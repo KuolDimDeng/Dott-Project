@@ -51,6 +51,9 @@ const InvoiceForm = () => {
       console.log('Fetching customers from database:', database_name); // Debugging line
       const response = await axiosInstance.get('http://localhost:8000/api/customers/', {
         params: { database: database_name },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
       console.log('Fetched customers:', response.data); // Debugging line
       setCustomers(response.data);

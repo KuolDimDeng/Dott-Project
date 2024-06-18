@@ -1,39 +1,44 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/CustomerList.js
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button } from '@mui/material';
+import axiosInstance from './axiosConfig';
 
 const CustomerList = () => {
   const [customers, setCustomers] = useState([]);
+  const [userDatabase, setUserDatabase] = useState('');
 
   useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          console.log('Token not found');
-          return;
-        }
-
-        const response = await fetch('http://localhost:8000/api/customers/', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setCustomers(data);
-          console.log('Fetched customers:', data);
-        } else {
-          console.error('Error fetching customers:', response.statusText);
-        }
-      } catch (error) {
-        console.error('Error fetching customers:', error);
-      }
-    };
-
-    fetchCustomers();
+    fetchUserProfile();
   }, []);
+
+  useEffect(() => {
+    if (userDatabase) {
+      fetchCustomers(userDatabase);
+    }
+  }, [userDatabase]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await axiosInstance.get('http://localhost:8000/api/profile/');
+      setUserDatabase(response.data.database_name);
+      console.log('User profile:', response.data);
+      console.log('User database:', response.data.database_name);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
+
+  const fetchCustomers = async (database_name) => {
+    try {
+      console.log('Fetching customers from database:', database_name);
+      const response = await axiosInstance.get('http://localhost:8000/api/customers/', {
+        params: { database: database_name },
+      });
+      console.log('Fetched customers:', response.data);
+      setCustomers(response.data);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    }
+  };
 
   return (
     <Box sx={{ p: 3 }}>
@@ -59,15 +64,16 @@ const CustomerList = () => {
               <TableCell>Shipping Phone</TableCell>
               <TableCell>Street</TableCell>
               <TableCell>Postcode</TableCell>
+              <TableCell>City</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {customers.map((customer) => (
               <TableRow key={customer.id}>
                 <TableCell>{customer.customerName}</TableCell>
-                <TableCell>{`${customer.primaryContactFirstName} ${customer.primaryContactLastName}`}</TableCell>
-                <TableCell>{customer.primaryContactEmail}</TableCell>
-                <TableCell>{customer.primaryContactPhone}</TableCell>
+                <TableCell>{`${customer.first_name} ${customer.last_name}`}</TableCell>
+                <TableCell>{customer.email}</TableCell>
+                <TableCell>{customer.phone}</TableCell>
                 <TableCell>{customer.accountNumber}</TableCell>
                 <TableCell>{customer.website}</TableCell>
                 <TableCell>{customer.currency}</TableCell>
@@ -79,6 +85,7 @@ const CustomerList = () => {
                 <TableCell>{customer.shippingPhone}</TableCell>
                 <TableCell>{customer.street}</TableCell>
                 <TableCell>{customer.postcode}</TableCell>
+                <TableCell>{customer.city}</TableCell>
               </TableRow>
             ))}
           </TableBody>

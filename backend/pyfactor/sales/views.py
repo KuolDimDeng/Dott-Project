@@ -83,14 +83,15 @@ def customer_list(request):
             logger.error("Database name is empty.")
             return Response({'error': 'Database name is empty.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if database_name in settings.DATABASES:
-            customers = Customer.objects.using(database_name).all()
-            logger.debug("Fetched customers: %s", customers)
-            serializer = CustomerSerializer(customers, many=True)
-            return Response(serializer.data)
-        else:
-            logger.warning("Database '%s' does not exist in settings.", database_name)
-            return Response({'error': 'Database does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+        # Create the dynamic database if it doesn't exist
+        logger.debug(f"Creating dynamic database: {database_name}")
+        router = UserDatabaseRouter()
+        router.create_dynamic_database(database_name)
+
+        customers = Customer.objects.using(database_name).all()
+        logger.debug("Fetched customers: %s", customers)
+        serializer = CustomerSerializer(customers, many=True)
+        return Response(serializer.data)
 
     except UserProfile.DoesNotExist:
         logger.error("UserProfile does not exist for user: %s", user)
