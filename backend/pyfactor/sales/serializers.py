@@ -43,10 +43,11 @@ class InvoiceSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = ['id', 'invoice_num', 'customer', 'amount', 'date_created', 'due_date', 'status', 'transaction']
 
+
 class VendorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vendor
-        fields = ['id', 'vendor_name', 'street', 'postcode']
+        fields = ['id', 'vendor_name', 'street', 'postcode', 'city', 'state', 'phone']
 
 class EstimateSerializer(serializers.ModelSerializer):
     class Meta:

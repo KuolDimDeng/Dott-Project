@@ -2,11 +2,22 @@ import React from 'react';
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import { Button } from '@mui/material';
 
-const InvoicePreview = ({ logo, accentColor, template, userData, invoiceItems }) => {
+const InvoicePreview = ({ logo, accentColor, template, userData, invoiceItems, products, services }) => {
   const { first_name, last_name, business_name, address, city, state, zip_code, phone, email } = userData || {};
   const subtotal = invoiceItems.reduce((total, item) => total + item.quantity * item.unitPrice, 0);
   const tax = subtotal * 0.1;
   const total = subtotal + tax;
+
+  const getItemName = (item) => {
+    if (item.type === 'product') {
+      const product = products.find((product) => product.id === item.productId);
+      return product ? product.name : '';
+    } else if (item.type === 'service') {
+      const service = services.find((service) => service.id === item.serviceId);
+      return service ? service.name : '';
+    }
+    return '';
+  };
 
   return (
     <Paper style={{ padding: '1rem' }}>
@@ -58,6 +69,7 @@ const InvoicePreview = ({ logo, accentColor, template, userData, invoiceItems })
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell style={{ fontWeight: 'bold' }}>Item</TableCell>
               <TableCell style={{ fontWeight: 'bold' }}>Description</TableCell>
               <TableCell style={{ fontWeight: 'bold' }}>Quantity</TableCell>
               <TableCell style={{ fontWeight: 'bold' }}>Unit Price</TableCell>
@@ -67,6 +79,7 @@ const InvoicePreview = ({ logo, accentColor, template, userData, invoiceItems })
           <TableBody>
             {invoiceItems.map((item, index) => (
               <TableRow key={index}>
+                <TableCell>{getItemName(item)}</TableCell>
                 <TableCell>{item.description}</TableCell>
                 <TableCell>{item.quantity}</TableCell>
                 <TableCell>${item.unitPrice.toFixed(2)}</TableCell>

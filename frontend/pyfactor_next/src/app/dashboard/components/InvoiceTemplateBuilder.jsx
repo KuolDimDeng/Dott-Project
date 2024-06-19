@@ -3,35 +3,19 @@ import React, { useState } from 'react';
 import { Box, Typography, Button, Input, MenuItem, Select, Grid } from '@mui/material';
 import InvoicePreview from './InvoicePreview';
 
-const InvoiceTemplateBuilder = ({ handleClose, userData }) => {
-  const [logo, setLogo] = useState(null);
-  const [accentColor, setAccentColor] = useState('#000000');
-  const [template, setTemplate] = useState('Contemporary');
-  const [invoiceItems, setInvoiceItems] = useState([]);
-
-  const handleLogoUpload = (event) => {
-    const file = event.target.files[0];
-    setLogo(URL.createObjectURL(file));
-  };
-
-  const handleAccentColorChange = (event) => {
-    setAccentColor(event.target.value);
-  };
-
-  const handleTemplateChange = (event) => {
-    setTemplate(event.target.value);
-  };
-
-  const handleAddInvoiceItem = () => {
-    setInvoiceItems([...invoiceItems, { description: '', quantity: 1, unitPrice: 0, total: 0 }]);
-  };
-
-  const handleInvoiceItemChange = (index, field, value) => {
-    const updatedItems = [...invoiceItems];
-    updatedItems[index][field] = value;
-    setInvoiceItems(updatedItems);
-  };
-
+const InvoiceTemplateBuilder = ({
+  handleClose,
+  userData,
+  logo,
+  accentColor,
+  template,
+  invoiceItems,
+  handleLogoUpload,
+  handleAccentColorChange,
+  handleTemplateChange,
+  handleAddInvoiceItem,
+  handleInvoiceItemChange,
+}) => {
   return (
     <Grid container spacing={3}>
       <Grid item xs={8}>
@@ -82,7 +66,7 @@ const InvoiceTemplateBuilder = ({ handleClose, userData }) => {
                   type="number"
                   placeholder="Quantity"
                   value={item.quantity}
-                  onChange={(e) => handleInvoiceItemChange(index, 'quantity', parseInt(e.target.value))}
+                  onChange={(e) => handleInvoiceItemChange(index, 'quantity', parseFloat(e.target.value))}
                 />
                 <Input
                   type="number"
@@ -90,7 +74,7 @@ const InvoiceTemplateBuilder = ({ handleClose, userData }) => {
                   value={item.unitPrice}
                   onChange={(e) => handleInvoiceItemChange(index, 'unitPrice', parseFloat(e.target.value))}
                 />
-                <Typography variant="body1">Total: {item.quantity * item.unitPrice}</Typography>
+                <Typography variant="body1">Amount: {item.amount}</Typography>
               </Box>
             ))}
           </Box>

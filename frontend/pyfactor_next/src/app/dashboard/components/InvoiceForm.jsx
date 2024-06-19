@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Grid, TextField, MenuItem } from '@mui/material';
+import { Box, Typography, Button, Grid, TextField, MenuItem, FormControl, InputLabel, Select } from '@mui/material';
 import InvoicePreview from './InvoicePreview';
 import InvoiceTemplateBuilder from './InvoiceTemplateBuilder';
 import axiosInstance from './axiosConfig';
@@ -24,6 +24,8 @@ const InvoiceForm = () => {
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [userDatabase, setUserDatabase] = useState('');
+  const [products, setProducts] = useState([]);
+  const [services, setServices] = useState([]);
 
   useEffect(() => {
     fetchUserProfile();
@@ -32,6 +34,8 @@ const InvoiceForm = () => {
   useEffect(() => {
     if (userDatabase) {
       fetchCustomers(userDatabase);
+      fetchProducts(userDatabase);
+      fetchServices(userDatabase);
     }
   }, [userDatabase]);
 
@@ -39,8 +43,8 @@ const InvoiceForm = () => {
     try {
       const response = await axiosInstance.get('http://localhost:8000/api/profile/');
       setUserDatabase(response.data.database_name);
-      console.log('User profile:', response.data); // Debugging line
-      console.log('User database:', response.data.database_name); // Debugging line
+      console.log('User profile:', response.data);
+      console.log('User database:', response.data.database_name);
     } catch (error) {
       console.error('Error fetching user profile:', error);
     }
@@ -48,17 +52,49 @@ const InvoiceForm = () => {
 
   const fetchCustomers = async (database_name) => {
     try {
-      console.log('Fetching customers from database:', database_name); // Debugging line
+      console.log('Fetching customers from database:', database_name);
       const response = await axiosInstance.get('http://localhost:8000/api/customers/', {
         params: { database: database_name },
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
       });
-      console.log('Fetched customers:', response.data); // Debugging line
+      console.log('Fetched customers:', response.data);
       setCustomers(response.data);
     } catch (error) {
       console.error('Error fetching customers:', error);
+    }
+  };
+
+  const fetchProducts = async (database_name) => {
+    try {
+      console.log('Fetching products from database:', database_name);
+      const response = await axiosInstance.get('http://localhost:8000/api/products/', {
+        params: { database: database_name },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      console.log('Fetched products:', response.data);
+      setProducts(response.data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
+
+  const fetchServices = async (database_name) => {
+    try {
+      console.log('Fetching services from database:', database_name);
+      const response = await axiosInstance.get('http://localhost:8000/api/services/', {
+        params: { database: database_name },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      console.log('Fetched services:', response.data);
+      setServices(response.data);
+    } catch (error) {
+      console.error('Error fetching services:', error);
     }
   };
 
@@ -71,8 +107,8 @@ const InvoiceForm = () => {
         last_name: selectedCustomerData.last_name,
         business_name: selectedCustomerData.customerName,
         address: selectedCustomerData.street,
-        city: selectedCustomerData.city || '', // Set an empty string if city is null or undefined
-        state: selectedCustomerData.billingState || '', // Set an empty string if state is null or undefined
+        city: selectedCustomerData.city || '',
+        state: selectedCustomerData.billingState || '',
         zip_code: selectedCustomerData.postcode,
         phone: selectedCustomerData.phone,
         email: selectedCustomerData.email,
@@ -105,12 +141,15 @@ const InvoiceForm = () => {
   };
 
   const handleAddInvoiceItem = () => {
-    setInvoiceItems([...invoiceItems, { description: '', quantity: 1, unitPrice: 0, total: 0 }]);
+    setInvoiceItems([...invoiceItems, { type: '', description: '', quantity: 1, unitPrice: 0, amount: 0 }]);
   };
 
   const handleInvoiceItemChange = (index, field, value) => {
     const updatedItems = [...invoiceItems];
     updatedItems[index][field] = value;
+    if (field === 'quantity' || field === 'unitPrice') {
+      updatedItems[index].amount = updatedItems[index].quantity * updatedItems[index].unitPrice;
+    }
     setInvoiceItems(updatedItems);
   };
 
@@ -136,71 +175,99 @@ const InvoiceForm = () => {
             ))}
           </TextField>
         </Grid>
-        <Grid item xs={12} md={6}>
-          <TextField
-            label="First Name"
-            value={userData.first_name}
-            onChange={(e) => setUserData({ ...userData, first_name: e.target.value })}
-            fullWidth
-            required
-          />
-          <TextField
-            label="Last Name"
-            value={userData.last_name}
-            onChange={(e) => setUserData({ ...userData, last_name: e.target.value })}
-            fullWidth
-            required
-          />
-          <TextField
-            label="Business Name"
-            value={userData.business_name}
-            onChange={(e) => setUserData({ ...userData, business_name: e.target.value })}
-            fullWidth
-            required
-          />
-          <TextField
-            label="Address"
-            value={userData.address}
-            onChange={(e) => setUserData({ ...userData, address: e.target.value })}
-            fullWidth
-            required
-          />
-          <TextField
-            label="City"
-            value={userData.city}
-            onChange={(e) => setUserData({ ...userData, city: e.target.value })}
-            fullWidth
-            required
-          />
-          <TextField
-            label="State"
-            value={userData.state}
-            onChange={(e) => setUserData({ ...userData, state: e.target.value })}
-            fullWidth
-            required
-          />
-          <TextField
-            label="Zip Code"
-            value={userData.zip_code}
-            onChange={(e) => setUserData({ ...userData, zip_code: e.target.value })}
-            fullWidth
-            required
-          />
-          <TextField
-            label="Phone"
-            value={userData.phone}
-            onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
-            fullWidth
-            required
-          />
-          <TextField
-            label="Email"
-            type="email"
-            value={userData.email}
-            onChange={(e) => setUserData({ ...userData, email: e.target.value })}
-            fullWidth
-            required
-          />
+        <Grid item xs={12}>
+          <Typography variant="h6">Invoice Items</Typography>
+          <Button variant="contained" color="primary" onClick={handleAddInvoiceItem}>
+            Add Item
+          </Button>
+          {invoiceItems.map((item, index) => (
+            <Grid container key={index} spacing={2}>
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel>Item Type</InputLabel>
+                  <Select
+                    value={item.type}
+                    onChange={(e) => handleInvoiceItemChange(index, 'type', e.target.value)}
+                  >
+                    <MenuItem value="">Select Item Type</MenuItem>
+                    <MenuItem value="product">Product</MenuItem>
+                    <MenuItem value="service">Service</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              {item.type === 'product' && (
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Product</InputLabel>
+                    <Select
+                      value={item.productId}
+                      onChange={(e) => handleInvoiceItemChange(index, 'productId', e.target.value)}
+                    >
+                      <MenuItem value="">Select a product</MenuItem>
+                      {products.map((product) => (
+                        <MenuItem key={product.id} value={product.id}>
+                          {product.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
+
+              {item.type === 'service' && (
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Service</InputLabel>
+                    <Select
+                      value={item.serviceId}
+                      onChange={(e) => handleInvoiceItemChange(index, 'serviceId', e.target.value)}
+                    >
+                      <MenuItem value="">Select a service</MenuItem>
+                      {services.map((service) => (
+                        <MenuItem key={service.id} value={service.id}>
+                          {service.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
+              <Grid item xs={6}>
+                <TextField
+                  label="Description"
+                  value={item.description}
+                  onChange={(e) => handleInvoiceItemChange(index, 'description', e.target.value)}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={2}>
+                <TextField
+                  label="Quantity"
+                  type="number"
+                  value={item.quantity}
+                  onChange={(e) => handleInvoiceItemChange(index, 'quantity', parseFloat(e.target.value))}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={2}>
+                <TextField
+                  label="Unit Price"
+                  type="number"
+                  value={item.unitPrice}
+                  onChange={(e) => handleInvoiceItemChange(index, 'unitPrice', parseFloat(e.target.value))}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={2}>
+                <TextField
+                  label="Amount"
+                  value={item.amount}
+                  InputProps={{ readOnly: true }}
+                  fullWidth
+                />
+              </Grid>
+            </Grid>
+          ))}
         </Grid>
         <Grid item xs={12}>
           <Button variant="contained" color="primary" onClick={handleOpenTemplateBuilder}>
@@ -229,6 +296,8 @@ const InvoiceForm = () => {
         template={template}
         userData={userData}
         invoiceItems={invoiceItems}
+        products={products}
+        services={services}
       />
     </Box>
   );

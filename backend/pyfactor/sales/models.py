@@ -76,7 +76,10 @@ class Invoice(models.Model):
 class Vendor(models.Model):
     vendor_name = models.CharField(max_length=100)
     street = models.CharField(max_length=100)
-    postcode = models.CharField(max_length=10)
+    postcode = models.CharField(max_length=10, default='Enter Postcode')
+    city = models.CharField(max_length=100, default='Enter City')
+    state = models.CharField(max_length=100, default='Enter State')
+    phone = models.CharField(max_length=20, blank=True, null=True)
 
     def __str__(self):
         return self.vendor_name
