@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    InvoiceCreateView,
+    create_invoice,
     create_customer,
     customer_list,
     customer_detail,
@@ -13,7 +13,7 @@ from .views import (
 )
 
 urlpatterns = [
-    path('invoices/', InvoiceCreateView.as_view(), name='invoice-create'),
+    path('invoices/', create_invoice, name='invoice-create'),
     path('create-customer/', create_customer, name='create_customer'),
     path('customers/', customer_list, name='customer_list'),
     path('customers/<int:pk>/', customer_detail, name='customer-detail'),

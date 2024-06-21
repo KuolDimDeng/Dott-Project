@@ -3,7 +3,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from finance.views import (
-    IncomeCreateView,
+    create_income,
     AccountTypeCreateView,
     AccountCreateView,  # Import the AccountCreateView
     TransactionCreateView,
@@ -13,7 +13,7 @@ from finance.views import (
 )
 
 urlpatterns = [
-    path('api/incomes/', IncomeCreateView.as_view(), name='income-create'),
+    path('api/incomes/', create_income, name='income-create'),
     path('api/account-types/', AccountTypeCreateView.as_view(), name='account-type-create'),
     path('api/accounts/', AccountCreateView.as_view(), name='account-create'),  # Add this line
     path('api/transactions/', TransactionListView.as_view(), name='transaction-create'),

@@ -6,68 +6,145 @@ from rest_framework.generics import CreateAPIView, ListCreateAPIView, UpdateAPIV
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.decorators import parser_classes
+from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from .models import AccountType, Account, Transaction, Income, RevenueAccount, CashAccount, Expense
 from datetime import datetime
-from .serializers import AccountTypeSerializer, AccountSerializer, IncomeSerializer, TransactionSerializer, CashAccountSerializer, TransactionListSerializer
+from .serializers import AccountTypeSerializer, AccountSerializer, IncomeSerializer, SalesTaxAccountSerializer, TransactionSerializer, CashAccountSerializer, TransactionListSerializer
 from users.models import UserProfile
 from finance.utils import create_revenue_account
 from rest_framework.exceptions import ValidationError
-from django.db import DatabaseError, connection, transaction
+from django.db import DatabaseError, connection, transaction, connections, transaction as db_transaction
+from finance.account_types import ACCOUNT_TYPES
 from pyfactor.logging_config import setup_logging
 from rest_framework import generics, status
+from .utils import get_or_create_account
 import traceback
+import logging
+logger = logging.getLogger(__name__)
 
 logger = setup_logging()
 
 # Create your views here.
-class IncomeCreateView(APIView):
-    logger.debug('IncomeCreateView...')
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def create_income(request):
+    logger.debug("Create Income: Received request data: %s", request.data)
+    user = request.user
 
-    def post(self, request, *args, **kwargs):
-        user = self.request.user
-        logger.debug('User: %s', user)
-        
+    if not user.is_authenticated:
+        logger.warning("Unauthenticated user attempted to create income")
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        # Fetch the user profile to get the dynamic database name
+        logger.debug("Fetching user profile")
+        user_profile = UserProfile.objects.using('default').get(user=user)
+        database_name = user_profile.database_name
+        logger.debug("Fetched user profile. Database name: %s", database_name)
+
+        # Ensure the dynamic database exists
+        logger.debug("Creating dynamic database if it doesn't exist: %s", database_name)
+        router = UserDatabaseRouter()
+        router.create_dynamic_database(database_name)
+
+        # Use the dynamic database for this operation
+        logger.debug('Using dynamic database: %s', database_name)
+
+        # Validate input data
+        logger.debug("Validating input data")
+        required_fields = ['date', 'account', 'type', 'amount']
+        for field in required_fields:
+            if field not in request.data:
+                return Response({"error": f"Missing required field: {field}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        date_string = request.data['date']
+        account_name = request.data['account']
+        transaction_type = request.data['type']
+        amount = request.data['amount']
+        sales_tax = request.data.get('sales_tax', '0')
+        notes = request.data.get('notes', '')
+        receipt = request.data.get('receipt')
+        account_type_name = request.data.get('account_type')
+
+        # Parse the formatted date string
         try:
-            user_profile = UserProfile.objects.using('default').get(user=user)
-            database_name = user_profile.database_name
-            logger.debug('User Profile: %s', user_profile)
-            logger.debug('Database Name: %s', database_name)
-            logger.debug('request: %s', request)
-
-            date_string = request.data.get('date')
-            account_name = request.data.get('account')
-            transaction_type = request.data.get('type')
-            amount = request.data.get('amount')
-            notes = request.data.get('notes')
-            receipt = request.data.get('receipt')
-            account_type_name = request.data.get('account_type')
-
-            # Parse the formatted date string
             date = datetime.strptime(date_string, "%Y-%m-%d").date()
+        except ValueError:
+            return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
 
+        with db_transaction.atomic(using=database_name):
+            transaction = None
             if account_name == 'Cash on Hand' and account_type_name == 'Sales' and transaction_type == 'Deposit':
                 logger.info('Creating a revenue account...')
-                create_revenue_account(database_name, date, account_name, transaction_type, amount, notes, receipt, account_type_name)
+                account_type_id = ACCOUNT_TYPES[account_type_name]
+                transaction = create_revenue_account(database_name, date, account_name, transaction_type, amount, notes, receipt, account_type_name, account_type_id)
                 logger.info('Revenue account created...')
             else:
-                pass
+                account = get_or_create_account(database_name, account_name, account_type_name)
+                transaction_data = {
+                    'date': date,
+                    'description': notes,
+                    'account': account.id,
+                    'type': transaction_type,
+                    'amount': amount,
+                    'notes': notes,
+                    'receipt': receipt
+                }
+                context = {'database_name': database_name}
+                logger.debug(f"Initializing TransactionSerializer with context: {context}")
+                transaction_serializer = TransactionSerializer(data=transaction_data, context=context)
+                if transaction_serializer.is_valid():
+                    with connections[database_name].cursor() as cursor:
+                        logger.debug("Setting search path to dynamic database: %s", database_name)
+                        cursor.execute("SET search_path TO public, {}".format(database_name))
+                        transaction = transaction_serializer.save()
+                        logger.debug("Transaction created: %s", transaction)
+                    
+                    income = Income.objects.using(database_name).create(transaction=transaction)
+                    logger.info('Income record created: %s', income)
+                else:
+                    logger.error('Transaction validation errors: %s', transaction_serializer.errors)
+                    return Response(transaction_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            logger.info('Income record created...Passed')
-            return Response({"message": "Income record created successfully"}, status=status.HTTP_201_CREATED)
-        
-        except UserProfile.DoesNotExist:
-            logger.error("UserProfile does not exist for user: %s", user)
-            return Response({"error": "UserProfile does not exist"}, status=status.HTTP_404_NOT_FOUND)
-        except DatabaseError as e:
-            logger.error("Database error: %s", e)
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except Exception as e:
-            logger.exception("An error occurred while creating income %s", e)
-            logger.error("Traceback:\n%s", traceback.format_exc())
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # Create SalesTaxAccount
+            logger.debug(f"Checking sales tax condition: sales_tax={sales_tax}, float(sales_tax)={float(sales_tax)}")
+            if sales_tax and float(sales_tax) > 0:
+                logger.debug("Sales tax condition met, proceeding with SalesTaxAccount creation")
+                sales_tax_data = {
+                    'date': date,
+                    'debit': sales_tax,
+                    'description': f'Sales Tax for transaction {transaction.id if transaction else ""}',
+                    'note': notes,
+                    'transaction': transaction.id if transaction else None
+                }
+                logger.debug(f"Prepared sales_tax_data: {sales_tax_data}")
+                
+                sales_tax_serializer = SalesTaxAccountSerializer(data=sales_tax_data, context={'database_name': database_name})
+                if sales_tax_serializer.is_valid():
+                    sales_tax_account = sales_tax_serializer.save()
+                    logger.info(f"Sales Tax Account created: {sales_tax_account}")
+                else:
+                    logger.error(f"Sales Tax Account validation errors: {sales_tax_serializer.errors}")
+                    return Response(sales_tax_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                logger.debug("Sales tax condition not met, skipping SalesTaxAccount creation")
+
+        return Response({"message": "Income record created successfully"}, status=status.HTTP_201_CREATED)
+
+    except UserProfile.DoesNotExist:
+        logger.error("UserProfile does not exist for user: %s", user)
+        return Response({"error": "UserProfile does not exist"}, status=status.HTTP_404_NOT_FOUND)
+    except ValueError as e:
+        logger.error("ValueError in create_income: %s", str(e))
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.exception("Unexpected error creating income: %s", e)
+        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class AccountTypeCreateView(generics.CreateAPIView):
     queryset = AccountType.objects.all()

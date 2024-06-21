@@ -2,6 +2,7 @@ from django.db import models
 from datetime import timedelta
 from django.utils import timezone
 
+
 class Product(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
@@ -46,8 +47,9 @@ class Customer(models.Model):
     street = models.CharField(max_length=255, blank=True, null=True)
     postcode = models.CharField(max_length=20, blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
+
     def __str__(self):
-        return self.customerName
+        return self.customerName if self.customerName else f"{self.first_name} {self.last_name}"
 
 class Bill(models.Model):
     bill_num = models.CharField(max_length=20)
@@ -69,6 +71,11 @@ class Invoice(models.Model):
     due_date = models.DateField(default=default_due_date)
     status = models.CharField(max_length=20, choices=[('draft', 'Draft'), ('sent', 'Sent'), ('paid', 'Paid')], default='draft')
     transaction = models.OneToOneField('finance.Transaction', on_delete=models.CASCADE, related_name='sales_invoice', null=True, blank=True)
+    accounts_receivable = models.ForeignKey('finance.Account', on_delete=models.CASCADE, related_name='invoices_receivable', null=True, blank=True)
+    sales_revenue = models.ForeignKey('finance.Account', on_delete=models.CASCADE, related_name='invoices_revenue', null=True, blank=True)
+    sales_tax_payable = models.ForeignKey('finance.Account', on_delete=models.CASCADE, related_name='invoices_tax_payable', null=True, blank=True)
+    cost_of_goods_sold = models.ForeignKey('finance.Account', on_delete=models.CASCADE, related_name='invoices_cogs', null=True, blank=True)
+    inventory = models.ForeignKey('finance.Account', on_delete=models.CASCADE, related_name='invoices_inventory', null=True, blank=True)
 
     def __str__(self):
         return self.invoice_num
@@ -104,7 +111,7 @@ class SalesOrder(models.Model):
 
 class Department(models.Model):
     dept_code = models.CharField(max_length=20)
-    product_num = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product')
+    product_num = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='department')
     date_created = models.DateField(auto_now_add=True)
     dept_name = models.CharField(max_length=20)
 

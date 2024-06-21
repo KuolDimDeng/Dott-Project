@@ -1,4 +1,5 @@
 import django
+from django.apps import apps
 from django.utils import timezone
 from django.core.management import call_command
 from django.db import transaction, connections
@@ -10,6 +11,7 @@ import pytz
 import traceback
 import psycopg2
 from pyfactor.logging_config import setup_logging
+from finance.account_types import ACCOUNT_TYPES
 
 logger = setup_logging()
 logger = logging.getLogger(__name__)
@@ -71,7 +73,8 @@ def setup_user_database(database_name, user_data, user):
 
             # Create initial data
             logger.info("Creating initial data...")
-            account_type = AccountType.objects.using(database_name).create(name='Sales')
+            populate_account_types(database_name)
+            account_type = AccountType.objects.using(database_name).get(account_type_id=0)
             cash_account = Account.objects.using(database_name).create(account_number='1', name='Cash on Hand', account_type=account_type)
             Transaction.objects.using(database_name).create(
                 date=timezone.now().astimezone(pytz.timezone(settings.TIME_ZONE)).date(),
@@ -105,3 +108,13 @@ def setup_user_database(database_name, user_data, user):
         logger.error("Error updating user profile: %s", str(e))
         logger.error("Traceback:\n%s", traceback.format_exc())
         raise
+
+def populate_account_types(database_name):
+    logger.info(f"Populating finance_accounttype table for user database: {database_name}")
+    AccountType = apps.get_model('finance', 'AccountType')
+    for account_type_name, account_type_id in ACCOUNT_TYPES.items():
+        AccountType.objects.using(database_name).update_or_create(
+            account_type_id=account_type_id,
+            defaults={'name': account_type_name}
+        )
+    logger.info(f"finance_accounttype table populated successfully for user database: {database_name}")

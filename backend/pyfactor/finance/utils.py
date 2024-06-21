@@ -3,6 +3,7 @@ from django.conf import settings
 from finance.models import AccountType, Account, Transaction, RevenueAccount, CashAccount
 from django.db import DatabaseError, OperationalError, transaction, connections
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
+from finance.account_types import ACCOUNT_TYPES
 import logging
 import traceback
 
@@ -25,17 +26,24 @@ def is_valid_database(database_name):
             return False
     return False
 
-def create_revenue_account(database_name, date, account_name, transaction_type, amount, notes, receipt, account_type_name):
+def create_revenue_account(database_name, date, account_name, transaction_type, amount, notes, receipt, account_type_name, account_type_id):
+    account_type_id = ACCOUNT_TYPES.get(account_type_name)
+    if account_type_id is None:
+        raise ValueError(f"Invalid account type: {account_type_name}")
     logger.info('Creating a revenue account in user database...')
     logger.debug('Database name: %s', database_name)
+    logger.debug('Account name: %s', account_name)
     
     ensure_dynamic_database(database_name)
 
     try:
         with transaction.atomic(using=database_name):
             # Check if the account type already exists
-            logger.debug('Checking if account type "%s" exists...', account_type_name)
-            account_type, created = AccountType.objects.using(database_name).get_or_create(name=account_type_name)
+            logger.debug('Checking if account type "%s" exists... (ID: %s)', account_type_name, account_type_id)            
+            account_type, created = AccountType.objects.using(database_name).get_or_create(
+                name=account_type_name,
+                defaults={'account_type_id': account_type_id}  # Add this line
+            )            
             if created:
                 logger.info('Account type "%s" created.', account_type_name)
             else:
@@ -116,4 +124,36 @@ def create_revenue_account(database_name, date, account_name, transaction_type, 
     except Exception as e:
         logger.error("Error during revenue setup: %s", str(e))
         logger.error("Traceback:\n%s", traceback.format_exc())
+        raise
+    
+def get_or_create_account(database_name, account_name, account_type_name):
+    logger.debug(f"Fetching or creating account: {account_name} in database: {database_name}")
+    account_type_id = ACCOUNT_TYPES.get(account_type_name)
+    if account_type_id is None:
+        raise ValueError(f"Invalid account type: {account_type_name}")
+    
+    logger.debug(f"Fetching or creating account: {account_name} in database: {database_name}")
+    
+    try:
+        with transaction.atomic(using=database_name):
+            # Get or create the AccountType
+            account_type, _ = AccountType.objects.using(database_name).get_or_create(
+                account_type_id=account_type_id,
+                defaults={'name': account_type_name}
+            )
+            
+            # Get or create the Account
+            account, created = Account.objects.using(database_name).get_or_create(
+                name=account_name,
+                defaults={'account_type': account_type}
+            )
+            
+            if created:
+                logger.debug(f"Account created: {account}")
+            else:
+                logger.debug(f"Account already exists: {account}")
+            
+            return account
+    except Exception as e:
+        logger.exception(f"Error fetching or creating account: {e}")
         raise

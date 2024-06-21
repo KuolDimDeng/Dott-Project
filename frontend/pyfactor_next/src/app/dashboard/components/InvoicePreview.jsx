@@ -82,8 +82,8 @@ const InvoicePreview = ({ logo, accentColor, template, userData, invoiceItems, p
                 <TableCell>{getItemName(item)}</TableCell>
                 <TableCell>{item.description}</TableCell>
                 <TableCell>{item.quantity}</TableCell>
-                <TableCell>${item.unitPrice.toFixed(2)}</TableCell>
-                <TableCell>${(item.quantity * item.unitPrice).toFixed(2)}</TableCell>
+                <TableCell>${item.unitPrice?.toFixed(2) || '0.00'}</TableCell>
+                <TableCell>${((item.quantity * item.unitPrice) || 0).toFixed(2)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

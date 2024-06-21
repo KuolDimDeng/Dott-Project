@@ -99,7 +99,7 @@ const InvoiceForm = () => {
   };
 
   const handleCustomerChange = (event) => {
-    setSelectedCustomer(event.target.value);
+    setSelectedCustomer(event.target.value || '');
     const selectedCustomerData = customers.find((customer) => customer.id === event.target.value);
     if (selectedCustomerData) {
       setUserData({
@@ -147,10 +147,99 @@ const InvoiceForm = () => {
   const handleInvoiceItemChange = (index, field, value) => {
     const updatedItems = [...invoiceItems];
     updatedItems[index][field] = value;
-    if (field === 'quantity' || field === 'unitPrice') {
+  
+    if (field === 'productId' || field === 'serviceId') {
+      const selectedItem = field === 'productId'
+        ? products.find((product) => product.id === value)
+        : services.find((service) => service.id === value);
+  
+      if (selectedItem && selectedItem.price) {
+        updatedItems[index].unitPrice = parseFloat(selectedItem.price);
+        updatedItems[index].amount = updatedItems[index].quantity * parseFloat(selectedItem.price);
+      }
+    }
+  
+  
+    if (field === 'quantity') {
       updatedItems[index].amount = updatedItems[index].quantity * updatedItems[index].unitPrice;
     }
+  
     setInvoiceItems(updatedItems);
+  };
+
+  const handleSave = async () => {
+    try {
+        const subtotal = invoiceItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+        const tax = subtotal * 0.1;
+        const total = subtotal + tax;
+  
+        // Generate a unique invoice number
+        const currentDate = new Date();
+        const year = currentDate.getFullYear().toString().slice(-2);
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        const dateString = `${year}${month}${day}`;
+  
+        // Fetch the last invoice number from the server or local storage
+        const lastInvoiceNumber = await getLastInvoiceNumber();
+        let newInvoiceNumber;
+  
+        if (lastInvoiceNumber) {
+            const lastNumber = parseInt(lastInvoiceNumber.replace(/\D/g, ''), 10);
+            newInvoiceNumber = `INV${String(lastNumber + 1).padStart(5, '0')}`;
+        } else {
+            newInvoiceNumber = `INV00001`;
+        }
+  
+        // Correct transaction data format
+        const transactionData = {
+            description: "Transaction Description", // Provide a suitable description
+            account: 1, // Provide a valid account ID
+            type: "credit", // Specify the transaction type
+            amount: total, // Provide the total amount
+            notes: "Transaction Notes", // Any additional notes
+            receipt: null // Receipt file if any
+        };
+
+        const invoiceData = {
+            invoice_num: newInvoiceNumber,
+            customer: selectedCustomer,
+            amount: total,
+            due_date: currentDate.toISOString().split('T')[0], // Correct date format
+            status: 'draft',
+            transaction: transactionData,
+        };
+  
+        // Save the new invoice number to the server or local storage
+        await saveInvoiceNumber(newInvoiceNumber);
+        console.log("Invoice data being sent to server:", invoiceData);
+        const response = await axiosInstance.post('http://localhost:8000/api/invoices/', invoiceData, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+        });
+        console.log('Invoice created successfully', response.data);
+    } catch (error) {
+        console.error('Error creating invoice', error);
+    }
+};
+
+  
+  // Function to fetch the last invoice number from the server or local storage
+  const getLastInvoiceNumber = async () => {
+    // Implement logic to fetch the last invoice number from the server or local storage
+    // Return the last invoice number or null if not found
+    return null; // Replace with your implementation
+  };
+  
+  // Function to save the new invoice number to the server or local storage
+  const saveInvoiceNumber = async (invoiceNumber) => {
+    // Implement logic to save the new invoice number to the server or local storage
+    // Return a promise or handle any necessary operations
+  }; // Replace with your implementation
+
+  const handleCancel = () => {
+    // Reset form data or navigate to the previous page
   };
 
   return (
@@ -200,7 +289,7 @@ const InvoiceForm = () => {
                   <FormControl fullWidth>
                     <InputLabel>Product</InputLabel>
                     <Select
-                      value={item.productId}
+                      value={item.productId || ''}
                       onChange={(e) => handleInvoiceItemChange(index, 'productId', e.target.value)}
                     >
                       <MenuItem value="">Select a product</MenuItem>
@@ -219,7 +308,7 @@ const InvoiceForm = () => {
                   <FormControl fullWidth>
                     <InputLabel>Service</InputLabel>
                     <Select
-                      value={item.serviceId}
+                      value={item.serviceId || ''}
                       onChange={(e) => handleInvoiceItemChange(index, 'serviceId', e.target.value)}
                     >
                       <MenuItem value="">Select a service</MenuItem>
@@ -299,6 +388,15 @@ const InvoiceForm = () => {
         products={products}
         services={services}
       />
+
+      <Box display="flex" justifyContent="flex-end" mt={3}>
+        <Button variant="outlined" color="inherit" sx={{ mr: 2 }} onClick={handleCancel}>
+          Cancel
+        </Button>
+        <Button variant="contained" color="primary" onClick={handleSave}>
+          Save
+        </Button>
+      </Box>
     </Box>
   );
 };

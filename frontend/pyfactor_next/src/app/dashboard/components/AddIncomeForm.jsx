@@ -11,6 +11,7 @@ const AddIncomeForm = ({ onClose, accounts }) => {
   const [type, setType] = useState('');
   const [accountType, setAccountType] = useState('');
   const [amount, setAmount] = useState('');
+  const [salesTax, setSalesTax] = useState('');
   const [notes, setNotes] = useState('');
   const [receipt, setReceipt] = useState(null);
   const [userDatabase, setUserDatabase] = useState('');
@@ -60,8 +61,11 @@ const AddIncomeForm = ({ onClose, accounts }) => {
     formData.append('type', type);
     formData.append('account_type', accountType);
     formData.append('amount', amount);
+    formData.append('sales_tax', salesTax);
     formData.append('notes', notes);
-    formData.append('receipt', receipt);
+    if (receipt) {
+      formData.append('receipt', receipt);
+    }
     formData.append('database', userDatabase);
   
     console.log('Form data:', formData);
@@ -76,92 +80,19 @@ const AddIncomeForm = ({ onClose, accounts }) => {
       if (response.status === 201) {
         const data = response.data;
         console.log('Income record created:', data);
-  
-        await insertDataIntoFinanceTables(data.id, date, account, type, accountType, amount, notes);
-  
         onClose();
-      } else {
-        console.error('Error creating income record:', response.statusText);
       }
     } catch (error) {
       console.error('Error creating income record:', error);
-    }
-  };
-
-  const insertDataIntoFinanceTables = async (incomeId, date, account, type, accountType, amount, notes) => {
-    try {
-      const token = localStorage.getItem('token');
-      console.log('Token:', token);
-
-      const accountTypeResponse = await fetch('http://localhost:8000/api/account-types/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name: accountType }),
-      });
-
-      if (accountTypeResponse.ok) {
-        const accountTypeData = await accountTypeResponse.json();
-        console.log('Account type created:', accountTypeData);
-
-        const accountResponse = await fetch('http://localhost:8000/api/accounts/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ account_number: '1', name: account, account_type: accountTypeData.id }),
-        });
-
-        if (accountResponse.ok) {
-          const accountData = await accountResponse.json();
-          console.log('Account created:', accountData);
-
-          const transactionResponse = await fetch('http://localhost:8000/api/transactions/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              date,
-              description: 'Default description',
-              account: accountData.id,
-              type,
-              amount,
-              notes,
-              receipt: null,
-            }),
-          });
-
-          if (transactionResponse.ok) {
-            const transactionData = await transactionResponse.json();
-            console.log('Transaction created:', transactionData);
-
-            await fetch(`http://localhost:8000/api/incomes/${incomeId}/`, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ transaction: transactionData.id }),
-            });
-          } else {
-            const errorData = await transactionResponse.json();
-            console.error('Error creating transaction:', errorData);
-          }
-        } else {
-          const errorData = await accountResponse.json();
-          console.error('Error creating account:', errorData);
-        }
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        console.error('Error response headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('Error request:', error.request);
       } else {
-        const errorData = await accountTypeResponse.json();
-        console.error('Error creating account type:', errorData);
+        console.error('Error message:', error.message);
       }
-    } catch (error) {
-      console.error('Error inserting data into finance tables:', error);
     }
   };
 
@@ -228,6 +159,14 @@ const AddIncomeForm = ({ onClose, accounts }) => {
         margin="normal"
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
+      />
+
+      <TextField
+        label="Sales Tax"
+        fullWidth
+        margin="normal"
+        value={salesTax}
+        onChange={(e) => setSalesTax(e.target.value)}
       />
 
       <TextField
