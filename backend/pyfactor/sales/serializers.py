@@ -1,13 +1,10 @@
+from django.db import connections
 from rest_framework import serializers
+from finance.models import Account, Transaction
 from .models import Product, Service, Customer, Bill, Invoice, Vendor, Estimate, SalesOrder, Department
-from finance.models import Income, Transaction
-from users.models import User
-import logging
-from finance.serializers import TransactionSerializer
+from pyfactor.logging_config import get_logger
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
+logger = get_logger()
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
@@ -42,45 +39,70 @@ class BillSerializer(serializers.ModelSerializer):
         model = Bill
         fields = ['id', 'bill_num', 'customer', 'amount', 'date_created']
 
-class InvoiceSerializer(serializers.ModelSerializer):
-    transaction = TransactionSerializer()
-
+class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Invoice
-        fields = ['id', 'invoice_num', 'customer', 'amount', 'due_date', 'status', 'transaction']
+        model = Transaction
+        fields = ['id', 'date', 'description', 'account', 'type', 'amount', 'notes', 'receipt']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.database_name = self.context.get('database_name')
-        logger.debug(f"InvoiceSerializer initialized with database_name: {self.database_name}")
-
-    def to_internal_value(self, data):
-        logger.debug(f"InvoiceSerializer to_internal_value called with data: {data}")
-        internal_value = super().to_internal_value(data)
-        
-        transaction_data = data.get('transaction')
-        if transaction_data:
-            transaction_serializer = TransactionSerializer(
-                data=transaction_data, 
-                context={'database_name': self.database_name}
-            )
-            if transaction_serializer.is_valid():
-                internal_value['transaction'] = transaction_serializer.validated_data
-            else:
-                raise serializers.ValidationError({'transaction': transaction_serializer.errors})
-        
-        return internal_value
+        if self.database_name:
+            self.fields['account'].queryset = Account.objects.using(self.database_name).all()
 
     def create(self, validated_data):
-        logger.debug(f"IncomeSerializer create method called with validated_data: {validated_data}")
-        transaction_data = validated_data.pop('transaction')
-        database_name = self.context.get('database_name') or 'default'
-        transaction_serializer = TransactionSerializer(data=transaction_data, context={'database_name': database_name})
-        if transaction_serializer.is_valid():
-            transaction = transaction_serializer.save()
-            return Income.objects.using(database_name).create(transaction=transaction, **validated_data)
+        if self.database_name:
+            transaction = Transaction.objects.using(self.database_name).create(**validated_data)
         else:
-            raise serializers.ValidationError(transaction_serializer.errors)
+            transaction = Transaction.objects.create(**validated_data)
+        transaction.update_account_balance()
+        return transaction
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    transaction = TransactionSerializer(required=False)
+    accounts_receivable = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=False)
+    sales_revenue = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=False)
+    sales_tax_payable = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=False)
+    cost_of_goods_sold = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=False)
+    inventory = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=False)
+
+    class Meta:
+        model = Invoice
+        fields = ['id', 'invoice_num', 'customer', 'amount', 'created_at', 'due_date', 'status', 'transaction', 
+                  'accounts_receivable', 'sales_revenue', 'sales_tax_payable', 'cost_of_goods_sold', 'inventory']
+        read_only_fields = ['created_at']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.database_name = self.context.get('database_name')
+        if self.database_name:
+            self.fields['transaction'] = TransactionSerializer(required=False, context={'database_name': self.database_name})
+            self.fields['accounts_receivable'].queryset = Account.objects.using(self.database_name).all()
+            self.fields['sales_revenue'].queryset = Account.objects.using(self.database_name).all()
+            self.fields['sales_tax_payable'].queryset = Account.objects.using(self.database_name).all()
+            self.fields['cost_of_goods_sold'].queryset = Account.objects.using(self.database_name).all()
+            self.fields['inventory'].queryset = Account.objects.using(self.database_name).all()
+
+    def create(self, validated_data):
+        transaction_data = validated_data.pop('transaction', None)
+        accounts_data = {
+            'accounts_receivable': validated_data.pop('accounts_receivable', None),
+            'sales_revenue': validated_data.pop('sales_revenue', None),
+            'sales_tax_payable': validated_data.pop('sales_tax_payable', None),
+            'cost_of_goods_sold': validated_data.pop('cost_of_goods_sold', None),
+            'inventory': validated_data.pop('inventory', None),
+        }
+        
+        invoice = Invoice.objects.using(self.database_name).create(**validated_data, **accounts_data)
+        
+        if transaction_data:
+            transaction_serializer = TransactionSerializer(data=transaction_data, context={'database_name': self.database_name})
+            if transaction_serializer.is_valid():
+                transaction = transaction_serializer.save()
+                invoice.transaction = transaction
+                invoice.save()
+        
+        return invoice
     
 class VendorSerializer(serializers.ModelSerializer):
     class Meta:

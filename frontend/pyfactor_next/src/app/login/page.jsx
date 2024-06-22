@@ -88,11 +88,10 @@ export default function SignIn() {
         const token = response.data.access; // Access the token from response.data.access
         setToken(token);
         localStorage.setItem('token', token);
-        console.log('Token sign in:', token);
         router.push('/dashboard', { query: { token } });
            }
     } catch (error) {
-      console.error('Error during login:', error);
+      logger.error('Error during login:', error);
       setErrorState(error.response.data);
     }
   };

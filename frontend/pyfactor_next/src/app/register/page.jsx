@@ -101,7 +101,7 @@ export default function RegistrationPage() {
       handleSuccess();
       router.push('/');
     } catch (error) {
-      console.error('Registration error:', error);
+      logger.error('Registration error:', error);
     }
   };
 

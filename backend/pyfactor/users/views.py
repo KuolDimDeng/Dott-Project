@@ -11,11 +11,11 @@ from django.conf import settings
 from rest_framework.views import APIView
 from .models import User, UserProfile
 from .serializers import CustomRegisterSerializer, CustomTokenObtainPairSerializer, CustomAuthTokenSerializer
-from pyfactor.logging_config import setup_logging
+from pyfactor.logging_config import get_logger
 import traceback
 import jwt
 
-logger = setup_logging()
+logger = get_logger()
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = CustomRegisterSerializer

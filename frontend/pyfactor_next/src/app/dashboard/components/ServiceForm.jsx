@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { Box, Typography, TextField, FormControlLabel, Checkbox, Button } from '@mui/material';
 import axiosInstance from './axiosConfig';
+import { logger } from '@/utils/logger';
+import { useUserMessageContext } from '@/contexts/UserMessageContext';
+
+
 
 const ServiceForm = () => {
   const [name, setName] = useState('');
@@ -10,6 +14,7 @@ const ServiceForm = () => {
   const [buyEnabled, setBuyEnabled] = useState(false);
   const [salesTax, setSalesTax] = useState(0);
   const [error, setError] = useState(null);
+  const { addMessage } = useUserMessageContext();
 
 
   const handleSubmit = async (e) => {
@@ -27,10 +32,11 @@ const ServiceForm = () => {
       console.log('Service data:', serviceData);
       const response = await axiosInstance.post('http://localhost:8000/api/create-service/', serviceData);
       console.log('Service created successfully', response.data);
+      addMessage('info', 'Service created successfully');
       // Reset form fields or navigate to the service list page
     } catch (error) {
-      console.error('Error creating service', error);
-      setError('Failed to create service. Please try again.');
+      logger.error('Error creating service', error);
+      addMessage('error', 'Error creating service');
       // Handle error condition
     }
   };

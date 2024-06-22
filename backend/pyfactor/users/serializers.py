@@ -16,11 +16,11 @@ from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from finance.models import AccountType, Account, Transaction, Income
-from pyfactor.logging_config import setup_logging
+from pyfactor.logging_config import get_logger
 import sys
 import traceback
 
-logger = setup_logging()
+logger = get_logger()
 
 class CustomRegisterSerializer(RegisterSerializer):
     username = None

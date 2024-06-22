@@ -2,79 +2,46 @@ import React, { useState, useEffect } from 'react';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import { styled } from '@mui/material/styles';
+import { useUserMessageContext } from '@/contexts/UserMessageContext';
+
+const lightBlue = '#E3F2FD'; // Make sure this matches the color in your Dashboard component
 
 const MessageContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
-  overflowX: 'auto',
-  whiteSpace: 'nowrap',
+  alignItems: 'center', // Center the message vertically
+  backgroundColor: lightBlue,
+  padding: theme.spacing(1),
+  height: '100%',
+  overflow: 'hidden', // Hide overflow
 }));
 
-const SuccessMessage = styled(Typography)(({ theme }) => ({
-  color: 'green',
-  marginRight: theme.spacing(1),
+const Message = styled(Typography)(({ theme, messageType }) => ({
+  whiteSpace: 'nowrap', // Prevent line breaks
+  overflow: 'hidden', // Hide overflow
+  textOverflow: 'ellipsis', // Add ellipsis for overflowing text
+  fontWeight: 'bold',
+  color: messageType === 'info' ? 'green' : 'red',
 }));
 
-const WarningMessage = styled(Typography)(({ theme }) => ({
-  color: 'orange',
-  marginRight: theme.spacing(1),
-}));
-
-const ErrorMessage = styled(Typography)(({ theme }) => ({
-  color: 'red',
-  marginRight: theme.spacing(1),
-}));
-
-function PrintStatements() {
-  const [messages, setMessages] = useState([]);
+function ConsoleMessages() {
+  const { messages } = useUserMessageContext();
+  const [latestMessage, setLatestMessage] = useState(null);
 
   useEffect(() => {
-    const originalConsoleLog = console.log;
-
-    console.log = (...args) => {
-      const message = args.join(' ');
-      const messageType = getMessageType(message);
-      setMessages((prevMessages) => [...prevMessages, { message, type: messageType }]);
-      originalConsoleLog(...args);
-    };
-
-    return () => {
-      console.log = originalConsoleLog;
-    };
-  }, []);
-
-  const getMessageType = (message) => {
-    if (message.includes('success')) {
-      return 'success';
-    } else if (message.includes('warning')) {
-      return 'warning';
-    } else if (message.includes('error')) {
-      return 'error';
+    if (messages.length > 0) {
+      setLatestMessage(messages[messages.length - 1]);
     }
-    return 'default';
-  };
+  }, [messages]);
 
   return (
     <MessageContainer>
-      {messages.map((messageData, index) => (
-        <React.Fragment key={index}>
-          {messageData.type === 'success' && (
-            <SuccessMessage variant="body2">{messageData.message}</SuccessMessage>
-          )}
-          {messageData.type === 'warning' && (
-            <WarningMessage variant="body2">{messageData.message}</WarningMessage>
-          )}
-          {messageData.type === 'error' && (
-            <ErrorMessage variant="body2">{messageData.message}</ErrorMessage>
-          )}
-          {messageData.type === 'default' && (
-            <Typography variant="body2" color="inherit">
-              {messageData.message}
-            </Typography>
-          )}
-        </React.Fragment>
-      ))}
+      {latestMessage && (
+        <Message messageType={latestMessage.type}>
+          {latestMessage.content}
+        </Message>
+      )}
     </MessageContainer>
   );
 }
 
-export default PrintStatements;
+export default ConsoleMessages;

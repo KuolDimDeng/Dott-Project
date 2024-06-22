@@ -12,6 +12,10 @@ import {
   MenuItem,
   Grid,
 } from '@mui/material';
+import { logger } from '@/utils/logger';
+import { useUserMessageContext } from '@/contexts/UserMessageContext';
+
+
 
 const initialState = {
   customerName: '',
@@ -40,6 +44,7 @@ const CustomerForm = ({ router }) => {
 
   const [formData, setFormData] = useState(initialState);
   const [error, setError] = useState(null);
+  const { addMessage } = useUserMessageContext();
 
   useEffect(() => {
     console.log('CustomerForm component mounted');
@@ -60,10 +65,11 @@ const CustomerForm = ({ router }) => {
     try {
       const response = await axiosInstance.post('http://localhost:8000/api/create-customer/', formData);
       console.log('Customer created successfully', response.data);
+      addMessage('info', 'Customer created successfully');
       //router.push('/dashboard/customers');
     } catch (error) {
-      console.error('Error creating customer', error);
-      setError('Failed to create customer. Please try again.');
+      logger.error('Error creating customer', error);
+      addMessage('error', 'Error creating customer');
     }
   }, [formData, router]);
 

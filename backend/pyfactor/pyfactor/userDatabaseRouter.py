@@ -1,10 +1,10 @@
+#/Users/kuoldeng/projectx/backend/pyfactor/pyfactor/userDatabaseRouter.py
 from django.conf import settings
 from users.models import UserProfile
-from pyfactor.logging_config import setup_logging
+from pyfactor.logging_config import get_logger
 from django.db import connections
-import logging
 
-logger = setup_logging()
+logger = get_logger()
 
 class UserDatabaseRouter:
     def db_for_read(self, model, **hints):

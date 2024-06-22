@@ -1,5 +1,6 @@
 'use client';
 import * as React from 'react';
+import { useState, useCallback, useEffect } from 'react'; // Add this line
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import { Button } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -22,7 +23,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { MainListItems, secondaryListItems } from './components/listItems';
+import { MainListItems } from './components/listItems';
 import Chart from './Chart';
 import Deposits from './Deposits';
 import Orders from './Orders';
@@ -43,6 +44,9 @@ import EstimateForm from './components/EstimateForm';
 import SalesOrderForm from './components/SalesOrderForm';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
+import { logger } from '@/utils/logger';
+import { UserMessageProvider, useUserMessageContext } from '@/contexts/UserMessageContext';
+
 
 function Copyright(props) {
   return (
@@ -82,13 +86,15 @@ const theme = createTheme({
     },
   },
 });
-
+const lightBlue = '#E3F2FD'; // You can adjust this hex code to get the exact shade of light blue you want
 const BottomAppBar = styled(MuiAppBar)(({ theme }) => ({
   top: 'auto',
   bottom: 0,
-  backgroundColor: '#FFB6C1', // Light pink color
-  height: 'calc(64px * 0.7)', // Reduce height by 30%
-  minHeight: 'unset', // Remove the default minimum height
+  backgroundColor: lightBlue,
+  height: '60px', // Set a fixed height
+  minHeight: 'unset',
+  display: 'flex',
+  alignItems: 'left', // Center the content vertically
 }));
 
 const Search = styled('div')(({ theme }) => ({
@@ -237,7 +243,7 @@ const renderMainContent = (
   }
 };
 
-export default function Dashboard() {
+function DashboardContent() {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const openMenu = Boolean(anchorEl);
   const [userData, setUserData] = React.useState(null);
@@ -246,6 +252,8 @@ export default function Dashboard() {
   const [selectedOption, setSelectedOption] = React.useState(null);
   const [showTransactionForm, setShowTransactionForm] = React.useState(false);
   const [showAccountPage, setShowAccountPage] = React.useState(false);
+  const { addMessage } = useUserMessageContext();
+
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -311,41 +319,47 @@ export default function Dashboard() {
   
       if (!response.ok) {
         // Handle error
-        console.error('Error deleting account:', response.statusText);
+        logger.error('Error deleting account:', response.statusText);
+        addMessage('error', `Error deleting account: ${response.statusText}`);
+      } else {
+        addMessage('info', 'Account deleted successfully');
       }
     } catch (error) {
-      console.error('Error deleting account:', error);
+      logger.error('Error deleting account:', error);
+      addMessage('error', `Error deleting account: ${error.message}`);
     }
   };
 
-  React.useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        console.log('Token Dashboard:', token);
-        const response = await fetch('http://localhost:8000/api/profile/', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+  const fetchUserData = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8000/api/profile/', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Dashboard User data:', data);
-          if (!data.full_name) {
-            data.full_name = '${data.first_name} ${data.last_name}';
-          }
-          setUserData(data);
-        } else {
-          console.error('Error fetching user data:', response.statusText);
+      if (response.ok) {
+        const data = await response.json();
+        logger.log('Dashboard User data:', data);
+        if (!data.full_name) {
+          data.full_name = `${data.first_name} ${data.last_name}`;
         }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
+        setUserData(data);
+        addMessage('info', 'User profile loaded successfully');
+      } else {
+        logger.error('Error fetching user data:', response.statusText);
+        addMessage('error', `Error fetching user data: ${response.statusText}`);
       }
-    };
+    } catch (error) {
+      logger.error('Error fetching user data:', error);
+      addMessage('error', `Error fetching user data: ${error.message}`);
+    }
+  }, [addMessage]);
 
+  React.useEffect(() => {
     fetchUserData();
-  }, []);
+  }, [fetchUserData]);
 
   return (
     <ThemeProvider theme={theme}>
@@ -431,7 +445,6 @@ export default function Dashboard() {
               showTransactionForm={handleShowTransactionForm}
             />
             <Divider sx={{ my: 1 }} />
-            {secondaryListItems}
           </List>
         </Drawer>
         <Box
@@ -464,11 +477,19 @@ export default function Dashboard() {
           </Container>
         </Box>
         <BottomAppBar position="fixed" color="secondary">
-          <Toolbar>
-            <ConsoleMessages />
+        <Toolbar style={{ minHeight: '48px', padding: '0 16px' }}>
+        <ConsoleMessages />
           </Toolbar>
         </BottomAppBar>
       </Box>
     </ThemeProvider>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <UserMessageProvider>
+      <DashboardContent />
+    </UserMessageProvider>
   );
 }

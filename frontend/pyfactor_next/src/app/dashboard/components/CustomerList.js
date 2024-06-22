@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button } from '@mui/material';
 import axiosInstance from './axiosConfig';
+import { logger, UserMessage } from '@/utils/logger';
+
 
 const CustomerList = () => {
   const [customers, setCustomers] = useState([]);
@@ -23,7 +25,7 @@ const CustomerList = () => {
       console.log('User profile:', response.data);
       console.log('User database:', response.data.database_name);
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      logger.error('Error fetching user profile:', error);
     }
   };
 
@@ -36,7 +38,7 @@ const CustomerList = () => {
       console.log('Fetched customers:', response.data);
       setCustomers(response.data);
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      logger.error('Error fetching customers:', error);
     }
   };
 

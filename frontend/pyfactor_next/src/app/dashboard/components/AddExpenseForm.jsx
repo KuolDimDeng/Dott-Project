@@ -4,6 +4,10 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import axiosInstance from './axiosConfig';
+import { logger } from '@/utils/logger';
+import { useUserMessageContext } from '@/contexts/UserMessageContext';
+
+
 
 const AddExpenseForm = ({ onClose }) => {
   const [date, setDate] = useState(null);
@@ -14,6 +18,7 @@ const AddExpenseForm = ({ onClose }) => {
   const [notes, setNotes] = useState('');
   const [receipt, setReceipt] = useState(null);
   const [userDatabase, setUserDatabase] = useState('');
+  const { addMessage } = useUserMessageContext();
 
   useEffect(() => {
     fetchUserProfile();
@@ -26,7 +31,7 @@ const AddExpenseForm = ({ onClose }) => {
       console.log('User profile:', response.data);
       console.log('User database:', response.data.database_name);
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      logger.error('Error fetching user profile:', error);
     }
   };
 
@@ -69,10 +74,10 @@ const AddExpenseForm = ({ onClose }) => {
       if (response.status === 201) {
         onClose();
       } else {
-        console.error('Error creating expense record:', response.statusText);
+        logger.error('Error creating expense record:', response.statusText);
       }
     } catch (error) {
-      console.error('Error creating expense record:', error);
+      logger.error('Error creating expense record:', error);
     }
   };
 

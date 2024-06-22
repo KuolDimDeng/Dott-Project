@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, TextField, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
+import { 
+  Box, 
+  Button, 
+  TextField, 
+  Select, 
+  MenuItem, 
+  InputLabel, 
+  FormControl,
+  InputAdornment
+} from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import axiosInstance from './axiosConfig';
+import { logger } from '@/utils/logger';
+import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const AddIncomeForm = ({ onClose, accounts }) => {
   const [date, setDate] = useState(null);
@@ -11,31 +22,44 @@ const AddIncomeForm = ({ onClose, accounts }) => {
   const [type, setType] = useState('');
   const [accountType, setAccountType] = useState('');
   const [amount, setAmount] = useState('');
-  const [salesTax, setSalesTax] = useState('');
+  const [salesTaxPercentage, setSalesTaxPercentage] = useState('');
+  const [calculatedSalesTax, setCalculatedSalesTax] = useState(0);
   const [notes, setNotes] = useState('');
   const [receipt, setReceipt] = useState(null);
   const [userDatabase, setUserDatabase] = useState('');
+
+  const { addMessage } = useUserMessageContext();
 
   useEffect(() => {
     fetchUserProfile();
   }, []);
 
+  useEffect(() => {
+    if (amount && salesTaxPercentage) {
+      const taxAmount = (parseFloat(amount) * parseFloat(salesTaxPercentage)) / 100;
+      setCalculatedSalesTax(taxAmount.toFixed(2));
+    } else {
+      setCalculatedSalesTax(0);
+    }
+  }, [amount, salesTaxPercentage]);
+
   const fetchUserProfile = async () => {
     try {
       const response = await axiosInstance.get('http://localhost:8000/api/profile/');
       setUserDatabase(response.data.database_name);
-      console.log('User profile:', response.data);
-      console.log('User database:', response.data.database_name);
+      logger.log('User profile:', response.data);
+      logger.log('User database:', response.data.database_name);
+      addMessage('info', 'User profile loaded successfully');
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      logger.error('Error fetching user profile:', error);
+      addMessage('error', `Error fetching user profile: ${error.message}`);
     }
   };
 
   const handleAccountChange = (e) => {
     const selectedAccount = e.target.value;
-    console.log('Selected account value:', selectedAccount);
     setAccount(selectedAccount);
-    console.log('Selected account ID:', selectedAccount);
+    logger.log('Selected account ID:', selectedAccount);
   };
 
   const handleTypeChange = (e) => {
@@ -61,14 +85,15 @@ const AddIncomeForm = ({ onClose, accounts }) => {
     formData.append('type', type);
     formData.append('account_type', accountType);
     formData.append('amount', amount);
-    formData.append('sales_tax', salesTax);
+    formData.append('sales_tax_percentage', salesTaxPercentage);
+    formData.append('sales_tax_amount', calculatedSalesTax);
     formData.append('notes', notes);
     if (receipt) {
       formData.append('receipt', receipt);
     }
     formData.append('database', userDatabase);
   
-    console.log('Form data:', formData);
+    logger.log('Form data:', formData);
   
     try {
       const response = await axiosInstance.post('http://localhost:8000/api/incomes/', formData, {
@@ -79,19 +104,23 @@ const AddIncomeForm = ({ onClose, accounts }) => {
   
       if (response.status === 201) {
         const data = response.data;
-        console.log('Income record created:', data);
+        logger.log('Income record created:', data);
+        addMessage('info', 'Income record created successfully');
         onClose();
       }
     } catch (error) {
-      console.error('Error creating income record:', error);
+      logger.error('Error creating income record:', error);
       if (error.response) {
-        console.error('Error response data:', error.response.data);
-        console.error('Error response status:', error.response.status);
-        console.error('Error response headers:', error.response.headers);
+        logger.error('Error response data:', error.response.data);
+        logger.error('Error response status:', error.response.status);
+        logger.error('Error response headers:', error.response.headers);
+        addMessage('error', `Error creating income record: ${error.response.data.message || 'Unknown error'}`);
       } else if (error.request) {
-        console.error('Error request:', error.request);
+        logger.error('Error request:', error.request);
+        addMessage('error', 'Error creating income record: No response received from server');
       } else {
-        console.error('Error message:', error.message);
+        logger.error('Error message:', error.message);
+        addMessage('error', `Error creating income record: ${error.message}`);
       }
     }
   };
@@ -162,11 +191,24 @@ const AddIncomeForm = ({ onClose, accounts }) => {
       />
 
       <TextField
-        label="Sales Tax"
+        label="Sales Tax Percentage"
         fullWidth
         margin="normal"
-        value={salesTax}
-        onChange={(e) => setSalesTax(e.target.value)}
+        value={salesTaxPercentage}
+        onChange={(e) => setSalesTaxPercentage(e.target.value)}
+        type="number"
+        InputProps={{
+          endAdornment: <InputAdornment position="end">%</InputAdornment>,
+        }}
+      />
+      <TextField
+        label="Calculated Sales Tax"
+        fullWidth
+        margin="normal"
+        value={calculatedSalesTax}
+        InputProps={{
+          readOnly: true,
+        }}
       />
 
       <TextField

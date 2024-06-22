@@ -1,21 +1,23 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from rest_framework import generics, status, serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import Invoice, Customer, Product, Service
-from finance.models import Account, AccountType
+from finance.models import Account, AccountType, Transaction as FinanceTransaction
 from users.models import UserProfile
 from .serializers import InvoiceSerializer, CustomerSerializer, ProductSerializer, ServiceSerializer, VendorSerializer
 from finance.serializers import TransactionSerializer
 from django.conf import settings
 from django.db import connections, transaction as db_transaction, transaction
 from finance.account_types import ACCOUNT_TYPES
-import logging
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
+from pyfactor.user_console import console
+from pyfactor.logging_config import get_logger
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+
+logger = get_logger()
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -24,111 +26,108 @@ def create_invoice(request):
     user = request.user
 
     if not user.is_authenticated:
-        logger.warning("Unauthenticated user attempted to create invoice")
         return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
 
     try:
-        # Fetch the user profile to get the dynamic database name
-        user_profile = UserProfile.objects.using('default').get(user=user)
-        database_name = user_profile.database_name
-        logger.debug("Fetched user profile. Database name: %s", database_name)
-
-        # Ensure the dynamic database exists
-        logger.debug("Creating dynamic database if it doesn't exist: %s", database_name)
-        router = UserDatabaseRouter()
-        router.create_dynamic_database(database_name)
-
-        # Use the dynamic database for this operation
-        logger.debug('Using dynamic database: %s', database_name)
-        
-        # Add this check here
-        account_exists = Account.objects.using(database_name).filter(pk=1).exists()
-        logger.debug(f"Account with ID 1 exists in database {database_name}: {account_exists}")
+        database_name = get_user_database(user)
+        ensure_database_exists(database_name)
+        ensure_accounts_exist(database_name)
 
         with db_transaction.atomic(using=database_name):
-            context = {'database_name': database_name}
-            logger.debug(f"Initializing InvoiceSerializer with context: {context}")
-            serializer = InvoiceSerializer(data=request.data, context=context)
-            logger.debug("Initialized InvoiceSerializer with data: %s", request.data)
-            
-            if serializer.is_valid():
-                logger.debug("InvoiceSerializer is valid")
-                transaction_data = request.data.get('transaction')
-                if transaction_data:
-                    logger.debug("Transaction data received: %s", transaction_data)
-                    logger.debug(f"Initializing TransactionSerializer with context: {context}")
-                    transaction_serializer = TransactionSerializer(data=transaction_data, context=context)
-                    if transaction_serializer.is_valid():
-                        logger.debug("TransactionSerializer is valid")
-                        with connections[database_name].cursor() as cursor:
-                            logger.debug("Setting search path to dynamic database: %s", database_name)
-                            cursor.execute("SET search_path TO public, {}".format(database_name))
-                            transaction = transaction_serializer.save()
-                            logger.debug("Transaction created: %s", transaction)
-                    else:
-                        logger.error("Transaction validation errors: %s", transaction_serializer.errors)
-                        return Response(transaction_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            invoice = create_invoice_with_transaction(request.data, database_name)
+            return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
 
-                    logger.debug("Fetching or creating necessary accounts")
-                    accounts_receivable = get_or_create_account(database_name, 'Accounts Receivable', 'Accounts Receivable')
-                    sales_revenue = get_or_create_account(database_name, 'Sales Revenue', 'Sales Revenue')
-                    sales_tax_payable = get_or_create_account(database_name, 'Sales Tax Payable', 'Sales Tax Payable')
-                    cost_of_goods_sold = get_or_create_account(database_name, 'Cost of Goods Sold', 'Cost of Goods Sold')
-                    inventory = get_or_create_account(database_name, 'Inventory', 'Inventory')
-
-                    logger.debug("Accounts receivable: %s", accounts_receivable)
-                    logger.debug("Sales revenue: %s", sales_revenue)
-                    logger.debug("Sales tax payable: %s", sales_tax_payable)
-                    logger.debug("Cost of goods sold: %s", cost_of_goods_sold)
-                    logger.debug("Inventory: %s", inventory)
-
-                    invoice = serializer.save(
-                        transaction=transaction,
-                        accounts_receivable=accounts_receivable,
-                        sales_revenue=sales_revenue,
-                        sales_tax_payable=sales_tax_payable,
-                        cost_of_goods_sold=cost_of_goods_sold,
-                        inventory=inventory,
-                    )
-                else:
-                    logger.debug("No transaction data provided")
-                    invoice = serializer.save()
-
-                invoice.save(using=database_name)
-                logger.info("Invoice created and saved: %s", serializer.data)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            else:
-                logger.error("InvoiceSerializer validation errors: %s", serializer.errors)
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except UserProfile.DoesNotExist:
         logger.error("UserProfile does not exist for user: %s", user)
+        console.error("UserProfile does not exist for user: %s", user)
         return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
     except ValueError as e:
         logger.error("ValueError in create_invoice: %s", str(e))
+        console.error("ValueError in create_invoice: %s", str(e))
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         logger.exception("Unexpected error creating invoice: %s", e)
+        console.error("Unexpected error creating invoice.")
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
+def get_user_database(user):
+    user_profile = get_object_or_404(UserProfile.objects.using('default'), user=user)
+    database_name = user_profile.database_name
+    logger.debug("Fetched user profile. Database name: %s", database_name)
+    return database_name
+
+def ensure_database_exists(database_name):
+    logger.debug("Creating dynamic database if it doesn't exist: %s", database_name)
+    router = UserDatabaseRouter()
+    router.create_dynamic_database(database_name)
+
+def ensure_accounts_exist(database_name):
+    logger.debug("Ensuring necessary accounts exist in database: %s", database_name)
+    required_accounts = [
+        ('Accounts Receivable', 'Accounts Receivable'),
+        ('Sales Revenue', 'Sales Revenue'),
+        ('Sales Tax Payable', 'Sales Tax Payable'),
+        ('Cost of Goods Sold', 'Cost of Goods Sold'),
+        ('Inventory', 'Inventory')
+    ]
+    for account_name, account_type_name in required_accounts:
+        get_or_create_account(database_name, account_name, account_type_name)
+
 def get_or_create_account(database_name, account_name, account_type_name):
     account_type_id = ACCOUNT_TYPES.get(account_type_name)
     if account_type_id is None:
         raise ValueError(f"Invalid account type: {account_type_name}")    
-    logger.debug("Fetching or creating account: %s in database: %s", account_name, database_name)
+    logger.debug(f"Fetching or creating account: {account_name} in database: {database_name}")
     try:
-        account_type = AccountType.objects.using(database_name).get(account_type_id=account_type_id)
-        account, created = Account.objects.using(database_name).get_or_create(
-            name=account_name,
-            defaults={'account_type': account_type}
-        )
+        with db_transaction.atomic(using=database_name):
+            account_type, _ = AccountType.objects.using(database_name).get_or_create(
+                account_type_id=account_type_id,
+                defaults={'name': account_type_name}
+            )
+            account, created = Account.objects.using(database_name).get_or_create(
+                name=account_name,
+                defaults={'account_type': account_type}
+            )
         if created:
-            logger.debug("Account created: %s", account)
+            logger.debug(f"Account created: {account}")
+            console.info(f"Account created: {account}")
         else:
-            logger.debug("Account already exists: %s", account)
+            logger.debug(f"Account already exists: {account}")
         return account
     except Exception as e:
-        logger.exception("Error fetching or creating account: %s", e)
+        logger.exception(f"Error fetching or creating account: {e}")
+        console.error(f"Error fetching or creating account: {e}")
         raise
+
+def create_invoice_with_transaction(data, database_name):
+    logger.debug(f"Creating invoice with transaction in database: {database_name}")
+    
+    context = {'database_name': database_name}
+    invoice_serializer = InvoiceSerializer(data=data, context=context)
+    invoice_serializer.is_valid(raise_exception=True)
+
+    transaction_data = data.get('transaction')
+    if transaction_data:
+        transaction_serializer = TransactionSerializer(data=transaction_data, context=context)
+        transaction_serializer.is_valid(raise_exception=True)
+        finance_transaction = transaction_serializer.save()
+    else:
+        finance_transaction = None
+
+    accounts = {
+        'accounts_receivable': get_or_create_account(database_name, 'Accounts Receivable', 'Accounts Receivable'),
+        'sales_revenue': get_or_create_account(database_name, 'Sales Revenue', 'Sales Revenue'),
+        'sales_tax_payable': get_or_create_account(database_name, 'Sales Tax Payable', 'Sales Tax Payable'),
+        'cost_of_goods_sold': get_or_create_account(database_name, 'Cost of Goods Sold', 'Cost of Goods Sold'),
+        'inventory': get_or_create_account(database_name, 'Inventory', 'Inventory')
+    }
+
+    with db_transaction.atomic(using=database_name):
+        invoice = invoice_serializer.save(transaction=finance_transaction, **accounts)
+    
+    logger.info(f"Invoice created and saved: {invoice_serializer.data}")
+    console.info(f"Invoice created and saved: {invoice_serializer.data}")
+    return invoice
     
     
 @api_view(['POST'])
@@ -160,15 +159,19 @@ def create_customer(request):
                 customer = serializer.save()
                 customer.save(using=database_name)
                 logger.debug("Customer created: %s", serializer.data)
+                console.info("Customer created")
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 logger.error("Validation errors: %s", serializer.errors)
+                console.error("Validation errors")
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except UserProfile.DoesNotExist:
         logger.error("UserProfile does not exist for user: %s", user)
+        console.error("UserProfile does not exist for user: %s", user)
         return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         logger.exception("Error creating customer: %s", e)
+        console.error("Error creating customer: %s", e)
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
@@ -200,10 +203,12 @@ def customer_list(request):
 
     except UserProfile.DoesNotExist:
         logger.error("UserProfile does not exist for user: %s", user)
+        console.error("UserProfile does not exist for user: %s", user)
         return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
 
     except Exception as e:
         logger.exception("Error fetching customers: %s", str(e))
+        console.error("Error fetching customers: %s", str(e))
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
@@ -270,6 +275,7 @@ def create_product(request):
                 product = serializer.save()
                 product.save(using=database_name)
                 logger.debug("Product created: %s", serializer.data)
+                console.info("Product created successfully.")
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 logger.error("Validation errors: %s", serializer.errors)
@@ -306,15 +312,18 @@ def create_service(request):
                 service = serializer.save()
                 service.save(using=database_name)
                 logger.debug("Service created: %s", serializer.data)
+                console.info("Service created successfully.")
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 logger.error("Validation errors: %s", serializer.errors)
+                console.error("Validation errors")
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except UserProfile.DoesNotExist:
         logger.error("UserProfile does not exist for user: %s", user)
         return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         logger.exception("Error creating service: %s", e)
+        console.error("Error creating service")
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     
@@ -384,10 +393,12 @@ def product_list(request):
 
     except UserProfile.DoesNotExist:
         logger.error("UserProfile does not exist for user: %s", user)
+        console.error("UserProfile does not exist for user: %s", user)
         return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
 
     except Exception as e:
         logger.exception("Error fetching products: %s", str(e))
+        console.error("Error fetching products: %s", str(e))
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])

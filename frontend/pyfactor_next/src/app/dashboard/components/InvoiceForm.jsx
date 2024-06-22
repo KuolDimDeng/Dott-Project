@@ -3,6 +3,10 @@ import { Box, Typography, Button, Grid, TextField, MenuItem, FormControl, InputL
 import InvoicePreview from './InvoicePreview';
 import InvoiceTemplateBuilder from './InvoiceTemplateBuilder';
 import axiosInstance from './axiosConfig';
+import { logger } from '@/utils/logger';
+import { useUserMessageContext } from '@/contexts/UserMessageContext';
+
+
 
 const InvoiceForm = () => {
   const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
@@ -26,6 +30,8 @@ const InvoiceForm = () => {
   const [userDatabase, setUserDatabase] = useState('');
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState('');
+  const { addMessage } = useUserMessageContext();
 
   useEffect(() => {
     fetchUserProfile();
@@ -46,7 +52,7 @@ const InvoiceForm = () => {
       console.log('User profile:', response.data);
       console.log('User database:', response.data.database_name);
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      logger.error('Error fetching user profile:', error);
     }
   };
 
@@ -62,7 +68,7 @@ const InvoiceForm = () => {
       console.log('Fetched customers:', response.data);
       setCustomers(response.data);
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      logger.error('Error fetching customers:', error);
     }
   };
 
@@ -78,7 +84,7 @@ const InvoiceForm = () => {
       console.log('Fetched products:', response.data);
       setProducts(response.data);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      logger.error('Error fetching products:', error);
     }
   };
 
@@ -94,7 +100,7 @@ const InvoiceForm = () => {
       console.log('Fetched services:', response.data);
       setServices(response.data);
     } catch (error) {
-      console.error('Error fetching services:', error);
+      logger.error('Error fetching services:', error);
     }
   };
 
@@ -179,6 +185,7 @@ const InvoiceForm = () => {
         const month = String(currentDate.getMonth() + 1).padStart(2, '0');
         const day = String(currentDate.getDate()).padStart(2, '0');
         const dateString = `${year}${month}${day}`;
+        
   
         // Fetch the last invoice number from the server or local storage
         const lastInvoiceNumber = await getLastInvoiceNumber();
@@ -219,8 +226,10 @@ const InvoiceForm = () => {
             },
         });
         console.log('Invoice created successfully', response.data);
+        addMessage('info', 'Invoice created successfully');
     } catch (error) {
-        console.error('Error creating invoice', error);
+        logger.error('Error creating invoice', error);
+        addMessage('error', 'Error creating invoice');
     }
 };
 

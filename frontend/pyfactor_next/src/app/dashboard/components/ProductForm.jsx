@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { Box, Typography, TextField, FormControlLabel, Checkbox, Button } from '@mui/material';
 import axiosInstance from './axiosConfig';
+import { logger } from '@/utils/logger';
+import { useUserMessageContext } from '@/contexts/UserMessageContext';
+
+
 
 const ProductForm = () => {
   const [name, setName] = useState('');
@@ -10,6 +14,7 @@ const ProductForm = () => {
   const [buyEnabled, setBuyEnabled] = useState(false);
   const [salesTax, setSalesTax] = useState(0);
   const [error, setError] = useState(null);
+  const { addMessage } = useUserMessageContext();
 
 
   const handleSubmit = async (e) => {
@@ -24,13 +29,15 @@ const ProductForm = () => {
         buyEnabled,
         salesTax,
       };
-      console.log('Product data:', productData);
+      logger.info('Product data:', productData);
       const response = await axiosInstance.post('http://localhost:8000/api/create-product/', productData);
-      console.log('Product created successfully', response.data);
+      logger.info('Product created successfully', response.data);
+      addMessage('info', 'Product created successfully');
+
       // Reset form fields or navigate to the product list page
     } catch (error) {
-      console.error('Error creating product', error);
-      setError('Failed to create product. Please try again.');
+      logger.error('Error creating product', error);
+      addMessage('error', 'Product created successfully');
       // Handle error condition
     }
   };

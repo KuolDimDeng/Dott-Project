@@ -11,6 +11,9 @@ import {
   MenuItem,
   Grid,
 } from '@mui/material';
+import { logger } from '@/utils/logger';
+import { useUserMessageContext } from '@/contexts/UserMessageContext';
+
 
 const initialState = {
   vendor_name: '',
@@ -24,6 +27,7 @@ const initialState = {
 const VendorForm = () => {
   const [formData, setFormData] = useState(initialState);
   const [error, setError] = useState(null);
+  const { addMessage } = useUserMessageContext();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,10 +43,11 @@ const VendorForm = () => {
     try {
       const response = await axiosInstance.post('http://localhost:8000/api/create-vendor/', formData);
       console.log('Vendor created successfully', response.data);
+      addMessage('info', 'Vendor created successfully');
       // Reset form data or redirect to vendor list page
     } catch (error) {
-      console.error('Error creating vendor', error);
-      setError('Failed to create vendor. Please try again.');
+      logger.error('Error creating vendor', error);
+      addMessage('error', 'Error creating vendor');
     }
   };
 

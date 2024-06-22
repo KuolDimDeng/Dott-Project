@@ -15,7 +15,7 @@ export async function POST(request) {
     // Return the token in the response
     return NextResponse.json({ token });
   } catch (error) {
-    console.error('Error during login:', error);
+    logger.error('Error during login:', error);
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 }

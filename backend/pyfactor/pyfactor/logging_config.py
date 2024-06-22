@@ -1,3 +1,5 @@
+# /Users/kuoldeng/projectx/backend/pyfactor/pyfactor/logging_config.py
+
 import logging
 
 class CustomFormatter(logging.Formatter):
@@ -23,19 +25,29 @@ class CustomFormatter(logging.Formatter):
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
 
-# Function to set up logging
-def setup_logging():
-    logger = logging.getLogger("Pyfactor")
-    logger.setLevel(logging.DEBUG)
+class SingletonLogger:
+    _instance = None
 
-    # Check if handlers already exist
-    if not logger.handlers:
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)
-        ch.setFormatter(CustomFormatter())
-        logger.addHandler(ch)
+    @classmethod
+    def get_logger(cls):
+        if cls._instance is None:
+            cls._instance = cls._setup_logging()
+        return cls._instance
 
-    # To prevent propagation of logs to the root logger and duplicate entries
-    logger.propagate = False
+    @staticmethod
+    def _setup_logging():
+        logger = logging.getLogger("Pyfactor")
+        logger.setLevel(logging.DEBUG)
 
-    return logger
+        # Check if a handler of type StreamHandler already exists
+        if not any(isinstance(handler, logging.StreamHandler) for handler in logger.handlers):
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.DEBUG)
+            ch.setFormatter(CustomFormatter())
+            logger.addHandler(ch)
+
+        logger.propagate = False
+        return logger
+
+def get_logger():
+    return SingletonLogger.get_logger()

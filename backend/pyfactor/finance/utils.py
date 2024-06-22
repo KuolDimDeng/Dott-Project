@@ -3,11 +3,11 @@ from django.conf import settings
 from finance.models import AccountType, Account, Transaction, RevenueAccount, CashAccount
 from django.db import DatabaseError, OperationalError, transaction, connections
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
+from pyfactor.logging_config import get_logger
 from finance.account_types import ACCOUNT_TYPES
-import logging
 import traceback
 
-logger = logging.getLogger(__name__)
+logger = get_logger()
 def ensure_dynamic_database(database_name):
     router = UserDatabaseRouter()
     router.create_dynamic_database(database_name)

@@ -3,11 +3,11 @@ from django.core.management import call_command
 from django.apps import apps
 from django.db import connection
 from users.models import UserProfile
-from pyfactor.logging_config import setup_logging
+from pyfactor.logging_config import get_logger
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from finance.account_types import ACCOUNT_TYPES
 
-logger = setup_logging()
+logger = get_logger()
 
 class Command(BaseCommand):
     help = 'Applies migrations to all user-specific databases and populates the finance_accounttype table'

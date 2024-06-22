@@ -10,11 +10,10 @@ import logging
 import pytz
 import traceback
 import psycopg2
-from pyfactor.logging_config import setup_logging
+from pyfactor.logging_config import get_logger
 from finance.account_types import ACCOUNT_TYPES
 
-logger = setup_logging()
-logger = logging.getLogger(__name__)
+logger = get_logger()
 
 def create_user_database(username, user_data, subscription_type):
     timestamp = timezone.now().strftime('%Y%m%d%H%M%S')

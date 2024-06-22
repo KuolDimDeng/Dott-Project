@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button } from '@mui/material';
+import { logger, UserMessage } from '@/utils/logger';
+
 
 const TransactionList = () => {
   const [transactions, setTransactions] = useState([]);
@@ -19,10 +21,10 @@ const TransactionList = () => {
           setTransactions(data);
           console.log('Fetched transactions:', data);
         } else {
-          console.error('Error fetching transactions:', response.statusText);
+          logger.error('Error fetching transactions:', response.statusText);
         }
       } catch (error) {
-        console.error('Error fetching transactions:', error);
+        logger.error('Error fetching transactions:', error);
       }
     };
 

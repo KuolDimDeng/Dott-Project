@@ -18,14 +18,15 @@ from finance.utils import create_revenue_account
 from rest_framework.exceptions import ValidationError
 from django.db import DatabaseError, connection, transaction, connections, transaction as db_transaction
 from finance.account_types import ACCOUNT_TYPES
-from pyfactor.logging_config import setup_logging
 from rest_framework import generics, status
 from .utils import get_or_create_account
 import traceback
-import logging
-logger = logging.getLogger(__name__)
+from pyfactor.logging_config import get_logger
+from pyfactor.user_console import console  # Make sure this is importing a single instance
 
-logger = setup_logging()
+
+
+logger = get_logger()
 
 # Create your views here.
 @api_view(['POST'])
@@ -37,11 +38,13 @@ def create_income(request):
 
     if not user.is_authenticated:
         logger.warning("Unauthenticated user attempted to create income")
+        console.error("Unauthenticated user attempted to create income")
         return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
 
     try:
         # Fetch the user profile to get the dynamic database name
         logger.debug("Fetching user profile")
+        console.info("Fetching user profile")
         user_profile = UserProfile.objects.using('default').get(user=user)
         database_name = user_profile.database_name
         logger.debug("Fetched user profile. Database name: %s", database_name)
@@ -65,7 +68,8 @@ def create_income(request):
         account_name = request.data['account']
         transaction_type = request.data['type']
         amount = request.data['amount']
-        sales_tax = request.data.get('sales_tax', '0')
+        sales_tax_percentage = request.data.get('sales_tax_percentage', '0')
+        sales_tax_amount = request.data.get('sales_tax_amount', '0')
         notes = request.data.get('notes', '')
         receipt = request.data.get('receipt')
         account_type_name = request.data.get('account_type')
@@ -83,6 +87,7 @@ def create_income(request):
                 account_type_id = ACCOUNT_TYPES[account_type_name]
                 transaction = create_revenue_account(database_name, date, account_name, transaction_type, amount, notes, receipt, account_type_name, account_type_id)
                 logger.info('Revenue account created...')
+                console.info('Revenue account created.')
             else:
                 account = get_or_create_account(database_name, account_name, account_type_name)
                 transaction_data = {
@@ -103,20 +108,25 @@ def create_income(request):
                         cursor.execute("SET search_path TO public, {}".format(database_name))
                         transaction = transaction_serializer.save()
                         logger.debug("Transaction created: %s", transaction)
+                        console.info('Transaction created.')
                     
                     income = Income.objects.using(database_name).create(transaction=transaction)
                     logger.info('Income record created: %s', income)
+                    console.info('Income record created.')
                 else:
                     logger.error('Transaction validation errors: %s', transaction_serializer.errors)
+                    console.error('Transaction validation errors.')
                     return Response(transaction_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
             # Create SalesTaxAccount
-            logger.debug(f"Checking sales tax condition: sales_tax={sales_tax}, float(sales_tax)={float(sales_tax)}")
-            if sales_tax and float(sales_tax) > 0:
+            logger.debug(f"Checking sales tax condition: sales_tax_percentage={sales_tax_percentage}, sales_tax_amount={sales_tax_amount}")
+            if sales_tax_percentage and float(sales_tax_percentage) > 0:
                 logger.debug("Sales tax condition met, proceeding with SalesTaxAccount creation")
                 sales_tax_data = {
                     'date': date,
-                    'debit': sales_tax,
+                    'debit': sales_tax_amount,
+                    'credit': 0,  # Set this to the appropriate value if needed
+                    'percentage': sales_tax_percentage,
                     'description': f'Sales Tax for transaction {transaction.id if transaction else ""}',
                     'note': notes,
                     'transaction': transaction.id if transaction else None
@@ -126,23 +136,27 @@ def create_income(request):
                 sales_tax_serializer = SalesTaxAccountSerializer(data=sales_tax_data, context={'database_name': database_name})
                 if sales_tax_serializer.is_valid():
                     sales_tax_account = sales_tax_serializer.save()
-                    logger.info(f"Sales Tax Account created: {sales_tax_account}")
+                    console.info('Sales tax account created.')
                 else:
                     logger.error(f"Sales Tax Account validation errors: {sales_tax_serializer.errors}")
+                    console.error('Sales Tax Account validation errors.')
                     return Response(sales_tax_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             else:
                 logger.debug("Sales tax condition not met, skipping SalesTaxAccount creation")
+                console.info('Sales tax condition not met, skipping SalesTaxAccount creation.')
 
         return Response({"message": "Income record created successfully"}, status=status.HTTP_201_CREATED)
 
     except UserProfile.DoesNotExist:
         logger.error("UserProfile does not exist for user: %s", user)
+        console.error('UserProfile does not exist.')
         return Response({"error": "UserProfile does not exist"}, status=status.HTTP_404_NOT_FOUND)
     except ValueError as e:
         logger.error("ValueError in create_income: %s", str(e))
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         logger.exception("Unexpected error creating income: %s", e)
+        console.error('Unexpected error creating income.')
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -221,6 +235,7 @@ class TransactionCreateView(generics.CreateAPIView):
             serializer.is_valid(raise_exception=True)
             transaction = serializer.save(using=database_name, **validated_data)
             logger.info('Transaction Created Successfully')
+            console.info('Transaction created successfully.')
             logger.info('Created transaction: %s', transaction)
         except Account.DoesNotExist:
             logger.error('Invalid account ID: %s', account_id)
@@ -230,6 +245,7 @@ class TransactionCreateView(generics.CreateAPIView):
             raise
         except Exception as e:
             logger.exception('Error creating transaction: %s', str(e))
+            console.error('Unexpected error creating transaction.')
             raise
 
 class IncomeUpdateView(generics.UpdateAPIView):

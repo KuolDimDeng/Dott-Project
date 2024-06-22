@@ -3,6 +3,9 @@ import { Box, Button, Modal, Typography, List, ListItem, ListItemText } from '@m
 import AddIncomeForm from './AddIncomeForm';
 import AddExpenseForm from './AddExpenseForm';
 import axiosInstance from './axiosConfig';
+import { logger } from '@/utils/logger';
+import { useUserMessageContext } from '@/contexts/UserMessageContext';
+
 
 const TransactionForm = () => {
   const [openAddIncomeModal, setOpenAddIncomeModal] = useState(false);
@@ -10,6 +13,7 @@ const TransactionForm = () => {
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [userDatabase, setUserDatabase] = useState('');
+  const { addMessage } = useUserMessageContext();
 
   useEffect(() => {
     fetchUserProfile();
@@ -26,36 +30,37 @@ const TransactionForm = () => {
     try {
       const response = await axiosInstance.get('http://localhost:8000/api/profile/');
       setUserDatabase(response.data.database_name);
-      console.log('User profile:', response.data);
-      console.log('User database:', response.data.database_name);
+      logger.log('User profile:', response.data);
+      logger.log('User database:', response.data.database_name);
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      logger.error('Error fetching user profile:', error);
     }
   };
 
   const fetchAccounts = async (database_name) => {
     try {
-      console.log('Fetching accounts from database:', database_name);
+      logger.log('Fetching accounts from database:', database_name);
       const response = await axiosInstance.get('http://localhost:8000/api/accounts/', {
         params: { database: database_name },
       });
-      console.log('Fetched accounts:', response.data);
+      logger.log('Fetched accounts:', response.data);
       setAccounts(response.data);
     } catch (error) {
-      console.error('Error fetching accounts:', error);
+      logger.error('Error fetching accounts:', error);
     }
   };
 
   const fetchTransactions = async (database_name) => {
     try {
-      console.log('Fetching transactions from database:', database_name);
+      logger.log('Fetching transactions from database:', database_name);
       const response = await axiosInstance.get('http://localhost:8000/api/transactions/', {
         params: { database: database_name },
       });
-      console.log('Fetched transactions:', response.data);
+      logger.log('Fetched transactions:', response.data);
       setTransactions(response.data);
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      logger.error('Error fetching transactions:', error);
+      addMessage('error', 'Error fetching transactions');
     }
   };
 
