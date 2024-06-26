@@ -2,6 +2,9 @@ from django.db import models
 from datetime import timedelta
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
+from decimal import Decimal
+
 
 class Item(models.Model):
     name = models.CharField(max_length=100)
@@ -75,7 +78,8 @@ def default_due_date():
 class Invoice(models.Model):
     invoice_num = models.CharField(max_length=20)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='invoices')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    date = models.DateField(default=timezone.now)  # New date field
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     due_date = models.DateField(default=default_due_date)
@@ -86,6 +90,9 @@ class Invoice(models.Model):
     sales_tax_payable = models.ForeignKey('finance.Account', on_delete=models.SET_NULL, related_name='invoices_tax_payable', null=True)
     cost_of_goods_sold = models.ForeignKey('finance.Account', on_delete=models.SET_NULL, related_name='invoices_cogs', null=True)
     inventory = models.ForeignKey('finance.Account', on_delete=models.SET_NULL, related_name='invoices_inventory', null=True)
+    is_paid = models.BooleanField(default=False)
+
+
 
     def __str__(self):
         return self.invoice_num

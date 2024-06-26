@@ -1,8 +1,12 @@
 from django.db import connections
 from rest_framework import serializers
 from finance.models import Account, Transaction
-from .models import Product, Service, Customer, Bill, Invoice, Vendor, Estimate, SalesOrder, Department
+from .models import Product, Service, Customer, Bill, Invoice, Vendor, Estimate, SalesOrder, Department, default_due_date
 from pyfactor.logging_config import get_logger
+from django.utils import timezone
+from datetime import date
+
+
 
 logger = get_logger()
 class ProductSerializer(serializers.ModelSerializer):
@@ -65,10 +69,12 @@ class InvoiceSerializer(serializers.ModelSerializer):
     sales_tax_payable = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=False)
     cost_of_goods_sold = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=False)
     inventory = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=False)
+    date = serializers.DateField(default=timezone.now().date())
+    due_date = serializers.DateField(default=default_due_date)
 
     class Meta:
         model = Invoice
-        fields = ['id', 'invoice_num', 'customer', 'amount', 'created_at', 'due_date', 'status', 'transaction', 
+        fields = ['id', 'invoice_num', 'customer', 'amount', 'date', 'created_at', 'due_date', 'status', 'transaction', 
                   'accounts_receivable', 'sales_revenue', 'sales_tax_payable', 'cost_of_goods_sold', 'inventory']
         read_only_fields = ['created_at']
 
@@ -93,6 +99,12 @@ class InvoiceSerializer(serializers.ModelSerializer):
             'inventory': validated_data.pop('inventory', None),
         }
         
+        # Ensure date and due_date are date objects without calling .date() method
+        if 'date' not in validated_data or not isinstance(validated_data['date'], date):
+            validated_data['date'] = timezone.now().date()
+        if 'due_date' not in validated_data or not isinstance(validated_data['due_date'], date):
+            validated_data['due_date'] = default_due_date()
+     
         invoice = Invoice.objects.using(self.database_name).create(**validated_data, **accounts_data)
         
         if transaction_data:

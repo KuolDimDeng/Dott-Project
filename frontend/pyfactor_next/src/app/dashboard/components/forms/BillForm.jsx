@@ -11,7 +11,7 @@ import {
   Grid,
   Autocomplete,
 } from '@mui/material';
-import currencyList from './currencies'; // Import the currency list
+import currencyList from '../components/currencies'; // Import the currency list
 import { logger, UserMessage } from '@/utils/logger';
 
 

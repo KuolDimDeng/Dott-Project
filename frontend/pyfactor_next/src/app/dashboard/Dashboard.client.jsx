@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import { useState, useCallback, useEffect } from 'react'; // Add this line
+import { useState, useCallback, useEffect } from 'react';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import { Button } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -23,30 +23,31 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { MainListItems } from './components/listItems';
+import { MainListItems } from './components/lists/listItems';
 import Chart from './Chart';
 import Deposits from './Deposits';
 import Orders from './Orders';
 import InputBase from '@mui/material/InputBase';
 import SearchIcon from '@mui/icons-material/Search';
-import DateTime from './components/DateTime.jsx';
-import ConsoleMessages from './components/ConsoleMessages.jsx';
+import DateTime from './components/components/DateTime.jsx';
+import ConsoleMessages from './components/components/ConsoleMessages.jsx';
 import Image from 'next/image';
 import logoPath from '/public/static/images/Pyfactor.png';
-import InvoiceTemplateBuilder from './components/InvoiceTemplateBuilder';
-import ProductForm from './components/ProductForm';
-import ServiceForm from './components/ServiceForm';
-import CustomerForm from './components/CustomerForm';
-import BillForm from './components/BillForm';
-import InvoiceForm from './components/InvoiceForm';
-import VendorForm from './components/VendorForm';
-import EstimateForm from './components/EstimateForm';
-import SalesOrderForm from './components/SalesOrderForm';
-import TransactionForm from './components/TransactionForm';
-import TransactionList from './components/TransactionList';
+import InvoiceTemplateBuilder from './components/forms/InvoiceTemplateBuilder';
+import ProductForm from './components/forms/ProductForm';
+import ServiceForm from './components/forms/ServiceForm';
+import CustomerForm from './components/forms/CustomerForm';
+import BillForm from './components/forms/BillForm';
+import InvoiceForm from './components/forms/InvoiceForm';
+import VendorForm from './components/forms/VendorForm';
+import EstimateForm from './components/forms/EstimateForm';
+import SalesOrderForm from './components/forms/SalesOrderForm';
+import TransactionForm from './components/forms/TransactionForm';
+import TransactionList from './components/lists/TransactionList';
+import ReportDisplay from './components/ReportDisplay';
+
 import { logger } from '@/utils/logger';
 import { UserMessageProvider, useUserMessageContext } from '@/contexts/UserMessageContext';
-
 
 function Copyright(props) {
   return (
@@ -86,15 +87,16 @@ const theme = createTheme({
     },
   },
 });
-const lightBlue = '#E3F2FD'; // You can adjust this hex code to get the exact shade of light blue you want
+
+const lightBlue = '#E3F2FD';
 const BottomAppBar = styled(MuiAppBar)(({ theme }) => ({
   top: 'auto',
   bottom: 0,
   backgroundColor: lightBlue,
-  height: '60px', // Set a fixed height
+  height: '60px',
   minHeight: 'unset',
   display: 'flex',
-  alignItems: 'left', // Center the content vertically
+  alignItems: 'left',
 }));
 
 const Search = styled('div')(({ theme }) => ({
@@ -105,7 +107,7 @@ const Search = styled('div')(({ theme }) => ({
   marginLeft: theme.spacing(3),
   width: 'auto',
   [theme.breakpoints.up('sm')]: {
-    width: 'calc(20ch * 1.4)', // Increase the width by 40%
+    width: 'calc(20ch * 1.4)',
   },
 }));
 
@@ -128,7 +130,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
     transition: theme.transitions.create('width'),
     width: '100%',
     [theme.breakpoints.up('md')]: {
-      width: 'calc(20ch * 1.4)', // Increase the width by 40%
+      width: 'calc(20ch * 1.4)',
     },
   },
 }));
@@ -164,20 +166,20 @@ const renderMainContent = (
   userData,
   handleCloseInvoiceBuilder,
   showAccountPage,
-  handleDeleteAccount
+  handleDeleteAccount,
+  selectedReport
 ) => {
-    if (showAccountPage) {
-        return (
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <Button variant="contained" color="error" onClick={handleDeleteAccount}>
-                Delete Account
-              </Button>
-            </Grid>
-          </Grid>
-        );
-
-    } else if (showTransactionForm) {
+  if (showAccountPage) {
+    return (
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <Button variant="contained" color="error" onClick={handleDeleteAccount}>
+            Delete Account
+          </Button>
+        </Grid>
+      </Grid>
+    );
+  } else if (showTransactionForm) {
     return (
       <Grid container spacing={3}>
         <Grid item xs={12}>
@@ -203,10 +205,11 @@ const renderMainContent = (
         </Grid>
       </Grid>
     );
+  } else if (selectedReport) {
+    return <ReportDisplay reportType={selectedReport} />;
   } else {
     return (
       <Grid container spacing={3}>
-        {/* Chart */}
         <Grid item xs={12} md={8} lg={9}>
           <Paper
             sx={{
@@ -219,7 +222,6 @@ const renderMainContent = (
             <Chart />
           </Paper>
         </Grid>
-        {/* Recent Deposits */}
         <Grid item xs={12} md={4} lg={3}>
           <Paper
             sx={{
@@ -232,7 +234,6 @@ const renderMainContent = (
             <Deposits />
           </Paper>
         </Grid>
-        {/* Recent Orders */}
         <Grid item xs={12}>
           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
             <Orders />
@@ -253,6 +254,14 @@ function DashboardContent() {
   const [showTransactionForm, setShowTransactionForm] = React.useState(false);
   const [showAccountPage, setShowAccountPage] = React.useState(false);
   const { addMessage } = useUserMessageContext();
+  const [selectedReport, setSelectedReport] = useState(null);
+
+  const handleReportClick = (reportType) => {
+    setSelectedReport(reportType);
+    setShowCreateOptions(false);
+    setShowInvoiceBuilder(false);
+    setShowTransactionForm(false);
+  };
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -267,6 +276,7 @@ function DashboardContent() {
     setShowCreateOptions(false);
     setSelectedOption(null);
     setShowTransactionForm(false);
+    setSelectedReport(null);
   };
 
   const handleCloseInvoiceBuilder = () => {
@@ -278,6 +288,7 @@ function DashboardContent() {
     setShowInvoiceBuilder(false);
     setSelectedOption(option);
     setShowTransactionForm(false);
+    setSelectedReport(null);
   };
 
   const handleShowTransactionForm = () => {
@@ -285,6 +296,7 @@ function DashboardContent() {
     setShowCreateOptions(false);
     setShowInvoiceBuilder(false);
     setSelectedOption(null);
+    setSelectedReport(null);
   };
 
   const handleAccountClick = () => {
@@ -297,7 +309,6 @@ function DashboardContent() {
       "Are you sure you want to close your account permanently?"
     );
     if (confirmDelete) {
-      // Call the API to delete the user account
       deleteUserAccount();
     }
   };
@@ -306,10 +317,8 @@ function DashboardContent() {
     try {
       const token = localStorage.getItem('token');
       localStorage.removeItem('token');
-      // Redirect to the landing page
       window.location.href = '/';
   
-      // Make the API call to delete the user account in the background
       const response = await fetch('http://localhost:8000/api/delete-account/', {
         method: 'DELETE',
         headers: {
@@ -318,7 +327,6 @@ function DashboardContent() {
       });
   
       if (!response.ok) {
-        // Handle error
         logger.error('Error deleting account:', response.statusText);
         addMessage('error', `Error deleting account: ${response.statusText}`);
       } else {
@@ -422,12 +430,10 @@ function DashboardContent() {
               >
                 {userData && (
                   <div>
-                    <MenuItem disabled>
-                     {userData.full_name}</MenuItem>
+                    <MenuItem disabled>{userData.full_name}</MenuItem>
                     <MenuItem disabled>{userData.business_name}</MenuItem>
                     <MenuItem disabled>{userData.occupation}</MenuItem>
                     <MenuItem onClick={handleAccountClick}>Account</MenuItem>
-
                   </div>
                 )}
               </Menu>
@@ -443,6 +449,7 @@ function DashboardContent() {
               hideInvoiceBuilder={handleCloseInvoiceBuilder}
               showCreateOptions={handleShowCreateOptions}
               showTransactionForm={handleShowTransactionForm}
+              handleReportClick={handleReportClick}
             />
             <Divider sx={{ my: 1 }} />
           </List>
@@ -455,10 +462,10 @@ function DashboardContent() {
                 ? theme.palette.grey[100]
                 : theme.palette.grey[900],
             flexGrow: 1,
-            height: 'calc(100vh - 64px)', // Adjusted height to exclude the bottom bar
+            height: 'calc(100vh - 64px)',
             overflow: 'auto',
-            position: 'relative', // Add relative positioning
-            zIndex: 1, // Ensure the main content is above the bottom bar
+            position: 'relative',
+            zIndex: 1,
           }}
         >
           <Toolbar />
@@ -471,14 +478,15 @@ function DashboardContent() {
               userData,
               handleCloseInvoiceBuilder,
               showAccountPage,
-              handleDeleteAccount
-                          )}
+              handleDeleteAccount,
+              selectedReport
+            )}
             <Copyright sx={{ pt: 4 }} />
           </Container>
         </Box>
         <BottomAppBar position="fixed" color="secondary">
-        <Toolbar style={{ minHeight: '48px', padding: '0 16px' }}>
-        <ConsoleMessages />
+          <Toolbar style={{ minHeight: '48px', padding: '0 16px' }}>
+            <ConsoleMessages />
           </Toolbar>
         </BottomAppBar>
       </Box>

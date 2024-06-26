@@ -1,6 +1,6 @@
 // src/app/dashboard/components/CustomerForm.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import axiosInstance from './axiosConfig';
+import axiosInstance from '../components/axiosConfig';
 import {
   Box,
   Typography,

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Box, Typography, TextField, FormControlLabel, Checkbox, Button } from '@mui/material';
-import axiosInstance from './axiosConfig';
+import axiosInstance from '../components/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 
 
-const ProductForm = () => {
+const ServiceForm = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState(0);
@@ -21,7 +21,7 @@ const ProductForm = () => {
     e.preventDefault();
     
     try {
-      const productData = {
+      const serviceData = {
         name,
         description,
         price,
@@ -29,24 +29,22 @@ const ProductForm = () => {
         buyEnabled,
         salesTax,
       };
-      logger.info('Product data:', productData);
-      const response = await axiosInstance.post('http://localhost:8000/api/create-product/', productData);
-      logger.info('Product created successfully', response.data);
-      addMessage('info', 'Product created successfully');
-
-      // Reset form fields or navigate to the product list page
+      console.log('Service data:', serviceData);
+      const response = await axiosInstance.post('http://localhost:8000/api/create-service/', serviceData);
+      console.log('Service created successfully', response.data);
+      addMessage('info', 'Service created successfully');
+      // Reset form fields or navigate to the service list page
     } catch (error) {
-      logger.error('Error creating product', error);
-      addMessage('error', 'Product created successfully');
+      logger.error('Error creating service', error);
+      addMessage('error', 'Error creating service');
       // Handle error condition
     }
   };
 
-
   return (
     <Box>
       <Typography variant="h5" gutterBottom>
-        Add a Product
+        Add a Service
       </Typography>
       <form onSubmit={handleSubmit}>
         <TextField
@@ -56,6 +54,7 @@ const ProductForm = () => {
           margin="normal"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          required
         />
         <TextField
           label="Description"
@@ -66,6 +65,7 @@ const ProductForm = () => {
           margin="normal"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          required
         />
         <TextField
           label="Price"
@@ -75,6 +75,7 @@ const ProductForm = () => {
           margin="normal"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
+          required
         />
         <FormControlLabel
           control={
@@ -104,13 +105,14 @@ const ProductForm = () => {
           margin="normal"
           value={salesTax}
           onChange={(e) => setSalesTax(e.target.value)}
+          required
         />
         <Button variant="contained" color="primary" type="submit" fullWidth>
-          Add Product
+          Add Service
         </Button>
       </form>
     </Box>
   );
 };
 
-export default ProductForm;
+export default ServiceForm;

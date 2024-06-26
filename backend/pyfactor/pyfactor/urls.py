@@ -12,6 +12,8 @@ urlpatterns = [
     path('api/', include('sales.urls')),
     path('accounts/', include('allauth.urls')),
     path('api/messages/', views.message_stream, name='message_stream'),
+    path('api/reports/', include('reports.urls')),
+
 
 
 ]

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Box, Button, Modal, Typography, List, ListItem, ListItemText } from '@mui/material';
 import AddIncomeForm from './AddIncomeForm';
 import AddExpenseForm from './AddExpenseForm';
-import axiosInstance from './axiosConfig';
+import axiosInstance from '../components/axiosConfig';
+import JournalEntryForm from './JournalEntryForm';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
@@ -14,6 +15,7 @@ const TransactionForm = () => {
   const [transactions, setTransactions] = useState([]);
   const [userDatabase, setUserDatabase] = useState('');
   const { addMessage } = useUserMessageContext();
+  const [openJournalEntryModal, setOpenJournalEntryModal] = useState(false);
 
   useEffect(() => {
     fetchUserProfile();
@@ -80,6 +82,14 @@ const TransactionForm = () => {
     setOpenAddExpenseModal(false);
   };
 
+  const handleOpenJournalEntryModal = () => {
+    setOpenJournalEntryModal(true);
+  };
+  
+  const handleCloseJournalEntryModal = () => {
+    setOpenJournalEntryModal(false);
+  };
+
   return (
     <Box>
       <Box display="flex" justifyContent="flex-end" mb={2}>
@@ -89,7 +99,7 @@ const TransactionForm = () => {
         <Button variant="contained" color="primary" sx={{ mr: 1 }} onClick={handleOpenAddExpenseModal}>
           Add Expense
         </Button>
-        <Button variant="contained" color="primary" sx={{ mr: 1 }}>
+        <Button variant="contained" color="primary" sx={{ mr: 1 }} onClick={handleOpenJournalEntryModal}>
           Add Journal Entry
         </Button>
         <Button variant="contained" color="primary" sx={{ mr: 1 }}>
@@ -153,6 +163,33 @@ const TransactionForm = () => {
           <AddExpenseForm onClose={handleCloseAddExpenseModal} accounts={accounts} />
         </Box>
       </Modal>
+            {/* Add Journal Entry Modal */}
+        <Modal
+          open={openJournalEntryModal}
+          onClose={handleCloseJournalEntryModal}
+          aria-labelledby="add-journal-entry-modal-title"
+          aria-describedby="add-journal-entry-modal-description"
+        >
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 600,
+              bgcolor: 'background.paper',
+              boxShadow: 24,
+              p: 4,
+            }}
+          >
+            <Typography id="add-journal-entry-modal-title" variant="h6" component="h2">
+              Add Journal Entry
+            </Typography>
+            <JournalEntryForm onClose={handleCloseJournalEntryModal} />
+          </Box>
+        </Modal>
+
+
     </Box>
   );
 };

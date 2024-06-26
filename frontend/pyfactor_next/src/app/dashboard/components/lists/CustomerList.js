@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button } from '@mui/material';
-import axiosInstance from './axiosConfig';
+import axiosInstance from '../components/axiosConfig';
 import { logger, UserMessage } from '@/utils/logger';
 
 

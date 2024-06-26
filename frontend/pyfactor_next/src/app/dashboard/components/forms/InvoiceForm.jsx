@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Button, Grid, TextField, MenuItem, FormControl, InputLabel, Select } from '@mui/material';
 import InvoicePreview from './InvoicePreview';
 import InvoiceTemplateBuilder from './InvoiceTemplateBuilder';
-import axiosInstance from './axiosConfig';
+import axiosInstance from '../components/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
@@ -208,15 +208,16 @@ const InvoiceForm = () => {
             receipt: null // Receipt file if any
         };
 
+        const formattedDate = currentDate.toISOString().split('T')[0]; // This will give you YYYY-MM-DD
+    
         const invoiceData = {
-            invoice_num: newInvoiceNumber,
-            customer: selectedCustomer,
-            amount: total,
-            due_date: currentDate.toISOString().split('T')[0], // Correct date format
-            status: 'draft',
-            transaction: transactionData,
+          invoice_num: newInvoiceNumber,
+          customer: selectedCustomer,
+          amount: total,
+          due_date: formattedDate, // Use the formatted date string
+          status: 'draft',
+          transaction: transactionData,
         };
-  
         // Save the new invoice number to the server or local storage
         await saveInvoiceNumber(newInvoiceNumber);
         console.log("Invoice data being sent to server:", invoiceData);

@@ -139,7 +139,7 @@ export const MainListItems = ({ showInvoiceBuilder, hideInvoiceBuilder, showCrea
         <WorkIcon style={{ color: iconColor }} />
         <ListItemText primary="Payroll" sx={{ color: textColor }} />
       </ListItemButton>
-      <ListItemButton>
+      <ListItemButton onClick={() => handleReportClick('reports')}>
         <InsertChartIcon style={{ color: iconColor }} />
         <ListItemText primary="Reports" sx={{ color: textColor }} />
       </ListItemButton>

@@ -12,11 +12,11 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import axiosInstance from './axiosConfig';
+import axiosInstance from '../components/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
-const AddIncomeForm = ({ onClose, accounts }) => {
+const AddExpenseForm = ({ onClose }) => {
   const [date, setDate] = useState(null);
   const [account, setAccount] = useState('');
   const [type, setType] = useState('');
@@ -27,7 +27,6 @@ const AddIncomeForm = ({ onClose, accounts }) => {
   const [notes, setNotes] = useState('');
   const [receipt, setReceipt] = useState(null);
   const [userDatabase, setUserDatabase] = useState('');
-
   const { addMessage } = useUserMessageContext();
 
   useEffect(() => {
@@ -57,9 +56,7 @@ const AddIncomeForm = ({ onClose, accounts }) => {
   };
 
   const handleAccountChange = (e) => {
-    const selectedAccount = e.target.value;
-    setAccount(selectedAccount);
-    logger.log('Selected account ID:', selectedAccount);
+    setAccount(e.target.value);
   };
 
   const handleTypeChange = (e) => {
@@ -76,9 +73,9 @@ const AddIncomeForm = ({ onClose, accounts }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     const formattedDate = date.toISOString().split('T')[0];
-  
+
     const formData = new FormData();
     formData.append('date', formattedDate);
     formData.append('account', account);
@@ -92,35 +89,35 @@ const AddIncomeForm = ({ onClose, accounts }) => {
       formData.append('receipt', receipt);
     }
     formData.append('database', userDatabase);
-  
+
     logger.log('Form data:', formData);
-  
+
     try {
-      const response = await axiosInstance.post('http://localhost:8000/api/incomes/', formData, {
+      const response = await axiosInstance.post('http://localhost:8000/api/expenses/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-  
+
       if (response.status === 201) {
         const data = response.data;
-        logger.log('Income record created:', data);
-        addMessage('info', 'Income record created successfully');
+        logger.log('Expense record created:', data);
+        addMessage('info', 'Expense record created successfully');
         onClose();
       }
     } catch (error) {
-      logger.error('Error creating income record:', error);
+      logger.error('Error creating expense record:', error);
       if (error.response) {
         logger.error('Error response data:', error.response.data);
         logger.error('Error response status:', error.response.status);
         logger.error('Error response headers:', error.response.headers);
-        addMessage('error', `Error creating income record: ${error.response.data.message || 'Unknown error'}`);
+        addMessage('error', `Error creating expense record: ${error.response.data.message || 'Unknown error'}`);
       } else if (error.request) {
         logger.error('Error request:', error.request);
-        addMessage('error', 'Error creating income record: No response received from server');
+        addMessage('error', 'Error creating expense record: No response received from server');
       } else {
         logger.error('Error message:', error.message);
-        addMessage('error', `Error creating income record: ${error.message}`);
+        addMessage('error', `Error creating expense record: ${error.message}`);
       }
     }
   };
@@ -132,9 +129,7 @@ const AddIncomeForm = ({ onClose, accounts }) => {
           label="Date"
           value={date}
           onChange={(newDate) => setDate(newDate)}
-          renderInput={(params) => (
-            <TextField {...params} fullWidth margin="normal" />
-          )}
+          renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
         />
       </LocalizationProvider>
 
@@ -144,41 +139,28 @@ const AddIncomeForm = ({ onClose, accounts }) => {
           <MenuItem value="Cash on Hand">Cash on Hand</MenuItem>
           <MenuItem value="Checking Account">Checking Account</MenuItem>
           <MenuItem value="Savings Account">Savings Account</MenuItem>
-          <MenuItem value="Petty Cash">Petty Cash</MenuItem>
-          <MenuItem value="Accounts Receivable">Accounts Receivable</MenuItem>
-          <MenuItem value="Other Current Assets">Other Current Assets</MenuItem>
-          <MenuItem value="Fixed Assets">Fixed Assets</MenuItem>
-          <MenuItem value="Accounts Payable">Accounts Payable</MenuItem>
           <MenuItem value="Credit Card">Credit Card</MenuItem>
-          <MenuItem value="Other Current Liabilities">Other Current Liabilities</MenuItem>
-          <MenuItem value="Long Term Liabilities">Long Term Liabilities</MenuItem>
-          <MenuItem value="Owner's Equity">Owner's Equity</MenuItem>
-          <MenuItem value="Income">Income</MenuItem>
-          <MenuItem value="Other Income">Other Income</MenuItem>
-          <MenuItem value="Cost of Goods Sold">Cost of Goods Sold</MenuItem>
-          <MenuItem value="Expenses">Expenses</MenuItem>
-          <MenuItem value="Other Expenses">Other Expenses</MenuItem>
+          <MenuItem value="Accounts Payable">Accounts Payable</MenuItem>
         </Select>
       </FormControl>
 
       <FormControl fullWidth margin="normal">
         <InputLabel>Type</InputLabel>
         <Select value={type} onChange={handleTypeChange}>
-          <MenuItem value="Deposit">Deposit</MenuItem>
           <MenuItem value="Withdrawal">Withdrawal</MenuItem>
+          <MenuItem value="Deposit">Deposit</MenuItem>
         </Select>
       </FormControl>
 
       <FormControl fullWidth margin="normal">
         <InputLabel>Account Type</InputLabel>
         <Select value={accountType} onChange={handleAccountTypeChange}>
-          <MenuItem value="Sales">Sales</MenuItem>
-          <MenuItem value="Accounts Receivable">Accounts Receivable</MenuItem>
+          <MenuItem value="Expense">Expense</MenuItem>
           <MenuItem value="Accounts Payable">Accounts Payable</MenuItem>
-          <MenuItem value="Payroll Liabilities">Payroll Liabilities</MenuItem>
-          <MenuItem value="Owner Investment">Owner Investment</MenuItem>
-          <MenuItem value="Owner Drawings">Owner Drawings</MenuItem>
-          <MenuItem value="Owner Equity">Owner Equity</MenuItem>
+          <MenuItem value="Utilities">Utilities</MenuItem>
+          <MenuItem value="Rent">Rent</MenuItem>
+          <MenuItem value="Supplies">Supplies</MenuItem>
+          <MenuItem value="Payroll">Payroll</MenuItem>
         </Select>
       </FormControl>
 
@@ -201,6 +183,7 @@ const AddIncomeForm = ({ onClose, accounts }) => {
           endAdornment: <InputAdornment position="end">%</InputAdornment>,
         }}
       />
+
       <TextField
         label="Calculated Sales Tax"
         fullWidth
@@ -248,4 +231,4 @@ const AddIncomeForm = ({ onClose, accounts }) => {
   );
 };
 
-export default AddIncomeForm;
+export default AddExpenseForm;
