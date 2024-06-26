@@ -44,7 +44,9 @@ import EstimateForm from './components/forms/EstimateForm';
 import SalesOrderForm from './components/forms/SalesOrderForm';
 import TransactionForm from './components/forms/TransactionForm';
 import TransactionList from './components/lists/TransactionList';
-import ReportDisplay from './components/ReportDisplay';
+import ReportDisplay from './components/forms/ReportDisplay';
+import Reports from './components/components/Reports';
+
 
 import { logger } from '@/utils/logger';
 import { UserMessageProvider, useUserMessageContext } from '@/contexts/UserMessageContext';
@@ -68,14 +70,20 @@ const AppBar = styled(MuiAppBar)(({ theme }) => ({
   zIndex: theme.zIndex.drawer + 1,
 }));
 
-const Drawer = styled(MuiDrawer)({
+const Drawer = styled(MuiDrawer)(({ theme }) => ({
   '& .MuiDrawer-paper': {
     position: 'relative',
     whiteSpace: 'nowrap',
     width: drawerWidth,
     boxSizing: 'border-box',
+    '& .MuiListItemButton-root': {
+      borderBottom: 'none',
+    },
+    '& .MuiListItemButton-root:last-child': {
+      borderBottom: 'none',
+    },
   },
-});
+}));
 
 const theme = createTheme({
   palette: {
@@ -167,8 +175,13 @@ const renderMainContent = (
   handleCloseInvoiceBuilder,
   showAccountPage,
   handleDeleteAccount,
-  selectedReport
+  selectedReport,
+  showReports  // Add this parameter
+
 ) => {
+  if (showReports && selectedReport) {
+    return <ReportDisplay reportType={selectedReport} />;
+  }
   if (showAccountPage) {
     return (
       <Grid container spacing={3}>
@@ -255,9 +268,12 @@ function DashboardContent() {
   const [showAccountPage, setShowAccountPage] = React.useState(false);
   const { addMessage } = useUserMessageContext();
   const [selectedReport, setSelectedReport] = useState(null);
+  const [showReports, setShowReports] = useState(false);
+
 
   const handleReportClick = (reportType) => {
     setSelectedReport(reportType);
+    setShowReports(true);
     setShowCreateOptions(false);
     setShowInvoiceBuilder(false);
     setShowTransactionForm(false);
@@ -479,7 +495,8 @@ function DashboardContent() {
               handleCloseInvoiceBuilder,
               showAccountPage,
               handleDeleteAccount,
-              selectedReport
+              selectedReport,
+              showReports
             )}
             <Copyright sx={{ pt: 4 }} />
           </Container>

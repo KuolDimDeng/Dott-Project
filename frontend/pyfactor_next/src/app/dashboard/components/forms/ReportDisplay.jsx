@@ -1,9 +1,11 @@
+// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/ReportDisplay.jsx
 import React, { useState, useEffect } from 'react';
-import { Typography, Paper, Grid, Button } from '@mui/material';
+import { Typography, Paper, CircularProgress } from '@mui/material';
 import axios from 'axios';
 
 const ReportDisplay = ({ reportType }) => {
   const [reportData, setReportData] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchReportData = async () => {
@@ -15,14 +17,19 @@ const ReportDisplay = ({ reportType }) => {
         setReportData(response.data);
       } catch (error) {
         console.error('Error fetching report data:', error);
+        setError('Failed to load report. Please try again.');
       }
     };
 
     fetchReportData();
   }, [reportType]);
 
+  if (error) {
+    return <Typography color="error">{error}</Typography>;
+  }
+
   if (!reportData) {
-    return <Typography>Loading report...</Typography>;
+    return <CircularProgress />;
   }
 
   const renderReportContent = () => {

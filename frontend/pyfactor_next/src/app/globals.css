@@ -18,6 +18,10 @@
   }
 }
 
+.MuiListItemButton-root {
+  border-bottom: none !important;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
@@ -32,6 +36,12 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+
+  @layer base {
+    .MuiListItemButton-root {
+      @apply border-b-0;
+    }
+  }
 }
 
 /* Add any additional custom styles for MUI components */
