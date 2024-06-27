@@ -15,8 +15,11 @@ import RequestPageIcon from '@mui/icons-material/RequestPage';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import MenuIcon from '@mui/icons-material/Menu';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import { logger, UserMessage } from '@/utils/logger';
 
+const drawerWidth = 240;
 const navyBlue = '#000080';
 const textColor = navyBlue;
 const iconColor = '#000080';
@@ -31,15 +34,22 @@ const listItemStyle = {
   },
 };
 
-export const MainListItems = ({ showInvoiceBuilder, hideInvoiceBuilder, showCreateOptions, showTransactionForm, handleReportClick }) => {  
+export const MainListItems = ({ 
+  showInvoiceBuilder, 
+  hideInvoiceBuilder, 
+  showCreateOptions, 
+  showTransactionForm, 
+  handleReportClick,
+  drawerOpen,
+  handleDrawerToggle
+}) => {   
   const [showCreateOptionsMenu, setShowCreateOptionsMenu] = React.useState(false);
   const [showReportsMenu, setShowReportsMenu] = React.useState(false);
   const [createAnchorEl, setCreateAnchorEl] = React.useState(null);
   const [reportsAnchorEl, setReportsAnchorEl] = React.useState(null);
 
-
   const handleCreateOptionsMenuOpen = (event) => {
-    createAnchorEl(event.currentTarget);
+    setCreateAnchorEl(event.currentTarget);
     setShowCreateOptionsMenu(true);
   };
 
@@ -68,126 +78,145 @@ export const MainListItems = ({ showInvoiceBuilder, hideInvoiceBuilder, showCrea
   };
 
   const handleReportSelect = (reportType) => {
-    handleReportClick(reportType);  // This should now directly display the report
+    handleReportClick(reportType);
     handleReportsMenuClose();
   };
 
-
   return (
     <Box sx={{ 
-      '& .MuiListItemButton-root': listItemStyle,
+      overflow: 'auto',
+      '& .MuiListItemButton-root': {
+        ...listItemStyle,
+        paddingLeft: 2, //padding for the main list item
+        paddingRight: 2, //padding for the main list item
+      },
       '& .MuiListItemButton-root:last-child': {
         marginBottom: 0,
       },
     }}>
       <List disablePadding>
-        <ListItemButton onClick={handleCreateOptionsMenuOpen}>
+        <ListItemButton onClick={handleDrawerToggle}>
           <ListItemIcon>
-            <AddCircleOutlineIcon style={{ color: iconColor }} />
+            {drawerOpen ? <ChevronLeftIcon style={{ color: iconColor }} /> : <MenuIcon style={{ color: iconColor }} />}
           </ListItemIcon>
-          <ListItemText primary={<b>Create</b>} sx={{ color: textColor }} />
+          <ListItemText primary={drawerOpen ? "Close Menu" : "Open Menu"} sx={{ color: textColor }} />
         </ListItemButton>
-        <Menu
-          anchorEl={createAnchorEl}
-          open={showCreateOptionsMenu}
-          onClose={handleCreateOptionsMenuClose}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'left',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'left',
-          }}
-        >
-          <MenuItem onClick={() => handleCreateOptionsSelect('Transaction')}>Transaction</MenuItem>
-          <MenuItem onClick={() => handleCreateOptionsSelect('Product')}>Product</MenuItem>
-          <MenuItem onClick={() => handleCreateOptionsSelect('Service')}>Service</MenuItem>
-          <MenuItem onClick={() => handleCreateOptionsSelect('Customer')}>Customer</MenuItem>
-          <MenuItem onClick={() => handleCreateOptionsSelect('Bill')}>Bill</MenuItem>
-          <MenuItem onClick={() => handleCreateOptionsSelect('Invoice')}>Invoice</MenuItem>
-          <MenuItem onClick={() => handleCreateOptionsSelect('Vendor')}>Vendor</MenuItem>
-          <MenuItem onClick={() => handleCreateOptionsSelect('Estimate')}>Estimate</MenuItem>
-          <MenuItem onClick={() => handleCreateOptionsSelect('Sales Order')}>Sales Order</MenuItem>
-        </Menu>
-        <ListItemButton>
-          <ListItemIcon>
-            <DashboardCustomizeIcon style={{ color: iconColor }} />
-          </ListItemIcon>
-          <ListItemText primary="Dashboard" sx={{ color: textColor }} />
-        </ListItemButton>
-        <ListItemButton>
-          <ListItemIcon>
-            <PointOfSaleIcon style={{ color: iconColor }} />
-          </ListItemIcon>
-          <ListItemText primary="Sales" sx={{ color: textColor }} />
-        </ListItemButton>
-        <ListItemButton>
-          <ListItemIcon>
-            <PaymentsIcon style={{ color: iconColor }} />
-          </ListItemIcon>
-          <ListItemText primary="Payments" sx={{ color: textColor }} />
-        </ListItemButton>
-        <ListItemButton>
-          <ListItemIcon>
-            <ShoppingCartIcon style={{ color: iconColor }} />
-          </ListItemIcon>
-          <ListItemText primary="Purchases" sx={{ color: textColor }} />
-        </ListItemButton>
-        <ListItemButton>
-          <ListItemIcon>
-            <AccountBalanceIcon style={{ color: iconColor }} />
-          </ListItemIcon>
-          <ListItemText primary="Accounting" sx={{ color: textColor }} />
-        </ListItemButton>
-        <ListItemButton>
-          <ListItemIcon>
-            <AccountBalanceWalletIcon style={{ color: iconColor }} />
-          </ListItemIcon>
-          <ListItemText primary="Banking" sx={{ color: textColor }} />
-        </ListItemButton>
-        <ListItemButton>
-          <ListItemIcon>
-            <RequestPageIcon style={{ color: iconColor }} />
-          </ListItemIcon>
-          <ListItemText primary="Payroll" sx={{ color: textColor }} />
-        </ListItemButton>
-        <ListItemButton onClick={handleReportsMenuOpen}>
-          <ListItemIcon>
-            <AssessmentIcon style={{ color: iconColor }} />
-          </ListItemIcon>
-          <ListItemText primary="Reports" sx={{ color: textColor }} />
-        </ListItemButton>
-        <Menu
-          anchorEl={reportsAnchorEl}
-          open={showReportsMenu}
-          onClose={handleReportsMenuClose}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'left',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'left',
-          }}
-        >
-          <MenuItem onClick={() => handleReportSelect('balance_sheet')}>Balance Sheet</MenuItem>
-          <MenuItem onClick={() => handleReportSelect('cash_flow')}>Cash Flow</MenuItem>
-          <MenuItem onClick={() => handleReportSelect('income_statement')}>Income Statement</MenuItem>
-        </Menu>
-        <ListItemButton>
-          <ListItemIcon>
-            <AnalyticsIcon style={{ color: iconColor }} />
-          </ListItemIcon>
-          <ListItemText primary="Analysis" sx={{ color: textColor }} />
-        </ListItemButton>
-        <ListItemButton>
-          <ListItemIcon>
-            <ReceiptLongIcon style={{ color: iconColor }} />
-          </ListItemIcon>
-          <ListItemText primary="Taxes" sx={{ color: textColor }} />
-        </ListItemButton>
+        
+        {drawerOpen && (
+          <>
+            <ListItemButton onClick={handleCreateOptionsMenuOpen}>
+              <ListItemIcon>
+                <AddCircleOutlineIcon style={{ color: iconColor }} />
+              </ListItemIcon>
+              <ListItemText primary={<b>Create</b>} sx={{ color: textColor }} />
+            </ListItemButton>
+            <ListItemButton>
+              <ListItemIcon>
+                <DashboardCustomizeIcon style={{ color: iconColor }} />
+              </ListItemIcon>
+              <ListItemText primary="Dashboard" sx={{ color: textColor }} />
+            </ListItemButton>
+            <ListItemButton>
+              <ListItemIcon>
+                <PointOfSaleIcon style={{ color: iconColor }} />
+              </ListItemIcon>
+              <ListItemText primary="Sales" sx={{ color: textColor }} />
+            </ListItemButton>
+            <ListItemButton>
+              <ListItemIcon>
+                <PaymentsIcon style={{ color: iconColor }} />
+              </ListItemIcon>
+              <ListItemText primary="Payments" sx={{ color: textColor }} />
+            </ListItemButton>
+            <ListItemButton>
+              <ListItemIcon>
+                <ShoppingCartIcon style={{ color: iconColor }} />
+              </ListItemIcon>
+              <ListItemText primary="Purchases" sx={{ color: textColor }} />
+            </ListItemButton>
+            <ListItemButton>
+              <ListItemIcon>
+                <AccountBalanceIcon style={{ color: iconColor }} />
+              </ListItemIcon>
+              <ListItemText primary="Accounting" sx={{ color: textColor }} />
+            </ListItemButton>
+            <ListItemButton>
+              <ListItemIcon>
+                <AccountBalanceWalletIcon style={{ color: iconColor }} />
+              </ListItemIcon>
+              <ListItemText primary="Banking" sx={{ color: textColor }} />
+            </ListItemButton>
+            <ListItemButton>
+              <ListItemIcon>
+                <RequestPageIcon style={{ color: iconColor }} />
+              </ListItemIcon>
+              <ListItemText primary="Payroll" sx={{ color: textColor }} />
+            </ListItemButton>
+            <ListItemButton onClick={handleReportsMenuOpen}>
+              <ListItemIcon>
+                <AssessmentIcon style={{ color: iconColor }} />
+              </ListItemIcon>
+              <ListItemText primary="Reports" sx={{ color: textColor }} />
+            </ListItemButton>
+            <ListItemButton>
+              <ListItemIcon>
+                <AnalyticsIcon style={{ color: iconColor }} />
+              </ListItemIcon>
+              <ListItemText primary="Analysis" sx={{ color: textColor }} />
+            </ListItemButton>
+            <ListItemButton>
+              <ListItemIcon>
+                <ReceiptLongIcon style={{ color: iconColor }} />
+              </ListItemIcon>
+              <ListItemText primary="Taxes" sx={{ color: textColor }} />
+            </ListItemButton>
+          </>
+        )}
       </List>
+      <Menu
+        anchorEl={createAnchorEl}
+        open={showCreateOptionsMenu}
+        onClose={handleCreateOptionsMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        anchorReference="anchorPosition"
+        anchorPosition={{ left: 160, top: createAnchorEl ? createAnchorEl.getBoundingClientRect().top : 0}}
+      >
+        <MenuItem onClick={() => handleCreateOptionsSelect('Transaction')}>Transaction</MenuItem>
+        <MenuItem onClick={() => handleCreateOptionsSelect('Product')}>Product</MenuItem>
+        <MenuItem onClick={() => handleCreateOptionsSelect('Service')}>Service</MenuItem>
+        <MenuItem onClick={() => handleCreateOptionsSelect('Customer')}>Customer</MenuItem>
+        <MenuItem onClick={() => handleCreateOptionsSelect('Bill')}>Bill</MenuItem>
+        <MenuItem onClick={() => handleCreateOptionsSelect('Invoice')}>Invoice</MenuItem>
+        <MenuItem onClick={() => handleCreateOptionsSelect('Vendor')}>Vendor</MenuItem>
+        <MenuItem onClick={() => handleCreateOptionsSelect('Estimate')}>Estimate</MenuItem>
+        <MenuItem onClick={() => handleCreateOptionsSelect('Sales Order')}>Sales Order</MenuItem>
+      </Menu>
+      <Menu
+        anchorEl={reportsAnchorEl}
+        open={showReportsMenu}
+        onClose={handleReportsMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        anchorReference="anchorPosition"
+        anchorPosition={{ left: 160, top: reportsAnchorEl ? reportsAnchorEl.getBoundingClientRect().top : 0}}
+      >
+        <MenuItem onClick={() => handleReportSelect('balance_sheet')}>Balance Sheet</MenuItem>
+        <MenuItem onClick={() => handleReportSelect('cash_flow')}>Cash Flow</MenuItem>
+        <MenuItem onClick={() => handleReportSelect('income_statement')}>Income Statement</MenuItem>
+      </Menu>
     </Box>
   );
 };

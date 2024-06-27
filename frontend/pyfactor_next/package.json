@@ -23,7 +23,10 @@
     "country-list": "^2.3.0",
     "currency-codes": "^2.1.0",
     "date-fns": "2.29.3",
+    "file-saver": "^2.0.5",
     "js-cookie": "^3.0.5",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
     "next": "14.2.4",
     "next-auth": "^4.24.7",
     "react": "^18.3.1",
@@ -35,7 +38,8 @@
     "react-select": "^5.8.0",
     "tailwind": "^4.0.0",
     "uuid": "^9.0.1",
-    "valibot": "^0.30.0"
+    "valibot": "^0.30.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

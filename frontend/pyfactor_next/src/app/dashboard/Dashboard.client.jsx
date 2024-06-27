@@ -45,6 +45,7 @@ import SalesOrderForm from './components/forms/SalesOrderForm';
 import TransactionForm from './components/forms/TransactionForm';
 import TransactionList from './components/lists/TransactionList';
 import ReportDisplay from './components/forms/ReportDisplay';
+import MenuIcon from '@mui/icons-material/Menu';
 import Reports from './components/components/Reports';
 
 
@@ -64,7 +65,7 @@ function Copyright(props) {
   );
 }
 
-const drawerWidth = 240;
+const drawerWidth = 200;
 
 const AppBar = styled(MuiAppBar)(({ theme }) => ({
   zIndex: theme.zIndex.drawer + 1,
@@ -105,6 +106,9 @@ const BottomAppBar = styled(MuiAppBar)(({ theme }) => ({
   minHeight: 'unset',
   display: 'flex',
   alignItems: 'left',
+  position: 'fixed',
+  left: drawerWidth,
+  width: `calc(100% - ${drawerWidth}px)`,
 }));
 
 const Search = styled('div')(({ theme }) => ({
@@ -269,6 +273,11 @@ function DashboardContent() {
   const { addMessage } = useUserMessageContext();
   const [selectedReport, setSelectedReport] = useState(null);
   const [showReports, setShowReports] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(true);
+
+  const handleDrawerToggle = () => {
+    setDrawerOpen(!drawerOpen);
+  };
 
 
   const handleReportClick = (reportType) => {
@@ -385,18 +394,30 @@ function DashboardContent() {
     fetchUserData();
   }, [fetchUserData]);
 
+
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ display: 'flex' }}>
         <CssBaseline />
-        <AppBar position="absolute" color="primary">
+        <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
           <Toolbar sx={{ justifyContent: 'space-between' }}>
-            <Image
-              src={logoPath}
-              alt="PyFactor Logo"
-              width={120}
-              height={30}
-            />
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <IconButton
+                color="inherit"
+                aria-label="open drawer"
+                edge="start"
+                onClick={handleDrawerToggle}
+                sx={{ mr: 2 }}
+              >
+                <MenuIcon />
+              </IconButton>
+              <Image
+                src={logoPath}
+                alt="PyFactor Logo"
+                width={120}
+                height={30}
+              />
+            </Box>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Search>
                 <SearchIconWrapper>
@@ -456,61 +477,106 @@ function DashboardContent() {
             </Box>
           </Toolbar>
         </AppBar>
-        <Drawer variant="permanent">
-          <Toolbar />
-          <Divider />
-          <List component="nav">
-            <MainListItems
+        <Drawer
+          variant="persistent"
+          open={drawerOpen}
+          sx={{
+            width: drawerWidth,
+            flexShrink: 0,
+            '& .MuiDrawer-paper': { 
+              width: drawerWidth, 
+              boxSizing: 'border-box',
+              top: '64px', // Start below AppBar
+              height: 'calc(100% - 124px)', // Subtract AppBar and BottomAppBar heights
+              borderRight: 'none', // Remove right border
+              overflowX: 'hidden', // Hide horizontal scrollbar if any
+
+            },
+          }}
+        >
+          <Box sx={{ overflow: 'auto', pl: 0, pr: 0 }}> {/* Remove horizontal padding */}
+          <MainListItems
               showInvoiceBuilder={handleShowInvoiceBuilder}
               hideInvoiceBuilder={handleCloseInvoiceBuilder}
               showCreateOptions={handleShowCreateOptions}
               showTransactionForm={handleShowTransactionForm}
               handleReportClick={handleReportClick}
+              drawerOpen={drawerOpen}
+              handleDrawerToggle={handleDrawerToggle}
             />
-            <Divider sx={{ my: 1 }} />
-          </List>
+          </Box>
         </Drawer>
         <Box
-          component="main"
-          sx={{
-            backgroundColor: (theme) =>
-              theme.palette.mode === 'light'
-                ? theme.palette.grey[100]
-                : theme.palette.grey[900],
-            flexGrow: 1,
-            height: 'calc(100vh - 64px)',
-            overflow: 'auto',
-            position: 'relative',
-            zIndex: 1,
+            component="main"
+            sx={{
+              flexGrow: 1,
+              p: 0,
+              width: drawerOpen ? `calc(100% - ${drawerWidth - 150}px)` : '100%',
+              marginLeft: drawerOpen ? `${drawerWidth - 150}px` : 0,
+          
+              transition: theme.transitions.create(['margin', 'width'], {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.leavingScreen,
+              }),
+              pt: '64px', // Top padding for AppBar
+              pb: '60px', // Bottom padding for BottomAppBar
+              height: 'calc(100vh - 124px)', // Subtract AppBar and BottomAppBar heights
+              overflow: 'auto',
+            }}
+          >
+          <Box sx={{ mt: 2 }}> {/* Add this wrapper Box with margin-top */}
+          <Container 
+              maxWidth={false} // Change this to false to allow full width
+              sx={{ 
+                mt: 0, // Remove top margin
+                mb: 0, // Remove bottom margin
+                ml: 0, // Remove left margin
+                height: '100%', 
+                display: 'flex', 
+                flexDirection: 'column',
+                pl: 1, // Add minimal left padding
+                pr: 1, // Add minimal right padding
+              }}
+            >            
+            <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+                {renderMainContent(
+                  showTransactionForm,
+                  showInvoiceBuilder,
+                  showCreateOptions,
+                  selectedOption,
+                  userData,
+                  handleCloseInvoiceBuilder,
+                  showAccountPage,
+                  handleDeleteAccount,
+                  selectedReport,
+                  showReports
+                )}
+              </Box>
+            </Container>
+          </Box>
+          </Box>
+        <AppBar 
+          position="fixed" 
+          color="default" 
+          sx={{ 
+            top: 'auto', 
+            bottom: 0, 
+            left: 0,
+            right: 0,
+            height: '60px',
+            zIndex: (theme) => theme.zIndex.drawer + 2,
           }}
         >
-          <Toolbar />
-          <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            {renderMainContent(
-              showTransactionForm,
-              showInvoiceBuilder,
-              showCreateOptions,
-              selectedOption,
-              userData,
-              handleCloseInvoiceBuilder,
-              showAccountPage,
-              handleDeleteAccount,
-              selectedReport,
-              showReports
-            )}
-            <Copyright sx={{ pt: 4 }} />
-          </Container>
-        </Box>
-        <BottomAppBar position="fixed" color="secondary">
           <Toolbar style={{ minHeight: '48px', padding: '0 16px' }}>
             <ConsoleMessages />
           </Toolbar>
-        </BottomAppBar>
+        </AppBar>
       </Box>
+    
     </ThemeProvider>
   );
-}
 
+}
 export default function Dashboard() {
   return (
     <UserMessageProvider>
