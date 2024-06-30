@@ -1,4 +1,4 @@
-#/Users/kuoldeng/projectx/backend/pyfactor/pyfactor/userDatabaseRouter.py
+# /Users/kuoldeng/projectx/backend/pyfactor/pyfactor/userDatabaseRouter.py
 from django.conf import settings
 from users.models import UserProfile
 from pyfactor.logging_config import get_logger
@@ -9,6 +9,12 @@ logger = get_logger()
 class UserDatabaseRouter:
     def db_for_read(self, model, **hints):
         logger.debug("db_for_read called")
+        
+        # Celery routing
+        if model._meta.app_label in ['django_celery_beat', 'django_celery_results']:
+            return 'celery'
+        
+        # User routing
         if 'instance' in hints:
             instance = hints['instance']
             logger.debug(f"instance: {instance}")
@@ -22,21 +28,37 @@ class UserDatabaseRouter:
         return None
 
     def db_for_write(self, model, **hints):
-            logger.debug("db_for_write called")
-            if 'instance' in hints:
-                instance = hints['instance']
-                logger.debug(f"instance: {instance}")
-                if isinstance(instance, UserProfile):
-                    try:
-                        user_profile = UserProfile.objects.select_related('user').get(pk=instance.pk)
-                        logger.debug(f"user_profile: {user_profile}")
-                        return user_profile.database_name
-                    except UserProfile.DoesNotExist:
-                        logger.warning("UserProfile does not exist")
-            # Ensure that user-related writes are routed to the default database
-            if model._meta.app_label == 'users':
-                return 'default'
-            return None
+        logger.debug("db_for_write called")
+        
+        # Celery routing
+        if model._meta.app_label in ['django_celery_beat', 'django_celery_results']:
+            return 'celery'
+        
+        # User routing
+        if 'instance' in hints:
+            instance = hints['instance']
+            logger.debug(f"instance: {instance}")
+            if isinstance(instance, UserProfile):
+                try:
+                    user_profile = UserProfile.objects.select_related('user').get(pk=instance.pk)
+                    logger.debug(f"user_profile: {user_profile}")
+                    return user_profile.database_name
+                except UserProfile.DoesNotExist:
+                    logger.warning("UserProfile does not exist")
+        # Ensure that user-related writes are routed to the default database
+        if model._meta.app_label == 'users':
+            return 'default'
+        return None
+
+    def allow_relation(self, obj1, obj2, **hints):
+        return True
+
+    def allow_migrate(self, db, app_label, model_name=None, **hints):
+        if app_label in ['django_celery_beat', 'django_celery_results']:
+            return db == 'celery'
+        if model_name == 'user_chatbot_message':
+            return True  # Allow migration for user_chatbot_message in all databases
+        return True
 
     def create_dynamic_database(self, database_name):
         if database_name not in settings.DATABASES:
@@ -64,9 +86,3 @@ class UserDatabaseRouter:
             logger.debug(f"Added {database_name} connection to Django's connections")
         else:
             logger.warning(f"Database '{database_name}' already exists in DATABASES")
-
-    def allow_relation(self, obj1, obj2, **hints):
-        return True
-
-    def allow_migrate(self, db, app_label, model_name=None, **hints):
-        return True

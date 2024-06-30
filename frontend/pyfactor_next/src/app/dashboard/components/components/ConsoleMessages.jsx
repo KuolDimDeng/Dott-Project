@@ -6,24 +6,24 @@ import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const lightBlue = '#E3F2FD'; // Make sure this matches the color in your Dashboard component
 
-const MessageContainer = styled(Box)(({ theme }) => ({
+const MessageContainer = styled(Box)(({ theme, backgroundColor }) => ({
   display: 'flex',
-  alignItems: 'center', // Center the message vertically
-  backgroundColor: lightBlue,
+  alignItems: 'center',
+  backgroundColor: backgroundColor,
   padding: theme.spacing(1),
   height: '100%',
-  overflow: 'hidden', // Hide overflow
+  overflow: 'hidden',
 }));
 
-const Message = styled(Typography)(({ theme, messageType }) => ({
-  whiteSpace: 'nowrap', // Prevent line breaks
-  overflow: 'hidden', // Hide overflow
-  textOverflow: 'ellipsis', // Add ellipsis for overflowing text
+const getMessageStyle = (messageType) => ({
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
   fontWeight: 'bold',
   color: messageType === 'info' ? 'green' : 'red',
-}));
+});
 
-function ConsoleMessages() {
+function ConsoleMessages({ backgroundColor }) {
   const { messages } = useUserMessageContext();
   const [latestMessage, setLatestMessage] = useState(null);
 
@@ -34,11 +34,14 @@ function ConsoleMessages() {
   }, [messages]);
 
   return (
-    <MessageContainer>
+    <MessageContainer backgroundColor={backgroundColor}>
       {latestMessage && (
-        <Message messageType={latestMessage.type}>
+        <Typography 
+          style={getMessageStyle(latestMessage.type)}
+          aria-label={latestMessage.type}
+        >
           {latestMessage.content}
-        </Message>
+        </Typography>
       )}
     </MessageContainer>
   );

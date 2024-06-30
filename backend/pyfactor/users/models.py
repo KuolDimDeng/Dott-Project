@@ -81,6 +81,9 @@ class UserProfile(models.Model):
     def to_dict(self):
         return {
             'email': self.user.email,
+            'first_name': self.user.first_name,
+            'last_name': self.user.last_name,
+            'full_name': self.user.get_full_name(),
             'occupation': self.occupation,
             'business_name': self.business_name,
             'database_name': self.database_name,

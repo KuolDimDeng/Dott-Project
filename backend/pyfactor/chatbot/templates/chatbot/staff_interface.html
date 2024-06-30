@@ -1,0 +1,24 @@
+<!-- chatbot/templates/chatbot/staff_interface.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Staff Chat Interface</title>
+</head>
+<body>
+    <h1>Pending Messages</h1>
+    {% for message in pending_messages %}
+        <div>
+            <p>From: {{ message.user.email }}</p>
+            <p>Message: {{ message.message }}</p>
+            <form method="post" action="{% url 'respond_to_message' message.id %}">
+                {% csrf_token %}
+                <textarea name="response" required></textarea>
+                <button type="submit">Send Response</button>
+            </form>
+        </div>
+        <hr>
+    {% empty %}
+        <p>No pending messages.</p>
+    {% endfor %}
+</body>
+</html>

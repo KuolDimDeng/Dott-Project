@@ -60,6 +60,22 @@ def create_user_database(username, user_data, subscription_type):
 
     logger.debug("Creating initial tables in user's database via migrate: %s", database_name)
     call_command('migrate', database=database_name)
+    
+     # Create user_chatbot_message table
+    logger.debug("Creating user_chatbot_message table in user's database: %s", database_name)
+    with connections[database_name].cursor() as cursor:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_chatbot_message (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                message TEXT NOT NULL,
+                is_from_user BOOLEAN NOT NULL,
+                timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    logger.info("user_chatbot_message table created successfully in user's database: %s", database_name)
+
+    
     logger.info("Initial tables created successfully in user's database: %s", database_name)
     return database_name
 

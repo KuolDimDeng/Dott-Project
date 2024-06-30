@@ -85,6 +85,12 @@ REST_FRAMEWORK = {
     ],
 }
 
+
+CELERY_BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_RESULT_BACKEND_DB = 'celery'
+
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
@@ -211,6 +217,14 @@ INSTALLED_APPS = [
     'sales',
     'finance',
     'reports',
+    'banking',
+    'hr',
+    'payroll',
+    'analysis',
+    'chatbot',
+    'django_celery_beat',
+    'django_celery_results',
+    
 ]
 
 MIDDLEWARE = [
@@ -273,6 +287,22 @@ DATABASES = {
             'connect_timeout': 10,
         },
     },
+    'celery': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'celery_db',
+        'USER': 'postgres',
+        'PASSWORD': 'TOzuISAf13KvGVZi4zbd',
+        'HOST': 'database-2.c12qgo6m085e.us-east-1.rds.amazonaws.com',
+        'PORT': '5432',
+        'ATOMIC_REQUESTS': False,  # or False
+        'CONN_HEALTH_CHECKS': True,  # or False, depending on your preference
+        'CONN_MAX_AGE': 600,  # Set an appropriate value in seconds
+        'AUTOCOMMIT': True,  # or False, depending on your preference
+        'OPTIONS': {
+            'connect_timeout': 10,
+        },
+    },
+    
 }
 
 print("DATABASES", DATABASES)

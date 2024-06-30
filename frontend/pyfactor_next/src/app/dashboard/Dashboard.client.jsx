@@ -46,7 +46,10 @@ import TransactionForm from './components/forms/TransactionForm';
 import TransactionList from './components/lists/TransactionList';
 import ReportDisplay from './components/forms/ReportDisplay';
 import MenuIcon from '@mui/icons-material/Menu';
+import BankingDashboard from './components/forms/BankingDashboard';
 import Reports from './components/components/Reports';
+import AnalysisPage from './components/forms/AnalysisPage';
+import Chatbot from './components/forms/ChatBot.jsx';
 
 
 import { logger } from '@/utils/logger';
@@ -65,7 +68,7 @@ function Copyright(props) {
   );
 }
 
-const drawerWidth = 200;
+const drawerWidth = 270;
 
 const AppBar = styled(MuiAppBar)(({ theme }) => ({
   zIndex: theme.zIndex.drawer + 1,
@@ -97,7 +100,7 @@ const theme = createTheme({
   },
 });
 
-const lightBlue = '#E3F2FD';
+const lightBlue = '#81d4fa';
 const BottomAppBar = styled(MuiAppBar)(({ theme }) => ({
   top: 'auto',
   bottom: 0,
@@ -180,11 +183,32 @@ const renderMainContent = (
   showAccountPage,
   handleDeleteAccount,
   selectedReport,
-  showReports  // Add this parameter
+  showReports,  // Add this parameter
+  showBankingDashboard,
+  showHRDashboard,
+  hrSection,
+  showPayrollDashboard,
+  payrollSection,
+  showAnalysisPage,
+
 
 ) => {
+  console.log('Rendering main content. showAnalysisPage:', showAnalysisPage);
+  if (showAnalysisPage) {
+    console.log('Rendering AnalysisPage');
+    return <AnalysisPage />;
+  }
   if (showReports && selectedReport) {
     return <ReportDisplay reportType={selectedReport} />;
+  }
+  if (showBankingDashboard) {
+    return <BankingDashboard/>;
+  }
+  if (showHRDashboard) {
+    return <HRDashboard section={hrSection} />;
+  }
+  if (showPayrollDashboard) {
+    return <PayrollDashboard section={payrollSection} />;
   }
   if (showAccountPage) {
     return (
@@ -261,6 +285,29 @@ const renderMainContent = (
   }
 };
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <h1>Something went wrong.</h1>;
+    }
+
+    return this.props.children;
+  }
+}
+
 function DashboardContent() {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const openMenu = Boolean(anchorEl);
@@ -274,9 +321,48 @@ function DashboardContent() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [showReports, setShowReports] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
+  const [showBankingDashboard, setShowBankingDashboard] = useState(false);
+  const [showHRDashboard, setShowHRDashboard] = useState(false);
+  const [showPayrollDashboard, setShowPayrollDashboard] = useState(false);
+  const [hrSection, setHRSection] = useState('');
+  const [payrollSection, setPayrollSection] = useState('');
+  const [showAnalysisPage, setShowAnalysisPage] = useState(false);
+
+  const handleAnalysisClick = () => {
+    console.log('Before state update:', showAnalysisPage);
+    setShowAnalysisPage(true);
+    console.log('After state update:', showAnalysisPage);
+  };
+
+  const handleHRClick = (section) => {
+    setShowHRDashboard(true);
+    setHRSection(section);
+    // Reset other view states
+    setShowPayrollDashboard(false);
+    setShowBankingDashboard(false);
+    // ... (reset other states)
+  };
+
+  const handlePayrollClick = (section) => {
+    setShowPayrollDashboard(true);
+    setPayrollSection(section);
+    // Reset other view states
+    setShowHRDashboard(false);
+    setShowBankingDashboard(false);
+    // ... (reset other states)
+  };
 
   const handleDrawerToggle = () => {
     setDrawerOpen(!drawerOpen);
+  };
+
+  const handleBankingClick = () => {
+    setShowBankingDashboard(true);
+    // Reset other view states if necessary
+    setShowTransactionForm(false);
+    setShowCreateOptions(false);
+    setShowInvoiceBuilder(false);
+    setSelectedReport(null);
   };
 
 
@@ -371,15 +457,16 @@ function DashboardContent() {
           Authorization: `Bearer ${token}`,
         },
       });
-
+  
       if (response.ok) {
         const data = await response.json();
         logger.log('Dashboard User data:', data);
-        if (!data.full_name) {
-          data.full_name = `${data.first_name} ${data.last_name}`;
-        }
+        // Add this line to ensure first_name is always set
+        data.first_name = data.first_name || data.email.split('@')[0];
+        data.full_name = data.full_name || `${data.first_name} ${data.last_name}`;
+        console.log('first_name:', data.first_name);
         setUserData(data);
-        addMessage('info', 'User profile loaded successfully');
+        addMessage('info', 'Welcome.');
       } else {
         logger.error('Error fetching user data:', response.statusText);
         addMessage('error', `Error fetching user data: ${response.statusText}`);
@@ -468,8 +555,9 @@ function DashboardContent() {
                 {userData && (
                   <div>
                     <MenuItem disabled>{userData.full_name}</MenuItem>
-                    <MenuItem disabled>{userData.business_name}</MenuItem>
                     <MenuItem disabled>{userData.occupation}</MenuItem>
+                    <MenuItem disabled>{userData.business_name}</MenuItem>
+
                     <MenuItem onClick={handleAccountClick}>Account</MenuItem>
                   </div>
                 )}
@@ -487,7 +575,7 @@ function DashboardContent() {
               width: drawerWidth, 
               boxSizing: 'border-box',
               top: '64px', // Start below AppBar
-              height: 'calc(100% - 124px)', // Subtract AppBar and BottomAppBar heights
+              height: 'calc(100% - 64px)', // Subtract AppBar and BottomAppBar heights
               borderRight: 'none', // Remove right border
               overflowX: 'hidden', // Hide horizontal scrollbar if any
 
@@ -503,6 +591,11 @@ function DashboardContent() {
               handleReportClick={handleReportClick}
               drawerOpen={drawerOpen}
               handleDrawerToggle={handleDrawerToggle}
+              handleBankingClick={handleBankingClick}
+              handleHRClick={handleHRClick}
+              handlePayrollClick={handlePayrollClick}
+              handleAnalysisClick={handleAnalysisClick}
+              
             />
           </Box>
         </Drawer>
@@ -512,7 +605,7 @@ function DashboardContent() {
               flexGrow: 1,
               p: 0,
               width: drawerOpen ? `calc(100% - ${drawerWidth - 150}px)` : '100%',
-              marginLeft: drawerOpen ? `${drawerWidth - 150}px` : 0,
+              marginLeft: drawerOpen ? `${drawerWidth - 150}px` : '0px' ,
           
               transition: theme.transitions.create(['margin', 'width'], {
                 easing: theme.transitions.easing.sharp,
@@ -549,15 +642,20 @@ function DashboardContent() {
                   showAccountPage,
                   handleDeleteAccount,
                   selectedReport,
-                  showReports
+                  showReports,
+                  showBankingDashboard,
+                  showHRDashboard,
+                  hrSection,
+                  showPayrollDashboard,
+                  payrollSection,
+                  showAnalysisPage,
                 )}
               </Box>
             </Container>
           </Box>
           </Box>
-        <AppBar 
+          <AppBar 
           position="fixed" 
-          color="default" 
           sx={{ 
             top: 'auto', 
             bottom: 0, 
@@ -565,12 +663,17 @@ function DashboardContent() {
             right: 0,
             height: '60px',
             zIndex: (theme) => theme.zIndex.drawer + 2,
+            backgroundColor: lightBlue,
           }}
         >
           <Toolbar style={{ minHeight: '48px', padding: '0 16px' }}>
-            <ConsoleMessages />
+            <ConsoleMessages backgroundColor={lightBlue} />
           </Toolbar>
         </AppBar>
+        <ErrorBoundary>
+        <Chatbot useraName={userData ? userData.first_name : 'Guest'}
+          backgroundColor={lightBlue} />
+          </ErrorBoundary>
       </Box>
     
     </ThemeProvider>

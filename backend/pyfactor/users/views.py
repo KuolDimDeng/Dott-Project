@@ -86,7 +86,6 @@ class CustomAuthToken(ObtainAuthToken):
 custom_auth_token_view = CustomAuthToken.as_view()
 
 class ProfileView(APIView):
-    logger.debug('Profile view called.')
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
@@ -111,10 +110,11 @@ class ProfileView(APIView):
             user = User.objects.get(id=user_id)
             user_profile = self.get_user_profile(user)
             if user_profile:
-                logger.debug(f'User profile: {user_profile}')
-                # Log the user's specific database name
+                profile_data = user_profile.to_dict()
+                profile_data['first_name'] = user.first_name  # Ensure first_name is included
+                logger.debug(f'User profile: {profile_data}')
                 logger.debug(f'User database name: {user_profile.database_name}')
-                return JsonResponse(user_profile.to_dict(), safe=False)
+                return JsonResponse(profile_data, safe=False)
             else:
                 logger.error(f'Failed to retrieve user profile for user: {user}')
                 return JsonResponse({'error': 'Failed to retrieve user profile.'}, status=500)

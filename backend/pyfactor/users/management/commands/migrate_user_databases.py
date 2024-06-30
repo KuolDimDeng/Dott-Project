@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.core.management import call_command
 from django.apps import apps
-from django.db import connection
+from django.db import connection, connections
 from users.models import UserProfile
 from pyfactor.logging_config import get_logger
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
@@ -24,6 +24,22 @@ class Command(BaseCommand):
                     router.create_dynamic_database(database_name)
                     call_command('migrate', database=database_name)
                     logger.info(f"Migrations applied successfully to user database: {database_name}")
+                    
+                    # Create user_chatbot_message table
+                    logger.info(f"Creating user_chatbot_message table in user database: {database_name}")
+                    with connections[database_name].cursor() as cursor:
+                        cursor.execute("""
+                            CREATE TABLE IF NOT EXISTS user_chatbot_message (
+                                id SERIAL PRIMARY KEY,
+                                user_id INTEGER NOT NULL,
+                                message TEXT NOT NULL,
+                                is_from_user BOOLEAN NOT NULL,
+                                timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                            )
+                        """)
+                    logger.info(f"user_chatbot_message table created successfully in user database: {database_name}")
+
+                    
 
                     # Clean up duplicates in the finance_accounttype table
                     logger.info(f"Cleaning up duplicates in finance_accounttype table for user database: {database_name}")
