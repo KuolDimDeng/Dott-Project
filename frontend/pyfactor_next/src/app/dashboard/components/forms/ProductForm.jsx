@@ -1,47 +1,55 @@
 import React, { useState } from 'react';
-import { Box, Typography, TextField, FormControlLabel, Checkbox, Button } from '@mui/material';
+import { Box, Typography, TextField, FormControlLabel, Button, Switch } from '@mui/material';
 import axiosInstance from '../components/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
-
-
 const ProductForm = () => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState(0);
-  const [sellEnabled, setSellEnabled] = useState(false);
-  const [buyEnabled, setBuyEnabled] = useState(false);
-  const [salesTax, setSalesTax] = useState(0);
-  const [error, setError] = useState(null);
+  const [product, setProduct] = useState({
+    name: '',
+    description: '',
+    price: 0,
+    sellEnabled: false,
+    buyEnabled: false,
+    salesTax: 0,
+    stock_quantity: 0,
+    reorder_level: 0,
+  });
   const { addMessage } = useUserMessageContext();
+  const [error, setError] = useState('');
 
+  const handleChange = (event) => {
+    const { name, value, checked } = event.target;
+    setProduct(prevState => ({
+      ...prevState,
+      [name]: name === 'sellEnabled' || name === 'buyEnabled' ? checked : value
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    if (!product.name) {
+      setError('Product name is required');
+      return;
+    }
+
     try {
-      const productData = {
-        name,
-        description,
-        price,
-        sellEnabled,
-        buyEnabled,
-        salesTax,
-      };
-      logger.info('Product data:', productData);
-      const response = await axiosInstance.post('http://localhost:8000/api/create-product/', productData);
+      logger.info('Product data:', product);
+      const response = await axiosInstance.post('http://localhost:8000/api/create-product/', product);
       logger.info('Product created successfully', response.data);
       addMessage('info', 'Product created successfully');
 
       // Reset form fields or navigate to the product list page
     } catch (error) {
       logger.error('Error creating product', error);
-      addMessage('error', 'Product created successfully');
+      if (error.response) {
+        logger.error('Error response data:', error.response.data);
+      }
+      addMessage('error', 'Error creating product');
       // Handle error condition
     }
   };
-
 
   return (
     <Box>
@@ -49,65 +57,22 @@ const ProductForm = () => {
         Add a Product
       </Typography>
       <form onSubmit={handleSubmit}>
-        <TextField
-          label="Name"
-          variant="outlined"
-          fullWidth
-          margin="normal"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <TextField
-          label="Description"
-          variant="outlined"
-          fullWidth
-          multiline
-          rows={4}
-          margin="normal"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <TextField
-          label="Price"
-          variant="outlined"
-          fullWidth
-          type="number"
-          margin="normal"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
+        {error && <Typography color="error">{error}</Typography>}
+        <TextField label="Name" name="name" value={product.name} onChange={handleChange} fullWidth margin="normal" required />
+        <TextField label="Description" name="description" value={product.description} onChange={handleChange} fullWidth margin="normal" />
+        <TextField label="Price" name="price" type="number" value={product.price} onChange={handleChange} fullWidth margin="normal" />
+        <FormControlLabel
+          control={<Switch checked={product.sellEnabled} onChange={handleChange} name="sellEnabled" />}
+          label="Sell Enabled"
         />
         <FormControlLabel
-          control={
-            <Checkbox
-              checked={sellEnabled}
-              onChange={(e) => setSellEnabled(e.target.checked)}
-              name="sellEnabled"
-            />
-          }
-          label="Sell this"
+          control={<Switch checked={product.buyEnabled} onChange={handleChange} name="buyEnabled" />}
+          label="Buy Enabled"
         />
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={buyEnabled}
-              onChange={(e) => setBuyEnabled(e.target.checked)}
-              name="buyEnabled"
-            />
-          }
-          label="Buy this"
-        />
-        <TextField
-          label="Sales Tax (%)"
-          variant="outlined"
-          fullWidth
-          type="number"
-          margin="normal"
-          value={salesTax}
-          onChange={(e) => setSalesTax(e.target.value)}
-        />
-        <Button variant="contained" color="primary" type="submit" fullWidth>
-          Add Product
-        </Button>
+        <TextField label="Sales Tax" name="salesTax" type="number" value={product.salesTax} onChange={handleChange} fullWidth margin="normal" />
+        <TextField label="Stock Quantity" name="stock_quantity" type="number" value={product.stock_quantity} onChange={handleChange} fullWidth margin="normal" />
+        <TextField label="Reorder Level" name="reorder_level" type="number" value={product.reorder_level} onChange={handleChange} fullWidth margin="normal" />
+        <Button type="submit" variant="contained" color="primary">Create Product</Button>
       </form>
     </Box>
   );

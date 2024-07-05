@@ -1,12 +1,18 @@
+
+import uuid
 from django.db import models
 from datetime import timedelta
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from decimal import Decimal
+from django.utils.text import slugify
+import random
+import string
 
 
 class Item(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -25,14 +31,54 @@ class Item(models.Model):
     def clean(self):
         if self.price < 0:
             raise ValidationError('Price must be non-negative.')
+        
+    @classmethod
+    def generate_unique_code(cls, name, field):
+        base = slugify(name)[:20]  # Take first 20 characters of slugified name
+        while True:
+            code = f"{base}_{''.join(random.choices(string.ascii_uppercase + string.digits, k=5))}"
+            if not cls.objects.filter(**{field: code}).exists():
+                return code
+
 
 class Product(Item):
+    product_code = models.CharField(max_length=50, unique=True, editable=False)
     department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, related_name='products')
+    stock_quantity = models.IntegerField(default=0)
+    reorder_level = models.IntegerField(default=0)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['name']),
+            models.Index(fields=['product_code']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.product_code:
+            self.product_code = self.generate_unique_code(self.name, 'product_code')
+        super().save(*args, **kwargs)
+
 
 class Service(Item):
-    pass
+    service_code = models.CharField(max_length=50, unique=True, editable=False)
+    duration = models.DurationField(null=True, blank=True)
+    is_recurring = models.BooleanField(default=False)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['name']),
+            models.Index(fields=['service_code']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.service_code:
+            self.service_code = self.generate_unique_code(self.name, 'service_code')
+        super().save(*args, **kwargs)
+
+
 
 class Customer(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customerName = models.CharField(max_length=255, blank=True, null=True)
     first_name = models.CharField(max_length=255, blank=True, null=True)
     last_name = models.CharField(max_length=255, blank=True, null=True)
@@ -76,6 +122,7 @@ def default_due_date():
     return timezone.now() + timedelta(days=30)
 
 class Invoice(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     invoice_num = models.CharField(max_length=20)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='invoices')
     amount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
@@ -103,6 +150,32 @@ class Invoice(models.Model):
 
     def total_with_tax(self):
         return self.amount * (1 + self.customer.salesTax / 100)
+    
+    @classmethod
+    def generate_invoice_number(cls):
+        # Get the highest invoice number
+        last_invoice = cls.objects.aggregate(Max('invoice_num'))['invoice_num__max']
+        
+        if not last_invoice:
+            new_number = 1
+        else:
+            # Extract the numeric part and increment
+            last_number = int(last_invoice[3:8])
+            new_number = last_number + 1
+        
+        # Generate a new UUID for this invoice
+        new_uuid = uuid.uuid4()
+        
+        # Get the last 3 characters of the UUID and convert to uppercase
+        uuid_suffix = str(new_uuid)[-3:].upper()
+        
+        return f'INV{new_number:05d}{uuid_suffix}'
+
+    def save(self, *args, **kwargs):
+        if not self.invoice_num:
+            self.invoice_num = self.generate_invoice_number()
+        super().save(*args, **kwargs)
+
 
 class Vendor(models.Model):
     vendor_name = models.CharField(max_length=100)

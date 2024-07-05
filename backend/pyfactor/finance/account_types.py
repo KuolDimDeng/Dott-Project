@@ -23,5 +23,6 @@ ACCOUNT_TYPES = {
     'Advertising Expense': 21,
     'Office Supplies Expense': 22,
     'Payroll Tax Expense': 23,
-    'Miscellaneous Expense': 24
+    'Miscellaneous Expense': 24,
+    'Sales Tax Payable': 25
 }

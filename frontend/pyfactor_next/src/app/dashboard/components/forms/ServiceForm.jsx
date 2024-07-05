@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, TextField, FormControlLabel, Checkbox, Button } from '@mui/material';
+import { Box, Typography, TextField, FormControlLabel, Checkbox, Button, Switch } from '@mui/material';
 import axiosInstance from '../components/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
@@ -15,6 +15,25 @@ const ServiceForm = () => {
   const [salesTax, setSalesTax] = useState(0);
   const [error, setError] = useState(null);
   const { addMessage } = useUserMessageContext();
+
+  const [service, setService] = useState({
+    name: '',
+    description: '',
+    price: '',
+    sellEnabled: false,
+    buyEnabled: false,
+    salesTax: '',
+    duration: '',
+    is_recurring: false,
+  });
+
+  const handleChange = (event) => {
+    const { name, value, checked } = event.target;
+    setProduct(prevState => ({
+      ...prevState,
+      [name]: name === 'sellEnabled' || name === 'buyEnabled' ? checked : value
+    }));
+  };
 
 
   const handleSubmit = async (e) => {
@@ -47,70 +66,25 @@ const ServiceForm = () => {
         Add a Service
       </Typography>
       <form onSubmit={handleSubmit}>
-        <TextField
-          label="Name"
-          variant="outlined"
-          fullWidth
-          margin="normal"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <TextField
-          label="Description"
-          variant="outlined"
-          fullWidth
-          multiline
-          rows={4}
-          margin="normal"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          required
-        />
-        <TextField
-          label="Price"
-          variant="outlined"
-          fullWidth
-          type="number"
-          margin="normal"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          required
-        />
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={sellEnabled}
-              onChange={(e) => setSellEnabled(e.target.checked)}
-              name="sellEnabled"
-            />
-          }
-          label="Sell this"
-        />
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={buyEnabled}
-              onChange={(e) => setBuyEnabled(e.target.checked)}
-              name="buyEnabled"
-            />
-          }
-          label="Buy this"
-        />
-        <TextField
-          label="Sales Tax (%)"
-          variant="outlined"
-          fullWidth
-          type="number"
-          margin="normal"
-          value={salesTax}
-          onChange={(e) => setSalesTax(e.target.value)}
-          required
-        />
-        <Button variant="contained" color="primary" type="submit" fullWidth>
-          Add Service
-        </Button>
-      </form>
+      <TextField label="Name" name="name" value={service.name} onChange={handleChange} fullWidth margin="normal" />
+      <TextField label="Description" name="description" value={service.description} onChange={handleChange} fullWidth margin="normal" />
+      <TextField label="Price" name="price" type="number" value={service.price} onChange={handleChange} fullWidth margin="normal" />
+      <FormControlLabel
+        control={<Switch checked={service.sellEnabled} onChange={handleChange} name="sellEnabled" />}
+        label="Sell Enabled"
+      />
+      <FormControlLabel
+        control={<Switch checked={service.buyEnabled} onChange={handleChange} name="buyEnabled" />}
+        label="Buy Enabled"
+      />
+      <TextField label="Sales Tax" name="salesTax" type="number" value={service.salesTax} onChange={handleChange} fullWidth margin="normal" />
+      <TextField label="Duration (in minutes)" name="duration" type="number" value={service.duration} onChange={handleChange} fullWidth margin="normal" />
+      <FormControlLabel
+        control={<Switch checked={service.is_recurring} onChange={handleChange} name="is_recurring" />}
+        label="Is Recurring"
+      />
+      <Button type="submit" variant="contained" color="primary">Create Service</Button>
+    </form>
     </Box>
   );
 };

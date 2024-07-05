@@ -1,4 +1,3 @@
-# /Users/kuoldeng/projectx/backend/pyfactor/sales/urls.py
 from django.urls import path
 from .views import (
     create_invoice,
@@ -10,18 +9,23 @@ from .views import (
     create_vendor,
     product_list,
     service_list,
-    
+    customer_invoices,
+    customer_transactions,
+    invoice_detail,
 )
 
 urlpatterns = [
     path('invoices/', create_invoice, name='invoice-create'),
     path('create-customer/', create_customer, name='create_customer'),
     path('customers/', customer_list, name='customer_list'),
-    path('customers/<int:pk>/', customer_detail, name='customer-detail'),
+    path('customers/<uuid:pk>/', customer_detail, name='customer-detail'),
     path('create-product/', create_product, name='create_product'),
     path('create-service/', create_service, name='create_service'),
     path('create-vendor/', create_vendor, name='create_vendor'),
     path('products/', product_list, name='product_list'),
     path('services/', service_list, name='service_list'),
-    # ...other URL patterns
+    path('customers/<uuid:customer_id>/invoices/', customer_invoices, name='customer-invoices'),
+    path('customers/<uuid:customer_id>/transactions/', customer_transactions, name='customer-transactions'),
+    path('invoices/<uuid:invoice_id>/', invoice_detail, name='invoice-detail'),
+
 ]

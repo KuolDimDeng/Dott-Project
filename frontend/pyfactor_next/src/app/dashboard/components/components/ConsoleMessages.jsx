@@ -19,8 +19,8 @@ const getMessageStyle = (messageType) => ({
   whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
-  fontWeight: 'bold',
-  color: messageType === 'info' ? 'green' : 'red',
+  fontWeight: 'normal',
+  color: messageType === 'info' ? 'navy' : 'red',
 });
 
 function ConsoleMessages({ backgroundColor }) {
