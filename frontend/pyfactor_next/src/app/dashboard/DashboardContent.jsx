@@ -1,7 +1,8 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/DashboardContent.jsx
 'use client';
 import React, { useState, useCallback, useEffect } from 'react';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
-import { CssBaseline, Box, Container, AppBar as MuiAppBar, Toolbar } from '@mui/material';
+import { CssBaseline, Box, Container, AppBar as MuiAppBar, Toolbar, Typography } from '@mui/material';
 import ConsoleMessages from './components/components/ConsoleMessages';
 import Chatbot from './components/forms/ChatBot';
 import Drawer from './components/Drawer';
@@ -16,6 +17,9 @@ import CustomerDetails from './components/forms/CustomerDetails';
 import ProductList from './components/lists/ProductList';
 import ServiceList from './components/lists/ServiceList';
 import axiosInstance from './components/components/axiosConfig';
+import ChartContainer from '../chart/component/ChartContainer';
+import { FamilyRestroomRounded } from '@mui/icons-material';
+
 
 const theme = createTheme({
   palette: {
@@ -69,24 +73,62 @@ function DashboardContent() {
   const [showServiceList, setShowServiceList] = useState(false);
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
+  const [showProductManagement, setShowProductManagement] = useState(false);
+  const [showServiceManagement, setShowServiceManagement] = useState(false);
+  const [showChart, setShowChart] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
+  const [showSalesAnalysis, setShowSalesAnalysis] = useState(false);
+
+
 
 
   const handleSalesClick = (section) => {
+    console.log('handleSalesClick called with section:', section);
     if (section === 'customers') {
-      setView('customerList');
-      setShowCustomerList(true);
-      setShowBankingDashboard(false);
-      setShowCreateOptions(false);
-      setShowAnalysisPage(false);
-      setShowHRDashboard(false);
-      setShowPayrollDashboard(false);
-      setSelectedInvoiceId(null);
-      setShowInvoiceBuilder(false);
-      setShowReports(false);
-      setShowTransactionForm(false);
-      setShowAccountPage(false);
+        setView('customerList');
+        setShowCustomerList(true);
+        setShowProductManagement(false);
+    } else if (section === 'products') {
+        setShowProductManagement(true);
+        setShowCustomerList(false);
+        setShowServiceManagement(false);
+    } else if (section ==='services') {
+        setShowServiceManagement(true);
+        setShowCustomerList(false);
+        setShowProductManagement(false);
     }
-    // Handle other sales sections here
+    setShowBankingDashboard(false);
+    setShowCreateOptions(false);
+    setShowAnalysisPage(false);
+    setShowHRDashboard(false);
+    setShowPayrollDashboard(false);
+    setSelectedInvoiceId(null);
+    setShowInvoiceBuilder(false);
+    setShowReports(false);
+    setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowDashboard(false);
+    setShowSalesAnalysis(false);
+  };
+
+  const handleDashboardClick = () => {
+    console.log('handleDashboardClick called.');
+    setShowDashboard(true);
+    console.log('showDashboard set to true');
+    // Reset other view states
+    setShowBankingDashboard(false);
+    setShowCreateOptions(false);
+    setShowAnalysisPage(false);
+    setShowHRDashboard(false);
+    setShowPayrollDashboard(false);
+    setSelectedInvoiceId(null);
+    setShowInvoiceBuilder(false);
+    setShowReports(false);
+    setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowSalesAnalysis(false);
+    setView('dashboard');
+    console.log('view set to: dashboard');
   };
 
   const handleCustomerSelect = (customerId) => {
@@ -101,8 +143,25 @@ function DashboardContent() {
     setSelectedInvoiceId(invoiceId);
   };
 
-  const handleAnalysisClick = () => {
-    setShowAnalysisPage(true);
+  const handleAnalysisClick = (section) => {
+    if (section === 'sales-analysis') {
+      setShowSalesAnalysis(true);
+      setShowDashboard(false);
+      // Reset other view states
+    setShowBankingDashboard(false);
+    setShowCreateOptions(false);
+    setShowAnalysisPage(false);
+    setShowHRDashboard(false);
+    setShowPayrollDashboard(false);
+    setSelectedInvoiceId(null);
+    setShowInvoiceBuilder(false);
+    setShowReports(false);
+    setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowDashboard(false);
+    setShowProductManagement(false);
+    setShowServiceManagement(false);
+    }
   };
 
   const handleBackFromInvoice = () => {
@@ -187,6 +246,18 @@ function DashboardContent() {
     setSelectedOption(option);
     setShowTransactionForm(false);
     setSelectedReport(null);
+    setShowBankingDashboard(false);
+    setShowAnalysisPage(false);
+    setShowHRDashboard(false);
+    setShowPayrollDashboard(false);
+    setSelectedInvoiceId(null);
+    setShowReports(false);
+    setShowAccountPage(false);
+    setShowDashboard(false);
+    setShowProductManagement(false);
+    setShowServiceManagement(false);
+    setShowSalesAnalysis(false);
+    
   };
 
   const handleShowTransactionForm = () => {
@@ -338,6 +409,8 @@ function DashboardContent() {
           handleSalesClick={handleSalesClick}
           handleProductsClick={handleProductsClick}
           handleServicesClick={handleServicesClick}
+          handleDashboardClick={handleDashboardClick}
+
         />
         <Box
           component="main"
@@ -374,6 +447,13 @@ function DashboardContent() {
             }}
           >
             <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+                {console.log('Before rendering content, showDashboard: ', showDashboard)}
+                {showDashboard && (
+              <Typography variant="h4" component="h1" gutterBottom>
+                This is the dashboard area
+              </Typography>
+            )}
+            {showSalesAnalysis && <ChartContainer />}
               {view === 'invoiceDetails' && (
                 <InvoiceDetails 
                   invoiceId={selectedInvoiceId} 
@@ -424,6 +504,10 @@ function DashboardContent() {
                 setView,
                 view,
                 handleCustomerSelect,
+                showProductManagement,
+                showServiceManagement,
+                showDashboard,
+                
               })}
             </Box>
           </Container>

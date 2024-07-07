@@ -1,7 +1,5 @@
-
 import uuid
 from django.db import models
-from datetime import timedelta
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
@@ -9,7 +7,8 @@ from decimal import Decimal
 from django.utils.text import slugify
 import random
 import string
-
+import re
+from datetime import timedelta
 
 class Item(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -34,12 +33,11 @@ class Item(models.Model):
         
     @classmethod
     def generate_unique_code(cls, name, field):
-        base = slugify(name)[:20]  # Take first 20 characters of slugified name
+        base = slugify(name)[:20]
         while True:
             code = f"{base}_{''.join(random.choices(string.ascii_uppercase + string.digits, k=5))}"
             if not cls.objects.filter(**{field: code}).exists():
                 return code
-
 
 class Product(Item):
     product_code = models.CharField(max_length=50, unique=True, editable=False)
@@ -58,7 +56,6 @@ class Product(Item):
             self.product_code = self.generate_unique_code(self.name, 'product_code')
         super().save(*args, **kwargs)
 
-
 class Service(Item):
     service_code = models.CharField(max_length=50, unique=True, editable=False)
     duration = models.DurationField(null=True, blank=True)
@@ -75,8 +72,6 @@ class Service(Item):
             self.service_code = self.generate_unique_code(self.name, 'service_code')
         super().save(*args, **kwargs)
 
-
-
 class Customer(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customerName = models.CharField(max_length=255, blank=True, null=True)
@@ -84,7 +79,7 @@ class Customer(models.Model):
     last_name = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
-    accountNumber = models.CharField(max_length=50, blank=True, null=True)
+    accountNumber = models.CharField(max_length=6, unique=True, editable=False)
     website = models.URLField(blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
     currency = models.CharField(max_length=3, blank=True, null=True)
@@ -100,10 +95,16 @@ class Customer(models.Model):
     city = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        if not self.accountNumber:
+            uuid_numbers = re.sub('[^0-9]', '', str(self.id))
+            self.accountNumber = (uuid_numbers[:5] + '00000')[:5]
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.customerName if self.customerName else f"{self.first_name} {self.last_name}"
-
+        return f"{self.customerName} (Account: {self.accountNumber})"
+    
 class Bill(models.Model):
     bill_num = models.CharField(max_length=20)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='bills')
@@ -118,18 +119,21 @@ class Bill(models.Model):
         if self.amount <= 0:
             raise ValidationError('Bill amount must be positive.')
 
-def default_due_date():
-    return timezone.now() + timedelta(days=30)
+def get_current_datetime():
+    return timezone.now()
+
+def default_due_datetime():
+    return get_current_datetime() + timedelta(days=30)
 
 class Invoice(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    invoice_num = models.CharField(max_length=20)
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='invoices')
+    invoice_num = models.CharField(max_length=20, unique=True, editable=False)
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='invoices')
     amount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
-    date = models.DateField(default=timezone.now)  # New date field
-    created_at = models.DateTimeField(default=timezone.now)
+    date = models.DateTimeField(default=get_current_datetime)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    due_date = models.DateField(default=default_due_date)
+    due_date = models.DateTimeField(default=default_due_datetime)
     status = models.CharField(max_length=20, choices=[('draft', 'Draft'), ('sent', 'Sent'), ('paid', 'Paid')], default='draft')
     transaction = models.OneToOneField('finance.Transaction', on_delete=models.CASCADE, related_name='sales_invoice', null=True, blank=True)
     accounts_receivable = models.ForeignKey('finance.Account', on_delete=models.SET_NULL, related_name='invoices_receivable', null=True)
@@ -139,10 +143,18 @@ class Invoice(models.Model):
     inventory = models.ForeignKey('finance.Account', on_delete=models.SET_NULL, related_name='invoices_inventory', null=True)
     is_paid = models.BooleanField(default=False)
 
-
-
     def __str__(self):
         return self.invoice_num
+
+    @staticmethod
+    def generate_invoice_number(uuid_value):
+        uuid_part = str(uuid_value)[-8:].upper()
+        return f'INV{uuid_part}'
+
+    def save(self, *args, **kwargs):
+        if not self.invoice_num:
+            self.invoice_num = self.generate_invoice_number(self.id)
+        super().save(*args, **kwargs)
 
     def clean(self):
         if self.amount <= 0:
@@ -150,32 +162,6 @@ class Invoice(models.Model):
 
     def total_with_tax(self):
         return self.amount * (1 + self.customer.salesTax / 100)
-    
-    @classmethod
-    def generate_invoice_number(cls):
-        # Get the highest invoice number
-        last_invoice = cls.objects.aggregate(Max('invoice_num'))['invoice_num__max']
-        
-        if not last_invoice:
-            new_number = 1
-        else:
-            # Extract the numeric part and increment
-            last_number = int(last_invoice[3:8])
-            new_number = last_number + 1
-        
-        # Generate a new UUID for this invoice
-        new_uuid = uuid.uuid4()
-        
-        # Get the last 3 characters of the UUID and convert to uppercase
-        uuid_suffix = str(new_uuid)[-3:].upper()
-        
-        return f'INV{new_number:05d}{uuid_suffix}'
-
-    def save(self, *args, **kwargs):
-        if not self.invoice_num:
-            self.invoice_num = self.generate_invoice_number()
-        super().save(*args, **kwargs)
-
 
 class Vendor(models.Model):
     vendor_name = models.CharField(max_length=100)
@@ -191,11 +177,39 @@ class Vendor(models.Model):
         return self.vendor_name
 
 class Estimate(models.Model):
-    estimate_num = models.CharField(max_length=20)
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='estimates')
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    estimate_num = models.CharField(max_length=5, unique=True, editable=False)
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='estimates')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+    date = models.DateTimeField(default=get_current_datetime)
+    valid_until= models.DateTimeField(default=default_due_datetime)
+    title = models.CharField(max_length=200, default='Estimate')
+    summary = models.TextField(blank=True)
+    logo = models.ImageField(upload_to='estimate_logos/', null=True, blank=True)
+    customer_ref = models.CharField(max_length=100, blank=True)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default='USD')
+    footer = models.TextField(blank=True)
+   
+class EstimateItem(models.Model):
+    estimate = models.ForeignKey(Estimate, related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey('Product', on_delete=models.SET_NULL, null=True, blank=True)
+    service = models.ForeignKey('Service', on_delete=models.SET_NULL, null=True, blank=True)
+    description = models.CharField(max_length=200)
+    quantity = models.IntegerField(default=1)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+class EstimateAttachment(models.Model):
+    estimate = models.ForeignKey(Estimate, related_name='attachments', on_delete=models.CASCADE)
+    file = models.FileField(upload_to='estimate_attachments/')
+
+
+    def save(self, *args, **kwargs):
+        if not self.estimate_num:
+            self.estimate_num = str(self.id)[-5:]
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.estimate_num
@@ -216,7 +230,7 @@ class SalesOrder(models.Model):
 
     def clean(self):
         if self.amount <= 0:
-            raise ValidationError('Sales order amount must be positive.')
+            raise ValidationError('Sales order amount must be_positive.')
 
 class Department(models.Model):
     dept_code = models.CharField(max_length=20)

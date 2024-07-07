@@ -4,7 +4,7 @@ import {
   Box, Typography, Paper, Grid, Tabs, Tab, 
   Button, TextField, Table, TableBody, TableCell, Link,
   TableContainer, TableHead, TableRow, Avatar, IconButton,
-  CircularProgress
+  CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
 } from '@mui/material';
 import axiosInstance from '../components/axiosConfig';
 import { logger } from '@/utils/logger';
@@ -12,6 +12,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SaveIcon from '@mui/icons-material/Save';
+import CancelIcon from '@mui/icons-material/Cancel';
 import InvoiceDetails from './InvoiceDetails';
 import { ErrorBoundary } from 'next/dist/client/components/error-boundary';
 
@@ -24,6 +26,9 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
   const [error, setError] = useState(null);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [userDatabase, setUserDatabase] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedCustomer, setEditedCustomer] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const fetchUserProfile = useCallback(async () => {
     try {
@@ -110,13 +115,40 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
   }, [tabValue, customer, fetchInvoices, fetchTransactions]);
 
   const handleEdit = () => {
-    // Implement edit functionality
     logger.info('Edit customer:', customer.id);
+    setIsEditing(true);
+    setEditedCustomer({...customer});
   };
+
+  const handleCancelEdit = () => {
+    logger.info('Cancel edit customer:', customer.id);
+    setIsEditing(false);
+    setEditedCustomer(null);
+  }
+
+  const handleSaveEdit = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await axiosInstance.patch(`/api/customers/${customer.id}/update/`, editedCustomer);
+      setCustomer(response.data);
+      setIsEditing(false);
+      setEditedCustomer(null);
+      logger.info('Customer updated successfully');
+    } catch (error) {
+      logger.error('Error updating customer:', error);
+      setError('Failed to update customer. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
 
   const handleDelete = () => {
     // Implement delete functionality
     logger.info('Delete customer:', customer.id);
+    setDeleteDialogOpen(true);
   };
 
   const handleTabChange = (event, newValue) => {
@@ -134,92 +166,247 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
     setSelectedInvoice(null);
   };
 
-  const renderDetailsTab = () => (
-    <Grid container spacing={2}>
-      <Grid item xs={12} md={6}>
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Basic Information</Typography>
-          <TextField fullWidth label="Customer Name" value={customer.customerName || ''} margin="normal" InputProps={{ readOnly: true }} />
-          <TextField fullWidth label="First Name" value={customer.first_name || ''} margin="normal" InputProps={{ readOnly: true }} />
-          <TextField fullWidth label="Last Name" value={customer.last_name || ''} margin="normal" InputProps={{ readOnly: true }} />
-          <TextField fullWidth label="Email" value={customer.email || ''} margin="normal" InputProps={{ readOnly: true }} />
-          <TextField fullWidth label="Phone" value={customer.phone || ''} margin="normal" InputProps={{ readOnly: true }} />
-          <TextField fullWidth label="Account Number" value={customer.accountNumber || ''} margin="normal" InputProps={{ readOnly: true }} />
-          <TextField 
-            fullWidth 
-            label="Website" 
-            value={customer.website || ''} 
-            margin="normal" 
-            InputProps={{ 
-              readOnly: true,
-              endAdornment: customer.website && (
-                <Link href={customer.website} target="_blank" rel="noopener noreferrer">
-                  Visit
-                </Link>
-              )
-            }} 
-          />
-          <TextField fullWidth label="Currency" value={customer.currency || ''} margin="normal" InputProps={{ readOnly: true }} />
-        </Paper>
+  const handleConfirmDelete = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await axiosInstance.delete(`/api/customers/${customer.id}/delete`);
+      logger.info('Customer deleted successfully');
+      onBackToList();
+    } catch (error) {
+      logger.error('Error deleting customer:', error);
+      setError('Failed to delete customer. Please try again.');
+    } finally {
+      setIsLoading(false);
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const renderDetailsTab = () => {
+    const handleInputChange = (event) => {
+      const { name, value } = event.target;
+      setEditedCustomer({ ...editedCustomer, [name]: value });
+    };
+  
+    return (
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>Basic Information</Typography>
+            <TextField
+              fullWidth
+              label="Customer Name"
+              name="customerName"
+              value={isEditing ? editedCustomer.customerName || '' : customer.customerName || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+            <TextField
+              fullWidth
+              label="First Name"
+              name="first_name"
+              value={isEditing ? editedCustomer.first_name || '' : customer.first_name || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+            <TextField
+              fullWidth
+              label="Last Name"
+              name="last_name"
+              value={isEditing ? editedCustomer.last_name || '' : customer.last_name || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+            <TextField
+              fullWidth
+              label="Email"
+              name="email"
+              value={isEditing ? editedCustomer.email || '' : customer.email || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+            <TextField
+              fullWidth
+              label="Phone"
+              name="phone"
+              value={isEditing ? editedCustomer.phone || '' : customer.phone || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+            <TextField
+              fullWidth
+              label="Account Number"
+              value={customer.accountNumber || ''}
+              margin="normal"
+              InputProps={{ readOnly: true }}
+            />
+            <TextField 
+              fullWidth 
+              label="Website" 
+              name="website"
+              value={isEditing ? editedCustomer.website || '' : customer.website || ''} 
+              onChange={handleInputChange}
+              margin="normal" 
+              InputProps={{ 
+                readOnly: !isEditing,
+                endAdornment: customer.website && !isEditing && (
+                  <Link href={customer.website} target="_blank" rel="noopener noreferrer">
+                    Visit
+                  </Link>
+                )
+              }} 
+            />
+            <TextField
+              fullWidth
+              label="Currency"
+              name="currency"
+              value={isEditing ? editedCustomer.currency || '' : customer.currency || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>Billing Address</Typography>
+            <TextField
+              fullWidth
+              label="Street"
+              name="street"
+              value={isEditing ? editedCustomer.street || '' : customer.street || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+            <TextField
+              fullWidth
+              label="City"
+              name="city"
+              value={isEditing ? editedCustomer.city || '' : customer.city || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+            <TextField
+              fullWidth
+              label="State"
+              name="billingState"
+              value={isEditing ? editedCustomer.billingState || '' : customer.billingState || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+            <TextField
+              fullWidth
+              label="Postcode"
+              name="postcode"
+              value={isEditing ? editedCustomer.postcode || '' : customer.postcode || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+            <TextField
+              fullWidth
+              label="Country"
+              name="billingCountry"
+              value={isEditing ? editedCustomer.billingCountry || '' : customer.billingCountry || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>Shipping Information</Typography>
+            <TextField
+              fullWidth
+              label="Ship To Name"
+              name="shipToName"
+              value={isEditing ? editedCustomer.shipToName || '' : customer.shipToName || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+            <TextField
+              fullWidth
+              label="Shipping Country"
+              name="shippingCountry"
+              value={isEditing ? editedCustomer.shippingCountry || '' : customer.shippingCountry || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+            <TextField
+              fullWidth
+              label="Shipping State"
+              name="shippingState"
+              value={isEditing ? editedCustomer.shippingState || '' : customer.shippingState || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+            <TextField
+              fullWidth
+              label="Shipping Phone"
+              name="shippingPhone"
+              value={isEditing ? editedCustomer.shippingPhone || '' : customer.shippingPhone || ''}
+              onChange={handleInputChange}
+              margin="normal"
+              InputProps={{ readOnly: !isEditing }}
+            />
+            <TextField 
+              fullWidth 
+              label="Delivery Instructions" 
+              name="deliveryInstructions"
+              value={isEditing ? editedCustomer.deliveryInstructions || '' : customer.deliveryInstructions || ''} 
+              onChange={handleInputChange}
+              margin="normal" 
+              multiline 
+              rows={3}
+              InputProps={{ readOnly: !isEditing }} 
+            />
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>Additional Information</Typography>
+            <TextField 
+              fullWidth 
+              label="Notes" 
+              name="notes"
+              value={isEditing ? editedCustomer.notes || '' : customer.notes || ''} 
+              onChange={handleInputChange}
+              margin="normal" 
+              multiline 
+              rows={4}
+              InputProps={{ readOnly: !isEditing }} 
+            />
+            <TextField 
+              fullWidth 
+              label="Created At" 
+              value={new Date(customer.created_at).toLocaleString()} 
+              margin="normal" 
+              InputProps={{ readOnly: true }} 
+            />
+            <TextField 
+              fullWidth 
+              label="Updated At" 
+              value={new Date(customer.updated_at).toLocaleString()} 
+              margin="normal" 
+              InputProps={{ readOnly: true }} 
+            />
+          </Paper>
+        </Grid>
       </Grid>
-      <Grid item xs={12} md={6}>
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Billing Address</Typography>
-          <TextField fullWidth label="Street" value={customer.street || ''} margin="normal" InputProps={{ readOnly: true }} />
-          <TextField fullWidth label="City" value={customer.city || ''} margin="normal" InputProps={{ readOnly: true }} />
-          <TextField fullWidth label="State" value={customer.billingState || ''} margin="normal" InputProps={{ readOnly: true }} />
-          <TextField fullWidth label="Postcode" value={customer.postcode || ''} margin="normal" InputProps={{ readOnly: true }} />
-          <TextField fullWidth label="Country" value={customer.billingCountry || ''} margin="normal" InputProps={{ readOnly: true }} />
-        </Paper>
-      </Grid>
-      <Grid item xs={12} md={6}>
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Shipping Information</Typography>
-          <TextField fullWidth label="Ship To Name" value={customer.shipToName || ''} margin="normal" InputProps={{ readOnly: true }} />
-          <TextField fullWidth label="Shipping Country" value={customer.shippingCountry || ''} margin="normal" InputProps={{ readOnly: true }} />
-          <TextField fullWidth label="Shipping State" value={customer.shippingState || ''} margin="normal" InputProps={{ readOnly: true }} />
-          <TextField fullWidth label="Shipping Phone" value={customer.shippingPhone || ''} margin="normal" InputProps={{ readOnly: true }} />
-          <TextField 
-            fullWidth 
-            label="Delivery Instructions" 
-            value={customer.deliveryInstructions || ''} 
-            margin="normal" 
-            multiline 
-            rows={3}
-            InputProps={{ readOnly: true }} 
-          />
-        </Paper>
-      </Grid>
-      <Grid item xs={12} md={6}>
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Additional Information</Typography>
-          <TextField 
-            fullWidth 
-            label="Notes" 
-            value={customer.notes || ''} 
-            margin="normal" 
-            multiline 
-            rows={4}
-            InputProps={{ readOnly: true }} 
-          />
-          <TextField 
-            fullWidth 
-            label="Created At" 
-            value={new Date(customer.created_at).toLocaleString()} 
-            margin="normal" 
-            InputProps={{ readOnly: true }} 
-          />
-          <TextField 
-            fullWidth 
-            label="Updated At" 
-            value={new Date(customer.updated_at).toLocaleString()} 
-            margin="normal" 
-            InputProps={{ readOnly: true }} 
-          />
-        </Paper>
-      </Grid>
-    </Grid>
-  );
+    );
+  };
 
   const renderInvoicesTab = () => (
     <TableContainer component={Paper}>
@@ -365,9 +552,11 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
                   <PersonIcon fontSize="large" />
                 </Avatar>
                 <Typography variant="h6" gutterBottom>Basic Information</Typography>
-                <IconButton sx={{ ml: 'auto' }} onClick={handleEdit}>
-                  <EditIcon />
-                </IconButton>
+                {!isEditing && (
+                  <IconButton sx={{ ml: 'auto' }} onClick={handleEdit}>
+                    <EditIcon />
+                  </IconButton>
+                )}
               </Box>
               <Typography>Name: {customer.customerName || `${customer.first_name} ${customer.last_name}`}</Typography>
               <Typography>Email: {customer.email}</Typography>
@@ -377,36 +566,74 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 2 }}>
               <Typography variant="h6">Actions</Typography>
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={handleEdit}
-                startIcon={<EditIcon />}
-                sx={{
-                  mr: 1,
-                  '&:hover': {
-                    backgroundColor: 'primary.main',
-                    color: 'white',
-                  },
-                }}
-              >
-                Edit
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={handleDelete}
-                startIcon={<DeleteIcon />}
-                sx={{
-                  mr: 1,
-                  '&:hover': {
-                    backgroundColor: 'error.main',
-                    color: 'white',
-                  },
-                }}
-              >
-                Delete
-              </Button>
+              {isEditing ? (
+                <>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={handleSaveEdit}
+                    startIcon={<SaveIcon />}
+                    sx={{
+                      mr: 1,
+                      '&:hover': {
+                        backgroundColor: 'primary.main',
+                        color: 'white',
+                      },
+                    }}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    onClick={handleCancelEdit}
+                    startIcon={<CancelIcon />}
+                    sx={{
+                      mr: 1,
+                      '&:hover': {
+                        backgroundColor: 'secondary.main',
+                        color: 'white',
+                      },
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={handleEdit}
+                    startIcon={<EditIcon />}
+                    sx={{
+                      mr: 1,
+                      '&:hover': {
+                        backgroundColor: 'primary.main',
+                        color: 'white',
+                      },
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={handleDelete}
+                    startIcon={<DeleteIcon />}
+                    sx={{
+                      mr: 1,
+                      '&:hover': {
+                        backgroundColor: 'error.main',
+                        color: 'white',
+                      },
+                    }}
+                  >
+
+                  Delete
+                  </Button>
+                </>
+              )}
             </Paper>
           </Grid>
         </Grid>
@@ -433,6 +660,31 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
           )}
         </Box>
       </Box>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Are you sure you want to delete this customer?
+            <br />
+            Name: {customer?.customerName || `${customer?.first_name} ${customer?.last_name}`}
+            <br />
+            Email: {customer?.email}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} color="error" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </ErrorBoundary>
   );
 };

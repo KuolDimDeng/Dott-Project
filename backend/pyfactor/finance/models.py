@@ -1,3 +1,4 @@
+#/Users/kuoldeng/projectx/backend/pyfactor/finance/models.py
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator

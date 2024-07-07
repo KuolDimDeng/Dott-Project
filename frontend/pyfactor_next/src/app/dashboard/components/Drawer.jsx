@@ -1,12 +1,42 @@
 import React from 'react';
-import { Drawer as MuiDrawer, Box, List } from '@mui/material';
+import { Drawer as MuiDrawer, Box, List, ListItem, ListItemIcon, ListItemText, Collapse } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { MainListItems } from './lists/listItems';
-import Search from './Search'; // Import the Search component
+import Search from './Search';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import PeopleIcon from '@mui/icons-material/People';
+import InventoryIcon from '@mui/icons-material/Inventory';
 
 const drawerWidth = 270;
 
-const Drawer = ({ drawerOpen, handleDrawerToggle, handleShowInvoiceBuilder, handleCloseInvoiceBuilder, handleShowCreateOptions, handleShowTransactionForm, handleReportClick, handleBankingClick, handleHRClick, handlePayrollClick, handleAnalysisClick, showCustomerList, setShowCustomerList, handleCreateCustomer, handleSalesClick }) => {
+const Drawer = ({ 
+  drawerOpen, 
+  handleDrawerToggle, 
+  handleShowInvoiceBuilder, 
+  handleCloseInvoiceBuilder, 
+  handleShowCreateOptions, 
+  handleShowTransactionForm, 
+  handleReportClick, 
+  handleBankingClick, 
+  handleHRClick, 
+  handlePayrollClick, 
+  handleAnalysisClick, 
+  showCustomerList, 
+  setShowCustomerList, 
+  handleCreateCustomer, 
+  handleSalesClick,
+  handleProductsClick,
+  handleServicesClick,
+  handleDashboardClick
+}) => {
+  const [salesOpen, setSalesOpen] = React.useState(false);
+
+  const toggleSalesMenu = () => {
+    setSalesOpen(!salesOpen);
+  };
+
   return (
     <MuiDrawer
       variant="persistent"
@@ -14,13 +44,13 @@ const Drawer = ({ drawerOpen, handleDrawerToggle, handleShowInvoiceBuilder, hand
       sx={{
         width: drawerWidth,
         flexShrink: 0,
-        '& .MuiDrawer-paper': { 
-          width: drawerWidth, 
+        '& .MuiDrawer-paper': {
+          width: drawerWidth,
           boxSizing: 'border-box',
-          top: '64px', // Start below AppBar
-          height: 'calc(100% - 64px)', // Subtract AppBar and BottomAppBar heights
-          borderRight: 'none', // Remove right border
-          overflowX: 'hidden', // Hide horizontal scrollbar if any
+          top: '64px',
+          height: 'calc(100% - 64px)',
+          borderRight: 'none',
+          overflowX: 'hidden',
         },
       }}
     >
@@ -41,8 +71,10 @@ const Drawer = ({ drawerOpen, handleDrawerToggle, handleShowInvoiceBuilder, hand
           setShowCustomerList={setShowCustomerList}
           handleCreateCustomer={handleCreateCustomer}
           handleSalesClick={handleSalesClick}
+          handleDashboardClick={handleDashboardClick}
         />
-       
+ 
+
       </Box>
     </MuiDrawer>
   );

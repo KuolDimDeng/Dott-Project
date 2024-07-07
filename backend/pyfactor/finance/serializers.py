@@ -1,3 +1,4 @@
+#/Users/kuoldeng/projectx/backend/pyfactor/finance/serializers.py
 from rest_framework import serializers
 from .models import AccountType, Account, SalesTaxAccount, Transaction, Income, RevenueAccount, CashAccount
 from dateutil import parser

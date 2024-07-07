@@ -87,22 +87,8 @@ const InvoiceDetails = ({ invoiceId, onBackToCustomerDetails }) => {
   return (
     <ErrorBoundary>
       <Box>
-        <Button
-          onClick={onBackToCustomerDetails}
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
-          sx={{
-            mr: 1,
-            mb: 2,
-            '&:hover': {
-              backgroundColor: 'primary.main',
-              color: 'white',
-            },
-          }}
-        >
-          Back to Customer Details
-        </Button>
-        <Typography variant="h4">Invoice Details</Typography>
+      
+        <Typography variant="h3">Invoice Details</Typography>
         <Typography>Invoice Number: {invoice.invoice_num}</Typography>
         <Typography>Amount: ${invoice.amount}</Typography>
         <Typography>Date: {new Date(invoice.date).toLocaleDateString()}</Typography>

@@ -1,12 +1,32 @@
-
+from datetime import datetime, date, timedelta
 from finance.models import Account, AccountType, Transaction as FinanceTransaction
-
-from django.db import connections, transaction as db_transaction, transaction
+from django.db import connections, transaction as db_transaction
 from finance.account_types import ACCOUNT_TYPES
 from pyfactor.logging_config import get_logger
 
-
 logger = get_logger()
+
+
+
+def ensure_date(value):
+    logger.debug(f"ensure_date called with value: {value} (type: {type(value)})")
+    if isinstance(value, datetime):
+        logger.debug(f"Converting datetime to date: {value}")
+        return value.date()
+    elif isinstance(value, str):
+        try:
+            converted_date = datetime.fromisoformat(value).date()
+            logger.debug(f"Converted string to date: {converted_date}")
+            return converted_date
+        except ValueError:
+            logger.error(f"Failed to convert string to date: {value}")
+            raise
+    elif isinstance(value, date):
+        logger.debug(f"Returning date as-is: {value}")
+        return value
+    else:
+        logger.error(f"Unsupported type for date conversion: {type(value)}")
+        raise TypeError(f"Unsupported type for date conversion: {type(value)}")
 
 
 
@@ -33,4 +53,13 @@ def get_or_create_account(database_name, account_name, account_type_name):
     except Exception as e:
         logger.exception(f"Error fetching or creating account: {e}")
         raise
-    
+
+
+def remove_time_from_datetime(dt):
+    if isinstance(dt, datetime):
+        return dt.date()
+    return dt
+
+
+def calculate_due_date(date):
+    return date + timedelta(days=30)

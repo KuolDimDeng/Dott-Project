@@ -23,7 +23,6 @@ const initialState = {
   last_name: '',
   email: '',
   phone: '',
-  accountNumber: '',
   website: '',
   notes: '',
   currency: 'USD',
@@ -87,7 +86,6 @@ const CustomerForm = ({ router }) => {
             <CustomTextField label="Last Name" name="last_name" value={formData.last_name} onChange={handleChange} required />
             <CustomTextField label="Email" name="email" value={formData.email} onChange={handleChange} required type="email" />
             <CustomTextField label="Phone" name="phone" value={formData.phone} onChange={handleChange} />
-            <CustomTextField label="Account Number" name="accountNumber" value={formData.accountNumber} onChange={handleChange} />
             <CustomTextField label="Website" name="website" value={formData.website} onChange={handleChange} />
             <CustomTextField label="Notes" name="notes" value={formData.notes} onChange={handleChange} multiline rows={4} />
           </Grid>

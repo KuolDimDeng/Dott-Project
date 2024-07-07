@@ -17,6 +17,9 @@ import PeopleIcon from '@mui/icons-material/People';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import BarChartIcon from '@mui/icons-material/BarChart';
+
+
 import MenuIcon from '@mui/icons-material/Menu'; 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 
@@ -80,6 +83,8 @@ export const MainListItems = ({
   setShowCustomerList,
   handleCreateCustomer,
   handleSalesClick,
+  handleChartClick,
+  handleDashboardClick,
 }) => {   
   const [showCreateOptionsMenu, setShowCreateOptionsMenu] = React.useState(false);
   const [showReportsMenu, setShowReportsMenu] = React.useState(false);
@@ -261,7 +266,7 @@ export const MainListItems = ({
                 <ListItemText primary={<b>Create new</b>} sx={{ color: textColor }} />
               </ListItemButton>
               <ListItemButton
-                onClick={() => setSelectedItem('dashboard')}
+                onClick={() => {setSelectedItem('dashboard'); handleDashboardClick();}}
                 selected={selectedItem === 'dashboard'}
               >
                 <ListItemIcon>

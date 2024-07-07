@@ -222,6 +222,7 @@ INSTALLED_APPS = [
     'payroll',
     'analysis',
     'chatbot',
+    'chart',
     'django_celery_beat',
     'django_celery_results',
     

@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { getData } from 'country-list';
 import { FormControl, InputLabel, Select as MuiSelect, MenuItem } from '@mui/material';
+import ConsoleMessages from '../dashboard/components/components/ConsoleMessages';
 
 function Copyright(props) {
   return (
@@ -101,7 +102,6 @@ export default function RegistrationPage() {
       handleSuccess();
       router.push('/');
     } catch (error) {
-      logger.error('Registration error:', error);
     }
   };
 

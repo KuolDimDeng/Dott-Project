@@ -59,6 +59,9 @@ import AnalysisPage from './forms/AnalysisPage';
 //import AccountPage from './forms/AccountPage';
 //import ReportPage from './forms/ReportPage';
 import renderForm from './RenderForm';
+import ProductManagement from './forms/ProductManagement';
+import ServiceManagement from './forms/ServiceManagement';
+import ChartContainer from '@/app/chart/component/ChartContainer';
 
 const RenderMainContent = ({
   showTransactionForm,
@@ -86,7 +89,36 @@ const RenderMainContent = ({
   selectedCustomer,
   handleCustomerSelect,
   handleBackToCustomerDetails,
+  showProductManagement,
+  showServiceManagement,
+  showDashboard,
 }) => {
+    if (showCreateOptions && selectedOption === 'Estimate') {
+        return (
+          <EstimateForm
+            onSave={(estimateData) => {
+              // Handle saving the estimate data
+              console.log('Saving estimate:', estimateData);
+              // You might want to call an API to save the data here
+            }}
+            onPreview={(estimateData) => {
+              // Handle previewing the estimate
+              console.log('Previewing estimate:', estimateData);
+              // You might want to open a modal or navigate to a preview page here
+            }}
+          />
+        );
+      }
+    if (showDashboard) {
+        console.log('Rendering ChartContainer');
+        return <ChartContainer />;
+      }
+    if (showProductManagement) {
+        return <ProductManagement />;
+      }
+      if (showServiceManagement) {
+        return <ServiceManagement />;
+      }
     if (selectedInvoiceId !== null) {
         return <InvoiceDetails invoiceId={selectedInvoiceId} onBack={handleBackToCustomerDetails} />;
       }

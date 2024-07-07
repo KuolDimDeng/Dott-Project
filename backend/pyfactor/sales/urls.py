@@ -12,6 +12,15 @@ from .views import (
     customer_invoices,
     customer_transactions,
     invoice_detail,
+    update_customer,
+    delete_customer,
+    product_detail,
+    service_detail,
+    create_estimate,
+    estimate_list,
+    estimate_detail,
+    update_estimate,
+    delete_estimate,
 )
 
 urlpatterns = [
@@ -19,13 +28,21 @@ urlpatterns = [
     path('create-customer/', create_customer, name='create_customer'),
     path('customers/', customer_list, name='customer_list'),
     path('customers/<uuid:pk>/', customer_detail, name='customer-detail'),
+    path('customers/<uuid:pk>/update/', update_customer, name='update-customer'),
+    path('customers/<uuid:pk>/delete/', delete_customer, name='delete-customer'),
     path('create-product/', create_product, name='create_product'),
     path('create-service/', create_service, name='create_service'),
     path('create-vendor/', create_vendor, name='create_vendor'),
     path('products/', product_list, name='product_list'),
+    path('products/<uuid:pk>/', product_detail, name='product-detail'),
     path('services/', service_list, name='service_list'),
+    path('services/<uuid:pk>/', service_detail, name='service-detail'),
     path('customers/<uuid:customer_id>/invoices/', customer_invoices, name='customer-invoices'),
     path('customers/<uuid:customer_id>/transactions/', customer_transactions, name='customer-transactions'),
     path('invoices/<uuid:invoice_id>/', invoice_detail, name='invoice-detail'),
-
+    path('estimates/', create_estimate, name='estimate-create'),
+    path('estimates/', estimate_list, name='estimate-list'),
+    path('estimates/<uuid:pk>/', estimate_detail, name='estimate-detail'),
+    path('estimates/<uuid:pk>/update/', update_estimate, name='update-estimate'),
+    path('estimates/<uuid:pk>/delete/', delete_estimate, name='delete-estimate'),
 ]
