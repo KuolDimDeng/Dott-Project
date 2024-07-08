@@ -20,7 +20,8 @@ urlpatterns = [
     path('staff_interface/', staff_interface, name='staff_interface'),
     path('staff/chat/respond/<int:message_id>/', respond_to_message, name='respond_to_message'),
     path('api/chart/', include('chart.urls')),
-
+    path('api/',include('business.urls')),
+    path('integrations/', include('integrations.urls')),
 
 
 

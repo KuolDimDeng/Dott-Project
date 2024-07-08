@@ -21,6 +21,7 @@
     "axios": "^1.6.8",
     "chart.js": "^4.4.3",
     "core-js": "^3.37.0",
+    "countries-list": "^3.1.0",
     "country-list": "^2.3.0",
     "currency-codes": "^2.1.0",
     "date-fns": "2.29.3",

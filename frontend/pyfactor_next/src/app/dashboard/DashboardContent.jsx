@@ -19,6 +19,7 @@ import ServiceList from './components/lists/ServiceList';
 import axiosInstance from './components/components/axiosConfig';
 import ChartContainer from '../chart/component/ChartContainer';
 import { FamilyRestroomRounded } from '@mui/icons-material';
+import IntegrationSettings from './components/components/IntegrationSettings';
 
 
 const theme = createTheme({
@@ -78,8 +79,38 @@ function DashboardContent() {
   const [showChart, setShowChart] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const [showSalesAnalysis, setShowSalesAnalysis] = useState(false);
+  const [showIntegrationSettings, setShowIntegrationSettings] = useState(false);
+  const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
+  const settingsMenuOpen = Boolean(settingsAnchorEl);
 
 
+  const handleSettingsClick = (event) => {
+    setSettingsAnchorEl(event.currentTarget);
+  };
+
+  const handleSettingsMenuClose = () => {
+    setSettingsAnchorEl(null);
+  };
+
+  const handleIntegrationsClick = () => {
+    setShowIntegrationSettings(true);
+    handleSettingsMenuClose();
+    // Reset other view states as needed
+    setShowBankingDashboard(false);
+    setShowCreateOptions(false);
+    setShowAnalysisPage(false);
+    setShowHRDashboard(false);
+    setShowPayrollDashboard(false);
+    setSelectedInvoiceId(null);
+    setShowInvoiceBuilder(false);
+    setShowReports(false);
+    setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowDashboard(false);
+    setShowSalesAnalysis(false);
+  };
+  
+ 
 
 
   const handleSalesClick = (section) => {
@@ -109,6 +140,7 @@ function DashboardContent() {
     setShowAccountPage(false);
     setShowDashboard(false);
     setShowSalesAnalysis(false);
+    setShowIntegrationSettings(false);
   };
 
   const handleDashboardClick = () => {
@@ -127,6 +159,7 @@ function DashboardContent() {
     setShowTransactionForm(false);
     setShowAccountPage(false);
     setShowSalesAnalysis(false);
+    setShowIntegrationSettings(false);
     setView('dashboard');
     console.log('view set to: dashboard');
   };
@@ -257,7 +290,8 @@ function DashboardContent() {
     setShowProductManagement(false);
     setShowServiceManagement(false);
     setShowSalesAnalysis(false);
-    
+    setShowIntegrationSettings(false);
+
   };
 
   const handleShowTransactionForm = () => {
@@ -390,6 +424,11 @@ function DashboardContent() {
           handleClick={handleClick}
           handleClose={handleClose}
           handleAccountClick={handleAccountClick}
+          handleSettingsClick={handleSettingsClick}
+          settingsAnchorEl={settingsAnchorEl}
+          settingsMenuOpen={settingsMenuOpen}
+          handleSettingsMenuClose={handleSettingsMenuClose}
+          handleIntegrationsClick={handleIntegrationsClick}
         />
         <Drawer 
           drawerOpen={drawerOpen}
@@ -453,6 +492,7 @@ function DashboardContent() {
                 This is the dashboard area
               </Typography>
             )}
+            {showIntegrationSettings && <IntegrationSettings userData={userData} />}
             {showSalesAnalysis && <ChartContainer />}
               {view === 'invoiceDetails' && (
                 <InvoiceDetails 
@@ -476,7 +516,8 @@ function DashboardContent() {
                 <ServiceList services={services} />
               )}
               {view !== 'invoiceDetails' && view !== 'customerDetails' && 
-               view !== 'productList' && view !== 'serviceList' &&  renderMainContent({
+               view !== 'productList' && view !== 'serviceList' &&  
+               renderMainContent({
                 showTransactionForm,
                 showInvoiceBuilder,
                 showCreateOptions,
@@ -507,6 +548,7 @@ function DashboardContent() {
                 showProductManagement,
                 showServiceManagement,
                 showDashboard,
+                showIntegrationSettings,
                 
               })}
             </Box>

@@ -1,17 +1,12 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from django.db import models
+from django.db import models, connections
 from django.utils import timezone
 from django_countries.fields import CountryField
 from django.core.exceptions import ValidationError
+from business.models import Business
+import uuid
 
-BUSINESS_TYPES = [
-    ('COMMERCE', 'Commerce'),
-    ('CHARITY', 'Charity'),
-    ('HOSPITALITY', 'Hospitality'),
-    ('PROPERTY_MANAGEMENT', 'Property Management'),
-    ('TRANSPORTATION', 'Transportation'),
-    ('STORAGE', 'Storage'),
-]
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -38,6 +33,7 @@ class UserManager(BaseUserManager):
         return self.get(email=email)
 
 class User(AbstractBaseUser, PermissionsMixin):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField('email address', unique=True)
     first_name = models.CharField(max_length=100, blank=True)
     last_name = models.CharField(max_length=100, blank=True)
@@ -50,6 +46,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     objects = UserManager()
+    ROLE_CHOICES = [
+        ('OWNER', 'Business Owner'),
+        ('ADMIN', 'Administrator'),
+        ('EMPLOYEE', 'Employee'),
+        ('ACCOUNTANT', 'Accountant'),
+        ('HR-ADMIN','HR-Admin'),
+        ('PAYROLL-ADMIN', 'Payroll-Admin'),
+        ('ACCOUNTS-PAYABLE', 'Accounts-Payable'),
+        ('ACCOUNTS-RECEIVABLE', 'Accounts-Receivable'),
+        ('ANALYST','Analyst')
+    ]
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='EMPLOYEE')
+
 
     class Meta:
         db_table = 'users_user'
@@ -65,8 +74,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    business_name = models.CharField(max_length=200, null=True)
-    business_type = models.CharField(max_length=20, choices=BUSINESS_TYPES, null=True)
+    business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, null=True, related_name='employees')
     occupation = models.CharField(max_length=200, null=True)
     street = models.CharField(max_length=200, null=True)
     city = models.CharField(max_length=200, null=True)
@@ -77,18 +85,21 @@ class UserProfile(models.Model):
     database_name = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True, null=True)
+    is_business_owner = models.BooleanField(default=False)
 
     def to_dict(self):
+     
         return {
             'email': self.user.email,
             'first_name': self.user.first_name,
             'last_name': self.user.last_name,
             'full_name': self.user.get_full_name(),
             'occupation': self.occupation,
-            'business_name': self.business_name,
+            'business_name': self.business.name if self.business_id is not None else None,
             'database_name': self.database_name,
             # Add other fields as needed
-        }
+            }
+
 
     def save(self, *args, **kwargs):
         if self.pk is None and not self.user:
@@ -96,4 +107,5 @@ class UserProfile(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"User Profile: {self.id}"
+        return f"User Profile: {self.id or 'unsaved'}"
+

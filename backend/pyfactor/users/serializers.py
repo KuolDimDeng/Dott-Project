@@ -7,7 +7,7 @@ from rest_framework import serializers
 
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from .models import UserProfile, User
-from business.models import Subscription
+from business.models import Subscription, Business
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.db import IntegrityError, transaction
 from django.contrib.auth import authenticate
@@ -26,17 +26,17 @@ class CustomRegisterSerializer(RegisterSerializer):
     username = None
     password1 = serializers.CharField(write_only=True)
     password2 = serializers.CharField(write_only=True)
-    first_name = serializers.CharField(max_length=100, required=True)
-    last_name = serializers.CharField(max_length=100, required=True)
-    business_name = serializers.CharField(max_length=200, required=True)
-    business_type = serializers.CharField(max_length=20, required=True)
+    first_name = serializers.CharField(required=True, write_only=True)
+    last_name = serializers.CharField(required=True, write_only=True)
+    business_name = serializers.CharField(required=False, write_only=True)
+    business_type = serializers.CharField(required=False, write_only=True)
     street = serializers.CharField(max_length=200, required=True)
     postcode = serializers.CharField(max_length=200, required=True)
     state = serializers.CharField(max_length=200, required=True)
     country = serializers.CharField(max_length=200, required=True)
     occupation = serializers.CharField(max_length=200, required=True)
     phone_number = serializers.CharField(max_length=200, required=False)
-    subscription_type = serializers.ChoiceField(choices=Subscription.SUBSCRIPTION_CHOICES)
+    subscription_type = serializers.ChoiceField(choices=Subscription.SUBSCRIPTION_TYPES)
 
     class Meta:
         model = User
@@ -48,35 +48,21 @@ class CustomRegisterSerializer(RegisterSerializer):
 
     def validate_email(self, email):
         email = get_adapter().clean_email(email)
-        try:
-            get_adapter().validate_unique_email(email)
-        except serializers.ValidationError:
+        if User.objects.filter(email=email).exists():
             raise serializers.ValidationError("A user is already registered with this email address.")
         return email
-
-    def validate_password1(self, password):
-        return get_adapter().clean_password(password)
 
     def validate(self, data):
         if data["password1"] != data["password2"]:
             raise serializers.ValidationError("The two password fields didn't match.")
         return data
 
-    def custom_signup(self, request, user):
-        setup_user_email(request, user, [])
-
-    def get_cleaned_data(self):
-        cleaned_data = super().get_cleaned_data()
-        cleaned_data.pop('username', None)
-        return cleaned_data
-    
     def save(self, **kwargs):
         logger.debug('CustomRegisterSerializer - save')
         validated_data = self.validated_data
 
         try:
             with transaction.atomic():
-                logger.debug("Creating user: %s", validated_data['email'])
                 user = User.objects.create_user(
                     email=validated_data['email'],
                     password=validated_data['password1'],
@@ -84,13 +70,22 @@ class CustomRegisterSerializer(RegisterSerializer):
                     last_name=validated_data['last_name']
                 )
 
-                # Generate the database name using the create_user_database function
-                logger.debug('create_user_database function called')
-                database_name = create_user_database(
-                    username=user.email,  # Use email as the username for the database name
-                    user_data=validated_data,
-                    subscription_type=validated_data['subscription_type']
+                # Generate the database name
+                database_name = f"{user.email.replace('@', '').replace('.', '')}_{timezone.now().strftime('%Y%m%d%H%M%S')}"
+
+                # Create the Business
+                logger.info('Creating business...')
+                business = Business.objects.create(
+                    name=validated_data.get('business_name', ''),
+                    business_type=validated_data.get('business_type', ''),
+                    street=validated_data['street'],
+                    postcode=validated_data['postcode'],
+                    state=validated_data['state'],
+                    country=validated_data['country'],
+                    database_name=database_name
                 )
+                business.owners.add(user)
+                business.save()  # Ensure the business is saved and committed before creating UserProfile
 
                 # Call create_dynamic_database to create the database and add it to DATABASES and connections
                 logger.debug('create_dynamic_database function called')
@@ -99,17 +94,13 @@ class CustomRegisterSerializer(RegisterSerializer):
                 logger.info('Database created: %s', database_name)
 
                 logger.info('Creating user profile...')
-                user_profile = UserProfile.objects.using('default').create(
+                user_profile = UserProfile.objects.create(
                     user=user,
-                    business_name=validated_data['business_name'],
-                    business_type=validated_data['business_type'],
-                    street=validated_data['street'],
-                    postcode=validated_data['postcode'],
-                    state=validated_data['state'],
-                    country=validated_data['country'],
+                    business=business,
                     occupation=validated_data['occupation'],
-                    phone_number=validated_data['phone_number'],
-                    database_name=database_name  # Set the generated database name
+                    phone_number=validated_data.get('phone_number', ''),
+                    is_business_owner=True,
+                    database_name=database_name
                 )
                 logger.info('User profile created: %s', user_profile)
 
@@ -120,19 +111,26 @@ class CustomRegisterSerializer(RegisterSerializer):
                 # Create the subscription
                 logger.info('Creating subscription...')
                 Subscription.objects.create(
-                    user=user,
+                    business=business,
                     subscription_type=validated_data['subscription_type'],
+                    start_date=timezone.now(),
                 )
 
                 return user
 
-        except django.db.utils.OperationalError as e:
-            logger.exception("Error during user profile creation: %s", str(e))
-            raise serializers.ValidationError({'user': 'Failed to create user profile due to a database error.'})
         except Exception as e:
             logger.exception("Error during user creation: %s", str(e))
             raise serializers.ValidationError({'user': 'Failed to create user.'})
 
+    def calculate_end_date(self, subscription_type):
+        if subscription_type == 'free':
+            return timezone.now() + timedelta(days=30)
+        elif subscription_type.startswith('monthly'):
+            return timezone.now() + relativedelta(months=1)
+        elif subscription_type.startswith('yearly'):
+            return timezone.now() + relativedelta(years=1)
+        
+        
     def calculate_end_date(self, subscription_type):
         if subscription_type == 'free':
             return timezone.now() + timedelta(days=30)
@@ -146,6 +144,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email')
     first_name = serializers.CharField(source='user.first_name')
     last_name = serializers.CharField(source='user.last_name')
+    business_name = serializers.CharField(source='business.name', allow_null=True)
+
 
     class Meta:
         model = UserProfile

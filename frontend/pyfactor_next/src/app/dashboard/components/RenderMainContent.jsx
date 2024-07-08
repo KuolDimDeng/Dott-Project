@@ -62,6 +62,9 @@ import renderForm from './RenderForm';
 import ProductManagement from './forms/ProductManagement';
 import ServiceManagement from './forms/ServiceManagement';
 import ChartContainer from '@/app/chart/component/ChartContainer';
+import IntegrationSettings from './components/IntegrationSettings';
+
+
 
 const RenderMainContent = ({
   showTransactionForm,
@@ -92,104 +95,118 @@ const RenderMainContent = ({
   showProductManagement,
   showServiceManagement,
   showDashboard,
+  showIntegrationSettings,
 }) => {
-    if (showCreateOptions && selectedOption === 'Estimate') {
-        return (
-          <EstimateForm
-            onSave={(estimateData) => {
-              // Handle saving the estimate data
-              console.log('Saving estimate:', estimateData);
-              // You might want to call an API to save the data here
-            }}
-            onPreview={(estimateData) => {
-              // Handle previewing the estimate
-              console.log('Previewing estimate:', estimateData);
-              // You might want to open a modal or navigate to a preview page here
-            }}
-          />
-        );
-      }
-    if (showDashboard) {
-        console.log('Rendering ChartContainer');
-        return <ChartContainer />;
-      }
-    if (showProductManagement) {
-        return <ProductManagement />;
-      }
-      if (showServiceManagement) {
-        return <ServiceManagement />;
-      }
-    if (selectedInvoiceId !== null) {
-        return <InvoiceDetails invoiceId={selectedInvoiceId} onBack={handleBackToCustomerDetails} />;
-      }
-      if (showCustomerDetails && selectedCustomer) {
-        return <CustomerDetails customer={selectedCustomer} onInvoiceSelect={handleInvoiceSelect} onBack={handleBackFromInvoice} />;
-      }
-      if (showAnalysisPage) {
-        return <AnalysisPage />;
-      }
-      if (showCustomerList) {
-        return <CustomerList 
-          onCreateCustomer={handleCreateCustomer} 
-          onInvoiceSelect={handleInvoiceSelect}
-          onCustomerSelect={handleCustomerSelect} // Add this line to handle customer selection
-        />;
-      }
-      if (showReports && selectedReport) {
-        return <ReportDisplay reportType={selectedReport} />;
-      }
-      if (showBankingDashboard) {
-        return <BankingDashboard />;
-      }
-      if (showHRDashboard) {
-        return <HRDashboard section={hrSection} />;
-      }
-      if (showPayrollDashboard) {
-        return <PayrollDashboard section={payrollSection} />;
-      }
-      if (showAccountPage) {
-        return (
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <Button variant="contained" color="error" onClick={handleDeleteAccount}>
-                Delete Account
-              </Button>
-            </Grid>
-          </Grid>
-        );
-      }
-      if (showTransactionForm) {
-        return (
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <TransactionForm />
-            </Grid>
-            <Grid item xs={12}>
-              <TransactionList />
-            </Grid>
-          </Grid>
-        );
-      }
-      if (showInvoiceBuilder) {
-        return (
-          <InvoiceTemplateBuilder
-            handleClose={handleCloseInvoiceBuilder}
-            userData={userData}
-          />
-        );
-      }
-      if (showCreateOptions) {
-        return (
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
-              {renderForm(selectedOption, userData)}
-            </Grid>
-          </Grid>
-        );
-      }
-  // Add more conditions as needed
+  if (showIntegrationSettings) return null;
+  
+  if (showCreateOptions && selectedOption === 'Estimate') {
+    return (
+      <EstimateForm
+        onSave={(estimateData) => {
+          console.log('Saving estimate:', estimateData);
+        }}
+        onPreview={(estimateData) => {
+          console.log('Previewing estimate:', estimateData);
+        }}
+      />
+    );
+  }
 
-  return null; // Default case if no condition is met
+  if (showDashboard) {
+    return <Typography variant="h4" component="h1" gutterBottom>This is the dashboard area</Typography>;
+  }
+
+  if (showProductManagement) {
+    return <ProductManagement />;
+  }
+
+  if (showServiceManagement) {
+    return <ServiceManagement />;
+  }
+
+  if (selectedInvoiceId !== null) {
+    return <InvoiceDetails invoiceId={selectedInvoiceId} onBack={handleBackToCustomerDetails} />;
+  }
+
+  if (showCustomerDetails && selectedCustomer) {
+    return <CustomerDetails customer={selectedCustomer} onInvoiceSelect={handleInvoiceSelect} onBack={handleBackFromInvoice} />;
+  }
+
+  if (showAnalysisPage) {
+    return <AnalysisPage />;
+  }
+
+  if (showCustomerList) {
+    return (
+      <CustomerList 
+        onCreateCustomer={handleCreateCustomer} 
+        onInvoiceSelect={handleInvoiceSelect}
+        onCustomerSelect={handleCustomerSelect}
+      />
+    );
+  }
+
+  if (showReports && selectedReport) {
+    return <ReportDisplay reportType={selectedReport} />;
+  }
+
+  if (showBankingDashboard) {
+    return <BankingDashboard />;
+  }
+
+  if (showHRDashboard) {
+    return <HRDashboard section={hrSection} />;
+  }
+
+  if (showPayrollDashboard) {
+    return <PayrollDashboard section={payrollSection} />;
+  }
+
+  if (showAccountPage) {
+    return (
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <Button variant="contained" color="error" onClick={handleDeleteAccount}>
+            Delete Account
+          </Button>
+        </Grid>
+      </Grid>
+    );
+  }
+
+  if (showTransactionForm) {
+    return (
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <TransactionForm />
+        </Grid>
+        <Grid item xs={12}>
+          <TransactionList />
+        </Grid>
+      </Grid>
+    );
+  }
+
+  if (showInvoiceBuilder) {
+    return (
+      <InvoiceTemplateBuilder
+        handleClose={handleCloseInvoiceBuilder}
+        userData={userData}
+      />
+    );
+  }
+
+  if (showCreateOptions) {
+    return (
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={8}>
+          {renderForm(selectedOption, userData)}
+        </Grid>
+      </Grid>
+    );
+  }
+
+  return null;
 };
 
 export default RenderMainContent;

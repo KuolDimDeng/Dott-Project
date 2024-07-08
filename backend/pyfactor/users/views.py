@@ -9,9 +9,12 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 from django.conf import settings
 from rest_framework.views import APIView
+
+from business.models import Business
 from .models import User, UserProfile
 from .serializers import CustomRegisterSerializer, CustomTokenObtainPairSerializer, CustomAuthTokenSerializer
 from pyfactor.logging_config import get_logger
+from pyfactor.userDatabaseRouter import UserDatabaseRouter
 import traceback
 import jwt
 
@@ -110,8 +113,29 @@ class ProfileView(APIView):
             user = User.objects.get(id=user_id)
             user_profile = self.get_user_profile(user)
             if user_profile:
-                profile_data = user_profile.to_dict()
-                profile_data['first_name'] = user.first_name  # Ensure first_name is included
+                # Ensure the user's database connection exists
+                router = UserDatabaseRouter()
+                if user_profile.database_name and user_profile.database_name not in connections.databases:
+                    try:
+                        router.create_dynamic_database(user_profile.database_name)
+                    except Exception as e:
+                        logger.error(f"Error creating/configuring database: {str(e)}")
+                        return JsonResponse({'error': 'Error accessing user database'}, status=500)
+
+                try:
+                    profile_data = user_profile.to_dict()
+                except Business.DoesNotExist:
+                    logger.warning(f"No Business associated with UserProfile: {user_profile.id}")
+                    profile_data = {
+                        'email': user.email,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'full_name': user.get_full_name(),
+                        'occupation': user_profile.occupation,
+                        'business_name': None,
+                        'database_name': user_profile.database_name,
+                    }
+
                 logger.debug(f'User profile: {profile_data}')
                 logger.debug(f'User database name: {user_profile.database_name}')
                 return JsonResponse(profile_data, safe=False)
@@ -124,7 +148,7 @@ class ProfileView(APIView):
         except Exception as e:
             logger.exception("An error occurred while retrieving the user profile: %s", str(e))
             return JsonResponse({'error': 'Internal server error.'}, status=500)
-
+        
     def get_user_profile(self, user):
         logger.debug(f'Retrieving user profile for user: {user}')
         try:

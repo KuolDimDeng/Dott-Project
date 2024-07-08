@@ -223,6 +223,7 @@ INSTALLED_APPS = [
     'analysis',
     'chatbot',
     'chart',
+    'integrations',
     'django_celery_beat',
     'django_celery_results',
     

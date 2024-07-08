@@ -1,7 +1,7 @@
 'use client' // Add this directive at the top
 
 import { Inter } from 'next/font/google';
-import SignIn from './login/page'; // Import the SignIn component from the correct path
+import SignIn from '../../pages/login'; // Import the SignIn component from the correct path
 import { usePathname } from 'next/navigation'; // Import the usePathname hook from 'next/navigation'
 import React from 'react'; // Import React for TypeScript
 import LandingPage from './page';

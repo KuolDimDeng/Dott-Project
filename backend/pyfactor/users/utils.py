@@ -2,25 +2,55 @@ import django
 from django.apps import apps
 from django.utils import timezone
 from django.core.management import call_command
-from django.db import transaction, connections
-from users.models import UserProfile
+from django.db import connection, transaction, connections
+from business.models import Business
+from users.models import User, UserProfile
 from finance.models import AccountType, Account, Transaction
 from django.conf import settings
 import logging
 import pytz
 import traceback
 import psycopg2
+from psycopg2 import sql
 from pyfactor.logging_config import get_logger
 from finance.account_types import ACCOUNT_TYPES
 
 logger = get_logger()
 
-def create_user_database(username, user_data, subscription_type):
+def initial_user_registration(user_data):
+    logger.info("Starting initial user registration")
+    try:
+        # Create user without associating a database
+        user = User.objects.create_user(
+            email=user_data['email'],
+            password=user_data['password1'],
+            first_name=user_data['first_name'],
+            last_name=user_data['last_name']
+        )
+        logger.info(f"User created: {user.email}")
+        
+        # Create a temporary UserProfile without a database
+        user_profile = UserProfile.objects.create(
+            user=user,
+            occupation=user_data['occupation'],
+            phone_number=user_data.get('phone_number', ''),
+            # Add other fields as necessary
+        )
+        logger.info(f"Temporary UserProfile created for: {user.email}")
+        
+        return user
+    except Exception as e:
+        logger.error(f"Error in initial user registration: {str(e)}")
+        raise
+
+def create_user_database(user, business_data):
     timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
-    business_name = username.lower().replace(' ', '_').replace('.', '').replace('@', '')
+    business_name = business_data['name'].lower().replace(' ', '_').replace('.', '')
     database_name = f"{business_name}_{timestamp}"
+    logger.info(f"Creating user database: {database_name}")
 
     try:
+        logger.info("Connecting to default database...")
         conn = psycopg2.connect(
             dbname=settings.DATABASES['default']['NAME'],
             user=settings.DATABASES['default']['USER'],
@@ -29,10 +59,15 @@ def create_user_database(username, user_data, subscription_type):
             port=settings.DATABASES['default']['PORT']
         )
         conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        logger.info("Connected to default database.")
 
         with conn.cursor() as cursor:
-            cursor.execute(f"CREATE DATABASE {database_name}")
-            logger.info("User Database created: %s", database_name)
+            logger.info(f"Creating new database: {database_name}")
+            cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database_name)))
+            logger.info(f"User Database created: {database_name}")
+
+        conn.close()
+        logger.info("Closed connection to default database.")
 
     except (Exception, psycopg2.DatabaseError) as error:
         logger.error(f"Error creating database: {error}")
@@ -58,39 +93,36 @@ def create_user_database(username, user_data, subscription_type):
     
     connections.databases[database_name] = settings.DATABASES[database_name]
 
-    logger.debug("Creating initial tables in user's database via migrate: %s", database_name)
-    call_command('migrate', database=database_name)
-    
-     # Create user_chatbot_message table
-    logger.debug("Creating user_chatbot_message table in user's database: %s", database_name)
-    with connections[database_name].cursor() as cursor:
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS user_chatbot_message (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL,
-                message TEXT NOT NULL,
-                is_from_user BOOLEAN NOT NULL,
-                timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-    logger.info("user_chatbot_message table created successfully in user's database: %s", database_name)
-
-    
-    logger.info("Initial tables created successfully in user's database: %s", database_name)
+    logger.info(f"Initial database setup completed for: {database_name}")
     return database_name
 
 def setup_user_database(database_name, user_data, user):
     try:
-        logger.debug("Attempting to create initial tables in user's database: %s", database_name)
-        with transaction.atomic(using=database_name):
-            with connections[database_name].cursor() as cursor:
-                cursor.execute("SET search_path TO public")
+        logger.debug(f"Setting up user database: {database_name}")
+        
+        # Run migrations for the user's database
+        logger.info("Running migrations for the user's database")
+        call_command('migrate', database=database_name)
 
+        with transaction.atomic(using=database_name):
             # Create initial data
             logger.info("Creating initial data...")
             populate_account_types(database_name)
+            
+            # Fetch the account type after populating
+            logger.info("Fetching the account type after populating...")
             account_type = AccountType.objects.using(database_name).get(account_type_id=0)
-            cash_account = Account.objects.using(database_name).create(account_number='1', name='Cash on Hand', account_type=account_type)
+
+            # Create Cash Account
+            logger.info("Creating Cash Account...")
+            cash_account = Account.objects.using(database_name).create(
+                account_number='1', 
+                name='Cash on Hand', 
+                account_type=account_type
+            )
+
+            # Create Initial Transaction
+            logger.info("Creating initial transaction...")
             Transaction.objects.using(database_name).create(
                 date=timezone.now().astimezone(pytz.timezone(settings.TIME_ZONE)).date(),
                 description='Initial Transaction',
@@ -101,27 +133,19 @@ def setup_user_database(database_name, user_data, user):
                 receipt=None
             )
 
-        logger.debug("Initial tables created successfully in user's database: %s", database_name)
+        logger.debug(f"Initial tables and data created successfully in user's database: {database_name}")
+
+        # Update UserProfile with the new database name
+        user_profile = UserProfile.objects.get(user=user)
+        user_profile.database_name = database_name
+        user_profile.save()
+
+        logger.info(f"Database {database_name} setup completed successfully")
+        return database_name
 
     except Exception as e:
-        logger.error("Error during user database setup: %s", str(e))
-        logger.error("Traceback:\n%s", traceback.format_exc())
-        raise
-    
-    logger.debug("Retrieving user profile from default database")
-    try:
-        user_profile = UserProfile.objects.using('default').get(user=user)
-        logger.debug("Retrieved UserProfile: %s", user_profile)
-        user_profile.database_name = database_name
-        user_profile.save(using='default')  # Save changes to the default database
-        logger.debug("Updated UserProfile with database_name: %s", user_profile.database_name)
-        logger.info("Database %s created successfully", database_name)
-    except UserProfile.DoesNotExist:
-        logger.error("UserProfile does not exist for user: %s", user)
-        raise
-    except Exception as e:
-        logger.error("Error updating user profile: %s", str(e))
-        logger.error("Traceback:\n%s", traceback.format_exc())
+        logger.error(f"Error during user database setup: {str(e)}")
+        logger.error(f"Traceback:\n{traceback.format_exc()}")
         raise
 
 def populate_account_types(database_name):

@@ -10,6 +10,7 @@ import Image from 'next/image';
 import logoPath from '/public/static/images/Pyfactor.png';
 import SearchIcon from '@mui/icons-material/Search';
 import DateTime from './components/DateTime'; // Corrected path to DateTime
+import SettingsMenu from './components/SettingsMenu'; // Corrected path to SettingsMenu
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -47,7 +48,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-const AppBar = ({ drawerOpen, handleDrawerToggle, userData, anchorEl, openMenu, handleClick, handleClose, handleAccountClick }) => {
+const AppBar = ({ drawerOpen, handleDrawerToggle, userData, anchorEl, openMenu, handleClick, handleClose, handleAccountClick, handleSettingsClick, settingsAnchorEl, settingsMenuOpen, handleSettingsMenuClose, handleIntegrationsClick }) => {
   return (
     <MuiAppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
       <Toolbar sx={{ justifyContent: 'space-between' }}>
@@ -78,7 +79,7 @@ const AppBar = ({ drawerOpen, handleDrawerToggle, userData, anchorEl, openMenu, 
           <IconButton color="inherit">
             <HelpOutlineIcon />
           </IconButton>
-          <IconButton color="inherit">
+          <IconButton color="inherit" onClick={handleSettingsClick}>
             <SettingsIcon />
           </IconButton>
           <IconButton color="inherit" onClick={handleClick} aria-controls={openMenu ? 'user-menu' : undefined} aria-haspopup="true" aria-expanded={openMenu ? 'true' : undefined}>
@@ -96,6 +97,12 @@ const AppBar = ({ drawerOpen, handleDrawerToggle, userData, anchorEl, openMenu, 
           </Menu>
         </Box>
       </Toolbar>
+      <SettingsMenu
+        anchorEl={settingsAnchorEl}
+        open={settingsMenuOpen}
+        onClose={handleSettingsMenuClose}
+        onIntegrationsClick={handleIntegrationsClick}
+      />
     </MuiAppBar>
   );
 };
