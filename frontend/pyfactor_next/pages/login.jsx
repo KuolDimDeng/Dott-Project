@@ -1,4 +1,3 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/login/page.jsx
 'use client';
 
 import { useState } from 'react';
@@ -30,6 +29,16 @@ import { logger } from '@/utils/logger';
 // Util Imports
 import axios from 'axios';
 
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+    background: {
+      default: '#f5f5f5',
+      paper: '#ffffff',
+    },
+  },
+});
+
 function Copyright(props) {
   return (
     <Typography variant="body2" color="text.secondary" align="center" {...props}>
@@ -42,8 +51,6 @@ function Copyright(props) {
     </Typography>
   );
 }
-
-const defaultTheme = createTheme();
 
 const schema = object({
   email: string([minLength(1, 'This field is required'), email('Email is invalid')]),
@@ -76,7 +83,7 @@ export default function SignIn() {
   const axiosInstance = axios.create({
     baseURL: 'http://localhost:8000',
   });
-  
+
   const onSubmit = async (data) => {
     try {
       console.log('Sending login request with data:', data);
@@ -85,122 +92,151 @@ export default function SignIn() {
   
       console.log('Response from the backend:', response);
   
-      if (response.status === 200) {
-        const token = response.data.access; // Access the token from response.data.access
+      if (response.status === 200 && response.data.access) {
+        const token = response.data.access;
         setToken(token);
         localStorage.setItem('token', token);
-        router.push('/dashboard', { query: { token } });
-           }
+        if (response.data.refresh) {
+          localStorage.setItem('refreshToken', response.data.refresh);
+        }
+        router.push('/dashboard');
+      } else {
+        setErrorState({ message: 'Invalid response from server' });
+      }
     } catch (error) {
       logger.error('Error during login:', error);
-      setErrorState(error.response.data);
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        setErrorState(error.response.data || { message: 'Server error' });
+      } else if (error.request) {
+        // The request was made but no response was received
+        setErrorState({ message: 'No response received from server. Please try again.' });
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        setErrorState({ message: 'An error occurred. Please try again.' });
+      }
     }
   };
-  
 
   return (
-    <ThemeProvider theme={defaultTheme}>
-      <Container component="main" maxWidth="xs">
-        <CssBaseline />
-        <Box
-          sx={{
-            marginTop: 8,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            backgroundColor: 'white',
-            padding: 3,
-          }}
-        >
-          <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
-            <LockOutlinedIcon />
-          </Avatar>
-          <Typography component="h1" variant="h5">
-            Sign in
-          </Typography>
-          <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 1 }}>
-            <Controller
-              name="email"
-              control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  margin="normal"
-                  required
-                  fullWidth
-                  id="email"
-                  label="Email Address"
-                  name="email"
-                  autoComplete="email"
-                  autoFocus
-                  onChange={(e) => {
-                    field.onChange(e.target.value);
-                    errorState !== null && setErrorState(null);
-                  }}
-                  error={!!errors.email || errorState !== null}
-                  helperText={errors?.email?.message || errorState?.message?.[0]}
-                />
-              )}
-            />
-            <Controller
-              name="password"
-              control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  margin="normal"
-                  required
-                  fullWidth
-                  name="password"
-                  label="Password"
-                  type={isPasswordShown ? 'text' : 'password'}
-                  id="password"
-                  autoComplete="current-password"
-                  onChange={(e) => {
-                    field.onChange(e.target.value);
-                    errorState !== null && setErrorState(null);
-                  }}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          edge="end"
-                          onClick={handleClickShowPassword}
-                          onMouseDown={(e) => e.preventDefault()}
-                          aria-label="toggle password visibility"
-                        >
-                          <i className={isPasswordShown ? 'ri-eye-off-line' : 'ri-eye-line'} />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                  error={!!errors.password}
-                  helperText={errors.password?.message}
-                />
-              )}
-            />
-            <FormControlLabel control={<Checkbox value="remember" color="primary" />} label="Remember me" />
-            <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
-              Sign In
-            </Button>
-            <Grid container>
-              <Grid item xs>
-                <Link href="#" variant="body2">
-                  Forgot password?
-                </Link>
+    <ThemeProvider theme={theme}>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          bgcolor: 'background.default',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Container component="main" maxWidth="xs" sx={{ bgcolor: 'background.paper', p: 3, borderRadius: 2, boxShadow: 1 }}>
+          <CssBaseline />
+          <Box
+            sx={{
+              marginTop: 8,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              backgroundColor: 'white',
+              padding: 3,
+            }}
+          >
+            <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
+              <LockOutlinedIcon />
+            </Avatar>
+            <Typography component="h1" variant="h5">
+              Sign in
+            </Typography>
+            <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 1 }}>
+              <Controller
+                name="email"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    margin="normal"
+                    required
+                    fullWidth
+                    id="email"
+                    label="Email Address"
+                    name="email"
+                    autoComplete="email"
+                    autoFocus
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                      errorState !== null && setErrorState(null);
+                    }}
+                    error={!!errors.email || errorState !== null}
+                    helperText={errors?.email?.message || errorState?.message?.[0]}
+                  />
+                )}
+              />
+              <Controller
+                name="password"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    margin="normal"
+                    required
+                    fullWidth
+                    name="password"
+                    label="Password"
+                    type={isPasswordShown ? 'text' : 'password'}
+                    id="password"
+                    autoComplete="current-password"
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                      errorState !== null && setErrorState(null);
+                    }}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            edge="end"
+                            onClick={handleClickShowPassword}
+                            onMouseDown={(e) => e.preventDefault()}
+                            aria-label="toggle password visibility"
+                          >
+                            <i className={isPasswordShown ? 'ri-eye-off-line' : 'ri-eye-line'} />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    error={!!errors.password}
+                    helperText={errors.password?.message}
+                  />
+                )}
+              />
+              <FormControlLabel control={<Checkbox value="remember" color="primary" />} label="Remember me" />
+              <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
+                Sign In
+              </Button>
+              <Grid container>
+                <Grid item xs>
+                  <Link href="/forgot-password" passHref>
+                    <Typography variant="body2" sx={{ cursor: 'pointer', textDecoration: 'underline' }}>
+                      Forgot password?
+                    </Typography>
+                  </Link>
+                </Grid>
+                <Grid item>
+                  <Link href="/register" passHref>
+                    <Typography variant="body2" sx={{ cursor: 'pointer', textDecoration: 'underline' }}>
+                      {"Don't have an account? Register here"}
+                    </Typography>
+                  </Link>
+                </Grid>
               </Grid>
-              <Grid item>
-                <Link href="/register" variant="body2">
-                  {"Don't have an account? Sign Up"}
-                </Link>
-              </Grid>
-            </Grid>
+            </Box>
           </Box>
-        </Box>
-        <Copyright sx={{ mt: 8, mb: 4 }} />
-      </Container>
+          <Copyright sx={{ mt: 8, mb: 4 }} />
+        </Container>
+      </Box>
     </ThemeProvider>
   );
 }

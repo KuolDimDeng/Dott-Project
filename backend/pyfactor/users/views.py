@@ -9,10 +9,11 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 from django.conf import settings
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view, permission_classes, action
 
 from business.models import Business
 from .models import User, UserProfile
-from .serializers import CustomRegisterSerializer, CustomTokenObtainPairSerializer, CustomAuthTokenSerializer
+from .serializers import CustomRegisterSerializer, CustomTokenObtainPairSerializer, CustomAuthTokenSerializer, UserProfileSerializer
 from pyfactor.logging_config import get_logger
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
 import traceback
@@ -92,6 +93,12 @@ class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
+    def get_user_profile(self, user):
+        try:
+            return UserProfile.objects.get(user=user)
+        except UserProfile.DoesNotExist:
+            return None
+
     def get(self, request, *args, **kwargs):
         logger.debug('Authorization header: %s', request.META.get('HTTP_AUTHORIZATION'))
 
@@ -122,19 +129,31 @@ class ProfileView(APIView):
                         logger.error(f"Error creating/configuring database: {str(e)}")
                         return JsonResponse({'error': 'Error accessing user database'}, status=500)
 
+                # Fetching business data
                 try:
-                    profile_data = user_profile.to_dict()
-                except Business.DoesNotExist:
-                    logger.warning(f"No Business associated with UserProfile: {user_profile.id}")
-                    profile_data = {
-                        'email': user.email,
-                        'first_name': user.first_name,
-                        'last_name': user.last_name,
-                        'full_name': user.get_full_name(),
-                        'occupation': user_profile.occupation,
-                        'business_name': None,
-                        'database_name': user_profile.database_name,
+                    business = user_profile.business
+                    business_data = {
+                        'id': str(business.id),
+                        'business_num': business.business_num,
+                        'name': business.name,
+                        'business_type': business.business_type,
+                        'street': business.street,
+                        'city': business.city,
+                        'state': business.state,
+                        'postcode': business.postcode,
+                        'country': str(business.country),
+                        'address': business.address,
+                        'email': business.email,
+                        'phone_number': business.phone_number,
+                        'database_name': business.database_name,
+                        'created_at': business.created_at,
+                        'modified_at': business.modified_at,
                     }
+                except Business.DoesNotExist:
+                    business_data = None
+
+                profile_data = user_profile.to_dict()
+                profile_data['business'] = business_data
 
                 logger.debug(f'User profile: {profile_data}')
                 logger.debug(f'User database name: {user_profile.database_name}')
@@ -148,16 +167,5 @@ class ProfileView(APIView):
         except Exception as e:
             logger.exception("An error occurred while retrieving the user profile: %s", str(e))
             return JsonResponse({'error': 'Internal server error.'}, status=500)
-        
-    def get_user_profile(self, user):
-        logger.debug(f'Retrieving user profile for user: {user}')
-        try:
-            return UserProfile.objects.using('default').select_related('user').get(user=user)
-        except UserProfile.DoesNotExist:
-            logger.error("UserProfile does not exist for user: %s", user)
-            return None
-        except Exception as e:
-            logger.error(f"Error retrieving user profile: {str(e)}")
-            return None
 
 profile_view = ProfileView.as_view()

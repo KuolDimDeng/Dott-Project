@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Box, Button, Modal, Typography, List, ListItem, ListItemText } from '@mui/material';
 import AddIncomeForm from './AddIncomeForm';
 import AddExpenseForm from './AddExpenseForm';
-import axiosInstance from '../components/axiosConfig';
 import JournalEntryForm from './JournalEntryForm';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
+import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
 
 
 const TransactionForm = () => {

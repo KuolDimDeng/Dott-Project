@@ -19,10 +19,10 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '../../dashboard/components/components/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
-import UnpaidInvoicesList from '../lists/UnpaidInvoicesList';  // Adjust the import path as needed
+import UnpaidInvoicesList from '../../dashboard/components/lists/UnpaidInvoicesList';  // Adjust the import path as needed
 
 
 const AddIncomeForm = ({ onClose }) => {

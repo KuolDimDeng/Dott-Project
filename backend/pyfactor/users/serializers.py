@@ -1,4 +1,5 @@
 # serializers.py
+import uuid
 from allauth.account.adapter import get_adapter
 from allauth.account.utils import setup_user_email
 from dj_rest_auth.registration.serializers import RegisterSerializer
@@ -9,7 +10,7 @@ from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from .models import UserProfile, User
 from business.models import Subscription, Business
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connections, transaction
 from django.contrib.auth import authenticate
 from .utils import create_user_database, setup_user_database
 from datetime import timedelta
@@ -53,7 +54,7 @@ class CustomRegisterSerializer(RegisterSerializer):
         return email
 
     def validate(self, data):
-        if data["password1"] != data["password2"]:
+        if data.get("password1") != data.get("password2"):
             raise serializers.ValidationError("The two password fields didn't match.")
         return data
 
@@ -63,6 +64,7 @@ class CustomRegisterSerializer(RegisterSerializer):
 
         try:
             with transaction.atomic():
+                # Create user in the default database
                 user = User.objects.create_user(
                     email=validated_data['email'],
                     password=validated_data['password1'],
@@ -73,71 +75,102 @@ class CustomRegisterSerializer(RegisterSerializer):
                 # Generate the database name
                 database_name = f"{user.email.replace('@', '').replace('.', '')}_{timezone.now().strftime('%Y%m%d%H%M%S')}"
 
-                # Create the Business
-                logger.info('Creating business...')
-                business = Business.objects.create(
-                    name=validated_data.get('business_name', ''),
-                    business_type=validated_data.get('business_type', ''),
-                    street=validated_data['street'],
-                    postcode=validated_data['postcode'],
-                    state=validated_data['state'],
-                    country=validated_data['country'],
-                    database_name=database_name
-                )
-                business.owners.add(user)
-                business.save()  # Ensure the business is saved and committed before creating UserProfile
-
-                # Call create_dynamic_database to create the database and add it to DATABASES and connections
-                logger.debug('create_dynamic_database function called')
+                # Create the dynamic database
                 router = UserDatabaseRouter()
                 router.create_dynamic_database(database_name)
-                logger.info('Database created: %s', database_name)
 
-                logger.info('Creating user profile...')
-                user_profile = UserProfile.objects.create(
-                    user=user,
-                    business=business,
-                    occupation=validated_data['occupation'],
-                    phone_number=validated_data.get('phone_number', ''),
-                    is_business_owner=True,
-                    database_name=database_name
-                )
-                logger.info('User profile created: %s', user_profile)
+                # Use the new database for the following operations
+                with transaction.atomic(using=database_name):
+                    # Create the same user in the new database
+                    User.objects.using(database_name).create(
+                        id=user.id,
+                        email=user.email,
+                        password=user.password,
+                        first_name=user.first_name,
+                        last_name=user.last_name,
+                        is_active=user.is_active,
+                        is_staff=user.is_staff,
+                        date_joined=user.date_joined
+                    )
 
-                # Call the setup_user_database function to create initial data in the user's database
-                logger.debug('setup_user_database function called')
-                setup_user_database(database_name, validated_data, user)
+                    # Create the Business in both databases
+                    business_default = Business.objects.create(
+                        name=validated_data.get('business_name', ''),
+                        business_type=validated_data.get('business_type', ''),
+                        street=validated_data['street'],
+                        postcode=validated_data['postcode'],
+                        state=validated_data['state'],
+                        country=validated_data['country'],
+                        database_name=database_name
+                    )
+                    
+                    business = Business.objects.using(database_name).create(
+                        id=business_default.id,
+                        name=business_default.name,
+                        business_type=business_default.business_type,
+                        street=business_default.street,
+                        postcode=business_default.postcode,
+                        state=business_default.state,
+                        country=business_default.country,
+                        database_name=database_name
+                    )
 
-                # Create the subscription
-                logger.info('Creating subscription...')
-                Subscription.objects.create(
-                    business=business,
-                    subscription_type=validated_data['subscription_type'],
-                    start_date=timezone.now(),
-                )
+                    # Create UserProfile in both databases
+                    user_profile_default = UserProfile.objects.create(
+                        user=user,
+                        business=business_default,
+                        occupation=validated_data['occupation'],
+                        phone_number=validated_data.get('phone_number', ''),
+                        is_business_owner=True,
+                        database_name=database_name
+                    )
 
+                    UserProfile.objects.using(database_name).create(
+                        id=user_profile_default.id,
+                        user_id=user.id,
+                        business=business,
+                        occupation=user_profile_default.occupation,
+                        phone_number=user_profile_default.phone_number,
+                        is_business_owner=user_profile_default.is_business_owner,
+                        database_name=database_name
+                    )
+
+                    # Create the subscription in both databases
+                    subscription_type = validated_data['subscription_type']
+                    start_date = timezone.now()
+                    end_date = self.calculate_end_date(subscription_type, start_date)
+                    
+                    subscription_default = Subscription.objects.create(
+                        business=business_default,
+                        subscription_type=subscription_type,
+                        start_date=start_date,
+                        end_date=end_date
+                    )
+
+                    Subscription.objects.using(database_name).create(
+                        id=subscription_default.id,
+                        business=business,
+                        subscription_type=subscription_type,
+                        start_date=start_date,
+                        end_date=end_date
+                    )
+
+                logger.info(f"User {user.email} created successfully with database {database_name}")
                 return user
 
         except Exception as e:
             logger.exception("Error during user creation: %s", str(e))
-            raise serializers.ValidationError({'user': 'Failed to create user.'})
+            raise serializers.ValidationError({'user': f'Failed to create user: {str(e)}'})
 
-    def calculate_end_date(self, subscription_type):
+    def calculate_end_date(self, subscription_type, start_date):
         if subscription_type == 'free':
-            return timezone.now() + timedelta(days=30)
-        elif subscription_type.startswith('monthly'):
-            return timezone.now() + relativedelta(months=1)
-        elif subscription_type.startswith('yearly'):
-            return timezone.now() + relativedelta(years=1)
-        
-        
-    def calculate_end_date(self, subscription_type):
-        if subscription_type == 'free':
-            return timezone.now() + timedelta(days=30)
-        elif subscription_type.startswith('monthly'):
-            return timezone.now() + relativedelta(months=1)
-        elif subscription_type.startswith('yearly'):
-            return timezone.now() + relativedelta(years=1)
+            return start_date + relativedelta(days=30)
+        elif subscription_type == 'professional':
+            return start_date + relativedelta(years=1)
+        elif subscription_type == 'enterprise':
+            return start_date + relativedelta(years=1)
+        else:
+            return None  # For indefinite subscriptions or handle as needed
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

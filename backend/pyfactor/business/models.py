@@ -48,7 +48,7 @@ class Business(models.Model):
 class Subscription(models.Model):
 
     SUBSCRIPTION_TYPES = (
-        ('free', 'FREE'),
+        ('free', 'Free'),
         ('professional', 'Professional'),
 
     )
@@ -56,6 +56,7 @@ class Subscription(models.Model):
     subscription_type = models.CharField(max_length=20, choices=SUBSCRIPTION_TYPES)
     start_date = models.DateField()
     is_active = models.BooleanField(default=True)
+    end_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"Subscription {self.pk if self.pk else 'unsaved'}"

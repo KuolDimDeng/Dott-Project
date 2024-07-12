@@ -1,20 +1,8 @@
-import psycopg2.pool
+# /Users/kuoldeng/projectx/backend/pyfactor/pyfactor/__init__.py
 
-from .settings import DATABASES
+default_app_config = 'pyfactor.apps.PyfactorConfig'
 
-# Create a connection pool
-DATABASE_POOLS = {
-    'default': psycopg2.pool.ThreadedConnectionPool(
-        minconn=2,  # Minimum number of connections in the pool
-        maxconn=10,  # Maximum number of connections in the pool
-        host=DATABASES['default']['HOST'],
-        port=DATABASES['default']['PORT'],
-        database=DATABASES['default']['NAME'],
-        user=DATABASES['default']['USER'],
-        password=DATABASES['default']['PASSWORD'],
-    )
-}
+# This ensures the celery app is loaded when Django starts
+from .celery import app as celery_app
 
-def get_database_pool():
-    return DATABASE_POOLS['default']
-
+__all__ = ('celery_app',)

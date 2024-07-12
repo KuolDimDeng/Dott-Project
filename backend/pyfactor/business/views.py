@@ -99,27 +99,17 @@ def ecommerce_platform_selection(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_business_data(request):
-    logger.info(f"get_business_data view hit for user: {request.user}")
     try:
-        business = Business.objects.get(owners=request.user)
-        logger.info(f"Business found: {business}, Type: {business.business_type}")
-        subscriptions = Subscription.objects.filter(business=business)
-        logger.info(f"Subscriptions found: {subscriptions}")
-        
-        data = {
-            'business_type': business.business_type,
-            'subscriptions': [
-                {
-                    'subscription_type': sub.subscription_type,
-                    'is_active': sub.is_active
-                } for sub in subscriptions
-            ]
-        }
-        logger.info(f"Returning data: {data}")
-        return Response(data)
-    except Business.DoesNotExist:
-        logger.warning(f"No business found for user: {request.user}")
-        return Response({'error': 'Business not found'}, status=404)
+        user_profile = UserProfile.objects.get(user=request.user)
+        business = user_profile.business
+
+        if business:
+            business_data = BusinessSerializer(business).data
+            return Response(business_data)
+        else:
+            return Response({'error': 'No business found for user'}, status=404)
+    except UserProfile.DoesNotExist:
+        return Response({'error': 'User profile not found'}, status=404)
     except Exception as e:
-        logger.error(f"Error in get_business_data: {str(e)}")
-        return Response({'error': str(e)}, status=500)
+        logger.exception(f"An error occurred while fetching business data: {str(e)}")
+        return Response({'error': 'An internal server error occurred'}, status=500)

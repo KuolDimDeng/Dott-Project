@@ -16,10 +16,19 @@ import sys
 import os
 import logging
 import logging.config
+from dotenv import load_dotenv
 
-print(sys.path)
+# Load environment variables from .env file
+load_dotenv()
+
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join(PROJECT_ROOT, '.venv/lib/python3.12/site-packages'))
+
+# Use environment variables
+SHOPIFY_API_KEY = os.getenv('SHOPIFY_API_KEY')
+SHOPIFY_API_SECRET = os.getenv('SHOPIFY_API_SECRET')
+SHOPIFY_SHOP_URL = os.getenv('SHOPIFY_SHOP_URL')
+APP_URL = 'http://localhost:8000'  # or whatever your app's URL is
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -32,20 +41,23 @@ USER_DATABASE_OPTIONS = {
     'connect_timeout': 10,
 }
 
+FRONTEND_URL = 'http://localhost:3000'  # Adjust this to your actual frontend URL
+
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-8)j4zojil$u=s73e8yap9s-q6swefl((h)3krq))g@4qm$1crw'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-8)j4zojil$u=s73e8yap9s-q6swefl((h)3krq))g@4qm$1crw')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True  # Allow credentials if needed
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_METHODS = [
     'GET',
@@ -62,6 +74,14 @@ CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = True
 CSRF_USE_SESSIONS = True
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 3600  # 1 hour in seconds
 AUTH_USER_MODEL = 'users.User'
 
 ACCOUNT_USERNAME_REQUIRED = False
@@ -73,9 +93,6 @@ ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 
 DATABASE_ROUTERS = ['pyfactor.userDatabaseRouter.UserDatabaseRouter']
 
-print("TIME_ZONE value:", TIME_ZONE)
-print("USE_TZ value:", USE_TZ)
-
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -85,11 +102,14 @@ REST_FRAMEWORK = {
     ],
 }
 
-
-CELERY_BROKER_URL = 'redis://localhost:6379'
-CELERY_RESULT_BACKEND = 'django-db'
-CELERY_RESULT_BACKEND_DB = 'celery'
-
+# Celery Configuration
+# Celery settings
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
@@ -226,7 +246,6 @@ INSTALLED_APPS = [
     'integrations',
     'django_celery_beat',
     'django_celery_results',
-    
 ]
 
 MIDDLEWARE = [
@@ -247,7 +266,7 @@ ROOT_URLCONF = 'pyfactor.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # Add this line
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -276,38 +295,35 @@ CHANNEL_LAYERS = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'TOzuISAf13KvGVZi4zbd',
-        'HOST': 'database-2.c12qgo6m085e.us-east-1.rds.amazonaws.com',
+        'NAME': os.getenv('DB_NAME', 'postgres'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'TOzuISAf13KvGVZi4zbd'),
+        'HOST': os.getenv('DB_HOST', 'database-2.c12qgo6m085e.us-east-1.rds.amazonaws.com'),
         'PORT': '5432',
-        'ATOMIC_REQUESTS': False,  # or False
-        'CONN_HEALTH_CHECKS': True,  # or False, depending on your preference
-        'CONN_MAX_AGE': 600,  # Set an appropriate value in seconds
-        'AUTOCOMMIT': True,  # or False, depending on your preference
+        'ATOMIC_REQUESTS': False,
+        'CONN_HEALTH_CHECKS': True,
+        'CONN_MAX_AGE': 600,
+        'AUTOCOMMIT': True,
         'OPTIONS': {
             'connect_timeout': 10,
         },
     },
     'celery': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'celery_db',
-        'USER': 'postgres',
-        'PASSWORD': 'TOzuISAf13KvGVZi4zbd',
-        'HOST': 'database-2.c12qgo6m085e.us-east-1.rds.amazonaws.com',
+        'NAME': os.getenv('DB_NAME', 'celery_db'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'TOzuISAf13KvGVZi4zbd'),
+        'HOST': os.getenv('DB_HOST', 'database-2.c12qgo6m085e.us-east-1.rds.amazonaws.com'),
         'PORT': '5432',
-        'ATOMIC_REQUESTS': False,  # or False
-        'CONN_HEALTH_CHECKS': True,  # or False, depending on your preference
-        'CONN_MAX_AGE': 600,  # Set an appropriate value in seconds
-        'AUTOCOMMIT': True,  # or False, depending on your preference
+        'ATOMIC_REQUESTS': False,
+        'CONN_HEALTH_CHECKS': True,
+        'CONN_MAX_AGE': 600,
+        'AUTOCOMMIT': True,
         'OPTIONS': {
             'connect_timeout': 10,
         },
     },
-    
 }
-
-print("DATABASES", DATABASES)
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

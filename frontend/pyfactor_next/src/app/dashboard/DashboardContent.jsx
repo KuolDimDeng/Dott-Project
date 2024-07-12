@@ -19,7 +19,8 @@ import ServiceList from './components/lists/ServiceList';
 import axiosInstance from './components/components/axiosConfig';
 import ChartContainer from '../chart/component/ChartContainer';
 import { FamilyRestroomRounded } from '@mui/icons-material';
-import IntegrationSettings from './components/components/IntegrationSettings';
+import IntegrationSettings from '../Settings/integrations/components/IntegrationSettings';
+import { useSearchParams } from 'next/navigation';
 
 
 const theme = createTheme({
@@ -82,6 +83,9 @@ function DashboardContent() {
   const [showIntegrationSettings, setShowIntegrationSettings] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
   const settingsMenuOpen = Boolean(settingsAnchorEl);
+  const searchParams = useSearchParams();
+  const status = searchParams.get('status');
+  const platform = searchParams.get('platform');
 
 
   const handleSettingsClick = (event) => {
@@ -93,6 +97,7 @@ function DashboardContent() {
   };
 
   const handleIntegrationsClick = () => {
+    console.log('handleIntegrationsClick called');
     setShowIntegrationSettings(true);
     handleSettingsMenuClose();
     // Reset other view states as needed
@@ -370,11 +375,12 @@ function DashboardContent() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Dashboard User data:', data);
         logger.log('Dashboard User data:', data);
         data.first_name = data.first_name || data.email.split('@')[0];
         data.full_name = data.full_name || `${data.first_name} ${data.last_name}`;
         setUserData(data);
-        addMessage('info', `Welcome, ${data.full_name}`);
+        addMessage('info', `Hello, ${data.full_name}.`);
       } else {
         logger.error('Error fetching user data:', response.statusText);
         addMessage('error', `Error fetching user data: ${response.statusText}`);
@@ -384,6 +390,10 @@ function DashboardContent() {
       addMessage('error', `Error fetching user data: ${error.message}`);
     }
   }, [addMessage]);
+
+  useEffect(() => {
+    setShowDashboard(true);
+  }, []);
 
   useEffect(() => {
     fetchUserData();
@@ -469,22 +479,22 @@ function DashboardContent() {
           }}
         >
           <Container 
-            maxWidth={false}
-            sx={{ 
-              mt: 1, 
-              mb: 0, 
-              ml: drawerOpen ? 2 : 1, 
-              height: '100%', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              pl: drawerOpen ? 1 : 2, 
-              pr: 1, 
-              transition: theme.transitions.create(['margin-left', 'padding-left'], {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.leavingScreen,
-              })
-            }}
-          >
+                maxWidth={false}
+                sx={{ 
+                    mt: 2,
+                    mb: 2,
+                    ml: drawerOpen ? 2 : 1, 
+                    height: 'calc(100% - 32px)', // Adjust for top and bottom margin
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    pl: drawerOpen ? 2 : 3, 
+                    pr: 2, 
+                    transition: theme.transitions.create(['margin-left', 'padding-left'], {
+                    easing: theme.transitions.easing.sharp,
+                    duration: theme.transitions.duration.leavingScreen,
+                    })
+                }}
+                >
             <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
                 {console.log('Before rendering content, showDashboard: ', showDashboard)}
                 {showDashboard && (
@@ -492,7 +502,14 @@ function DashboardContent() {
                 This is the dashboard area
               </Typography>
             )}
-            {showIntegrationSettings && <IntegrationSettings userData={userData} />}
+            {showIntegrationSettings && (
+                <IntegrationSettings
+                    initialStatus={status}
+                    initialPlatform={platform}
+                    initialBusinessData={userData?.business}
+
+                />
+                )}
             {showSalesAnalysis && <ChartContainer />}
               {view === 'invoiceDetails' && (
                 <InvoiceDetails 

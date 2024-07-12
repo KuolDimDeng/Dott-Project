@@ -43,7 +43,7 @@ import InvoiceForm from './forms/InvoiceForm';
 import VendorForm from './forms/VendorForm';
 import EstimateForm from './forms/EstimateForm';
 import SalesOrderForm from './forms/SalesOrderForm';
-import TransactionForm from './forms/TransactionForm';
+import TransactionForm from '../../CreateNew/forms/TransactionForm';
 import TransactionList from './lists/TransactionList';
 import ReportDisplay from './forms/ReportDisplay';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -62,151 +62,165 @@ import renderForm from './RenderForm';
 import ProductManagement from './forms/ProductManagement';
 import ServiceManagement from './forms/ServiceManagement';
 import ChartContainer from '@/app/chart/component/ChartContainer';
-import IntegrationSettings from './components/IntegrationSettings';
+import IntegrationSettings from '../../Settings/integrations/components/IntegrationSettings';
 
+import StatusMessage from './components/StatusMessage';
 
 
 const RenderMainContent = ({
-  showTransactionForm,
-  showInvoiceBuilder,
-  showCreateOptions,
-  selectedOption,
-  userData,
-  handleCloseInvoiceBuilder,
-  showAccountPage,
-  handleDeleteAccount,
-  selectedReport,
-  showReports,
-  showBankingDashboard,
-  showHRDashboard,
-  hrSection,
-  showPayrollDashboard,
-  payrollSection,
-  showAnalysisPage,
-  showCustomerList,
-  handleCreateCustomer,
-  selectedInvoiceId,
-  handleInvoiceSelect,
-  handleBackFromInvoice,
-  showCustomerDetails,
-  selectedCustomer,
-  handleCustomerSelect,
-  handleBackToCustomerDetails,
-  showProductManagement,
-  showServiceManagement,
-  showDashboard,
-  showIntegrationSettings,
-}) => {
-  if (showIntegrationSettings) return null;
+    showTransactionForm,
+    showInvoiceBuilder,
+    showCreateOptions,
+    selectedOption,
+    userData,
+    handleCloseInvoiceBuilder,
+    showAccountPage,
+    handleDeleteAccount,
+    selectedReport,
+    showReports,
+    showBankingDashboard,
+    showHRDashboard,
+    hrSection,
+    showPayrollDashboard,
+    payrollSection,
+    showAnalysisPage,
+    showCustomerList,
+    handleCreateCustomer,
+    selectedInvoiceId,
+    handleInvoiceSelect,
+    handleBackFromInvoice,
+    showCustomerDetails,
+    selectedCustomer,
+    handleCustomerSelect,
+    handleBackToCustomerDetails,
+    showProductManagement,
+    showServiceManagement,
+    showDashboard,
+    showIntegrationSettings,
+  }) => {
+    const renderContent = () => {
+      if (showIntegrationSettings) return null;
+      if (showDashboard) {
+
+      return (
+        <Box>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Dashboard
+          </Typography>
+          <Typography variant="body1">
+            Welcome to your dashboard. Here you can view an overview of your business activities.
+          </Typography>
+        </Box>
+      );
+    }
   
-  if (showCreateOptions && selectedOption === 'Estimate') {
+      if (showProductManagement) {
+        return <ProductManagement />;
+      }
+  
+      if (showServiceManagement) {
+        return <ServiceManagement />;
+      }
+  
+      if (selectedInvoiceId !== null) {
+        return <InvoiceDetails invoiceId={selectedInvoiceId} onBack={handleBackFromInvoice} />;
+      }
+  
+      if (showCustomerDetails && selectedCustomer) {
+        return <CustomerDetails customer={selectedCustomer} onInvoiceSelect={handleInvoiceSelect} onBack={handleBackToCustomerDetails} />;
+      }
+  
+      if (showAnalysisPage) {
+        return <AnalysisPage />;
+      }
+  
+      if (showCustomerList) {
+        return (
+          <CustomerList 
+            onCreateCustomer={handleCreateCustomer} 
+            onInvoiceSelect={handleInvoiceSelect}
+            onCustomerSelect={handleCustomerSelect}
+          />
+        );
+      }
+  
+      if (showReports && selectedReport) {
+        return <ReportDisplay reportType={selectedReport} />;
+      }
+  
+      if (showBankingDashboard) {
+        return <BankingDashboard />;
+      }
+  
+      if (showHRDashboard) {
+        return <HRDashboard section={hrSection} />;
+      }
+  
+      if (showPayrollDashboard) {
+        return <PayrollDashboard section={payrollSection} />;
+      }
+  
+      if (showAccountPage) {
+        return (
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Button variant="contained" color="error" onClick={handleDeleteAccount}>
+                Delete Account
+              </Button>
+            </Grid>
+          </Grid>
+        );
+      }
+  
+      if (showTransactionForm) {
+        return (
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <TransactionForm />
+            </Grid>
+            <Grid item xs={12}>
+              <TransactionList />
+            </Grid>
+          </Grid>
+        );
+      }
+  
+      if (showInvoiceBuilder) {
+        return (
+          <InvoiceTemplateBuilder
+            handleClose={handleCloseInvoiceBuilder}
+            userData={userData}
+          />
+        );
+      }
+  
+      if (showCreateOptions) {
+        return (
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              {renderForm(selectedOption, userData)}
+            </Grid>
+          </Grid>
+        );
+      }
+  
+      return null;
+    };
+  
     return (
-      <EstimateForm
-        onSave={(estimateData) => {
-          console.log('Saving estimate:', estimateData);
-        }}
-        onPreview={(estimateData) => {
-          console.log('Previewing estimate:', estimateData);
-        }}
-      />
-    );
-  }
-
-  if (showDashboard) {
-    return <Typography variant="h4" component="h1" gutterBottom>This is the dashboard area</Typography>;
-  }
-
-  if (showProductManagement) {
-    return <ProductManagement />;
-  }
-
-  if (showServiceManagement) {
-    return <ServiceManagement />;
-  }
-
-  if (selectedInvoiceId !== null) {
-    return <InvoiceDetails invoiceId={selectedInvoiceId} onBack={handleBackToCustomerDetails} />;
-  }
-
-  if (showCustomerDetails && selectedCustomer) {
-    return <CustomerDetails customer={selectedCustomer} onInvoiceSelect={handleInvoiceSelect} onBack={handleBackFromInvoice} />;
-  }
-
-  if (showAnalysisPage) {
-    return <AnalysisPage />;
-  }
-
-  if (showCustomerList) {
-    return (
-      <CustomerList 
-        onCreateCustomer={handleCreateCustomer} 
-        onInvoiceSelect={handleInvoiceSelect}
-        onCustomerSelect={handleCustomerSelect}
-      />
-    );
-  }
-
-  if (showReports && selectedReport) {
-    return <ReportDisplay reportType={selectedReport} />;
-  }
-
-  if (showBankingDashboard) {
-    return <BankingDashboard />;
-  }
-
-  if (showHRDashboard) {
-    return <HRDashboard section={hrSection} />;
-  }
-
-  if (showPayrollDashboard) {
-    return <PayrollDashboard section={payrollSection} />;
-  }
-
-  if (showAccountPage) {
-    return (
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Button variant="contained" color="error" onClick={handleDeleteAccount}>
-            Delete Account
-          </Button>
-        </Grid>
-      </Grid>
-    );
-  }
-
-  if (showTransactionForm) {
-    return (
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <TransactionForm />
-        </Grid>
-        <Grid item xs={12}>
-          <TransactionList />
-        </Grid>
-      </Grid>
-    );
-  }
-
-  if (showInvoiceBuilder) {
-    return (
-      <InvoiceTemplateBuilder
-        handleClose={handleCloseInvoiceBuilder}
-        userData={userData}
-      />
-    );
-  }
-
-  if (showCreateOptions) {
-    return (
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          {renderForm(selectedOption, userData)}
-        </Grid>
-      </Grid>
-    );
-  }
-
-  return null;
-};
-
-export default RenderMainContent;
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 4, 
+            height: '100%', 
+            overflow: 'auto',
+            backgroundColor: 'background.paper',
+            borderRadius: 2,
+          }}
+        >
+          {renderContent()}
+        </Paper>
+      );
+    };
+  
+  export default RenderMainContent;

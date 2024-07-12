@@ -8,7 +8,7 @@ from pyfactor import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('users.urls')),
+    path('api/', include('users.urls')),
     path('', include('finance.urls')),
     path('api/banking/', include('banking.urls')),
     path('api/', include('sales.urls')),
@@ -21,7 +21,7 @@ urlpatterns = [
     path('staff/chat/respond/<int:message_id>/', respond_to_message, name='respond_to_message'),
     path('api/chart/', include('chart.urls')),
     path('api/',include('business.urls')),
-    path('integrations/', include('integrations.urls')),
+    path('api/integrations/', include('integrations.urls')),
 
 
 

@@ -1,3 +1,4 @@
+import re
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models, connections
 from django.utils import timezone
@@ -82,13 +83,13 @@ class UserProfile(models.Model):
     postcode = models.CharField(max_length=200, null=True)
     country = CountryField(default='US')
     phone_number = models.CharField(max_length=200, null=True)
-    database_name = models.CharField(max_length=255, null=True, blank=True)
+    database_name = models.CharField(max_length=255, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True, null=True)
     is_business_owner = models.BooleanField(default=False)
+    shopify_access_token = models.CharField(max_length=255, null=True, blank=True)
 
     def to_dict(self):
-     
         return {
             'email': self.user.email,
             'first_name': self.user.first_name,
@@ -98,14 +99,15 @@ class UserProfile(models.Model):
             'business_name': self.business.name if self.business_id is not None else None,
             'database_name': self.database_name,
             # Add other fields as needed
-            }
-
+        }
 
     def save(self, *args, **kwargs):
-        if self.pk is None and not self.user:
-            raise ValidationError('UserProfile must have an associated User instance.')
+        if not self.database_name and self.user:
+            safe_id = re.sub(r'[^a-zA-Z0-9_]', '', str(self.user.id).replace('-', '_'))
+            safe_email = re.sub(r'[^a-zA-Z0-9_]', '', self.user.email.split('@')[0])
+            self.database_name = f"{safe_id}_{safe_email}"
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"User Profile: {self.id or 'unsaved'}"
+        return f"User Profile: {self.id}"  # Changed from self.user.email to self.id
 

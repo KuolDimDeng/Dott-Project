@@ -12,7 +12,34 @@ venv/
 dist/
 build/
 
+# Environment variables
+.env
+
 # OS files
 .DS_Store
 Thumbs.db
 
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Django stuff
+*.sqlite3
+*.pyc
+local_settings.py
+
+# Media and static files (in development)
+media/
+static/
+
+# Coverage reports
+htmlcov/
+.coverage
+
+# IDE specific files
+.vscode/
+.idea/
+
+# Temporary files
+*.swp
+*~

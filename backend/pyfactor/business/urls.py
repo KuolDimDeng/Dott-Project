@@ -14,5 +14,5 @@ urlpatterns = [
     path('ecommerce-integration/', EcommerceIntegrationView.as_view(), name='ecommerce-integration'),
     path('integrate/woocommerce/', WooCommerceIntegrationView.as_view(), name='woocommerce-integration'),
     path('ecommerce-platform-selection/', ecommerce_platform_selection, name='ecommerce_platform_selection'),
-    path('business/data/', get_business_data, name='business_data'),  # Changed this line
+    path('api/business/data/', get_business_data, name='business_data'),  # Changed this line
 ]
