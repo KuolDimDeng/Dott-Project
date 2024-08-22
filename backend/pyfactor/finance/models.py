@@ -3,6 +3,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
+from sales.models import Bill
 
 class AccountType(models.Model):
     name = models.CharField(max_length=100)
@@ -38,7 +39,7 @@ class Account(models.Model):
     def __str__(self):
         return f"{self.name} ({self.id})"
 
-class Transaction(models.Model):
+class FinanceTransaction(models.Model):
     TYPE_CHOICES = [
         ('credit', 'Credit'),
         ('debit', 'Debit'),
@@ -53,6 +54,9 @@ class Transaction(models.Model):
     invoice = models.OneToOneField('sales.Invoice', on_delete=models.SET_NULL, related_name='finance_transaction', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    bill = models.ForeignKey(Bill, on_delete=models.SET_NULL, related_name='finance_transactions', null=True, blank=True)  # Add this line
+
+
 
     def update_account_balance(self):
         if self.type == 'credit':
@@ -66,10 +70,10 @@ class Transaction(models.Model):
             raise ValidationError('Transaction amount must be positive.')
 
 class Income(models.Model):
-    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='income')
+    transaction = models.OneToOneField(FinanceTransaction, on_delete=models.CASCADE, related_name='income')
 
 class Expense(models.Model):
-    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='expense')
+    transaction = models.OneToOneField(FinanceTransaction, on_delete=models.CASCADE, related_name='expense')
 
 class RevenueAccount(models.Model):
     date = models.DateField(default=timezone.now)
@@ -80,7 +84,7 @@ class RevenueAccount(models.Model):
     description = models.CharField(max_length=255)
     note = models.TextField(blank=True)
     account_type = models.ForeignKey(AccountType, on_delete=models.CASCADE, related_name='revenue_accounts')
-    transaction = models.OneToOneField(Transaction, on_delete=models.SET_NULL, related_name='revenue_account', null=True)
+    transaction = models.OneToOneField(FinanceTransaction, on_delete=models.SET_NULL, related_name='revenue_account', null=True)
 
 class CashAccount(models.Model):
     date = models.DateField(default=timezone.now)
@@ -90,7 +94,7 @@ class CashAccount(models.Model):
     description = models.CharField(max_length=255)
     note = models.TextField(blank=True)
     account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='cash_accounts')
-    transaction = models.OneToOneField(Transaction, on_delete=models.SET_NULL, related_name='cash_account', null=True)
+    transaction = models.OneToOneField(FinanceTransaction, on_delete=models.SET_NULL, related_name='cash_account', null=True)
 
 class SalesTaxAccount(models.Model):
     date = models.DateField(default=timezone.now)
@@ -99,4 +103,4 @@ class SalesTaxAccount(models.Model):
     percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(0)])
     description = models.CharField(max_length=255)
     note = models.TextField(blank=True)
-    transaction = models.OneToOneField(Transaction, on_delete=models.SET_NULL, related_name='sales_tax_account', null=True)
+    transaction = models.OneToOneField(FinanceTransaction, on_delete=models.SET_NULL, related_name='sales_tax_account', null=True)

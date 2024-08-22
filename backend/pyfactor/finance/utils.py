@@ -1,6 +1,6 @@
 # /Users/kuoldeng/projectx/backend/pyfactor/finance/utils.py
 from django.conf import settings
-from finance.models import AccountType, Account, Transaction, RevenueAccount, CashAccount
+from finance.models import AccountType, Account, FinanceTransaction, RevenueAccount, CashAccount
 from django.db import DatabaseError, OperationalError, transaction, connections
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from pyfactor.logging_config import get_logger
@@ -71,7 +71,7 @@ def create_revenue_account(database_name, date, account_name, transaction_type, 
 
             # Create the transaction for the revenue account (credit)
             logger.debug('Creating the transaction for revenue account (credit)...')
-            credit_transaction = Transaction.objects.using(database_name).create(
+            credit_transaction = FinanceTransaction.objects.using(database_name).create(
                 date=date,
                 account=cash_account,
                 type=transaction_type,
@@ -83,7 +83,7 @@ def create_revenue_account(database_name, date, account_name, transaction_type, 
 
             # Create the transaction for the cash account (debit)
             logger.debug('Creating the transaction for cash account (debit)...')
-            debit_transaction = Transaction.objects.using(database_name).create(
+            debit_transaction = FinanceTransaction.objects.using(database_name).create(
                 date=date,
                 account=cash_account,
                 type='Debit',

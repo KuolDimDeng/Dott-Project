@@ -4,8 +4,8 @@ from django.shortcuts import render
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import BankAccount, Transaction
-from .serializers import BankAccountSerializer, TransactionSerializer
+from .models import BankAccount, BankTransaction
+from .serializers import BankAccountSerializer, BankTransactionSerializer
 
 class BankAccountViewSet(viewsets.ModelViewSet):
     serializer_class = BankAccountSerializer
@@ -20,10 +20,10 @@ class BankAccountViewSet(viewsets.ModelViewSet):
         return Response({"message": "Sync initiated"})
 
 class TransactionViewSet(viewsets.ModelViewSet):
-    serializer_class = TransactionSerializer
+    serializer_class = BankTransactionSerializer
 
     def get_queryset(self):
-        return Transaction.objects.filter(account__user=self.request.user)
+        return BankTransaction.objects.filter(account__user=self.request.user)
 
     @action(detail=True, methods=['post'])
     def reconcile(self, request, pk=None):

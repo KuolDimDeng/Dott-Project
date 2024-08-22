@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from users.models import User, UserProfile
-from finance.models import Account, Transaction
+from finance.models import Account, FinanceTransaction
 from .models import Report
 from .serializers import ReportSerializer
 from pyfactor.logging_config import get_logger
@@ -137,9 +137,9 @@ def generate_balance_sheet(database_name):
 def generate_cash_flow(database_name):
     logger.debug(f"Generating cash flow statement for database: {database_name}")
     try:
-        operating_activities = Transaction.objects.using(database_name).filter(account__account_type__name='Operating').aggregate(total=models.Sum('amount'))['total'] or 0
-        investing_activities = Transaction.objects.using(database_name).filter(account__account_type__name='Investing').aggregate(total=models.Sum('amount'))['total'] or 0
-        financing_activities = Transaction.objects.using(database_name).filter(account__account_type__name='Financing').aggregate(total=models.Sum('amount'))['total'] or 0
+        operating_activities = FinanceTransaction.objects.using(database_name).filter(account__account_type__name='Operating').aggregate(total=models.Sum('amount'))['total'] or 0
+        investing_activities = FinanceTransaction.objects.using(database_name).filter(account__account_type__name='Investing').aggregate(total=models.Sum('amount'))['total'] or 0
+        financing_activities = FinanceTransaction.objects.using(database_name).filter(account__account_type__name='Financing').aggregate(total=models.Sum('amount'))['total'] or 0
 
         data = {
             'operating_activities': operating_activities,

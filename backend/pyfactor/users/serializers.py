@@ -16,7 +16,7 @@ from .utils import create_user_database, setup_user_database
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
-from finance.models import AccountType, Account, Transaction, Income
+from finance.models import AccountType, Account, FinanceTransaction, Income
 from pyfactor.logging_config import get_logger
 import sys
 import traceback
@@ -155,13 +155,16 @@ class CustomRegisterSerializer(RegisterSerializer):
                         end_date=end_date
                     )
 
+                # Call setup_user_database after creating the database
+                setup_user_database(database_name, validated_data, user)
+
                 logger.info(f"User {user.email} created successfully with database {database_name}")
                 return user
 
         except Exception as e:
             logger.exception("Error during user creation: %s", str(e))
             raise serializers.ValidationError({'user': f'Failed to create user: {str(e)}'})
-
+    
     def calculate_end_date(self, subscription_type, start_date):
         if subscription_type == 'free':
             return start_date + relativedelta(days=30)

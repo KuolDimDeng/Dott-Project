@@ -1,6 +1,6 @@
 #/Users/kuoldeng/projectx/backend/pyfactor/finance/serializers.py
 from rest_framework import serializers
-from .models import AccountType, Account, SalesTaxAccount, Transaction, Income, RevenueAccount, CashAccount
+from .models import AccountType, Account, SalesTaxAccount, FinanceTransaction, Income, RevenueAccount, CashAccount
 from dateutil import parser
 from sales.serializers import TransactionSerializer
 from rest_framework.exceptions import ValidationError
@@ -37,7 +37,7 @@ class IncomeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         logger.debug(f"TransactionSerializer create method called with validated_data: {validated_data}")
         database_name = self.context.get('database_name') or 'default'
-        return Transaction.objects.using(database_name).create(**validated_data)
+        return FinanceTransaction.objects.using(database_name).create(**validated_data)
 
 class RevenueAccountSerializer(serializers.ModelSerializer):
     class Meta:
@@ -73,7 +73,7 @@ class TransactionListSerializer(serializers.ModelSerializer):
     account = AccountSerializer()
 
     class Meta:
-        model = Transaction
+        model = FinanceTransaction
         fields = ['id', 'date', 'description', 'account', 'type', 'amount', 'notes', 'receipt']
         
     def __init__(self, *args, **kwargs):

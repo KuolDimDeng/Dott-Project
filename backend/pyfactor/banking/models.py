@@ -11,7 +11,7 @@ class BankAccount(models.Model):
     balance = models.DecimalField(max_digits=10, decimal_places=2)
     last_synced = models.DateTimeField(auto_now=True)
 
-class Transaction(models.Model):
+class BankTransaction(models.Model):
     TRANSACTION_TYPES = [
         ('DEBIT', 'Debit'),
         ('CREDIT', 'Credit'),

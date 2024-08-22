@@ -5,7 +5,7 @@ from django.core.management import call_command
 from django.db import connection, transaction, connections
 from business.models import Business
 from users.models import User, UserProfile
-from finance.models import AccountType, Account, Transaction
+from finance.models import AccountType, Account, FinanceTransaction
 from django.conf import settings
 import logging
 import pytz
@@ -98,32 +98,50 @@ def create_user_database(user, business_data):
 
 def setup_user_database(database_name, user_data, user):
     try:
-        logger.debug(f"Setting up user database: {database_name}")
+        logger.debug(f"Starting setup_user_database for: {database_name}")
         
         # Run migrations for the user's database
-        logger.info("Running migrations for the user's database")
+        logger.info(f"Running migrations for database: {database_name}")
         call_command('migrate', database=database_name)
 
         with transaction.atomic(using=database_name):
             # Create initial data
-            logger.info("Creating initial data...")
+            logger.info(f"Creating initial data for database: {database_name}")
+            
+            # Populate account types
+            logger.info(f"Populating account types for database: {database_name}")
             populate_account_types(database_name)
             
-            # Fetch the account type after populating
-            logger.info("Fetching the account type after populating...")
-            account_type = AccountType.objects.using(database_name).get(account_type_id=0)
+            # Ensure necessary accounts exist
+            logger.info(f"Ensuring necessary accounts exist for database: {database_name}")
+            ensure_accounts_exist(database_name)
+            
+            # Fetch the Cash account type
+            logger.info(f"Fetching the Cash account type for database: {database_name}")
+            try:
+                cash_account_type = AccountType.objects.using(database_name).get(name='Cash')
+                logger.info(f"Cash account type fetched successfully for database: {database_name}")
+            except AccountType.DoesNotExist:
+                logger.error(f"Cash account type not found in database: {database_name}")
+                raise
 
-            # Create Cash Account
-            logger.info("Creating Cash Account...")
-            cash_account = Account.objects.using(database_name).create(
-                account_number='1', 
-                name='Cash on Hand', 
-                account_type=account_type
+            # Create Cash Account if it doesn't exist
+            logger.info(f"Creating or getting Cash Account for database: {database_name}")
+            cash_account, created = Account.objects.using(database_name).get_or_create(
+                name='Cash on Hand',
+                defaults={
+                    'account_number': '1',
+                    'account_type': cash_account_type
+                }
             )
+            if created:
+                logger.info(f"Cash Account created for database: {database_name}")
+            else:
+                logger.info(f"Cash Account already exists for database: {database_name}")
 
             # Create Initial Transaction
-            logger.info("Creating initial transaction...")
-            Transaction.objects.using(database_name).create(
+            logger.info(f"Creating initial transaction for database: {database_name}")
+            FinanceTransaction.objects.using(database_name).create(
                 date=timezone.now().astimezone(pytz.timezone(settings.TIME_ZONE)).date(),
                 description='Initial Transaction',
                 account=cash_account,
@@ -132,6 +150,7 @@ def setup_user_database(database_name, user_data, user):
                 notes='Initial transaction',
                 receipt=None
             )
+            logger.info(f"Initial transaction created successfully for database: {database_name}")
 
         logger.debug(f"Initial tables and data created successfully in user's database: {database_name}")
 
@@ -144,16 +163,38 @@ def setup_user_database(database_name, user_data, user):
         return database_name
 
     except Exception as e:
-        logger.error(f"Error during user database setup: {str(e)}")
+        logger.error(f"Error during user database setup for {database_name}: {str(e)}")
         logger.error(f"Traceback:\n{traceback.format_exc()}")
         raise
 
 def populate_account_types(database_name):
-    logger.info(f"Populating finance_accounttype table for user database: {database_name}")
+    logger.info(f"Populating account types for database: {database_name}")
     AccountType = apps.get_model('finance', 'AccountType')
     for account_type_name, account_type_id in ACCOUNT_TYPES.items():
-        AccountType.objects.using(database_name).update_or_create(
+        AccountType.objects.using(database_name).get_or_create(
             account_type_id=account_type_id,
             defaults={'name': account_type_name}
         )
-    logger.info(f"finance_accounttype table populated successfully for user database: {database_name}")
+    logger.info(f"Account types populated successfully for database: {database_name}")
+
+def ensure_accounts_exist(database_name):
+    logger.info(f"Ensuring necessary accounts exist in database: {database_name}")
+    Account = apps.get_model('finance', 'Account')
+    AccountType = apps.get_model('finance', 'AccountType')
+    required_accounts = [
+        ('Accounts Receivable', 'Accounts Receivable'),
+        ('Sales Revenue', 'Revenue'),
+        ('Sales Tax Payable', 'Current Liabilities'),
+        ('Cost of Goods Sold', 'Expenses'),
+        ('Inventory', 'Current Assets'),
+        ('Accounts Payable', 'Current Liabilities'),
+        ('Cash', 'Cash')
+    ]
+    for account_name, account_type_name in required_accounts:
+        account_type, _ = AccountType.objects.using(database_name).get_or_create(name=account_type_name)
+        Account.objects.using(database_name).get_or_create(
+            name=account_name,
+            defaults={'account_type': account_type}
+        )
+    logger.info(f"Necessary accounts ensured for database: {database_name}")
+

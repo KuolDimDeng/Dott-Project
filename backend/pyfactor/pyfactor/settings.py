@@ -18,6 +18,7 @@ import logging
 import logging.config
 from dotenv import load_dotenv
 
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -29,6 +30,8 @@ SHOPIFY_API_KEY = os.getenv('SHOPIFY_API_KEY')
 SHOPIFY_API_SECRET = os.getenv('SHOPIFY_API_SECRET')
 SHOPIFY_SHOP_URL = os.getenv('SHOPIFY_SHOP_URL')
 APP_URL = 'http://localhost:8000'  # or whatever your app's URL is
+
+SHOPIFY_API_VERSION = '2023-07'  # or whatever the latest version is
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -73,6 +76,7 @@ CSRF_TRUSTED_ORIGINS = ['http://localhost:3000']  # Add your frontend URL here
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = True
 CSRF_USE_SESSIONS = True
+
 
 CACHES = {
     'default': {
@@ -244,6 +248,7 @@ INSTALLED_APPS = [
     'chatbot',
     'chart',
     'integrations',
+    'alerts',
     'django_celery_beat',
     'django_celery_results',
 ]

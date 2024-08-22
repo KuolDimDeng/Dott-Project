@@ -14,7 +14,7 @@ from dateutil import parser as date_parser  # This is the changed line
 from sales.models import Invoice
 from sales.serializers import InvoiceSerializer
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
-from .models import AccountType, Account, Transaction, Income, RevenueAccount, CashAccount, Expense
+from .models import AccountType, Account, FinanceTransaction, Income, RevenueAccount, CashAccount, Expense
 from datetime import datetime
 from .serializers import AccountTypeSerializer, AccountSerializer, IncomeSerializer, SalesTaxAccountSerializer, TransactionSerializer, CashAccountSerializer, TransactionListSerializer
 from users.models import UserProfile
@@ -151,7 +151,7 @@ def handle_invoice_payment(invoice_id, data, database_name):
     ar_account = Account.objects.using(database_name).get(name='Accounts Receivable')
 
     # Debit Cash account
-    Transaction.objects.using(database_name).create(
+    FinanceTransaction.objects.using(database_name).create(
         date=data['date'],
         description=f"Payment received for Invoice #{invoice.invoice_num}",
         account=cash_account,
@@ -160,7 +160,7 @@ def handle_invoice_payment(invoice_id, data, database_name):
     )
 
     # Credit Accounts Receivable
-    Transaction.objects.using(database_name).create(
+    FinanceTransaction.objects.using(database_name).create(
         date=data['date'],
         description=f"Payment received for Invoice #{invoice.invoice_num}",
         account=ar_account,
@@ -176,12 +176,24 @@ def handle_unauthenticated_user():
     return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
 
 def get_user_database(user):
-    user_profile = UserProfile.objects.using('default').get(user=user)
+    try:
+        user_profile = UserProfile.objects.using('default').get(user=user)
+    except UserProfile.DoesNotExist:
+        logger.error("UserProfile does not exist for user: %s", user)
+        return None
+
     database_name = user_profile.database_name
+    if not database_name:
+        logger.error("Database name is None for user: %s", user)
+        return None  # Or handle it as you see fit
+    
     logger.debug("Fetched user profile. Database name: %s", database_name)
+    
     router = UserDatabaseRouter()
     router.create_dynamic_database(database_name)
+    
     return database_name
+
 
 def validate_required_fields(data):
     required_fields = ['date', 'account', 'type', 'amount', 'account_type']
@@ -349,7 +361,7 @@ def account_view(request):
 
 class TransactionCreateView(generics.CreateAPIView):
     logger.debug('TransactionCreateView')
-    queryset = Transaction.objects.all()
+    queryset = FinanceTransaction.objects.all()
     serializer_class = TransactionSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -447,7 +459,7 @@ class DeleteAccountView(APIView):
                 RevenueAccount.objects.using(database_name).all().delete()
                 Income.objects.using(database_name).all().delete()
                 Expense.objects.using(database_name).all().delete()
-                Transaction.objects.using(database_name).all().delete()
+                FinanceTransaction.objects.using(database_name).all().delete()
                 Account.objects.using(database_name).all().delete()
                 AccountType.objects.using(database_name).all().delete()
                 logger.info("Related models deleted")
@@ -507,20 +519,20 @@ class TransactionListView(generics.ListAPIView):
 
             if not database_name:
                 logger.error("Database name is empty.")
-                return Transaction.objects.none()  # Return an empty queryset
+                return FinanceTransaction.objects.none()  # Return an empty queryset
 
             if database_name in settings.DATABASES:
-                queryset = Transaction.objects.using(database_name).all()
+                queryset = FinanceTransaction.objects.using(database_name).all()
                 logger.debug("Queryset: %s", queryset)
                 return queryset
             else:
                 logger.warning("Database '%s' does not exist in settings.", database_name)
-                return Transaction.objects.none()
+                return FinanceTransaction.objects.none()
         
         except UserProfile.DoesNotExist:
             logger.error("UserProfile does not exist for user: %s", user)
-            return Transaction.objects.none()
+            return FinanceTransaction.objects.none()
         
         except Exception as e:
             logger.exception("An error occurred while retrieving the queryset: %s", e)
-            return Transaction.objects.none()
+            return FinanceTransaction.objects.none()

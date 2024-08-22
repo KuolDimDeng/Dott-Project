@@ -11,7 +11,7 @@ urlpatterns = [
     path('api/', include('users.urls')),
     path('', include('finance.urls')),
     path('api/banking/', include('banking.urls')),
-    path('api/', include('sales.urls')),
+    path('', include('sales.urls')),
     path('accounts/', include('allauth.urls')),
     path('api/messages/', views.message_stream, name='message_stream'),
     path('api/reports/', include('reports.urls')),
@@ -22,6 +22,8 @@ urlpatterns = [
     path('api/chart/', include('chart.urls')),
     path('api/',include('business.urls')),
     path('api/integrations/', include('integrations.urls')),
+    path('api/', include('alerts.urls')),
+
 
 
 

@@ -3,6 +3,8 @@
 import os
 from celery import Celery, signals
 from django.conf import settings
+import logging
+from celery.signals import after_setup_logger, after_setup_task_logger
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
@@ -15,6 +17,25 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Load task modules from all registered Django apps.
 app.autodiscover_tasks()
+
+def configure_logger(logger, **kwargs):
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    console_handler.setLevel(logging.DEBUG)
+    
+    logger.addHandler(console_handler)
+    logger.setLevel(logging.DEBUG)
+
+    # Suppress propagation to root logger
+    logger.propagate = False
+
+    return logger
+
+after_setup_logger.connect(configure_logger)
+after_setup_task_logger.connect(configure_logger)
 
 @app.task(bind=True)
 def debug_task(self):
@@ -68,7 +89,8 @@ def on_task_prerun(task_id, task, *args, **kwargs):
                 router.create_dynamic_database(database_name)
                 
             except Exception as e:
-                print(f"Error setting up database for shop {shop}: {str(e)}")
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error setting up database for shop {shop}: {str(e)}")
 
 app.conf.update(
     CELERY_TASK_ROUTES={

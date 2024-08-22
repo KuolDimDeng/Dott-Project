@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from finance.models import Transaction
+from finance.models import FinanceTransaction
 from users.models import UserProfile
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from django.db.models import Sum
@@ -32,7 +32,7 @@ def transaction_data(request):
         router = UserDatabaseRouter()
         router.create_dynamic_database(database_name)
 
-        transactions = Transaction.objects.using(database_name).all()
+        transactions = FinanceTransaction.objects.using(database_name).all()
 
         if account:
             transactions = transactions.filter(account__name=account)

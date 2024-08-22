@@ -134,8 +134,12 @@ class UserDatabaseRouter:
         return None
 
     def allow_relation(self, obj1, obj2, **hints):
-        logger.debug(f"allow_relation called with obj1: {obj1}, obj2: {obj2}")
-        return True
+        logger.debug(f"allow_relation called with obj1: {obj1.__class__.__name__} (ID: {obj1.pk}), obj2: {obj2.__class__.__name__} (ID: {obj2.pk})")
+        if obj1._state.db == obj2._state.db:
+            logger.debug(f"Relation allowed: same database ({obj1._state.db})")
+            return True
+        logger.debug(f"Relation not allowed: different databases (obj1: {obj1._state.db}, obj2: {obj2._state.db})")
+        return False
 
     def allow_migrate(self, db, app_label, model_name=None, **hints):
         logger.debug(f"allow_migrate called with db: {db}, app_label: {app_label}, model_name: {model_name}")

@@ -9,6 +9,14 @@ import random
 import string
 import re
 from datetime import timedelta
+from django.contrib.auth import get_user_model
+
+def get_current_datetime():
+    return timezone.now()
+
+def default_due_datetime():
+    return get_current_datetime() + timedelta(days=30)
+
 
 class Item(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -106,24 +114,36 @@ class Customer(models.Model):
         return f"{self.customerName} (Account: {self.accountNumber})"
     
 class Bill(models.Model):
-    bill_num = models.CharField(max_length=20)
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='bills')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    bill_number = models.CharField(max_length=20, unique=True, editable=False, blank=True, null=True)
+    vendor = models.ForeignKey('Vendor', on_delete=models.CASCADE, related_name='bills')
+    bill_date = models.DateTimeField(default=get_current_datetime)
+    due_date = models.DateTimeField(default=default_due_datetime)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # Add other fields as needed
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return self.bill_num
+    def save(self, *args, **kwargs):
+        if not self.bill_number:
+            self.bill_number = self.generate_bill_number()
+        super().save(*args, **kwargs)
 
+    def generate_bill_number(self):
+        # Get the first 5 characters of the UUID, convert to uppercase
+        uuid_part = str(self.id)[:8].upper()
+        return f"BILL-{uuid_part}"
+
+    def __str__(self):
+            return f"Bill {self.id or 'Unsaved'}"
+
+    class Meta:
+        ordering = ['-bill_date']
+        
     def clean(self):
-        if self.amount <= 0:
+        if self.total_amount <= 0:
             raise ValidationError('Bill amount must be positive.')
 
-def get_current_datetime():
-    return timezone.now()
-
-def default_due_datetime():
-    return get_current_datetime() + timedelta(days=30)
 
 class Invoice(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -135,7 +155,7 @@ class Invoice(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     due_date = models.DateTimeField(default=default_due_datetime)
     status = models.CharField(max_length=20, choices=[('draft', 'Draft'), ('sent', 'Sent'), ('paid', 'Paid')], default='draft')
-    transaction = models.OneToOneField('finance.Transaction', on_delete=models.CASCADE, related_name='sales_invoice', null=True, blank=True)
+    transaction = models.OneToOneField('finance.FinanceTransaction', on_delete=models.CASCADE, related_name='sales_invoice', null=True, blank=True)
     accounts_receivable = models.ForeignKey('finance.Account', on_delete=models.SET_NULL, related_name='invoices_receivable', null=True)
     sales_revenue = models.ForeignKey('finance.Account', on_delete=models.SET_NULL, related_name='invoices_revenue', null=True)
     sales_tax_payable = models.ForeignKey('finance.Account', on_delete=models.SET_NULL, related_name='invoices_tax_payable', null=True)
@@ -164,23 +184,37 @@ class Invoice(models.Model):
         return self.amount * (1 + self.customer.salesTax / 100)
 
 class Vendor(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    vendor_number = models.CharField(max_length=20, unique=True, editable=False)
     vendor_name = models.CharField(max_length=100)
     street = models.CharField(max_length=100)
-    postcode = models.CharField(max_length=10, default='Enter Postcode')
-    city = models.CharField(max_length=100, default='Enter City')
-    state = models.CharField(max_length=100, default='Enter State')
+    postcode = models.CharField(max_length=10)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
     phone = models.CharField(max_length=20, blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        if not self.vendor_number:
+            self.vendor_number = self.generate_vendor_number()
+        super().save(*args, **kwargs)
+
+    def generate_vendor_number(self):
+        uuid_part = str(self.id)[:8].upper()
+        return f"V-{uuid_part}"
+
     def __str__(self):
-        return self.vendor_name
+        return f"{self.vendor_name} ({self.vendor_number})"
+
+    class Meta:
+        ordering = ['vendor_name']
 
 class Estimate(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    estimate_num = models.CharField(max_length=5, unique=True, editable=False)
+    estimate_num = models.CharField(max_length=20, unique=True, editable=False)
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='estimates')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    totalAmount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     date = models.DateTimeField(default=get_current_datetime)
@@ -192,6 +226,19 @@ class Estimate(models.Model):
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     currency = models.CharField(max_length=3, default='USD')
     footer = models.TextField(blank=True)
+    
+    def save(self, *args, **kwargs):
+        if not self.estimate_num:
+            self.estimate_num = self.generate_estimate_number()
+        super().save(*args, **kwargs)
+
+    def generate_estimate_number(self):
+        # Get the first 8 characters of the UUID, convert to uppercase
+        uuid_part = str(self.id)[:8].upper()
+        return f"EST-{uuid_part}"
+
+    def __str__(self):
+        return f"Estimate {self.estimate_num}"
    
 class EstimateItem(models.Model):
     estimate = models.ForeignKey(Estimate, related_name='items', on_delete=models.CASCADE)
@@ -218,19 +265,55 @@ class EstimateAttachment(models.Model):
         if self.amount <= 0:
             raise ValidationError('Estimate amount must be positive.')
 
+
 class SalesOrder(models.Model):
-    order_num = models.CharField(max_length=20)
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='sales_orders')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    order_number = models.CharField(max_length=50, unique=True, editable=False)
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)    
+    currency = models.CharField(max_length=3, default='USD')
+    date = models.DateField()
+    created_by = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return self.order_num
+    def save(self, *args, **kwargs):
+        if not self.order_number:
+            self.order_number = self.generate_order_number()
+        super().save(*args, **kwargs)
+
+    def generate_order_number(self):
+        uuid_part = str(self.id)[:8].upper()
+        return f"SO-{uuid_part}"
+
 
     def clean(self):
-        if self.amount <= 0:
-            raise ValidationError('Sales order amount must be_positive.')
+        if self.amount is not None and self.amount <= 0:
+            raise ValidationError('Sales order amount must be positive.')
+
+    class Meta:
+        ordering = ['-date']
+        app_label = 'sales'
+        
+class SalesOrderItem(models.Model):
+    sales_order = models.ForeignKey(SalesOrder, related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    service = models.ForeignKey(Service, on_delete=models.SET_NULL, null=True, blank=True)
+    description = models.CharField(max_length=200, null=True)
+    quantity = models.IntegerField(default=1)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    def __str__(self):
+        return f"SalesOrderItem {self.id} for SalesOrder {self.sales_order_id}"
+
+    def subtotal(self):
+        return self.quantity * self.unit_price
+
+    class Meta:
+        ordering = ['id']
+        app_label = 'sales'
 
 class Department(models.Model):
     dept_code = models.CharField(max_length=20)
