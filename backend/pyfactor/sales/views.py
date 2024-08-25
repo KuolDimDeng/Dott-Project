@@ -1,5 +1,6 @@
 from decimal import Decimal
 from django.shortcuts import get_object_or_404, render
+from psycopg2 import IntegrityError
 from rest_framework import generics, status, serializers, viewsets, status
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated
@@ -9,7 +10,7 @@ from finance.views import get_user_database
 from .models import Estimate, EstimateItem, Invoice, Customer, Product, Service, Vendor, default_due_datetime, Bill, SalesOrder, SalesOrderItem
 from finance.models import Account, AccountType, FinanceTransaction
 from users.models import UserProfile
-from .serializers import InvoiceSerializer, CustomerSerializer, ProductSerializer, ServiceSerializer, VendorSerializer, EstimateSerializer, EstimateAttachmentSerializer, SalesOrderSerializer, EstimateAttachmentSerializer
+from .serializers import InvoiceSerializer, CustomerSerializer, ProductSerializer, ServiceSerializer, VendorSerializer, EstimateSerializer, EstimateAttachmentSerializer, SalesOrderSerializer, EstimateAttachmentSerializer, EstimateItemSerializer, SalesOrderItemSerializer
 from finance.serializers import TransactionSerializer
 from django.conf import settings
 from django.db import connections, transaction as db_transaction
@@ -29,6 +30,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from .utils import get_or_create_user_database
 import traceback
 from decimal import Decimal
+from rest_framework.exceptions import ValidationError
+
 
 
 import uuid
@@ -113,13 +116,17 @@ def ensure_accounts_exist(database_name):
 
 def create_invoice_with_transaction(data, database_name):
     logger.debug(f"Creating invoice with transaction in database: {database_name}")
-    
+    logger.debug(f"Data received: {data}")
+
     context = {'database_name': database_name}
-    
+
     with db_transaction.atomic(using=database_name):
         transaction_data = data.pop('transaction', None)
         finance_transaction = None
+
+        # Process transaction data if provided
         if transaction_data:
+            logger.debug(f"Processing transaction data: {transaction_data}")
             transaction_serializer = TransactionSerializer(data=transaction_data, context=context)
             if transaction_serializer.is_valid(raise_exception=True):
                 finance_transaction = transaction_serializer.save()
@@ -128,29 +135,33 @@ def create_invoice_with_transaction(data, database_name):
                 logger.error(f"Transaction validation failed: {transaction_serializer.errors}")
                 raise serializers.ValidationError(transaction_serializer.errors)
 
-        # Ensure date is a date object
+        # Convert date strings to date objects if necessary
         if 'date' in data and isinstance(data['date'], str):
+            logger.debug(f"Parsing date from string: {data['date']}")
             data['date'] = datetime.strptime(data['date'], "%Y-%m-%d").date()
 
-        # Remove due_date if it's in the data, let the serializer calculate it
-        data.pop('due_date', None)
+        # Ensure the 'customer' field is a string (UUID as string)
+        customer = data.get('customer')
+        if isinstance(customer, uuid.UUID):
+            data['customer'] = str(customer)
+        elif not isinstance(customer, str):
+            logger.error(f"Invalid customer type: {type(customer)}. Expected UUID as string.")
+            raise serializers.ValidationError({'customer': 'Invalid customer format. Expected UUID as string.'})
 
-        # Convert customer ID to UUID
-        customer_id = data.get('customer')
-        try:
-            data['customer'] = uuid.UUID(customer_id)
-        except ValueError:
-            raise serializers.ValidationError({'customer': f'Invalid UUID format for customer: {customer_id}'})
-
+        # Initialize and validate the serializer
         invoice_serializer = InvoiceSerializer(data=data, context=context)
         logger.debug(f"Invoice data before validation: {data}")
         if invoice_serializer.is_valid(raise_exception=True):
             logger.debug(f"Validated invoice data: {invoice_serializer.validated_data}")
             invoice = invoice_serializer.save()
             logger.debug(f"Saved invoice: {invoice}")
-            logger.debug(f"Invoice date: {invoice.date}, type: {type(invoice.date)}")
-            logger.debug(f"Invoice due_date: {invoice.due_date}, type: {type(invoice.due_date)}")
-            
+
+            # If finance_transaction exists, link it to the invoice (if required)
+            if finance_transaction:
+                logger.debug(f"Linking finance transaction to invoice: {finance_transaction}")
+                invoice.transaction = finance_transaction
+                invoice.save()
+
             return invoice
         else:
             logger.error(f"Invoice validation failed: {invoice_serializer.errors}")
@@ -166,18 +177,11 @@ def create_customer(request):
         return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
 
     try:
-        user_profile = UserProfile.objects.using('default').get(user=user)
-        database_name = user_profile.database_name
-        logger.debug("Database name: %s", database_name)
-
-        # Create the dynamic database if it doesn't exist
-        logger.debug(f"Creating dynamic database: {database_name}")
-        router = UserDatabaseRouter()
-        router.create_dynamic_database(database_name)
+        database_name = get_user_database(user)
+        ensure_database_exists(database_name)
 
         with db_transaction.atomic(using=database_name):
             serializer = CustomerSerializer(data=request.data, context={'database_name': database_name})
-            logger.debug("Serializer: %s", serializer)
             if serializer.is_valid():
                 customer = serializer.save()
                 logger.debug("Customer created: %s", serializer.data)
@@ -185,53 +189,37 @@ def create_customer(request):
             else:
                 logger.error("Validation errors: %s", serializer.errors)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    except UserProfile.DoesNotExist:
-        logger.error("UserProfile does not exist for user: %s", user)
-        return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except ValueError as e:
+        logger.error("ValueError in create_customer: %s", str(e))
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except IntegrityError as e:
+        logger.error("IntegrityError in create_customer: %s", str(e))
+        return Response({'error': 'Data integrity error occurred.'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
-        logger.exception("Error creating customer: %s", str(e))
+        logger.exception("Unexpected error creating customer: %s", str(e))
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def customer_list(request):
-    """
-    API view to list all customers.
-    """
     logger.debug("Customer List called")
     user = request.user
-    logger.debug("User: %s", user)
 
     try:
-        user_profile = UserProfile.objects.using('default').get(user=user)
-        database_name = user_profile.database_name
-        logger.debug("User Profile: %s", user_profile)
-        logger.debug("Database Name from UserProfile: %s", database_name)
-
-        if not database_name:
-            logger.error("Database name is empty.")
-            return Response({'error': 'Database name is empty.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Create the dynamic database if it doesn't exist
-        logger.debug(f"Creating dynamic database: %s", database_name)
-        router = UserDatabaseRouter()
-        router.create_dynamic_database(database_name)
+        database_name = get_user_database(user)
+        ensure_database_exists(database_name)
 
         customers = Customer.objects.using(database_name).all()
-        logger.debug("Fetched customers: %s", customers)
         serializer = CustomerSerializer(customers, many=True)
         return Response(serializer.data)
 
-    except UserProfile.DoesNotExist:
-        logger.error("UserProfile does not exist for user: %s", user)
-        console.error("UserProfile does not exist for user: %s", user)
-        return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
-
+    except ValueError as e:
+        logger.error("ValueError in customer_list: %s", str(e))
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         logger.exception("Error fetching customers: %s", str(e))
-        console.error("Error fetching customers: %s", str(e))
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -381,7 +369,7 @@ def product_list(request):
         logger.exception(f"Error fetching products: {str(e)}")
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['PUT', 'DELETE'])
+@api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def product_detail(request, pk):
     logger.debug(f"Product Detail called for product_id: {pk}")
@@ -398,9 +386,17 @@ def product_detail(request, pk):
         router = UserDatabaseRouter()
         router.create_dynamic_database(database_name)
 
-        product = Product.objects.using(database_name).get(pk=pk)
+        try:
+            product = Product.objects.using(database_name).get(pk=pk)
+        except Product.DoesNotExist:
+            logger.error(f"Product with id {pk} not found in database {database_name}")
+            return Response({'error': 'Product not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        if request.method == 'PUT':
+        if request.method == 'GET':
+            serializer = ProductSerializer(product)
+            return Response(serializer.data)
+
+        elif request.method == 'PUT':
             serializer = ProductSerializer(product, data=request.data)
             if serializer.is_valid():
                 serializer.save()
@@ -414,9 +410,6 @@ def product_detail(request, pk):
     except UserProfile.DoesNotExist:
         logger.error(f"UserProfile does not exist for user: {user}")
         return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
-
-    except Product.DoesNotExist:
-        return Response({'error': 'Product not found.'}, status=status.HTTP_404_NOT_FOUND)
 
     except Exception as e:
         logger.exception(f"Error processing product detail: {str(e)}")
@@ -689,145 +682,87 @@ def service_detail(request, pk):
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_estimates(request):
+    logger.debug("List Estimates called")
+    user = request.user
+
+    try:
+        user_profile = UserProfile.objects.using('default').get(user=user)
+        database_name = user_profile.database_name
+
+        if not database_name:
+            logger.error("Database name is empty.")
+            return Response({'error': 'Database name is empty.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        router = UserDatabaseRouter()
+        router.create_dynamic_database(database_name)
+
+        estimates = Estimate.objects.using(database_name).all().prefetch_related('items', 'customer')
+        serializer = EstimateSerializer(estimates, many=True, context={'database_name': database_name})
+        return Response(serializer.data)
+
+    except UserProfile.DoesNotExist:
+        logger.error("User profile not found.")
+        return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.exception(f"Error fetching estimates: {str(e)}")
+        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_estimate(request):
-    logger.debug("Create Estimate: Received request data: %s", request.data)
+    """
+    API view to create a new estimate.
+    """
+    logger.debug("Create Estimate called with request data: %s", request.data)
     user = request.user
-
+    
+    
     if not user.is_authenticated:
-        logger.error("User is not authenticated")
         return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
     try:
-        # Get the dynamic database for the user
         database_name = get_user_database(user)
-        logger.debug(f"Retrieved database name: {database_name}")
-
+        logger.debug("Database name: %s", database_name)
         ensure_database_exists(database_name)
-        logger.debug(f"Ensured database exists: {database_name}")
-
+        logger.debug("Database {database_name} exists.")
         ensure_accounts_exist(database_name)
-        logger.debug(f"Ensured necessary accounts exist in database: {database_name}")
+        logger.debug("Accounts exist.")
+        
+
 
         with db_transaction.atomic(using=database_name):
             data = request.data
-
-            # Ensure date fields are datetime objects
             data['date'] = ensure_date(data.get('date', timezone.now()))
-            data['valid_until'] = ensure_date(data.get('valid_until', timezone.now() + timedelta(days=30)))
-            logger.debug(f"Processed date fields: {data['date']}, valid until: {data['valid_until']}")
-
-            # Create the estimate with transaction handling
+            data['valid_until'] = ensure_date(data.get('valid_until', default_due_datetime()))
             estimate = create_estimate_with_transaction(data, database_name)
             return Response(EstimateSerializer(estimate).data, status=status.HTTP_201_CREATED)
-
+      
     except UserProfile.DoesNotExist:
-        logger.error(f"UserProfile does not exist for user: {user}")
+        logger.error("User profile not found.")
         return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
-    except ValueError as e:
-        logger.error(f"ValueError in create_estimate: {str(e)}")
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         logger.exception(f"Unexpected error creating estimate: {e}")
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-def create_estimate_with_items(data, database_name):
-    context = {'database_name': database_name}
-    with db_transaction.atomic(using=database_name):
-        # Validate customer UUID format
-        try:
-            data['customer'] = uuid.UUID(data['customer'])
-        except ValueError:
-            raise serializers.ValidationError({'customer': f'Invalid UUID format for customer: {data["customer"]}'})
 
-        # Ensure dates are proper datetime objects
-        data['date'] = ensure_date(data.get('date', timezone.now()))
-        data['valid_until'] = ensure_date(data.get('valid_until', default_valid_until()))
-
-        # Process and validate items
-        items_data = data.pop('items', [])
-        for item in items_data:
-            if 'product' in item:
-                try:
-                    product = Product.objects.using(database_name).get(id=item['product'])
-                    item['product'] = product.id
-                except Product.DoesNotExist:
-                    raise serializers.ValidationError(f'Product with id {item["product"]} does not exist.')
-
-        # Validate and create estimate
-        estimate_serializer = EstimateSerializer(data=data, context=context)
-        if estimate_serializer.is_valid(raise_exception=True):
-            estimate = estimate_serializer.save()
-            # Create estimate items
-            for item_data in items_data:
-                EstimateItem.objects.using(database_name).create(estimate=estimate, **item_data)
-            return estimate
-        else:
-            raise serializers.ValidationError(estimate_serializer.errors)
 def create_estimate_with_transaction(data, database_name):
     logger.debug(f"Creating estimate with transaction in database: {database_name}")
+    logger.debug(f"Data received: {data}")
+
+    estimate_serializer = EstimateSerializer(data=data, context={'database_name': database_name})
     
-    context = {'database_name': database_name}
-    
-    with db_transaction.atomic(using=database_name):
-        transaction_data = data.pop('transaction', None)
-        finance_transaction = None
-        if transaction_data:
-            logger.debug(f"Processing transaction data: {transaction_data}")
-            transaction_serializer = TransactionSerializer(data=transaction_data, context=context)
-            if transaction_serializer.is_valid(raise_exception=True):
-                finance_transaction = transaction_serializer.save()
-                logger.debug(f"Transaction created: {finance_transaction}")
-            else:
-                logger.error(f"Transaction validation failed: {transaction_serializer.errors}")
-                raise serializers.ValidationError(transaction_serializer.errors)
+    if estimate_serializer.is_valid(raise_exception=True):
+        estimate = estimate_serializer.save()
+        logger.debug(f"Estimate saved: {estimate.estimate_num}")
 
-        # Ensure date is a date object
-        if 'date' in data and isinstance(data['date'], str):
-            logger.debug(f"Parsing date from string: {data['date']}")
-            data['date'] = datetime.strptime(data['date'], "%Y-%m-%d").date()
+        # No need to process items here, as they are already processed in the serializer's create method
 
-        # Remove valid_until if it's in the data, let the serializer calculate it
-        if 'valid_until' in data:
-            logger.debug(f"Removing 'valid_until' from data to let the serializer calculate it")
-            data.pop('valid_until', None)
-
-        # Convert customer ID to UUID and fetch the customer from the correct database
-        customer_id = data.get('customer')
-        logger.debug(f"Processing customer ID: {customer_id}")
-        try:
-            customer_uuid = uuid.UUID(customer_id)
-            logger.debug(f"Converted customer ID to UUID: {customer_uuid}")
-            customer = Customer.objects.using(database_name).filter(pk=customer_uuid).first()
-            if not customer:
-                logger.error(f"Customer with id {customer_id} does not exist in database {database_name}")
-                raise serializers.ValidationError({'customer': f'Customer with id {customer_id} does not exist in database {database_name}'})
-            data['customer'] = customer.id  # Set the correct customer ID in the data
-            logger.debug(f"Customer found and set in data: {customer.id}")
-        except ValueError:
-            logger.error(f"Invalid UUID format for customer: {customer_id}")
-            raise serializers.ValidationError({'customer': f'Invalid UUID format for customer: {customer_id}'})
-
-        estimate_serializer = EstimateSerializer(data=data, context=context)
-        logger.debug(f"Estimate data before validation: {data}")
-        if estimate_serializer.is_valid(raise_exception=True):
-            logger.debug(f"Validated estimate data: {estimate_serializer.validated_data}")
-            estimate = estimate_serializer.save()
-            logger.debug(f"Saved estimate: {estimate}")
-            
-            # If finance_transaction exists, link it to the estimate (if required)
-            if finance_transaction:
-                logger.debug(f"Linking finance transaction to estimate: {finance_transaction}")
-                estimate.transaction = finance_transaction
-                estimate.save()
-
-            return estimate
-        else:
-            logger.error(f"Estimate validation failed: {estimate_serializer.errors}")
-            raise serializers.ValidationError(estimate_serializer.errors)
-
-
-
+        return estimate
+        
 def ensure_date(date_value):
     if isinstance(date_value, str):
         try:
@@ -851,45 +786,10 @@ def ensure_database_exists(database_name):
     router = UserDatabaseRouter()
     router.create_dynamic_database(database_name)
     
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def estimate_list(request):
-    """
-    API view to list all estimates.
-    """
-    logger.debug("Estimate List called")
-    user = request.user
-
-    try:
-        user_profile = UserProfile.objects.using('default').get(user=user)
-        database_name = user_profile.database_name
-        logger.debug("Database Name from UserProfile: %s", database_name)
-
-        if not database_name:
-            logger.error("Database name is empty.")
-            return Response({'error': 'Database name is empty.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        router = UserDatabaseRouter()
-        router.create_dynamic_database(database_name)
-
-        estimates = Estimate.objects.using(database_name).all()
-        logger.debug("Fetched estimates: %s", estimates)
-        serializer = EstimateSerializer(estimates, many=True)
-        return Response(serializer.data)
-
-    except UserProfile.DoesNotExist:
-        logger.error("UserProfile does not exist for user: %s", user)
-        return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        logger.exception("Error fetching estimates: %s", str(e))
-        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def estimate_detail(request, pk):
-    """
-    API view to get estimate details by ID.
-    """
     logger.debug(f"Estimate Detail called for estimate_id: {pk}")
     user = request.user
 
@@ -904,9 +804,9 @@ def estimate_detail(request, pk):
         router = UserDatabaseRouter()
         router.create_dynamic_database(database_name)
         
-        estimate = get_object_or_404(Estimate.objects.using(database_name), pk=pk)
+        estimate = get_object_or_404(Estimate.objects.using(database_name).prefetch_related('items', 'customer'), pk=pk)
         logger.debug(f"Fetched estimate: {estimate}")
-        serializer = EstimateSerializer(estimate)
+        serializer = EstimateSerializer(estimate, context={'database_name': database_name})
         return Response(serializer.data)
 
     except UserProfile.DoesNotExist:

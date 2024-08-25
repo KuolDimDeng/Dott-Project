@@ -10,12 +10,27 @@ import string
 import re
 from datetime import timedelta
 from django.contrib.auth import get_user_model
+from pyfactor.logging_config import get_logger
+from django.dispatch import receiver
+from django.db.models.signals import post_save
+
+
+
+logger = get_logger()
 
 def get_current_datetime():
     return timezone.now()
 
 def default_due_datetime():
     return get_current_datetime() + timedelta(days=30)
+
+class ProductManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().using(self._db)
+    
+class ServiceManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().using(self._db)
 
 
 class Item(models.Model):
@@ -52,22 +67,34 @@ class Product(Item):
     department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, related_name='products')
     stock_quantity = models.IntegerField(default=0)
     reorder_level = models.IntegerField(default=0)
+    objects = ProductManager()
+
 
     class Meta:
         indexes = [
             models.Index(fields=['name']),
             models.Index(fields=['product_code']),
         ]
+        app_label = 'sales'
 
     def save(self, *args, **kwargs):
         if not self.product_code:
             self.product_code = self.generate_unique_code(self.name, 'product_code')
         super().save(*args, **kwargs)
 
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        instance = super().from_db(db, field_names, values)
+        instance._state.db = db
+        return instance
+
 class Service(Item):
     service_code = models.CharField(max_length=50, unique=True, editable=False)
     duration = models.DurationField(null=True, blank=True)
     is_recurring = models.BooleanField(default=False)
+    
+    objects = ServiceManager()
+
 
     class Meta:
         indexes = [
@@ -79,6 +106,12 @@ class Service(Item):
         if not self.service_code:
             self.service_code = self.generate_unique_code(self.name, 'service_code')
         super().save(*args, **kwargs)
+        
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        instance = super().from_db(db, field_names, values)
+        instance._state.db = db
+        return instance
 
 class Customer(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -212,13 +245,13 @@ class Vendor(models.Model):
 
 class Estimate(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    estimate_num = models.CharField(max_length=20, unique=True, editable=False)
+    estimate_num = models.CharField(max_length=20, unique=True, editable=False, null=True, blank=True)
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='estimates')
-    totalAmount = models.DecimalField(max_digits=10, decimal_places=2)
+    totalAmount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))], default=Decimal('0.00'))
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     date = models.DateTimeField(default=get_current_datetime)
-    valid_until= models.DateTimeField(default=default_due_datetime)
+    valid_until = models.DateTimeField(default=default_due_datetime)
     title = models.CharField(max_length=200, default='Estimate')
     summary = models.TextField(blank=True)
     logo = models.ImageField(upload_to='estimate_logos/', null=True, blank=True)
@@ -226,27 +259,51 @@ class Estimate(models.Model):
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     currency = models.CharField(max_length=3, default='USD')
     footer = models.TextField(blank=True)
-    
-    def save(self, *args, **kwargs):
-        if not self.estimate_num:
-            self.estimate_num = self.generate_estimate_number()
-        super().save(*args, **kwargs)
 
-    def generate_estimate_number(self):
-        # Get the first 8 characters of the UUID, convert to uppercase
-        uuid_part = str(self.id)[:8].upper()
-        return f"EST-{uuid_part}"
-
+    class Meta:
+        app_label = 'sales'
+        
     def __str__(self):
-        return f"Estimate {self.estimate_num}"
-   
+        return self.estimate_num
+
+    @staticmethod
+    def generate_estimate_number(uuid_value):
+        uuid_part = str(uuid_value)[:8].upper()
+        return f'EST-{uuid_part}'
+
+    def clean(self):
+        if self.totalAmount <= 0:
+            raise ValidationError('Estimate amount must be positive.')
+
+    def total_with_discount(self):
+        return self.totalAmount - (self.totalAmount * self.discount / 100)
+    
+    def total_with_tax(self):
+        return self.total_with_discount() * (1 + self.customer.salesTax / 100)
+
+
 class EstimateItem(models.Model):
     estimate = models.ForeignKey(Estimate, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey('Product', on_delete=models.SET_NULL, null=True, blank=True)
     service = models.ForeignKey('Service', on_delete=models.SET_NULL, null=True, blank=True)
-    description = models.CharField(max_length=200)
+    description = models.CharField(max_length=200, null=True, blank=True)
     quantity = models.IntegerField(default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def subtotal(self):
+        return self.quantity * self.unit_price
+
+    def __str__(self):
+        return f"EstimateItem {self.id} for Estimate {self.estimate_id}"
+
+
+# Using Django signals to automatically update totalAmount when EstimateItem is saved
+@receiver(post_save, sender=EstimateItem)
+def update_estimate_total(sender, instance, **kwargs):
+    estimate = instance.estimate
+    total = sum(item.subtotal() for item in estimate.items.all())
+    estimate.totalAmount = total - estimate.discount
+    estimate.save()
 
 class EstimateAttachment(models.Model):
     estimate = models.ForeignKey(Estimate, related_name='attachments', on_delete=models.CASCADE)

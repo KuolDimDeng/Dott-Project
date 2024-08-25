@@ -138,6 +138,9 @@ class UserDatabaseRouter:
         if obj1._state.db == obj2._state.db:
             logger.debug(f"Relation allowed: same database ({obj1._state.db})")
             return True
+        if isinstance(obj1, UserProfile) or isinstance(obj2, UserProfile):
+            logger.debug(f"Relation allowed: UserProfile objects")
+            return True
         logger.debug(f"Relation not allowed: different databases (obj1: {obj1._state.db}, obj2: {obj2._state.db})")
         return False
 
