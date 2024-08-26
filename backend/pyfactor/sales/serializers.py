@@ -3,7 +3,7 @@ from django.db import connections, transaction as db_transaction
 from rest_framework import serializers
 from .utils import get_or_create_account, calculate_due_date
 from finance.models import Account, FinanceTransaction
-from .models import Product, Service, Customer, Bill, Invoice, Vendor, Estimate, SalesOrder, SalesOrderItem, Department, default_due_datetime, EstimateItem, EstimateAttachment
+from .models import Product, Service, Customer, Bill, BillItem, Invoice, Vendor, Estimate, SalesOrder, SalesOrderItem, Department, default_due_datetime, EstimateItem, EstimateAttachment, InvoiceItem
 from pyfactor.logging_config import get_logger
 from django.utils import timezone
 from decimal import Decimal
@@ -72,10 +72,81 @@ class CustomerSerializer(serializers.ModelSerializer):
     def get_display_name(self, obj):
         return f"{obj.customerName} - {obj.accountNumber}"
 
+class BillItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BillItem
+        fields = ['category', 'description', 'quantity', 'price', 'tax', 'amount']
+
 class BillSerializer(serializers.ModelSerializer):
+    items = BillItemSerializer(many=True)
+    vendor = serializers.PrimaryKeyRelatedField(queryset=Vendor.objects.all())
+
     class Meta:
         model = Bill
-        fields = ['id', 'bill_num', 'customer', 'amount', 'created_at']
+        fields = ['id', 'bill_number', 'vendor', 'currency', 'bill_date', 'due_date', 'poso_number', 'totalAmount', 'notes', 'items']
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items')
+        database_name = self.context.get('database_name')
+
+        with db_transaction.atomic(using=database_name):
+            bill = Bill.objects.using(database_name).create(**validated_data)
+            
+            # Create bill items
+            for item_data in items_data:
+                BillItem.objects.using(database_name).create(bill=bill, **item_data)
+
+            # Create transactions
+            accounts_payable = Account.objects.using(database_name).get(name='Accounts Payable')
+            
+            # Credit Accounts Payable
+            FinanceTransaction.objects.using(database_name).create(
+                account=accounts_payable,
+                amount=bill.totalAmount,
+                type='credit',
+                description=f"Bill {bill.bill_number} - Accounts Payable"
+            )
+
+            # Debit appropriate accounts based on bill items
+            for item in bill.items.all():
+                if item.category == 'Inventory':
+                    inventory_account = Account.objects.using(database_name).get(name='Inventory')
+                    FinanceTransaction.objects.using(database_name).create(
+                        account=inventory_account,
+                        amount=item.amount,
+                        type='debit',
+                        description=f"Bill {bill.bill_number} - Inventory Purchase"
+                    )
+                elif item.category == 'Prepaid Expense':
+                    prepaid_expense_account = Account.objects.using(database_name).get(name='Prepaid Expenses')
+                    FinanceTransaction.objects.using(database_name).create(
+                        account=prepaid_expense_account,
+                        amount=item.amount,
+                        type='debit',
+                        description=f"Bill {bill.bill_number} - Prepaid Expense"
+                    )
+                elif item.category == 'Fixed Asset':
+                    fixed_asset_account = Account.objects.using(database_name).get(name='Fixed Assets')
+                    FinanceTransaction.objects.using(database_name).create(
+                        account=fixed_asset_account,
+                        amount=item.amount,
+                        type='debit',
+                        description=f"Bill {bill.bill_number} - Fixed Asset Purchase"
+                    )
+                else:
+                    # Assume it's a regular expense
+                    expense_account, _ = Account.objects.using(database_name).get_or_create(
+                        name=item.category,
+                        defaults={'account_type': 'Expense'}
+                    )
+                    FinanceTransaction.objects.using(database_name).create(
+                        account=expense_account,
+                        amount=item.amount,
+                        type='debit',
+                        description=f"Bill {bill.bill_number} - {item.category} Expense"
+                    )
+
+        return bill
 
 class TransactionSerializer(serializers.ModelSerializer):
     account = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all())
@@ -102,55 +173,68 @@ class TransactionSerializer(serializers.ModelSerializer):
 class DateTimeToDateField(serializers.DateTimeField):
     def to_representation(self, value):
         if value:
-            return timezone.localtime(value).date()
+            if isinstance(value, datetime):
+                return timezone.localtime(value).date()
+            elif isinstance(value, date):
+                return value
         return None
 
     def to_internal_value(self, value):
         if isinstance(value, date):
             return timezone.make_aware(datetime.combine(value, datetime.min.time()))
         return super().to_internal_value(value)
-
-class InvoiceSerializer(serializers.ModelSerializer):
-    transaction = TransactionSerializer(required=False)
-    accounts_receivable = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=False)
-    sales_revenue = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=False)
-    sales_tax_payable = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=False)
-    cost_of_goods_sold = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=False)
-    inventory = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all(), required=False)
-    amount = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=Decimal('0.01'))
-    date = DateTimeToDateField()
-    due_date = DateTimeToDateField(required=False)
-    created_at = DateTimeToDateField(read_only=True)
-    updated_at = DateTimeToDateField(read_only=True)
-    customer = serializers.CharField()
+    
+class InvoiceItemSerializer(serializers.ModelSerializer):
+    product = serializers.CharField(max_length=36)  # Keep this as CharField
 
     class Meta:
-        model = Invoice
-        fields = ['id', 'invoice_num', 'customer', 'amount', 'date', 'created_at', 'updated_at', 'due_date', 'status', 'transaction', 
-                  'accounts_receivable', 'sales_revenue', 'sales_tax_payable', 'cost_of_goods_sold', 'inventory']
+        model = InvoiceItem
+        fields = ['product', 'quantity', 'unit_price']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.database_name = self.context.get('database_name')
-        logger.debug(f"InvoiceSerializer initialized with database_name: {self.database_name}")
-        if self.database_name:
-            self.fields['transaction'] = TransactionSerializer(required=False, context={'database_name': self.database_name})
-            self.fields['accounts_receivable'].queryset = Account.objects.using(self.database_name).all()
-            self.fields['sales_revenue'].queryset = Account.objects.using(self.database_name).all()
-            self.fields['sales_tax_payable'].queryset = Account.objects.using(self.database_name).all()
-            self.fields['cost_of_goods_sold'].queryset = Account.objects.using(self.database_name).all()
-            self.fields['inventory'].queryset = Account.objects.using(self.database_name).all()
-            logger.debug("Account querysets updated for database")
+        logger.debug(f"InvoiceItemSerializer initialized with database_name: {self.database_name}")
 
-    def to_internal_value(self, data):
-        logger.debug(f"to_internal_value called with data: {data}")
-        converted_data = super().to_internal_value(data)
-        logger.debug(f"Converted data: {converted_data}")
-        return converted_data
-    
+    def validate_product(self, value):
+        database_name = self.context.get('database_name')
+        if not database_name:
+            raise ValueError("database_name is required in the serializer context")
+        try:
+            product = Product.objects.using(database_name).get(pk=value)
+            logger.debug(f"Product retrieved: {product.id}: {product.name}")
+            return value  # Return the product ID, not the product object
+        except Product.DoesNotExist:
+            logger.error(f"Product with id {value} does not exist in database {database_name}.")
+            raise serializers.ValidationError(f"Product with id {value} does not exist in database {database_name}.")
+        
+        
+class InvoiceSerializer(serializers.ModelSerializer):
+    items = InvoiceItemSerializer(many=True)
+    customer = serializers.CharField()
+    date = DateTimeToDateField()
+    due_date = DateTimeToDateField(required=False)
+    totalAmount = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+
+    class Meta:
+        model = Invoice
+        fields = ['id', 'invoice_num', 'customer', 'totalAmount', 'date', 'due_date', 'items', 'discount', 'currency']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.database_name = self.context.get('database_name')
+        logger.debug(f"InvoiceSerializer initialized with database: {self.database_name}")
+
+    def validate(self, data):
+        if 'totalAmount' not in data:
+            # Calculate totalAmount based on items
+            total = sum(item['quantity'] * item['unit_price'] for item in data['items'])
+            data['totalAmount'] = total - data.get('discount', 0)
+        return data
+
     def validate_customer(self, value):
         database_name = self.context.get('database_name')
-        
+
         if isinstance(value, str):
             try:
                 value = uuid.UUID(value)
@@ -160,51 +244,99 @@ class InvoiceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f"Invalid customer identifier: {value}")
 
         logger.debug(f"Validating customer: {value} in database: {database_name}")
-        
+
         try:
             customer = Customer.objects.using(database_name).get(pk=value)
+            logger.debug(f"Customer retrieved: {customer.id}: {customer.customerName}")
             return customer
         except Customer.DoesNotExist:
             logger.error(f"Customer with id {value} does not exist in database {database_name}.")
             raise serializers.ValidationError(f"Customer with id {value} does not exist in database {database_name}.")
 
+    
     def create(self, validated_data):
-        logger.debug(f"Creating invoice with validated data: {validated_data}")
-        transaction_data = validated_data.pop('transaction', None)
-        
-        invoice = Invoice(**validated_data)
-        invoice.invoice_num = Invoice.generate_invoice_number(invoice.id)
-        
-        if 'date' in validated_data and 'due_date' not in validated_data:
-            validated_data['due_date'] = calculate_due_date(validated_data['date'])
+        items_data = validated_data.pop('items')
+        database_name = self.context.get('database_name')
 
-        accounts = {
-            'accounts_receivable': get_or_create_account(self.context['database_name'], 'Accounts Receivable', 'Accounts Receivable'),
-            'sales_revenue': get_or_create_account(self.context['database_name'], 'Sales Revenue', 'Sales Revenue'),
-            'sales_tax_payable': get_or_create_account(self.context['database_name'], 'Sales Tax Payable', 'Sales Tax Payable'),
-            'cost_of_goods_sold': get_or_create_account(self.context['database_name'], 'Cost of Goods Sold', 'Cost of Goods Sold'),
-            'inventory': get_or_create_account(self.context['database_name'], 'Inventory', 'Inventory')
-        }
+        with db_transaction.atomic(using=database_name):
+            invoice = Invoice.objects.using(database_name).create(**validated_data)
+            total_amount = Decimal('0.00')
+            total_cost = Decimal('0.00')
 
-        for account_field, account in accounts.items():
-            setattr(invoice, account_field, account)
+            for item_data in items_data:
+                product_id = item_data.pop('product')
+                product = Product.objects.using(database_name).get(pk=product_id)
+                item = InvoiceItem.objects.using(database_name).create(
+                    invoice=invoice,
+                    product=product,  # Pass the Product instance, not the ID
+                    **item_data
+                )
+                total_amount += item.quantity * item.unit_price
+                total_cost += item.quantity * product.price  # Assuming product has a 'price' field for cost
 
-        transaction_instance = None
-        if transaction_data:
-            transaction_serializer = TransactionSerializer(data=transaction_data, context=self.context)
-            if transaction_serializer.is_valid():
-                transaction_instance = transaction_serializer.save()
-                logger.debug(f"Transaction created: {transaction_instance}")
-            else:
-                logger.error(f"Transaction validation failed: {transaction_serializer.errors}")
-                raise serializers.ValidationError(transaction_serializer.errors)
+            invoice.totalAmount = total_amount
+            invoice.save(using=database_name)
 
-        with db_transaction.atomic(using=self.context['database_name']):
-            invoice.transaction = transaction_instance
-            invoice.save(using=self.context['database_name'])
-            logger.debug(f"Invoice saved: {invoice}")
+
+            # Create transactions
+            accounts_receivable = Account.objects.using(database_name).get(name='Accounts Receivable')
+            sales_revenue = Account.objects.using(database_name).get(name='Sales Revenue')
+            sales_tax_payable = Account.objects.using(database_name).get(name='Sales Tax Payable')
+            cost_of_goods_sold = Account.objects.using(database_name).get(name='Cost of Goods Sold')
+            inventory = Account.objects.using(database_name).get(name='Inventory')
+
+            # Accounts Receivable transaction
+            ar_transaction = FinanceTransaction.objects.using(database_name).create(
+                account=accounts_receivable,
+                amount=total_amount,
+                type='debit',
+                description=f"Invoice {invoice.invoice_num} - Accounts Receivable"
+            )
+            invoice.accounts_receivable = accounts_receivable
+            invoice.transaction = ar_transaction
+
+            # Sales Revenue transaction
+            FinanceTransaction.objects.using(database_name).create(
+                account=sales_revenue,
+                amount=total_amount,
+                type='credit',
+                description=f"Invoice {invoice.invoice_num} - Sales Revenue"
+            )
+            invoice.sales_revenue = sales_revenue
+
+            # Sales Tax Payable transaction (if applicable)
+            tax_amount = total_amount * Decimal('0.1')  # Assuming 10% tax rate
+            FinanceTransaction.objects.using(database_name).create(
+                account=sales_tax_payable,
+                amount=tax_amount,
+                type='credit',
+                description=f"Invoice {invoice.invoice_num} - Sales Tax Payable"
+            )
+            invoice.sales_tax_payable = sales_tax_payable
+
+            # Cost of Goods Sold transaction
+            FinanceTransaction.objects.using(database_name).create(
+                account=cost_of_goods_sold,
+                amount=total_cost,
+                type='debit',
+                description=f"Invoice {invoice.invoice_num} - Cost of Goods Sold"
+            )
+            invoice.cost_of_goods_sold = cost_of_goods_sold
+
+            # Inventory transaction
+            FinanceTransaction.objects.using(database_name).create(
+                account=inventory,
+                amount=total_cost,
+                type='credit',
+                description=f"Invoice {invoice.invoice_num} - Inventory"
+            )
+            invoice.inventory = inventory
+
+            invoice.save(using=database_name)
 
         return invoice
+
+
 
 class VendorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -222,7 +354,7 @@ class EstimateItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EstimateItem
-        fields = ['id', 'product', 'description', 'quantity', 'unit_price']
+        fields = ['id', 'product', 'service', 'description', 'quantity', 'unit_price']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -430,50 +562,101 @@ class DatabasePrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):
         return self.queryset
 
 class SalesOrderItemSerializer(serializers.ModelSerializer):
-    product = DatabasePrimaryKeyRelatedField(queryset=Product.objects.all(), required=False)
+    product = serializers.CharField(max_length=36)  # Change this to CharField
 
     class Meta:
         model = SalesOrderItem
-        fields = ['id', 'product', 'description', 'quantity', 'unit_price']
+        fields = ['id', 'product', 'service', 'description', 'quantity', 'unit_price']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        database_name = self.context.get('database_name')
-        if database_name:
-            logger.debug(f"SalesOrderItemSerializer initialized with database: {database_name}")
+        self.database_name = self.context.get('database_name')
+        logger.debug(f"SalesOrderItemSerializer initialized with database: {self.database_name}")
 
     def to_internal_value(self, data):
         logger.debug(f"SalesOrderItemSerializer to_internal_value called with data: {data}")
-        if 'product' in data and isinstance(data['product'], str):
-            try:
-                database_name = self.context.get('database_name')
-                logger.debug(f"Attempting to fetch product with id {data['product']} from database {database_name}")
-                product = Product.objects.using(database_name).get(pk=data['product'])
-                data['product'] = product.pk
-                logger.debug(f"Product found: {product.id}: {product.name}")
-            except Product.DoesNotExist:
-                logger.error(f"Product with id {data['product']} not found in database {database_name}")
-                raise serializers.ValidationError({'product': f"Product with id {data['product']} does not exist."})
         return super().to_internal_value(data)
+    
+    def create(self, validated_data):
+        database_name = self.context.get('database_name')
+        if not database_name:
+            raise ValueError("database_name is required in the serializer context")
+        return SalesOrderItem.objects.using(database_name).create(**validated_data)
+    
+    def validate_product(self, value):
+        database_name = self.context.get('database_name')
+        if not database_name:
+            raise ValueError("database_name is required in the serializer context")
+        try:
+            product = Product.objects.using(database_name).get(pk=value)
+            logger.debug(f"Product retrieved: {product.id}: {product.name}")
+            return product
+        except Product.DoesNotExist:
+            logger.error(f"Product with id {value} does not exist in database {database_name}.")
+            raise serializers.ValidationError(f"Product with id {value} does not exist in database {database_name}.")
 
 class SalesOrderSerializer(serializers.ModelSerializer):
     items = SalesOrderItemSerializer(many=True)
     customer = serializers.CharField()
+    customer_name = serializers.CharField(read_only=True)
+    date = DateTimeToDateField()
+    totalAmount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
+
 
     class Meta:
         model = SalesOrder
-        fields = ['id', 'order_number', 'customer', 'date', 'items', 'discount', 'currency', 'amount']
-        read_only_fields = ['order_number', 'amount']
+        fields = '__all__'
+        read_only_fields = ['order_number']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        database_name = self.context.get('database_name')
-        if database_name:
-            logger.debug(f"SalesOrderSerializer initialized with database: {database_name}")
+        self.database_name = self.context.get('database_name')
+        logger.debug(f"SalesOrderSerializer initialized with database: {self.database_name}")
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['totalAmount'] = str(instance.totalAmount)
+        return representation
 
     def to_internal_value(self, data):
         logger.debug(f"SalesOrderSerializer to_internal_value called with data: {data}")
-        return super().to_internal_value(data)
+        try:
+            converted_data = super().to_internal_value(data)
+            logger.debug(f"Base data converted: {converted_data}")
+        except Exception as e:
+            logger.error(f"Error converting base data: {str(e)}")
+            raise
+        
+        # Process items if present
+        items_data = data.get('items')
+        if items_data is not None:
+            converted_items = []
+            for item in items_data:
+                logger.debug(f"Processing item: {item}")
+                try:
+                    item_serializer = EstimateItemSerializer(
+                        data=item, 
+                        context={'database_name': self.context.get('database_name')}
+                    )
+                    if item_serializer.is_valid(raise_exception=True):
+                        converted_items.append(item_serializer.validated_data)
+                        logger.debug(f"Item converted: {item_serializer.validated_data}")
+                except Exception as e:
+                    logger.error(f"Error processing item {item}: {str(e)}")
+                    raise
+            
+            # Add converted items back to the data
+            converted_data['items'] = converted_items
+        else:
+            logger.error("Items data is None")
+            raise serializers.ValidationError({'items': 'This field is required.'})
+        
+        logger.debug(f"Final converted data: {converted_data}")
+        return converted_data
+
+    def validate_date(self, value):
+        return parse_date(value) if isinstance(value, str) else value
 
     def validate_customer(self, value):
         database_name = self.context.get('database_name')
@@ -490,22 +673,68 @@ class SalesOrderSerializer(serializers.ModelSerializer):
         
         try:
             customer = Customer.objects.using(database_name).get(pk=value)
+            logger.debug(f"Customer retrieved: {customer.id}: {customer.customerName}")
             return customer
         except Customer.DoesNotExist:
             logger.error(f"Customer with id {value} does not exist in database {database_name}.")
             raise serializers.ValidationError(f"Customer with id {value} does not exist in database {database_name}.")
 
+    def validate(self, data):
+        items_data = data.get('items', [])
+        if not items_data:
+            raise serializers.ValidationError({'items': 'This field is required.'})
+        
+        return data
+        
     def create(self, validated_data):
-        database_name = self.context.get('database_name')
-        items_data = validated_data.pop('items')
-        sales_order = SalesOrder.objects.using(database_name).create(**validated_data)
+        logger.debug(f"SalesOrderSerializer create called with data: {validated_data}")
         
+        if not self.database_name:
+            raise ValueError("database_name is required in the serializer context")
+        
+        items_data = validated_data.pop('items', [])
+        logger.debug(f"Items data: {items_data}")
+        sales_order = SalesOrder.objects.using(self.database_name).create(**validated_data)
+        logger.debug(f"Created SalesOrder: {sales_order.order_number} with data: {validated_data}")
+        
+        
+        
+        # Create Sales Order items
+        total_amount = Decimal('0.00')
         for item_data in items_data:
-            SalesOrderItem.objects.using(database_name).create(sales_order=sales_order, **item_data)
+            product_id = item_data.pop('product')
+            logger.debug(f"Product id: {product_id} with data: {item_data}")
+            product = Product.objects.using(self.database_name).get(pk=product_id)
+            logger.debug(f"Product retrieved: {product.id}: {product.name}")
+            item = SalesOrderItem.objects.using(self.database_name).create(
+                sales_order=sales_order, 
+                product=product,
+                **item_data)
+            total_amount += item.quantity * item.unit_price
         
+        logger.debug(f"Created Sales Order items for SalesOrder: {sales_order.order_number}")
+        sales_order.totalAmount = total_amount - sales_order.discount
+        sales_order.save(using=self.database_name)
+        logger.debug(f"Updated SalesOrder: {sales_order.order_number} with total amount: {sales_order.totalAmount}")
         return sales_order
+    
+    def calculate_total_amount(self, estimate):
+        """
+        Calculate the total amount for the estimate by summing up the amount of each EstimateItem.
+        """
+        total = Decimal('0.00')
+        for item in estimate.items.all():
+            total += item.quantity * item.unit_price
+        return total
+
+    def get_customer_name(self, obj):
+        return obj.customer.customerName if obj.customer else ''
+
+
+  
 
 class DepartmentSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = Department
         fields = ['id', 'dept_code', 'dept_name', 'created_at']

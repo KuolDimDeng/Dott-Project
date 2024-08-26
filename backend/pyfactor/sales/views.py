@@ -10,7 +10,7 @@ from finance.views import get_user_database
 from .models import Estimate, EstimateItem, Invoice, Customer, Product, Service, Vendor, default_due_datetime, Bill, SalesOrder, SalesOrderItem
 from finance.models import Account, AccountType, FinanceTransaction
 from users.models import UserProfile
-from .serializers import InvoiceSerializer, CustomerSerializer, ProductSerializer, ServiceSerializer, VendorSerializer, EstimateSerializer, EstimateAttachmentSerializer, SalesOrderSerializer, EstimateAttachmentSerializer, EstimateItemSerializer, SalesOrderItemSerializer
+from .serializers import InvoiceSerializer, CustomerSerializer, ProductSerializer, ServiceSerializer, VendorSerializer, EstimateSerializer, EstimateAttachmentSerializer, SalesOrderSerializer, EstimateAttachmentSerializer, EstimateItemSerializer, SalesOrderItemSerializer, InvoiceItemSerializer, BillSerializer
 from finance.serializers import TransactionSerializer
 from django.conf import settings
 from django.db import connections, transaction as db_transaction
@@ -38,25 +38,11 @@ import uuid
 
 logger = get_logger()
 
-def ensure_accounts_exist(database_name):
-    logger.debug("Ensuring necessary accounts exist in database: %s", database_name)
-    required_accounts = [
-        ('Accounts Receivable', 'Accounts Receivable'),
-        ('Sales Revenue', 'Sales Revenue'),
-        ('Sales Tax Payable', 'Sales Tax Payable'),
-        ('Cost of Goods Sold', 'Cost of Goods Sold'),
-        ('Inventory', 'Inventory'),
-        ('Accounts Payable', 'Accounts Payable')  # Add this line
-    ]
-    for account_name, account_type_name in required_accounts:
-        get_or_create_account(database_name, account_name, account_type_name)
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_invoice(request):
-    """
-    API view to create a new invoice.
-    """
     logger.debug("Create Invoice: Received request data: %s", request.data)
     user = request.user
 
@@ -68,40 +54,36 @@ def create_invoice(request):
         ensure_database_exists(database_name)
         ensure_accounts_exist(database_name)
 
+        # Check if products exist
+        for item in request.data.get('items', []):
+            product_id = item.get('product')
+            try:
+                Product.objects.using(database_name).get(id=product_id)
+            except Product.DoesNotExist:
+                return Response({'error': f'Product with id {product_id} does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+
         with db_transaction.atomic(using=database_name):
-            data = request.data
-            data['date'] = ensure_date(data.get('date', timezone.now()))
-            data['due_date'] = ensure_date(data.get('due_date', default_due_datetime()))
-            invoice = create_invoice_with_transaction(data, database_name)
-            return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
+            serializer = InvoiceSerializer(data=request.data, context={'database_name': database_name})
+            if serializer.is_valid():
+                invoice = serializer.save()
+                return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
+            else:
+                logger.error("Validation errors: %s", serializer.errors)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     except UserProfile.DoesNotExist:
         logger.error("UserProfile does not exist for user: %s", user)
-        console.error(f"UserProfile does not exist for user: {user}")
         return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
-    except ValueError as e:
-        logger.error("ValueError in create_invoice: %s", str(e))
-        console.error(f"ValueError in create_invoice: {str(e)}")
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
-        logger.exception("Unexpected error creating invoice: %s", e)
-        console.error(f"Unexpected error creating invoice: {e}")
+        logger.exception("Unexpected error creating invoice: %s", str(e))
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 def ensure_database_exists(database_name):
-    """
-    Ensure that the dynamic database exists.
-    """
     logger.debug("Creating dynamic database if it doesn't exist: %s", database_name)
     router = UserDatabaseRouter()
     router.create_dynamic_database(database_name)
 
-
 def ensure_accounts_exist(database_name):
-    """
-    Ensure that all necessary accounts exist in the dynamic database.
-    """
     logger.debug("Ensuring necessary accounts exist in database: %s", database_name)
     required_accounts = [
         ('Accounts Receivable', 'Accounts Receivable'),
@@ -113,60 +95,54 @@ def ensure_accounts_exist(database_name):
     for account_name, account_type_name in required_accounts:
         get_or_create_account(database_name, account_name, account_type_name)
 
+def get_user_database(user):
+    user_profile = UserProfile.objects.using('default').get(user=user)
+    return user_profile.database_name
 
-def create_invoice_with_transaction(data, database_name):
-    logger.debug(f"Creating invoice with transaction in database: {database_name}")
-    logger.debug(f"Data received: {data}")
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def invoice_list(request):
+    user = request.user
+    database_name = get_user_database(user)
 
-    context = {'database_name': database_name}
+    if request.method == 'GET':
+        invoices = Invoice.objects.using(database_name).all()
+        serializer = InvoiceSerializer(invoices, many=True, context={'database_name': database_name})
+        return Response(serializer.data)
 
-    with db_transaction.atomic(using=database_name):
-        transaction_data = data.pop('transaction', None)
-        finance_transaction = None
+    elif request.method == 'POST':
+        serializer = InvoiceSerializer(data=request.data, context={'database_name': database_name})
+        if serializer.is_valid():
+            invoice = serializer.save()
+            return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # Process transaction data if provided
-        if transaction_data:
-            logger.debug(f"Processing transaction data: {transaction_data}")
-            transaction_serializer = TransactionSerializer(data=transaction_data, context=context)
-            if transaction_serializer.is_valid(raise_exception=True):
-                finance_transaction = transaction_serializer.save()
-                logger.debug(f"Transaction created: {finance_transaction}")
-            else:
-                logger.error(f"Transaction validation failed: {transaction_serializer.errors}")
-                raise serializers.ValidationError(transaction_serializer.errors)
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def invoice_detail(request, pk):
+    user = request.user
+    database_name = get_user_database(user)
 
-        # Convert date strings to date objects if necessary
-        if 'date' in data and isinstance(data['date'], str):
-            logger.debug(f"Parsing date from string: {data['date']}")
-            data['date'] = datetime.strptime(data['date'], "%Y-%m-%d").date()
+    try:
+        invoice = Invoice.objects.using(database_name).get(pk=pk)
+    except Invoice.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
-        # Ensure the 'customer' field is a string (UUID as string)
-        customer = data.get('customer')
-        if isinstance(customer, uuid.UUID):
-            data['customer'] = str(customer)
-        elif not isinstance(customer, str):
-            logger.error(f"Invalid customer type: {type(customer)}. Expected UUID as string.")
-            raise serializers.ValidationError({'customer': 'Invalid customer format. Expected UUID as string.'})
+    if request.method == 'GET':
+        serializer = InvoiceSerializer(invoice, context={'database_name': database_name})
+        return Response(serializer.data)
 
-        # Initialize and validate the serializer
-        invoice_serializer = InvoiceSerializer(data=data, context=context)
-        logger.debug(f"Invoice data before validation: {data}")
-        if invoice_serializer.is_valid(raise_exception=True):
-            logger.debug(f"Validated invoice data: {invoice_serializer.validated_data}")
-            invoice = invoice_serializer.save()
-            logger.debug(f"Saved invoice: {invoice}")
+    elif request.method == 'PUT':
+        serializer = InvoiceSerializer(invoice, data=request.data, context={'database_name': database_name})
+        if serializer.is_valid():
+            updated_invoice = serializer.save()
+            return Response(InvoiceSerializer(updated_invoice).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            # If finance_transaction exists, link it to the invoice (if required)
-            if finance_transaction:
-                logger.debug(f"Linking finance transaction to invoice: {finance_transaction}")
-                invoice.transaction = finance_transaction
-                invoice.save()
+    elif request.method == 'DELETE':
+        invoice.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-            return invoice
-        else:
-            logger.error(f"Invoice validation failed: {invoice_serializer.errors}")
-            raise serializers.ValidationError(invoice_serializer.errors)
-        
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_customer(request):
@@ -887,58 +863,58 @@ def delete_estimate(request, pk):
 def create_bill(request):
     user = request.user
     database_name = get_user_database(user)
-    
+
     try:
         ensure_accounts_exist(database_name)
-        
+
         # Extract data from request
         bill_data = request.data
-        
+
         # Validate required fields
         required_fields = ['vendor', 'bill_date', 'due_date', 'items']
         for field in required_fields:
             if field not in bill_data:
                 return Response({'error': f'Missing required field: {field}'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # Get the vendor
         try:
             vendor = Vendor.objects.using(database_name).get(id=bill_data['vendor'])
         except Vendor.DoesNotExist:
             return Response({'error': 'Vendor not found'}, status=status.HTTP_400_BAD_REQUEST)
-        
-      # Calculate the total amount
+
+        # Calculate the total amount
         total_amount = sum(Decimal(item['amount']) for item in bill_data['items'])
-        
+
         # Create the bill
         bill = Bill.objects.using(database_name).create(
             vendor=vendor,
             bill_date=bill_data['bill_date'],
             due_date=bill_data['due_date'],
-            total_amount=total_amount  # Set the total amount here
+            total_amount=total_amount
         )
         bill.save(using=database_name)
-        
+
         # Get or create the Accounts Payable account
         accounts_payable, _ = Account.objects.using(database_name).get_or_create(
             name='Accounts Payable',
             defaults={'account_type': AccountType.objects.using(database_name).get(name='Current Liabilities')}
         )
-        
+
         # Get or create the Expense AccountType
         expense_account_type, _ = AccountType.objects.using(database_name).get_or_create(name='Expense')
-        
+
         # Create the accounting entries
         for item in bill_data['items']:
             # Validate item data
             if 'category' not in item or 'amount' not in item:
                 raise ValueError(f"Invalid item data: {item}")
-            
+
             # Get or create the expense account
             expense_account, _ = Account.objects.using(database_name).get_or_create(
                 name=item['category'],
                 defaults={'account_type': expense_account_type}
             )
-            
+
             # Create the debit transaction
             FinanceTransaction.objects.using(database_name).create(
                 account=expense_account,
@@ -947,7 +923,7 @@ def create_bill(request):
                 bill=bill,
                 description=f"Expense for {item['category']}"
             )
-        
+
         # Create the credit transaction for Accounts Payable
         FinanceTransaction.objects.using(database_name).create(
             account=accounts_payable,
@@ -956,74 +932,80 @@ def create_bill(request):
             bill=bill,
             description="Credit to Accounts Payable for bill"
         )
-        
+
         console.info(f"Bill created successfully.")
-        
+
         return Response({
             'message': 'Bill created successfully',
             'bill_id': str(bill.id),
             'total_amount': str(bill.total_amount)
         }, status=status.HTTP_201_CREATED)
-       
 
     except Exception as e:
         logger.exception(f"Unexpected error in create_bill: {str(e)}")
         console.error(f"Unexpected error in create_bill: {str(e)}")
         return Response({'error': 'An unexpected error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['POST'])
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def create_vendor(request):
-    logger.debug("Create Vendor: Received request data: %s", request.data)
+def bill_detail(request, pk):
     user = request.user
+    database_name = get_user_database(user)
 
     try:
-        user_profile = UserProfile.objects.using('default').get(user=user)
-        database_name = user_profile.database_name
-        logger.debug("Database name: %s", database_name)
+        bill = Bill.objects.using(database_name).get(pk=pk)
+    except Bill.DoesNotExist:
+        return Response({'error': 'Bill not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        router = UserDatabaseRouter()
-        router.create_dynamic_database(database_name)
+    serializer = BillSerializer(bill)
+    return Response(serializer.data)
 
-        with transaction.atomic(using=database_name):
-            serializer = VendorSerializer(data=request.data, context={'database_name': database_name})
-            if serializer.is_valid():
-                vendor = serializer.save()
-                logger.debug("Vendor created: %s", serializer.data)
-                transaction.on_commit(lambda: logger.debug("Transaction committed"))
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            else:
-                logger.error("Validation errors: %s", serializer.errors)
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
-        logger.exception("Error creating vendor: %s", e)
-        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def bill_list(request):
+    user = request.user
+    database_name = get_user_database(user)
+
+    bills = Bill.objects.using(database_name).all()
+    serializer = BillSerializer(bills, many=True)
+    return Response(serializer.data)
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def vendor_list(request):
-    logger.debug("Vendor List called")
     user = request.user
+    database_name = get_user_database(user)
+
+    vendors = Vendor.objects.using(database_name).all()
+    serializer = VendorSerializer(vendors, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_vendor(request):
+    user = request.user
+    database_name = get_user_database(user)
+
+    serializer = VendorSerializer(data=request.data, context={'database_name': database_name})
+    if serializer.is_valid():
+        with transaction.atomic(using=database_name):
+            vendor = serializer.save()
+        return Response(VendorSerializer(vendor).data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_detail(request, pk):
+    user = request.user
+    database_name = get_user_database(user)
 
     try:
-        user_profile = UserProfile.objects.using('default').get(user=user)
-        database_name = user_profile.database_name
+        vendor = Vendor.objects.using(database_name).get(pk=pk)
+    except Vendor.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
-        if not database_name:
-            logger.error("Database name is empty.")
-            return Response({'error': 'Database name is empty.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        router = UserDatabaseRouter()
-        router.create_dynamic_database(database_name)
-
-        vendors = Vendor.objects.using(database_name).all()
-        serializer = VendorSerializer(vendors, many=True)
-        return Response(serializer.data)
-
-    except Exception as e:
-        logger.exception(f"Error fetching vendors: {str(e)}")
-        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+    serializer = VendorSerializer(vendor)
+    return Response(serializer.data)
     
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -1078,147 +1060,112 @@ def email_estimate(request, estimate_id):
     return Response({'status': 'email sent'})
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_sales_order(request):
+    logger.debug("Create Sales Order: Received request data: %s", request.data)
+    user = request.user
+
+    if not user.is_authenticated:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        database_name = get_user_database(user)
+        logger.debug("Database name: %s", database_name)
+        ensure_database_exists(database_name)
+        logger.debug("Database {database_name} exists")
+        ensure_accounts_exist(database_name)
+        logger.debug("Accounts exist")
+
+        with db_transaction.atomic(using=database_name):
+            data = request.data
+            data['date'] = ensure_date(data.get('date', timezone.now()))
+            sales_order = create_sales_order_with_transaction(data, database_name)
+            return Response(SalesOrderSerializer(sales_order, context={'database_name': database_name}).data, status=status.HTTP_201_CREATED)
+
+    except UserProfile.DoesNotExist:
+        logger.error("UserProfile does not exist for user: %s", user)
+        return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.exception("Unexpected error creating sales order: %s", str(e))
+        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 def create_sales_order_with_transaction(data, database_name):
     logger.debug(f"Creating sales order with transaction in database: {database_name}")
     logger.debug(f"Data received: {data}")
+
+    sales_order_serializer = SalesOrderSerializer(data=data, context={'database_name': database_name})
     
-    try:
-        with transaction.atomic(using=database_name):
-            items_data = data.pop('items', [])
-            logger.debug(f"Items data: {items_data}")
-            
-            # Create SalesOrder
-            logger.debug(f"Creating SalesOrder with data: {data}")
-            sales_order = SalesOrder.objects.using(database_name).create(**data)
-            logger.debug(f"SalesOrder created with ID: {sales_order.id}")
-            
-            # Create SalesOrderItems
-            total_amount = Decimal('0.00')
-            for item_data in items_data:
-                logger.debug(f"Creating SalesOrderItem with data: {item_data}")
-                # Calculate the amount for the item
-                item_amount = item_data['quantity'] * item_data['unit_price']
-                item_data['amount'] = item_amount
-                item = SalesOrderItem.objects.using(database_name).create(sales_order=sales_order, **item_data)
-                logger.debug(f"SalesOrderItem created with ID: {item.id}")
-                total_amount += item_amount
-            
-            # Update SalesOrder with total amount
-            sales_order.amount = total_amount - sales_order.discount
-            logger.debug(f"Updating SalesOrder {sales_order.id} with total amount: {sales_order.amount}")
-            sales_order.save(using=database_name)
-            logger.debug(f"SalesOrder {sales_order.id} updated successfully")
-            
-            # Fetch the saved object to ensure it exists
-            logger.debug(f"Fetching saved SalesOrder with ID: {sales_order.id}")
-            saved_sales_order = SalesOrder.objects.using(database_name).get(pk=sales_order.id)
-            logger.debug(f"SalesOrder retrieved after save: {saved_sales_order.id}")
-            
-            return saved_sales_order
-    except Exception as e:
-        logger.error(f"Error in create_sales_order_with_transaction: {str(e)}")
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        raise
-    
-@api_view(['POST', 'GET'])
+    if sales_order_serializer.is_valid(raise_exception=True):
+        sales_order = sales_order_serializer.save()
+        logger.debug(f"Sales order created: {sales_order.order_number}")
+
+
+        return sales_order
+
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def sales_order_list_create(request):
+def list_sales_orders(request):
+    logger.debug("List Sales Orders called")
     user = request.user
 
     try:
-        database_name = get_or_create_user_database(user)
-    except ValueError as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
-        logger.error(f"Unexpected error getting user database: {str(e)}")
-        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        database_name = get_user_database(user)
+        ensure_database_exists(database_name)
 
-    if request.method == 'POST':
-        return create_sales_order(request, database_name)
-    elif request.method == 'GET':
-        return list_sales_orders(request, database_name)
-
-def create_sales_order(request, database_name):
-    logger.debug("Create Sales Order: Received request data: %s", request.data)
-
-    # Log all existing products
-    all_products = Product.objects.using(database_name).all()
-    logger.debug(f"All products in database {database_name}: {[f'{p.id}: {p.name}' for p in all_products]}")
-
-    # Check if the specific product exists
-    product_id = request.data['items'][0]['product']
-    try:
-        product = Product.objects.using(database_name).get(pk=product_id)
-        logger.debug(f"Product found: {product.id}: {product.name}")
-    except Product.DoesNotExist:
-        logger.error(f"Product with id {product_id} not found in database {database_name}")
-
-    context = {'database_name': database_name, 'request': request}
-    serializer = SalesOrderSerializer(data=request.data, context=context)
-
-    logger.debug(f"Serializer initialized with context: {serializer.context}")
-
-    if serializer.is_valid():
-        try:
-            with transaction.atomic(using=database_name):
-                sales_order = create_sales_order_with_transaction(serializer.validated_data, database_name)
-            logger.debug(f"Sales order created: {sales_order}")
-            return Response(SalesOrderSerializer(sales_order).data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            logger.exception(f"Unexpected error creating sales order: {str(e)}")
-            return Response({'error': 'Failed to create sales order', 'details': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    else:
-        logger.error(f"Sales order validation failed: {serializer.errors}")
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-def list_sales_orders(request, database_name):
-    sales_orders = SalesOrder.objects.using(database_name).all()
-    serializer = SalesOrderSerializer(sales_orders, many=True, context={'database_name': database_name})
-    return Response(serializer.data)
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAuthenticated])
-def sales_order_detail(request, pk):
-    user = request.user
-
-    try:
-        database_name = get_or_create_user_database(user)
-    except ValueError as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
-        logger.error(f"Unexpected error getting user database: {str(e)}")
-        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    try:
-        sales_order = SalesOrder.objects.using(database_name).get(pk=pk)
-    except SalesOrder.DoesNotExist:
-        logger.warning(f"Sales order with id {pk} not found in database {database_name}")
-        return Response({'error': 'Sales order not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'GET':
-        serializer = SalesOrderSerializer(sales_order, context={'database_name': database_name})
+        sales_orders = SalesOrder.objects.using(database_name).all()
+        serializer = SalesOrderSerializer(sales_orders, many=True, context={'database_name': database_name})
         return Response(serializer.data)
 
-    elif request.method == 'PUT':
-        serializer = SalesOrderSerializer(sales_order, data=request.data, context={'database_name': database_name})
-        if serializer.is_valid():
-            try:
-                with transaction.atomic(using=database_name):
-                    serializer.save()
-                logger.info(f"Sales order {pk} updated by user {request.user.id} in database {database_name}")
-                return Response(serializer.data)
-            except Exception as e:
-                logger.error(f"Error updating sales order {pk} in database {database_name}: {str(e)}")
-                return Response({'error': 'Failed to update sales order'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        logger.warning(f"Invalid data for updating sales order {pk} in database {database_name}: {serializer.errors}")
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except UserProfile.DoesNotExist:
+        logger.error("User profile not found.")
+        return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.exception(f"Error fetching sales orders: {str(e)}")
+        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    elif request.method == 'DELETE':
-        try:
-            with transaction.atomic(using=database_name):
-                sales_order.delete()
-            logger.info(f"Sales order {pk} deleted by user {request.user.id} from database {database_name}")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def sales_order_detail(request, pk):
+    logger.debug(f"Sales Order Detail called for sales_order_id: {pk}")
+    user = request.user
+
+    try:
+        database_name = get_user_database(user)
+        ensure_database_exists(database_name)
+        
+        sales_order = get_object_or_404(SalesOrder.objects.using(database_name).prefetch_related('items', 'customer'), pk=pk)
+
+        if request.method == 'GET':
+            serializer = SalesOrderSerializer(sales_order, context={'database_name': database_name})
+            return Response(serializer.data)
+
+        elif request.method == 'PUT':
+            with db_transaction.atomic(using=database_name):
+                serializer = SalesOrderSerializer(sales_order, data=request.data, context={'database_name': database_name})
+                if serializer.is_valid():
+                    updated_sales_order = serializer.save()
+                    
+                    items_data = request.data.get('items', [])
+                    updated_sales_order.items.all().delete()
+                    for item_data in items_data:
+                        item_serializer = SalesOrderItemSerializer(data=item_data, context={'database_name': database_name})
+                        if item_serializer.is_valid():
+                            item_serializer.save(sales_order=updated_sales_order)
+                    
+                    updated_sales_order.calculate_total_amount()
+                    updated_sales_order.save()
+                    
+                    return Response(SalesOrderSerializer(updated_sales_order, context={'database_name': database_name}).data)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        elif request.method == 'DELETE':
+            sales_order.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            logger.error(f"Error deleting sales order {pk} from database {database_name}: {str(e)}")
-            return Response({'error': 'Failed to delete sales order'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    except UserProfile.DoesNotExist:
+        logger.error(f"UserProfile does not exist for user: {user}")
+        return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.exception(f"Error processing sales order detail: {str(e)}")
+        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

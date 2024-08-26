@@ -146,6 +146,8 @@ class Customer(models.Model):
     def __str__(self):
         return f"{self.customerName} (Account: {self.accountNumber})"
     
+
+    
 class Bill(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     bill_number = models.CharField(max_length=20, unique=True, editable=False, blank=True, null=True)
@@ -178,11 +180,24 @@ class Bill(models.Model):
             raise ValidationError('Bill amount must be positive.')
 
 
+class BillItem(models.Model):
+    bill = models.ForeignKey(Bill, related_name='items', on_delete=models.CASCADE)
+    category = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def save(self, *args, **kwargs):
+        self.amount = self.quantity * self.price
+        super().save(*args, **kwargs)
+
 class Invoice(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     invoice_num = models.CharField(max_length=20, unique=True, editable=False)
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='invoices')
-    amount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    totalAmount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     date = models.DateTimeField(default=get_current_datetime)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -195,6 +210,8 @@ class Invoice(models.Model):
     cost_of_goods_sold = models.ForeignKey('finance.Account', on_delete=models.SET_NULL, related_name='invoices_cogs', null=True)
     inventory = models.ForeignKey('finance.Account', on_delete=models.SET_NULL, related_name='invoices_inventory', null=True)
     is_paid = models.BooleanField(default=False)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default='USD')
 
     def __str__(self):
         return self.invoice_num
@@ -215,6 +232,20 @@ class Invoice(models.Model):
 
     def total_with_tax(self):
         return self.amount * (1 + self.customer.salesTax / 100)
+    
+class InvoiceItem(models.Model):
+    invoice = models.ForeignKey(Invoice, related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey('Product', on_delete=models.SET_NULL, null=True, blank=True)
+    service = models.ForeignKey('Service', on_delete=models.SET_NULL, null=True, blank=True)
+    description = models.CharField(max_length=200, null=True, blank=True)
+    quantity = models.IntegerField(default=1)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def subtotal(self):
+        return self.quantity * self.unit_price
+
+    def __str__(self):
+        return f"InvoiceItem {self.id} for Invoice {self.invoice_id}"
 
 class Vendor(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -328,22 +359,28 @@ class SalesOrder(models.Model):
     order_number = models.CharField(max_length=50, unique=True, editable=False)
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE)
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)    
     currency = models.CharField(max_length=3, default='USD')
     date = models.DateField()
     created_by = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+    totalAmount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
 
     def save(self, *args, **kwargs):
         if not self.order_number:
             self.order_number = self.generate_order_number()
         super().save(*args, **kwargs)
 
-    def generate_order_number(self):
-        uuid_part = str(self.id)[:8].upper()
-        return f"SO-{uuid_part}"
+    @staticmethod
+    def generate_order_number():
+        return f"SO-{uuid.uuid4().hex[:8].upper()}"
 
+
+    def calculate_total_amount(self):
+        total = sum(item.subtotal() for item in self.items.all())
+        self.totalAmount = total - self.discount
+        self.save()
 
     def clean(self):
         if self.amount is not None and self.amount <= 0:
@@ -352,6 +389,9 @@ class SalesOrder(models.Model):
     class Meta:
         ordering = ['-date']
         app_label = 'sales'
+
+    def __str__(self):
+        return f"Sales Order {self.order_number}"
         
 class SalesOrderItem(models.Model):
     sales_order = models.ForeignKey(SalesOrder, related_name='items', on_delete=models.CASCADE)
@@ -360,7 +400,6 @@ class SalesOrderItem(models.Model):
     description = models.CharField(max_length=200, null=True)
     quantity = models.IntegerField(default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
     
     def __str__(self):
         return f"SalesOrderItem {self.id} for SalesOrder {self.sales_order_id}"
