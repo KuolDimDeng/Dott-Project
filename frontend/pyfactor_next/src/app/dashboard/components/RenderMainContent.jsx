@@ -56,13 +56,28 @@ import CustomerDetails from './forms/CustomerDetails';
 //import HRDashboard from './forms/HRDashboard';
 //import PayrollDashboard from './forms/PayrollDashboard';
 import AnalysisPage from './forms/AnalysisPage';
+import HomeIcon from '@mui/icons-material/Home';
 //import AccountPage from './forms/AccountPage';
 //import ReportPage from './forms/ReportPage';
 import renderForm from './RenderForm';
 import ProductManagement from './forms/ProductManagement';
 import ServiceManagement from './forms/ServiceManagement';
+import EstimateManagement from './forms/EstimateManagement';
+import SalesOrderManagement from './forms/SalesOrderManagement';
+import InvoiceManagement from './forms/InvoiceManagement'
+import VendorManagement from './forms/VendorManagement';
+import BillManagement from './forms/BillManagement';
+import PurchaseOrderManagement from './forms/PurchaseOrderManagement';
+import ExpensesManagement from './forms/ExpensesManagement';
+import PurchaseReturnsManagement from './forms/PurchaseReturnsManagement';
+import ProcurementManagement from './forms/ProcurementManagement';
+import EmployeeManagement from './forms/EmployeeManagement';
+import PayrollManagement from './forms/PayrollManagement';
+import TimesheetManagement from './forms/TimesheetManagement';
+import ChartOfAccountsManagement from './forms/ChartOfAccountsManagement';
 import ChartContainer from '@/app/chart/component/ChartContainer';
 import IntegrationSettings from '../../Settings/integrations/components/IntegrationSettings';
+import UserProfileSettings from '@/app/Settings/UserProfile/components/UserProfileSettings';
 
 import StatusMessage from './components/StatusMessage';
 
@@ -95,10 +110,28 @@ const RenderMainContent = ({
     handleBackToCustomerDetails,
     showProductManagement,
     showServiceManagement,
+    showEstimateManagement,
     showDashboard,
     showIntegrationSettings,
+    showUserProfileSettings,
+    handleUserProfileUpdate,
+    showSalesOrderManagement,
+    showInvoiceManagement,
+    showVendorManagement,
+    showBillManagement,
+    showPurchaseOrderManagement,
+    showExpensesManagement,
+    showPurchaseReturnManagement,
+    showProcurementManagement,
+    showEmployeeManagement,
+    showPayrollManagement,
+    showTimesheetManagement,
+    showChartOfAccounts,
   }) => {
     const renderContent = () => {
+      if (showUserProfileSettings) {
+        return <UserProfileSettings userData={userData} onUpdate={handleUserProfileUpdate} />;
+      }
       if (showIntegrationSettings) return null;
       if (showDashboard) {
 
@@ -120,6 +153,57 @@ const RenderMainContent = ({
   
       if (showServiceManagement) {
         return <ServiceManagement />;
+      }
+      if (showEstimateManagement) {
+        return <EstimateManagement />;
+      }
+
+      if (showSalesOrderManagement) {
+        return <SalesOrderManagement />;
+      }
+
+      if (showInvoiceManagement) {
+        return <InvoiceManagement />;
+      }
+
+      if (showVendorManagement) {
+        return <VendorManagement />;
+      }
+
+      if (showBillManagement) {
+        return <BillManagement />;
+      }
+      if (showPurchaseOrderManagement) {
+        return <PurchaseOrderManagement />;
+      }
+
+      if (showExpensesManagement) {
+        return <ExpensesManagement />;
+      }
+
+      if (showPurchaseReturnManagement) {
+        return <PurchaseReturnsManagement/>;
+      }
+
+      if (showProcurementManagement) {
+        return <ProcurementManagement />;
+      }
+
+      if (showPayrollManagement) {
+        return <PayrollManagement/>;
+      }
+
+      if (showTimesheetManagement) {
+        return <TimesheetManagement/>;
+      }
+
+      if (showChartOfAccounts) {
+        return <ChartOfAccountsManagement/>;
+      }
+
+      if (showEmployeeManagement) {
+        console.log('Rendering EmployeeManagement component');
+        return <EmployeeManagement />;
       }
   
       if (selectedInvoiceId !== null) {

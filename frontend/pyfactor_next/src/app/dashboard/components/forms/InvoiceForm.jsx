@@ -26,6 +26,8 @@ const InvoiceForm = () => {
     email: '',
   });
   const [customers, setCustomers] = useState([]);
+  const [customersLoading, setCustomersLoading] = useState(true);
+  const [customersError, setCustomersError] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [userDatabase, setUserDatabase] = useState('');
   const [products, setProducts] = useState([]);
@@ -45,41 +47,58 @@ const InvoiceForm = () => {
     }
   }, [userDatabase]);
 
+  useEffect(() => {
+    console.log('Selected customer state changed:', selectedCustomer);
+  }, [selectedCustomer]);
+
   const fetchUserProfile = async () => {
     try {
-      const response = await axiosInstance.get('http://localhost:8000/api/profile/');
+      const response = await axiosInstance.get('/api/profile/');
       setUserDatabase(response.data.database_name);
       console.log('User profile:', response.data);
       console.log('User database:', response.data.database_name);
     } catch (error) {
+      console.error('Error fetching user profile:', error);
       logger.error('Error fetching user profile:', error);
+      addMessage('error', 'Failed to fetch user profile');
     }
   };
 
-  const fetchCustomers = async (database_name) => {
+  const fetchCustomers = async () => {
     try {
-      console.log('Fetching customers from database:', database_name);
-      const response = await axiosInstance.get('http://localhost:8000/api/customers/', {
-        params: { database: database_name },
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
+      setCustomersLoading(true);
+      setCustomersError(null);
+      console.log('Fetching customers from database:', userDatabase);
+      const response = await axiosInstance.get('/api/customers/', {
+        params: { database: userDatabase },
       });
       console.log('Fetched customers:', response.data);
       setCustomers(response.data);
     } catch (error) {
-      logger.error('Error fetching customers:', error);
+      console.error('Error fetching customers:', error);
+      if (error.response) {
+        console.error("Data:", error.response.data);
+        console.error("Status:", error.response.status);
+        console.error("Headers:", error.response.headers);
+        setCustomersError(`Failed to load customers. Server responded with status ${error.response.status}`);
+      } else if (error.request) {
+        console.error("Request:", error.request);
+        setCustomersError('Failed to load customers. No response received from server.');
+      } else {
+        console.error('Error', error.message);
+        setCustomersError(`Failed to load customers. ${error.message}`);
+      }
+      addMessage('error', `Failed to fetch customers: ${error.message}`);
+    } finally {
+      setCustomersLoading(false);
     }
   };
 
   const fetchProducts = async (database_name) => {
     try {
       console.log('Fetching products from database:', database_name);
-      const response = await axiosInstance.get('http://localhost:8000/api/products/', {
+      const response = await axiosInstance.get('/api/products/', {
         params: { database: database_name },
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
       });
       console.log('Fetched products:', response.data);
       setProducts(response.data);
@@ -87,15 +106,12 @@ const InvoiceForm = () => {
       logger.error('Error fetching products:', error);
     }
   };
-
+  
   const fetchServices = async (database_name) => {
     try {
       console.log('Fetching services from database:', database_name);
-      const response = await axiosInstance.get('http://localhost:8000/api/services/', {
+      const response = await axiosInstance.get('/api/services/', {
         params: { database: database_name },
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
       });
       console.log('Fetched services:', response.data);
       setServices(response.data);
@@ -105,20 +121,27 @@ const InvoiceForm = () => {
   };
 
   const handleCustomerChange = (event) => {
-    setSelectedCustomer(event.target.value || '');
-    const selectedCustomerData = customers.find((customer) => customer.id === event.target.value);
+    const selectedId = event.target.value;
+    console.log('Selected customer ID:', selectedId);
+    setSelectedCustomer(selectedId);
+    
+    const selectedCustomerData = customers.find((customer) => customer.id === selectedId);
+    console.log('Selected customer data:', selectedCustomerData);
+    
     if (selectedCustomerData) {
       setUserData({
-        first_name: selectedCustomerData.first_name,
-        last_name: selectedCustomerData.last_name,
-        business_name: selectedCustomerData.customerName,
-        address: selectedCustomerData.street,
+        first_name: selectedCustomerData.first_name || '',
+        last_name: selectedCustomerData.last_name || '',
+        business_name: selectedCustomerData.customerName || '',
+        address: selectedCustomerData.street || '',
         city: selectedCustomerData.city || '',
         state: selectedCustomerData.billingState || '',
-        zip_code: selectedCustomerData.postcode,
-        phone: selectedCustomerData.phone,
-        email: selectedCustomerData.email,
+        zip_code: selectedCustomerData.postcode || '',
+        phone: selectedCustomerData.phone || '',
+        email: selectedCustomerData.email || '',
       });
+    } else {
+      console.log('No customer found with id:', selectedId);
     }
   };
 
@@ -174,65 +197,87 @@ const InvoiceForm = () => {
   };
 
   const handleSave = async () => {
-    try {
-        const subtotal = invoiceItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
-        const tax = subtotal * 0.1;
-        const total = subtotal + tax;
-  
-        // Generate a unique invoice number
-        const currentDate = new Date();
-        const year = currentDate.getFullYear().toString().slice(-2);
-        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-        const day = String(currentDate.getDate()).padStart(2, '0');
-        const dateString = `${year}${month}${day}`;
-        
-  
-        // Fetch the last invoice number from the server or local storage
-        const lastInvoiceNumber = await getLastInvoiceNumber();
-        let newInvoiceNumber;
-  
-        if (lastInvoiceNumber) {
-            const lastNumber = parseInt(lastInvoiceNumber.replace(/\D/g, ''), 10);
-            newInvoiceNumber = `INV${String(lastNumber + 1).padStart(5, '0')}`;
-        } else {
-            newInvoiceNumber = `INV00001`;
-        }
-  
-        // Correct transaction data format
-        const transactionData = {
-            description: "Transaction Description", // Provide a suitable description
-            account: 1, // Provide a valid account ID
-            type: "credit", // Specify the transaction type
-            amount: total, // Provide the total amount
-            notes: "Transaction Notes", // Any additional notes
-            receipt: null // Receipt file if any
-        };
-
-        const formattedDate = currentDate.toISOString().split('T')[0]; // This will give you YYYY-MM-DD
-    
-        const invoiceData = {
-          invoice_num: newInvoiceNumber,
-          customer: selectedCustomer,
-          amount: total,
-          due_date: formattedDate, // Use the formatted date string
-          status: 'draft',
-          transaction: transactionData,
-        };
-        // Save the new invoice number to the server or local storage
-        await saveInvoiceNumber(newInvoiceNumber);
-        console.log("Invoice data being sent to server:", invoiceData);
-        const response = await axiosInstance.post('http://localhost:8000/api/invoices/', invoiceData, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-        });
-        console.log('Invoice created successfully', response.data);
-        addMessage('info', 'Invoice created successfully');
-    } catch (error) {
-        logger.error('Error creating invoice', error);
-        addMessage('error', 'Error creating invoice');
+    if (invoiceItems.length === 0) {
+      addMessage('error', 'Please add at least one item to the invoice');
+      return;
     }
-};
+  
+    const subtotal = invoiceItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+    const tax = subtotal * 0.1;
+    const total = subtotal + tax;
+  
+    if (total <= 0) {
+      addMessage('error', 'Invoice total must be greater than zero');
+      return;
+    }
+  
+    try {
+      // Generate a unique invoice number
+      const currentDate = new Date();
+      const year = currentDate.getFullYear().toString().slice(-2);
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const day = String(currentDate.getDate()).padStart(2, '0');
+      const dateString = `${year}${month}${day}`;
+      
+      // Fetch the last invoice number from the server or local storage
+      const lastInvoiceNumber = await getLastInvoiceNumber();
+      let newInvoiceNumber;
+  
+      if (lastInvoiceNumber) {
+        const lastNumber = parseInt(lastInvoiceNumber.replace(/\D/g, ''), 10);
+        newInvoiceNumber = `INV${String(lastNumber + 1).padStart(5, '0')}`;
+      } else {
+        newInvoiceNumber = `INV00001`;
+      }
+  
+      const formattedDate = currentDate.toISOString().split('T')[0]; // This will give you YYYY-MM-DD
+  
+      // Correct transaction data format
+      const transactionData = {
+        description: "Invoice Transaction",
+        account: 1, // Make sure this is a valid account ID
+        type: "credit",
+        amount: total,
+        notes: "Automatically created for invoice",
+        date: formattedDate // Add the transaction date
+      };
+      
+      const invoiceData = {
+        invoice_num: newInvoiceNumber,
+        customer: selectedCustomer,
+        amount: total,
+        due_date: formattedDate,
+        status: 'draft',
+        transaction: transactionData,
+        date: formattedDate, // Add the invoice date
+        items: invoiceItems.map(item => ({
+          product: item.productId,
+          service: item.serviceId,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          amount: item.amount
+        }))
+      };
+      
+      // Save the new invoice number to the server or local storage
+      await saveInvoiceNumber(newInvoiceNumber);
+      console.log("Invoice data being sent to server:", invoiceData);
+      const response = await axiosInstance.post('/api/invoices/create/', invoiceData);
+  
+      console.log('Invoice created successfully', response.data);
+      addMessage('info', 'Invoice created successfully');
+    } catch (error) {
+      console.error('Error creating invoice:', error);
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        console.error("Response status:", error.response.status);
+        console.error("Response headers:", error.response.headers);
+      }
+      logger.error('Error creating invoice', error);
+      addMessage('error', `Error creating invoice: ${error.message}`);
+    }
+  };
 
   
   // Function to fetch the last invoice number from the server or local storage
@@ -259,20 +304,31 @@ const InvoiceForm = () => {
       </Typography>
       <Grid container spacing={2}>
         <Grid item xs={12}>
-          <TextField
-            select
-            label="Existing Customer"
-            value={selectedCustomer}
-            onChange={handleCustomerChange}
-            fullWidth
-          >
-            <MenuItem value="">Select a customer</MenuItem>
-            {customers.map((customer) => (
-              <MenuItem key={customer.id} value={customer.id}>
-                {customer.display_name}
-              </MenuItem>
-            ))}
-          </TextField>
+          <FormControl fullWidth>
+            <InputLabel id="customer-select-label">Customer</InputLabel>
+            <Select
+                labelId="customer-select-label"
+                id="customer-select"
+                value={selectedCustomer}
+                onChange={handleCustomerChange}
+                label="Customer"
+                error={!!customersError}
+              >
+                <MenuItem value="">
+                  <em>Select a customer</em>
+                </MenuItem>
+                {customers.map((customer) => (
+                  <MenuItem key={customer.id} value={String(customer.id)}>
+                    {customer.customerName || `${customer.first_name} ${customer.last_name}`}
+                  </MenuItem>
+                ))}
+              </Select>
+          </FormControl>
+          {customersError && (
+            <Typography color="error" variant="caption">
+              {customersError}
+            </Typography>
+          )}
         </Grid>
         <Grid item xs={12}>
           <Typography variant="h6">Invoice Items</Typography>

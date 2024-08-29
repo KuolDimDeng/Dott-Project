@@ -61,6 +61,10 @@ class Item(models.Model):
             code = f"{base}_{''.join(random.choices(string.ascii_uppercase + string.digits, k=5))}"
             if not cls.objects.filter(**{field: code}).exists():
                 return code
+            # If it exists, generate a new one with a longer random suffix
+            code = f"{base}_{''.join(random.choices(string.ascii_uppercase + string.digits, k=8))}"
+            if not cls.objects.filter(**{field: code}).exists():
+               return code
 
 class Product(Item):
     product_code = models.CharField(max_length=50, unique=True, editable=False)
@@ -146,52 +150,20 @@ class Customer(models.Model):
     def __str__(self):
         return f"{self.customerName} (Account: {self.accountNumber})"
     
-
+    def generate_account_number():
+        while True:
+            uuid_numbers = re.sub('[^0-9]', '', str(uuid.uuid4()))
+            account_number = (uuid_numbers[:5] + '00000')[:5]
+            if not Customer.objects.filter(accountNumber=account_number).exists():
+                return account_number
+            # If it exists, generate a new one with a random suffix
+            random_suffix = ''.join(random.choices('0123456789', k=2))
+            account_number = (uuid_numbers[:3] + random_suffix + '00000')[:5]
+            if not Customer.objects.filter(accountNumber=account_number).exists():
+                return account_number
     
-class Bill(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    bill_number = models.CharField(max_length=20, unique=True, editable=False, blank=True, null=True)
-    vendor = models.ForeignKey('Vendor', on_delete=models.CASCADE, related_name='bills')
-    bill_date = models.DateTimeField(default=get_current_datetime)
-    due_date = models.DateTimeField(default=default_due_datetime)
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    # Add other fields as needed
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
 
-    def save(self, *args, **kwargs):
-        if not self.bill_number:
-            self.bill_number = self.generate_bill_number()
-        super().save(*args, **kwargs)
-
-    def generate_bill_number(self):
-        # Get the first 5 characters of the UUID, convert to uppercase
-        uuid_part = str(self.id)[:8].upper()
-        return f"BILL-{uuid_part}"
-
-    def __str__(self):
-            return f"Bill {self.id or 'Unsaved'}"
-
-    class Meta:
-        ordering = ['-bill_date']
-        
-    def clean(self):
-        if self.total_amount <= 0:
-            raise ValidationError('Bill amount must be positive.')
-
-
-class BillItem(models.Model):
-    bill = models.ForeignKey(Bill, related_name='items', on_delete=models.CASCADE)
-    category = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-
-    def save(self, *args, **kwargs):
-        self.amount = self.quantity * self.price
-        super().save(*args, **kwargs)
+   
 
 class Invoice(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -216,14 +188,22 @@ class Invoice(models.Model):
     def __str__(self):
         return self.invoice_num
 
-    @staticmethod
-    def generate_invoice_number(uuid_value):
-        uuid_part = str(uuid_value)[-8:].upper()
-        return f'INV{uuid_part}'
+    @classmethod
+    def generate_invoice_number(cls):
+        while True:
+            uuid_part = uuid.uuid4().hex[-8:].upper()
+            invoice_num = f'INV{uuid_part}'
+            if not cls.objects.filter(invoice_num=invoice_num).exists():
+                return invoice_num
+            # If it exists, generate a new one with a random suffix
+            random_suffix = ''.join(random.choices('0123456789ABCDEF', k=4))
+            invoice_num = f'INV{uuid_part}-{random_suffix}'
+            if not cls.objects.filter(invoice_num=invoice_num).exists():
+                return invoice_num
 
     def save(self, *args, **kwargs):
         if not self.invoice_num:
-            self.invoice_num = self.generate_invoice_number(self.id)
+            self.invoice_num = self.generate_invoice_number()
         super().save(*args, **kwargs)
 
     def clean(self):
@@ -247,32 +227,7 @@ class InvoiceItem(models.Model):
     def __str__(self):
         return f"InvoiceItem {self.id} for Invoice {self.invoice_id}"
 
-class Vendor(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    vendor_number = models.CharField(max_length=20, unique=True, editable=False)
-    vendor_name = models.CharField(max_length=100)
-    street = models.CharField(max_length=100)
-    postcode = models.CharField(max_length=10)
-    city = models.CharField(max_length=100)
-    state = models.CharField(max_length=100)
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
 
-    def save(self, *args, **kwargs):
-        if not self.vendor_number:
-            self.vendor_number = self.generate_vendor_number()
-        super().save(*args, **kwargs)
-
-    def generate_vendor_number(self):
-        uuid_part = str(self.id)[:8].upper()
-        return f"V-{uuid_part}"
-
-    def __str__(self):
-        return f"{self.vendor_name} ({self.vendor_number})"
-
-    class Meta:
-        ordering = ['vendor_name']
 
 class Estimate(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -298,9 +253,17 @@ class Estimate(models.Model):
         return self.estimate_num
 
     @staticmethod
-    def generate_estimate_number(uuid_value):
-        uuid_part = str(uuid_value)[:8].upper()
-        return f'EST-{uuid_part}'
+    def generate_estimate_number():
+        while True:
+            uuid_part = uuid.uuid4().hex[:8].upper()
+            estimate_num = f'EST-{uuid_part}'
+            if not Estimate.objects.filter(estimate_num=estimate_num).exists():
+                return estimate_num
+            # If it exists, generate a new one with a random suffix
+            random_suffix = ''.join(random.choices('0123456789ABCDEF', k=4))
+            estimate_num = f'EST-{uuid_part}-{random_suffix}'
+            if not Estimate.objects.filter(estimate_num=estimate_num).exists():
+                return estimate_num
 
     def clean(self):
         if self.totalAmount <= 0:
@@ -374,7 +337,16 @@ class SalesOrder(models.Model):
 
     @staticmethod
     def generate_order_number():
-        return f"SO-{uuid.uuid4().hex[:8].upper()}"
+        while True:
+            uuid_part = uuid.uuid4().hex[:8].upper()
+            order_number = f"SO-{uuid_part}"
+            if not SalesOrder.objects.filter(order_number=order_number).exists():
+                return order_number
+            # If it exists, generate a new one with a random suffix
+            random_suffix = ''.join(random.choices('0123456789ABCDEF', k=4))
+            order_number = f"SO-{uuid_part}-{random_suffix}"
+            if not SalesOrder.objects.filter(order_number=order_number).exists():
+                return order_number
 
 
     def calculate_total_amount(self):

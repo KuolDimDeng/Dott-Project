@@ -3,7 +3,7 @@ from django.db import connections, transaction as db_transaction
 from rest_framework import serializers
 from .utils import get_or_create_account, calculate_due_date
 from finance.models import Account, FinanceTransaction
-from .models import Product, Service, Customer, Bill, BillItem, Invoice, Vendor, Estimate, SalesOrder, SalesOrderItem, Department, default_due_datetime, EstimateItem, EstimateAttachment, InvoiceItem
+from .models import Product, Service, Customer, Invoice, Estimate, SalesOrder, SalesOrderItem, Department, default_due_datetime, EstimateItem, EstimateAttachment, InvoiceItem
 from pyfactor.logging_config import get_logger
 from django.utils import timezone
 from decimal import Decimal
@@ -62,6 +62,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             'shippingPhone', 'deliveryInstructions', 'street', 'postcode', 'city', 'display_name'
         ]
         read_only_fields = ['id', 'accountNumber']
+        
 
     def create(self, validated_data):
         database_name = self.context.get('database_name')
@@ -72,81 +73,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     def get_display_name(self, obj):
         return f"{obj.customerName} - {obj.accountNumber}"
 
-class BillItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BillItem
-        fields = ['category', 'description', 'quantity', 'price', 'tax', 'amount']
 
-class BillSerializer(serializers.ModelSerializer):
-    items = BillItemSerializer(many=True)
-    vendor = serializers.PrimaryKeyRelatedField(queryset=Vendor.objects.all())
-
-    class Meta:
-        model = Bill
-        fields = ['id', 'bill_number', 'vendor', 'currency', 'bill_date', 'due_date', 'poso_number', 'totalAmount', 'notes', 'items']
-
-    def create(self, validated_data):
-        items_data = validated_data.pop('items')
-        database_name = self.context.get('database_name')
-
-        with db_transaction.atomic(using=database_name):
-            bill = Bill.objects.using(database_name).create(**validated_data)
-            
-            # Create bill items
-            for item_data in items_data:
-                BillItem.objects.using(database_name).create(bill=bill, **item_data)
-
-            # Create transactions
-            accounts_payable = Account.objects.using(database_name).get(name='Accounts Payable')
-            
-            # Credit Accounts Payable
-            FinanceTransaction.objects.using(database_name).create(
-                account=accounts_payable,
-                amount=bill.totalAmount,
-                type='credit',
-                description=f"Bill {bill.bill_number} - Accounts Payable"
-            )
-
-            # Debit appropriate accounts based on bill items
-            for item in bill.items.all():
-                if item.category == 'Inventory':
-                    inventory_account = Account.objects.using(database_name).get(name='Inventory')
-                    FinanceTransaction.objects.using(database_name).create(
-                        account=inventory_account,
-                        amount=item.amount,
-                        type='debit',
-                        description=f"Bill {bill.bill_number} - Inventory Purchase"
-                    )
-                elif item.category == 'Prepaid Expense':
-                    prepaid_expense_account = Account.objects.using(database_name).get(name='Prepaid Expenses')
-                    FinanceTransaction.objects.using(database_name).create(
-                        account=prepaid_expense_account,
-                        amount=item.amount,
-                        type='debit',
-                        description=f"Bill {bill.bill_number} - Prepaid Expense"
-                    )
-                elif item.category == 'Fixed Asset':
-                    fixed_asset_account = Account.objects.using(database_name).get(name='Fixed Assets')
-                    FinanceTransaction.objects.using(database_name).create(
-                        account=fixed_asset_account,
-                        amount=item.amount,
-                        type='debit',
-                        description=f"Bill {bill.bill_number} - Fixed Asset Purchase"
-                    )
-                else:
-                    # Assume it's a regular expense
-                    expense_account, _ = Account.objects.using(database_name).get_or_create(
-                        name=item.category,
-                        defaults={'account_type': 'Expense'}
-                    )
-                    FinanceTransaction.objects.using(database_name).create(
-                        account=expense_account,
-                        amount=item.amount,
-                        type='debit',
-                        description=f"Bill {bill.bill_number} - {item.category} Expense"
-                    )
-
-        return bill
 
 class TransactionSerializer(serializers.ModelSerializer):
     account = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all())
@@ -338,15 +265,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 
 
-class VendorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Vendor
-        fields = ['id', 'vendor_number', 'vendor_name', 'street', 'postcode', 'city', 'state', 'phone']
-        read_only_fields = ['id', 'vendor_number']
 
-    def create(self, validated_data):
-        database_name = self.context.get('database_name')
-        return Vendor.objects.using(database_name).create(**validated_data)
 
 class EstimateItemSerializer(serializers.ModelSerializer):
     product = serializers.CharField(max_length=36)  # Change this to CharField
@@ -738,3 +657,6 @@ class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
         fields = ['id', 'dept_code', 'dept_name', 'created_at']
+        
+
+        

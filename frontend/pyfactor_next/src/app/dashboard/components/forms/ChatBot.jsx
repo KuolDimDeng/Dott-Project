@@ -98,7 +98,7 @@ const Chatbot = ({ userName, backgroundColor }) => {
       {isOpen ? (
         <Paper elevation={3} sx={{ width: 300, height: 400, display: 'flex', flexDirection: 'column', backgroundColor }}>
           <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e0e0e0' }}>
-            <Typography variant="h6">Chat with {userName}</Typography>
+            <Typography variant="h6">Hello {userName}, need help?</Typography>
             <IconButton onClick={handleToggle} size="small">
               <CloseIcon />
             </IconButton>

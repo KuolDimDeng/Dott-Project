@@ -12,6 +12,8 @@ urlpatterns = [
     path('', include('finance.urls')),
     path('api/banking/', include('banking.urls')),
     path('', include('sales.urls')),
+    path('', include('purchases.urls')),
+    path('', include('hr.urls')),  
     path('accounts/', include('allauth.urls')),
     path('api/messages/', views.message_stream, name='message_stream'),
     path('api/reports/', include('reports.urls')),

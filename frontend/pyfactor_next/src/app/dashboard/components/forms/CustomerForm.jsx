@@ -43,6 +43,7 @@ const CustomerForm = ({ router }) => {
 
   const [formData, setFormData] = useState(initialState);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { addMessage } = useUserMessageContext();
 
   useEffect(() => {
@@ -60,17 +61,29 @@ const CustomerForm = ({ router }) => {
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
-    console.log('Form submitted with data:', formData);
+    setIsLoading(true);
+    setError(null);
     try {
-      const response = await axiosInstance.post('http://localhost:8000/api/create-customer/', formData);
+      const response = await axiosInstance.post('http://localhost:8000/api/customers/create/', formData);
       console.log('Customer created successfully', response.data);
       addMessage('info', 'Customer created successfully');
-      //router.push('/dashboard/customers');
+      if (router && router.push) {
+        router.push('/dashboard/customers');
+      }
     } catch (error) {
       logger.error('Error creating customer', error);
+      setError('Failed to create customer. Please try again.');
       addMessage('error', 'Error creating customer');
+    } finally {
+      setIsLoading(false);
     }
-  }, [formData, router]);
+  }, [formData, router, addMessage]);
+
+  const handleCancel = () => {
+    if (router && router.back) {
+      router.back();
+    }
+  };
 
   return (
     <Box sx={{ p: 3 }}>
@@ -116,8 +129,10 @@ const CustomerForm = ({ router }) => {
           </Grid>
         </Grid>
         <Box display="flex" justifyContent="flex-end" mt={3}>
-          <Button variant="outlined" color="inherit" sx={{ mr: 2 }}>Cancel</Button>
-          <Button variant="contained" color="primary" type="submit">Save</Button>
+          <Button variant="outlined" color="inherit" sx={{ mr: 2 }} onClick={handleCancel}>Cancel</Button>
+          <Button variant="contained" color="primary" type="submit" disabled={isLoading}>
+            {isLoading ? 'Saving...' : 'Save'}
+          </Button>
         </Box>
       </form>
     </Box>

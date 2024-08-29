@@ -1,5 +1,6 @@
+'use client'
 import React from 'react';
-import { AppBar as MuiAppBar, Toolbar, IconButton, Badge, Box, Menu, MenuItem, InputBase } from '@mui/material';
+import { AppBar as MuiAppBar, Toolbar, IconButton, Badge, Box, Menu, MenuItem, InputBase, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
@@ -9,8 +10,9 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Image from 'next/image';
 import logoPath from '/public/static/images/Pyfactor.png';
 import SearchIcon from '@mui/icons-material/Search';
-import DateTime from './components/DateTime'; // Corrected path to DateTime
-import SettingsMenu from './components/SettingsMenu'; // Corrected path to SettingsMenu
+import DateTime from './components/DateTime';
+import SettingsMenu from './components/SettingsMenu';
+import HomeIcon from '@mui/icons-material/Home';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -48,15 +50,43 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-const AppBar = ({ drawerOpen, handleDrawerToggle, userData, anchorEl, openMenu, handleClick, handleClose, handleAccountClick, handleSettingsClick, settingsAnchorEl, settingsMenuOpen, handleSettingsMenuClose, handleIntegrationsClick }) => {
+const AppBar = ({ 
+  drawerOpen, 
+  handleDrawerToggle, 
+  userData, 
+  anchorEl, 
+  openMenu, 
+  handleClick, 
+  handleClose, 
+  handleAccountClick, 
+  handleSettingsClick, 
+  settingsAnchorEl, 
+  settingsMenuOpen, 
+  handleSettingsMenuClose, 
+  handleIntegrationsClick,
+  isShopifyConnected,
+  handleUserProfileClick,
+  handleAlertClick,
+  handleDashboardClick,
+}) => {
   return (
     <MuiAppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
       <Toolbar sx={{ justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <IconButton color="inherit" aria-label="open drawer" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2 }}>
+          <IconButton color="inherit" aria-label="open drawer" edge="start" onClick={handleDrawerToggle} sx={{ mr: 1 }}>
             <MenuIcon />
           </IconButton>
-          <Image src={logoPath} alt="PyFactor Logo" width={120} height={30} />
+          <IconButton
+            color="inherit"
+            aria-label="home"
+            onClick={handleDashboardClick}
+            sx={{ ml: 0.5}}
+          >
+            <HomeIcon />
+          </IconButton>
+          <Image src={logoPath} alt="PyFactor Logo" width={120} height={30} style={{ marginLeft: '-8px' }}/>
+       
+
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Search>
@@ -71,7 +101,12 @@ const AppBar = ({ drawerOpen, handleDrawerToggle, userData, anchorEl, openMenu, 
           <Box sx={{ ml: 2 }}>
             <DateTime />
           </Box>
-          <IconButton color="inherit">
+          {isShopifyConnected && (
+            <Typography variant="body2" sx={{ color: 'lightgreen', mr: 2 }}>
+              Connected to Shopify
+            </Typography>
+          )}
+         <IconButton color="inherit" onClick={handleAlertClick}>
             <Badge badgeContent={4} color="secondary">
               <NotificationsIcon />
             </Badge>
@@ -91,7 +126,12 @@ const AppBar = ({ drawerOpen, handleDrawerToggle, userData, anchorEl, openMenu, 
                 <MenuItem disabled>{userData.full_name}</MenuItem>
                 <MenuItem disabled>{userData.occupation}</MenuItem>
                 <MenuItem disabled>{userData.business_name}</MenuItem>
+                <MenuItem onClick={handleUserProfileClick}>Profile Settings</MenuItem>
+
                 <MenuItem onClick={handleAccountClick}>Account</MenuItem>
+                {userData.is_staff && (
+                  <MenuItem onClick={handleSendGlobalAlertClick}>Send Global Alert</MenuItem>
+                )}
               </div>
             )}
           </Menu>

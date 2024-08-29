@@ -6,7 +6,6 @@ from .views import (
     customer_detail,
     create_product,
     create_service,
-    create_vendor,
     product_list,
     service_list,
     customer_invoices,
@@ -22,11 +21,6 @@ from .views import (
     estimate_detail,
     update_estimate,
     delete_estimate,
-    create_bill,
-    bill_detail,
-    bill_list,
-    vendor_list,
-    vendor_detail,  # New
     estimate_pdf,
     save_estimate,
     email_estimate,
@@ -48,9 +42,6 @@ urlpatterns = [
     path('api/customers/<uuid:pk>/delete/', delete_customer, name='delete-customer'),
     path('api/products/create/', create_product, name='create_product'),
     path('api/services/create/', create_service, name='create_service'),
-    path('api/vendors/create/', create_vendor, name='create_vendor'),
-    path('api/vendors/', vendor_list, name='vendor_list'),
-    path('api/vendors/<uuid:pk>/', vendor_detail, name='vendor-detail'),  # New
     path('api/products/', product_list, name='product_list'),
     path('api/products/<uuid:pk>/', product_detail, name='product-detail'),
     path('api/services/', service_list, name='service_list'),
@@ -69,7 +60,4 @@ urlpatterns = [
     path('api/salesorders/create/', create_sales_order, name='create-sales-order'),
     path('api/salesorders/', list_sales_orders, name='list-sales-orders'),
     path('api/salesorders/<uuid:pk>/', sales_order_detail, name='sales-order-detail'),
-    path('api/bills/', bill_list, name='bill-list'),
-    path('api/bills/create/', create_bill, name='create-bill'),
-    path('api/bills/<uuid:pk>/', bill_detail, name='bill-detail'),
 ]

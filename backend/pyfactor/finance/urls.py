@@ -10,7 +10,12 @@ from finance.views import (
     IncomeUpdateView,
     DeleteAccountView,
     TransactionListView,
-    unpaid_invoices  # Import the new view function
+    unpaid_invoices, # Import the new view function
+    account_category_list,
+    account_category_detail,
+    chart_of_accounts,
+    chart_of_account_detail,
+   
 )
 
 urlpatterns = [
@@ -22,4 +27,8 @@ urlpatterns = [
     path('api/delete-account/', DeleteAccountView.as_view(), name='delete-account'),
     path('api/transactions/create/', TransactionCreateView.as_view(), name='transaction-create'),
     path('api/unpaid-invoices/', unpaid_invoices, name='unpaid-invoices'),  # Add this new path
+    path('api/account-categories/', account_category_list, name='account-category-list'),
+    path('api/account-categories/<int:pk>/', account_category_detail, name='account-category-detail'),
+    path('api/chart-of-accounts/', chart_of_accounts, name='chart-of-accounts'),
+    path('api/chart-of-accounts/<int:pk>/', chart_of_account_detail, name='chart-of-account-detail'),
 ]

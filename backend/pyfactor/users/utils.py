@@ -5,7 +5,7 @@ from django.core.management import call_command
 from django.db import connection, transaction, connections
 from business.models import Business
 from users.models import User, UserProfile
-from finance.models import AccountType, Account, FinanceTransaction
+from finance.models import AccountCategory, AccountType, Account, ChartOfAccount, FinanceTransaction
 from django.conf import settings
 import logging
 import pytz
@@ -16,6 +16,64 @@ from pyfactor.logging_config import get_logger
 from finance.account_types import ACCOUNT_TYPES
 
 logger = get_logger()
+
+def create_and_populate_chart_of_accounts(database_name):
+    logger.info(f"Creating and populating Chart of Accounts for database: {database_name}")
+
+    categories = [
+        ('1000', 'Current Asset'),
+        ('2000', 'Current Liability'),
+        ('3000', 'Equity'),
+        ('4000', 'Revenue'),
+        ('5000', 'Operating Expense'),
+        ('6000', 'Cost of Goods Sold'),
+        ('6100', 'Non-Operating Expense'),
+    ]
+
+    accounts = [
+        ('1000', 'Cash', 'Petty Cash, Bank Accounts', '1000'),
+        ('1100', 'Accounts Receivable', 'Customer Invoices', '1000'),
+        ('1200', 'Inventory', 'Merchandise Inventory', '1000'),
+        ('2000', 'Accounts Payable', 'Supplier Invoices', '2000'),
+        ('3000', 'Owner\'s Equity', 'Owner\'s Contributions', '3000'),
+        ('3100', 'Retained Earnings', 'Accumulated Profits/Losses', '3000'),
+        ('4000', 'Sales Revenue', 'Income from Sales', '4000'),
+        ('5100', 'Salaries Expense', 'Employee Compensation', '5000'),
+        ('5200', 'Rent Expense', 'Office Lease', '5000'),
+        ('5300', 'Utilities Expense', 'Electricity, Water, Gas', '5000'),
+        ('5400', 'Office Supplies Expense', 'Cost of Office Supplies', '5000'),
+        ('5500', 'Advertising and Marketing Expense', 'Promotional Costs', '5000'),
+        ('5600', 'Depreciation Expense', 'Depreciation on PP&E', '5000'),
+        ('5700', 'Insurance Expense', 'Insurance Premiums', '5000'),
+        ('5800', 'Repairs and Maintenance Expense', 'Cost of Repairs', '5000'),
+        ('5900', 'Professional Fees', 'Legal, Accounting Fees', '5000'),
+        ('6000', 'Cost of Goods Sold (COGS)', 'Direct Costs of Goods Sold', '6000'),
+        ('6100', 'Interest Expense', 'Cost of Borrowing', '6100'),
+        ('6200', 'Loss on Disposal of Assets', 'Losses from Asset Disposal', '6100'),
+        ('6300', 'Miscellaneous Expense', 'Other Unclassified Expenses', '6100'),
+    ]
+
+    with transaction.atomic(using=database_name):
+        for code, name in categories:
+            AccountCategory.objects.using(database_name).get_or_create(
+                code=code,
+                defaults={'name': name}
+            )
+
+        for account_number, name, description, category_code in accounts:
+            category = AccountCategory.objects.using(database_name).get(code=category_code)
+            ChartOfAccount.objects.using(database_name).get_or_create(
+                account_number=account_number,
+                defaults={
+                    'name': name,
+                    'description': description,
+                    'category': category,
+                    'balance': 0,
+                    'is_active': True
+                }
+            )
+
+    logger.info(f"Chart of Accounts created and populated for database: {database_name}")
 
 def initial_user_registration(user_data):
     logger.info("Starting initial user registration")
@@ -116,6 +174,11 @@ def setup_user_database(database_name, user_data, user):
             logger.info(f"Ensuring necessary accounts exist for database: {database_name}")
             ensure_accounts_exist(database_name)
             
+            # Create and populate Chart of Accounts
+            logger.info(f"Creating and populating Chart of Accounts for database: {database_name}")
+            create_and_populate_chart_of_accounts(database_name)
+
+            
             # Fetch the Cash account type
             logger.info(f"Fetching the Cash account type for database: {database_name}")
             try:
@@ -182,13 +245,16 @@ def ensure_accounts_exist(database_name):
     Account = apps.get_model('finance', 'Account')
     AccountType = apps.get_model('finance', 'AccountType')
     required_accounts = [
-        ('Accounts Receivable', 'Accounts Receivable'),
+        ('Cash', 'Current Asset'),
+        ('Accounts Receivable', 'Current Asset'),
+        ('Inventory', 'Current Asset'),
+        ('Accounts Payable', 'Current Liability'),
+        ('Owner\'s Equity', 'Equity'),
         ('Sales Revenue', 'Revenue'),
-        ('Sales Tax Payable', 'Current Liabilities'),
-        ('Cost of Goods Sold', 'Expenses'),
-        ('Inventory', 'Current Assets'),
-        ('Accounts Payable', 'Current Liabilities'),
-        ('Cash', 'Cash')
+        ('Cost of Goods Sold (COGS)', 'Cost of Goods Sold'),
+        ('Salaries Expense', 'Operating Expense'),
+        ('Rent Expense', 'Operating Expense'),
+        ('Utilities Expense', 'Operating Expense'),
     ]
     for account_name, account_type_name in required_accounts:
         account_type, _ = AccountType.objects.using(database_name).get_or_create(name=account_type_name)
@@ -197,4 +263,3 @@ def ensure_accounts_exist(database_name):
             defaults={'account_type': account_type}
         )
     logger.info(f"Necessary accounts ensured for database: {database_name}")
-

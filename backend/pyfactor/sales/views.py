@@ -7,10 +7,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils import timezone
 from finance.views import get_user_database
-from .models import Estimate, EstimateItem, Invoice, Customer, Product, Service, Vendor, default_due_datetime, Bill, SalesOrder, SalesOrderItem
+from .models import Estimate, EstimateItem, Invoice, Customer, Product, Service, default_due_datetime, SalesOrder, SalesOrderItem
 from finance.models import Account, AccountType, FinanceTransaction
 from users.models import UserProfile
-from .serializers import InvoiceSerializer, CustomerSerializer, ProductSerializer, ServiceSerializer, VendorSerializer, EstimateSerializer, EstimateAttachmentSerializer, SalesOrderSerializer, EstimateAttachmentSerializer, EstimateItemSerializer, SalesOrderItemSerializer, InvoiceItemSerializer, BillSerializer
+from .serializers import InvoiceSerializer, CustomerSerializer, ProductSerializer, ServiceSerializer,  EstimateSerializer, EstimateAttachmentSerializer, SalesOrderSerializer, EstimateAttachmentSerializer, EstimateItemSerializer, SalesOrderItemSerializer, InvoiceItemSerializer
 from finance.serializers import TransactionSerializer
 from django.conf import settings
 from django.db import connections, transaction as db_transaction
@@ -31,12 +31,15 @@ from .utils import get_or_create_user_database
 import traceback
 from decimal import Decimal
 from rest_framework.exceptions import ValidationError
+from finance.utils import update_chart_of_accounts
+
 
 
 
 import uuid
 
 logger = get_logger()
+
 
 
 
@@ -66,6 +69,31 @@ def create_invoice(request):
             serializer = InvoiceSerializer(data=request.data, context={'database_name': database_name})
             if serializer.is_valid():
                 invoice = serializer.save()
+
+                # Update Chart of Accounts
+                total_amount = Decimal(str(invoice.totalAmount))
+                
+                # Update Accounts Receivable (assuming account number is '1100')
+                update_chart_of_accounts(database_name, '1100', total_amount, 'debit')
+                
+                # Update Sales Revenue (assuming account number is '4000')
+                update_chart_of_accounts(database_name, '4000', total_amount, 'credit')
+                
+                # If there's sales tax, update Sales Tax Payable (assuming account number is '2200')
+                sales_tax_rate = Decimal('0.1')  # 10% tax rate, adjust as needed
+                if invoice.sales_tax_payable:
+                    sales_tax = total_amount * sales_tax_rate
+                    update_chart_of_accounts(database_name, '2200', sales_tax, 'credit')
+
+                # Update Inventory and Cost of Goods Sold if applicable
+                for item in invoice.items.all():
+                    if item.product:
+                        cost = Decimal(str(item.product.price)) * Decimal(str(item.quantity))
+                        # Update Inventory (assuming account number is '1200')
+                        update_chart_of_accounts(database_name, '1200', cost, 'credit')
+                        # Update Cost of Goods Sold (assuming account number is '5000')
+                        update_chart_of_accounts(database_name, '5000', cost, 'debit')
+
                 return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
             else:
                 logger.error("Validation errors: %s", serializer.errors)
@@ -858,154 +886,7 @@ def delete_estimate(request, pk):
         logger.exception("Error deleting estimate: %s", str(e))
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-@api_view(['POST'])
-@transaction.atomic
-def create_bill(request):
-    user = request.user
-    database_name = get_user_database(user)
 
-    try:
-        ensure_accounts_exist(database_name)
-
-        # Extract data from request
-        bill_data = request.data
-
-        # Validate required fields
-        required_fields = ['vendor', 'bill_date', 'due_date', 'items']
-        for field in required_fields:
-            if field not in bill_data:
-                return Response({'error': f'Missing required field: {field}'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Get the vendor
-        try:
-            vendor = Vendor.objects.using(database_name).get(id=bill_data['vendor'])
-        except Vendor.DoesNotExist:
-            return Response({'error': 'Vendor not found'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Calculate the total amount
-        total_amount = sum(Decimal(item['amount']) for item in bill_data['items'])
-
-        # Create the bill
-        bill = Bill.objects.using(database_name).create(
-            vendor=vendor,
-            bill_date=bill_data['bill_date'],
-            due_date=bill_data['due_date'],
-            total_amount=total_amount
-        )
-        bill.save(using=database_name)
-
-        # Get or create the Accounts Payable account
-        accounts_payable, _ = Account.objects.using(database_name).get_or_create(
-            name='Accounts Payable',
-            defaults={'account_type': AccountType.objects.using(database_name).get(name='Current Liabilities')}
-        )
-
-        # Get or create the Expense AccountType
-        expense_account_type, _ = AccountType.objects.using(database_name).get_or_create(name='Expense')
-
-        # Create the accounting entries
-        for item in bill_data['items']:
-            # Validate item data
-            if 'category' not in item or 'amount' not in item:
-                raise ValueError(f"Invalid item data: {item}")
-
-            # Get or create the expense account
-            expense_account, _ = Account.objects.using(database_name).get_or_create(
-                name=item['category'],
-                defaults={'account_type': expense_account_type}
-            )
-
-            # Create the debit transaction
-            FinanceTransaction.objects.using(database_name).create(
-                account=expense_account,
-                amount=Decimal(item['amount']),
-                type='debit',
-                bill=bill,
-                description=f"Expense for {item['category']}"
-            )
-
-        # Create the credit transaction for Accounts Payable
-        FinanceTransaction.objects.using(database_name).create(
-            account=accounts_payable,
-            amount=bill.total_amount,
-            type='credit',
-            bill=bill,
-            description="Credit to Accounts Payable for bill"
-        )
-
-        console.info(f"Bill created successfully.")
-
-        return Response({
-            'message': 'Bill created successfully',
-            'bill_id': str(bill.id),
-            'total_amount': str(bill.total_amount)
-        }, status=status.HTTP_201_CREATED)
-
-    except Exception as e:
-        logger.exception(f"Unexpected error in create_bill: {str(e)}")
-        console.error(f"Unexpected error in create_bill: {str(e)}")
-        return Response({'error': 'An unexpected error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def bill_detail(request, pk):
-    user = request.user
-    database_name = get_user_database(user)
-
-    try:
-        bill = Bill.objects.using(database_name).get(pk=pk)
-    except Bill.DoesNotExist:
-        return Response({'error': 'Bill not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    serializer = BillSerializer(bill)
-    return Response(serializer.data)
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def bill_list(request):
-    user = request.user
-    database_name = get_user_database(user)
-
-    bills = Bill.objects.using(database_name).all()
-    serializer = BillSerializer(bills, many=True)
-    return Response(serializer.data)
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def vendor_list(request):
-    user = request.user
-    database_name = get_user_database(user)
-
-    vendors = Vendor.objects.using(database_name).all()
-    serializer = VendorSerializer(vendors, many=True)
-    return Response(serializer.data)
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def create_vendor(request):
-    user = request.user
-    database_name = get_user_database(user)
-
-    serializer = VendorSerializer(data=request.data, context={'database_name': database_name})
-    if serializer.is_valid():
-        with transaction.atomic(using=database_name):
-            vendor = serializer.save()
-        return Response(VendorSerializer(vendor).data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def vendor_detail(request, pk):
-    user = request.user
-    database_name = get_user_database(user)
-
-    try:
-        vendor = Vendor.objects.using(database_name).get(pk=pk)
-    except Vendor.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    serializer = VendorSerializer(vendor)
-    return Response(serializer.data)
     
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

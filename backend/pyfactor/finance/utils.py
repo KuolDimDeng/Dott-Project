@@ -1,6 +1,6 @@
 # /Users/kuoldeng/projectx/backend/pyfactor/finance/utils.py
 from django.conf import settings
-from finance.models import AccountType, Account, FinanceTransaction, RevenueAccount, CashAccount
+from finance.models import AccountType, Account, FinanceTransaction, RevenueAccount, CashAccount, AccountCategory, ChartOfAccount
 from django.db import DatabaseError, OperationalError, transaction, connections
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from pyfactor.logging_config import get_logger
@@ -25,6 +25,7 @@ def is_valid_database(database_name):
             logger.error(f"Operational error connecting to database '{database_name}'")
             return False
     return False
+
 
 def create_revenue_account(database_name, date, account_name, transaction_type, amount, notes, receipt, account_type_name, account_type_id):
     account_type_id = ACCOUNT_TYPES.get(account_type_name)
@@ -157,3 +158,16 @@ def get_or_create_account(database_name, account_name, account_type_name):
     except Exception as e:
         logger.exception(f"Error fetching or creating account: {e}")
         raise
+    
+    
+def update_chart_of_accounts(database_name, account_number, amount, transaction_type):
+    with transaction.atomic(using=database_name):
+        try:
+            account = ChartOfAccount.objects.using(database_name).get(account_number=account_number)
+            if transaction_type == 'debit':
+                account.balance += amount
+            elif transaction_type == 'credit':
+                account.balance -= amount
+            account.save(using=database_name)
+        except ChartOfAccount.DoesNotExist:
+            logger.error(f"Account {account_number} not found in Chart of Accounts")

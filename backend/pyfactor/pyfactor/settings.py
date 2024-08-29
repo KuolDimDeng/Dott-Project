@@ -249,6 +249,7 @@ INSTALLED_APPS = [
     'chart',
     'integrations',
     'alerts',
+    'purchases',
     'django_celery_beat',
     'django_celery_results',
 ]

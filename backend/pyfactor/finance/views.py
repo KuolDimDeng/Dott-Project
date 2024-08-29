@@ -14,9 +14,9 @@ from dateutil import parser as date_parser  # This is the changed line
 from sales.models import Invoice
 from sales.serializers import InvoiceSerializer
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
-from .models import AccountType, Account, FinanceTransaction, Income, RevenueAccount, CashAccount, Expense
+from .models import AccountType, Account, FinanceTransaction, Income, RevenueAccount, CashAccount, AccountCategory, ChartOfAccount
 from datetime import datetime
-from .serializers import AccountTypeSerializer, AccountSerializer, IncomeSerializer, SalesTaxAccountSerializer, TransactionSerializer, CashAccountSerializer, TransactionListSerializer
+from .serializers import AccountTypeSerializer, AccountSerializer, IncomeSerializer, SalesTaxAccountSerializer, TransactionSerializer, CashAccountSerializer, TransactionListSerializer, AccountCategorySerializer, ChartOfAccountSerializer
 from users.models import UserProfile
 from finance.utils import create_revenue_account
 from rest_framework.exceptions import ValidationError
@@ -30,6 +30,12 @@ from pyfactor.user_console import console  # Make sure this is importing a singl
 from rest_framework.pagination import PageNumberPagination
 from django.core.paginator import Paginator
 from .account_types import ACCOUNT_TYPES
+# views.py
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+
 
 
 
@@ -458,7 +464,6 @@ class DeleteAccountView(APIView):
                 # Delete all related models in the user's database in the correct order
                 RevenueAccount.objects.using(database_name).all().delete()
                 Income.objects.using(database_name).all().delete()
-                Expense.objects.using(database_name).all().delete()
                 FinanceTransaction.objects.using(database_name).all().delete()
                 Account.objects.using(database_name).all().delete()
                 AccountType.objects.using(database_name).all().delete()
@@ -536,3 +541,105 @@ class TransactionListView(generics.ListAPIView):
         except Exception as e:
             logger.exception("An error occurred while retrieving the queryset: %s", e)
             return FinanceTransaction.objects.none()
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def account_category_list(request):
+    if request.method == 'GET':
+        categories = AccountCategory.objects.all()
+        serializer = AccountCategorySerializer(categories, many=True)
+        return Response(serializer.data)
+    
+    elif request.method == 'POST':
+        serializer = AccountCategorySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def account_category_detail(request, pk):
+    try:
+        category = AccountCategory.objects.get(pk=pk)
+    except AccountCategory.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = AccountCategorySerializer(category)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = AccountCategorySerializer(category, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        category.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+def get_user_database(user):
+    try:
+        user_profile = UserProfile.objects.using('default').get(user=user)
+        return user_profile.database_name
+    except UserProfile.DoesNotExist:
+        logger.error(f"UserProfile does not exist for user: {user}")
+        return None
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def chart_of_accounts(request):
+    user = request.user
+    database_name = get_user_database(user)
+
+    if request.method == 'GET':
+        # Get all ChartOfAccount entries
+        chart_accounts = ChartOfAccount.objects.using(database_name).all()
+        chart_serializer = ChartOfAccountSerializer(chart_accounts, many=True, context={'database_name': database_name})
+
+        # Get all Account entries that are not in ChartOfAccount
+        existing_account_numbers = chart_accounts.values_list('account_number', flat=True)
+        other_accounts = Account.objects.using(database_name).exclude(account_number__in=existing_account_numbers)
+        account_serializer = AccountSerializer(other_accounts, many=True)
+
+        # Combine the results
+        combined_data = chart_serializer.data + account_serializer.data
+
+        # Sort the combined data by account_number
+        sorted_data = sorted(combined_data, key=lambda x: x['account_number'])
+
+        return Response(sorted_data)
+
+    elif request.method == 'POST':
+        serializer = ChartOfAccountSerializer(data=request.data, context={'database_name': database_name})
+        if serializer.is_valid():
+            account = serializer.save()
+            return Response(ChartOfAccountSerializer(account).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def chart_of_account_detail(request, pk):
+    user = request.user
+    database_name = get_user_database(user)
+
+    try:
+        account = ChartOfAccount.objects.using(database_name).get(pk=pk)
+    except ChartOfAccount.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = ChartOfAccountSerializer(account, context={'database_name': database_name})
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = ChartOfAccountSerializer(account, data=request.data, context={'database_name': database_name})
+        if serializer.is_valid():
+            updated_account = serializer.save()
+            return Response(ChartOfAccountSerializer(updated_account).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        account.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

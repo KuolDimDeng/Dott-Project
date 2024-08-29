@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useState, useCallback, useEffect } from 'react';
 import List from '@mui/material/List';
+import Paper from '@mui/material/Paper';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -76,7 +77,6 @@ export const MainListItems = ({
   handlePayrollClick,
   handleAnalysisClick,
   handleAccountingClick,
-  handlePurchasesClick,
   handlePaymentsClick,
   handleTaxesClick,
   showCustomerList,
@@ -85,6 +85,7 @@ export const MainListItems = ({
   handleSalesClick,
   handleChartClick,
   handleDashboardClick,
+  handlePurchasesClick,
 }) => {   
   const [showCreateOptionsMenu, setShowCreateOptionsMenu] = React.useState(false);
   const [showReportsMenu, setShowReportsMenu] = React.useState(false);
@@ -100,7 +101,7 @@ export const MainListItems = ({
   const [taxesAnchorEl, setTaxesAnchorEl] = React.useState(null);
   const [selectedItem, setSelectedItem] = React.useState(null);
   const [purchasesAnchorEl, setPurchasesAnchorEl] = React.useState(null);
-  
+  const [chartAnchorEl, setChartAnchorEl] = React.useState(null);
     
   const handlePurchasesMenuOpen = (event) => {
     setPurchasesAnchorEl(event.currentTarget);
@@ -232,7 +233,8 @@ export const MainListItems = ({
  // };
 
   return (
-    <Box sx={{ 
+    <Paper elevation={3} sx={{ p: 2, my: 2, width: '99%' }}>
+      <Box sx={{ 
       overflow: 'auto',
       '& .MuiListItemButton-root': {
         ...listItemStyle,
@@ -389,7 +391,7 @@ export const MainListItems = ({
                 <ListItemIcon>
                   <AnalyticsIcon style={{ color: iconColor }} />
                 </ListItemIcon>
-                <ListItemText primary="Analysis" sx={{ color: textColor }} />
+                <ListItemText primary="Analytics" sx={{ color: textColor }} />
               </ListItemButton>
               <ListItemButton 
                 onClick={(event) => {
@@ -446,20 +448,42 @@ export const MainListItems = ({
         anchorReference="anchorPosition"
         anchorPosition={{ left: 220, top: reportsAnchorEl ? reportsAnchorEl.getBoundingClientRect().top : 0}}
       >
-        <MenuItem onClick={() => handleReportSelect('income_statement')} sx={menuItemStyle}>Profit & Loss (Income Statement)</MenuItem>
-        <MenuItem onClick={() => handleReportSelect('balance_sheet')} sx={menuItemStyle}>Balance Sheet</MenuItem>
-        <MenuItem onClick={() => handleReportSelect('cash_flow')} sx={menuItemStyle}>Cash Flow</MenuItem>
-        <MenuItem sx={menuItemStyle}>Sales Tax Report</MenuItem>
-        <MenuItem sx={menuItemStyle}>Payroll Wage & Tax Report</MenuItem>
-        <MenuItem sx={menuItemStyle}>Income by Customer</MenuItem>
-        <MenuItem sx={menuItemStyle}>Aged Receivables</MenuItem>
-        <MenuItem sx={menuItemStyle}>Purchases by Vendor</MenuItem>
-        <MenuItem sx={menuItemStyle}>Aged Payables</MenuItem>
-        <MenuItem sx={menuItemStyle}>Account Balances</MenuItem>
-        <MenuItem sx={menuItemStyle}>Trial Balance</MenuItem>
-        <MenuItem sx={menuItemStyle}>General Ledger (Account Transactions)</MenuItem>
-
-
+   <MenuItem onClick={() => handleReportSelect('income_statement')} sx={menuItemStyle}>
+  Profit & Loss (Income Statement)
+</MenuItem>
+<MenuItem onClick={() => handleReportSelect('balance_sheet')} sx={menuItemStyle}>
+  Balance Sheet
+</MenuItem>
+<MenuItem onClick={() => handleReportSelect('cash_flow')} sx={menuItemStyle}>
+  Cash Flow
+</MenuItem>
+<MenuItem onClick={() => handleReportSelect('sales_tax_report')} sx={menuItemStyle}>
+  Sales Tax Report
+</MenuItem>
+<MenuItem onClick={() => handleReportSelect('payroll_wage_tax_report')} sx={menuItemStyle}>
+  Payroll Wage & Tax Report
+</MenuItem>
+<MenuItem onClick={() => handleReportSelect('income_by_customer')} sx={menuItemStyle}>
+  Income by Customer
+</MenuItem>
+<MenuItem onClick={() => handleReportSelect('aged_receivables')} sx={menuItemStyle}>
+  Aged Receivables
+</MenuItem>
+<MenuItem onClick={() => handleReportSelect('purchases_by_vendor')} sx={menuItemStyle}>
+  Purchases by Vendor
+</MenuItem>
+<MenuItem onClick={() => handleReportSelect('aged_payables')} sx={menuItemStyle}>
+  Aged Payables
+</MenuItem>
+<MenuItem onClick={() => handleReportSelect('account_balances')} sx={menuItemStyle}>
+  Account Balances
+</MenuItem>
+<MenuItem onClick={() => handleReportSelect('trial_balance')} sx={menuItemStyle}>
+  Trial Balance
+</MenuItem>
+<MenuItem onClick={() => handleReportSelect('general_ledger')} sx={menuItemStyle}>
+  General Ledger (Account Transactions)
+</MenuItem>
 
 
 
@@ -510,15 +534,9 @@ export const MainListItems = ({
         anchorPosition={{ left: 220, top: hrAnchorEl ? hrAnchorEl.getBoundingClientRect().top : 0}}
       >
         <MenuItem onClick={() => handleHRClick('employees')} sx={menuItemStyle}>Employees</MenuItem>
-        <MenuItem onClick={() => handleHRClick('recruitment')} sx={menuItemStyle}>Recruitment</MenuItem>
-        <MenuItem onClick={() => handleHRClick('onboarding')} sx={menuItemStyle}>Onboarding</MenuItem>
-        <MenuItem onClick={() => handleHRClick('performance')} sx={menuItemStyle}>Performance Management</MenuItem>
-        <MenuItem onClick={() => handleHRClick('training')} sx={menuItemStyle}>Training and Development</MenuItem>
         <MenuItem onClick={() => handleHRClick('time-attendance')} sx={menuItemStyle}>Time and Attendance</MenuItem>
         <MenuItem onClick={() => handleHRClick('benefits')} sx={menuItemStyle}>Benefits Administration</MenuItem>
-        <MenuItem onClick={() => handleHRClick('compensation')} sx={menuItemStyle}>Compensation</MenuItem>
         <MenuItem onClick={() => handleHRClick('employee-relations')} sx={menuItemStyle}>Employee Relations</MenuItem>
-        <MenuItem onClick={() => handleHRClick('compliance')} sx={menuItemStyle}>Compliance</MenuItem>
         <MenuItem onClick={() => handleHRClick('hr-reports')} sx={menuItemStyle}>Reporting and Analytics</MenuItem>
       </Menu>
 
@@ -594,11 +612,9 @@ export const MainListItems = ({
           <MenuItem onClick={() => handleSalesMenuItemClick('customers')} sx={menuItemStyle}>Customers</MenuItem>
           <MenuItem onClick={() => handleSalesMenuItemClick('products')} sx={menuItemStyle}>Products</MenuItem>
           <MenuItem onClick={() => handleSalesMenuItemClick('services')} sx={menuItemStyle}>Services</MenuItem>
-          <MenuItem onClick={() => handleSalesMenuItemClick('quotes')} sx={menuItemStyle}>Quotes/Estimates</MenuItem>
+          <MenuItem onClick={() => handleSalesMenuItemClick('estimates')} sx={menuItemStyle}>Estimates</MenuItem>
           <MenuItem onClick={() => handleSalesMenuItemClick('orders')} sx={menuItemStyle}>Orders</MenuItem>
           <MenuItem onClick={() => handleSalesMenuItemClick('invoices')} sx={menuItemStyle}>Invoices</MenuItem>
-          <MenuItem onClick={() => handleSalesMenuItemClick('contracts')} sx={menuItemStyle}>Contracts</MenuItem>
-          <MenuItem onClick={() => handleSalesMenuItemClick('opportunities')} sx={menuItemStyle}>Opportunities</MenuItem>
           <MenuItem onClick={() => handleSalesMenuItemClick('sales-team')} sx={menuItemStyle}>Sales Team</MenuItem>
           <MenuItem onClick={() => handleSalesMenuItemClick('reports')} sx={menuItemStyle}>Reports</MenuItem>
         </Menu>
@@ -700,11 +716,11 @@ export const MainListItems = ({
                 <MenuItem onClick={() => handlePurchasesClick('purchase-orders')} sx={menuItemStyle}>Purchase Orders</MenuItem>
                 <MenuItem onClick={() => handlePurchasesClick('bills')} sx={menuItemStyle}>Bills</MenuItem>
                 <MenuItem onClick={() => handlePurchasesClick('expenses')} sx={menuItemStyle}>Expenses</MenuItem>
-                <MenuItem onClick={() => handlePurchasesClick('receive-items')} sx={menuItemStyle}>Receive Items</MenuItem>
                 <MenuItem onClick={() => handlePurchasesClick('purchase-returns')} sx={menuItemStyle}>Purchase Returns</MenuItem>
                 <MenuItem onClick={() => handlePurchasesClick('procurement')} sx={menuItemStyle}>Procurement</MenuItem>
                 <MenuItem onClick={() => handlePurchasesClick('reports')} sx={menuItemStyle}>Reports</MenuItem>
               </Menu>
     </Box>
+    </Paper>
   );
 };

@@ -8,6 +8,8 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import PeopleIcon from '@mui/icons-material/People';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+
 
 const drawerWidth = 270;
 
@@ -29,7 +31,9 @@ const Drawer = ({
   handleSalesClick,
   handleProductsClick,
   handleServicesClick,
-  handleDashboardClick
+  handleDashboardClick,
+  handlePurchasesClick,
+  handleAccountingClick,
 }) => {
   const [salesOpen, setSalesOpen] = React.useState(false);
 
@@ -72,6 +76,8 @@ const Drawer = ({
           handleCreateCustomer={handleCreateCustomer}
           handleSalesClick={handleSalesClick}
           handleDashboardClick={handleDashboardClick}
+          handlePurchasesClick={handlePurchasesClick}
+          handleAccountingClick={handleAccountingClick}
         />
  
 

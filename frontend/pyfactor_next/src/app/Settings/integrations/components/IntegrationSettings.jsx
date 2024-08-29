@@ -8,8 +8,8 @@ const PLATFORMS = [
   { value: 'shopify', label: 'Shopify' },
 ];
 
-const IntegrationSettings = React.memo(({ initialStatus, initialPlatform, initialBusinessData }) => {
-  console.log('IntegrationSettings rendered', { initialStatus, initialPlatform, initialBusinessData });
+const IntegrationSettings = React.memo(({ initialStatus, initialPlatform, initialBusinessData, title }) => {
+  console.log('IntegrationSettings rendered', { initialStatus, initialPlatform, initialBusinessData, title });
   const { addMessage } = useUserMessageContext();
   
   const [businessData, setBusinessData] = useState(initialBusinessData);
@@ -25,6 +25,8 @@ const IntegrationSettings = React.memo(({ initialStatus, initialPlatform, initia
   });
   const [connecting, setConnecting] = useState(false);
   const [currentPlatform, setCurrentPlatform] = useState('woocommerce');
+  const [isShopifyConnected, setIsShopifyConnected] = useState(false);
+
 
   useEffect(() => {
     console.log('IntegrationSettings useEffect triggered', { initialBusinessData, loading });
@@ -36,8 +38,10 @@ const IntegrationSettings = React.memo(({ initialStatus, initialPlatform, initia
   const handleConnectionStatus = (status, platform) => {
     if (status === 'success' && platform === 'shopify') {
       addMessage('Successfully connected to Shopify!', 'info');
+      setIsShopifyConnected(true);
     } else if (status === 'error' && platform === 'shopify') {
       addMessage('Failed to connect to Shopify. Please try again.', 'error');
+      setIsShopifyConnected(false);
     }
     setCurrentPlatform('shopify');
   };
@@ -88,7 +92,14 @@ const IntegrationSettings = React.memo(({ initialStatus, initialPlatform, initia
   return (
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', p: 3 }}>
       <Paper elevation={3} sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom>Integrations Settings</Typography>
+        <Typography variant="h4" gutterBottom>
+          {title || 'Integrations Settings'}
+        </Typography>
+        {isShopifyConnected && (
+          <Typography variant="body1" sx={{ color: 'green', mb: 2 }}>
+            Connected to Shopify
+          </Typography>
+        )}
         {businessData && businessData.business_type?.toLowerCase() === 'ecommerce' && (
           <>
             <Tabs value={currentPlatform} onChange={handleTabChange} aria-label="e-commerce platforms">

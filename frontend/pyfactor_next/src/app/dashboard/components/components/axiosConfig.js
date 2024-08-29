@@ -2,6 +2,9 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
+const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const noAuthRequired = ['/api/register/', '/api/token/', '/api/token/refresh/'];
+
 const getToken = () => {
   if (typeof window !== 'undefined') {
     return localStorage.getItem('token');
@@ -10,10 +13,11 @@ const getToken = () => {
 };
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
+  //timeout: 30000, // Set a timeout of 10 seconds
 });
 
 // Request interceptor for API calls
@@ -22,7 +26,10 @@ axiosInstance.interceptors.request.use(
     const token = getToken();
     const csrfToken = Cookies.get('csrftoken');
     
-    if (token) {
+    // Check if the request URL is in the noAuthRequired list
+    const isAuthRequired = !noAuthRequired.some(url => config.url.includes(url));
+    
+    if (token && isAuthRequired) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
     
@@ -33,9 +40,11 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
+
 
 // Response interceptor for API calls
 axiosInstance.interceptors.response.use(
@@ -43,28 +52,56 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // If the error status is 401 and there is no originalRequest._retry flag,
-    // it means the token has expired and we need to refresh it
-    if (error.response.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+    if (error.response) {
+      console.error('Response error:', error.response.status, error.response.data);
       
-      try {
+      // Handle 401 (Unauthorized) errors
+      if (error.response.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+        
         const refreshToken = localStorage.getItem('refreshToken');
-        const response = await axios.post('http://localhost:8000/api/token/refresh/', { refresh: refreshToken });
-        const newToken = response.data.access;
-        
-        localStorage.setItem('token', newToken);
-        
-        // Retry the original request with the new token
-        originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-        return axiosInstance(originalRequest);
-      } catch (error) {
-        // If refresh token fails, redirect to login
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
+        if (!refreshToken) {
+          // No refresh token, redirect to login
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+          }
+          return Promise.reject(error);
         }
-        return Promise.reject(error);
+        
+        try {
+          const response = await axios.post(`${baseURL}/api/token/refresh/`, { refresh: refreshToken });
+          const newToken = response.data.access;
+          
+          localStorage.setItem('token', newToken);
+          
+          // Retry the original request with the new token
+          originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+          return axiosInstance(originalRequest);
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+          // If refresh token fails, redirect to login
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+          }
+          return Promise.reject(refreshError);
+        }
       }
+      
+      // Handle 403 (Forbidden) errors
+      if (error.response.status === 403) {
+        console.error('Permission denied:', error.response.data);
+        // You might want to redirect to an "Access Denied" page or show a message
+        if (typeof window !== 'undefined') {
+          // Replace this with your preferred way of showing "Access Denied" messages
+          alert('Access Denied: You do not have permission to perform this action.');
+        }
+      }
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('No response received:', error.request);
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('Error setting up the request:', error.message);
     }
     
     return Promise.reject(error);

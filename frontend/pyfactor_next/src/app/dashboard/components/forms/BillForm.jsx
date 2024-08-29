@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+'use client'
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -10,20 +11,52 @@ import {
   MenuItem,
   Grid,
   Autocomplete,
+  Paper,
 } from '@mui/material';
-import currencyList from '../components/currencies'; // Import the currency list
-import { logger, UserMessage } from '@/utils/logger';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import axiosInstance from '../components/axiosConfig';
+import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 
 const BillForm = () => {
   const [vendor, setVendor] = useState(null);
+  const [vendors, setVendors] = useState([]);
   const [currency, setCurrency] = useState('USD');
-  const [billDate, setBillDate] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [billDate, setBillDate] = useState(null);
+  const [dueDate, setDueDate] = useState(null);
   const [posoNumber, setPosoNumber] = useState('');
-  const [billNumber, setBillNumber] = useState('');
+  const [totalAmount, setTotalAmount] = useState(0);
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState([{ category: '', description: '', quantity: 1, price: 0, tax: 0, amount: 0 }]);
+  const [vendorsLoading, setVendorsLoading] = useState(true);
+  const [vendorsError, setVendorsError] = useState(null);
+  const { addMessage } = useUserMessageContext();
+
+
+  useEffect(() => {
+    fetchVendors();
+  }, []);
+
+  useEffect(() => {
+    console.log('Vendors:', vendors);
+  }, [vendors]);
+
+  const fetchVendors = async () => {
+    try {
+      setVendorsLoading(true);
+      const response = await axiosInstance.get('/api/vendors/');
+      console.log('Vendors response:', response.data);
+      setVendors(response.data);
+      setVendorsError(null);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+      setVendorsError('Failed to load vendors. Please try again.');
+    } finally {
+      setVendorsLoading(false);
+    }
+  };
 
   const handleVendorChange = (event, newValue) => {
     setVendor(newValue);
@@ -44,182 +77,124 @@ const BillForm = () => {
     setItems([...items, { category: '', description: '', quantity: 1, price: 0, tax: 0, amount: 0 }]);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission logic here
-    console.log({
-      vendor,
+    const billData = {
+      vendor: vendor.id,
       currency,
-      billDate,
-      dueDate,
-      posoNumber,
-      billNumber,
+      bill_date: billDate,
+      due_date: dueDate,
+      poso_number: posoNumber,
+      totalAmount, totalAmount,
       notes,
       items,
-    });
+    };
+
+    try {
+      const response = await axiosInstance.post('/api/bills/', billData);
+      console.log('Bill created:', response.data);
+      addMessage('info', 'Bill created successfully');
+      
+      // Handle success (e.g., show a success message, redirect, etc.)
+    } catch (error) {
+      console.error('Error creating bill:', error);
+      addMessage('error', 'Error creating bill');
+      // Handle error (e.g., show an error message)
+    }
   };
 
   return (
-    <Box>
+    <Paper elevation={3} sx={{ p: 4, maxWidth: 800, mx: 'auto' }}>
       <Typography variant="h5" gutterBottom>
-        Add bill
+        Add Bill
       </Typography>
       <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <Autocomplete
               options={vendors}
-              getOptionLabel={(option) => option.name}
+              getOptionLabel={(option) => `${option.vendor_name} (${option.vendor_number})`}
               value={vendor}
               onChange={handleVendorChange}
+              loading={vendorsLoading}
               renderInput={(params) => (
-                <TextField {...params} label="Vendor" required />
+                <TextField
+                  {...params}
+                  label="Vendor"
+                  required
+                  error={!!vendorsError}
+                  helperText={vendorsError}
+                />
               )}
+              renderOption={(props, option) => (
+                <li {...props}>
+                  {option.vendor_name} ({option.vendor_number})
+                </li>
+              )}
+              noOptionsText={vendorsLoading ? "Loading..." : "No vendors found"}
             />
+          </Grid>
+          <Grid item xs={12} md={6}>
             <FormControl fullWidth>
               <InputLabel>Currency</InputLabel>
               <Select value={currency} onChange={handleCurrencyChange}>
-                {currencyList.map((currency) => (
-                  <MenuItem key={currency.code} value={currency.code}>
-                    {currency.code} - {currency.name}
-                  </MenuItem>
-                ))}
+                <MenuItem value="USD">USD</MenuItem>
+                <MenuItem value="EUR">EUR</MenuItem>
+                <MenuItem value="GBP">GBP</MenuItem>
+                {/* Add more currency options as needed */}
               </Select>
             </FormControl>
-            <TextField
-              label="Bill Date"
-              type="date"
-              value={billDate}
-              onChange={(e) => setBillDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              required
-            />
-            <TextField
-              label="Due Date"
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              required
-            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                label="Bill Date"
+                value={billDate}
+                onChange={(newValue) => setBillDate(newValue)}
+                renderInput={(params) => <TextField {...params} fullWidth />}
+              />
+            </LocalizationProvider>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                label="Due Date"
+                value={dueDate}
+                onChange={(newValue) => setDueDate(newValue)}
+                renderInput={(params) => <TextField {...params} fullWidth />}
+              />
+            </LocalizationProvider>
+          </Grid>
+          <Grid item xs={12} md={6}>
             <TextField
               label="P.O./S.O."
               value={posoNumber}
               onChange={(e) => setPosoNumber(e.target.value)}
+              fullWidth
             />
+          </Grid>
+          <Grid item xs={12} md={6}>
             <TextField
-              label="Bill #"
-              value={billNumber}
-              onChange={(e) => setBillNumber(e.target.value)}
-              required
+              label="Total Amount"
+              value={totalAmount}
+              onChange={(e) => setTotalAmount(e.target.value)}
+              fullWidth
             />
+          </Grid>
+          <Grid item xs={12}>
             <TextField
               label="Notes"
               multiline
               rows={4}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              fullWidth
             />
           </Grid>
-          <Grid item xs={12} md={6}>
-            <Typography variant="h6" gutterBottom>
-              Items
-            </Typography>
-            {items.map((item, index) => (
-              <Grid container spacing={2} key={index}>
-                <Grid item xs={3}>
-                  <FormControl fullWidth>
-                    <InputLabel>Category</InputLabel>
-                    <Select
-                      value={item.category}
-                      onChange={(e) =>
-                        handleItemChange(index, 'category', e.target.value)
-                      }
-                    >
-                      <MenuItem value="">Choose</MenuItem>
-                      <MenuItem value="Accounting Fees">Accounting Fees</MenuItem>
-                      <MenuItem value="Advertising & Promotion">
-                        Advertising & Promotion
-                      </MenuItem>
-                      {/* Add more expense categories */}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField
-                    label="Description"
-                    value={item.description}
-                    onChange={(e) =>
-                      handleItemChange(index, 'description', e.target.value)
-                    }
-                  />
-                </Grid>
-                <Grid item xs={1}>
-                  <TextField
-                    label="Qty"
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) =>
-                      handleItemChange(index, 'quantity', e.target.value)
-                    }
-                  />
-                </Grid>
-                <Grid item xs={2}>
-                  <TextField
-                    label="Price"
-                    type="number"
-                    value={item.price}
-                    onChange={(e) =>
-                      handleItemChange(index, 'price', e.target.value)
-                    }
-                  />
-                </Grid>
-                <Grid item xs={2}>
-                  <TextField
-                    label="Tax"
-                    type="number"
-                    value={item.tax}
-                    onChange={(e) =>
-                      handleItemChange(index, 'tax', e.target.value)
-                    }
-                  />
-                </Grid>
-                <Grid item xs={3}>
-                  <TextField
-                    label="Amount"
-                    value={item.amount}
-                    disabled
-                  />
-                </Grid>
-              </Grid>
-            ))}
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleAddItem}
-              sx={{ mt: 2 }}
-            >
-              Add a line
-            </Button>
-            <Box display="flex" justifyContent="flex-end" mt={2}>
-              <Typography variant="body1" sx={{ mr: 2 }}>
-                Subtotal: $
-                {items.reduce((total, item) => total + item.amount, 0).toFixed(2)}
-              </Typography>
-              <Typography variant="body1" sx={{ mr: 2 }}>
-                Total ({currency}): $
-                {items.reduce((total, item) => total + item.amount, 0).toFixed(2)}
-              </Typography>
-              <Typography variant="body1" sx={{ mr: 2 }}>
-                Total Paid ({currency}): $0.00
-              </Typography>
-              <Typography variant="body1">
-                Amount Due ({currency}): $
-                {items.reduce((total, item) => total + item.amount, 0).toFixed(2)}
-              </Typography>
-            </Box>
-          </Grid>
         </Grid>
+
+        {/* Add items section here */}
+
         <Box display="flex" justifyContent="flex-end" mt={3}>
           <Button variant="outlined" color="inherit" sx={{ mr: 2 }}>
             Cancel
@@ -229,7 +204,7 @@ const BillForm = () => {
           </Button>
         </Box>
       </form>
-    </Box>
+    </Paper>
   );
 };
 

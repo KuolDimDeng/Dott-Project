@@ -16,6 +16,9 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { countries } from 'countries-list';
+import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
+
+
 
 const theme = createTheme({
   palette: {
@@ -59,28 +62,37 @@ export default function RegisterPage() {
   });
   const router = useRouter();
   const [successMessage, setSuccessMessage] = useState('');
+ 
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axiosInstance.post('/api/register/', formData);
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        handleSuccess();
+      } else {
+        console.error('Registration successful but no token received');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      // Set error state or display error message to user
+    }
+  };
+
+  
   const handleSuccess = () => {
     setSuccessMessage('Registration successful!');
     setTimeout(() => {
       setSuccessMessage('');
       router.push('/dashboard');
     }, 2000);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post('http://localhost:8000/api/register/', formData);
-      handleSuccess();
-    } catch (error) {
-      console.error('Registration error:', error);
-    }
   };
 
   return (

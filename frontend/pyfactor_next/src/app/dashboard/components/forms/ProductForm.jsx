@@ -36,7 +36,7 @@ const ProductForm = () => {
 
     try {
       logger.info('Product data:', product);
-      const response = await axiosInstance.post('http://localhost:8000/api/create-product/', product);
+      const response = await axiosInstance.post('http://localhost:8000/api/products/create/', product);
       logger.info('Product created successfully', response.data);
       addMessage('info', 'Product created successfully');
 

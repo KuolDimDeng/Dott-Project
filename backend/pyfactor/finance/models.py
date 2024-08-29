@@ -3,10 +3,19 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
-from sales.models import Bill
+from purchases.models import Bill
 
 class AccountType(models.Model):
-    name = models.CharField(max_length=100)
+    ACCOUNT_TYPE_CHOICES = [
+        ('Current Asset', 'Current Asset'),
+        ('Current Liability', 'Current Liability'),
+        ('Equity', 'Equity'),
+        ('Revenue', 'Revenue'),
+        ('Operating Expense', 'Operating Expense'),
+        ('Cost of Goods Sold', 'Cost of Goods Sold'),
+        ('Non-Operating Expense', 'Non-Operating Expense'),
+    ]
+    name = models.CharField(max_length=100, choices=ACCOUNT_TYPE_CHOICES)
     account_type_id = models.IntegerField(unique=True, null=True)
 
     def __str__(self):
@@ -72,8 +81,6 @@ class FinanceTransaction(models.Model):
 class Income(models.Model):
     transaction = models.OneToOneField(FinanceTransaction, on_delete=models.CASCADE, related_name='income')
 
-class Expense(models.Model):
-    transaction = models.OneToOneField(FinanceTransaction, on_delete=models.CASCADE, related_name='expense')
 
 class RevenueAccount(models.Model):
     date = models.DateField(default=timezone.now)
@@ -104,3 +111,22 @@ class SalesTaxAccount(models.Model):
     description = models.CharField(max_length=255)
     note = models.TextField(blank=True)
     transaction = models.OneToOneField(FinanceTransaction, on_delete=models.SET_NULL, related_name='sales_tax_account', null=True)
+    
+class AccountCategory(models.Model):
+    name = models.CharField(max_length=100)
+    code = models.CharField(max_length=10, unique=True)
+
+    def __str__(self):
+        return f"{self.code} - {self.name}"
+
+class ChartOfAccount(models.Model):
+    account_number = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    category = models.ForeignKey(AccountCategory, on_delete=models.CASCADE, related_name='accounts')
+    balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='children')
+
+    def __str__(self):
+        return f"{self.account_number} - {self.name}"

@@ -21,6 +21,14 @@ import ChartContainer from '../chart/component/ChartContainer';
 import { FamilyRestroomRounded } from '@mui/icons-material';
 import IntegrationSettings from '../Settings/integrations/components/IntegrationSettings';
 import { useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import APIIntegrations from './components/APIIntegrations';
+import AlertsPage from '../alerts/components/AlertsPage';
+import SendGlobalAlert from '../alerts/components/SendGlobalAlert';
+import AlertsComponent from '../alerts/components/AlertsComponents';
+
+
+
 
 
 const theme = createTheme({
@@ -77,6 +85,7 @@ function DashboardContent() {
   const [services, setServices] = useState([]);
   const [showProductManagement, setShowProductManagement] = useState(false);
   const [showServiceManagement, setShowServiceManagement] = useState(false);
+  const [showEstimateManagement, setShowEstimateManagement] = useState(false);
   const [showChart, setShowChart] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const [showSalesAnalysis, setShowSalesAnalysis] = useState(false);
@@ -86,7 +95,79 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const status = searchParams.get('status');
   const platform = searchParams.get('platform');
+  const [isShopifyConnected, setIsShopifyConnected] = useState(false);
+  const [showAPIIntegrations, setShowAPIIntegrations] = useState(false);
+  const [showECommercePlatformAPI, setShowECommercePlatformAPI] = useState(false);
+  const [showUserProfileSettings, setShowUserProfileSettings] = useState(false);
+  const [showAlerts, setShowAlerts] = useState(false);
+  const [alerts, setAlerts] = useState([]);
+  const [showSendGlobalAlert, setShowSendGlobalAlert] = useState(false);
+  const [showSalesOrderManagement, setShowSalesOrderManagement] = useState(false);
+  const [showInvoiceManagement, setShowInvoiceManagement] = useState(false);
+  const [showVendorManagement, setShowVendorManagement] = useState(false);
+  const [showBillManagement, setShowBillManagement] = useState(false);
+  const [showPurchaseOrderManagement, setShowPurchaseOrderManagement] = useState(false);
+  const [showExpensesManagement, setShowExpensesManagement] = useState(false);
+  const [showPurchaseReturnManagement, setShowPurchaseReturnManagement] = useState(false);
+  const [showProcurementManagement, setShowProcurementManagement] = useState(false);
+  const [showEmployeeManagement, setShowEmployeeManagement] = useState(false);
+  const [showPayrollManagement, setShowPayrollManagement] = useState(false);
+  const [showTimesheetManagement, setShowTimeSheetManagement] = useState(false);
+  const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
+  const router = useRouter();
 
+  const handleUserProfileClick = () => {
+    setShowUserProfileSettings(true);
+    // Reset other view states
+    setShowBankingDashboard(false);
+    setShowCreateOptions(false);
+    setShowAnalysisPage(false);
+    setShowHRDashboard(false);
+    setShowPayrollDashboard(false);
+    setSelectedInvoiceId(null);
+    setShowInvoiceBuilder(false);
+    setShowReports(false);
+    setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowDashboard(false);
+    setShowSalesAnalysis(false);
+    setShowIntegrationSettings(false);
+  };
+
+  const handleUserProfileUpdate = (updatedUserData) => {
+    setUserData(updatedUserData);
+    addMessage('info', 'User profile updated successfully');
+  };
+
+  const handleAPIIntegrationsClick = () => {
+    setShowAPIIntegrations(true);
+    setShowIntegrationSettings(false);
+    setShowECommercePlatformAPI(false);
+    setShowCreateOptions(false);
+    setShowAnalysisPage(false);
+    setShowHRDashboard(false);
+    setShowPayrollDashboard(false);
+    setSelectedInvoiceId(null);
+    setShowInvoiceBuilder(false);
+    setShowReports(false);
+    setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowDashboard(false);
+    setShowProductManagement(false);
+    setShowServiceManagement(false);
+    setShowECommercePlatformAPI(false);
+  };
+
+  const handleECommercePlatformAPIClick = () => {
+    setShowECommercePlatformAPI(true);
+    setShowAPIIntegrations(false);
+    
+  };
+
+  const handleCRMAPIClick = () => {
+    // Implement CRM API functionality here
+    console.log('CRM API clicked');
+  };
 
   const handleSettingsClick = (event) => {
     setSettingsAnchorEl(event.currentTarget);
@@ -98,7 +179,7 @@ function DashboardContent() {
 
   const handleIntegrationsClick = () => {
     console.log('handleIntegrationsClick called');
-    setShowIntegrationSettings(true);
+    setShowAPIIntegrations(true);
     handleSettingsMenuClose();
     // Reset other view states as needed
     setShowBankingDashboard(false);
@@ -113,26 +194,46 @@ function DashboardContent() {
     setShowAccountPage(false);
     setShowDashboard(false);
     setShowSalesAnalysis(false);
+    setShowIntegrationSettings(false);
   };
   
- 
+
 
 
   const handleSalesClick = (section) => {
     console.log('handleSalesClick called with section:', section);
-    if (section === 'customers') {
-        setView('customerList');
+    setShowCustomerList(false);
+    setShowProductManagement(false);
+    setShowServiceManagement(false);
+    setShowEstimateManagement(false);
+    setShowSalesOrderManagement(false);
+
+    switch(section) {
+      case 'customers':
         setShowCustomerList(true);
-        setShowProductManagement(false);
-    } else if (section === 'products') {
+        setView('customerList');
+        break;
+      case 'products':
         setShowProductManagement(true);
-        setShowCustomerList(false);
-        setShowServiceManagement(false);
-    } else if (section ==='services') {
+        break;
+      case 'services':
         setShowServiceManagement(true);
-        setShowCustomerList(false);
-        setShowProductManagement(false);
+        break;
+      case 'estimates':
+        setShowEstimateManagement(true);
+        break;
+      case 'orders':
+        setShowSalesOrderManagement(true);
+        break;
+        case 'invoices':
+      setShowInvoiceManagement(true);
+      break;
+      
+      default:
+        break;
     }
+
+    // Reset other view states
     setShowBankingDashboard(false);
     setShowCreateOptions(false);
     setShowAnalysisPage(false);
@@ -219,10 +320,66 @@ function DashboardContent() {
   };
 
   const handleHRClick = (section) => {
-    setShowHRDashboard(true);
-    setHRSection(section);
+    console.log('handleHRClick called with section:', section);
+    
+    // Reset all HR-related states
+    setShowHRDashboard(false);
     setShowPayrollDashboard(false);
     setShowBankingDashboard(false);
+    setShowEmployeeManagement(false);
+    
+    // Reset other general states
+    setShowBankingDashboard(false);
+    setShowCreateOptions(false);
+    setShowAnalysisPage(false);
+    setShowPayrollDashboard(false);
+    setSelectedInvoiceId(null);
+    setShowInvoiceBuilder(false);
+    setShowReports(false);
+    setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowDashboard(false);
+    setShowSalesAnalysis(false);
+    setShowIntegrationSettings(false);
+  
+    switch(section) {
+      case 'employees':
+        setShowEmployeeManagement(true);
+        break;
+      case 'recruitment':
+        // Set state for recruitment management
+        break;
+      case 'onboarding':
+        // Set state for onboarding management
+        break;
+      case 'performance':
+        // Set state for performance management
+        break;
+      case 'training':
+        // Set state for training management
+        break;
+      case 'time-attendance':
+        // Set state for time and attendance management
+        break;
+      case 'benefits':
+        // Set state for benefits administration
+        break;
+      case 'compensation':
+        // Set state for compensation management
+        break;
+      case 'employee-relations':
+        // Set state for employee relations management
+        break;
+      case 'compliance':
+        // Set state for compliance management
+        break;
+      case 'hr-reports':
+        // Set state for HR reporting and analytics
+        break;
+      default:
+        console.log('Unknown HR section:', section);
+        break;
+    }
   };
 
   const handleCreateCustomer = () => {
@@ -232,10 +389,106 @@ function DashboardContent() {
   };
 
   const handlePayrollClick = (section) => {
-    setShowPayrollDashboard(true);
-    setPayrollSection(section);
-    setShowHRDashboard(false);
+    console.log('handlePayrollClick called with section:', section);
+  
+    // Reset all payroll-related states
+    setShowPayrollDashboard(false);
+    setShowPayrollManagement(false);
+    setShowTimeSheetManagement(false);
+  
+    // Reset other general states
     setShowBankingDashboard(false);
+    setShowCreateOptions(false);
+    setShowAnalysisPage(false);
+    setShowHRDashboard(false);
+    setSelectedInvoiceId(null);
+    setShowInvoiceBuilder(false);
+    setShowReports(false);
+    setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowDashboard(false);
+    setShowSalesAnalysis(false);
+    setShowIntegrationSettings(false);
+  
+    switch(section) {
+      case 'run':
+        setShowPayrollManagement(true);
+        setPayrollSection('run');
+        break;
+      case 'timesheets':
+        setShowTimeSheetManagement(true);
+        setPayrollSection('timesheets');
+        break;
+      case 'transactions':
+        setShowPayrollManagement(true);
+        setPayrollSection('transactions');
+        break;
+      case 'taxes':
+        setShowPayrollManagement(true);
+        setPayrollSection('taxes');
+        break;
+      case 'taxForms':
+        setShowPayrollManagement(true);
+        setPayrollSection('taxForms');
+        break;
+      case 'payroll-reports':
+        setShowPayrollManagement(true);
+        setPayrollSection('reports');
+        break;
+      case 'dashboard':
+        setShowPayrollDashboard(true);
+        break;
+      default:
+        console.log('Unknown payroll section:', section);
+        break;
+    }
+  };
+
+  const handlePurchasesClick = (section) => {
+    console.log('handlePurchasesClick called with section:', section);
+    setShowVendorManagement(false);
+    setShowBillManagement(false);
+    setShowPurchaseOrderManagement(false);
+    setShowExpensesManagement(false);
+    setShowPurchaseReturnManagement(false);
+    setShowProcurementManagement(false);  
+
+    switch(section) {
+      case 'vendors':
+        setShowVendorManagement(true);
+        break;
+      case 'bills':
+        setShowBillManagement(true);
+        break;
+      case 'purchase-orders':
+        setShowPurchaseOrderManagement(true);
+        break;
+      case 'expenses':
+        setShowExpensesManagement(true);
+        break;
+      case 'purchase-returns':
+        setShowPurchaseReturnManagement(true);
+        break;
+      case 'procurement':
+        setShowProcurementManagement(true);
+        break;
+      // ... other cases ...
+    }
+  
+    // Reset other view states
+    setShowBankingDashboard(false);
+    setShowCreateOptions(false);
+    setShowAnalysisPage(false);
+    setShowHRDashboard(false);
+    setShowPayrollDashboard(false);
+    setSelectedInvoiceId(null);
+    setShowInvoiceBuilder(false);
+    setShowReports(false);
+    setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowDashboard(false);
+    setShowSalesAnalysis(false);
+    setShowIntegrationSettings(false);
   };
 
   const handleDrawerToggle = () => {
@@ -294,6 +547,7 @@ function DashboardContent() {
     setShowDashboard(false);
     setShowProductManagement(false);
     setShowServiceManagement(false);
+    setShowEstimateManagement(false);
     setShowSalesAnalysis(false);
     setShowIntegrationSettings(false);
 
@@ -307,9 +561,59 @@ function DashboardContent() {
     setSelectedReport(null);
   };
 
-  const handleAccountClick = () => {
-    setShowAccountPage(true);
-    setAnchorEl(null);
+  const handleAccountingClick = (section) => {
+    console.log('handleAccountingClick called with section:', section);
+    
+    // Reset all accounting-related states
+    setShowChartOfAccounts(false);
+    
+    // Reset other general states
+    setShowBankingDashboard(false);
+    setShowCreateOptions(false);
+    setShowAnalysisPage(false);
+    setShowHRDashboard(false);
+    setShowPayrollDashboard(false);
+    setSelectedInvoiceId(null);
+    setShowInvoiceBuilder(false);
+    setShowReports(false);
+    setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowDashboard(false);
+    setShowSalesAnalysis(false);
+    setShowIntegrationSettings(false);
+  
+    switch(section) {
+      case 'chart-of-accounts':
+        setShowChartOfAccounts(true);
+        break;
+      case 'journal-entries':
+        // Set state for journal entries management
+        break;
+      case 'general-ledger':
+        // Set state for general ledger
+        break;
+      case 'reconciliation':
+        // Set state for account reconciliation
+        break;
+      case 'financial-statements':
+        // Set state for financial statements
+        break;
+      case 'fixed-assets':
+        // Set state for fixed assets management
+        break;
+      case 'budgeting':
+        // Set state for budgeting
+        break;
+      case 'cost-accounting':
+        // Set state for cost accounting
+        break;
+      case 'accounting-reports':
+        // Set state for accounting reports
+        break;
+      default:
+        console.log('Unknown accounting section:', section);
+        break;
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -337,6 +641,88 @@ function DashboardContent() {
     setShowCustomerList(false);
     // ... (reset other view states)
     fetchServices();
+  };
+
+  const handleAlertClick = async () => {
+    try {
+      const response = await axiosInstance.get('/api/alerts/user_alerts/');
+      setAlerts(response.data);
+      setShowAlerts(true);
+    // Reset other view states
+    setShowBankingDashboard(false);
+    setShowCreateOptions(false);
+    setShowAnalysisPage(false);
+    setShowHRDashboard(false);
+    setShowPayrollDashboard(false);
+    setSelectedInvoiceId(null);
+    setShowInvoiceBuilder(false);
+    setShowReports(false);
+    setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowDashboard(false);
+    setShowSalesAnalysis(false);
+    setShowIntegrationSettings(false);
+  } catch (error) {
+    console.error('Error fetching alerts:', error);
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error("Data:", error.response.data);
+      console.error("Status:", error.response.status);
+      console.error("Headers:", error.response.headers);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error("Request:", error.request);
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('Error', error.message);
+    }
+    addMessage('error', 'Failed to fetch alerts');
+  }
+};
+
+  const handleMarkAsRead = async (alertId) => {
+    try {
+      await axiosInstance.post(`/api/alerts/${alertId}/mark_as_read/`);
+      setAlerts(alerts.map(alert => 
+        alert.id === alertId ? { ...alert, is_read: true } : alert
+      ));
+    } catch (error) {
+      console.error('Error marking alert as read:', error);
+    }
+  };
+  
+  const handleSendGlobalAlertClick = () => {
+    setShowSendGlobalAlert(true);
+    // Reset other view states
+    setShowAlerts(false);
+    setShowBankingDashboard(false);
+    setShowCreateOptions(false);
+    setShowAnalysisPage(false);
+    setShowHRDashboard(false);
+    setShowPayrollDashboard(false);
+    setSelectedInvoiceId(null);
+    setShowInvoiceBuilder(false);
+    setShowReports(false);
+    setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowDashboard(false);
+    setShowSalesAnalysis(false);
+    setShowIntegrationSettings(false);
+  };
+
+  useEffect(() => {
+    // Check Shopify connection status on component mount
+    checkShopifyConnectionStatus();
+  }, []);
+
+  const checkShopifyConnectionStatus = async () => {
+    try {
+      const response = await axiosInstance.get('/api/integrations/shopify-status/');
+      setIsShopifyConnected(response.data.connected);
+    } catch (error) {
+      console.error('Error checking Shopify connection status:', error);
+    }
   };
 
   const deleteUserAccount = async () => {
@@ -367,14 +753,14 @@ function DashboardContent() {
   const fetchUserData = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/profile/', {
+      const response = await axiosInstance.get('/api/profile/', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.status === 200) {
+        const data = response.data;
         console.log('Dashboard User data:', data);
         logger.log('Dashboard User data:', data);
         data.first_name = data.first_name || data.email.split('@')[0];
@@ -384,16 +770,17 @@ function DashboardContent() {
       } else {
         logger.error('Error fetching user data:', response.statusText);
         addMessage('error', `Error fetching user data: ${response.statusText}`);
+        localStorage.removeItem('token');
+        router.push('/login');
       }
     } catch (error) {
       logger.error('Error fetching user data:', error);
       addMessage('error', `Error fetching user data: ${error.message}`);
+      localStorage.removeItem('token');
+      router.push('/login');
     }
-  }, [addMessage]);
+  }, [addMessage, router]);
 
-  useEffect(() => {
-    setShowDashboard(true);
-  }, []);
 
   useEffect(() => {
     fetchUserData();
@@ -433,13 +820,18 @@ function DashboardContent() {
           openMenu={openMenu}
           handleClick={handleClick}
           handleClose={handleClose}
-          handleAccountClick={handleAccountClick}
+          handleAccountingClick={handleAccountingClick}
           handleSettingsClick={handleSettingsClick}
           settingsAnchorEl={settingsAnchorEl}
           settingsMenuOpen={settingsMenuOpen}
           handleSettingsMenuClose={handleSettingsMenuClose}
           handleIntegrationsClick={handleIntegrationsClick}
-        />
+          isShopifyConnected={isShopifyConnected}
+          handleUserProfileClick={handleUserProfileClick}
+          handleAlertClick={handleAlertClick}
+        >
+          <AlertsComponent onAlertClick={handleAlertClick} />
+        </AppBar>
         <Drawer 
           drawerOpen={drawerOpen}
           handleDrawerToggle={handleDrawerToggle}
@@ -459,7 +851,8 @@ function DashboardContent() {
           handleProductsClick={handleProductsClick}
           handleServicesClick={handleServicesClick}
           handleDashboardClick={handleDashboardClick}
-
+          handlePurchasesClick={handlePurchasesClick}
+          handleAccountingClick={handleAccountingClick}
         />
         <Box
           component="main"
@@ -479,62 +872,88 @@ function DashboardContent() {
           }}
         >
           <Container 
-                maxWidth={false}
-                sx={{ 
-                    mt: 2,
-                    mb: 2,
-                    ml: drawerOpen ? 2 : 1, 
-                    height: 'calc(100% - 32px)', // Adjust for top and bottom margin
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    pl: drawerOpen ? 2 : 3, 
-                    pr: 2, 
-                    transition: theme.transitions.create(['margin-left', 'padding-left'], {
-                    easing: theme.transitions.easing.sharp,
-                    duration: theme.transitions.duration.leavingScreen,
-                    })
-                }}
-                >
+            maxWidth={false}
+            sx={{ 
+              mt: 2,
+              mb: 2,
+              ml: drawerOpen ? 2 : 1, 
+              height: 'calc(100% - 32px)',
+              display: 'flex', 
+              flexDirection: 'column', 
+              pl: drawerOpen ? 2 : 3, 
+              pr: 2, 
+              transition: theme.transitions.create(['margin-left', 'padding-left'], {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.leavingScreen,
+              })
+            }}
+          >
             <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-                {console.log('Before rendering content, showDashboard: ', showDashboard)}
-                {showDashboard && (
-              <Typography variant="h4" component="h1" gutterBottom>
-                This is the dashboard area
-              </Typography>
-            )}
-            {showIntegrationSettings && (
-                <IntegrationSettings
-                    initialStatus={status}
-                    initialPlatform={platform}
-                    initialBusinessData={userData?.business}
-
+              {console.log('Before rendering content, showDashboard: ', showDashboard)}
+              {showAlerts && (
+                <AlertsPage alerts={alerts} onMarkAsRead={handleMarkAsRead} />
+              )}
+              {showSendGlobalAlert && (
+                <SendGlobalAlert />
+              )}
+              {showAPIIntegrations && (
+                <APIIntegrations
+                  onECommerceClick={handleECommercePlatformAPIClick}
+                  onCRMClick={handleCRMAPIClick}
                 />
-                )}
-            {showSalesAnalysis && <ChartContainer />}
+              )}
+              {showECommercePlatformAPI && (
+                <IntegrationSettings
+                  initialStatus={status}
+                  initialPlatform={platform}
+                  initialBusinessData={userData?.business}
+                  title="E-Commerce Platform API"
+                />
+              )}
+              {showDashboard && (
+                <Typography variant="h4" component="h1" gutterBottom>
+                  This is the dashboard area
+                </Typography>
+              )}
+              {showIntegrationSettings && (
+                <IntegrationSettings
+                  initialStatus={status}
+                  initialPlatform={platform}
+                  initialBusinessData={userData?.business}
+                />
+              )}
+              {showSalesAnalysis && <ChartContainer />}
               {view === 'invoiceDetails' && (
                 <InvoiceDetails 
                   invoiceId={selectedInvoiceId} 
                   onBackToCustomerDetails={handleBackToCustomerDetails} 
                 />
               )}
-              {console.log('Rendering InvoiceDetails with ID: ', selectedInvoice)}
-              {view === 'customerDetails' && selectedCustomerId && (
-                <CustomerDetails 
+              {selectedCustomerId && (
+                  <CustomerDetails 
                     customerId={selectedCustomerId}
                     onBackToList={handleBackToList}
                     onInvoiceSelect={handleInvoiceSelect}
-                />
+                  />
                 )}
-                {console.log('Rendering CustomerDetails with ID: ', selectedCustomerId)}
-                {view === 'productList' && (
+              {console.log('Rendering InvoiceDetails with ID: ', selectedInvoice)}
+              {view === 'customerDetails' && selectedCustomerId && (
+                <CustomerDetails 
+                  customerId={selectedCustomerId}
+                  onBackToList={handleBackToList}
+                  onInvoiceSelect={handleInvoiceSelect}
+                />
+              )}
+              {console.log('Rendering CustomerDetails with ID: ', selectedCustomerId)}
+              {view === 'productList' && (
                 <ProductList products={products} />
               )}
               {view === 'serviceList' && (
                 <ServiceList services={services} />
               )}
               {view !== 'invoiceDetails' && view !== 'customerDetails' && 
-               view !== 'productList' && view !== 'serviceList' &&  
-               renderMainContent({
+              view !== 'productList' && view !== 'serviceList' &&  
+              renderMainContent({
                 showTransactionForm,
                 showInvoiceBuilder,
                 showCreateOptions,
@@ -564,9 +983,23 @@ function DashboardContent() {
                 handleCustomerSelect,
                 showProductManagement,
                 showServiceManagement,
+                showEstimateManagement,
+                showSalesOrderManagement,
+                showInvoiceManagement,
+                showVendorManagement,
+                showBillManagement,
+                showPurchaseOrderManagement,
+                showExpensesManagement,
+                showPurchaseReturnManagement,
+                showProcurementManagement,
+                showEmployeeManagement,
+                showPayrollManagement,
+                showTimesheetManagement,
+                showChartOfAccounts,
                 showDashboard,
                 showIntegrationSettings,
-                
+                showUserProfileSettings,
+                handleUserProfileUpdate,
               })}
             </Box>
           </Container>

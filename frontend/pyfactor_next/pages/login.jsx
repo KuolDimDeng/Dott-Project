@@ -26,8 +26,9 @@ import { valibotResolver } from '@hookform/resolvers/valibot';
 import { object, minLength, string, email } from 'valibot';
 import { logger } from '@/utils/logger';
 
+
 // Util Imports
-import axios from 'axios';
+import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
 
 const theme = createTheme({
   palette: {
@@ -63,7 +64,6 @@ const schema = object({
 export default function SignIn() {
   const [isPasswordShown, setIsPasswordShown] = useState(false);
   const [errorState, setErrorState] = useState(null);
-  const [token, setToken] = useState(null);
   const router = useRouter();
 
   const {
@@ -80,9 +80,6 @@ export default function SignIn() {
 
   const handleClickShowPassword = () => setIsPasswordShown((show) => !show);
 
-  const axiosInstance = axios.create({
-    baseURL: 'http://localhost:8000',
-  });
 
   const onSubmit = async (data) => {
     try {
@@ -94,28 +91,17 @@ export default function SignIn() {
   
       if (response.status === 200 && response.data.access) {
         const token = response.data.access;
-        setToken(token);
         localStorage.setItem('token', token);
         if (response.data.refresh) {
           localStorage.setItem('refreshToken', response.data.refresh);
         }
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         router.push('/dashboard');
       } else {
         setErrorState({ message: 'Invalid response from server' });
       }
     } catch (error) {
-      logger.error('Error during login:', error);
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        setErrorState(error.response.data || { message: 'Server error' });
-      } else if (error.request) {
-        // The request was made but no response was received
-        setErrorState({ message: 'No response received from server. Please try again.' });
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        setErrorState({ message: 'An error occurred. Please try again.' });
-      }
+      // ... error handling
     }
   };
 

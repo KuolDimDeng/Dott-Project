@@ -1,3 +1,4 @@
+'use client'
 import DashboardContent from '../../src/app/dashboard/DashboardContent';
 
 const IntegrationsPage = () => {

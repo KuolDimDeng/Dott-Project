@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Typography from '@mui/material/Typography';
 
 function DateTime() {
@@ -7,14 +7,14 @@ function DateTime() {
   useEffect(() => {
     const timer = setInterval(() => {
       setDateTime(new Date());
-    }, 1000);
+    }, 60000); // Update every minute
 
     return () => {
       clearInterval(timer);
     };
   }, []);
 
-  const formatDateTime = (date) => {
+  const formattedDateTime = useMemo(() => {
     const options = {
       weekday: 'long',
       month: 'long',
@@ -23,12 +23,12 @@ function DateTime() {
       minute: 'numeric',
       hour12: true,
     };
-    return date.toLocaleString('en-US', options);
-  };
+    return dateTime.toLocaleString('en-US', options);
+  }, [dateTime]);
 
   return (
     <Typography variant="body2" color="inherit">
-      {formatDateTime(dateTime)}
+      {formattedDateTime}
     </Typography>
   );
 }

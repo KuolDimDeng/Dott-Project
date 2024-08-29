@@ -4,7 +4,7 @@ import Box from '@mui/material/Box';
 import { styled } from '@mui/material/styles';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
-const lightBlue = '#E3F2FD'; // Make sure this matches the color in your Dashboard component
+const lightBlue = '#E3F2FD';
 
 const MessageContainer = styled(Box)(({ theme, backgroundColor }) => ({
   display: 'flex',
@@ -36,7 +36,7 @@ function ConsoleMessages({ backgroundColor }) {
   return (
     <MessageContainer backgroundColor={backgroundColor}>
       {latestMessage && (
-        <Typography 
+        <Typography
           style={getMessageStyle(latestMessage.type)}
           aria-label={latestMessage.type}
         >

@@ -10,10 +10,10 @@ import {
   Select,
   MenuItem,
   Grid,
+  Paper,
 } from '@mui/material';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
-
 
 const initialState = {
   vendor_name: '',
@@ -41,7 +41,7 @@ const VendorForm = () => {
     e.preventDefault();
     console.log('Form submitted with data:', formData);
     try {
-      const response = await axiosInstance.post('http://localhost:8000/api/create-vendor/', formData);
+      const response = await axiosInstance.post('/api/vendors/create/', formData);
       console.log('Vendor created successfully', response.data);
       addMessage('info', 'Vendor created successfully');
       // Reset form data or redirect to vendor list page
@@ -65,13 +65,13 @@ const VendorForm = () => {
   ];
 
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
-        Add a vendor
+    <Paper elevation={3} sx={{ p: 4, maxWidth: 600, mx: 'auto' }}>
+      <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
+        Add a Vendor
       </Typography>
       <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12}>
             <TextField
               label="Vendor Name"
               name="vendor_name"
@@ -80,6 +80,8 @@ const VendorForm = () => {
               required
               fullWidth
             />
+          </Grid>
+          <Grid item xs={12}>
             <TextField
               label="Street"
               name="street"
@@ -88,6 +90,8 @@ const VendorForm = () => {
               required
               fullWidth
             />
+          </Grid>
+          <Grid item xs={12} sm={6}>
             <TextField
               label="Postcode"
               name="postcode"
@@ -96,6 +100,8 @@ const VendorForm = () => {
               required
               fullWidth
             />
+          </Grid>
+          <Grid item xs={12} sm={6}>
             <TextField
               label="City"
               name="city"
@@ -104,6 +110,8 @@ const VendorForm = () => {
               required
               fullWidth
             />
+          </Grid>
+          <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
               <InputLabel>State</InputLabel>
               <Select
@@ -119,6 +127,8 @@ const VendorForm = () => {
                 ))}
               </Select>
             </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6}>
             <TextField
               label="Phone"
               name="phone"
@@ -129,7 +139,7 @@ const VendorForm = () => {
             />
           </Grid>
         </Grid>
-        <Box display="flex" justifyContent="flex-end" mt={3}>
+        <Box display="flex" justifyContent="flex-end" mt={4}>
           <Button variant="outlined" color="inherit" sx={{ mr: 2 }}>
             Cancel
           </Button>
@@ -138,7 +148,7 @@ const VendorForm = () => {
           </Button>
         </Box>
       </form>
-    </Box>
+    </Paper>
   );
 };
 
