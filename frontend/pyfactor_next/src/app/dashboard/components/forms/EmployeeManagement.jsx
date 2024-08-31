@@ -114,6 +114,8 @@ const EmployeeManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
+          <Paper style={{ padding: '2rem' }}>
+
       <Box>
         <Typography variant="h4" gutterBottom>
           Employee Management
@@ -362,6 +364,7 @@ const EmployeeManagement = () => {
           </Box>
         )}
       </Box>
+      </Paper>
     </LocalizationProvider>
   );
 };

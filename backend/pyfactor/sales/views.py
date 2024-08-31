@@ -1,4 +1,5 @@
 from decimal import Decimal
+import decimal
 from django.shortcuts import get_object_or_404, render
 from psycopg2 import IntegrityError
 from rest_framework import generics, status, serializers, viewsets, status
@@ -6,6 +7,7 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils import timezone
+from finance.utils import generate_financial_statements, get_or_create_chart_account
 from finance.views import get_user_database
 from .models import Estimate, EstimateItem, Invoice, Customer, Product, Service, default_due_datetime, SalesOrder, SalesOrderItem
 from finance.models import Account, AccountType, FinanceTransaction
@@ -31,7 +33,9 @@ from .utils import get_or_create_user_database
 import traceback
 from decimal import Decimal
 from rest_framework.exceptions import ValidationError
-from finance.utils import update_chart_of_accounts
+from finance.utils import create_general_ledger_entry, update_chart_of_accounts
+from django.apps import apps
+
 
 
 
@@ -57,42 +61,55 @@ def create_invoice(request):
         ensure_database_exists(database_name)
         ensure_accounts_exist(database_name)
 
-        # Check if products exist
-        for item in request.data.get('items', []):
-            product_id = item.get('product')
-            try:
-                Product.objects.using(database_name).get(id=product_id)
-            except Product.DoesNotExist:
-                return Response({'error': f'Product with id {product_id} does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+        accounts_receivable = get_or_create_chart_account(database_name, 'Accounts Receivable', 'Current Asset')
+        sales_revenue = get_or_create_chart_account(database_name, 'Sales Revenue', 'Revenue')
+        sales_tax_payable = get_or_create_chart_account(database_name, 'Sales Tax Payable', 'Current Liability')
+        inventory = get_or_create_chart_account(database_name, 'Inventory', 'Current Asset')
+        cost_of_goods_sold = get_or_create_chart_account(database_name, 'Cost of Goods Sold (COGS)', 'Cost of Goods Sold')
 
         with db_transaction.atomic(using=database_name):
             serializer = InvoiceSerializer(data=request.data, context={'database_name': database_name})
             if serializer.is_valid():
                 invoice = serializer.save()
-
-                # Update Chart of Accounts
                 total_amount = Decimal(str(invoice.totalAmount))
                 
-                # Update Accounts Receivable (assuming account number is '1100')
-                update_chart_of_accounts(database_name, '1100', total_amount, 'debit')
-                
-                # Update Sales Revenue (assuming account number is '4000')
-                update_chart_of_accounts(database_name, '4000', total_amount, 'credit')
-                
-                # If there's sales tax, update Sales Tax Payable (assuming account number is '2200')
-                sales_tax_rate = Decimal('0.1')  # 10% tax rate, adjust as needed
-                if invoice.sales_tax_payable:
-                    sales_tax = total_amount * sales_tax_rate
-                    update_chart_of_accounts(database_name, '2200', sales_tax, 'credit')
+                try:
+                    tax_amount = Decimal(str(invoice.sales_tax_payable)) if invoice.sales_tax_payable else Decimal('0')
+                except decimal.InvalidOperation:
+                    logger.warning(f"Invalid sales tax value for invoice {invoice.invoice_num}: {invoice.sales_tax_payable}")
+                    tax_amount = Decimal('0')
 
-                # Update Inventory and Cost of Goods Sold if applicable
+                subtotal = total_amount - tax_amount
+
+                # Accounts Receivable (Debit)
+                create_general_ledger_entry(database_name, accounts_receivable, total_amount, 'debit', f"Invoice {invoice.invoice_num} created")
+                
+                # Sales Revenue (Credit)
+                create_general_ledger_entry(database_name, sales_revenue, subtotal, 'credit', f"Revenue from Invoice {invoice.invoice_num}")
+                
+                # Sales Tax Payable (Credit)
+                if tax_amount > 0:
+                    create_general_ledger_entry(database_name, sales_tax_payable, tax_amount, 'credit', f"Sales tax for Invoice {invoice.invoice_num}")
+
+                # Handle inventory and COGS
                 for item in invoice.items.all():
                     if item.product:
-                        cost = Decimal(str(item.product.price)) * Decimal(str(item.quantity))
-                        # Update Inventory (assuming account number is '1200')
-                        update_chart_of_accounts(database_name, '1200', cost, 'credit')
-                        # Update Cost of Goods Sold (assuming account number is '5000')
-                        update_chart_of_accounts(database_name, '5000', cost, 'debit')
+                        try:
+                            quantity = Decimal(str(item.quantity))
+                            cost_price = Decimal(str(item.product.price))  # Assuming this is the cost price
+                            cost = quantity * cost_price
+
+                            # Inventory (Credit)
+                            create_general_ledger_entry(database_name, inventory, cost, 'credit', f"Inventory reduction for Invoice {invoice.invoice_num}")
+                            
+                            # Cost of Goods Sold (Debit)
+                            create_general_ledger_entry(database_name, cost_of_goods_sold, cost, 'debit', f"COGS for Invoice {invoice.invoice_num}")
+                        except decimal.InvalidOperation as e:
+                            logger.error(f"Invalid decimal value for item in invoice {invoice.invoice_num}: {e}")
+                            # You might want to handle this error, perhaps by skipping this item or rolling back the transaction
+
+                # Generate updated financial statements
+                generate_financial_statements(database_name)
 
                 return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
             else:
@@ -112,16 +129,27 @@ def ensure_database_exists(database_name):
     router.create_dynamic_database(database_name)
 
 def ensure_accounts_exist(database_name):
-    logger.debug("Ensuring necessary accounts exist in database: %s", database_name)
-    required_accounts = [
+    logger.debug(f"Ensuring necessary accounts exist in database: {database_name}")
+    
+    # Log existing account types
+    existing_account_types = AccountType.objects.using(database_name).all()
+    logger.debug(f"Existing AccountTypes: {[at.name for at in existing_account_types]}")
+
+    accounts_to_create = [
         ('Accounts Receivable', 'Accounts Receivable'),
         ('Sales Revenue', 'Sales Revenue'),
         ('Sales Tax Payable', 'Sales Tax Payable'),
         ('Cost of Goods Sold', 'Cost of Goods Sold'),
-        ('Inventory', 'Inventory')
     ]
-    for account_name, account_type_name in required_accounts:
-        get_or_create_account(database_name, account_name, account_type_name)
+    
+    for account_name, account_type_name in accounts_to_create:
+        logger.debug(f"Processing account: {account_name} of type {account_type_name}")
+        try:
+            account = get_or_create_account(database_name, account_name, account_type_name)
+            logger.debug(f"Successfully processed account: {account}")
+        except Exception as e:
+            logger.error(f"Error processing account {account_name}: {e}", exc_info=True)
+            raise
 
 def get_user_database(user):
     user_profile = UserProfile.objects.using('default').get(user=user)
@@ -762,6 +790,19 @@ def create_estimate_with_transaction(data, database_name):
     if estimate_serializer.is_valid(raise_exception=True):
         estimate = estimate_serializer.save()
         logger.debug(f"Estimate saved: {estimate.estimate_num}")
+        
+          # Add general ledger entries here (if you want to record estimates in the general ledger)
+        create_general_ledger_entry(database_name,
+                                    get_or_create_account(database_name, 'Estimated Receivables', 'Current Asset'),
+                                    estimate.total_amount,
+                                    'debit',
+                                    f"Estimate {estimate.estimate_num} created")
+        create_general_ledger_entry(database_name,
+                                    get_or_create_account(database_name, 'Estimated Revenue', 'Revenue'),
+                                    estimate.total_amount,
+                                    'credit',
+                                    f"Estimated Revenue from Estimate {estimate.estimate_num}")
+
 
         # No need to process items here, as they are already processed in the serializer's create method
 
@@ -980,6 +1021,19 @@ def create_sales_order_with_transaction(data, database_name):
     if sales_order_serializer.is_valid(raise_exception=True):
         sales_order = sales_order_serializer.save()
         logger.debug(f"Sales order created: {sales_order.order_number}")
+        
+        # Add general ledger entries here
+        create_general_ledger_entry(database_name, 
+                                    get_or_create_account(database_name, 'Accounts Receivable', 'Current Asset'),
+                                    sales_order.total_amount,
+                                    'debit',
+                                    f"Sales Order {sales_order.order_number} created")
+        create_general_ledger_entry(database_name,
+                                    get_or_create_account(database_name, 'Sales', 'Revenue'),
+                                    sales_order.total_amount,
+                                    'credit',
+                                    f"Revenue from Sales Order {sales_order.order_number}")
+
 
 
         return sales_order

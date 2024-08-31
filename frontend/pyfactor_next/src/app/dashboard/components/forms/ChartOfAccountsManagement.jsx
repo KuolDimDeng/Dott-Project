@@ -3,17 +3,15 @@ import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Button, TextField, Select, MenuItem, FormControl, 
   InputLabel, IconButton, Toolbar, InputAdornment, Drawer, List, ListItem, 
-  ListItemText, Checkbox, Collapse
+  ListItemText, Checkbox
 } from '@mui/material';
 import { 
-  Add, FilterList, Search, Edit, Delete, ExpandMore, ExpandLess, 
-  ImportExport, Settings
+  Add, FilterList, Search, Edit, Delete, ImportExport, Settings
 } from '@mui/icons-material';
 import axiosInstance from '../components/axiosConfig';
 
 const ChartOfAccountsManagement = () => {
   const [accounts, setAccounts] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [newAccount, setNewAccount] = useState({
     account_number: '',
     name: '',
@@ -30,28 +28,18 @@ const ChartOfAccountsManagement = () => {
     status: 'all',
     dateRange: { start: null, end: null }
   });
-  const [expandedCategories, setExpandedCategories] = useState({});
 
   useEffect(() => {
     fetchAccounts();
-    fetchCategories();
   }, []);
 
   const fetchAccounts = async () => {
     try {
       const response = await axiosInstance.get('/api/chart-of-accounts/');
+      console.log('Accounts API Response:', response.data);
       setAccounts(response.data);
     } catch (error) {
       console.error('Error fetching accounts:', error);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const response = await axiosInstance.get('/api/account-categories/');
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
     }
   };
 
@@ -91,17 +79,12 @@ const ChartOfAccountsManagement = () => {
     setFilters({ ...filters, [filterType]: value });
   };
 
-  const toggleCategoryExpansion = (categoryId) => {
-    setExpandedCategories({
-      ...expandedCategories,
-      [categoryId]: !expandedCategories[categoryId]
-    });
-  };
+  const filteredAccounts = accounts ? accounts.filter(account => 
+    (account.name && account.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (account.account_number && account.account_number.includes(searchTerm))
+  ) : [];
 
-  const filteredAccounts = accounts.filter(account => 
-    account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    account.account_number.includes(searchTerm)
-  );
+  console.log('Rendering accounts:', filteredAccounts);
 
   return (
     <Box>
@@ -155,12 +138,14 @@ const ChartOfAccountsManagement = () => {
                   onChange={(e) => handleFilterChange('accountTypes', e.target.value)}
                   renderValue={(selected) => selected.join(', ')}
                 >
-                  {categories.map((category) => (
-                    <MenuItem key={category.id} value={category.name}>
-                      <Checkbox checked={filters.accountTypes.indexOf(category.name) > -1} />
-                      <ListItemText primary={category.name} />
-                    </MenuItem>
-                  ))}
+                  <MenuItem value="Asset">
+                    <Checkbox checked={filters.accountTypes.indexOf('Asset') > -1} />
+                    <ListItemText primary="Asset" />
+                  </MenuItem>
+                  <MenuItem value="Liability">
+                    <Checkbox checked={filters.accountTypes.indexOf('Liability') > -1} />
+                    <ListItemText primary="Liability" />
+                  </MenuItem>
                 </Select>
               </FormControl>
             </ListItem>
@@ -177,7 +162,6 @@ const ChartOfAccountsManagement = () => {
                 </Select>
               </FormControl>
             </ListItem>
-            {/* Add date range picker here if needed */}
           </List>
         </Box>
       </Drawer>
@@ -190,44 +174,32 @@ const ChartOfAccountsManagement = () => {
               <TableCell>Name</TableCell>
               <TableCell>Category</TableCell>
               <TableCell>Balance</TableCell>
-              <TableCell>Currency</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {categories.map((category) => (
-              <React.Fragment key={category.id}>
-                <TableRow>
-                  <TableCell colSpan={7}>
-                    <IconButton size="small" onClick={() => toggleCategoryExpansion(category.id)}>
-                      {expandedCategories[category.id] ? <ExpandLess /> : <ExpandMore />}
-                    </IconButton>
-                    <Typography variant="subtitle1" component="span">
-                      {category.name}
-                    </Typography>
+            {filteredAccounts.length > 0 ? (
+              filteredAccounts.map((account) => (
+                <TableRow key={account.id}>
+                  <TableCell>{account.account_number}</TableCell>
+                  <TableCell>{account.name}</TableCell>
+                  <TableCell>{account.category_name}</TableCell>
+                  <TableCell>{account.balance}</TableCell>
+                  <TableCell>{account.is_active ? 'Active' : 'Inactive'}</TableCell>
+                  <TableCell>
+                    <IconButton size="small"><Edit /></IconButton>
+                    <IconButton size="small"><Delete /></IconButton>
                   </TableCell>
                 </TableRow>
-                <Collapse in={expandedCategories[category.id]} timeout="auto" unmountOnExit>
-                  {filteredAccounts
-                    .filter(account => account.category === category.id)
-                    .map((account) => (
-                      <TableRow key={account.id}>
-                        <TableCell>{account.account_number}</TableCell>
-                        <TableCell>{account.name}</TableCell>
-                        <TableCell>{account.category_name}</TableCell>
-                        <TableCell>{account.balance}</TableCell>
-                        <TableCell>{account.currency || 'USD'}</TableCell>
-                        <TableCell>{account.is_active ? 'Active' : 'Inactive'}</TableCell>
-                        <TableCell>
-                          <IconButton size="small"><Edit /></IconButton>
-                          <IconButton size="small"><Delete /></IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </Collapse>
-              </React.Fragment>
-            ))}
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} align="center">
+                  No accounts found.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -236,7 +208,6 @@ const ChartOfAccountsManagement = () => {
         <Typography variant="h6">Account Summary</Typography>
         <Typography>Total Accounts: {accounts.length}</Typography>
         <Typography>Active Accounts: {accounts.filter(a => a.is_active).length}</Typography>
-        {/* Add more summary information here */}
       </Box>
     </Box>
   );

@@ -1,3 +1,4 @@
+#/Users/kuoldeng/projectx/backend/pyfactor/banking/serializers.py
 from rest_framework import serializers
 from .models import BankAccount, BankTransaction
 

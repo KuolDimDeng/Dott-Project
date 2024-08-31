@@ -75,6 +75,11 @@ import EmployeeManagement from './forms/EmployeeManagement';
 import PayrollManagement from './forms/PayrollManagement';
 import TimesheetManagement from './forms/TimesheetManagement';
 import ChartOfAccountsManagement from './forms/ChartOfAccountsManagement';
+import JournalEntryManagement from './forms/JournalEntryManagement';
+import GeneralLedgerManagement from './forms/GeneralLedgerManagement';
+import AccountReconManagement from './forms/AccountReconManagement';
+import MonthEndManagement from './forms/MonthEndManagement';
+import FinancialManagement from './forms/FinancialStatementsManagement';
 import ChartContainer from '@/app/chart/component/ChartContainer';
 import IntegrationSettings from '../../Settings/integrations/components/IntegrationSettings';
 import UserProfileSettings from '@/app/Settings/UserProfile/components/UserProfileSettings';
@@ -127,6 +132,12 @@ const RenderMainContent = ({
     showPayrollManagement,
     showTimesheetManagement,
     showChartOfAccounts,
+    showJournalEntryManagement,
+    showGeneralLedgerManagement,
+    showAccountReconManagement,
+    showMonthEndManagement,
+    showFinancialStatements,
+
   }) => {
     const renderContent = () => {
       if (showUserProfileSettings) {
@@ -201,9 +212,31 @@ const RenderMainContent = ({
         return <ChartOfAccountsManagement/>;
       }
 
+      if (showGeneralLedgerManagement) {
+        return <GeneralLedgerManagement/>
+      }
+
+      if (showAccountReconManagement) {
+        return <AccountReconManagement />;
+      }
+
+      if (showMonthEndManagement) {
+        return <MonthEndManagement />;
+
+      }
+
+      if (showFinancialStatements) {
+        return <FinancialManagement/>;
+      }
+
       if (showEmployeeManagement) {
         console.log('Rendering EmployeeManagement component');
         return <EmployeeManagement />;
+      }
+
+      if (showJournalEntryManagement) {
+        console.log('Rendering Journal Entry Management Component')
+        return <JournalEntryManagement/>;
       }
   
       if (selectedInvoiceId !== null) {

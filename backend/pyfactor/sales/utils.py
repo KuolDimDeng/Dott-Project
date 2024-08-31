@@ -2,7 +2,7 @@
 #/Users/kuoldeng/projectx/backend/pyfactor/sales/utils.py
 from datetime import datetime, date, timedelta
 from finance.models import Account, AccountType, FinanceTransaction
-from django.db import connections, transaction as db_transaction
+from django.db import IntegrityError, connections, transaction as db_transaction
 from finance.account_types import ACCOUNT_TYPES
 from pyfactor.logging_config import get_logger
 from io import BytesIO
@@ -43,28 +43,40 @@ def ensure_date(value):
 
 
 def get_or_create_account(database_name, account_name, account_type_name):
-    account_type_id = ACCOUNT_TYPES.get(account_type_name)
-    if account_type_id is None:
-        raise ValueError(f"Invalid account type: {account_type_name}")
-    logger.debug(f"Fetching or creating account: {account_name} in database: {database_name}")
+    logger.debug(f"Attempting to get or create account: {account_name} of type {account_type_name} in database {database_name}")
+    
+    # First, try to get the AccountType
     try:
-        with db_transaction.atomic(using=database_name):
-            account_type, _ = AccountType.objects.using(database_name).get_or_create(
-                id=account_type_id,
-                defaults={'name': account_type_name}
-            )
-            account, created = Account.objects.using(database_name).get_or_create(
-                name=account_name,
-                defaults={'account_type': account_type}
-            )
+        logger.debug(f"Trying to get AccountType: {account_type_name}")
+        account_type = AccountType.objects.using(database_name).get(name=account_type_name)
+        logger.debug(f"Successfully retrieved AccountType: {account_type}")
+    except AccountType.DoesNotExist:
+        logger.debug(f"AccountType {account_type_name} does not exist. Attempting to create.")
+        try:
+            account_type = AccountType.objects.using(database_name).create(name=account_type_name)
+            logger.debug(f"Successfully created AccountType: {account_type}")
+        except IntegrityError:
+            logger.warning(f"IntegrityError while creating AccountType. It might have been created concurrently. Trying to fetch again.")
+            account_type = AccountType.objects.using(database_name).get(name=account_type_name)
+            logger.debug(f"Successfully retrieved AccountType after IntegrityError: {account_type}")
+
+    # Now that we have the AccountType, get or create the Account
+    logger.debug(f"Attempting to get or create Account: {account_name}")
+    try:
+        account, created = Account.objects.using(database_name).get_or_create(
+            name=account_name,
+            defaults={'account_type': account_type}
+        )
         if created:
-            logger.debug(f"Account created: {account}")
+            logger.debug(f"Created new Account: {account}")
         else:
-            logger.debug(f"Account already exists: {account}")
-        return account
-    except Exception as e:
-        logger.exception(f"Error fetching or creating account: {e}")
-        raise
+            logger.debug(f"Retrieved existing Account: {account}")
+    except IntegrityError:
+        logger.warning(f"IntegrityError while creating Account. It might have been created concurrently. Trying to fetch.")
+        account = Account.objects.using(database_name).get(name=account_name)
+        logger.debug(f"Successfully retrieved Account after IntegrityError: {account}")
+
+    return account
 
 
 def remove_time_from_datetime(dt):

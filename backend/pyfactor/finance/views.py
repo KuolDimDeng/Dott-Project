@@ -1,5 +1,7 @@
 #/Users/kuoldeng/projectx/backend/pyfactor/finance/views.py
 from django.conf import settings
+from django.http import HttpRequest
+from requests import Request
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -14,22 +16,24 @@ from dateutil import parser as date_parser  # This is the changed line
 from sales.models import Invoice
 from sales.serializers import InvoiceSerializer
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
-from .models import AccountType, Account, FinanceTransaction, Income, RevenueAccount, CashAccount, AccountCategory, ChartOfAccount
+from .models import AccountReconciliation, AccountType, Account, FinanceTransaction, FinancialStatement, GeneralLedgerEntry, Income, JournalEntry, MonthEndClosing, MonthEndTask, ReconciliationItem, RevenueAccount, CashAccount, AccountCategory, ChartOfAccount
 from datetime import datetime
-from .serializers import AccountTypeSerializer, AccountSerializer, IncomeSerializer, SalesTaxAccountSerializer, TransactionSerializer, CashAccountSerializer, TransactionListSerializer, AccountCategorySerializer, ChartOfAccountSerializer
+from .serializers import AccountReconciliationSerializer, AccountTypeSerializer, AccountSerializer, FinancialStatementSerializer, GeneralLedgerEntrySerializer, IncomeSerializer, JournalEntrySerializer, MonthEndClosingSerializer, MonthEndTaskSerializer, ReconciliationItemSerializer, SalesTaxAccountSerializer, TransactionSerializer, CashAccountSerializer, TransactionListSerializer, AccountCategorySerializer, ChartOfAccountSerializer
 from users.models import UserProfile
 from finance.utils import create_revenue_account
 from rest_framework.exceptions import ValidationError
-from django.db import DatabaseError, connection, transaction, connections, transaction as db_transaction
+from django.db import DatabaseError, IntegrityError, connection, transaction, connections, transaction as db_transaction
 from finance.account_types import ACCOUNT_TYPES
 from rest_framework import generics, status
-from .utils import get_or_create_account
+from .utils import create_general_ledger_entry, get_or_create_account, update_chart_of_accounts
 import traceback
 from pyfactor.logging_config import get_logger
 from pyfactor.user_console import console  # Make sure this is importing a single instance
 from rest_framework.pagination import PageNumberPagination
 from django.core.paginator import Paginator
 from .account_types import ACCOUNT_TYPES
+from django.utils import timezone
+
 # views.py
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -137,6 +141,13 @@ def handle_invoice_payment(invoice_id, data, database_name):
     invoice.is_paid = True
     invoice.status = 'paid'
     invoice.save()
+    
+    create_general_ledger_entry(database_name, cash_account, data['amount'], 'debit', f"Payment received for Invoice #{invoice.invoice_num}")
+    update_chart_of_accounts(database_name, cash_account.account_number, data['amount'], 'debit')
+    
+    create_general_ledger_entry(database_name, ar_account, data['amount'], 'credit', f"Payment received for Invoice #{invoice.invoice_num}")
+    update_chart_of_accounts(database_name, ar_account.account_number, data['amount'], 'credit')
+
 
     # Get the cash account more specifically
     try:
@@ -251,11 +262,38 @@ def handle_other_income(data, database_name):
     console.info('Income record created.')
 
 def get_or_create_account(database_name, account_name, account_type_name):
-    account_type, _ = AccountType.objects.using(database_name).get_or_create(name=account_type_name)
-    account, _ = Account.objects.using(database_name).get_or_create(
+    logger.debug(f"Attempting to get or create account: {account_name} of type {account_type_name} in database {database_name}")
+    
+    try:
+        # First, try to get the AccountType
+        logger.debug(f"Trying to get AccountType: {account_type_name}")
+        account_type = AccountType.objects.using(database_name).get(name=account_type_name)
+        logger.debug(f"Successfully retrieved AccountType: {account_type}")
+    except AccountType.DoesNotExist:
+        logger.debug(f"AccountType {account_type_name} does not exist. Attempting to create.")
+        # If it doesn't exist, create it
+        try:
+            account_type = AccountType.objects.using(database_name).create(name=account_type_name)
+            logger.debug(f"Successfully created AccountType: {account_type}")
+        except IntegrityError as e:
+            logger.error(f"IntegrityError while creating AccountType: {e}")
+            # If we get an IntegrityError, it means another process created it
+            # So we try to get it one more time
+            account_type = AccountType.objects.using(database_name).get(name=account_type_name)
+            logger.debug(f"Retrieved AccountType after IntegrityError: {account_type}")
+
+    # Now that we have the AccountType, get or create the Account
+    logger.debug(f"Attempting to get or create Account: {account_name}")
+    account, created = Account.objects.using(database_name).get_or_create(
         name=account_name,
-        account_type=account_type
+        defaults={'account_type': account_type}
     )
+    
+    if created:
+        logger.debug(f"Created new Account: {account}")
+    else:
+        logger.debug(f"Retrieved existing Account: {account}")
+
     return account
 
 def create_transaction(data, database_name, account, transaction_type, description=None):
@@ -545,8 +583,10 @@ class TransactionListView(generics.ListAPIView):
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def account_category_list(request):
+    logger.debug("Fetching account categories...")
     if request.method == 'GET':
         categories = AccountCategory.objects.all()
+        logger.debug(f"Categories found: {categories}")
         serializer = AccountCategorySerializer(categories, many=True)
         return Response(serializer.data)
     
@@ -555,7 +595,10 @@ def account_category_list(request):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        logger.error(f"Serializer errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
@@ -587,37 +630,8 @@ def get_user_database(user):
     except UserProfile.DoesNotExist:
         logger.error(f"UserProfile does not exist for user: {user}")
         return None
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def chart_of_accounts(request):
-    user = request.user
-    database_name = get_user_database(user)
-
-    if request.method == 'GET':
-        # Get all ChartOfAccount entries
-        chart_accounts = ChartOfAccount.objects.using(database_name).all()
-        chart_serializer = ChartOfAccountSerializer(chart_accounts, many=True, context={'database_name': database_name})
-
-        # Get all Account entries that are not in ChartOfAccount
-        existing_account_numbers = chart_accounts.values_list('account_number', flat=True)
-        other_accounts = Account.objects.using(database_name).exclude(account_number__in=existing_account_numbers)
-        account_serializer = AccountSerializer(other_accounts, many=True)
-
-        # Combine the results
-        combined_data = chart_serializer.data + account_serializer.data
-
-        # Sort the combined data by account_number
-        sorted_data = sorted(combined_data, key=lambda x: x['account_number'])
-
-        return Response(sorted_data)
-
-    elif request.method == 'POST':
-        serializer = ChartOfAccountSerializer(data=request.data, context={'database_name': database_name})
-        if serializer.is_valid():
-            account = serializer.save()
-            return Response(ChartOfAccountSerializer(account).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
+    
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def chart_of_account_detail(request, pk):
@@ -643,3 +657,450 @@ def chart_of_account_detail(request, pk):
     elif request.method == 'DELETE':
         account.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def chart_of_accounts(request):
+    user = request.user
+    database_name = get_user_database(user)
+    logger.debug("Chart of Accounts API called")
+    logger.debug("Database Name: %s", database_name)
+
+    if request.method == 'GET':
+        chart_accounts = ChartOfAccount.objects.using(database_name).all()
+        serializer = ChartOfAccountSerializer(chart_accounts, many=True, context={'database_name': database_name})
+        logger.debug("Chart of Accounts: %s", chart_accounts)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        serializer = ChartOfAccountSerializer(data=request.data, context={'database_name': database_name})
+        if serializer.is_valid():
+            account = serializer.save()
+            return Response(ChartOfAccountSerializer(account).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def journal_entry_list(request):
+    if request.method == 'GET':
+        journal_entries = JournalEntry.objects.all()
+        serializer = JournalEntrySerializer(journal_entries, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        serializer = JournalEntrySerializer(data=request.data)
+        if serializer.is_valid():
+            with transaction.atomic():
+                journal_entry = serializer.save()
+                update_account_balances(journal_entry, request.user.profile.database_name)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def journal_entry_detail(request, pk):
+    try:
+        journal_entry = JournalEntry.objects.get(pk=pk)
+    except JournalEntry.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = JournalEntrySerializer(journal_entry)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = JournalEntrySerializer(journal_entry, data=request.data)
+        if serializer.is_valid():
+            with transaction.atomic():
+                journal_entry = serializer.save()
+                update_account_balances(journal_entry, request.user.profile.database_name)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        journal_entry.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def post_journal_entry(request, pk):
+    try:
+        journal_entry = JournalEntry.objects.get(pk=pk)
+    except JournalEntry.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if not journal_entry.is_posted:
+        with transaction.atomic():
+            journal_entry.is_posted = True
+            journal_entry.save()
+            update_account_balances(journal_entry, request.user.profile.database_name)
+            
+               
+            # Add general ledger entries here
+            for line in journal_entry.lines.all():
+                create_general_ledger_entry(request.user.profile.database_name, 
+                                            line.account, 
+                                            line.debit_amount, 
+                                            'debit', 
+                                            f"Journal Entry {journal_entry.id}: {line.description}")
+                update_chart_of_accounts(request.user.profile.database_name, 
+                                         line.account.account_number, 
+                                         line.debit_amount, 
+                                         'debit')
+                
+                create_general_ledger_entry(request.user.profile.database_name, 
+                                            line.account, 
+                                            line.credit_amount, 
+                                            'credit', 
+                                            f"Journal Entry {journal_entry.id}: {line.description}")
+                update_chart_of_accounts(request.user.profile.database_name, 
+                                         line.account.account_number, 
+                                         line.credit_amount, 
+                                         'credit')
+                
+        return Response({'status': 'Journal entry posted'})
+    return Response({'status': 'Journal entry already posted'}, status=status.HTTP_400_BAD_REQUEST)
+
+def update_account_balances(journal_entry, database_name):
+    for line in journal_entry.lines.all():
+        update_chart_of_accounts(database_name,
+                                 line.account.account_number,
+                                 line.debit_amount,
+                                 'debit')
+        update_chart_of_accounts(database_name,
+                                 line.account.account_number,
+                                 line.credit_amount,
+                                 'credit')
+        
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def general_ledger(request):
+    print("General ledger view called")
+    print(f"Request user: {request.user}")
+    print(f"Request query params: {request.query_params}")
+    user = request.user
+    database_name = get_user_database(user)
+    logger.debug("Database Name: %s", database_name)
+    start_date = request.query_params.get('start_date')
+    end_date = request.query_params.get('end_date')
+    account_id = request.query_params.get('account_id')
+
+    queryset = GeneralLedgerEntry.objects.using(database_name).all()
+
+    if start_date:
+        queryset = queryset.filter(date__gte=start_date)
+    if end_date:
+        queryset = queryset.filter(date__lte=end_date)
+    if account_id:
+        queryset = queryset.filter(account_id=account_id)
+
+    print(f"Query parameters: start_date={start_date}, end_date={end_date}, account_id={account_id}")
+    print(f"Queryset SQL: {queryset.query}")
+
+    print(f"Queryset count: {queryset.count()}")
+    entries = queryset.order_by('date', 'id')
+    print(f"Entries count: {len(entries)}")
+    serializer = GeneralLedgerEntrySerializer(entries, many=True)
+    print(f"Serialized data count: {len(serializer.data)}")
+    
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def general_ledger_summary(request):
+    accounts = ChartOfAccount.objects.all()
+    summary = []
+
+    for account in accounts:
+        latest_entry = GeneralLedgerEntry.objects.filter(account=account).order_by('-date', '-id').first()
+        if latest_entry:
+            summary.append({
+                'account_id': account.id,
+                'account_name': account.name,
+                'account_number': account.account_number,
+                'balance': latest_entry.balance
+            })
+
+    return Response(summary)
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def account_reconciliation_list(request):
+    logger.debug("Account Reconciliation view called")
+    user = request.user
+    database_name = get_user_database(user)
+    logger.debug(f"Request user: {request.user}")
+    logger.debug(f"Request query params: {request.query_params}")
+    logger.debug(f"Database Name: {database_name}")
+    
+    
+    if not database_name:
+        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"USE {database_name}")
+        
+        if request.method == 'GET':
+            reconciliations = AccountReconciliation.objects.all()
+            serializer = AccountReconciliationSerializer(reconciliations, many=True)
+            return Response(serializer.data)
+
+        elif request.method == 'POST':
+            serializer = AccountReconciliationSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def account_reconciliation_detail(request, pk):
+    logger.debug("Reconciliation item detail view called")
+    user = request.user
+    database_name = get_user_database(user)
+    logger.debug(f"Request user: {request.user}")
+    logger.debug(f"Request query params: {request.query_params}")
+    logger.debug(f"Database Name: {database_name}")
+    
+    
+    if not database_name:
+        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"USE {database_name}")
+        
+        try:
+            reconciliation = AccountReconciliation.objects.get(pk=pk)
+        except AccountReconciliation.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if request.method == 'GET':
+            serializer = AccountReconciliationSerializer(reconciliation)
+            return Response(serializer.data)
+
+        elif request.method == 'PUT':
+            serializer = AccountReconciliationSerializer(reconciliation, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        elif request.method == 'DELETE':
+            reconciliation.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def reconciliation_item_list(request):
+    logger.debug("Reconciliation item list view called")
+    user = request.user
+    database_name = get_user_database(user)
+    logger.debug(f"Request user: {request.user}")
+    logger.debug(f"Request query params: {request.query_params}")
+    logger.debug(f"Database Name: {database_name}")
+    
+    if not database_name:
+        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"USE {database_name}")
+        
+        if request.method == 'GET':
+            items = ReconciliationItem.objects.all()
+            serializer = ReconciliationItemSerializer(items, many=True)
+            return Response(serializer.data)
+
+        elif request.method == 'POST':
+            serializer = ReconciliationItemSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def reconciliation_item_detail(request, pk):
+    logger.debug("Reconciliation item detail view called")
+    user = request.user
+    database_name = get_user_database(user)
+    logger.debug(f"Request user: {request.user}")
+    logger.debug(f"Request query params: {request.query_params}")
+    logger.debug(f"Database Name: {database_name}")
+    
+    if not database_name:
+        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"USE {database_name}")
+        
+        try:
+            item = ReconciliationItem.objects.get(pk=pk)
+        except ReconciliationItem.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if request.method == 'GET':
+            serializer = ReconciliationItemSerializer(item)
+            return Response(serializer.data)
+
+        elif request.method == 'PUT':
+            serializer = ReconciliationItemSerializer(item, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        elif request.method == 'DELETE':
+            item.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        
+        
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def month_end_closing_list(request):
+    user = request.user
+    database_name = get_user_database(user)
+
+    if not database_name:
+        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"USE {database_name}")
+
+        if request.method == 'GET':
+            closings = MonthEndClosing.objects.all().order_by('-year', '-month')
+            serializer = MonthEndClosingSerializer(closings, many=True)
+            return Response(serializer.data)
+
+        elif request.method == 'POST':
+            serializer = MonthEndClosingSerializer(data=request.data)
+            if serializer.is_valid():
+                closing = serializer.save()
+                # Create default tasks for the month-end closing
+                default_tasks = [
+                    "Review and reconcile all bank accounts",
+                    "Review and reconcile accounts receivable",
+                    "Review and reconcile accounts payable",
+                    "Review and reconcile all balance sheet accounts",
+                    "Close the revenue and expense accounts",
+                    "Generate financial statements",
+                    "Backup financial data"
+                ]
+                for task_name in default_tasks:
+                    MonthEndTask.objects.create(closing=closing, name=task_name)
+                return Response(MonthEndClosingSerializer(closing).data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def month_end_closing_detail(request, pk):
+    user = request.user
+    database_name = get_user_database(user)
+
+    if not database_name:
+        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"USE {database_name}")
+
+        try:
+            closing = MonthEndClosing.objects.get(pk=pk)
+        except MonthEndClosing.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if request.method == 'GET':
+            serializer = MonthEndClosingSerializer(closing)
+            return Response(serializer.data)
+
+        elif request.method == 'PUT':
+            serializer = MonthEndClosingSerializer(closing, data=request.data, partial=True)
+            if serializer.is_valid():
+                updated_closing = serializer.save()
+                if updated_closing.status == 'completed' and not updated_closing.completed_at:
+                    updated_closing.completed_at = timezone.now()
+                    updated_closing.save()
+                return Response(MonthEndClosingSerializer(updated_closing).data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        elif request.method == 'DELETE':
+            closing.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_month_end_task(request, pk):
+    user = request.user
+    database_name = get_user_database(user)
+
+    if not database_name:
+        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with connection.cursor() as cursor:
+        cursor.execute(f"USE {database_name}")
+
+        try:
+            task = MonthEndTask.objects.get(pk=pk)
+        except MonthEndTask.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = MonthEndTaskSerializer(task, data=request.data, partial=True)
+        if serializer.is_valid():
+            updated_task = serializer.save()
+            if updated_task.is_completed and not updated_task.completed_at:
+                updated_task.completed_at = timezone.now()
+                updated_task.save()
+            return Response(MonthEndTaskSerializer(updated_task).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+def financial_statement_view(request, statement_type):
+    logger.debug(f"Received request for {statement_type} statement")
+    logger.debug(f"Request user: {request.user}")
+    logger.debug(f"Request type: {type(request)}")
+
+    date = request.query_params.get('date', timezone.now().date())
+    user = request.user
+
+    logger.debug(f"Date: {date}")
+    logger.debug(f"User: {user}")
+
+    database_name = get_user_database(user)
+    logger.debug(f"Database name: {database_name}")
+
+    if not database_name:
+        logger.error(f"User database not found for user: {user}")
+        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+            statement = FinancialStatement.objects.using(database_name).get(statement_type=statement_type, date=date)
+            serializer = FinancialStatementSerializer(statement)
+            return Response(serializer.data)
+    except FinancialStatement.DoesNotExist:
+            logger.warning(f"Statement not found for type: {statement_type}, date: {date}")
+            # Return an empty data structure instead of a 404 error
+            empty_data = {
+                'statement_type': statement_type,
+                'date': date,
+                'data': {}  # or [] depending on your data structure
+            }
+            return Response(empty_data)
+    except Exception as e:
+            logger.exception(f"Error retrieving financial statement: {str(e)}")
+            return Response({"error": "Internal server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def profit_and_loss_view(request):
+    return financial_statement_view(request, 'PL')
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def balance_sheet_view(request):
+    return financial_statement_view(request, 'BS')
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cash_flow_view(request):
+    return financial_statement_view(request, 'CF')

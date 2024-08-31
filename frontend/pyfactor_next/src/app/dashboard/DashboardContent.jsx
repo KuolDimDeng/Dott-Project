@@ -114,6 +114,12 @@ function DashboardContent() {
   const [showPayrollManagement, setShowPayrollManagement] = useState(false);
   const [showTimesheetManagement, setShowTimeSheetManagement] = useState(false);
   const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
+  const [showJournalEntryManagement, setShowJournalEntryManagement] = useState(false);
+  const [showGeneralLedgerManagement, setShowGeneralLedger] = useState(false);
+  const [showAccountReconManagement, setShowAccountReconManagement] = useState(false);
+  const [showMonthEndManagement, setShowMonthEndManagement] = useState(false);
+  const [showFinancialStatements, setShowFinancialStatements] = useState(false);
+
   const router = useRouter();
 
   const handleUserProfileClick = () => {
@@ -566,6 +572,11 @@ function DashboardContent() {
     
     // Reset all accounting-related states
     setShowChartOfAccounts(false);
+    setShowJournalEntryManagement(false);
+    setShowGeneralLedger(false);
+    setShowAccountReconManagement(false);
+    setShowMonthEndManagement(false);
+    setShowFinancialStatements(false);
     
     // Reset other general states
     setShowBankingDashboard(false);
@@ -585,18 +596,31 @@ function DashboardContent() {
     switch(section) {
       case 'chart-of-accounts':
         setShowChartOfAccounts(true);
+        setShowDashboard(false);
         break;
       case 'journal-entries':
         // Set state for journal entries management
+        setShowJournalEntryManagement(true);
+        setShowDashboard(false);
         break;
-      case 'general-ledger':
-        // Set state for general ledger
-        break;
+        case 'general-ledger':
+          setShowGeneralLedger(true);
+          setShowDashboard(false);
+          break;
       case 'reconciliation':
         // Set state for account reconciliation
+        setShowAccountReconManagement(true);
+        setShowDashboard(false);
+        break;
+      case 'month-end-closing':
+        // Set state for fixed assets management
+        setShowMonthEndManagement(true);
+        setShowDashboard(false);
         break;
       case 'financial-statements':
         // Set state for financial statements
+        setShowFinancialStatements(true);
+        setShowDashboard(false);
         break;
       case 'fixed-assets':
         // Set state for fixed assets management
@@ -996,6 +1020,11 @@ function DashboardContent() {
                 showPayrollManagement,
                 showTimesheetManagement,
                 showChartOfAccounts,
+                showJournalEntryManagement,
+                showGeneralLedgerManagement,
+                showAccountReconManagement,
+                showMonthEndManagement,
+                showFinancialStatements,
                 showDashboard,
                 showIntegrationSettings,
                 showUserProfileSettings,

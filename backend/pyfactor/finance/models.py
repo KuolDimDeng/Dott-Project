@@ -3,6 +3,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
+from banking.models import BankAccount, BankTransaction
 from purchases.models import Bill
 
 class AccountType(models.Model):
@@ -15,8 +16,11 @@ class AccountType(models.Model):
         ('Cost of Goods Sold', 'Cost of Goods Sold'),
         ('Non-Operating Expense', 'Non-Operating Expense'),
     ]
-    name = models.CharField(max_length=100, choices=ACCOUNT_TYPE_CHOICES)
+    name = models.CharField(max_length=100, unique=True)
     account_type_id = models.IntegerField(unique=True, null=True)
+
+    class Meta:
+        unique_together = ('name', 'account_type_id')
 
     def __str__(self):
         return self.name
@@ -44,6 +48,9 @@ class Account(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+
 
     def __str__(self):
         return f"{self.name} ({self.id})"
@@ -130,3 +137,112 @@ class ChartOfAccount(models.Model):
 
     def __str__(self):
         return f"{self.account_number} - {self.name}"
+    
+
+class JournalEntry(models.Model):
+    date = models.DateField()
+    description = models.CharField(max_length=255)
+    is_posted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Journal Entry {self.id} - {self.date}"
+
+class JournalEntryLine(models.Model):
+    journal_entry = models.ForeignKey(JournalEntry, related_name='lines', on_delete=models.CASCADE)
+    account = models.ForeignKey(ChartOfAccount, on_delete=models.PROTECT)
+    description = models.CharField(max_length=255, blank=True)
+    debit_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    credit_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"Line for Journal Entry {self.journal_entry.id} - {self.account.name}"
+    
+
+
+class GeneralLedgerEntry(models.Model):
+    account = models.ForeignKey('ChartOfAccount', on_delete=models.PROTECT)    
+    date = models.DateField()
+    description = models.CharField(max_length=255)
+    debit_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    credit_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    balance = models.DecimalField(max_digits=15, decimal_places=2)
+
+    class Meta:
+        ordering = ['date', 'id']
+
+    def __str__(self):
+        return f"{self.date} - {self.account.name} - {self.description}"
+    
+
+class AccountReconciliation(models.Model):
+    bank_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE)
+    reconciliation_date = models.DateField()
+    statement_balance = models.DecimalField(max_digits=10, decimal_places=2)
+    book_balance = models.DecimalField(max_digits=10, decimal_places=2)
+    is_reconciled = models.BooleanField(default=False)
+    notes = models.TextField(blank=True)
+
+class ReconciliationItem(models.Model):
+    reconciliation = models.ForeignKey(AccountReconciliation, on_delete=models.CASCADE, related_name='items')
+    bank_transaction = models.ForeignKey(BankTransaction, on_delete=models.SET_NULL, null=True)
+    finance_transaction = models.ForeignKey('FinanceTransaction', on_delete=models.SET_NULL, null=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    is_matched = models.BooleanField(default=False)
+    notes = models.CharField(max_length=255, blank=True)
+    
+    
+class MonthEndClosing(models.Model):
+    MONTH_CHOICES = [
+        (1, 'January'), (2, 'February'), (3, 'March'), (4, 'April'),
+        (5, 'May'), (6, 'June'), (7, 'July'), (8, 'August'),
+        (9, 'September'), (10, 'October'), (11, 'November'), (12, 'December')
+    ]
+
+    STATUS_CHOICES = [
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('reviewed', 'Reviewed'),
+        ('approved', 'Approved')
+    ]
+
+    month = models.IntegerField(choices=MONTH_CHOICES)
+    year = models.IntegerField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='in_progress')
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ('month', 'year')
+
+    def __str__(self):
+        return f"Month-End Closing - {self.get_month_display()} {self.year}"
+
+class MonthEndTask(models.Model):
+    closing = models.ForeignKey(MonthEndClosing, on_delete=models.CASCADE, related_name='tasks')
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    is_completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.closing}"
+    
+    
+class FinancialStatement(models.Model):
+    STATEMENT_TYPES = (
+        ('PL', 'Profit and Loss'),
+        ('BS', 'Balance Sheet'),
+        ('CF', 'Cash Flow'),
+    )
+    statement_type = models.CharField(max_length=2, choices=STATEMENT_TYPES)
+    date = models.DateField(default=timezone.now)
+    data = models.JSONField()  # This will store the statement data as JSON
+
+    class Meta:
+        unique_together = ('statement_type', 'date')
+
+    def __str__(self):
+        return f"{self.get_statement_type_display()} - {self.date}"
