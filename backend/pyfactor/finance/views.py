@@ -16,16 +16,16 @@ from dateutil import parser as date_parser  # This is the changed line
 from sales.models import Invoice
 from sales.serializers import InvoiceSerializer
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
-from .models import AccountReconciliation, AccountType, Account, FinanceTransaction, FinancialStatement, GeneralLedgerEntry, Income, JournalEntry, MonthEndClosing, MonthEndTask, ReconciliationItem, RevenueAccount, CashAccount, AccountCategory, ChartOfAccount
+from .models import AccountReconciliation, AccountType, Account, AuditTrail, Budget, CostCategory, CostEntry, FinanceTransaction, FinancialStatement, FixedAsset, GeneralLedgerEntry, Income, IntercompanyAccount, IntercompanyTransaction, JournalEntry, MonthEndClosing, MonthEndTask, ReconciliationItem, RevenueAccount, CashAccount, AccountCategory, ChartOfAccount
 from datetime import datetime
-from .serializers import AccountReconciliationSerializer, AccountTypeSerializer, AccountSerializer, FinancialStatementSerializer, GeneralLedgerEntrySerializer, IncomeSerializer, JournalEntrySerializer, MonthEndClosingSerializer, MonthEndTaskSerializer, ReconciliationItemSerializer, SalesTaxAccountSerializer, TransactionSerializer, CashAccountSerializer, TransactionListSerializer, AccountCategorySerializer, ChartOfAccountSerializer
+from .serializers import AccountReconciliationSerializer, AccountTypeSerializer, AccountSerializer, AuditTrailSerializer, BudgetSerializer, CostCategorySerializer, CostEntrySerializer, FinancialStatementSerializer, FixedAssetSerializer, GeneralLedgerEntrySerializer, IncomeSerializer, IntercompanyAccountSerializer, IntercompanyTransactionSerializer, JournalEntrySerializer, MonthEndClosingSerializer, MonthEndTaskSerializer, ReconciliationItemSerializer, SalesTaxAccountSerializer, TransactionSerializer, CashAccountSerializer, TransactionListSerializer, AccountCategorySerializer, ChartOfAccountSerializer
 from users.models import UserProfile
 from finance.utils import create_revenue_account
 from rest_framework.exceptions import ValidationError
 from django.db import DatabaseError, IntegrityError, connection, transaction, connections, transaction as db_transaction
 from finance.account_types import ACCOUNT_TYPES
 from rest_framework import generics, status
-from .utils import create_general_ledger_entry, get_or_create_account, update_chart_of_accounts
+from .utils import create_general_ledger_entry, generate_financial_statements, get_or_create_account, update_chart_of_accounts
 import traceback
 from pyfactor.logging_config import get_logger
 from pyfactor.user_console import console  # Make sure this is importing a single instance
@@ -1060,7 +1060,11 @@ def financial_statement_view(request, statement_type):
     logger.debug(f"Request user: {request.user}")
     logger.debug(f"Request type: {type(request)}")
 
-    date = request.query_params.get('date', timezone.now().date())
+    # Convert DRF Request to Django HttpRequest if necessary
+    if isinstance(request, Request):
+        request = request._request
+
+    date = request.GET.get('date', timezone.now().date())
     user = request.user
 
     logger.debug(f"Date: {date}")
@@ -1074,33 +1078,310 @@ def financial_statement_view(request, statement_type):
         return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-            statement = FinancialStatement.objects.using(database_name).get(statement_type=statement_type, date=date)
-            serializer = FinancialStatementSerializer(statement)
-            return Response(serializer.data)
+        statement = FinancialStatement.objects.using(database_name).get(statement_type=statement_type, date=date)
+        serializer = FinancialStatementSerializer(statement)
+        logger.info(f"Successfully retrieved {statement_type} statement for date: {date}")
+        return Response(serializer.data)
     except FinancialStatement.DoesNotExist:
-            logger.warning(f"Statement not found for type: {statement_type}, date: {date}")
-            # Return an empty data structure instead of a 404 error
-            empty_data = {
-                'statement_type': statement_type,
-                'date': date,
-                'data': {}  # or [] depending on your data structure
-            }
-            return Response(empty_data)
+        logger.warning(f"Statement not found for type: {statement_type}, date: {date}")
+        logger.info("Attempting to generate financial statements...")
+        
+        try:
+            generate_financial_statements(database_name)
+            logger.info("Financial statements generated successfully")
+            
+            # Try to fetch the statement again
+            try:
+                statement = FinancialStatement.objects.using(database_name).get(statement_type=statement_type, date=date)
+                serializer = FinancialStatementSerializer(statement)
+                logger.info(f"Successfully retrieved newly generated {statement_type} statement for date: {date}")
+                return Response(serializer.data)
+            except FinancialStatement.DoesNotExist:
+                logger.warning(f"Statement still not found after generation attempt: {statement_type}, date: {date}")
+                # If it still doesn't exist, return an empty structure
+                empty_data = {
+                    'statement_type': statement_type,
+                    'date': str(date),
+                    'data': {}
+                }
+                logger.info(f"Returning empty data structure for {statement_type} statement")
+                return Response(empty_data)
+        except Exception as generation_error:
+            logger.exception(f"Error generating financial statements: {str(generation_error)}")
+            return Response({"error": "Failed to generate financial statements"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
-            logger.exception(f"Error retrieving financial statement: {str(e)}")
-            return Response({"error": "Internal server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.exception(f"Error retrieving financial statement: {str(e)}")
+        return Response({"error": "Internal server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def profit_and_loss_view(request):
-    return financial_statement_view(request, 'PL')
+    user = request.user
+    database_name = get_user_database(user)
+    
+    if not database_name:
+        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+    financial_data = generate_financial_statements(database_name)
+    return Response(financial_data['profit_and_loss'])
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def balance_sheet_view(request):
-    return financial_statement_view(request, 'BS')
+    user = request.user
+    database_name = get_user_database(user)
+    
+    if not database_name:
+        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+    financial_data = generate_financial_statements(database_name)
+    return Response(financial_data['balance_sheet'])
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def cash_flow_view(request):
-    return financial_statement_view(request, 'CF')
+    user = request.user
+    database_name = get_user_database(user)
+    
+    if not database_name:
+        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+    financial_data = generate_financial_statements(database_name)
+    return Response(financial_data['cash_flow'])
+
+
+
+@api_view(['GET', 'POST'])
+def fixed_asset_list(request):
+    if request.method == 'GET':
+        fixed_assets = FixedAsset.objects.all()
+        serializer = FixedAssetSerializer(fixed_assets, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        serializer = FixedAssetSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def fixed_asset_detail(request, pk):
+    try:
+        fixed_asset = FixedAsset.objects.get(pk=pk)
+    except FixedAsset.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = FixedAssetSerializer(fixed_asset)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = FixedAssetSerializer(fixed_asset, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        fixed_asset.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    
+@api_view(['GET', 'POST'])
+def budget_list(request):
+    if request.method == 'GET':
+        budgets = Budget.objects.all()
+        serializer = BudgetSerializer(budgets, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        serializer = BudgetSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def budget_detail(request, pk):
+    try:
+        budget = Budget.objects.get(pk=pk)
+    except Budget.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = BudgetSerializer(budget)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = BudgetSerializer(budget, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        budget.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+@api_view(['GET', 'POST'])
+def cost_category_list(request):
+    if request.method == 'GET':
+        categories = CostCategory.objects.all()
+        serializer = CostCategorySerializer(categories, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        serializer = CostCategorySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def cost_category_detail(request, pk):
+    try:
+        category = CostCategory.objects.get(pk=pk)
+    except CostCategory.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = CostCategorySerializer(category)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = CostCategorySerializer(category, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        category.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET', 'POST'])
+def cost_entry_list(request):
+    if request.method == 'GET':
+        entries = CostEntry.objects.all()
+        serializer = CostEntrySerializer(entries, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        serializer = CostEntrySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def cost_entry_detail(request, pk):
+    try:
+        entry = CostEntry.objects.get(pk=pk)
+    except CostEntry.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = CostEntrySerializer(entry)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = CostEntrySerializer(entry, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        entry.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    
+@api_view(['GET', 'POST'])
+def intercompany_transaction_list(request):
+    if request.method == 'GET':
+        transactions = IntercompanyTransaction.objects.all()
+        serializer = IntercompanyTransactionSerializer(transactions, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        serializer = IntercompanyTransactionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def intercompany_transaction_detail(request, pk):
+    try:
+        transaction = IntercompanyTransaction.objects.get(pk=pk)
+    except IntercompanyTransaction.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = IntercompanyTransactionSerializer(transaction)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = IntercompanyTransactionSerializer(transaction, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        transaction.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET', 'POST'])
+def intercompany_account_list(request):
+    if request.method == 'GET':
+        accounts = IntercompanyAccount.objects.all()
+        serializer = IntercompanyAccountSerializer(accounts, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        serializer = IntercompanyAccountSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def intercompany_account_detail(request, pk):
+    try:
+        account = IntercompanyAccount.objects.get(pk=pk)
+    except IntercompanyAccount.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = IntercompanyAccountSerializer(account)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = IntercompanyAccountSerializer(account, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        account.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    
+@api_view(['GET'])
+def audit_trail_list(request):
+    audit_trails = AuditTrail.objects.all().order_by('-date_time')
+    serializer = AuditTrailSerializer(audit_trails, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def audit_trail_detail(request, pk):
+    try:
+        audit_trail = AuditTrail.objects.get(pk=pk)
+    except AuditTrail.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    serializer = AuditTrailSerializer(audit_trail)
+    return Response(serializer.data)

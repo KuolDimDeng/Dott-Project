@@ -119,6 +119,16 @@ function DashboardContent() {
   const [showAccountReconManagement, setShowAccountReconManagement] = useState(false);
   const [showMonthEndManagement, setShowMonthEndManagement] = useState(false);
   const [showFinancialStatements, setShowFinancialStatements] = useState(false);
+  const [showFixedAssetManagement, setShowFixedAssetManagement] = useState(false);
+  const [showBudgetManagement, setShowBudgetManagement] = useState(false);
+  const [showCostAccountingManagement, setShowCostAccountingManagement] = useState(false);
+  const [showIntercompanyManagement, setShowIntercompanyManagement] = useState(false);
+  const [showAuditTrailManagement, setShowAuditTrailManagement] = useState(false);
+  const [showProfitAndLossReport, setShowProfitAndLossReport] = useState(false);
+  const [showBalanceSheetReport, setShowBalanceSheetReport] = useState(false);
+  const [showCashFlowReport, setShowCashFlowReport] = useState(false);
+
+
 
   const router = useRouter();
 
@@ -510,11 +520,82 @@ function DashboardContent() {
   };
 
   const handleReportClick = (reportType) => {
-    setSelectedReport(reportType);
-    setShowReports(true);
+    console.log('handleReportClick called with reportType:', reportType);
+  
+    // Reset all report-related states
+    setShowProfitAndLossReport(false);
+    setShowBalanceSheetReport(false);
+    //setShowBalanceSheet(false);
+    //setShowCashFlow(false);
+    //setShowSalesTaxReport(false);
+    //setShowPayrollWageTaxReport(false);
+    //setShowIncomeByCustomer(false);
+    //setShowAgedReceivables(false);
+    //setShowPurchasesByVendor(false);
+    //setShowAgedPayables(false);
+    //setShowAccountBalances(false);
+    //setShowTrialBalance(false);
+   // setShowGeneralLedger(false);
+  
+    // Reset other general states
+    setShowBankingDashboard(false);
     setShowCreateOptions(false);
+    setShowAnalysisPage(false);
+    setShowHRDashboard(false);
+    setShowPayrollDashboard(false);
+    setSelectedInvoiceId(null);
     setShowInvoiceBuilder(false);
     setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowDashboard(false);
+    setShowSalesAnalysis(false);
+    setShowIntegrationSettings(false);
+  
+    // Set the selected report and show reports
+    setSelectedReport(reportType);
+    setShowReports(true);
+  
+    switch(reportType) {
+      case 'income_statement':
+        setShowProfitAndLossReport(true);
+        break;
+      case 'balance_sheet':
+        setShowBalanceSheetReport(true);
+        break;
+      case 'cash_flow':
+        setShowCashFlowReport(true);
+        break;
+      case 'sales_tax_report':
+        setShowSalesTaxReport(true);
+        break;
+      case 'payroll_wage_tax_report':
+        setShowPayrollWageTaxReport(true);
+        break;
+      case 'income_by_customer':
+        setShowIncomeByCustomer(true);
+        break;
+      case 'aged_receivables':
+        setShowAgedReceivables(true);
+        break;
+      case 'purchases_by_vendor':
+        setShowPurchasesByVendor(true);
+        break;
+      case 'aged_payables':
+        setShowAgedPayables(true);
+        break;
+      case 'account_balances':
+        setShowAccountBalances(true);
+        break;
+      case 'trial_balance':
+        setShowTrialBalance(true);
+        break;
+      case 'general_ledger':
+        setShowGeneralLedger(true);
+        break;
+      default:
+        console.log('Unknown report type:', reportType);
+        break;
+    }
   };
 
   const handleClick = (event) => {
@@ -577,6 +658,11 @@ function DashboardContent() {
     setShowAccountReconManagement(false);
     setShowMonthEndManagement(false);
     setShowFinancialStatements(false);
+    setShowFixedAssetManagement(false);
+    setShowBudgetManagement(false);
+    setShowCostAccountingManagement(false);
+    setShowIntercompanyManagement(false);
+    setShowAuditTrailManagement(false);
     
     // Reset other general states
     setShowBankingDashboard(false);
@@ -623,14 +709,31 @@ function DashboardContent() {
         setShowDashboard(false);
         break;
       case 'fixed-assets':
+        setShowFixedAssetManagement(true);
+        setShowDashboard(false);
         // Set state for fixed assets management
         break;
       case 'budgeting':
         // Set state for budgeting
+        setShowBudgetManagement(true);
+        setShowDashboard(false);
         break;
       case 'cost-accounting':
         // Set state for cost accounting
+        setShowCostAccountingManagement(true);
+        setShowDashboard(false);
         break;
+      case 'intercompany-transactions':
+          // Set state for cost accounting
+          setShowIntercompanyManagement(true);
+          setShowDashboard(false);
+          break;
+      case 'audit-trail':
+            // Set state for cost accounting
+            setShowAuditTrailManagement(true);
+            setShowDashboard(false);
+            break;
+
       case 'accounting-reports':
         // Set state for accounting reports
         break;
@@ -1025,6 +1128,14 @@ function DashboardContent() {
                 showAccountReconManagement,
                 showMonthEndManagement,
                 showFinancialStatements,
+                showFixedAssetManagement,
+                showBudgetManagement,
+                showCostAccountingManagement,
+                showIntercompanyManagement,
+                showAuditTrailManagement,
+                showProfitAndLossReport,
+                showBalanceSheetReport,
+                showCashFlowReport,
                 showDashboard,
                 showIntegrationSettings,
                 showUserProfileSettings,

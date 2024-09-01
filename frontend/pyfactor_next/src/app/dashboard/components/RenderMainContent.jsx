@@ -80,6 +80,14 @@ import GeneralLedgerManagement from './forms/GeneralLedgerManagement';
 import AccountReconManagement from './forms/AccountReconManagement';
 import MonthEndManagement from './forms/MonthEndManagement';
 import FinancialManagement from './forms/FinancialStatementsManagement';
+import FixedAssetManagement from './forms/FixedAssetManagement'
+import BudgetManagement from './forms/BudgetManagement.jsx';
+import CostAccountingManagement from './forms/CostAccountingManagement';
+import IntercompanyManagement from './forms/IntercompanyManagement';
+import AuditTrailManagement from './forms/AuditTrailManagement';
+import ProfitAndLossReport from './forms/ProfitAndLossReport';
+import BalanceSheetReport from './forms/BalanceSheetReport';
+import CashFlowReport from './forms/CashFlowReport';
 import ChartContainer from '@/app/chart/component/ChartContainer';
 import IntegrationSettings from '../../Settings/integrations/components/IntegrationSettings';
 import UserProfileSettings from '@/app/Settings/UserProfile/components/UserProfileSettings';
@@ -137,6 +145,14 @@ const RenderMainContent = ({
     showAccountReconManagement,
     showMonthEndManagement,
     showFinancialStatements,
+    showFixedAssetManagement,
+    showBudgetManagement,
+    showCostAccountingManagement,
+    showIntercompanyManagement,
+    showAuditTrailManagement,
+    showProfitAndLossReport,
+    showBalanceSheetReport,
+    showCashFlowReport,
 
   }) => {
     const renderContent = () => {
@@ -227,6 +243,38 @@ const RenderMainContent = ({
 
       if (showFinancialStatements) {
         return <FinancialManagement/>;
+      }
+
+      if (showFixedAssetManagement) {
+        return <FixedAssetManagement/>;
+      }
+
+      if (showBudgetManagement) {
+        return <BudgetManagement/>;
+      }
+
+      if (showCostAccountingManagement) {
+        return <CostAccountingManagement/>;
+      }
+
+      if (showIntercompanyManagement) {
+        return <IntercompanyManagement />;
+      }
+
+      if (showAuditTrailManagement) {
+        return <AuditTrailManagement />;
+      }
+
+      if (showProfitAndLossReport) {
+        return <ProfitAndLossReport />;
+      }
+
+      if (showBalanceSheetReport) {
+        return <BalanceSheetReport/>;
+      }
+
+      if (showCashFlowReport) {
+        return <CashFlowReport/>;
       }
 
       if (showEmployeeManagement) {

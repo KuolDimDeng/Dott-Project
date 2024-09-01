@@ -1,9 +1,11 @@
 #/Users/kuoldeng/projectx/backend/pyfactor/finance/models.py
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from banking.models import BankAccount, BankTransaction
+
 from purchases.models import Bill
 
 class AccountType(models.Model):
@@ -246,3 +248,185 @@ class FinancialStatement(models.Model):
 
     def __str__(self):
         return f"{self.get_statement_type_display()} - {self.date}"
+    
+
+class FixedAsset(models.Model):
+    DEPRECIATION_METHOD_CHOICES = [
+        ('SL', 'Straight Line'),
+        ('DB', 'Declining Balance'),
+        ('SYD', 'Sum of Years Digits'),
+        ('UOP', 'Units of Production'),
+    ]
+
+    name = models.CharField(max_length=255)
+    asset_type = models.CharField(max_length=100)
+    acquisition_date = models.DateField()
+    acquisition_cost = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    depreciation_method = models.CharField(max_length=3, choices=DEPRECIATION_METHOD_CHOICES)
+    useful_life = models.PositiveIntegerField(help_text="Useful life in years")
+    salvage_value = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    accumulated_depreciation = models.DecimalField(max_digits=15, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+    book_value = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    location = models.CharField(max_length=255)
+    asset_tag = models.CharField(max_length=100, unique=True)
+    warranty_expiry = models.DateField(null=True, blank=True)
+    disposal_date = models.DateField(null=True, blank=True)
+    disposal_price = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        self.book_value = self.acquisition_cost - self.accumulated_depreciation
+        super().save(*args, **kwargs)
+        
+        
+class Budget(models.Model):
+    PERIOD_CHOICES = [
+        ('monthly', 'Monthly'),
+        ('quarterly', 'Quarterly'),
+        ('annually', 'Annually'),
+    ]
+    
+    name = models.CharField(max_length=255)
+    period = models.CharField(max_length=10, choices=PERIOD_CHOICES)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    department = models.CharField(max_length=100, blank=True)
+    approved = models.BooleanField(default=False)
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.period} ({self.start_date} to {self.end_date})"
+
+class BudgetItem(models.Model):
+    budget = models.ForeignKey(Budget, related_name='items', on_delete=models.CASCADE)
+    account_code = models.CharField(max_length=20)
+    account_name = models.CharField(max_length=100)
+    budgeted_amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    actual_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    @property
+    def variance(self):
+        return self.actual_amount - self.budgeted_amount
+
+    def __str__(self):
+        return f"{self.account_name} - {self.budgeted_amount}"
+    
+    
+class CostCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+class CostEntry(models.Model):
+    COST_TYPE_CHOICES = [
+        ('direct', 'Direct'),
+        ('indirect', 'Indirect'),
+    ]
+    COST_NATURE_CHOICES = [
+        ('fixed', 'Fixed'),
+        ('variable', 'Variable'),
+    ]
+
+    cost_id = models.AutoField(primary_key=True)
+    description = models.CharField(max_length=255)
+    category = models.ForeignKey(CostCategory, on_delete=models.SET_NULL, null=True)
+    cost_type = models.CharField(max_length=10, choices=COST_TYPE_CHOICES)
+    cost_nature = models.CharField(max_length=10, choices=COST_NATURE_CHOICES)
+    amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    date = models.DateField()
+    department = models.CharField(max_length=100, blank=True)
+    project = models.CharField(max_length=100, blank=True)
+    cost_driver = models.CharField(max_length=100, blank=True)
+    job_process_id = models.CharField(max_length=50, blank=True)
+    budgeted_amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    notes = models.TextField(blank=True)
+
+    @property
+    def variance(self):
+        return self.amount - self.budgeted_amount
+
+    def __str__(self):
+        return f"{self.cost_id} - {self.description}"
+
+class CostAllocation(models.Model):
+    cost_entry = models.ForeignKey(CostEntry, on_delete=models.CASCADE, related_name='allocations')
+    allocation_base = models.CharField(max_length=100)
+    allocation_percentage = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(0)])
+    allocated_amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+
+    def __str__(self):
+        return f"Allocation for {self.cost_entry} - {self.allocation_base}"
+    
+    
+class IntercompanyTransaction(models.Model):
+    TRANSACTION_TYPES = [
+        ('sale', 'Sale'),
+        ('purchase', 'Purchase'),
+        ('loan', 'Loan'),
+        ('asset_transfer', 'Asset Transfer'),
+        ('service', 'Service'),
+        ('cost_allocation', 'Cost Allocation'),
+    ]
+    
+    transaction_id = models.AutoField(primary_key=True)
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
+    entity_from = models.CharField(max_length=100)
+    entity_to = models.CharField(max_length=100)
+    amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    currency = models.CharField(max_length=3)
+    converted_amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    exchange_rate = models.DecimalField(max_digits=10, decimal_places=6)
+    date = models.DateField()
+    document_reference = models.CharField(max_length=50, blank=True)
+    reconciliation_status = models.CharField(max_length=20, default='unmatched')
+    transfer_pricing = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.transaction_id} - {self.transaction_type} from {self.entity_from} to {self.entity_to}"
+
+class IntercompanyAccount(models.Model):
+    ACCOUNT_TYPES = [
+        ('receivable', 'Receivable'),
+        ('payable', 'Payable'),
+        ('revenue', 'Revenue'),
+        ('expense', 'Expense'),
+        ('loan', 'Loan'),
+    ]
+    
+    name = models.CharField(max_length=100)
+    account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPES)
+    entity = models.CharField(max_length=100)
+    balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"{self.name} - {self.entity}"
+    
+    
+class AuditTrail(models.Model):
+    ACTION_TYPES = [
+        ('create', 'Create'),
+        ('modify', 'Modify'),
+        ('delete', 'Delete'),
+        ('approve', 'Approve'),
+    ]
+    
+    date_time = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    action_type = models.CharField(max_length=10, choices=ACTION_TYPES)
+    transaction_id = models.CharField(max_length=50)
+    transaction_type = models.CharField(max_length=50)
+    affected_accounts = models.CharField(max_length=255)
+    old_value = models.TextField(blank=True, null=True)
+    new_value = models.TextField(blank=True, null=True)
+    approval_status = models.CharField(max_length=20, blank=True)
+    notes = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField()
+    module = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f"{self.date_time} - {self.user} - {self.action_type}"

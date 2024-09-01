@@ -296,99 +296,110 @@ def get_or_create_chart_account(database_name, account_name, account_type_name):
  
 def generate_financial_statements(database_name):
     today = timezone.now().date()
+    logger.info(f"Generating financial statements for database: {database_name}, date: {today}")
 
-    # Get all relevant account balances
-    with connections[database_name].cursor() as cursor:
-        cursor.execute("""
-            SELECT name, balance
-            FROM finance_chartofaccount
-        """)
-        account_balances = {row[0]: Decimal(row[1]) for row in cursor.fetchall()}
+    # Fetch all accounts
+    accounts = ChartOfAccount.objects.using(database_name).all()
 
-    # Income Statement (Profit and Loss)
-    revenue = -account_balances.get('Sales Revenue', Decimal('0'))  # Negate to make positive
-    cogs = account_balances.get('Cost of Goods Sold (COGS)', Decimal('0'))
-    operating_expenses = sum(account_balances.get(name, Decimal('0')) for name in [
-        'Salaries Expense', 'Rent Expense', 'Utilities Expense', 'Office Supplies Expense',
-        'Advertising and Marketing Expense', 'Insurance Expense', 'Repairs and Maintenance Expense',
-        'Professional Fees'
-    ])
-    
-    gross_profit = revenue - cogs
+    # Group accounts by category
+    revenue_accounts = accounts.filter(category__name='Revenue')
+    cogs_accounts = accounts.filter(category__name='Cost of Goods Sold')
+    expense_accounts = accounts.filter(category__name='Expense')
+    asset_accounts = accounts.filter(category__name__in=['Current Asset', 'Fixed Asset'])
+    liability_accounts = accounts.filter(category__name__in=['Current Liability', 'Long Term Liability'])
+    equity_accounts = accounts.filter(category__name='Equity')
+
+    # Profit and Loss Statement
+    revenue = sum(-account.balance for account in revenue_accounts)  # Negative because revenue is typically stored as negative
+    cost_of_goods_sold = sum(account.balance for account in cogs_accounts)
+    gross_profit = revenue - cost_of_goods_sold
+    operating_expenses = sum(account.balance for account in expense_accounts)
     net_income = gross_profit - operating_expenses
 
+    pl_data = {
+        'Revenue': {
+            'total': float(revenue),
+            'accounts': [{'name': account.name, 'amount': float(-account.balance)} for account in revenue_accounts]
+        },
+        'Cost of Goods Sold': {
+            'total': float(cost_of_goods_sold),
+            'accounts': [{'name': account.name, 'amount': float(account.balance)} for account in cogs_accounts]
+        },
+        'Gross Profit': float(gross_profit),
+        'Operating Expenses': {
+            'total': float(operating_expenses),
+            'accounts': [{'name': account.name, 'amount': float(account.balance)} for account in expense_accounts]
+        },
+        'Net Income': float(net_income)
+    }
+
     # Balance Sheet
-    current_assets = sum(account_balances.get(name, Decimal('0')) for name in [
-        'Cash', 'Accounts Receivable', 'Inventory'
-    ])
-    fixed_assets = account_balances.get('Property, Plant, and Equipment', Decimal('0'))
-    total_assets = current_assets + fixed_assets
+    total_assets = sum(account.balance for account in asset_accounts)
+    total_liabilities = sum(account.balance for account in liability_accounts)
+    total_equity = sum(account.balance for account in equity_accounts) + net_income  # Include net income in equity
 
-    current_liabilities = sum(account_balances.get(name, Decimal('0')) for name in [
-        'Accounts Payable', 'Sales Tax Payable'
-    ])
-    long_term_liabilities = account_balances.get('Long-term Debt', Decimal('0'))
-    total_liabilities = current_liabilities + long_term_liabilities
+    bs_data = {
+        'Assets': {
+            'total': float(total_assets),
+            'accounts': [{'name': account.name, 'amount': float(account.balance)} for account in asset_accounts]
+        },
+        'Liabilities': {
+            'total': float(total_liabilities),
+            'accounts': [{'name': account.name, 'amount': float(account.balance)} for account in liability_accounts]
+        },
+        'Equity': {
+            'total': float(total_equity),
+            'accounts': [{'name': account.name, 'amount': float(account.balance)} for account in equity_accounts] + 
+                        [{'name': 'Retained Earnings', 'amount': float(net_income)}]
+        }
+    }
 
-    equity = account_balances.get('Owner\'s Equity', Decimal('0'))
-    retained_earnings = net_income  # This is simplified; in a real system, you'd accumulate this over time
-    total_equity = equity + retained_earnings
+    # Cash Flow Statement
+    # Note: This is a simplified version. A real cash flow statement would require more detailed analysis.
+    cash_account = accounts.filter(name='Cash').first()
+    if cash_account:
+        net_cash_flow = cash_account.balance
+    else:
+        net_cash_flow = Decimal('0')
+        logger.warning("No Cash account found for Cash Flow Statement")
 
-    # Cash Flow
-    start_date = today.replace(day=1)
-    end_date = today
+    cf_data = {
+        'Operating Activities': {
+            'Net Income': float(net_income),
+            # Add more operating activities here
+        },
+        'Investing Activities': {
+            # Add investing activities here
+        },
+        'Financing Activities': {
+            # Add financing activities here
+        },
+        'Net Cash Flow': float(net_cash_flow)
+    }
 
-    with connections[database_name].cursor() as cursor:
-        cursor.execute("""
-            SELECT 
-                COALESCE(SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END), 0) as cash_inflows,
-                COALESCE(ABS(SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END)), 0) as cash_outflows
-            FROM finance_financetransaction
-            WHERE account_id = (SELECT id FROM finance_account WHERE name = 'Cash')
-                AND date BETWEEN %s AND %s
-        """, [start_date, end_date])
-        cash_flow_data = cursor.fetchone()
-
-    cash_inflows, cash_outflows = cash_flow_data if cash_flow_data else (Decimal('0'), Decimal('0'))
-    net_cash_flow = cash_inflows - cash_outflows
-
-    # Create or update financial statements with more readable labels
-    FinancialStatement.objects.using(database_name).update_or_create(
+    # Create or update financial statements
+    pl_statement, _ = FinancialStatement.objects.using(database_name).update_or_create(
         statement_type='PL',
         date=today,
-        defaults={'data': {
-            'Revenue': float(revenue),
-            'Cost of Goods Sold': float(cogs),
-            'Gross Profit': float(gross_profit),
-            'Operating Expenses': float(operating_expenses),
-            'Net Income': float(net_income)
-        }}
+        defaults={'data': pl_data}
     )
 
-    FinancialStatement.objects.using(database_name).update_or_create(
+    bs_statement, _ = FinancialStatement.objects.using(database_name).update_or_create(
         statement_type='BS',
         date=today,
-        defaults={'data': {
-            'Current Assets': float(current_assets),
-            'Fixed Assets': float(fixed_assets),
-            'Total Assets': float(total_assets),
-            'Current Liabilities': float(current_liabilities),
-            'Long Term Liabilities': float(long_term_liabilities),
-            'Total Liabilities': float(total_liabilities),
-            'Equity': float(equity),
-            'Retained Earnings': float(retained_earnings),
-            'Total Equity': float(total_equity)
-        }}
+        defaults={'data': bs_data}
     )
 
-    FinancialStatement.objects.using(database_name).update_or_create(
+    cf_statement, _ = FinancialStatement.objects.using(database_name).update_or_create(
         statement_type='CF',
         date=today,
-        defaults={'data': {
-            'Cash Inflows': float(cash_inflows),
-            'Cash Outflows': float(cash_outflows),
-            'Net Cash Flow': float(net_cash_flow)
-        }}
+        defaults={'data': cf_data}
     )
 
     logger.info(f'Successfully generated financial statements for {database_name}')
+
+    return {
+        'profit_and_loss': pl_statement.data,
+        'balance_sheet': bs_statement.data,
+        'cash_flow': cf_statement.data
+    }

@@ -1,6 +1,6 @@
 #/Users/kuoldeng/projectx/backend/pyfactor/finance/serializers.py
 from rest_framework import serializers
-from .models import AccountCategory, AccountReconciliation, AccountType, Account, ChartOfAccount, FinancialStatement, GeneralLedgerEntry, JournalEntry, JournalEntryLine, MonthEndClosing, MonthEndTask, ReconciliationItem, SalesTaxAccount, FinanceTransaction, Income, RevenueAccount, CashAccount
+from .models import AccountCategory, AccountReconciliation, AccountType, Account, AuditTrail, Budget, BudgetItem, ChartOfAccount, CostAllocation, CostCategory, CostEntry, FinancialStatement, FixedAsset, GeneralLedgerEntry, IntercompanyAccount, IntercompanyTransaction, JournalEntry, JournalEntryLine, MonthEndClosing, MonthEndTask, ReconciliationItem, SalesTaxAccount, FinanceTransaction, Income, RevenueAccount, CashAccount
 from dateutil import parser
 from sales.serializers import TransactionSerializer
 from rest_framework.exceptions import ValidationError
@@ -213,3 +213,95 @@ class FinancialStatementSerializer(serializers.ModelSerializer):
     class Meta:
         model = FinancialStatement
         fields = ['id', 'statement_type', 'date', 'data']
+
+
+class FixedAssetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FixedAsset
+        fields = '__all__'
+        
+        
+class BudgetItemSerializer(serializers.ModelSerializer):
+    variance = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = BudgetItem
+        fields = ['id', 'account_code', 'account_name', 'budgeted_amount', 'actual_amount', 'variance']
+
+class BudgetSerializer(serializers.ModelSerializer):
+    items = BudgetItemSerializer(many=True, required=False)
+
+    class Meta:
+        model = Budget
+        fields = ['id', 'name', 'period', 'start_date', 'end_date', 'department', 'approved', 'notes', 'items']
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items', [])
+        budget = Budget.objects.create(**validated_data)
+        for item_data in items_data:
+            BudgetItem.objects.create(budget=budget, **item_data)
+        return budget
+
+    def update(self, instance, validated_data):
+        items_data = validated_data.pop('items', [])
+        instance = super().update(instance, validated_data)
+        
+        instance.items.all().delete()
+        for item_data in items_data:
+            BudgetItem.objects.create(budget=instance, **item_data)
+        
+        return instance
+    
+    
+class CostCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CostCategory
+        fields = '__all__'
+
+class CostAllocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CostAllocation
+        fields = ['id', 'allocation_base', 'allocation_percentage', 'allocated_amount']
+
+class CostEntrySerializer(serializers.ModelSerializer):
+    allocations = CostAllocationSerializer(many=True, required=False)
+    variance = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = CostEntry
+        fields = '__all__'
+
+    def create(self, validated_data):
+        allocations_data = validated_data.pop('allocations', [])
+        cost_entry = CostEntry.objects.create(**validated_data)
+        for allocation_data in allocations_data:
+            CostAllocation.objects.create(cost_entry=cost_entry, **allocation_data)
+        return cost_entry
+
+    def update(self, instance, validated_data):
+        allocations_data = validated_data.pop('allocations', [])
+        instance = super().update(instance, validated_data)
+        
+        instance.allocations.all().delete()
+        for allocation_data in allocations_data:
+            CostAllocation.objects.create(cost_entry=instance, **allocation_data)
+        
+        return instance
+    
+    
+class IntercompanyTransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IntercompanyTransaction
+        fields = '__all__'
+
+class IntercompanyAccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IntercompanyAccount
+        fields = '__all__'
+        
+class AuditTrailSerializer(serializers.ModelSerializer):
+    user_name = serializers.ReadOnlyField(source='user.username')
+
+    class Meta:
+        model = AuditTrail
+        fields = '__all__'

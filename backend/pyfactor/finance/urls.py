@@ -29,7 +29,19 @@ from finance.views import (
     profit_and_loss_view,
     cash_flow_view,
     balance_sheet_view,
-    
+    fixed_asset_detail,
+    fixed_asset_list,
+    budget_detail,
+    budget_list,
+    budget_detail,
+    intercompany_account_detail,
+    intercompany_transaction_detail,
+    intercompany_transaction_list,
+    intercompany_account_list,
+    audit_trail_detail,
+    audit_trail_list
+
+ 
     
 )
 
@@ -59,11 +71,22 @@ urlpatterns = [
     path('month-end-closings/', month_end_closing_list, name='month-end-closing-list'),
     path('month-end-closings/<int:pk>/', month_end_closing_detail, name='month-end-closing-detail'),
     path('month-end-tasks/<int:pk>/', update_month_end_task, name='update-month-end-task'),
-    path('profit-and-loss/', profit_and_loss_view, name='profit_and_loss'),
-    path('balance-sheet/', balance_sheet_view, name='balance_sheet'),
-    path('cash-flow/', cash_flow_view, name='cash_flow'),
-
+    path('api/profit-and-loss/', profit_and_loss_view, name='profit_and_loss'),
+    path('api/balance-sheet/', balance_sheet_view, name='balance_sheet'),
+    path('api/cash-flow/', cash_flow_view, name='cash_flow'),
+    path('fixed-assets/', fixed_asset_list, name='fixed-asset-list'),
+    path('fixed-assets/<int:pk>/', fixed_asset_detail, name='fixed-asset-detail'),
+    path('budgets/', budget_list, name='budget-list'),
+    path('budgets/<int:pk>/', budget_detail, name='budget-detail'),
+    path('intercompany-transactions/', intercompany_transaction_list, name='intercompany-transaction-list'),
+    path('intercompany-transactions/<int:pk>/', intercompany_transaction_detail, name='intercompany-transaction-detail'),
+    path('intercompany-accounts/', intercompany_account_list, name='intercompany-account-list'),
+    path('intercompany-accounts/<int:pk>/', intercompany_account_detail, name='intercompany-account-detail'),
+    path('audit-trail/', audit_trail_list, name='audit-trail-list'),
+    path('audit-trail/<int:pk>/', audit_trail_detail, name='audit-trail-detail'),
 ]
+
+
 
     # ... other URL patterns ...
 
