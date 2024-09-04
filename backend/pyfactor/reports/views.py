@@ -1,17 +1,30 @@
 # /Users/kuoldeng/projectx/backend/pyfactor/reports/views.py
 from django.db import models
+from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.db import connections, transaction as db_transaction
+
+from purchases.models import Bill
+from .serializers import AgedPayablesSerializer, AgedReceivableSerializer
 from rest_framework import status
+from sales.models import Invoice
+from finance.views import get_user_database
 from users.models import User, UserProfile
-from finance.models import Account, FinanceTransaction
+from finance.models import Account, ChartOfAccount, FinanceTransaction
 from .models import Report
 from .serializers import ReportSerializer
 from pyfactor.logging_config import get_logger
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from pyfactor.user_console import console
-
+from decimal import Decimal
+from django.db.models import F, ExpressionWrapper, IntegerField, Case, When, Value
+from django.db.models.functions import Cast, Extract
+from datetime import datetime, timedelta, date
+from django.utils import timezone
 
 logger = get_logger()
 
@@ -171,3 +184,215 @@ def generate_income_statement(database_name):
     except Exception as e:
         logger.exception(f"Error generating income statement: {str(e)}")
         raise
+    
+    
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def aged_receivables(request):
+    user = request.user
+    database_name = get_user_database(user)
+    
+    as_of_date = request.query_params.get('as_of_date', timezone.now().date())
+    
+    if isinstance(as_of_date, str):
+        as_of_date = timezone.datetime.strptime(as_of_date, '%Y-%m-%d').date()
+
+    logger.debug(f"Fetching invoices for database: {database_name}, as of date: {as_of_date}")
+    invoices = Invoice.objects.using(database_name).filter(is_paid=False)
+    logger.debug(f"Found {invoices.count()} unpaid invoices")
+
+    aged_receivables_data = []
+    for invoice in invoices:
+        outstanding = invoice.totalAmount
+        invoice_date = invoice.date if isinstance(invoice.date, date) else invoice.date.date()
+        due_date = invoice.due_date if isinstance(invoice.due_date, date) else invoice.due_date.date()
+        days_overdue = (as_of_date - due_date).days
+
+        logger.debug(f"Processing invoice {invoice.invoice_num}: "
+                     f"date={invoice_date}, due_date={due_date}, "
+                     f"days_overdue={days_overdue}, outstanding={outstanding}")
+
+        current = Decimal('0.00')
+        days_0_30 = Decimal('0.00')
+        days_31_60 = Decimal('0.00')
+        days_61_90 = Decimal('0.00')
+        days_over_90 = Decimal('0.00')
+
+        if days_overdue <= 0:
+            current = outstanding
+        elif 0 < days_overdue <= 30:
+            days_0_30 = outstanding
+        elif 30 < days_overdue <= 60:
+            days_31_60 = outstanding
+        elif 60 < days_overdue <= 90:
+            days_61_90 = outstanding
+        else:
+            days_over_90 = outstanding
+
+        aged_receivables_data.append({
+            'customer_name': invoice.customer.customerName,
+            'invoice_number': invoice.invoice_num,
+            'invoice_date': invoice_date,
+            'due_date': due_date,
+            'invoice_amount': outstanding,
+            'current': current,
+            'days_0_30': days_0_30,
+            'days_31_60': days_31_60,
+            'days_61_90': days_61_90,
+            'days_over_90': days_over_90,
+            'total_outstanding': outstanding
+        })
+
+    logger.debug(f"Processed {len(aged_receivables_data)} invoices for aged receivables")
+
+    # Sort the data by customer name and invoice date
+    aged_receivables_data.sort(key=lambda x: (x['customer_name'], x['invoice_date']))
+
+    serializer = AgedReceivableSerializer(aged_receivables_data, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def aged_payables(request):
+    user = request.user
+    database_name = get_user_database(user)
+    
+    as_of_date = request.query_params.get('as_of_date', timezone.now().date())
+    
+    if isinstance(as_of_date, str):
+        as_of_date = timezone.datetime.strptime(as_of_date, '%Y-%m-%d').date()
+
+    bills = Bill.objects.using(database_name).filter(is_paid=False)
+
+    aged_payables_data = []
+    for bill in bills:
+        vendor = bill.vendor
+        due_date = bill.due_date.date() if isinstance(bill.due_date, datetime) else bill.due_date
+        days_overdue = (as_of_date - due_date).days
+
+        current = Decimal('0.00')
+        days_1_30 = Decimal('0.00')
+        days_31_60 = Decimal('0.00')
+        days_61_90 = Decimal('0.00')
+        days_over_90 = Decimal('0.00')
+
+        if days_overdue <= 0:
+            current = bill.totalAmount
+        elif 1 <= days_overdue <= 30:
+            days_1_30 = bill.totalAmount
+        elif 31 <= days_overdue <= 60:
+            days_31_60 = bill.totalAmount
+        elif 61 <= days_overdue <= 90:
+            days_61_90 = bill.totalAmount
+        else:
+            days_over_90 = bill.totalAmount
+
+        aged_payables_data.append({
+            'vendor_name': vendor.vendor_name,
+            'vendor_id': vendor.id,
+            'invoice_number': bill.bill_number,
+            'invoice_date': bill.bill_date,
+            'due_date': due_date,
+            'invoice_amount': bill.totalAmount,
+            'current': current,
+            'days_1_30': days_1_30,
+            'days_31_60': days_31_60,
+            'days_61_90': days_61_90,
+            'days_over_90': days_over_90,
+            'total_outstanding': bill.totalAmount
+        })
+
+    # Group by vendor
+    vendor_totals = {}
+    for item in aged_payables_data:
+        vendor_id = item['vendor_id']
+        if vendor_id not in vendor_totals:
+            vendor_totals[vendor_id] = {
+                'vendor_name': item['vendor_name'],
+                'current': Decimal('0.00'),
+                'days_1_30': Decimal('0.00'),
+                'days_31_60': Decimal('0.00'),
+                'days_61_90': Decimal('0.00'),
+                'days_over_90': Decimal('0.00'),
+                'total_outstanding': Decimal('0.00'),
+            }
+        vendor_totals[vendor_id]['current'] += item['current']
+        vendor_totals[vendor_id]['days_1_30'] += item['days_1_30']
+        vendor_totals[vendor_id]['days_31_60'] += item['days_31_60']
+        vendor_totals[vendor_id]['days_61_90'] += item['days_61_90']
+        vendor_totals[vendor_id]['days_over_90'] += item['days_over_90']
+        vendor_totals[vendor_id]['total_outstanding'] += item['total_outstanding']
+
+    serializer = AgedPayablesSerializer(vendor_totals.values(), many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def account_balances(request):
+    user = request.user
+    database_name = get_user_database(user)
+    
+    if not database_name:
+        return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+    accounts = ChartOfAccount.objects.using(database_name).all().order_by('account_number')
+    
+    account_data = []
+    for account in accounts:
+        account_data.append({
+            'account_number': account.account_number,
+            'name': account.name,
+            'account_type': account.category.name,
+            'balance': account.balance,
+            'description': account.description
+        })
+
+    return Response(account_data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def trial_balance(request):
+    logger.debug("Trial balance view called")
+    user = request.user
+    try:
+        user_profile = UserProfile.objects.using('default').get(user=user)
+        database_name = user_profile.database_name
+
+        if not database_name:
+            return Response({"error": "User database not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+        accounts = ChartOfAccount.objects.using(database_name).all().order_by('account_number')
+        
+        trial_balance_data = []
+        total_debits = 0
+        total_credits = 0
+
+        for account in accounts:
+            debit_balance = max(account.balance, 0)
+            credit_balance = max(-account.balance, 0)
+            
+            trial_balance_data.append({
+                'account_number': account.account_number,
+                'account_name': account.name,
+                'account_type': account.category.name,
+                'debit_balance': debit_balance,
+                'credit_balance': credit_balance,
+            })
+            
+            total_debits += debit_balance
+            total_credits += credit_balance
+
+        return Response({
+            'accounts': trial_balance_data,
+            'total_debits': total_debits,
+            'total_credits': total_credits,
+            'is_balanced': total_debits == total_credits
+        })
+
+    except UserProfile.DoesNotExist:
+        return Response({"error": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

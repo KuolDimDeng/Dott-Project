@@ -161,6 +161,9 @@ class Customer(models.Model):
             account_number = (uuid_numbers[:3] + random_suffix + '00000')[:5]
             if not Customer.objects.filter(accountNumber=account_number).exists():
                 return account_number
+            
+    def total_income(self):
+        return sum(invoice.totalAmount for invoice in self.invoices.all())
     
 
    
@@ -168,12 +171,12 @@ class Customer(models.Model):
 class Invoice(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     invoice_num = models.CharField(max_length=20, unique=True, editable=False)
-    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='invoices')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='invoices')
     totalAmount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
-    date = models.DateTimeField(default=get_current_datetime)
+    date = models.DateField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    due_date = models.DateTimeField(default=default_due_datetime)
+    due_date = models.DateField(default=default_due_datetime)
     status = models.CharField(max_length=20, choices=[('draft', 'Draft'), ('sent', 'Sent'), ('paid', 'Paid')], default='draft')
     transaction = models.OneToOneField('finance.FinanceTransaction', on_delete=models.CASCADE, related_name='sales_invoice', null=True, blank=True)
     accounts_receivable = models.ForeignKey('finance.Account', on_delete=models.SET_NULL, related_name='invoices_receivable', null=True)
@@ -212,6 +215,18 @@ class Invoice(models.Model):
 
     def total_with_tax(self):
         return self.amount * (1 + self.customer.salesTax / 100)
+    
+    @property
+    def outstanding_amount(self):
+        return self.totalAmount if not self.is_paid else Decimal('0.00')
+
+    @property
+    def days_overdue(self, as_of_date=None):
+        if not as_of_date:
+            as_of_date = timezone.now().date()
+        if self.is_paid:
+            return 0
+        return max(0, (as_of_date - self.due_date.date()).days)
     
 class InvoiceItem(models.Model):
     invoice = models.ForeignKey(Invoice, related_name='items', on_delete=models.CASCADE)

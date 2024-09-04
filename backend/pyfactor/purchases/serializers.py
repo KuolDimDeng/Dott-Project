@@ -43,10 +43,11 @@ class BillSerializer(serializers.ModelSerializer):
     bill_date = DateTimeToDateField()
     due_date = DateTimeToDateField(required=False)
     totalAmount = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    is_paid = serializers.BooleanField(default=False)
 
     class Meta:
         model = Bill
-        fields = ['id', 'bill_number', 'vendor', 'vendor_id', 'vendor_name', 'currency', 'bill_date', 'due_date', 'poso_number', 'totalAmount', 'notes', 'items']
+        fields = ['id', 'bill_number', 'vendor', 'vendor_id', 'vendor_name', 'currency', 'bill_date', 'due_date', 'poso_number', 'totalAmount', 'notes', 'items', 'is_paid']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

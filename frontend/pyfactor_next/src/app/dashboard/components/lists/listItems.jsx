@@ -662,14 +662,13 @@ export const MainListItems = ({
           anchorPosition={{ left: 220, top: analysisAnchorEl ? analysisAnchorEl.getBoundingClientRect().top : 0}}
         >
           <MenuItem onClick={() => handleAnalysisClick('financial-overview')} sx={menuItemStyle}>Financial Overview</MenuItem>
-          <MenuItem onClick={() => handleAnalysisClick('profit-loss')} sx={menuItemStyle}>Profit & Loss Analysis</MenuItem>
+          <MenuItem onClick={() => handleAnalysisClick('profit-loss-analysis')} sx={menuItemStyle}>Profit & Loss Analysis</MenuItem>
           <MenuItem onClick={() => handleAnalysisClick('balance-sheet')} sx={menuItemStyle}>Balance Sheet Analysis</MenuItem>
           <MenuItem onClick={() => handleAnalysisClick('cash-flow')} sx={menuItemStyle}>Cash Flow Analysis</MenuItem>
           <MenuItem onClick={() => handleAnalysisClick('budget-vs-actual')} sx={menuItemStyle}>Budget vs. Actual</MenuItem>
           <MenuItem onClick={() => handleAnalysisClick('sales-analysis')} sx={menuItemStyle}>Sales Analysis</MenuItem>
           <MenuItem onClick={() => handleAnalysisClick('expense-analysis')} sx={menuItemStyle}>Expense Analysis</MenuItem>
-          <MenuItem onClick={() => handleAnalysisClick('kpi-dashboard')} sx={menuItemStyle}>KPI Dashboard</MenuItem>
-          <MenuItem onClick={() => handleAnalysisClick('custom-reports')} sx={menuItemStyle}>Custom Reports</MenuItem>
+          <MenuItem onClick={() => handleAnalysisClick('kpi-data')} sx={menuItemStyle}>KPI Dashboard</MenuItem>
         </Menu>
         <Menu
             anchorEl={taxesAnchorEl}

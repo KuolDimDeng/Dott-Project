@@ -74,7 +74,17 @@ class CustomerSerializer(serializers.ModelSerializer):
         return f"{obj.customerName} - {obj.accountNumber}"
 
 
+class CustomerIncomeSerializer(serializers.ModelSerializer):
+    total_income = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
+    class Meta:
+        model = Customer
+        fields = ['id', 'customerName', 'email', 'phone', 'total_income']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        return representation
+    
 class TransactionSerializer(serializers.ModelSerializer):
     account = serializers.PrimaryKeyRelatedField(queryset=Account.objects.all())
 

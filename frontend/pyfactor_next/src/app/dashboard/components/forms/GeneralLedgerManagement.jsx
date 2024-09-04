@@ -36,7 +36,7 @@ const GeneralLedgerManagement = () => {
 
   const fetchAccounts = async () => {
     try {
-      const response = await axiosInstance.get('/api/chart-of-accounts/');
+      const response = await axiosInstance.get('/api/finance/chart-of-accounts/');
       setAccounts(response.data);
     } catch (error) {
       console.error('Error fetching accounts:', error);
@@ -45,7 +45,7 @@ const GeneralLedgerManagement = () => {
 
   const fetchGeneralLedger = async () => {
     try {
-      const response = await axiosInstance.get('/api/general-ledger/', {
+      const response = await axiosInstance.get('/api/finance/general-ledger/', {
         params: {
           account_id: selectedAccount,
           start_date: startDate,
@@ -61,7 +61,7 @@ const GeneralLedgerManagement = () => {
   
   const fetchGeneralLedgerSummary = async () => {
     try {
-      const response = await axiosInstance.get('/api/general-ledger-summary/');
+      const response = await axiosInstance.get('/api/finance/general-ledger-summary/');
       setGeneralLedgerSummary(response.data);
       setSummary(response.data);  // Add this line
     } catch (error) {

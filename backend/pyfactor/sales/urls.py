@@ -28,6 +28,8 @@ from .views import (
     sales_order_detail,
     create_sales_order,
     list_sales_orders,
+    income_by_customer,
+    customer_income_detail
 
 )
 
@@ -60,4 +62,7 @@ urlpatterns = [
     path('api/salesorders/create/', create_sales_order, name='create-sales-order'),
     path('api/salesorders/', list_sales_orders, name='list-sales-orders'),
     path('api/salesorders/<uuid:pk>/', sales_order_detail, name='sales-order-detail'),
+    path('api/income-by-customer/', income_by_customer, name='income-by-customer'),
+    path('api/income-by-customer/<uuid:customer_id>/', customer_income_detail, name='customer-income-detail'),
+
 ]

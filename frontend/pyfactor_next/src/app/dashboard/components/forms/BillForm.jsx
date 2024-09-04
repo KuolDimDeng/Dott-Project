@@ -91,7 +91,7 @@ const BillForm = () => {
     };
 
     try {
-      const response = await axiosInstance.post('/api/bills/', billData);
+      const response = await axiosInstance.post('/api/bills/create/', billData);
       console.log('Bill created:', response.data);
       addMessage('info', 'Bill created successfully');
       

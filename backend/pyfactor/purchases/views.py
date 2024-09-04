@@ -62,7 +62,7 @@ def get_user_database(user):
     return user_profile.database_name
 
 @api_view(['POST'])
-@transaction.atomic
+@permission_classes([IsAuthenticated])
 def create_bill(request):
     logger.debug("Create Bill: Received request data: %s", request.data)
     user = request.user
@@ -497,3 +497,5 @@ def procurement_list(request):
     procurements = Procurement.objects.using(database_name).select_related('vendor').prefetch_related('items').all()
     serializer = ProcurementSerializer(procurements, many=True, context={'database_name': database_name})
     return Response(serializer.data)
+
+

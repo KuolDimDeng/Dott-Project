@@ -26,6 +26,7 @@ import APIIntegrations from './components/APIIntegrations';
 import AlertsPage from '../alerts/components/AlertsPage';
 import SendGlobalAlert from '../alerts/components/SendGlobalAlert';
 import AlertsComponent from '../alerts/components/AlertsComponents';
+import KPIDashboard from './components/forms/KPIDashboard';
 
 
 
@@ -127,15 +128,58 @@ function DashboardContent() {
   const [showProfitAndLossReport, setShowProfitAndLossReport] = useState(false);
   const [showBalanceSheetReport, setShowBalanceSheetReport] = useState(false);
   const [showCashFlowReport, setShowCashFlowReport] = useState(false);
-
-
+  const [showIncomeByCustomer, setShowIncomeByCustomer] = useState(false);
+  const [showAgedReceivables, setShowAgedReceivables] = useState(false);
+  const [showAgedPayables, setShowAgedPayables] = useState(false);
+  const [showAccountBalances, setShowAccountBalances] = useState(false);
+  const [showTrialBalances, setShowTrialBalances] = useState(false);
+  const [showProfitAndLossAnalysis, setShowProfitAndLossAnalysis] = useState(false);
+  const [selectedAnalysis, setSelectedAnalysis] = useState(null);
+  const [showBalanceSheetAnalysis, setShowBalanceSheetAnalysis] = useState(false);
+  const [showCashFlowAnalysis, setShowCashFlowAnalysis] = useState(false);
+  const [showBudgetVsActualAnalysis, setShowBudgetVsActualAnalysis] = useState(false);
+  const [showExpenseAnalysis, setShowExpenseAnalysis] = useState(false);
+  const [showKPIDashboard, setShowKPIDashboard] = useState(false);
 
   const router = useRouter();
+
+  const fetchUserData = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axiosInstance.get('/api/profile/', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      if (response.status === 200) {
+        const data = response.data;
+        console.log('Dashboard User data:', data);
+        logger.log('Dashboard User data:', data);
+        data.first_name = data.first_name || data.email.split('@')[0];
+        data.full_name = data.full_name || `${data.first_name} ${data.last_name}`;
+        setUserData(data);
+        addMessage('info', `Hello, ${data.full_name}.`);
+      } else {
+        logger.error('Error fetching user data:', response.statusText);
+        addMessage('error', `Error fetching user data: ${response.statusText}`);
+        localStorage.removeItem('token');
+        router.push('/login');
+      }
+    } catch (error) {
+      logger.error('Error fetching user data:', error);
+      addMessage('error', `Error fetching user data: ${error.message}`);
+      localStorage.removeItem('token');
+      router.push('/login');
+    }
+  }, [addMessage, router]);
+
 
   const handleUserProfileClick = () => {
     setShowUserProfileSettings(true);
     // Reset other view states
     setShowBankingDashboard(false);
+    setShowKPIDashboard(false);
     setShowCreateOptions(false);
     setShowAnalysisPage(false);
     setShowHRDashboard(false);
@@ -172,6 +216,7 @@ function DashboardContent() {
     setShowProductManagement(false);
     setShowServiceManagement(false);
     setShowECommercePlatformAPI(false);
+    setShowKPIDashboard(false);
   };
 
   const handleECommercePlatformAPIClick = () => {
@@ -199,6 +244,7 @@ function DashboardContent() {
     handleSettingsMenuClose();
     // Reset other view states as needed
     setShowBankingDashboard(false);
+    setShowKPIDashboard(false);
     setShowCreateOptions(false);
     setShowAnalysisPage(false);
     setShowHRDashboard(false);
@@ -251,6 +297,7 @@ function DashboardContent() {
 
     // Reset other view states
     setShowBankingDashboard(false);
+    setShowKPIDashboard(false);
     setShowCreateOptions(false);
     setShowAnalysisPage(false);
     setShowHRDashboard(false);
@@ -267,7 +314,8 @@ function DashboardContent() {
 
   const handleDashboardClick = () => {
     console.log('handleDashboardClick called.');
-    setShowDashboard(true);
+    setShowDashboard(false);
+    setShowKPIDashboard(true);
     console.log('showDashboard set to true');
     // Reset other view states
     setShowBankingDashboard(false);
@@ -298,11 +346,21 @@ function DashboardContent() {
     setSelectedInvoiceId(invoiceId);
   };
 
-  const handleAnalysisClick = (section) => {
-    if (section === 'sales-analysis') {
-      setShowSalesAnalysis(true);
-      setShowDashboard(false);
-      // Reset other view states
+  const handleAnalysisClick = (analysisType) => {
+    console.log('handleAnalysisClick called with analysisType:', analysisType);
+  
+    // Reset all analysis-related states
+    setShowSalesAnalysis(false);
+    setShowProfitAndLossAnalysis(false);
+    setShowBalanceSheetAnalysis(false);
+    setShowCashFlowAnalysis(false);
+    setShowBudgetVsActualAnalysis(false);
+    setShowSalesAnalysis(false);
+    setShowExpenseAnalysis(false);
+    setShowKPIDashboard(false);
+    // Add more analysis types here as needed
+  
+    // Reset other general states
     setShowBankingDashboard(false);
     setShowCreateOptions(false);
     setShowAnalysisPage(false);
@@ -310,12 +368,46 @@ function DashboardContent() {
     setShowPayrollDashboard(false);
     setSelectedInvoiceId(null);
     setShowInvoiceBuilder(false);
-    setShowReports(false);
     setShowTransactionForm(false);
     setShowAccountPage(false);
     setShowDashboard(false);
-    setShowProductManagement(false);
-    setShowServiceManagement(false);
+    setShowReports(false);
+    setShowIntegrationSettings(false);
+  
+    setSelectedAnalysis(analysisType);
+    setShowAnalysisPage(true);
+  
+    switch(analysisType) {
+      case 'sales-analysis':
+        setShowSalesAnalysis(true);
+        break;
+      case 'profit-loss-analysis':
+        setShowProfitAndLossAnalysis(true);
+        break;
+      case 'balance-sheet':
+        setShowBalanceSheetAnalysis(true);
+      // Add more cases for different analysis types
+        break;
+      case 'cash-flow':
+        setShowCashFlowAnalysis(true);
+        break;
+
+      case 'budget-vs-actual':
+        setShowBudgetVsActualAnalysis(true);
+        break;
+
+      case 'sales-analysis':
+        setShowSalesAnalysis(true);
+        break;
+      case 'expense-analysis':
+        setShowExpenseAnalysis(true);
+        break;
+      case 'kpi-data':
+        setShowKPIDashboard(true);
+        break;
+      default:
+        console.log('Unknown analysis type:', analysisType);
+        break;
     }
   };
 
@@ -346,6 +438,7 @@ function DashboardContent() {
     
     // Reset other general states
     setShowBankingDashboard(false);
+    setShowKPIDashboard(false);
     setShowCreateOptions(false);
     setShowAnalysisPage(false);
     setShowPayrollDashboard(false);
@@ -414,6 +507,7 @@ function DashboardContent() {
   
     // Reset other general states
     setShowBankingDashboard(false);
+    setShowKPIDashboard(false);
     setShowCreateOptions(false);
     setShowAnalysisPage(false);
     setShowHRDashboard(false);
@@ -493,6 +587,7 @@ function DashboardContent() {
   
     // Reset other view states
     setShowBankingDashboard(false);
+    setShowKPIDashboard(false);
     setShowCreateOptions(false);
     setShowAnalysisPage(false);
     setShowHRDashboard(false);
@@ -525,17 +620,13 @@ function DashboardContent() {
     // Reset all report-related states
     setShowProfitAndLossReport(false);
     setShowBalanceSheetReport(false);
-    //setShowBalanceSheet(false);
-    //setShowCashFlow(false);
-    //setShowSalesTaxReport(false);
-    //setShowPayrollWageTaxReport(false);
-    //setShowIncomeByCustomer(false);
-    //setShowAgedReceivables(false);
-    //setShowPurchasesByVendor(false);
-    //setShowAgedPayables(false);
-    //setShowAccountBalances(false);
-    //setShowTrialBalance(false);
-   // setShowGeneralLedger(false);
+    setShowCashFlowReport(false);
+    setShowIncomeByCustomer(false);
+    setShowAgedReceivables(false);
+    setShowAgedPayables(false);
+    setShowAccountBalances(false);
+    setShowTrialBalances(false);
+
   
     // Reset other general states
     setShowBankingDashboard(false);
@@ -550,6 +641,7 @@ function DashboardContent() {
     setShowDashboard(false);
     setShowSalesAnalysis(false);
     setShowIntegrationSettings(false);
+    setShowKPIDashboard(false);
   
     // Set the selected report and show reports
     setSelectedReport(reportType);
@@ -587,7 +679,7 @@ function DashboardContent() {
         setShowAccountBalances(true);
         break;
       case 'trial_balance':
-        setShowTrialBalance(true);
+        setShowTrialBalances(true);
         break;
       case 'general_ledger':
         setShowGeneralLedger(true);
@@ -637,6 +729,7 @@ function DashboardContent() {
     setShowEstimateManagement(false);
     setShowSalesAnalysis(false);
     setShowIntegrationSettings(false);
+    setShowKPIDashboard(false);
 
   };
 
@@ -666,6 +759,7 @@ function DashboardContent() {
     
     // Reset other general states
     setShowBankingDashboard(false);
+    setShowKPIDashboard(false);
     setShowCreateOptions(false);
     setShowAnalysisPage(false);
     setShowHRDashboard(false);
@@ -839,9 +933,23 @@ function DashboardContent() {
   };
 
   useEffect(() => {
-    // Check Shopify connection status on component mount
-    checkShopifyConnectionStatus();
-  }, []);
+    fetchUserData();
+    setShowKPIDashboard(true);
+    // Reset other view states
+    setShowBankingDashboard(false);
+    setShowCreateOptions(false);
+    setShowAnalysisPage(false);
+    setShowHRDashboard(false);
+    setShowPayrollDashboard(false);
+    setSelectedInvoiceId(null);
+    setShowInvoiceBuilder(false);
+    setShowReports(false);
+    setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowSalesAnalysis(false);
+    setShowIntegrationSettings(false);
+    // ... reset any other view states as necessary
+  }, [fetchUserData]);
 
   const checkShopifyConnectionStatus = async () => {
     try {
@@ -877,37 +985,7 @@ function DashboardContent() {
     }
   };
 
-  const fetchUserData = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axiosInstance.get('/api/profile/', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.status === 200) {
-        const data = response.data;
-        console.log('Dashboard User data:', data);
-        logger.log('Dashboard User data:', data);
-        data.first_name = data.first_name || data.email.split('@')[0];
-        data.full_name = data.full_name || `${data.first_name} ${data.last_name}`;
-        setUserData(data);
-        addMessage('info', `Hello, ${data.full_name}.`);
-      } else {
-        logger.error('Error fetching user data:', response.statusText);
-        addMessage('error', `Error fetching user data: ${response.statusText}`);
-        localStorage.removeItem('token');
-        router.push('/login');
-      }
-    } catch (error) {
-      logger.error('Error fetching user data:', error);
-      addMessage('error', `Error fetching user data: ${error.message}`);
-      localStorage.removeItem('token');
-      router.push('/login');
-    }
-  }, [addMessage, router]);
-
+  
 
   useEffect(() => {
     fetchUserData();
@@ -1037,11 +1115,11 @@ function DashboardContent() {
                   title="E-Commerce Platform API"
                 />
               )}
-              {showDashboard && (
-                <Typography variant="h4" component="h1" gutterBottom>
-                  This is the dashboard area
-                </Typography>
-              )}
+             {showDashboard && (
+                  <Box sx={{ width: '100%', overflow: 'auto' }}>
+                    <KPIDashboard />
+                  </Box>
+                )}
               {showIntegrationSettings && (
                 <IntegrationSettings
                   initialStatus={status}
@@ -1136,6 +1214,18 @@ function DashboardContent() {
                 showProfitAndLossReport,
                 showBalanceSheetReport,
                 showCashFlowReport,
+                showIncomeByCustomer,
+                showAgedReceivables,
+                showAgedPayables,
+                showAccountBalances,
+                showTrialBalances,
+                showProfitAndLossAnalysis,
+                showBalanceSheetAnalysis,
+                showCashFlowAnalysis,
+                showBudgetVsActualAnalysis,
+                showSalesAnalysis,
+                showExpenseAnalysis,
+                showKPIDashboard,
                 showDashboard,
                 showIntegrationSettings,
                 showUserProfileSettings,

@@ -1,15 +1,17 @@
 #/Users/kuoldeng/pyfcator_project/backend/pyfactor/pyfactor/urls.py
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
 from chatbot.views import staff_interface, respond_to_message
 
 from pyfactor import views
 
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('users.urls')),
-    path('', include('finance.urls')),
+    path('api/finance/', include('finance.urls')),
     path('api/banking/', include('banking.urls')),
     path('', include('sales.urls')),
     path('', include('purchases.urls')),
@@ -27,8 +29,11 @@ urlpatterns = [
     path('api/', include('alerts.urls')),
     path('api/financial-statements/', include('finance.urls')),
 
-
-
-
-
 ]
+
+if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns = [
+        path('__debug__/', include(debug_toolbar.urls)),
+    ] + urlpatterns
+    

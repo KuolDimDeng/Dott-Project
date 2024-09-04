@@ -12,7 +12,7 @@ from finance.views import get_user_database
 from .models import Estimate, EstimateItem, Invoice, Customer, Product, Service, default_due_datetime, SalesOrder, SalesOrderItem
 from finance.models import Account, AccountType, FinanceTransaction
 from users.models import UserProfile
-from .serializers import InvoiceSerializer, CustomerSerializer, ProductSerializer, ServiceSerializer,  EstimateSerializer, EstimateAttachmentSerializer, SalesOrderSerializer, EstimateAttachmentSerializer, EstimateItemSerializer, SalesOrderItemSerializer, InvoiceItemSerializer
+from .serializers import CustomerIncomeSerializer, InvoiceSerializer, CustomerSerializer, ProductSerializer, ServiceSerializer,  EstimateSerializer, EstimateAttachmentSerializer, SalesOrderSerializer, EstimateAttachmentSerializer, EstimateItemSerializer, SalesOrderItemSerializer, InvoiceItemSerializer
 from finance.serializers import TransactionSerializer
 from django.conf import settings
 from django.db import connections, transaction as db_transaction
@@ -26,6 +26,8 @@ from datetime import datetime, timedelta, date
 from django.db.models import Q
 from django.http import FileResponse
 from django.core.mail import EmailMessage
+from django.db.models import Sum, DecimalField, F, Case, When, Value
+
 from .utils import generate_pdf
 from dateutil import parser
 from django.core.exceptions import ObjectDoesNotExist
@@ -290,6 +292,70 @@ def customer_detail(request, pk):
     except Exception as e:
         logger.exception("Error fetching customer detail: %s", str(e))
         console.error("Error fetching customer detail: %s", str(e))
+        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def income_by_customer(request):
+    logger.debug("Income by Customer called")
+    user = request.user
+
+    try:
+        database_name = get_user_database(user)
+        ensure_database_exists(database_name)
+
+        customers = Customer.objects.using(database_name).annotate(
+            total_income=Sum('invoices__totalAmount')
+        ).order_by('-total_income')
+
+        serializer = CustomerIncomeSerializer(customers, many=True)
+        return Response(serializer.data)
+
+    except UserProfile.DoesNotExist:
+        logger.error("User profile not found.")
+        return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.exception(f"Error fetching income by customer: {str(e)}")
+        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def customer_income_detail(request, customer_id):
+    logger.debug(f"Customer Income Detail called for customer_id: {customer_id}")
+    user = request.user
+
+    try:
+        database_name = get_user_database(user)
+        ensure_database_exists(database_name)
+
+        customer = Customer.objects.using(database_name).annotate(
+            total_income=Sum('invoices__totalAmount')
+        ).get(id=customer_id)
+
+        invoices = Invoice.objects.using(database_name).filter(customer=customer)
+        
+        data = {
+            'customer': CustomerIncomeSerializer(customer).data,
+            'invoices': [
+                {
+                    'invoice_num': invoice.invoice_num,
+                    'date': invoice.date,
+                    'totalAmount': invoice.totalAmount,
+                    'status': invoice.status
+                } for invoice in invoices
+            ]
+        }
+
+        return Response(data)
+
+    except Customer.DoesNotExist:
+        return Response({'error': 'Customer not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except UserProfile.DoesNotExist:
+        logger.error("User profile not found.")
+        return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.exception(f"Error fetching customer income detail: {str(e)}")
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -1104,3 +1170,5 @@ def sales_order_detail(request, pk):
     except Exception as e:
         logger.exception(f"Error processing sales order detail: {str(e)}")
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    

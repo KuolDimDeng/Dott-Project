@@ -95,6 +95,8 @@ class Bill(models.Model):
     currency = models.CharField(max_length=3, default='USD')  # Add this line if it's not present
     poso_number = models.CharField(max_length=50, blank=True, null=True)  # Add this line if it's missing
     notes = models.TextField(blank=True, null=True)
+    is_paid = models.BooleanField(default=False)
+
 
 
     def save(self, *args, **kwargs):

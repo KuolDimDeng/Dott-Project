@@ -88,11 +88,24 @@ import AuditTrailManagement from './forms/AuditTrailManagement';
 import ProfitAndLossReport from './forms/ProfitAndLossReport';
 import BalanceSheetReport from './forms/BalanceSheetReport';
 import CashFlowReport from './forms/CashFlowReport';
+import IncomeByCustomer from './forms/IncomeByCustomer';
+import AgedReceivables from './forms/AgedReceivables';
+import AgedPayables from './forms/AgedPayables';
+import AccountBalances from './forms/AccountBalances';
+import TrialBalances from './forms/TrialBalances';
+import ProfitAndLossAnalysis from './forms/ProfitAndLossAnalysis';
+import CashFlowAnalysis from './forms/CashFlowAnalysis';
+import BudgetVsActualAnalysis from './forms/BudgetVsActualAnalysis';
+import SalesAnalysis from './forms/SalesAnalysis';
+import ExpenseAnalysis from './forms/ExpenseAnalysis';
+import KPIDashboard from './forms/KPIDashboard';
+import BalanceSheet from './forms/BalanceSheetAnalysis';
 import ChartContainer from '@/app/chart/component/ChartContainer';
 import IntegrationSettings from '../../Settings/integrations/components/IntegrationSettings';
 import UserProfileSettings from '@/app/Settings/UserProfile/components/UserProfileSettings';
 
 import StatusMessage from './components/StatusMessage';
+import BalanceSheetAnalysis from './forms/BalanceSheetAnalysis';
 
 
 const RenderMainContent = ({
@@ -153,6 +166,18 @@ const RenderMainContent = ({
     showProfitAndLossReport,
     showBalanceSheetReport,
     showCashFlowReport,
+    showIncomeByCustomer,
+    showAgedReceivables,
+    showAgedPayables,
+    showAccountBalances,
+    showTrialBalances,
+    showProfitAndLossAnalysis,
+    showBalanceSheetAnalysis,
+    showCashFlowAnalysis,
+    showBudgetVsActualAnalysis,
+    showSalesAnalysis,
+    showExpenseAnalysis,
+    showKPIDashboard,
 
   }) => {
     const renderContent = () => {
@@ -275,6 +300,54 @@ const RenderMainContent = ({
 
       if (showCashFlowReport) {
         return <CashFlowReport/>;
+      }
+
+      if (showIncomeByCustomer) {
+        return <IncomeByCustomer />;
+      }
+
+      if (showAgedReceivables) {
+        return <AgedReceivables />;
+      }
+
+      if (showAgedPayables) {
+        return <AgedPayables />;
+      }
+
+      if (showAccountBalances) {
+        return <AccountBalances />;
+      }
+
+      if (showTrialBalances) {
+        return <TrialBalances />;
+      }
+
+      if (showProfitAndLossAnalysis) {
+        return < ProfitAndLossAnalysis/>;
+      }
+
+      if (showBalanceSheetAnalysis) {
+        return <BalanceSheetAnalysis/>;
+      }
+
+      if (showCashFlowAnalysis) {
+        return <CashFlowAnalysis/>;
+      }
+
+      if (showBudgetVsActualAnalysis) {
+        return <BudgetVsActualAnalysis/>;
+      }
+
+      if (showSalesAnalysis) {
+        return <SalesAnalysis/>;
+      }
+
+      if (showExpenseAnalysis) {
+        return <ExpenseAnalysis/>;
+      }
+
+      if (showKPIDashboard) {
+        return <KPIDashboard/>
       }
 
       if (showEmployeeManagement) {
