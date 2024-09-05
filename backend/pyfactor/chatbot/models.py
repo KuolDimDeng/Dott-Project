@@ -5,10 +5,11 @@ from django.db import models
 from django.db import models
 from django.conf import settings
 
+
 class FAQ(models.Model):
     question = models.TextField()
     answer = models.TextField()
-    keywords = models.TextField()  # Store keywords as comma-separated values
+    keywords = models.TextField()
 
     def __str__(self):
         return self.question[:50]

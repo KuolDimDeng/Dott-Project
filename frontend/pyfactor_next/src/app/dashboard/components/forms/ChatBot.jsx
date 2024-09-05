@@ -7,14 +7,13 @@ import CloseIcon from '@mui/icons-material/Close';
 import axiosInstance from '../components/axiosConfig';
 console.log('axiosInstance:', axiosInstance);
 
-
-
 const Chatbot = ({ userName, backgroundColor }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
   const [userDatabase, setUserDatabase] = useState([]);
+  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -23,6 +22,7 @@ const Chatbot = ({ userName, backgroundColor }) => {
           const database_name = await fetchUserProfile();
           if (database_name) {
             await fetchMessages(database_name);
+            initializeWebSocket(database_name);
           }
         } catch (error) {
           console.error('Error initializing chat:', error);
@@ -36,6 +36,29 @@ const Chatbot = ({ userName, backgroundColor }) => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const initializeWebSocket = (database_name) => {
+    const newSocket = new WebSocket(`ws://localhost:8000/ws/chat/${userName}/?database=${database_name}`);
+    
+    newSocket.onopen = () => {
+      console.log('WebSocket connected');
+    };
+  
+    newSocket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setMessages(prevMessages => [...prevMessages, { message: data.message, is_from_user: data.username === userName }]);
+    };
+  
+    newSocket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+  
+    newSocket.onclose = () => {
+      console.log('WebSocket disconnected');
+    };
+  
+    setSocket(newSocket);
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -52,9 +75,10 @@ const Chatbot = ({ userName, backgroundColor }) => {
 
   const fetchMessages = async (database_name) => {
     try {
-      const response = await axiosInstance.get('/api/chatbot/messages/get_messages/', {
+      const response = await axiosInstance.get('/chatbot/api/chatbot/messages/get_messages/', {
         params: { database: database_name },
       });
+      console.log('Fetched messages:', response.data);
       if (Array.isArray(response.data.messages)) {
         setMessages(response.data.messages);
       } else {
@@ -63,33 +87,17 @@ const Chatbot = ({ userName, backgroundColor }) => {
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
-      if (error.response) {
-        console.error('Response data:', error.response.data);
-        console.error('Response status:', error.response.status);
-        console.error('Response headers:', error.response.headers);
-      } else if (error.request) {
-        console.error('No response received:', error.request);
-      } else {
-        console.error('Error setting up request:', error.message);
-      }
       setMessages([]);
     }
   };
 
   const handleToggle = () => setIsOpen(!isOpen);
 
-  const handleSend = async () => {
-    if (input.trim() && userDatabase) {
-      try {
-        const response = await axiosInstance.post('/api/chatbot/messages/send_message/', 
-          { message: input },
-          { params: { database: userDatabase } }
-        );
-        setMessages([...messages, { message: input, is_from_user: true }, { message: response.data.response, is_from_user: false }]);
-        setInput('');
-      } catch (error) {
-        console.error('Error sending message:', error);
-      }
+  const handleSend = () => {
+    if (input.trim() && userDatabase && socket && socket.readyState === WebSocket.OPEN) {
+      const message = JSON.stringify({ message: input, user_id: userName });
+      socket.send(message);
+      setInput('');
     }
   };
 

@@ -39,20 +39,6 @@ const theme = createTheme({
   },
 });
 
-const BottomAppBar = styled(MuiAppBar)(({ theme }) => ({
-    top: 'auto',
-    bottom: 0,
-    backgroundColor: '#81d4fa',
-    height: '60px',
-    minHeight: 'unset',
-    display: 'flex',
-    alignItems: 'left',
-    position: 'fixed',
-    left: 0,
-    right: 0,
-    width: '100%',
-    zIndex: theme.zIndex.drawer + 1, // Ensure it's above the drawer
-  }));
 
 function DashboardContent() {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -1071,8 +1057,8 @@ function DashboardContent() {
               duration: theme.transitions.duration.leavingScreen,
             }),
             pt: '64px',
-            pb: '60px',
-            height: 'calc(100vh - 124px)',
+            //pb: '60px',
+            height: 'calc(100vh - 4px)',
             overflow: 'auto',
           }}
         >
@@ -1235,11 +1221,7 @@ function DashboardContent() {
           </Container>
         </Box>
       
-        <BottomAppBar>
-          <Toolbar style={{ minHeight: '48px', padding: '0 10px' }}>
-            <ConsoleMessages backgroundColor="#81d4fa" />
-          </Toolbar>
-        </BottomAppBar>
+      
         <ErrorBoundary>
           <Chatbot userName={userData ? userData.first_name : 'Guest'} backgroundColor="#81d4fa" />
         </ErrorBoundary>

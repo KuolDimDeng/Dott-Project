@@ -1,24 +1,23 @@
-<!-- chatbot/templates/chatbot/staff_interface.html -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Staff Chat Interface</title>
-</head>
-<body>
-    <h1>Pending Messages</h1>
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Staff Chat Interface</h1>
+{% if pending_messages %}
+    <ul>
     {% for message in pending_messages %}
-        <div>
+        <li>
             <p>From: {{ message.user.email }}</p>
             <p>Message: {{ message.message }}</p>
+            <p>Timestamp: {{ message.timestamp }}</p>
             <form method="post" action="{% url 'respond_to_message' message.id %}">
                 {% csrf_token %}
-                <textarea name="response" required></textarea>
-                <button type="submit">Send Response</button>
+                <textarea name="response" required></textarea><br>
+                <input type="submit" value="Respond">
             </form>
-        </div>
-        <hr>
-    {% empty %}
-        <p>No pending messages.</p>
+        </li>
     {% endfor %}
-</body>
-</html>
+    </ul>
+{% else %}
+    <p>No pending messages.</p>
+{% endif %}
+{% endblock %}

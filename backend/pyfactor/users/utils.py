@@ -171,6 +171,9 @@ def setup_user_database(database_name, user_data, user):
         # Run migrations for the user's database
         logger.info(f"Running migrations for database: {database_name}")
         call_command('migrate', database=database_name)
+        
+          # Apply chatbot migrations specifically
+        call_command('migrate', 'chatbot', database=database_name)
 
         with transaction.atomic(using=database_name):
             # Create initial data

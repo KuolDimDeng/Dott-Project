@@ -20,7 +20,7 @@ urlpatterns = [
     path('api/messages/', views.message_stream, name='message_stream'),
     path('api/reports/', include('reports.urls')),
     path('api/analysis/', include('analysis.urls')),
-    path('api/chatbot/', include('chatbot.urls')),
+    path('chatbot/', include('chatbot.urls')),
     path('staff_interface/', staff_interface, name='staff_interface'),
     path('staff/chat/respond/<int:message_id>/', respond_to_message, name='respond_to_message'),
     path('api/chart/', include('chart.urls')),

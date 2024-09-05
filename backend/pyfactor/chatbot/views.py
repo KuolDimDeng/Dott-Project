@@ -1,6 +1,7 @@
 from datetime import timezone
 import json
 from django.shortcuts import redirect, render
+from django.core.exceptions import ObjectDoesNotExist
 
 # Create your views here.
 # chatbot/views.py
@@ -20,7 +21,16 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db import connections
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from django.conf import settings
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from pyfactor.logging_config import get_logger
+logger = get_logger()
 
+logger.debug("Attempting to import get_channel_layer")
+from channels.layers import get_channel_layer
+logger.debug("Successfully imported get_channel_layer")
+
+logger.debug("Chatbot views module loaded")
 
 def get_messages(request):
     database = request.GET.get('database')
@@ -65,14 +75,46 @@ def send_message(request):
         return JsonResponse({'response': response})
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
-
-@user_passes_test(lambda u: u.is_staff)
 def staff_interface(request):
-    pending_messages = ChatMessage.objects.filter(needs_staff_attention=True, staff_response__isnull=True)
-    return render(request, 'chatbot/staff_interface.html', {'pending_messages': pending_messages})
+    logger.debug("Entering staff_interface view")
+    
+    try:
+        # Log the current user
+        logger.debug(f"Current user: {request.user}")
+        
+        # Log the databases available
+        from django.db import connections
+        logger.debug(f"Available databases: {list(connections.databases.keys())}")
+        
+        # Attempt to get pending messages
+        pending_messages = ChatMessage.objects.filter(needs_staff_attention=True, staff_response__isnull=True)
+        
+        # Log the query being executed
+        logger.debug(f"Executing query: {pending_messages.query}")
+        
+        # Log the count and details of pending messages
+        logger.debug(f"Number of pending messages: {pending_messages.count()}")
+        for message in pending_messages:
+            logger.debug(f"Message ID: {message.id}, User: {message.user}, Content: {message.message[:50]}...")
+        
+        # If there are no pending messages, log this information
+        if not pending_messages.exists():
+            logger.info("No pending messages found.")
+        
+        # Render the template with the pending messages
+        return render(request, 'chatbot/staff_interface.html', {'pending_messages': pending_messages})
+    
+    except ObjectDoesNotExist as e:
+        logger.error(f"ObjectDoesNotExist error in staff_interface: {str(e)}")
+        return render(request, 'chatbot/staff_interface.html', {'error': 'Database error occurred.'})
+    except Exception as e:
+        logger.exception(f"Unexpected error in staff_interface: {str(e)}")
+        return render(request, 'chatbot/staff_interface.html', {'error': 'An unexpected error occurred.'})
+
 
 @user_passes_test(lambda u: u.is_staff)
 def respond_to_message(request, message_id):
+    logger.debug(f"Entering respond_to_message view with message_id: {message_id}")
     if request.method == 'POST':
         message = get_object_or_404(ChatMessage, id=message_id)
         response = request.POST.get('response')
@@ -86,42 +128,57 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
     queryset = ChatMessage.objects.all()
     serializer_class = ChatMessageSerializer
 
-    @action(detail=False, methods=['POST'])
-    def send_message(self, request):
-        message = request.data.get('message')
-        chat_message = ChatMessage.objects.create(user=request.user, message=message, is_from_user=True)
-        
-        # Try to match with FAQ
-        faqs = FAQ.objects.all()
-        if faqs.exists():
-            vectorizer = TfidfVectorizer()
-            corpus = [faq.question for faq in faqs] + [message]
-            tfidf_matrix = vectorizer.fit_transform(corpus)
-            cosine_similarities = cosine_similarity(tfidf_matrix[-1], tfidf_matrix[:-1]).flatten()
-            best_match_index = cosine_similarities.argmax()
+    @csrf_exempt
+    def send_message(request):
+        if request.method == 'POST':
+            database = request.GET.get('database')
+            data = json.loads(request.body)
+            message = data.get('message')
             
-            if cosine_similarities[best_match_index] > 0.5:  # Threshold for considering it a match
-                response = faqs[best_match_index].answer
-                ChatMessage.objects.create(user=request.user, message=response, is_from_user=False)
-            else:
-                response = "I'm not sure about that. Let me get a staff member to help you."
-                chat_message.needs_staff_attention = True
-                chat_message.save()
-                notify_staff.delay(chat_message.id)
-        else:
-            response = "I'm not sure about that. Let me get a staff member to help you."
-            chat_message.needs_staff_attention = True
-            chat_message.save()
-            notify_staff.delay(chat_message.id)
-        
-        return Response({'status': 'success', 'response': response})
+            # Use ORM to create the message
+            ChatMessage.objects.using(database).create(
+                user=request.user,
+                message=message,
+                is_from_user=True,
+                timestamp=timezone.now()
+            )
+            
+            # Create the response message
+            response = "Thank you for your message. A staff member will respond soon."
+            ChatMessage.objects.using(database).create(
+                user=request.user,
+                message=response,
+                is_from_user=False,
+                timestamp=timezone.now()
+            )
+            
+            return JsonResponse({'response': response})
+        return JsonResponse({'error': 'Invalid request'}, status=400)
 
-    @action(detail=False, methods=['GET'])
-    def get_messages(self, request):
-        messages = ChatMessage.objects.filter(user=request.user).order_by('timestamp')
-        serializer = self.get_serializer(messages, many=True)
-        return Response(serializer.data)
+def get_messages(request):
+    database = request.GET.get('database')
+    if not database:
+        return JsonResponse({'error': 'Database parameter is required'}, status=400)
+
+    try:
+        with connections[database].cursor() as cursor:
+            cursor.execute("SELECT * FROM chatbot_chatmessage ORDER BY timestamp DESC")
+            messages = cursor.fetchall()
+        
+        return JsonResponse({'messages': [
+            {
+                'id': msg[0],
+                'user_id': msg[1],
+                'message': msg[2],
+                'is_from_user': msg[3],
+                'timestamp': msg[4]
+            } for msg in messages
+        ]})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 class FAQViewSet(viewsets.ModelViewSet):
     queryset = FAQ.objects.all()
     serializer_class = FAQSerializer
+
+
