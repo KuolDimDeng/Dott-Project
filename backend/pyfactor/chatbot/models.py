@@ -1,4 +1,3 @@
-from django.db import models
 
 # Create your models here.
 # chatbot/models.py
@@ -17,8 +16,8 @@ class FAQ(models.Model):
 class ChatMessage(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     message = models.TextField()
-    is_from_user = models.BooleanField(default=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+    is_from_user = models.BooleanField(default=True)
     needs_staff_attention = models.BooleanField(default=False)
     staff_response = models.TextField(null=True, blank=True)
 

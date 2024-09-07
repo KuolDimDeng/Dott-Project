@@ -7,5 +7,6 @@ logger = get_logger()
 logger.debug("Configuring websocket_urlpatterns")
 websocket_urlpatterns = [
     re_path(r'ws/chat/(?P<username>\w+)/$', consumers.ChatConsumer.as_asgi()),
+    re_path(r'ws/staff_chat/$', consumers.StaffChatConsumer.as_asgi()),
 ]
 logger.debug("websocket_urlpatterns configured")

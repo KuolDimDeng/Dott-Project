@@ -1,5 +1,3 @@
-// EmployeeManagement.jsx
-
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -19,60 +17,98 @@ import {
   FormControlLabel,
   Select,
   MenuItem,
-  Chip,
+  Grid,
+  IconButton,
+  InputAdornment,
+  LinearProgress,
+
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
+import { countries } from 'countries-list';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import SearchIcon from '@mui/icons-material/Search';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import axiosInstance from '../components/axiosConfig';
 
 const EmployeeManagement = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [roles, setRoles] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [payrollProgress, setPayrollProgress] = useState(10);
+
   const [newEmployee, setNewEmployee] = useState({
     first_name: '',
+    middle_name: '',
     last_name: '',
     dob: null,
+    gender: '',
+    marital_status: '',
+    nationality: '',
     street: '',
     postcode: '',
     city: '',
     country: '',
+    security_number_type: 'SSN',
+    security_number: '',
+    invite_to_onboard: false,
     date_joined: null,
-    last_work_date: null,
-    active: true,
-    role: '',
-    site_access_privileges: '',
-    email: '',
-    phone_number: '',
-    department: '',
+    wage_type: 'salary',
     salary: '',
-    emergency_contact_name: '',
-    emergency_contact_phone: '',
-    roles: [],
+    wage_rate: '',
+    direct_deposit: false,
+    department: '',
+    job_title: '',
   });
 
-  useEffect(() => {
-    fetchEmployees();
-    fetchRoles();
-  }, []);
 
-  const fetchEmployees = async () => {
-    try {
-      const response = await axiosInstance.get('/api/employees/');
-      setEmployees(response.data);
-    } catch (error) {
-      console.error('Error fetching employees:', error);
+  const countryList = Object.entries(countries).map(([code, country]) => ({
+    code,
+    name: country.name,
+  }));
+
+  const getSecurityNumberType = (countryCode) => {
+    switch (countryCode) {
+      case 'US':
+        return 'SSN';
+      case 'UK':
+        return 'NIN';
+      case 'CA':
+        return 'SIN';
+      // Add more countries and their respective security number types
+      default:
+        return 'Other';
     }
   };
 
-  const fetchRoles = async () => {
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  // Custom styled LinearProgress
+  const GreenLinearProgress = styled(LinearProgress)(({ theme }) => ({
+    height: 10,
+    borderRadius: 5,
+    [`&.MuiLinearProgress-colorPrimary`]: {
+      backgroundColor: theme.palette.grey[300],
+    },
+    [`& .MuiLinearProgress-bar`]: {
+        borderRadius: 5,
+        backgroundColor: '#4caf50', // green color
+      },
+  }));
+
+  const fetchEmployees = async () => {
     try {
-      const response = await axiosInstance.get('/api/roles/');
-      setRoles(response.data);
+      const response = await axiosInstance.get(`/api/hr/employees/?q=${searchQuery}`);
+      setEmployees(response.data);
     } catch (error) {
-      console.error('Error fetching roles:', error);
+      console.error('Error fetching employees:', error);
     }
   };
 
@@ -82,10 +118,19 @@ const EmployeeManagement = () => {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setNewEmployee(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name === 'country') {
+      const securityNumberType = getSecurityNumberType(value);
+      setNewEmployee(prev => ({
+        ...prev,
+        [name]: value,
+        security_number_type: securityNumberType,
+      }));
+    } else {
+      setNewEmployee(prev => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleDateChange = (name, date) => {
@@ -98,10 +143,15 @@ const EmployeeManagement = () => {
   const handleCreateEmployee = async (e) => {
     e.preventDefault();
     try {
-      const response = await axiosInstance.post('/api/employees/create/', newEmployee);
+      const response = await axiosInstance.post('/api/hr/employees/create/', newEmployee);
       console.log('Employee created:', response.data);
+      if (newEmployee.invite_to_onboard) {
+        await axiosInstance.post('/api/hr/invite-employee/', { email: newEmployee.email });
+        console.log('Invitation sent to employee');
+      }
       fetchEmployees();
       setActiveTab(2);
+      setPayrollProgress(20); // Increase progress when employee is added
     } catch (error) {
       console.error('Error creating employee:', error);
     }
@@ -112,259 +162,289 @@ const EmployeeManagement = () => {
     setActiveTab(1);
   };
 
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const handleSearch = () => {
+    fetchEmployees();
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <Paper style={{ padding: '2rem' }}>
+      <Box sx={{ flexGrow: 1, bgcolor: 'background.paper' }}>
+      <Box sx={{ position: 'relative', mt: 2, mb: 2 }}>
+  {/* Progress Bar Section */}
+  <Box sx={{ width: '50%' }}>
+    <GreenLinearProgress variant="determinate" value={payrollProgress} />
+  </Box>
+  <Typography variant="body2" color="text.secondary" align="left" sx={{ mt: 1 }}>
+    Payroll setup {payrollProgress}% completed
+  </Typography>
 
-      <Box>
-        <Typography variant="h4" gutterBottom>
-          Employee Management
-        </Typography>
-        <Tabs value={activeTab} onChange={handleTabChange}>
-          <Tab label="Create" />
-          <Tab label="Details" />
-          <Tab label="List" />
+  {/* Image Section */}
+  <Box sx={{ position: 'absolute', right: 0, top: 0 }}>
+    <img
+      src="/static/images/good4.png"
+      alt="Good icon"
+      style={{ width: 100, height: 100, // Adjust the size as needed
+      borderRadius: '50%', // If the image is circular
+      imageRendering: 'auto', // For smooth scaling
+      objectFit: 'contain', // Adjust how the image fits in the space
+    }}
+  />
+</Box>
+</Box>
+
+        <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          sx={{
+            borderBottom: 1,
+            borderColor: 'divider',
+            '& .MuiTab-root': {
+              color: 'blue',
+              opacity: 0.7,
+              '&.Mui-selected': {
+                color: 'blue',
+                opacity: 1,
+              },
+            },
+          }}
+        >
+          <Tab label="Add Employee" />
+          <Tab label="Employee Details" />
+          <Tab label="View Employees" />
         </Tabs>
-
-        {activeTab === 0 && (
-          <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Create Employee</Typography>
-            <form onSubmit={handleCreateEmployee}>
-              <TextField
-                label="First Name"
-                name="first_name"
-                value={newEmployee.first_name}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Last Name"
-                name="last_name"
-                value={newEmployee.last_name}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-              <DatePicker
-                label="Date of Birth"
-                value={newEmployee.dob}
-                onChange={(date) => handleDateChange('dob', date)}
-                renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
-              />
-              <TextField
-                label="Street"
-                name="street"
-                value={newEmployee.street}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Postcode"
-                name="postcode"
-                value={newEmployee.postcode}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="City"
-                name="city"
-                value={newEmployee.city}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Country"
-                name="country"
-                value={newEmployee.country}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-              <DatePicker
-                label="Date Joined"
-                value={newEmployee.date_joined}
-                onChange={(date) => handleDateChange('date_joined', date)}
-                renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
-              />
-              <TextField
-                label="Role"
-                name="role"
-                value={newEmployee.role}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Site Access Privileges"
-                name="site_access_privileges"
-                value={newEmployee.site_access_privileges}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-                multiline
-                rows={4}
-              />
-              <TextField
-                label="Email"
-                name="email"
-                type="email"
-                value={newEmployee.email}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Phone Number"
-                name="phone_number"
-                value={newEmployee.phone_number}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Department"
-                name="department"
-                value={newEmployee.department}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Salary"
-                name="salary"
-                type="number"
-                value={newEmployee.salary}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Emergency Contact Name"
-                name="emergency_contact_name"
-                value={newEmployee.emergency_contact_name}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-              <TextField
-                label="Emergency Contact Phone"
-                name="emergency_contact_phone"
-                value={newEmployee.emergency_contact_phone}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={newEmployee.active}
-                    onChange={(e) => setNewEmployee(prev => ({ ...prev, active: e.target.checked }))}
-                    name="active"
-                  />
-                }
-                label="Active"
-              />
-              <Select
-                multiple
-                value={newEmployee.roles}
-                onChange={(e) => setNewEmployee(prev => ({ ...prev, roles: e.target.value }))}
-                renderValue={(selected) => (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.map((value) => (
-                      <Chip key={value} label={roles.find(role => role.id === value)?.name} />
-                    ))}
-                  </Box>
-                )}
-                fullWidth
-                margin="normal"
-              >
-                {roles.map((role) => (
-                  <MenuItem key={role.id} value={role.id}>
-                    {role.name}
-                  </MenuItem>
-                ))}
-              </Select>
-              <Button type="submit" variant="contained" color="primary">Create Employee</Button>
-            </form>
-          </Box>
-        )}
-
-        {activeTab === 1 && (
-          <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Employee Details</Typography>
-            {selectedEmployee ? (
-              <Box>
-                <TextField label="Employee Number" value={selectedEmployee.employee_number} fullWidth margin="normal" disabled />
-                <TextField label="First Name" value={selectedEmployee.first_name} fullWidth margin="normal" disabled />
-                <TextField label="Last Name" value={selectedEmployee.last_name} fullWidth margin="normal" disabled />
-                <TextField label="Date of Birth" value={new Date(selectedEmployee.dob).toLocaleDateString()} fullWidth margin="normal" disabled />
-                <TextField label="Street" value={selectedEmployee.street} fullWidth margin="normal" disabled />
-                <TextField label="Postcode" value={selectedEmployee.postcode} fullWidth margin="normal" disabled />
-                <TextField label="City" value={selectedEmployee.city} fullWidth margin="normal" disabled />
-                <TextField label="Country" value={selectedEmployee.country} fullWidth margin="normal" disabled />
-                <TextField label="Date Joined" value={new Date(selectedEmployee.date_joined).toLocaleDateString()} fullWidth margin="normal" disabled />
-                <TextField label="Role" value={selectedEmployee.role} fullWidth margin="normal" disabled />
-                <TextField label="Site Access Privileges" value={selectedEmployee.site_access_privileges} fullWidth margin="normal" disabled multiline rows={4} />
-                <TextField label="Email" value={selectedEmployee.email} fullWidth margin="normal" disabled />
-                <TextField label="Phone Number" value={selectedEmployee.phone_number} fullWidth margin="normal" disabled />
-                <TextField label="Department" value={selectedEmployee.department} fullWidth margin="normal" disabled />
-                <TextField label="Salary" value={selectedEmployee.salary} fullWidth margin="normal" disabled />
-                <TextField label="Emergency Contact Name" value={selectedEmployee.emergency_contact_name} fullWidth margin="normal" disabled />
-                <TextField label="Emergency Contact Phone" value={selectedEmployee.emergency_contact_phone} fullWidth margin="normal" disabled />
-                <FormControlLabel
-                  control={<Switch checked={selectedEmployee.active} disabled />}
-                  label="Active"
-                />
-                <Box mt={2}>
-                  <Typography variant="subtitle1">Roles:</Typography>
-                  {selectedEmployee.roles.map((role) => (
-                    <Chip key={role.id} label={role.role.name} style={{ margin: '0 4px 4px 0' }} />
-                  ))}
-                </Box>
+  
+        <Box sx={{ flexGrow: 1, mt: 2, overflow: 'auto' }}>
+          {activeTab === 0 && (
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <PersonAddIcon sx={{ fontSize: 30, mr: 1, color: '#000080' }} />
+                <Typography variant="h5" gutterBottom sx={{ mb: 0 }}>
+                  Add Employee
+                </Typography>
               </Box>
-            ) : (
-              <Typography>Select an employee from the list to view details</Typography>
-            )}
-          </Box>
-        )}
+              <Typography variant="h8" gutterBottom sx={{ mb: 0 }}>Add basic information about the employee.</Typography>
 
-        {activeTab === 2 && (
-          <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Employee List</Typography>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Employee Number</TableCell>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Role</TableCell>
-                    <TableCell>Department</TableCell>
-                    <TableCell>Active</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {employees.map((employee) => (
-                    <TableRow key={employee.id} onClick={() => handleEmployeeSelect(employee)}>
-                      <TableCell>{employee.employee_number}</TableCell>
-                      <TableCell>{`${employee.first_name} ${employee.last_name}`}</TableCell>
-                      <TableCell>{employee.role}</TableCell>
-                      <TableCell>{employee.department}</TableCell>
-                      <TableCell>
-                        <Switch checked={employee.active} disabled />
-                      </TableCell>
+              <form onSubmit={handleCreateEmployee}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={6}>
+                    <Paper elevation={3} sx={{ p: 3 }}>
+                      <Typography variant="h6" gutterBottom>Personal Information</Typography>
+                      <TextField label="First Name" name="first_name" value={newEmployee.first_name} onChange={handleInputChange} fullWidth margin="normal" />
+                      <TextField label="Middle Name" name="middle_name" value={newEmployee.middle_name} onChange={handleInputChange} fullWidth margin="normal" />
+                      <TextField label="Last Name" name="last_name" value={newEmployee.last_name} onChange={handleInputChange} fullWidth margin="normal" />
+                      <DatePicker
+                        label="Date of Birth"
+                        value={newEmployee.dob}
+                        onChange={(date) => handleDateChange('dob', date)}
+                        renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+                      />
+                      <TextField
+                        select
+                        label="Gender"
+                        name="gender"
+                        value={newEmployee.gender}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      >
+                        <MenuItem value="M">Male</MenuItem>
+                        <MenuItem value="F">Female</MenuItem>
+                        <MenuItem value="O">Other</MenuItem>
+                        <MenuItem value="N">Prefer not to say</MenuItem>
+                      </TextField>
+                      <TextField
+                        select
+                        label="Marital Status"
+                        name="marital_status"
+                        value={newEmployee.marital_status}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      >
+                        <MenuItem value="S">Single</MenuItem>
+                        <MenuItem value="M">Married</MenuItem>
+                        <MenuItem value="D">Divorced</MenuItem>
+                        <MenuItem value="W">Widowed</MenuItem>
+                      </TextField>
+                      <TextField label="Nationality" name="nationality" value={newEmployee.nationality} onChange={handleInputChange} fullWidth margin="normal" />
+                      <TextField label="Street" name="street" value={newEmployee.street} onChange={handleInputChange} fullWidth margin="normal" />
+                      <TextField label="Postcode" name="postcode" value={newEmployee.postcode} onChange={handleInputChange} fullWidth margin="normal" />
+                      <TextField label="City" name="city" value={newEmployee.city} onChange={handleInputChange} fullWidth margin="normal" />
+                      <TextField label="Country" name="country" value={newEmployee.country} onChange={handleInputChange} fullWidth margin="normal" />
+                      <TextField
+                        select
+                        label="Security Number Type"
+                        name="security_number_type"
+                        value={newEmployee.security_number_type}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      >
+                        <MenuItem value="SSN">Social Security Number (US)</MenuItem>
+                        <MenuItem value="NIN">National Insurance Number (UK)</MenuItem>
+                        {/* Add other options as needed */}
+                      </TextField>
+                      <TextField label="Security Number" name="security_number" value={newEmployee.security_number} onChange={handleInputChange} fullWidth margin="normal" />
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={newEmployee.invite_to_onboard}
+                            onChange={(e) => setNewEmployee(prev => ({ ...prev, invite_to_onboard: e.target.checked }))}
+                            name="invite_to_onboard"
+                          />
+                        }
+                        label="Invite employee to onboard and enter their information"
+                      />
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Paper elevation={3} sx={{ p: 3 }}>
+                      <Typography variant="h6" gutterBottom>Work Information</Typography>
+                      <DatePicker
+                        label="Start Date"
+                        value={newEmployee.date_joined}
+                        onChange={(date) => handleDateChange('date_joined', date)}
+                        renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+                      />
+                      <TextField
+                        select
+                        label="Wage Type"
+                        name="wage_type"
+                        value={newEmployee.wage_type}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      >
+                        <MenuItem value="salary">Salary</MenuItem>
+                        <MenuItem value="wage">Wage</MenuItem>
+                      </TextField>
+                      {newEmployee.wage_type === 'salary' ? (
+                        <TextField label="Salary" name="salary" type="number" value={newEmployee.salary} onChange={handleInputChange} fullWidth margin="normal" />
+                      ) : (
+                        <TextField label="Wage Rate per Hour" name="wage_rate" type="number" value={newEmployee.wage_rate} onChange={handleInputChange} fullWidth margin="normal" />
+                      )}
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={newEmployee.direct_deposit}
+                            onChange={(e) => setNewEmployee(prev => ({ ...prev, direct_deposit: e.target.checked }))}
+                            name="direct_deposit"
+                          />
+                        }
+                        label="Direct Deposit"
+                      />
+                      <TextField label="Department" name="department" value={newEmployee.department} onChange={handleInputChange} fullWidth margin="normal" />
+                      <TextField label="Job Title" name="job_title" value={newEmployee.job_title} onChange={handleInputChange} fullWidth margin="normal" />
+                    </Paper>
+                  </Grid>
+                </Grid>
+                <Button type="submit" variant="contained" color="primary" sx={{ mt: 3 }}>
+                  Add Employee
+                </Button>
+              </form>
+            </Box>
+          )}
+          {activeTab === 1 && (
+            <Box>
+              <Typography variant="h4" gutterBottom>Employee Details</Typography>
+              {selectedEmployee && (
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={6}>
+                    <Paper elevation={3} sx={{ p: 3 }}>
+                      <Typography variant="h6" gutterBottom>Personal Information</Typography>
+                      <TextField label="Employee Number" value={selectedEmployee.employee_number} fullWidth margin="normal" disabled />
+                      <TextField label="First Name" value={selectedEmployee.first_name} fullWidth margin="normal" />
+                      <TextField label="Middle Name" value={selectedEmployee.middle_name} fullWidth margin="normal" />
+                      <TextField label="Last Name" value={selectedEmployee.last_name} fullWidth margin="normal" />
+                      <TextField label="Date of Birth" value={new Date(selectedEmployee.dob).toLocaleDateString()} fullWidth margin="normal" />
+                      <TextField label="Gender" value={selectedEmployee.gender} fullWidth margin="normal" />
+                      <TextField label="Marital Status" value={selectedEmployee.marital_status} fullWidth margin="normal" />
+                      <TextField label="Nationality" value={selectedEmployee.nationality} fullWidth margin="normal" />
+                      <TextField label="Security Number Type" value={selectedEmployee.security_number_type} fullWidth margin="normal" />
+                      <TextField label="Security Number" value={selectedEmployee.security_number} fullWidth margin="normal" />
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Paper elevation={3} sx={{ p: 3 }}>
+                      <Typography variant="h6" gutterBottom>Work Information</Typography>
+                      <TextField label="Job Title" value={selectedEmployee.job_title} fullWidth margin="normal" />
+                      <TextField label="Department" value={selectedEmployee.department} fullWidth margin="normal" />
+                      <TextField label="Date Joined" value={new Date(selectedEmployee.date_joined).toLocaleDateString()} fullWidth margin="normal" />
+                      <TextField label="Wage Type" value={selectedEmployee.wage_type} fullWidth margin="normal" />
+                      {selectedEmployee.wage_type === 'salary' ? (
+                        <TextField label="Salary" value={selectedEmployee.salary} fullWidth margin="normal" />
+                      ) : (
+                        <TextField label="Wage Rate" value={selectedEmployee.wage_rate} fullWidth margin="normal" />
+                      )}
+                      <FormControlLabel
+                        control={<Switch checked={selectedEmployee.direct_deposit} />}
+                        label="Direct Deposit"
+                      />
+                    </Paper>
+                  </Grid>
+                </Grid>
+              )}
+            </Box>
+          )}
+          {activeTab === 2 && (
+            <Box>
+              <Typography variant="h4" gutterBottom>View Employees</Typography>
+              <TextField
+                fullWidth
+                variant="outlined"
+                placeholder="Search employees..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={handleSearch}>
+                        <SearchIcon />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ mb: 2 }}
+              />
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Employee Number</TableCell>
+                      <TableCell>Name</TableCell>
+                      <TableCell>Job Title</TableCell>
+                      <TableCell>Department</TableCell>
+                      <TableCell>Actions</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
-        )}
+                  </TableHead>
+                  <TableBody>
+                    {employees.map((employee) => (
+                      <TableRow key={employee.id}>
+                        <TableCell>{employee.employee_number}</TableCell>
+                        <TableCell>{`${employee.first_name} ${employee.last_name}`}</TableCell>
+                        <TableCell>{employee.job_title}</TableCell>
+                        <TableCell>{employee.department}</TableCell>
+                        <TableCell>
+                          <IconButton onClick={() => handleEmployeeSelect(employee)}>
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton>
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          )}
+        </Box>
       </Box>
-      </Paper>
     </LocalizationProvider>
   );
 };

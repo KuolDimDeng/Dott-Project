@@ -17,7 +17,12 @@ import os
 import logging
 import logging.config
 from dotenv import load_dotenv
+from cryptography.fernet import Fernet
 
+ENCRYPTION_KEY = Fernet.generate_key()
+
+
+SECRET_KEY = 'sdbf6s8!9#w9@j_!w=2-s&+=x&g(9tvq&*p@g=%_&%fy$65-z%'
 
 
 # Load environment variables from .env file
@@ -55,7 +60,7 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-8)j4zojil$u=s73e8yap9s-q6swefl((h)3krq))g@4qm$1crw')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
@@ -242,6 +247,8 @@ INSTALLED_APPS = [
     'django_countries',
     'rest_framework.authtoken',
     'dj_rest_auth',
+    'django_cryptography',
+    'phonenumber_field',
     'channels',  # Add this line
     'users',
     'business',

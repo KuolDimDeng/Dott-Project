@@ -51,7 +51,7 @@ const Drawer = ({
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',
-          top: '64px',
+          top: '50px',
           height: 'calc(100% - 64px)',
           borderRight: 'none',
           overflowX: 'hidden',

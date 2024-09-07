@@ -8,6 +8,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import user_passes_test
+from users.models import User, UserProfile
 from .models import ChatMessage, FAQ
 from .serializers import ChatMessageSerializer, FAQSerializer
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -75,53 +78,69 @@ def send_message(request):
         return JsonResponse({'response': response})
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
+@user_passes_test(lambda u: u.is_staff)
 def staff_interface(request):
-    logger.debug("Entering staff_interface view")
-    
     try:
-        # Log the current user
-        logger.debug(f"Current user: {request.user}")
+        all_messages = []
+        user_profiles = UserProfile.objects.all()
         
-        # Log the databases available
-        from django.db import connections
-        logger.debug(f"Available databases: {list(connections.databases.keys())}")
+        for profile in user_profiles:
+            database_name = profile.database_name
+            if database_name:
+                try:
+                    with connections[database_name].cursor() as cursor:
+                        cursor.execute("SELECT * FROM chatbot_chatmessage ORDER BY timestamp DESC")
+                        messages = cursor.fetchall()
+                        all_messages.extend([
+                            {
+                                'id': message[0],
+                                'user_email': profile.user.email,
+                                'message': message[2],
+                                'timestamp': message[3],
+                                'is_from_user': message[4],
+                                'needs_staff_attention': message[5],
+                                'staff_response': message[6],
+                                'database': database_name,
+                            }
+                            for message in messages
+                        ])
+                except Exception as e:
+                    logger.error(f"Error fetching messages from database {database_name}: {str(e)}")
         
-        # Attempt to get pending messages
-        pending_messages = ChatMessage.objects.filter(needs_staff_attention=True, staff_response__isnull=True)
+        all_messages.sort(key=lambda x: x['timestamp'], reverse=True)
         
-        # Log the query being executed
-        logger.debug(f"Executing query: {pending_messages.query}")
+        logger.debug(f"Total messages fetched: {len(all_messages)}")
         
-        # Log the count and details of pending messages
-        logger.debug(f"Number of pending messages: {pending_messages.count()}")
-        for message in pending_messages:
-            logger.debug(f"Message ID: {message.id}, User: {message.user}, Content: {message.message[:50]}...")
-        
-        # If there are no pending messages, log this information
-        if not pending_messages.exists():
-            logger.info("No pending messages found.")
-        
-        # Render the template with the pending messages
-        return render(request, 'chatbot/staff_interface.html', {'pending_messages': pending_messages})
-    
-    except ObjectDoesNotExist as e:
-        logger.error(f"ObjectDoesNotExist error in staff_interface: {str(e)}")
-        return render(request, 'chatbot/staff_interface.html', {'error': 'Database error occurred.'})
+        return render(request, 'chatbot/staff_interface.html', {'messages': all_messages})
     except Exception as e:
         logger.exception(f"Unexpected error in staff_interface: {str(e)}")
         return render(request, 'chatbot/staff_interface.html', {'error': 'An unexpected error occurred.'})
-
-
+    
 @user_passes_test(lambda u: u.is_staff)
 def respond_to_message(request, message_id):
     logger.debug(f"Entering respond_to_message view with message_id: {message_id}")
     if request.method == 'POST':
-        message = get_object_or_404(ChatMessage, id=message_id)
+        database = request.POST.get('database')
         response = request.POST.get('response')
-        message.staff_response = response
-        message.needs_staff_attention = False
-        message.save()
-        ChatMessage.objects.create(user=message.user, message=response, is_from_user=False)
+        
+        with connections[database].cursor() as cursor:
+            # Update the original message
+            cursor.execute("""
+                UPDATE chatbot_chatmessage
+                SET staff_response = %s, needs_staff_attention = FALSE
+                WHERE id = %s
+            """, [response, message_id])
+            
+            # Create a new message for the staff response
+            cursor.execute("""
+                INSERT INTO chatbot_chatmessage (user_id, message, is_from_user, timestamp, needs_staff_attention)
+                SELECT user_id, %s, FALSE, %s, FALSE
+                FROM chatbot_chatmessage
+                WHERE id = %s
+            """, [response, timezone.now(), message_id])
+        
+        logger.info(f"Staff response added for message {message_id} in database {database}")
+    
     return redirect('staff_interface')
 
 class ChatMessageViewSet(viewsets.ModelViewSet):
@@ -181,4 +200,97 @@ class FAQViewSet(viewsets.ModelViewSet):
     queryset = FAQ.objects.all()
     serializer_class = FAQSerializer
 
+
+
+@user_passes_test(lambda u: u.is_staff)
+def message_details(request, message_id):
+    database = request.GET.get('database')
+    with connections[database].cursor() as cursor:
+        cursor.execute("SELECT * FROM chatbot_chatmessage WHERE id = %s", [message_id])
+        message = cursor.fetchone()
+    
+    if message:
+        return JsonResponse({
+            'id': message[0],
+            'user_email': message[1],  # You might need to fetch this from the user table
+            'message': message[2],
+            'timestamp': message[3],
+            'is_from_user': message[4],
+            'needs_staff_attention': message[5],
+            'staff_response': message[6]
+        })
+    else:
+        return JsonResponse({'error': 'Message not found'}, status=404)
+
+@user_passes_test(lambda u: u.is_staff)
+@require_http_methods(["POST"])
+def respond_to_message(request, message_id):
+    database = request.POST.get('database')
+    response = request.POST.get('response')
+    
+    with connections[database].cursor() as cursor:
+        cursor.execute("""
+            UPDATE chatbot_chatmessage
+            SET staff_response = %s, needs_staff_attention = FALSE
+            WHERE id = %s
+        """, [response, message_id])
+    
+    # Send a WebSocket message to update all staff interfaces
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        "staff_chat",
+        {
+            "type": "chat_message",
+            "message": {
+                "id": message_id,
+                "staff_response": response,
+                "needs_staff_attention": False
+            }
+        }
+    )
+    
+    return JsonResponse({'success': True})
+
+def user_details(request, message_id):
+    database = request.GET.get('database')
+    if not database:
+        return JsonResponse({'error': 'Database parameter is required'}, status=400)
+
+    try:
+        with connections[database].cursor() as cursor:
+            # Fetch the chat message
+            cursor.execute("SELECT * FROM chatbot_chatmessage WHERE id = %s", [message_id])
+            message = cursor.fetchone()
+            
+            if not message:
+                return JsonResponse({'error': 'Message not found'}, status=404)
+            
+            # Fetch user details
+            user_id = message[1]  # Assuming user_id is the second column
+            user = User.objects.get(id=user_id)
+            user_profile = UserProfile.objects.get(user=user)
+
+            # Fetch chat history
+            cursor.execute("SELECT * FROM chatbot_chatmessage WHERE user_id = %s ORDER BY timestamp DESC LIMIT 10", [user_id])
+            chat_history = cursor.fetchall()
+
+            return JsonResponse({
+                'full_name': f"{user.first_name} {user.last_name}",
+                'email': user.email,
+                'business_name': user_profile.business.name if user_profile.business else '',
+                'is_online': user.is_authenticated,  # You might want to implement a more sophisticated online status check
+                'user_id': str(user.id),
+                'chat_token': 'your_chat_token_here',  # Implement a proper token generation method
+                'chat_history': [
+                    {
+                        'message': msg[2],  # Assuming message content is the third column
+                        'timestamp': msg[3].isoformat(),  # Assuming timestamp is the fourth column
+                        'is_from_user': msg[4],  # Assuming is_from_user is the fifth column
+                    } for msg in chat_history
+                ],
+            })
+    except ObjectDoesNotExist:
+        return JsonResponse({'error': 'User or profile not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 

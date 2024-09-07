@@ -23,11 +23,16 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 
 import MenuIcon from '@mui/icons-material/Menu'; 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+const MENU_WIDTH = 220; // Adjust this value to change the menu width
+
+const SUBMENU_LEFT_POSITION = MENU_WIDTH; // Adjust this offset as needed
 
 
 const navyBlue = '#000080';
 const myColor = '#1565c0';
-const textColor = '#0d47a1';
+const lightGrey = '#bdbdbd';
+const blue = '#2196f3';
+const textColor = '#1a237e';
 const iconColor = '#1e88e5';
 
 const listItemStyle = {
@@ -56,11 +61,11 @@ const mainMenuItemStyle = {
 };
 
 const menuItemStyle = {
-  color: navyBlue, // Default text color
+  color: textColor, // Default text color
   transition: 'all 0.2s ease', // Fast transition for all properties
   '&:hover': {
-    backgroundColor: navyBlue,
-    color: 'white',
+    backgroundColor: 'rgba(0, 0, 128, 0.12)', // Darker shade of grey when selected
+    color: textColor, // Darker text color when hovered
   },
 };
 
@@ -233,7 +238,7 @@ export const MainListItems = ({
  // };
 
   return (
-    <Paper elevation={3} sx={{ p: 2, my: 2, width: '99%' }}>
+    <Paper elevation={3} sx={{ p: 2, my: 2, width: MENU_WIDTH }}>
       <Box sx={{ 
       overflow: 'auto',
       '& .MuiListItemButton-root': {
@@ -335,28 +340,7 @@ export const MainListItems = ({
                 </ListItemIcon>
                 <ListItemText primary="Banking" sx={{ color: textColor }} />
               </ListItemButton>
-              <ListItemButton 
-                onClick={(event) => {
-                  setSelectedItem('hr');
-                  handleHRMenuOpen(event);
-                }}
-                selected={selectedItem === 'hr'}
-              >
-                <ListItemIcon>
-                  <PeopleIcon style={{ color: iconColor }} />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Human Resources" 
-                  sx={{ 
-                    color: textColor,
-                    '& .MuiListItemText-primary': {
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }
-                  }} 
-                />         
-              </ListItemButton>
+             
               <ListItemButton 
                 onClick={(event) => {
                   setSelectedItem('payroll');
@@ -409,89 +393,59 @@ export const MainListItems = ({
           )}
       </List>
       <Menu
-        anchorEl={createAnchorEl}
-        open={showCreateOptionsMenu}
-        onClose={handleCreateOptionsMenuClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        anchorReference="anchorPosition"
-        anchorPosition={{ left: 220, top: createAnchorEl ? createAnchorEl.getBoundingClientRect().top : 0}}
-      >
-        <MenuItem onClick={() => handleCreateOptionsSelect('Transaction')} sx={menuItemStyle}>Transaction</MenuItem>
-        <MenuItem onClick={() => handleCreateOptionsSelect('Product')} sx={menuItemStyle}>Product</MenuItem>
-        <MenuItem onClick={() => handleCreateOptionsSelect('Service')} sx={menuItemStyle}>Service</MenuItem>
-        <MenuItem onClick={() => handleCreateOptionsSelect('Customer')} sx={menuItemStyle}>Customer</MenuItem>
-        <MenuItem onClick={() => handleCreateOptionsSelect('Bill')} sx={menuItemStyle}>Bill</MenuItem>
-        <MenuItem onClick={() => handleCreateOptionsSelect('Invoice')} sx={menuItemStyle}>Invoice</MenuItem>
-        <MenuItem onClick={() => handleCreateOptionsSelect('Vendor')} sx={menuItemStyle}>Vendor</MenuItem>
-        <MenuItem onClick={() => handleCreateOptionsSelect('Estimate')} sx={menuItemStyle}>Estimate</MenuItem>
-        <MenuItem onClick={() => handleCreateOptionsSelect('Sales Order')} sx={menuItemStyle}>Sales Order</MenuItem>
-      </Menu>
-      <Menu
-        anchorEl={reportsAnchorEl}
-        open={showReportsMenu}
-        onClose={handleReportsMenuClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        anchorReference="anchorPosition"
-        anchorPosition={{ left: 220, top: reportsAnchorEl ? reportsAnchorEl.getBoundingClientRect().top : 0}}
-      >
-   <MenuItem onClick={() => handleReportSelect('income_statement')} sx={menuItemStyle}>
-  Profit & Loss (Income Statement)
-</MenuItem>
-<MenuItem onClick={() => handleReportSelect('balance_sheet')} sx={menuItemStyle}>
-  Balance Sheet
-</MenuItem>
-<MenuItem onClick={() => handleReportSelect('cash_flow')} sx={menuItemStyle}>
-  Cash Flow
-</MenuItem>
-<MenuItem onClick={() => handleReportSelect('sales_tax_report')} sx={menuItemStyle}>
-  Sales Tax Report
-</MenuItem>
-<MenuItem onClick={() => handleReportSelect('payroll_wage_tax_report')} sx={menuItemStyle}>
-  Payroll Wage & Tax Report
-</MenuItem>
-<MenuItem onClick={() => handleReportSelect('income_by_customer')} sx={menuItemStyle}>
-  Income by Customer
-</MenuItem>
-<MenuItem onClick={() => handleReportSelect('aged_receivables')} sx={menuItemStyle}>
-  Aged Receivables
-</MenuItem>
-<MenuItem onClick={() => handleReportSelect('purchases_by_vendor')} sx={menuItemStyle}>
-  Purchases by Vendor
-</MenuItem>
-<MenuItem onClick={() => handleReportSelect('aged_payables')} sx={menuItemStyle}>
-  Aged Payables
-</MenuItem>
-<MenuItem onClick={() => handleReportSelect('account_balances')} sx={menuItemStyle}>
-  Account Balances
-</MenuItem>
-<MenuItem onClick={() => handleReportSelect('trial_balance')} sx={menuItemStyle}>
-  Trial Balance
-</MenuItem>
-<MenuItem onClick={() => handleReportSelect('general_ledger')} sx={menuItemStyle}>
-  General Ledger (Account Transactions)
-</MenuItem>
-
-
-
-
-
-
-      </Menu>
-      <Menu
+          anchorEl={createAnchorEl}
+          open={showCreateOptionsMenu}
+          onClose={handleCreateOptionsMenuClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+          anchorReference="anchorPosition"
+          anchorPosition={{ left: SUBMENU_LEFT_POSITION, top: createAnchorEl ? createAnchorEl.getBoundingClientRect().top : 0}}
+        >
+          <MenuItem onClick={() => handleCreateOptionsSelect('Transaction')} sx={menuItemStyle}>Transaction</MenuItem>
+          <MenuItem onClick={() => handleCreateOptionsSelect('Product')} sx={menuItemStyle}>Product</MenuItem>
+          <MenuItem onClick={() => handleCreateOptionsSelect('Service')} sx={menuItemStyle}>Service</MenuItem>
+          <MenuItem onClick={() => handleCreateOptionsSelect('Customer')} sx={menuItemStyle}>Customer</MenuItem>
+          <MenuItem onClick={() => handleCreateOptionsSelect('Bill')} sx={menuItemStyle}>Bill</MenuItem>
+          <MenuItem onClick={() => handleCreateOptionsSelect('Invoice')} sx={menuItemStyle}>Invoice</MenuItem>
+          <MenuItem onClick={() => handleCreateOptionsSelect('Vendor')} sx={menuItemStyle}>Vendor</MenuItem>
+          <MenuItem onClick={() => handleCreateOptionsSelect('Estimate')} sx={menuItemStyle}>Estimate</MenuItem>
+          <MenuItem onClick={() => handleCreateOptionsSelect('Sales Order')} sx={menuItemStyle}>Sales Order</MenuItem>
+        </Menu>
+        <Menu
+          anchorEl={reportsAnchorEl}
+          open={showReportsMenu}
+          onClose={handleReportsMenuClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+          anchorReference="anchorPosition"
+          anchorPosition={{ left: SUBMENU_LEFT_POSITION, top: reportsAnchorEl ? reportsAnchorEl.getBoundingClientRect().top : 0}}
+        >
+          <MenuItem onClick={() => handleReportSelect('income_statement')} sx={menuItemStyle}>Profit & Loss (Income Statement)</MenuItem>
+          <MenuItem onClick={() => handleReportSelect('balance_sheet')} sx={menuItemStyle}>Balance Sheet</MenuItem>
+          <MenuItem onClick={() => handleReportSelect('cash_flow')} sx={menuItemStyle}>Cash Flow</MenuItem>
+          <MenuItem onClick={() => handleReportSelect('sales_tax_report')} sx={menuItemStyle}>Sales Tax Report</MenuItem>
+          <MenuItem onClick={() => handleReportSelect('payroll_wage_tax_report')} sx={menuItemStyle}>Payroll Wage & Tax Report</MenuItem>
+          <MenuItem onClick={() => handleReportSelect('income_by_customer')} sx={menuItemStyle}>Income by Customer</MenuItem>
+          <MenuItem onClick={() => handleReportSelect('aged_receivables')} sx={menuItemStyle}>Aged Receivables</MenuItem>
+          <MenuItem onClick={() => handleReportSelect('purchases_by_vendor')} sx={menuItemStyle}>Purchases by Vendor</MenuItem>
+          <MenuItem onClick={() => handleReportSelect('aged_payables')} sx={menuItemStyle}>Aged Payables</MenuItem>
+          <MenuItem onClick={() => handleReportSelect('account_balances')} sx={menuItemStyle}>Account Balances</MenuItem>
+          <MenuItem onClick={() => handleReportSelect('trial_balance')} sx={menuItemStyle}>Trial Balance</MenuItem>
+          <MenuItem onClick={() => handleReportSelect('general_ledger')} sx={menuItemStyle}>General Ledger (Account Transactions)</MenuItem>
+        </Menu>
+        <Menu
           anchorEl={bankingAnchorEl}
           open={Boolean(bankingAnchorEl)}
           onClose={handleBankingMenuClose}
@@ -504,7 +458,7 @@ export const MainListItems = ({
             horizontal: 'left',
           }}
           anchorReference="anchorPosition"
-          anchorPosition={{ left: 220, top: bankingAnchorEl ? bankingAnchorEl.getBoundingClientRect().top : 0}}
+          anchorPosition={{ left: SUBMENU_LEFT_POSITION, top: bankingAnchorEl ? bankingAnchorEl.getBoundingClientRect().top : 0}}
         >
           <MenuItem onClick={() => handleBankingClick('dashboard')} sx={menuItemStyle}>Banking Dashboard</MenuItem>
           <MenuItem onClick={() => handleBankingClick('connect-account')} sx={menuItemStyle}>Connect Bank Account</MenuItem>
@@ -517,86 +471,10 @@ export const MainListItems = ({
           <MenuItem onClick={() => handleBankingClick('bank-rules')} sx={menuItemStyle}>Bank Rules</MenuItem>
           <MenuItem onClick={() => handleBankingClick('bank-reports')} sx={menuItemStyle}>Banking Reports</MenuItem>
         </Menu>
-
-      <Menu
-        anchorEl={hrAnchorEl}
-        open={Boolean(hrAnchorEl)}
-        onClose={handleHRMenuClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        anchorReference="anchorPosition"
-        anchorPosition={{ left: 220, top: hrAnchorEl ? hrAnchorEl.getBoundingClientRect().top : 0}}
-      >
-        <MenuItem onClick={() => handleHRClick('employees')} sx={menuItemStyle}>Employees</MenuItem>
-        <MenuItem onClick={() => handleHRClick('time-attendance')} sx={menuItemStyle}>Time and Attendance</MenuItem>
-        <MenuItem onClick={() => handleHRClick('benefits')} sx={menuItemStyle}>Benefits Administration</MenuItem>
-        <MenuItem onClick={() => handleHRClick('employee-relations')} sx={menuItemStyle}>Employee Relations</MenuItem>
-        <MenuItem onClick={() => handleHRClick('hr-reports')} sx={menuItemStyle}>Reporting and Analytics</MenuItem>
-      </Menu>
-
-      <Menu
-        anchorEl={payrollAnchorEl}
-        open={Boolean(payrollAnchorEl)}
-        onClose={handlePayrollMenuClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        anchorReference="anchorPosition"
-        anchorPosition={{ left: 220, top: payrollAnchorEl ? payrollAnchorEl.getBoundingClientRect().top : 0}}
-      >
-        <MenuItem onClick={() => handlePayrollClick('run')} sx={menuItemStyle}>Run Payroll</MenuItem>
-        <MenuItem onClick={() => handlePayrollClick('timesheets')} sx={menuItemStyle}>Timesheets</MenuItem>
-        <MenuItem onClick={() => handlePayrollClick('transactions')} sx={menuItemStyle}>Payroll Transactions</MenuItem>
-        <MenuItem onClick={() => handlePayrollClick('taxes')} sx={menuItemStyle}>Taxes</MenuItem>
-        <MenuItem onClick={() => handlePayrollClick('taxForms')} sx={menuItemStyle}>Tax Forms</MenuItem>
-        <MenuItem onClick={() => handlePayrollClick('payroll-reports')} sx={menuItemStyle}>Paytoll Reports</MenuItem>
-
-      </Menu>
-      <Menu
-            anchorEl={accountingAnchorEl}
-            open={Boolean(accountingAnchorEl)}
-            onClose={handleAccountingMenuClose}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'left',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'left',
-            }}
-            anchorReference="anchorPosition"
-            anchorPosition={{ left: 220, top: accountingAnchorEl ? accountingAnchorEl.getBoundingClientRect().top : 0}}
-          >
-            <MenuItem onClick={() => handleAccountingClick('dashboard')} sx={menuItemStyle}>Dashboard</MenuItem>
-            <MenuItem onClick={() => handleAccountingClick('chart-of-accounts')} sx={menuItemStyle}>Chart of Accounts</MenuItem>
-            <MenuItem onClick={() => handleAccountingClick('journal-entries')} sx={menuItemStyle}>Journal Entries</MenuItem>
-            <MenuItem onClick={() => handleAccountingClick('general-ledger')} sx={menuItemStyle}>General Ledger</MenuItem>
-            <MenuItem onClick={() => handleAccountingClick('reconciliation')} sx={menuItemStyle}>Account Reconciliation</MenuItem>
-            <MenuItem onClick={() => handleAccountingClick('month-end-closing')} sx={menuItemStyle}>Month-End Closing</MenuItem>
-            <MenuItem onClick={() => handleAccountingClick('financial-statements')} sx={menuItemStyle}>Financial Statements</MenuItem>
-            <MenuItem onClick={() => handleAccountingClick('fixed-assets')} sx={menuItemStyle}>Fixed Assets</MenuItem>
-            <MenuItem onClick={() => handleAccountingClick('budgeting')} sx={menuItemStyle}>Budgeting</MenuItem>
-            <MenuItem onClick={() => handleAccountingClick('cost-accounting')} sx={menuItemStyle}>Cost Accounting</MenuItem>
-            <MenuItem onClick={() => handleAccountingClick('intercompany-transactions')} sx={menuItemStyle}>Intercompany Transactions</MenuItem>
-            <MenuItem onClick={() => handleAccountingClick('audit-trail')} sx={menuItemStyle}>Audit Trail</MenuItem>
-            <MenuItem onClick={() => handleAccountingClick('accounting-reports')} sx={menuItemStyle}>Accounting Reports</MenuItem>
-          </Menu>
         <Menu
-          anchorEl={salesAnchorEl}
-          open={Boolean(salesAnchorEl)}
-          onClose={handleSalesMenuClose}
-          // ... other Menu props ...
+          anchorEl={hrAnchorEl}
+          open={Boolean(hrAnchorEl)}
+          onClose={handleHRMenuClose}
           anchorOrigin={{
             vertical: 'bottom',
             horizontal: 'left',
@@ -606,7 +484,79 @@ export const MainListItems = ({
             horizontal: 'left',
           }}
           anchorReference="anchorPosition"
-          anchorPosition={{ left: 220, top: salesAnchorEl ? salesAnchorEl.getBoundingClientRect().top : 0}}
+          anchorPosition={{ left: SUBMENU_LEFT_POSITION, top: hrAnchorEl ? hrAnchorEl.getBoundingClientRect().top : 0}}
+        >
+          <MenuItem onClick={() => handleHRClick('time-attendance')} sx={menuItemStyle}>Time and Attendance</MenuItem>
+          <MenuItem onClick={() => handleHRClick('benefits')} sx={menuItemStyle}>Benefits Administration</MenuItem>
+          <MenuItem onClick={() => handleHRClick('employee-relations')} sx={menuItemStyle}>Employee Relations</MenuItem>
+          <MenuItem onClick={() => handleHRClick('hr-reports')} sx={menuItemStyle}>Reporting and Analytics</MenuItem>
+        </Menu>
+        <Menu
+          anchorEl={payrollAnchorEl}
+          open={Boolean(payrollAnchorEl)}
+          onClose={handlePayrollMenuClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+          anchorReference="anchorPosition"
+          anchorPosition={{ left: SUBMENU_LEFT_POSITION, top: payrollAnchorEl ? payrollAnchorEl.getBoundingClientRect().top : 0}}
+        >
+          <MenuItem onClick={() => handlePayrollClick('employees')} sx={menuItemStyle}>Employees</MenuItem>
+          <MenuItem onClick={() => handlePayrollClick('run')} sx={menuItemStyle}>Run Payroll</MenuItem>
+          <MenuItem onClick={() => handlePayrollClick('timesheets')} sx={menuItemStyle}>Timesheets</MenuItem>
+          <MenuItem onClick={() => handlePayrollClick('transactions')} sx={menuItemStyle}>Payroll Transactions</MenuItem>
+          <MenuItem onClick={() => handlePayrollClick('taxes')} sx={menuItemStyle}>Taxes</MenuItem>
+          <MenuItem onClick={() => handlePayrollClick('taxForms')} sx={menuItemStyle}>Tax Forms</MenuItem>
+          <MenuItem onClick={() => handlePayrollClick('payroll-reports')} sx={menuItemStyle}>Payroll Reports</MenuItem>
+        </Menu>
+        <Menu
+          anchorEl={accountingAnchorEl}
+          open={Boolean(accountingAnchorEl)}
+          onClose={handleAccountingMenuClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+          anchorReference="anchorPosition"
+          anchorPosition={{ left: SUBMENU_LEFT_POSITION, top: accountingAnchorEl ? accountingAnchorEl.getBoundingClientRect().top : 0}}
+        >
+          <MenuItem onClick={() => handleAccountingClick('dashboard')} sx={menuItemStyle}>Dashboard</MenuItem>
+          <MenuItem onClick={() => handleAccountingClick('chart-of-accounts')} sx={menuItemStyle}>Chart of Accounts</MenuItem>
+          <MenuItem onClick={() => handleAccountingClick('journal-entries')} sx={menuItemStyle}>Journal Entries</MenuItem>
+          <MenuItem onClick={() => handleAccountingClick('general-ledger')} sx={menuItemStyle}>General Ledger</MenuItem>
+          <MenuItem onClick={() => handleAccountingClick('reconciliation')} sx={menuItemStyle}>Account Reconciliation</MenuItem>
+          <MenuItem onClick={() => handleAccountingClick('month-end-closing')} sx={menuItemStyle}>Month-End Closing</MenuItem>
+          <MenuItem onClick={() => handleAccountingClick('financial-statements')} sx={menuItemStyle}>Financial Statements</MenuItem>
+          <MenuItem onClick={() => handleAccountingClick('fixed-assets')} sx={menuItemStyle}>Fixed Assets</MenuItem>
+          <MenuItem onClick={() => handleAccountingClick('budgeting')} sx={menuItemStyle}>Budgeting</MenuItem>
+          <MenuItem onClick={() => handleAccountingClick('cost-accounting')} sx={menuItemStyle}>Cost Accounting</MenuItem>
+          <MenuItem onClick={() => handleAccountingClick('intercompany-transactions')} sx={menuItemStyle}>Intercompany Transactions</MenuItem>
+          <MenuItem onClick={() => handleAccountingClick('audit-trail')} sx={menuItemStyle}>Audit Trail</MenuItem>
+          <MenuItem onClick={() => handleAccountingClick('accounting-reports')} sx={menuItemStyle}>Accounting Reports</MenuItem>
+        </Menu>
+        <Menu
+          anchorEl={salesAnchorEl}
+          open={Boolean(salesAnchorEl)}
+          onClose={handleSalesMenuClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+          anchorReference="anchorPosition"
+          anchorPosition={{ left: SUBMENU_LEFT_POSITION, top: salesAnchorEl ? salesAnchorEl.getBoundingClientRect().top : 0}}
         >
           <MenuItem onClick={() => handleSalesMenuItemClick('dashboard')} sx={menuItemStyle}>Dashboard</MenuItem>
           <MenuItem onClick={() => handleSalesMenuItemClick('customers')} sx={menuItemStyle}>Customers</MenuItem>
@@ -618,12 +568,10 @@ export const MainListItems = ({
           <MenuItem onClick={() => handleSalesMenuItemClick('sales-team')} sx={menuItemStyle}>Sales Team</MenuItem>
           <MenuItem onClick={() => handleSalesMenuItemClick('reports')} sx={menuItemStyle}>Reports</MenuItem>
         </Menu>
-
         <Menu
           anchorEl={paymentsAnchorEl}
           open={Boolean(paymentsAnchorEl)}
           onClose={handlePaymentsMenuClose}
-       
           anchorOrigin={{
             vertical: 'bottom',
             horizontal: 'left',
@@ -633,7 +581,7 @@ export const MainListItems = ({
             horizontal: 'left',
           }}
           anchorReference="anchorPosition"
-          anchorPosition={{ left: 220, top: paymentsAnchorEl ? paymentsAnchorEl.getBoundingClientRect().top : 0}}
+          anchorPosition={{ left: SUBMENU_LEFT_POSITION, top: paymentsAnchorEl ? paymentsAnchorEl.getBoundingClientRect().top : 0}}
         >
           <MenuItem onClick={() => handlePaymentsClick('dashboard')} sx={menuItemStyle}>Dashboard</MenuItem>
           <MenuItem onClick={() => handlePaymentsClick('receive-payments')} sx={menuItemStyle}>Receive Payments</MenuItem>
@@ -659,7 +607,7 @@ export const MainListItems = ({
             horizontal: 'left',
           }}
           anchorReference="anchorPosition"
-          anchorPosition={{ left: 220, top: analysisAnchorEl ? analysisAnchorEl.getBoundingClientRect().top : 0}}
+          anchorPosition={{ left: SUBMENU_LEFT_POSITION, top: analysisAnchorEl ? analysisAnchorEl.getBoundingClientRect().top : 0}}
         >
           <MenuItem onClick={() => handleAnalysisClick('financial-overview')} sx={menuItemStyle}>Financial Overview</MenuItem>
           <MenuItem onClick={() => handleAnalysisClick('profit-loss-analysis')} sx={menuItemStyle}>Profit & Loss Analysis</MenuItem>
@@ -671,19 +619,19 @@ export const MainListItems = ({
           <MenuItem onClick={() => handleAnalysisClick('kpi-data')} sx={menuItemStyle}>KPI Dashboard</MenuItem>
         </Menu>
         <Menu
-            anchorEl={taxesAnchorEl}
-            open={Boolean(taxesAnchorEl)}
-            onClose={handleTaxesMenuClose}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'left',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'left',
-            }}
-            anchorReference="anchorPosition"
-            anchorPosition={{ left: 220, top: taxesAnchorEl ? taxesAnchorEl.getBoundingClientRect().top : 0}}
+          anchorEl={taxesAnchorEl}
+          open={Boolean(taxesAnchorEl)}
+          onClose={handleTaxesMenuClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+          anchorReference="anchorPosition"
+          anchorPosition={{ left: SUBMENU_LEFT_POSITION, top: taxesAnchorEl ? taxesAnchorEl.getBoundingClientRect().top : 0}}
           >
             <MenuItem onClick={() => handleTaxesClick('tax-dashboard')} sx={menuItemStyle}>Tax Dashboard</MenuItem>
             <MenuItem onClick={() => handleTaxesClick('sales-tax')} sx={menuItemStyle}>Sales Tax</MenuItem>
@@ -696,30 +644,32 @@ export const MainListItems = ({
             <MenuItem onClick={() => handleTaxesClick('tax-reports')} sx={menuItemStyle}>Tax Reports</MenuItem>
           </Menu>
           <Menu
-                anchorEl={purchasesAnchorEl}
-                open={Boolean(purchasesAnchorEl)}
-                onClose={handlePurchasesMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'left',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'left',
-                }}
-                anchorReference="anchorPosition"
-                anchorPosition={{ left: 220, top: purchasesAnchorEl ? purchasesAnchorEl.getBoundingClientRect().top : 0}}
-              >
-                <MenuItem onClick={() => handlePurchasesClick('dashboard')} sx={menuItemStyle}>Dashboard</MenuItem>
-                <MenuItem onClick={() => handlePurchasesClick('vendors')} sx={menuItemStyle}>Vendors</MenuItem>
-                <MenuItem onClick={() => handlePurchasesClick('purchase-orders')} sx={menuItemStyle}>Purchase Orders</MenuItem>
-                <MenuItem onClick={() => handlePurchasesClick('bills')} sx={menuItemStyle}>Bills</MenuItem>
-                <MenuItem onClick={() => handlePurchasesClick('expenses')} sx={menuItemStyle}>Expenses</MenuItem>
-                <MenuItem onClick={() => handlePurchasesClick('purchase-returns')} sx={menuItemStyle}>Purchase Returns</MenuItem>
-                <MenuItem onClick={() => handlePurchasesClick('procurement')} sx={menuItemStyle}>Procurement</MenuItem>
-                <MenuItem onClick={() => handlePurchasesClick('reports')} sx={menuItemStyle}>Reports</MenuItem>
-              </Menu>
-    </Box>
-    </Paper>
-  );
-};
+            anchorEl={purchasesAnchorEl}
+            open={Boolean(purchasesAnchorEl)}
+            onClose={handlePurchasesMenuClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'left',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'left',
+            }}
+            anchorReference="anchorPosition"
+            anchorPosition={{ left: SUBMENU_LEFT_POSITION, top: purchasesAnchorEl ? purchasesAnchorEl.getBoundingClientRect().top : 0}}
+          >
+            <MenuItem onClick={() => handlePurchasesClick('dashboard')} sx={menuItemStyle}>Dashboard</MenuItem>
+            <MenuItem onClick={() => handlePurchasesClick('vendors')} sx={menuItemStyle}>Vendors</MenuItem>
+            <MenuItem onClick={() => handlePurchasesClick('purchase-orders')} sx={menuItemStyle}>Purchase Orders</MenuItem>
+            <MenuItem onClick={() => handlePurchasesClick('bills')} sx={menuItemStyle}>Bills</MenuItem>
+            <MenuItem onClick={() => handlePurchasesClick('expenses')} sx={menuItemStyle}>Expenses</MenuItem>
+            <MenuItem onClick={() => handlePurchasesClick('purchase-returns')} sx={menuItemStyle}>Purchase Returns</MenuItem>
+            <MenuItem onClick={() => handlePurchasesClick('procurement')} sx={menuItemStyle}>Procurement</MenuItem>
+            <MenuItem onClick={() => handlePurchasesClick('reports')} sx={menuItemStyle}>Reports</MenuItem>
+          </Menu>
+        </Box>
+      </Paper>
+    );
+  };
+  
+  export default MainListItems;

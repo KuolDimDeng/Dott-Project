@@ -4,7 +4,6 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import { CssBaseline, Box, Container, AppBar as MuiAppBar, Toolbar, Typography } from '@mui/material';
 import ConsoleMessages from './components/components/ConsoleMessages';
-import Chatbot from './components/forms/ChatBot';
 import Drawer from './components/Drawer';
 import AppBar from './components/AppBar';
 import renderMainContent from './components/RenderMainContent';
@@ -129,6 +128,82 @@ function DashboardContent() {
 
   const router = useRouter();
 
+  const AllResetState = [
+    setShowInvoiceBuilder,
+    setShowCreateOptions,
+    setShowTransactionForm,
+    setShowAccountPage,
+    setShowReports,
+    setShowBankingDashboard,
+    setShowHRDashboard,
+    setShowPayrollDashboard,
+    setShowAnalysisPage,
+    setShowCustomerList,
+    setShowCustomerDetails,
+    setShowProductList,
+    setShowServiceList,
+    setShowProductManagement,
+    setShowServiceManagement,
+    setShowEstimateManagement,
+    setShowChart,
+    setShowDashboard,
+    setShowSalesAnalysis,
+    setShowIntegrationSettings,
+    setShowAPIIntegrations,
+    setShowECommercePlatformAPI,
+    setShowUserProfileSettings,
+    setShowAlerts,
+    setShowSendGlobalAlert,
+    setShowSalesOrderManagement,
+    setShowInvoiceManagement,
+    setShowVendorManagement,
+    setShowBillManagement,
+    setShowPurchaseOrderManagement,
+    setShowExpensesManagement,
+    setShowPurchaseReturnManagement,
+    setShowProcurementManagement,
+    setShowEmployeeManagement,
+    setShowPayrollManagement,
+    setShowTimeSheetManagement,
+    setShowChartOfAccounts,
+    setShowJournalEntryManagement,
+    setShowGeneralLedger,
+    setShowAccountReconManagement,
+    setShowMonthEndManagement,
+    setShowFinancialStatements,
+    setShowFixedAssetManagement,
+    setShowBudgetManagement,
+    setShowCostAccountingManagement,
+    setShowIntercompanyManagement,
+    setShowAuditTrailManagement,
+    setShowProfitAndLossReport,
+    setShowBalanceSheetReport,
+    setShowCashFlowReport,
+    setShowIncomeByCustomer,
+    setShowAgedReceivables,
+    setShowAgedPayables,
+    setShowAccountBalances,
+    setShowTrialBalances,
+    setShowProfitAndLossAnalysis,
+    setShowBalanceSheetAnalysis,
+    setShowCashFlowAnalysis,
+    setShowBudgetVsActualAnalysis,
+    setShowExpenseAnalysis,
+    setShowKPIDashboard
+  ];
+
+  const resetAllStatesExcept = (exceptionSetter) => {
+    AllResetState.forEach(setter => {
+      if (setter !== exceptionSetter) {
+        setter(false);
+      }
+    });
+  };
+
+  const resetAllStates = () => {
+    AllResetState.forEach(setter => setter(false));
+  };
+
   const fetchUserData = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
@@ -160,25 +235,11 @@ function DashboardContent() {
     }
   }, [addMessage, router]);
 
-
   const handleUserProfileClick = () => {
+    resetAllStates();
     setShowUserProfileSettings(true);
-    // Reset other view states
-    setShowBankingDashboard(false);
-    setShowKPIDashboard(false);
-    setShowCreateOptions(false);
-    setShowAnalysisPage(false);
-    setShowHRDashboard(false);
-    setShowPayrollDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowInvoiceBuilder(false);
-    setShowReports(false);
-    setShowTransactionForm(false);
-    setShowAccountPage(false);
-    setShowDashboard(false);
-    setShowSalesAnalysis(false);
-    setShowIntegrationSettings(false);
   };
+  
 
   const handleUserProfileUpdate = (updatedUserData) => {
     setUserData(updatedUserData);
@@ -186,24 +247,10 @@ function DashboardContent() {
   };
 
   const handleAPIIntegrationsClick = () => {
+    resetAllStates();
     setShowAPIIntegrations(true);
-    setShowIntegrationSettings(false);
-    setShowECommercePlatformAPI(false);
-    setShowCreateOptions(false);
-    setShowAnalysisPage(false);
-    setShowHRDashboard(false);
-    setShowPayrollDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowInvoiceBuilder(false);
-    setShowReports(false);
-    setShowTransactionForm(false);
-    setShowAccountPage(false);
-    setShowDashboard(false);
-    setShowProductManagement(false);
-    setShowServiceManagement(false);
-    setShowECommercePlatformAPI(false);
-    setShowKPIDashboard(false);
   };
+  
 
   const handleECommercePlatformAPIClick = () => {
     setShowECommercePlatformAPI(true);
@@ -250,34 +297,35 @@ function DashboardContent() {
 
   const handleSalesClick = (section) => {
     console.log('handleSalesClick called with section:', section);
-    setShowCustomerList(false);
-    setShowProductManagement(false);
-    setShowServiceManagement(false);
-    setShowEstimateManagement(false);
-    setShowSalesOrderManagement(false);
-
+    resetAllStatesExcept(setShowCustomerList);
+  
     switch(section) {
       case 'customers':
         setShowCustomerList(true);
         setView('customerList');
         break;
       case 'products':
+        resetAllStatesExcept(setShowProductManagement);
         setShowProductManagement(true);
         break;
       case 'services':
+        resetAllStatesExcept(setShowServiceManagement);
         setShowServiceManagement(true);
         break;
       case 'estimates':
+        resetAllStatesExcept(setShowEstimateManagement);
         setShowEstimateManagement(true);
         break;
       case 'orders':
+        resetAllStatesExcept(setShowSalesOrderManagement);
         setShowSalesOrderManagement(true);
         break;
-        case 'invoices':
-      setShowInvoiceManagement(true);
-      break;
-      
+      case 'invoices':
+        resetAllStatesExcept(setShowInvoiceManagement);
+        setShowInvoiceManagement(true);
+        break;
       default:
+        resetAllStates();
         break;
     }
 
@@ -298,28 +346,15 @@ function DashboardContent() {
     setShowIntegrationSettings(false);
   };
 
+
   const handleDashboardClick = () => {
     console.log('handleDashboardClick called.');
-    setShowDashboard(false);
+    resetAllStates();
     setShowKPIDashboard(true);
-    console.log('showDashboard set to true');
-    // Reset other view states
-    setShowBankingDashboard(false);
-    setShowCreateOptions(false);
-    setShowAnalysisPage(false);
-    setShowHRDashboard(false);
-    setShowPayrollDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowInvoiceBuilder(false);
-    setShowReports(false);
-    setShowTransactionForm(false);
-    setShowAccountPage(false);
-    setShowSalesAnalysis(false);
-    setShowIntegrationSettings(false);
     setView('dashboard');
     console.log('view set to: dashboard');
   };
-
+  
   const handleCustomerSelect = (customerId) => {
     console.log("handleCustomerSelect called with customerId:", customerId);
     setSelectedCustomerId(customerId);
@@ -335,32 +370,7 @@ function DashboardContent() {
   const handleAnalysisClick = (analysisType) => {
     console.log('handleAnalysisClick called with analysisType:', analysisType);
   
-    // Reset all analysis-related states
-    setShowSalesAnalysis(false);
-    setShowProfitAndLossAnalysis(false);
-    setShowBalanceSheetAnalysis(false);
-    setShowCashFlowAnalysis(false);
-    setShowBudgetVsActualAnalysis(false);
-    setShowSalesAnalysis(false);
-    setShowExpenseAnalysis(false);
-    setShowKPIDashboard(false);
-    // Add more analysis types here as needed
-  
-    // Reset other general states
-    setShowBankingDashboard(false);
-    setShowCreateOptions(false);
-    setShowAnalysisPage(false);
-    setShowHRDashboard(false);
-    setShowPayrollDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowInvoiceBuilder(false);
-    setShowTransactionForm(false);
-    setShowAccountPage(false);
-    setShowDashboard(false);
-    setShowReports(false);
-    setShowIntegrationSettings(false);
-  
-    setSelectedAnalysis(analysisType);
+    resetAllStates();
     setShowAnalysisPage(true);
   
     switch(analysisType) {
@@ -372,18 +382,12 @@ function DashboardContent() {
         break;
       case 'balance-sheet':
         setShowBalanceSheetAnalysis(true);
-      // Add more cases for different analysis types
         break;
       case 'cash-flow':
         setShowCashFlowAnalysis(true);
         break;
-
       case 'budget-vs-actual':
         setShowBudgetVsActualAnalysis(true);
-        break;
-
-      case 'sales-analysis':
-        setShowSalesAnalysis(true);
         break;
       case 'expense-analysis':
         setShowExpenseAnalysis(true);
@@ -486,27 +490,14 @@ function DashboardContent() {
   const handlePayrollClick = (section) => {
     console.log('handlePayrollClick called with section:', section);
   
-    // Reset all payroll-related states
-    setShowPayrollDashboard(false);
-    setShowPayrollManagement(false);
-    setShowTimeSheetManagement(false);
-  
-    // Reset other general states
-    setShowBankingDashboard(false);
-    setShowKPIDashboard(false);
-    setShowCreateOptions(false);
-    setShowAnalysisPage(false);
-    setShowHRDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowInvoiceBuilder(false);
-    setShowReports(false);
-    setShowTransactionForm(false);
-    setShowAccountPage(false);
-    setShowDashboard(false);
-    setShowSalesAnalysis(false);
-    setShowIntegrationSettings(false);
+    resetAllStates();
   
     switch(section) {
+      case 'employees':
+        setShowEmployeeManagement(true);
+        setPayrollSection('employees');
+        break;
+      case 'payroll':
       case 'run':
         setShowPayrollManagement(true);
         setPayrollSection('run');
@@ -542,13 +533,9 @@ function DashboardContent() {
 
   const handlePurchasesClick = (section) => {
     console.log('handlePurchasesClick called with section:', section);
-    setShowVendorManagement(false);
-    setShowBillManagement(false);
-    setShowPurchaseOrderManagement(false);
-    setShowExpensesManagement(false);
-    setShowPurchaseReturnManagement(false);
-    setShowProcurementManagement(false);  
-
+    
+    resetAllStates();
+  
     switch(section) {
       case 'vendors':
         setShowVendorManagement(true);
@@ -568,8 +555,11 @@ function DashboardContent() {
       case 'procurement':
         setShowProcurementManagement(true);
         break;
-      // ... other cases ...
+      default:
+        console.log('Unknown purchases section:', section);
+        break;
     }
+  
   
     // Reset other view states
     setShowBankingDashboard(false);
@@ -593,45 +583,17 @@ function DashboardContent() {
   };
 
   const handleBankingClick = () => {
+    resetAllStates();
     setShowBankingDashboard(true);
-    setShowTransactionForm(false);
-    setShowCreateOptions(false);
-    setShowInvoiceBuilder(false);
-    setSelectedReport(null);
   };
+
 
   const handleReportClick = (reportType) => {
     console.log('handleReportClick called with reportType:', reportType);
   
-    // Reset all report-related states
-    setShowProfitAndLossReport(false);
-    setShowBalanceSheetReport(false);
-    setShowCashFlowReport(false);
-    setShowIncomeByCustomer(false);
-    setShowAgedReceivables(false);
-    setShowAgedPayables(false);
-    setShowAccountBalances(false);
-    setShowTrialBalances(false);
-
-  
-    // Reset other general states
-    setShowBankingDashboard(false);
-    setShowCreateOptions(false);
-    setShowAnalysisPage(false);
-    setShowHRDashboard(false);
-    setShowPayrollDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowInvoiceBuilder(false);
-    setShowTransactionForm(false);
-    setShowAccountPage(false);
-    setShowDashboard(false);
-    setShowSalesAnalysis(false);
-    setShowIntegrationSettings(false);
-    setShowKPIDashboard(false);
-  
-    // Set the selected report and show reports
-    setSelectedReport(reportType);
+    resetAllStates();
     setShowReports(true);
+    setSelectedReport(reportType);
   
     switch(reportType) {
       case 'income_statement':
@@ -644,10 +606,10 @@ function DashboardContent() {
         setShowCashFlowReport(true);
         break;
       case 'sales_tax_report':
-        setShowSalesTaxReport(true);
+        // setShowSalesTaxReport(true);
         break;
       case 'payroll_wage_tax_report':
-        setShowPayrollWageTaxReport(true);
+        // setShowPayrollWageTaxReport(true);
         break;
       case 'income_by_customer':
         setShowIncomeByCustomer(true);
@@ -656,7 +618,7 @@ function DashboardContent() {
         setShowAgedReceivables(true);
         break;
       case 'purchases_by_vendor':
-        setShowPurchasesByVendor(true);
+        // setShowPurchasesByVendor(true);
         break;
       case 'aged_payables':
         setShowAgedPayables(true);
@@ -697,29 +659,14 @@ function DashboardContent() {
   };
 
   const handleShowCreateOptions = (option) => {
+    resetAllStates();
     setShowCreateOptions(true);
-    setShowInvoiceBuilder(false);
     setSelectedOption(option);
-    setShowTransactionForm(false);
-    setSelectedReport(null);
-    setShowBankingDashboard(false);
-    setShowAnalysisPage(false);
-    setShowHRDashboard(false);
-    setShowPayrollDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowReports(false);
-    setShowAccountPage(false);
-    setShowDashboard(false);
-    setShowProductManagement(false);
-    setShowServiceManagement(false);
-    setShowEstimateManagement(false);
-    setShowSalesAnalysis(false);
-    setShowIntegrationSettings(false);
-    setShowKPIDashboard(false);
-
   };
 
   const handleShowTransactionForm = () => {
+    resetAllStates();
+
     setShowTransactionForm(true);
     setShowCreateOptions(false);
     setShowInvoiceBuilder(false);
@@ -730,90 +677,42 @@ function DashboardContent() {
   const handleAccountingClick = (section) => {
     console.log('handleAccountingClick called with section:', section);
     
-    // Reset all accounting-related states
-    setShowChartOfAccounts(false);
-    setShowJournalEntryManagement(false);
-    setShowGeneralLedger(false);
-    setShowAccountReconManagement(false);
-    setShowMonthEndManagement(false);
-    setShowFinancialStatements(false);
-    setShowFixedAssetManagement(false);
-    setShowBudgetManagement(false);
-    setShowCostAccountingManagement(false);
-    setShowIntercompanyManagement(false);
-    setShowAuditTrailManagement(false);
-    
-    // Reset other general states
-    setShowBankingDashboard(false);
-    setShowKPIDashboard(false);
-    setShowCreateOptions(false);
-    setShowAnalysisPage(false);
-    setShowHRDashboard(false);
-    setShowPayrollDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowInvoiceBuilder(false);
-    setShowReports(false);
-    setShowTransactionForm(false);
-    setShowAccountPage(false);
-    setShowDashboard(false);
-    setShowSalesAnalysis(false);
-    setShowIntegrationSettings(false);
+    resetAllStates();
   
     switch(section) {
       case 'chart-of-accounts':
         setShowChartOfAccounts(true);
-        setShowDashboard(false);
         break;
       case 'journal-entries':
-        // Set state for journal entries management
         setShowJournalEntryManagement(true);
-        setShowDashboard(false);
         break;
-        case 'general-ledger':
-          setShowGeneralLedger(true);
-          setShowDashboard(false);
-          break;
+      case 'general-ledger':
+        setShowGeneralLedger(true);
+        break;
       case 'reconciliation':
-        // Set state for account reconciliation
         setShowAccountReconManagement(true);
-        setShowDashboard(false);
         break;
       case 'month-end-closing':
-        // Set state for fixed assets management
         setShowMonthEndManagement(true);
-        setShowDashboard(false);
         break;
       case 'financial-statements':
-        // Set state for financial statements
         setShowFinancialStatements(true);
-        setShowDashboard(false);
         break;
       case 'fixed-assets':
         setShowFixedAssetManagement(true);
-        setShowDashboard(false);
-        // Set state for fixed assets management
         break;
       case 'budgeting':
-        // Set state for budgeting
         setShowBudgetManagement(true);
-        setShowDashboard(false);
         break;
       case 'cost-accounting':
-        // Set state for cost accounting
         setShowCostAccountingManagement(true);
-        setShowDashboard(false);
         break;
       case 'intercompany-transactions':
-          // Set state for cost accounting
-          setShowIntercompanyManagement(true);
-          setShowDashboard(false);
-          break;
+        setShowIntercompanyManagement(true);
+        break;
       case 'audit-trail':
-            // Set state for cost accounting
-            setShowAuditTrailManagement(true);
-            setShowDashboard(false);
-            break;
-
+        setShowAuditTrailManagement(true);
+        break;
       case 'accounting-reports':
         // Set state for accounting reports
         break;
@@ -854,39 +753,13 @@ function DashboardContent() {
     try {
       const response = await axiosInstance.get('/api/alerts/user_alerts/');
       setAlerts(response.data);
+      resetAllStates();
       setShowAlerts(true);
-    // Reset other view states
-    setShowBankingDashboard(false);
-    setShowCreateOptions(false);
-    setShowAnalysisPage(false);
-    setShowHRDashboard(false);
-    setShowPayrollDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowInvoiceBuilder(false);
-    setShowReports(false);
-    setShowTransactionForm(false);
-    setShowAccountPage(false);
-    setShowDashboard(false);
-    setShowSalesAnalysis(false);
-    setShowIntegrationSettings(false);
-  } catch (error) {
-    console.error('Error fetching alerts:', error);
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.error("Data:", error.response.data);
-      console.error("Status:", error.response.status);
-      console.error("Headers:", error.response.headers);
-    } else if (error.request) {
-      // The request was made but no response was received
-      console.error("Request:", error.request);
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      console.error('Error', error.message);
+    } catch (error) {
+      console.error('Error fetching alerts:', error);
+      addMessage('error', 'Failed to fetch alerts');
     }
-    addMessage('error', 'Failed to fetch alerts');
-  }
-};
+  };
 
   const handleMarkAsRead = async (alertId) => {
     try {
@@ -900,22 +773,8 @@ function DashboardContent() {
   };
   
   const handleSendGlobalAlertClick = () => {
+    resetAllStates();
     setShowSendGlobalAlert(true);
-    // Reset other view states
-    setShowAlerts(false);
-    setShowBankingDashboard(false);
-    setShowCreateOptions(false);
-    setShowAnalysisPage(false);
-    setShowHRDashboard(false);
-    setShowPayrollDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowInvoiceBuilder(false);
-    setShowReports(false);
-    setShowTransactionForm(false);
-    setShowAccountPage(false);
-    setShowDashboard(false);
-    setShowSalesAnalysis(false);
-    setShowIntegrationSettings(false);
   };
 
   useEffect(() => {
@@ -1222,9 +1081,7 @@ function DashboardContent() {
         </Box>
       
       
-        <ErrorBoundary>
-          <Chatbot userName={userData ? userData.first_name : 'Guest'} backgroundColor="#81d4fa" />
-        </ErrorBoundary>
+  
       </Box>
     </ThemeProvider>
   );

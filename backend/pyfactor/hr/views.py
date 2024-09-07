@@ -8,34 +8,52 @@ from rest_framework.response import Response
 from .models import Employee, Role, EmployeeRole, AccessPermission
 from .serializers import EmployeeSerializer, RoleSerializer, EmployeeRoleSerializer, AccessPermissionSerializer
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
+
 from pyfactor.logging_config import get_logger
 
 logger = get_logger()
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def employee_list(request):
+    query = request.GET.get('q', '')
+    employees = Employee.objects.filter(
+        Q(first_name__icontains=query) | 
+        Q(last_name__icontains=query) | 
+        Q(employee_number__icontains=query)
+    )
+    serializer = EmployeeSerializer(employees, many=True)
+    return Response(serializer.data)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_employee(request):
     serializer = EmployeeSerializer(data=request.data)
     if serializer.is_valid():
-        employee = serializer.save()
-        logger.info(f"Employee created successfully. Employee ID: {employee.id}")
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    logger.error(f"Employee creation failed. Errors: {serializer.errors}")
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET'])
+@api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def employee_detail(request, pk):
     employee = get_object_or_404(Employee, pk=pk)
-    serializer = EmployeeSerializer(employee)
-    return Response(serializer.data)
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def employee_list(request):
-    employees = Employee.objects.all()
-    serializer = EmployeeSerializer(employees, many=True)
-    return Response(serializer.data)
+    if request.method == 'GET':
+        serializer = EmployeeSerializer(employee)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = EmployeeSerializer(employee, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        employee.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
@@ -154,3 +172,4 @@ def access_permission_detail(request, pk):
     elif request.method == 'DELETE':
         access_permission.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    

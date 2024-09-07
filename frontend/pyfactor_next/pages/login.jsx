@@ -80,30 +80,29 @@ export default function SignIn() {
 
   const handleClickShowPassword = () => setIsPasswordShown((show) => !show);
 
-
   const onSubmit = async (data) => {
     try {
-      console.log('Sending login request with data:', data);
-  
-      const response = await axiosInstance.post('/api/token/', data);
-  
-      console.log('Response from the backend:', response);
-  
-      if (response.status === 200 && response.data.access) {
-        const token = response.data.access;
-        localStorage.setItem('token', token);
-        if (response.data.refresh) {
-          localStorage.setItem('refreshToken', response.data.refresh);
+        console.log('Sending login request with data:', data);
+        const response = await axiosInstance.post('/api/token/', data);
+        console.log('Response from the backend:', response);
+        
+        if (response.status === 200 && response.data.access) {
+            const token = response.data.access;
+            localStorage.setItem('token', token);  // Ensure this key is consistent
+            if (response.data.refresh) {
+                localStorage.setItem('refreshToken', response.data.refresh);
+            }
+            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            router.push('/dashboard');
+        } else {
+            setErrorState({ message: 'Invalid response from server' });
         }
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        router.push('/dashboard');
-      } else {
-        setErrorState({ message: 'Invalid response from server' });
-      }
     } catch (error) {
-      // ... error handling
+        setErrorState({ message: 'Failed to login. Please check your credentials.' });
+        console.error('Error during login:', error);
     }
-  };
+};
+
 
   return (
     <ThemeProvider theme={theme}>

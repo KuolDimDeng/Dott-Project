@@ -1,23 +1,183 @@
 {% extends "base.html" %}
-
 {% block content %}
-<h1>Staff Chat Interface</h1>
-{% if pending_messages %}
-    <ul>
-    {% for message in pending_messages %}
-        <li>
-            <p>From: {{ message.user.email }}</p>
-            <p>Message: {{ message.message }}</p>
-            <p>Timestamp: {{ message.timestamp }}</p>
-            <form method="post" action="{% url 'respond_to_message' message.id %}">
-                {% csrf_token %}
-                <textarea name="response" required></textarea><br>
-                <input type="submit" value="Respond">
-            </form>
-        </li>
-    {% endfor %}
-    </ul>
-{% else %}
-    <p>No pending messages.</p>
-{% endif %}
+<div class="container mt-4">
+    <h1>Staff Chat Interface</h1>
+    
+    <table class="table table-striped" id="messageTable">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Message</th>
+                <th>Timestamp</th>
+                <th>From User</th>
+                <th>Needs Attention</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for message in messages %}
+            <tr data-message-id="{{ message.id }}" data-database="{{ message.database }}">
+                <td>{{ message.user_email }}</td>
+                <td>{{ message.message }}</td>
+                <td>{{ message.timestamp }}</td>
+                <td>{{ message.is_from_user|yesno:"Yes,No" }}</td>
+                <td>{{ message.needs_staff_attention|yesno:"Yes,No" }}</td>
+                <td>
+                    <button class="btn btn-primary btn-sm chat-btn">Chat</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal for real-time chat -->
+<div class="modal fade" id="chatModal" tabindex="-1" role="dialog" aria-labelledby="chatModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="chatModalLabel">Chat with User</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>User Information</h6>
+                        <p><strong>Name:</strong> <span id="userName"></span></p>
+                        <p><strong>Email:</strong> <span id="userEmail"></span></p>
+                        <p><strong>Business:</strong> <span id="userBusiness"></span></p>
+                        <p><strong>Status:</strong> <span id="userStatus"></span></p>
+                    </div>
+                    <div class="col-md-8">
+                        <div id="chatMessages" style="height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;"></div>
+                        <form id="chatForm">
+                            <div class="form-group">
+                                <textarea id="chatText" class="form-control" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Send</button>
+                            <button type="button" class="btn btn-secondary" id="updateBtn">Update</button>
+                            <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+<script>
+    $(document).ready(function() {
+        let currentChatSocket = null;
+        let currentMessageId = null;
+        let currentDatabase = null;
+
+        const staffSocket = new WebSocket('ws://' + window.location.host + '/ws/staff_chat/');
+
+        staffSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (data.type === 'chat_message') {
+                addMessageToTable(data.message);
+            }
+        };
+
+        function addMessageToTable(message) {
+            const row = `
+                <tr data-message-id="${message.id}" data-database="${message.database}">
+                    <td>${message.user_email}</td>
+                    <td>${message.message}</td>
+                    <td>${message.timestamp}</td>
+                    <td>${message.is_from_user ? 'Yes' : 'No'}</td>
+                    <td>${message.needs_staff_attention ? 'Yes' : 'No'}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm chat-btn">Chat</button>
+                    </td>
+                </tr>
+            `;
+            $('#messageTable tbody').prepend(row);
+        }
+
+        $(document).on('click', '.chat-btn', function() {
+            const row = $(this).closest('tr');
+            currentMessageId = row.data('message-id');
+            currentDatabase = row.data('database');
+            
+            // Fetch user details and chat history
+            $.get(`/api/chatbot/user_details/${currentMessageId}/?database=${currentDatabase}`, function(data) {
+                $('#userName').text(data.full_name);
+                $('#userEmail').text(data.email);
+                $('#userBusiness').text(data.business_name);
+                $('#userStatus').text(data.is_online ? 'Online' : 'Offline');
+                
+                $('#chatMessages').html('');
+                data.chat_history.forEach(message => {
+                    addMessageToChat(message);
+                });
+                
+                $('#chatModal').modal('show');
+                
+                // Close previous WebSocket if exists
+                if (currentChatSocket) {
+                    currentChatSocket.close();
+                }
+                
+                // Open new WebSocket for this chat
+                currentChatSocket = new WebSocket(`ws://${window.location.host}/ws/chat/${data.user_id}/?token=${data.chat_token}`);
+                
+                currentChatSocket.onmessage = function(e) {
+                    const message = JSON.parse(e.data);
+                    addMessageToChat(message);
+                };
+            });
+        });
+
+        $('#chatForm').submit(function(e) {
+            e.preventDefault();
+            const message = $('#chatText').val();
+            
+            if (currentChatSocket && currentChatSocket.readyState === WebSocket.OPEN) {
+                currentChatSocket.send(JSON.stringify({
+                    'message': message,
+                    'message_id': currentMessageId,
+                    'database': currentDatabase
+                }));
+                $('#chatText').val('');
+            } else {
+                alert('WebSocket is not connected. Please try again.');
+            }
+        });
+
+        $('#updateBtn').click(function() {
+            $.post(`/api/chatbot/update_chat/${currentMessageId}/`, {
+                database: currentDatabase
+            }, function(data) {
+                if (data.success) {
+                    alert('Chat updated successfully');
+                } else {
+                    alert('Failed to update chat');
+                }
+            });
+        });
+
+        function addMessageToChat(message) {
+            const messageHtml = `
+                <div class="${message.is_from_user ? 'text-left' : 'text-right'}">
+                    <strong>${message.is_from_user ? 'User' : 'Staff'}:</strong> ${message.message}
+                    <small class="text-muted">${message.timestamp}</small>
+                </div>
+            `;
+            $('#chatMessages').append(messageHtml);
+            $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+        }
+
+        // Initial load of messages
+        $.get('/api/chatbot/get_messages/', function(data) {
+            data.messages.forEach(addMessageToTable);
+        });
+    });
+</script>
 {% endblock %}
