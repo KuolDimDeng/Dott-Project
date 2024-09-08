@@ -1,6 +1,8 @@
 // src/app/dashboard/components/axiosConfig.js
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import axiosInstance from '../components/components/axiosConfig.jsaxiosConfig';
+
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const noAuthRequired = ['/api/register/', '/api/token/', '/api/token/refresh/'];

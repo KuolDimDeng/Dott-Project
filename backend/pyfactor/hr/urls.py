@@ -21,9 +21,5 @@ urlpatterns = [
     path('access-permissions/', views.access_permission_list, name='access-permission-list'),
     path('access-permissions/<int:pk>/', views.access_permission_detail, name='access-permission-detail'),
 
-    # Preboarding URLs
-    path('preboarding-forms/', views.preboarding_form_list, name='preboarding-form-list'),
-    path('preboarding-forms/create/', views.create_preboarding_form, name='create-preboarding-form'),
-    path('submit-new-hire-info/', views.submit_new_hire_info, name='submit-new-hire-info'),
-    path('verify-and-onboard/<uuid:employee_id>/', views.verify_and_onboard, name='verify-and-onboard'),
+
 ]

@@ -238,7 +238,7 @@ export const MainListItems = ({
  // };
 
   return (
-    <Paper elevation={3} sx={{ p: 2, my: 2, width: MENU_WIDTH }}>
+    <Paper elevation={3} sx={{ p: 2, my: 2, width: MENU_WIDTH,  height: '100vh'  }}>
       <Box sx={{ 
       overflow: 'auto',
       '& .MuiListItemButton-root': {
