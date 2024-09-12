@@ -670,3 +670,12 @@ class DepartmentSerializer(serializers.ModelSerializer):
         
 
         
+class SaleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sale
+        fields = ['id', 'product', 'customer', 'quantity', 'total_amount', 'payment_method', 'created_at']
+        read_only_fields = ['id', 'total_amount', 'created_at']
+
+    def create(self, validated_data):
+        database_name = self.context.get('database_name')
+        return Sale.objects.using(database_name).create(**validated_data)

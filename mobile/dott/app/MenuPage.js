@@ -21,7 +21,6 @@ export default function MenuPage() {
         console.error('Error fetching user name:', error);
       }
     };
-
     fetchUserName();
   }, []);
 
@@ -32,13 +31,13 @@ export default function MenuPage() {
         <Text style={styles.headerText}>Menu</Text>
         <Text style={styles.userText}>{userFullName}</Text>
       </View>
-      <View style={styles.menuContainer}>
+      <View style={styles.topMenuContainer}>
         <TouchableOpacity
           style={styles.menuButton}
-          onPress={() => router.push('/createTransaction')}
+          onPress={() => router.push('/createSales')}
         >
-          <Ionicons name="add-circle-outline" size={24} color={BLUE} />
-          <Text style={styles.menuButtonText}>Create Transaction</Text>
+          <Ionicons name="cart-outline" size={24} color={BLUE} />
+          <Text style={styles.menuButtonText}>Create Sales</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.menuButton}
@@ -47,6 +46,9 @@ export default function MenuPage() {
           <Ionicons name="cube-outline" size={24} color={BLUE} />
           <Text style={styles.menuButtonText}>Add Product</Text>
         </TouchableOpacity>
+      </View>
+      <View style={styles.menuContainer}>
+        {/* Add other menu items here if needed */}
       </View>
     </SafeAreaView>
   );
@@ -75,6 +77,12 @@ const styles = StyleSheet.create({
   userText: {
     color: BLUE,
     fontSize: 16,
+  },
+  topMenuContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
   menuContainer: {
     flex: 1,

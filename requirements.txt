@@ -55,7 +55,6 @@ oauthlib==3.2.2
 phonenumbers==8.13.45
 pillow==10.4.0
 prompt_toolkit==3.0.47
-psycopg2==2.9.9
 psycopg2-binary==2.9.9
 psycopg2-pool==1.2
 pyactiveresource==2.2.2
@@ -87,7 +86,6 @@ Twisted==24.3.0
 txaio==23.1.1
 typing_extensions==4.11.0
 tzdata==2024.1
-urllib3==2.2.1
 vine==5.1.0
 wcwidth==0.2.13
 WooCommerce==3.0.0

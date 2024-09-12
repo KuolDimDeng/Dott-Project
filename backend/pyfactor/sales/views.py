@@ -1172,3 +1172,28 @@ def sales_order_detail(request, pk):
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def product_by_barcode(request, barcode):
+    user = request.user
+    database_name = get_user_database(user)
+
+    try:
+        product = Product.objects.using(database_name).get(product_code=barcode)
+        serializer = ProductSerializer(product)
+        return Response(serializer.data)
+    except Product.DoesNotExist:
+        return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_sale(request):
+    user = request.user
+    database_name = get_user_database(user)
+
+    serializer = SaleSerializer(data=request.data, context={'database_name': database_name})
+    if serializer.is_valid():
+        sale = serializer.save()
+        return Response(SaleSerializer(sale).data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
