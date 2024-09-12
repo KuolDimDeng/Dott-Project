@@ -1,14 +1,8 @@
 {
   "expo": {
-    "name": "Dott",
+    "name": "dott",
     "slug": "dott",
     "version": "1.0.0",
-    "sdkVersion": "51.0.0",
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
     "orientation": "portrait",
     "icon": "./assets/images/icon.jpg",
     "scheme": "myapp",
@@ -38,6 +32,30 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "hooks": {
+      "postPublish": [
+        {
+          "file": "sentry-expo/upload-sourcemaps",
+          "config": {
+            "organization": "your organization's name",
+            "project": "your project's name",
+            "authToken": "your auth token"
+          }
+        }
+      ]
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    },
+    "owner": "your-expo-username"
   }
 }
