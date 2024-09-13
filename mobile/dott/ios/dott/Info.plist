@@ -5,19 +5,19 @@
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
     <key>CFBundleDevelopmentRegion</key>
-    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <string>en</string>
     <key>CFBundleDisplayName</key>
     <string>dott</string>
     <key>CFBundleExecutable</key>
-    <string>$(EXECUTABLE_NAME)</string>
+    <string>dott</string>
     <key>CFBundleIdentifier</key>
-    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <string>com.pyfactor.dott</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>$(PRODUCT_NAME)</string>
+    <string>dott</string>
     <key>CFBundlePackageType</key>
-    <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+    <string>APPL</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0.0</string>
     <key>CFBundleSignature</key>
@@ -31,9 +31,15 @@
           <string>com.pyfactor.dott</string>
         </array>
       </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>exp+dott</string>
+        </array>
+      </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>1.0.0</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSAppTransportSecurity</key>
@@ -44,11 +50,12 @@
       <true/>
     </dict>
     <key>NSCameraUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your camera</string>
+    <string>Allow dott to access your camera</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your microphone</string>
+    <string>Allow dott to access your microphone</string>
     <key>NSUserActivityTypes</key>
     <array>
+      <string>com.pyfactor.dott.expo.index_route</string>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
     </array>
     <key>UILaunchStoryboardName</key>
