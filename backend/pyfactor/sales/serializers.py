@@ -3,7 +3,7 @@ from django.db import connections, transaction as db_transaction
 from rest_framework import serializers
 from .utils import get_or_create_account, calculate_due_date
 from finance.models import Account, FinanceTransaction
-from .models import Product, Service, Customer, Invoice, Estimate, SalesOrder, SalesOrderItem, Department, default_due_datetime, EstimateItem, EstimateAttachment, InvoiceItem
+from .models import Product, Service, Customer, Invoice, Estimate, SalesOrder, SalesOrderItem, Department, default_due_datetime, EstimateItem, EstimateAttachment, InvoiceItem, Sale
 from pyfactor.logging_config import get_logger
 from django.utils import timezone
 from decimal import Decimal
@@ -673,9 +673,9 @@ class DepartmentSerializer(serializers.ModelSerializer):
 class SaleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sale
-        fields = ['id', 'product', 'customer', 'quantity', 'total_amount', 'payment_method', 'created_at']
-        read_only_fields = ['id', 'total_amount', 'created_at']
-
+        fields = ['id', 'product', 'customer', 'quantity', 'total_amount', 'payment_method', 'amount_given', 'change_due', 'created_at', 'created_by']
+        read_only_fields = ['id', 'total_amount', 'change_due', 'created_at', 'created_by']
+        
     def create(self, validated_data):
         database_name = self.context.get('database_name')
         return Sale.objects.using(database_name).create(**validated_data)

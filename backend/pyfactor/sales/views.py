@@ -1,3 +1,4 @@
+import base64
 from decimal import Decimal
 import decimal
 from django.shortcuts import get_object_or_404, render
@@ -9,10 +10,10 @@ from rest_framework.response import Response
 from django.utils import timezone
 from finance.utils import generate_financial_statements, get_or_create_chart_account
 from finance.views import get_user_database
-from .models import Estimate, EstimateItem, Invoice, Customer, Product, Service, default_due_datetime, SalesOrder, SalesOrderItem
+from .models import Estimate, EstimateItem, Invoice, Customer, Product, Sale, Service, default_due_datetime, SalesOrder, SalesOrderItem
 from finance.models import Account, AccountType, FinanceTransaction
 from users.models import UserProfile
-from .serializers import CustomerIncomeSerializer, InvoiceSerializer, CustomerSerializer, ProductSerializer, ServiceSerializer,  EstimateSerializer, EstimateAttachmentSerializer, SalesOrderSerializer, EstimateAttachmentSerializer, EstimateItemSerializer, SalesOrderItemSerializer, InvoiceItemSerializer
+from .serializers import CustomerIncomeSerializer, InvoiceSerializer, CustomerSerializer, ProductSerializer, SaleSerializer, ServiceSerializer,  EstimateSerializer, EstimateAttachmentSerializer, SalesOrderSerializer, EstimateAttachmentSerializer, EstimateItemSerializer, SalesOrderItemSerializer, InvoiceItemSerializer
 from finance.serializers import TransactionSerializer
 from django.conf import settings
 from django.db import connections, transaction as db_transaction
@@ -37,7 +38,9 @@ from decimal import Decimal
 from rest_framework.exceptions import ValidationError
 from finance.utils import create_general_ledger_entry, update_chart_of_accounts
 from django.apps import apps
-
+from barcode import generate
+from barcode.writer import ImageWriter
+from io import BytesIO
 
 
 
@@ -1194,6 +1197,46 @@ def create_sale(request):
 
     serializer = SaleSerializer(data=request.data, context={'database_name': database_name})
     if serializer.is_valid():
-        sale = serializer.save()
+        sale = serializer.save(created_by=user)
         return Response(SaleSerializer(sale).data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_receipt_data(request, sale_id):
+    sale = get_object_or_404(Sale, id=sale_id)
+    receipt_data = {
+        'sale_id': str(sale.id),
+        'product_name': sale.product.name,
+        'quantity': sale.quantity,
+        'total_amount': str(sale.total_amount),
+        'date': sale.created_at.strftime("%Y-%m-%d %H:%M:%S")
+    }
+    return Response(receipt_data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_product_label_data(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    label_data = {
+        'product_code': product.product_code,
+        'name': product.name,
+        'price': str(product.price),
+        'barcode': base64.b64encode(product.get_barcode_image()).decode()
+    }
+    return Response(label_data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def search_customers(request):
+    query = request.GET.get('q', '')
+    user = request.user
+    database_name = get_user_database(user)
+
+    customers = Customer.objects.using(database_name).filter(
+        Q(customerName__icontains=query) | 
+        Q(phone__icontains=query)
+    )[:10]  # Limit to 10 results
+    serializer = CustomerSerializer(customers, many=True)
+    return Response(serializer.data)

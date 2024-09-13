@@ -55,6 +55,7 @@ oauthlib==3.2.2
 phonenumbers==8.13.45
 pillow==10.4.0
 prompt_toolkit==3.0.47
+psycopg2==2.9.9
 psycopg2-binary==2.9.9
 psycopg2-pool==1.2
 pyactiveresource==2.2.2
@@ -63,11 +64,14 @@ pyasn1_modules==0.4.0
 pycparser==2.22
 PyJWT==2.8.0
 pyOpenSSL==24.1.0
+pypng==0.20220715.0
+python-barcode==0.15.1
 python-crontab==3.1.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 pytz==2024.1
 PyYAML==6.0.1
+qrcode==7.4.2
 redis==5.0.7
 reportlab==4.2.2
 requests==2.31.0
@@ -86,6 +90,7 @@ Twisted==24.3.0
 txaio==23.1.1
 typing_extensions==4.11.0
 tzdata==2024.1
+urllib3==2.2.1
 vine==5.1.0
 wcwidth==0.2.13
 WooCommerce==3.0.0

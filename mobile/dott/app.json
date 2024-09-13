@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.jpg",
-    "scheme": "myapp",
+    "scheme": "dott",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
@@ -39,9 +39,9 @@
         {
           "file": "sentry-expo/upload-sourcemaps",
           "config": {
-            "organization": "your organization's name",
-            "project": "your project's name",
-            "authToken": "your auth token"
+            "organization": "pyfactor",
+            "project": "dott",
+            "authToken": "your-auth-token"
           }
         }
       ]
@@ -57,6 +57,7 @@
         "projectId": "your-project-id"
       }
     },
-    "owner": "your-expo-username"
+    "owner": "your-expo-username",
+    "jsEngine": "jsc"
   }
 }

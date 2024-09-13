@@ -13,7 +13,9 @@ from django.contrib.auth import get_user_model
 from pyfactor.logging_config import get_logger
 from django.dispatch import receiver
 from django.db.models.signals import post_save
-
+from io import BytesIO
+from barcode import Code128
+from barcode.writer import ImageWriter
 
 
 logger = get_logger()
@@ -91,6 +93,11 @@ class Product(Item):
         instance = super().from_db(db, field_names, values)
         instance._state.db = db
         return instance
+    
+    def get_barcode_image(self):
+        rv = BytesIO()
+        Code128(self.product_code, writer=ImageWriter()).write(rv)
+        return rv.getvalue()
 
 class Service(Item):
     service_code = models.CharField(max_length=50, unique=True, editable=False)
@@ -415,8 +422,15 @@ class Sale(models.Model):
     quantity = models.PositiveIntegerField(default=1)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=[('cash', 'Cash'), ('card', 'Card'), ('invoice', 'Invoice')])
+    amount_given = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    change_due = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True)
 
     def save(self, *args, **kwargs):
         self.total_amount = self.product.price * self.quantity
+        if self.payment_method == 'cash' and self.amount_given:
+            self.change_due = self.amount_given - self.total_amount
         super().save(*args, **kwargs)
+        
+    

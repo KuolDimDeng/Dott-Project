@@ -264,6 +264,7 @@ INSTALLED_APPS = [
     'integrations',
     'alerts',
     'purchases',
+    'barcode',
     'debug_toolbar',
     'django_extensions',
     'django_celery_beat',
