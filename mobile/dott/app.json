@@ -54,10 +54,10 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "f68fa869-0579-448b-8e9f-c0d4a2532e1a"
       }
     },
-    "owner": "your-expo-username",
+    "owner": "kuoldeng",   
     "jsEngine": "jsc"
   }
 }
