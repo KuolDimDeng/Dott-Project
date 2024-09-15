@@ -6,6 +6,7 @@ export default function BarcodeScanner({ onBarCodeScanned }) {
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
 
+  // Request permission to access camera
   useEffect(() => {
     (async () => {
       const { status } = await BarCodeScanner.requestPermissionsAsync();
@@ -13,11 +14,13 @@ export default function BarcodeScanner({ onBarCodeScanned }) {
     })();
   }, []);
 
+  // Handle the scanning event
   const handleBarCodeScanned = ({ type, data }) => {
     setScanned(true);
-    onBarCodeScanned(data);
+    onBarCodeScanned(data);  // Pass the scanned data to the parent component
   };
 
+  // Check for camera permission
   if (hasPermission === null) {
     return <Text>Requesting for camera permission</Text>;
   }
@@ -25,13 +28,16 @@ export default function BarcodeScanner({ onBarCodeScanned }) {
     return <Text>No access to camera</Text>;
   }
 
+  // Barcode scanner view
   return (
     <View style={styles.container}>
       <BarCodeScanner
         onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFillObject}  // Fullscreen scanner
       />
-      {scanned && <Button title={'Tap to Scan Again'} onPress={() => setScanned(false)} />}
+      {scanned && (
+        <Button title={'Tap to Scan Again'} onPress={() => setScanned(false)} />
+      )}
     </View>
   );
 }

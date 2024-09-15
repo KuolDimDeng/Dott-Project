@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Text } from 'react-native';
+import { View, TextInput, Button, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from '../components/utils/axiosConfig';
@@ -8,9 +8,12 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async () => {
+    setLoading(true);
+    setError('');
     try {
       const response = await axiosInstance.post('/api/token/', {
         email,
@@ -29,8 +32,14 @@ export default function Login() {
         router.replace('/MenuPage');
       }
     } catch (error) {
-      setError('Invalid credentials. Please try again.');
+      setError(
+        error.response?.data?.detail 
+        ? error.response.data.detail 
+        : 'Invalid credentials. Please try again.'
+      );
       console.error('Login error:', error.response ? error.response.data : error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,7 +62,11 @@ export default function Login() {
           onChangeText={setPassword}
           secureTextEntry
         />
-        <Button title="Login" onPress={handleLogin} />
+        {loading ? (
+          <ActivityIndicator size="large" color="#0000ff" />
+        ) : (
+          <Button title="Login" onPress={handleLogin} />
+        )}
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </View>
       <Text style={styles.copyright}>© {new Date().getFullYear()} Pyfactor</Text>

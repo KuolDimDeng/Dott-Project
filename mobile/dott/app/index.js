@@ -1,5 +1,13 @@
-import { Redirect } from 'expo-router';
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
 
 export default function Index() {
-  return <Redirect href="/login" />;
+  const router = useRouter();
+
+  useEffect(() => {
+    // Navigate to the 'login' screen using expo-router
+    router.replace('/login');
+  }, [router]);
+
+  return null;
 }
