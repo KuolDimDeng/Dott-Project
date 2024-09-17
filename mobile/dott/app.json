@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.jpg",
-    "scheme": "dott",
+    "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
@@ -14,16 +14,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pyfactor.dott",
-      "buildNumber": "1.0.0"
+      "bundleIdentifier": "com.pyfactor.dott"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.pyfactor.dott",
-      "versionCode": 1
+      "package": "com.pyfactor.dott"
     },
     "web": {
       "bundler": "metro",
@@ -36,30 +34,10 @@
     "experiments": {
       "typedRoutes": true
     },
-    "hooks": {
-      "postPublish": [
-        {
-          "file": "sentry-expo/upload-sourcemaps",
-          "config": {
-            "organization": "pyfactor",
-            "project": "dott",
-            "authToken": "your-auth-token"
-          }
-        }
-      ]
-    },
-    "updates": {
-      "fallbackToCacheTimeout": 0
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
     "extra": {
       "eas": {
         "projectId": "f68fa869-0579-448b-8e9f-c0d4a2532e1a"
       }
-    },
-    "owner": "kuoldeng",
-    "jsEngine": "jsc"
+    }
   }
 }

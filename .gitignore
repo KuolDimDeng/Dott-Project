@@ -43,3 +43,6 @@ htmlcov/
 # Temporary files
 *.swp
 *~
+
+android/.gradle
+ios/Pods
