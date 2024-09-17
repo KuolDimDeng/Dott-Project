@@ -49,6 +49,7 @@ target 'dott' do
     :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
   )
 
+  # Detect architecture and exclude unnecessary architectures
   post_install do |installer|
     react_native_post_install(
       installer,
@@ -56,6 +57,17 @@ target 'dott' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
+
+    # Exclude architecture for Intel or Apple Silicon Macs
+    installer.pods_project.build_configurations.each do |config|
+      if RbConfig::CONFIG['host_cpu'] == 'arm64'
+        # Running on Apple Silicon
+        config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'x86_64'
+      else
+        # Running on Intel (x86_64)
+        config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+      end
+    end
 
     # This is necessary for Xcode 14, because it signs resource bundles by default
     # when building for devices.
