@@ -20,7 +20,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.pyfactor.dott"
     },
     "web": {
       "bundler": "metro",
@@ -32,6 +33,11 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f68fa869-0579-448b-8e9f-c0d4a2532e1a"
+      }
     }
   }
 }

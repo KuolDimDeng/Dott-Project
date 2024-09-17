@@ -2,8 +2,8 @@ FROM node:20
 
 WORKDIR /app
 
-# Install Expo CLI globally
-RUN npm install -g expo-cli
+# Install Expo CLI and ngrok globally
+RUN npm install -g expo-cli @expo/ngrok@^4.1.0
 
 # Copy package.json and package-lock.json (if available)
 COPY package*.json ./
