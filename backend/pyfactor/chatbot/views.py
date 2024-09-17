@@ -24,6 +24,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db import connections
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from django.conf import settings
+from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from pyfactor.logging_config import get_logger

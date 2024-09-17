@@ -10,8 +10,8 @@ botocore==1.34.113
 celery==5.4.0
 certifi==2024.2.2
 cffi==1.16.0
-channels==4.1.0
-channels-redis==4.2.0
+channels==4.0.0
+channels-redis==4.1.0
 chardet==5.2.0
 charset-normalizer==3.3.2
 click==8.1.7
@@ -55,7 +55,6 @@ oauthlib==3.2.2
 phonenumbers==8.13.45
 pillow==10.4.0
 prompt_toolkit==3.0.47
-psycopg2-binary==2.9.9
 psycopg2-binary==2.9.9
 psycopg2-pool==1.2
 pyactiveresource==2.2.2

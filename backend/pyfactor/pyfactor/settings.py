@@ -323,35 +323,32 @@ CHANNEL_LAYERS = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'postgres'),
-        'USER': os.getenv('DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'TOzuISAf13KvGVZi4zbd'),
-        'HOST': os.getenv('DB_HOST', 'database-2.c12qgo6m085e.us-east-1.rds.amazonaws.com'),
-        'PORT': '5432',
-        'ATOMIC_REQUESTS': False,
-        'CONN_HEALTH_CHECKS': True,
+        'NAME': os.getenv('POSTGRES_DB', 'postgres'),
+        'USER': os.getenv('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
+        'ATOMIC_REQUESTS': True,
         'CONN_MAX_AGE': 600,
-        'AUTOCOMMIT': True,
         'OPTIONS': {
             'connect_timeout': 10,
         },
     },
     'celery': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'celery_db'),
-        'USER': os.getenv('DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'TOzuISAf13KvGVZi4zbd'),
-        'HOST': os.getenv('DB_HOST', 'database-2.c12qgo6m085e.us-east-1.rds.amazonaws.com'),
-        'PORT': '5432',
-        'ATOMIC_REQUESTS': False,
-        'CONN_HEALTH_CHECKS': True,
+        'NAME': os.getenv('CELERY_DB_NAME', 'celery_db'),
+        'USER': os.getenv('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
+        'ATOMIC_REQUESTS': True,
         'CONN_MAX_AGE': 600,
-        'AUTOCOMMIT': True,
         'OPTIONS': {
             'connect_timeout': 10,
         },
     },
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

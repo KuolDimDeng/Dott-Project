@@ -1,9 +1,42 @@
-version: '3'
+version: '3.8'
 
 services:
   backend:
-    build: ./backend/pyfactor
+    build:
+      context: ./backend/pyfactor
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=pyfactor.settings
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
     volumes:
       - ./backend/pyfactor:/app
+    command: ["./entrypoint.sh"]
+
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
