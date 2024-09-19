@@ -237,8 +237,18 @@ export const MainListItems = ({
   //  setShowCustomerList(false);
  // };
 
-  return (
-    <Paper elevation={3} sx={{ p: 2, my: 2, width: MENU_WIDTH, height: '100vh', overflow: 'hidden' }}>
+ return (
+  <Paper 
+    elevation={3} 
+    sx={{ 
+      p: 2, 
+      my: 2, 
+      width: MENU_WIDTH, 
+      height: '100vh', 
+      overflow: 'hidden',
+      background: 'linear-gradient(to bottom, #e3f2fd, #ffffff)', // Light blue to white gradient
+    }}
+  >
     <Box sx={{ 
       height: '100%',
       overflow: 'auto',
@@ -251,6 +261,10 @@ export const MainListItems = ({
         ...listItemStyle,
         paddingLeft: 2,
         paddingRight: 2,
+        backgroundColor: 'rgba(255, 255, 255, 0.7)', // Semi-transparent white background
+        '&:hover': {
+          backgroundColor: 'rgba(255, 255, 255, 0.9)', // More opaque on hover
+        },
       },
       '& .MuiListItemButton-root:last-child': {
         marginBottom: 0,

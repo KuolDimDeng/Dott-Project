@@ -453,38 +453,41 @@ const RenderMainContent = ({
     };
   
     
-  return (
-    <Box
-      sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
-    >
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          flexGrow: 1,
+    return (
+      <Box
+        sx={{
+          height: '100%',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          backgroundColor: 'background.paper',
-          borderRadius: 2,
+          background: 'linear-gradient(to bottom, #e3f2fd, #ffffff)', // Light blue to white gradient
         }}
       >
-        <Box
-          sx={{
+        <Paper 
+          elevation={3} 
+          sx={{ 
             flexGrow: 1,
-            overflow: 'auto',
-            p: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            backgroundColor: 'transparent', // Make paper transparent to show gradient
+            borderRadius: 2,
+            m: 2, // Add margin to show gradient around the paper
           }}
         >
-          {renderContent()}
-        </Box>
-      </Paper>
-    </Box>
-  );
-};
-
-export default RenderMainContent;
+          <Box
+            sx={{
+              flexGrow: 1,
+              overflow: 'auto',
+              p: 4,
+              backgroundColor: 'rgba(255, 255, 255, 0.8)', // Semi-transparent white
+            }}
+          >
+            {renderContent()}
+          </Box>
+        </Paper>
+      </Box>
+    );
+  };
+  
+  export default RenderMainContent;
