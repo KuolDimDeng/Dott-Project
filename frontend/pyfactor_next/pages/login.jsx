@@ -22,7 +22,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { object, minLength, string, email } from 'valibot';
 import { logger } from '@/utils/logger';
-import axiosInstance from '@/app/dashboard/components/axiosConfig';
+import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
 
 const theme = createTheme({
   palette: {

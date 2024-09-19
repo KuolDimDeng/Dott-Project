@@ -3,30 +3,35 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const checkLoginStatus = async () => {
+  try {
+    const token = await AsyncStorage.getItem('token');
+    return token ? 'MenuPage' : 'Login';
+  } catch (error) {
+    console.error('Error checking login status:', error);
+    return 'Login';
+  }
+};
+
 export default function App() {
   const router = useRouter();
 
   useEffect(() => {
-    const checkLogin = async () => {
+    const initializeApp = async () => {
       // Simulate a delay for splash screen (can be replaced with actual initialization logic)
-      setTimeout(async () => {
-        // Check if token exists to bypass login
-        const token = await AsyncStorage.getItem('token');
-        if (token) {
-          router.replace('/MenuPage'); // Assuming a menu page for logged-in users
-        } else {
-          router.replace('/Login'); // Navigate to login if not logged in
-        }
-      }, 3000); // Show splash screen for 3 seconds
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      const initialRoute = await checkLoginStatus();
+      router.replace(`/${initialRoute}`);
     };
 
-    checkLogin();
+    initializeApp();
   }, [router]);
 
   return (
     <View style={styles.container}>
       {/* Show the splash screen during loading */}
-      <ActivityIndicator size="large" color="#0000FF" />
+      <ActivityIndicator size="large" color="#FFFFFF" />
     </View>
   );
 }

@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
-import { Box, Typography, TextField, FormControlLabel, Button, Switch } from '@mui/material';
+import { 
+  Box, 
+  Typography, 
+  TextField, 
+  FormControlLabel, 
+  Button, 
+  Switch,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl
+} from '@mui/material';
 import axiosInstance from '../components/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
@@ -9,11 +20,13 @@ const ServiceForm = () => {
     name: '',
     description: '',
     price: '',
-    sellEnabled: false,
-    buyEnabled: false,
+    is_for_sale: true,
+    is_for_rent: false,
     salesTax: '',
     duration: '',
     is_recurring: false,
+    charge_period: 'hour',
+    charge_amount: '',
   });
   const [errors, setErrors] = useState({});
   const { addMessage } = useUserMessageContext();
@@ -53,11 +66,13 @@ const ServiceForm = () => {
         name: '',
         description: '',
         price: '',
-        sellEnabled: false,
-        buyEnabled: false,
+        is_for_sale: true,
+        is_for_rent: false,
         salesTax: '',
         duration: '',
         is_recurring: false,
+        charge_period: 'hour',
+        charge_amount: '',
       });
     } catch (error) {
       logger.error('Error creating service', error);
@@ -103,12 +118,12 @@ const ServiceForm = () => {
           required
         />
         <FormControlLabel
-          control={<Switch checked={service.sellEnabled} onChange={handleChange} name="sellEnabled" />}
-          label="Sell Enabled"
+          control={<Switch checked={service.is_for_sale} onChange={handleChange} name="is_for_sale" />}
+          label="For Sale"
         />
         <FormControlLabel
-          control={<Switch checked={service.buyEnabled} onChange={handleChange} name="buyEnabled" />}
-          label="Buy Enabled"
+          control={<Switch checked={service.is_for_rent} onChange={handleChange} name="is_for_rent" />}
+          label="For Rent"
         />
         <TextField 
           label="Sales Tax" 
@@ -131,6 +146,24 @@ const ServiceForm = () => {
         <FormControlLabel
           control={<Switch checked={service.is_recurring} onChange={handleChange} name="is_recurring" />}
           label="Is Recurring"
+        />
+        <FormControl fullWidth margin="normal">
+          <InputLabel>Charge Period</InputLabel>
+          <Select name="charge_period" value={service.charge_period} onChange={handleChange}>
+            <MenuItem value="hour">Hour</MenuItem>
+            <MenuItem value="day">Day</MenuItem>
+            <MenuItem value="month">Month</MenuItem>
+            <MenuItem value="year">Year</MenuItem>
+          </Select>
+        </FormControl>
+        <TextField 
+          label="Charge Amount" 
+          name="charge_amount" 
+          type="number" 
+          value={service.charge_amount} 
+          onChange={handleChange} 
+          fullWidth 
+          margin="normal" 
         />
         <Button type="submit" variant="contained" color="primary">Create Service</Button>
       </form>

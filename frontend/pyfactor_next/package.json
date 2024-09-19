@@ -9,7 +9,6 @@
     "lint": "next lint",
     "test": "jest",
     "clean": "rm -rf .next"
-  
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
@@ -29,6 +28,7 @@
     "date-fns": "2.29.3",
     "file-saver": "^2.0.5",
     "js-cookie": "^3.0.5",
+    "jsbarcode": "^3.11.6",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
     "next": "14.2.5",
@@ -44,6 +44,7 @@
     "react-hook-form": "^7.51.4",
     "react-pdf": "^9.1.0",
     "react-select": "^5.8.0",
+    "react-svg": "^16.1.34",
     "recharts": "^2.12.7",
     "sharp": "^0.33.5",
     "socket.io-client": "^4.7.5",

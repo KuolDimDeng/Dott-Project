@@ -14,14 +14,20 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pyfactor.dott"
+      "bundleIdentifier": "com.pyfactor.dott",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.pyfactor.dott"
+      "package": "com.pyfactor.dott",
+      "permissions": ["INTERNET"]
     },
     "web": {
       "bundler": "metro",
@@ -31,7 +37,6 @@
     "plugins": [
       "expo-router",
       "expo-secure-store"
-
     ],
     "experiments": {
       "typedRoutes": true

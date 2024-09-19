@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from '../components/utils/axiosConfig';
 
 const MAX_RETRIES = 3;
+const RETRY_DELAY = 2000; // 2 seconds
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -23,14 +24,6 @@ function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
-
-  const checkInternetConnection = () => {
-    return new Promise((resolve) => {
-      fetch('https://8.8.8.8', { mode: 'no-cors', cache: 'no-store' })
-        .then(() => resolve(true))
-        .catch(() => resolve(false));
-    });
-  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -41,26 +34,19 @@ function Login() {
     setLoading(true);
     setError('');
 
-    const isConnected = await checkInternetConnection();
-    if (!isConnected) {
-      setError('No internet connection. Please check your network settings.');
-      setLoading(false);
-      return;
-    }
-
     try {
       let retries = 0;
       while (retries < MAX_RETRIES) {
         try {
           console.log('Attempting login', { email, retryCount: retries });
-          const response = await axiosInstance.post('/api/token/', { email, password });
+          const response = await axiosInstance.post('/users/token/', { email, password });
 
-          if (response.data.access) {
+          if (response && response.data && response.data.access) {
             await AsyncStorage.setItem('token', response.data.access);
             await AsyncStorage.setItem('refreshToken', response.data.refresh);
             
             console.log('Login successful, fetching user profile');
-            const profileResponse = await axiosInstance.get('/api/profile/');
+            const profileResponse = await axiosInstance.get('/users/profile/');
             const fullName = `${profileResponse.data.first_name} ${profileResponse.data.last_name}`;
             await AsyncStorage.setItem('userFullName', fullName);
 
@@ -76,23 +62,18 @@ function Login() {
             throw error;
           } else {
             console.warn(`Login attempt failed, retrying (${retries}/${MAX_RETRIES})`, { error: error.message });
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
           }
         }
       }
     } catch (error) {
       console.error('Login failed', { error: error.message });
-      if (error.response) {
-        setError(error.response.data.detail || 'An error occurred. Please try again.');
-      } else if (error.request) {
-        setError('No response from server. Please try again later.');
-      } else {
-        setError(error.message || 'An unexpected error occurred. Please try again.');
-      }
+      setError(error.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleForgotPassword = () => {
     navigation.navigate('ForgotPassword');
@@ -117,7 +98,7 @@ function Login() {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
-            autoCompleteType="email"
+            autoComplete="email"
           />
           <TextInput
             style={styles.input}
@@ -125,7 +106,7 @@ function Login() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            autoCompleteType="password"
+            autoComplete="password"
           />
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
           {loading ? (

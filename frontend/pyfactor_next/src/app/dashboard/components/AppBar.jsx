@@ -13,6 +13,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import DateTime from './components/DateTime';
 import SettingsMenu from './components/SettingsMenu';
 import HomeIcon from '@mui/icons-material/Home';
+import PrinterIcon from '@mui/icons-material/Print';
+import BluetoothIcon from '@mui/icons-material/Bluetooth';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -68,6 +70,8 @@ const AppBar = ({
   handleUserProfileClick,
   handleAlertClick,
   handleDashboardClick,
+  handleDeviceSettingsClick,
+  handleSendGlobalAlertClick,
 }) => {
   return (
     <MuiAppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
@@ -85,8 +89,6 @@ const AppBar = ({
             <HomeIcon />
           </IconButton>
           <Image src={logoPath} alt="PyFactor Logo" width={120} height={30} style={{ marginLeft: '-8px' }}/>
-       
-
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Search>
@@ -127,7 +129,6 @@ const AppBar = ({
                 <MenuItem disabled>{userData.occupation}</MenuItem>
                 <MenuItem disabled>{userData.business_name}</MenuItem>
                 <MenuItem onClick={handleUserProfileClick}>Profile Settings</MenuItem>
-
                 <MenuItem onClick={handleAccountClick}>Account</MenuItem>
                 {userData.is_staff && (
                   <MenuItem onClick={handleSendGlobalAlertClick}>Send Global Alert</MenuItem>
@@ -142,6 +143,7 @@ const AppBar = ({
         open={settingsMenuOpen}
         onClose={handleSettingsMenuClose}
         onIntegrationsClick={handleIntegrationsClick}
+        onDeviceSettingsClick={handleDeviceSettingsClick}
       />
     </MuiAppBar>
   );

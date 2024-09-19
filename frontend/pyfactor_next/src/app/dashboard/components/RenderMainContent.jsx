@@ -100,6 +100,7 @@ import BudgetVsActualAnalysis from './forms/BudgetVsActualAnalysis';
 import SalesAnalysis from './forms/SalesAnalysis';
 import ExpenseAnalysis from './forms/ExpenseAnalysis';
 import KPIDashboard from './forms/KPIDashboard';
+import DeviceSettings from '@/app/Settings/DeviceSettings/components/DeviceSettings';
 import BalanceSheet from './forms/BalanceSheetAnalysis';
 import ChartContainer from '@/app/chart/component/ChartContainer';
 import IntegrationSettings from '../../Settings/integrations/components/IntegrationSettings';
@@ -179,6 +180,7 @@ const RenderMainContent = ({
     showSalesAnalysis,
     showExpenseAnalysis,
     showKPIDashboard,
+    showDeviceSettings,
 
   }) => {
     const renderContent = () => {
@@ -343,6 +345,10 @@ const RenderMainContent = ({
         return <SalesAnalysis/>;
       }
 
+      if (showDeviceSettings) {
+        return <DeviceSettings/>;
+      }
+
       if (showExpenseAnalysis) {
         return <ExpenseAnalysis/>;
       }
@@ -446,20 +452,39 @@ const RenderMainContent = ({
       return null;
     };
   
-    return (
-        <Paper 
-          elevation={3} 
-          sx={{ 
-            p: 4, 
-            height: '100%', 
+    
+  return (
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          backgroundColor: 'background.paper',
+          borderRadius: 2,
+        }}
+      >
+        <Box
+          sx={{
+            flexGrow: 1,
             overflow: 'auto',
-            backgroundColor: 'background.paper',
-            borderRadius: 2,
+            p: 4,
           }}
         >
           {renderContent()}
-        </Paper>
-      );
-    };
-  
-  export default RenderMainContent;
+        </Box>
+      </Paper>
+    </Box>
+  );
+};
+
+export default RenderMainContent;

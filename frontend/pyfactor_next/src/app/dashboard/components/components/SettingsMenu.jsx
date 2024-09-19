@@ -11,7 +11,7 @@ const StyledMenuItem = styled(MenuItem)({
   },
 });
 
-const SettingsMenu = ({ anchorEl, open, onClose, onIntegrationsClick }) => {
+const SettingsMenu = ({ anchorEl, open, onClose, onIntegrationsClick, onDeviceSettingsClick }) => {
   return (
     <Menu
       anchorEl={anchorEl}
@@ -42,6 +42,8 @@ const SettingsMenu = ({ anchorEl, open, onClose, onIntegrationsClick }) => {
       <StyledMenuItem>Email Templates</StyledMenuItem>
       <StyledMenuItem>Product/Service Catalog</StyledMenuItem>
       <StyledMenuItem>Payment Gateway Settings</StyledMenuItem>
+      <StyledMenuItem onClick={onDeviceSettingsClick}>Device Settings</StyledMenuItem>
+
       {/* Add more menu items here as needed */}
     </Menu>
   );

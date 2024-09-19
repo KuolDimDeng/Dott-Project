@@ -14,10 +14,16 @@ from django.utils.dateparse import parse_date
 logger = get_logger()
 
 class ProductSerializer(serializers.ModelSerializer):
+    days_in_stock = serializers.ReadOnlyField()
+
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'price', 'sellEnabled', 'buyEnabled', 'salesTax', 'product_code', 'stock_quantity', 'reorder_level']
-        read_only_fields = ['id', 'product_code']
+        fields = ['id', 'name', 'description', 'price', 'is_for_sale', 'is_for_rent', 
+                  'salesTax', 'created_at', 'updated_at', 'height', 'width', 'height_unit', 
+                  'width_unit', 'weight', 'weight_unit', 'charge_period', 'charge_amount', 
+                  'days_in_stock', 'product_code', 'department', 'stock_quantity', 'reorder_level']
+        read_only_fields = ['id', 'product_code', 'days_in_stock']
+
 
     def create(self, validated_data):
         database_name = self.context.get('database_name')
@@ -32,10 +38,15 @@ class ProductSerializer(serializers.ModelSerializer):
         return product
 
 class ServiceSerializer(serializers.ModelSerializer):
+    days_in_stock = serializers.ReadOnlyField()
+
     class Meta:
         model = Service
-        fields = ['id', 'name', 'description', 'price', 'sellEnabled', 'buyEnabled', 'salesTax', 'service_code', 'duration', 'is_recurring']
-        read_only_fields = ['id', 'service_code']
+        fields = ['id', 'name', 'description', 'price', 'is_for_sale', 'is_for_rent', 
+                  'salesTax', 'created_at', 'updated_at', 'height', 'width', 'height_unit', 
+                  'width_unit', 'weight', 'weight_unit', 'charge_period', 'charge_amount', 
+                  'days_in_stock', 'service_code', 'duration', 'is_recurring']
+        read_only_fields = ['id', 'service_code', 'days_in_stock']
 
     def create(self, validated_data):
         database_name = self.context.get('database_name')

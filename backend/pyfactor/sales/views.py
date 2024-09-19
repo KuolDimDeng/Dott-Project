@@ -25,7 +25,7 @@ from .utils import get_or_create_account, ensure_date
 from django.db import transaction 
 from datetime import datetime, timedelta, date
 from django.db.models import Q
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponse
 from django.core.mail import EmailMessage
 from django.db.models import Sum, DecimalField, F, Case, When, Value
 
@@ -373,12 +373,8 @@ def create_product(request):
         database_name = user_profile.database_name
         logger.debug("Database name: %s", database_name)
 
-        router = UserDatabaseRouter()
-        router.create_dynamic_database(database_name)
-
         with transaction.atomic(using=database_name):
-            serializer = ProductSerializer(data=request.data, context={'database_name': database_name})
-            logger.debug("Serializer: %s", serializer)
+            serializer = ProductSerializer(data=request.data)
             if serializer.is_valid():
                 product = serializer.save()
                 logger.info(f"Product created: {product.id} - {product.name}")
@@ -392,6 +388,7 @@ def create_product(request):
     except Exception as e:
         logger.exception("Error creating product: %s", str(e))
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_service(request):
@@ -403,12 +400,8 @@ def create_service(request):
         database_name = user_profile.database_name
         logger.debug("Database name: %s", database_name)
 
-        router = UserDatabaseRouter()
-        router.create_dynamic_database(database_name)
-
         with transaction.atomic(using=database_name):
-            serializer = ServiceSerializer(data=request.data, context={'database_name': database_name})
-            logger.debug("Serializer: %s", serializer)
+            serializer = ServiceSerializer(data=request.data)
             if serializer.is_valid():
                 service = serializer.save()
                 logger.info(f"Service created: {service.id} - {service.name}")
@@ -422,6 +415,7 @@ def create_service(request):
     except Exception as e:
         logger.exception("Error creating service: %s", str(e))
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -1240,3 +1234,28 @@ def search_customers(request):
     )[:10]  # Limit to 10 results
     serializer = CustomerSerializer(customers, many=True)
     return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def print_barcode(request, product_id):
+    user = request.user
+    database_name = get_user_database(user)
+
+    try:
+        product = Product.objects.using(database_name).get(id=product_id)
+        
+        # Generate barcode
+        rv = BytesIO()
+        generate('code128', product.product_code, writer=ImageWriter(), output=rv)
+        rv.seek(0)
+
+        # Create the HTTP response with the barcode image
+        response = HttpResponse(rv, content_type='image/png')
+        response['Content-Disposition'] = f'attachment; filename="barcode_{product.product_code}.png"'
+        return response
+    except Product.DoesNotExist:
+        return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.exception(f"Error generating barcode for product {product_id}: {str(e)}")
+        return Response({'error': 'Failed to generate barcode'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -40,11 +40,19 @@ class Item(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    sellEnabled = models.BooleanField(default=False)
-    buyEnabled = models.BooleanField(default=False)
+    is_for_sale = models.BooleanField(default=True)
+    is_for_rent = models.BooleanField(default=False)
     salesTax = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+    height = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    width = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    height_unit = models.CharField(max_length=10, choices=[('cm', 'Centimeter'), ('m', 'Meter'), ('in', 'Inch')], default='cm')
+    width_unit = models.CharField(max_length=10, choices=[('cm', 'Centimeter'), ('m', 'Meter'), ('in', 'Inch')], default='cm')
+    weight = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    weight_unit = models.CharField(max_length=10, choices=[('kg', 'Kilogram'), ('lb', 'Pound'), ('g', 'Gram')], default='kg')
+    charge_period = models.CharField(max_length=10, choices=[('hour', 'Hour'), ('day', 'Day'), ('month', 'Month'), ('year', 'Year')], default='day')
+    charge_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         abstract = True
@@ -55,7 +63,11 @@ class Item(models.Model):
     def clean(self):
         if self.price < 0:
             raise ValidationError('Price must be non-negative.')
-        
+
+    @property
+    def days_in_stock(self):
+        return (timezone.now() - self.created_at).days
+
     @classmethod
     def generate_unique_code(cls, name, field):
         base = slugify(name)[:20]
@@ -63,18 +75,17 @@ class Item(models.Model):
             code = f"{base}_{''.join(random.choices(string.ascii_uppercase + string.digits, k=5))}"
             if not cls.objects.filter(**{field: code}).exists():
                 return code
-            # If it exists, generate a new one with a longer random suffix
             code = f"{base}_{''.join(random.choices(string.ascii_uppercase + string.digits, k=8))}"
             if not cls.objects.filter(**{field: code}).exists():
-               return code
+                return code
+
 
 class Product(Item):
     product_code = models.CharField(max_length=50, unique=True, editable=False)
     department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, related_name='products')
     stock_quantity = models.IntegerField(default=0)
     reorder_level = models.IntegerField(default=0)
-    objects = ProductManager()
-
+    objects = models.Manager()
 
     class Meta:
         indexes = [
@@ -103,9 +114,7 @@ class Service(Item):
     service_code = models.CharField(max_length=50, unique=True, editable=False)
     duration = models.DurationField(null=True, blank=True)
     is_recurring = models.BooleanField(default=False)
-    
-    objects = ServiceManager()
-
+    objects = models.Manager()
 
     class Meta:
         indexes = [

@@ -238,13 +238,19 @@ export const MainListItems = ({
  // };
 
   return (
-    <Paper elevation={3} sx={{ p: 2, my: 2, width: MENU_WIDTH,  height: '100vh'  }}>
-      <Box sx={{ 
+    <Paper elevation={3} sx={{ p: 2, my: 2, width: MENU_WIDTH, height: '100vh', overflow: 'hidden' }}>
+    <Box sx={{ 
+      height: '100%',
       overflow: 'auto',
+      '&::-webkit-scrollbar': {
+        display: 'none',
+      },
+      '-ms-overflow-style': 'none',
+      'scrollbar-width': 'none',
       '& .MuiListItemButton-root': {
         ...listItemStyle,
-        paddingLeft: 2, //padding for the main list item
-        paddingRight: 2, //padding for the main list item
+        paddingLeft: 2,
+        paddingRight: 2,
       },
       '& .MuiListItemButton-root:last-child': {
         marginBottom: 0,

@@ -26,6 +26,8 @@ import AlertsPage from '../alerts/components/AlertsPage';
 import SendGlobalAlert from '../alerts/components/SendGlobalAlert';
 import AlertsComponent from '../alerts/components/AlertsComponents';
 import KPIDashboard from './components/forms/KPIDashboard';
+import DeviceSettings from '../Settings/DeviceSettings/components/DeviceSettings';
+
 
 
 
@@ -125,6 +127,8 @@ function DashboardContent() {
   const [showBudgetVsActualAnalysis, setShowBudgetVsActualAnalysis] = useState(false);
   const [showExpenseAnalysis, setShowExpenseAnalysis] = useState(false);
   const [showKPIDashboard, setShowKPIDashboard] = useState(false);
+  const [showDeviceSettings, setShowDeviceSettings] = useState(false);
+
 
   const router = useRouter();
 
@@ -189,7 +193,8 @@ function DashboardContent() {
     setShowCashFlowAnalysis,
     setShowBudgetVsActualAnalysis,
     setShowExpenseAnalysis,
-    setShowKPIDashboard
+    setShowKPIDashboard,
+    setShowDeviceSettings,
   ];
 
   const resetAllStatesExcept = (exceptionSetter) => {
@@ -239,6 +244,12 @@ function DashboardContent() {
     resetAllStates();
     setShowUserProfileSettings(true);
   };
+
+  const handleDeviceSettingsClick = () => {
+    resetAllStates();
+    setShowDeviceSettings(true);
+  };
+
   
 
   const handleUserProfileUpdate = (updatedUserData) => {
@@ -860,7 +871,7 @@ function DashboardContent() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ display: 'flex' }}>
+      <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
         <CssBaseline />
         <AppBar 
           drawerOpen={drawerOpen}
@@ -879,6 +890,7 @@ function DashboardContent() {
           isShopifyConnected={isShopifyConnected}
           handleUserProfileClick={handleUserProfileClick}
           handleAlertClick={handleAlertClick}
+          handleDeviceSettingsClick={handleDeviceSettingsClick}
         >
           <AlertsComponent onAlertClick={handleAlertClick} />
         </AppBar>
@@ -904,42 +916,35 @@ function DashboardContent() {
           handlePurchasesClick={handlePurchasesClick}
           handleAccountingClick={handleAccountingClick}
         />
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: 0,
-            width: '100%',
-            marginLeft: drawerOpen ? `${270 - 290}px` : '-220px',
-            transition: theme.transitions.create(['margin', 'width'], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.leavingScreen,
-            }),
-            pt: '64px',
-            //pb: '60px',
-            height: 'calc(100vh - 4px)',
-            overflow: 'auto',
-          }}
-        >
+         <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          width: '100%',
+          marginLeft: drawerOpen ? `${270 - 290}px` : '-220px',
+          transition: theme.transitions.create(['margin', 'width'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
+          pt: '64px', // Adjust this value based on your AppBar height
+          height: '100vh',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
           <Container 
             maxWidth={false}
             sx={{ 
-              mt: 2,
-              mb: 2,
+              flexGrow: 1,
+              p: 2,
               ml: drawerOpen ? 2 : 1, 
-              height: 'calc(100% - 32px)',
               display: 'flex', 
               flexDirection: 'column', 
-              pl: drawerOpen ? 2 : 3, 
-              pr: 2, 
-              transition: theme.transitions.create(['margin-left', 'padding-left'], {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.leavingScreen,
-              })
+              overflow: 'hidden',
             }}
           >
-            <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-              {console.log('Before rendering content, showDashboard: ', showDashboard)}
+            <Box sx={{ flexGrow: 1, overflow: 'hidden', p: 2 }}>
               {showAlerts && (
                 <AlertsPage alerts={alerts} onMarkAsRead={handleMarkAsRead} />
               )}
@@ -952,6 +957,7 @@ function DashboardContent() {
                   onCRMClick={handleCRMAPIClick}
                 />
               )}
+            
               {showECommercePlatformAPI && (
                 <IntegrationSettings
                   initialStatus={status}
@@ -960,11 +966,11 @@ function DashboardContent() {
                   title="E-Commerce Platform API"
                 />
               )}
-             {showDashboard && (
-                  <Box sx={{ width: '100%', overflow: 'auto' }}>
-                    <KPIDashboard />
-                  </Box>
-                )}
+              {showDashboard && (
+                <Box sx={{ width: '100%', overflow: 'auto' }}>
+                  <KPIDashboard />
+                </Box>
+              )}
               {showIntegrationSettings && (
                 <IntegrationSettings
                   initialStatus={status}
@@ -980,13 +986,12 @@ function DashboardContent() {
                 />
               )}
               {selectedCustomerId && (
-                  <CustomerDetails 
-                    customerId={selectedCustomerId}
-                    onBackToList={handleBackToList}
-                    onInvoiceSelect={handleInvoiceSelect}
-                  />
-                )}
-              {console.log('Rendering InvoiceDetails with ID: ', selectedInvoice)}
+                <CustomerDetails 
+                  customerId={selectedCustomerId}
+                  onBackToList={handleBackToList}
+                  onInvoiceSelect={handleInvoiceSelect}
+                />
+              )}
               {view === 'customerDetails' && selectedCustomerId && (
                 <CustomerDetails 
                   customerId={selectedCustomerId}
@@ -994,7 +999,6 @@ function DashboardContent() {
                   onInvoiceSelect={handleInvoiceSelect}
                 />
               )}
-              {console.log('Rendering CustomerDetails with ID: ', selectedCustomerId)}
               {view === 'productList' && (
                 <ProductList products={products} />
               )}
@@ -1075,13 +1079,11 @@ function DashboardContent() {
                 showIntegrationSettings,
                 showUserProfileSettings,
                 handleUserProfileUpdate,
+                showDeviceSettings,
               })}
             </Box>
           </Container>
         </Box>
-      
-      
-  
       </Box>
     </ThemeProvider>
   );

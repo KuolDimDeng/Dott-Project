@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import PropTypes from 'prop-types';
+import { useState } from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
@@ -18,9 +18,10 @@ import getLPTheme from './getLPTheme';
 import { useRouter } from 'next/navigation';
 import Button from '@mui/material/Button';
 import ModeNightRoundedIcon from '@mui/icons-material/ModeNightRounded';
+import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
 
 export default function LandingPage() {
-  const mode = 'dark';
+  const [mode, setMode] = useState('light'); // Set default to light mode
   const LPtheme = createTheme(getLPTheme(mode));
   const router = useRouter();
 
@@ -30,6 +31,10 @@ export default function LandingPage() {
 
   const handleSignUpClick = () => {
     router.push('/register/page');
+  };
+
+  const toggleColorMode = () => {
+    setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
   };
 
   return (
@@ -50,15 +55,22 @@ export default function LandingPage() {
         <Divider />
         <Footer />
       </Box>
+      <ToggleColorMode toggleColorMode={toggleColorMode} mode={mode} />
     </ThemeProvider>
   );
 }
-export function ToggleColorMode() {
-    return (
-      <Box>
-        <Button color="primary" aria-label="dark mode" component="a" sx={{ ml: 1 }}>
-          <ModeNightRoundedIcon />
-        </Button>
-      </Box>
-    );
-  }
+
+export function ToggleColorMode({ toggleColorMode, mode }) {
+  return (
+    <Box sx={{ position: 'fixed', bottom: 16, right: 16 }}>
+      <Button
+        color="primary"
+        aria-label="toggle light/dark mode"
+        onClick={toggleColorMode}
+        startIcon={mode === 'light' ? <ModeNightRoundedIcon /> : <LightModeRoundedIcon />}
+      >
+        {mode === 'light' ? 'Dark Mode' : 'Light Mode'}
+      </Button>
+    </Box>
+  );
+}
