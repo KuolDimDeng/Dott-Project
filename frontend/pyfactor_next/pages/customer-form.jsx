@@ -1,7 +1,7 @@
 // pages/customer-form.jsx
 import React from 'react';
-import MockRouterProvider from '../src/app/dashboard/components/MockRouterProvider';
-import CustomerForm from '../src/app/dashboard/components/CustomerForm';
+import MockRouterProvider from '@components/MockRouterProvider';
+import CustomerForm from '@components/CustomerForm';
 
 const CustomerFormPage = () => {
   console.log('Rendering CustomerFormPage');

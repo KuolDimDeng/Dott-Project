@@ -1,7 +1,6 @@
 // src/app/dashboard/components/axiosConfig.js
 import axios from 'axios';
-import Cookies from 'js-cookie';
-
+import { logger } from '@/utils/logger';
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const noAuthRequired = ['/api/register/', '/api/token/', '/api/token/refresh/'];
@@ -18,69 +17,64 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  //timeout: 30000, // Set a timeout of 10 seconds
+  timeout: 30000, // Set a timeout of 30 seconds
 });
 
-// Request interceptor for API calls
+// Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = getToken();
-    const csrfToken = Cookies.get('csrftoken');
-    
-    // Check if the request URL is in the noAuthRequired list
     const isAuthRequired = !noAuthRequired.some(url => config.url.includes(url));
     
     if (token && isAuthRequired) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
     
-    if (csrfToken) {
-      config.headers['X-CSRFToken'] = csrfToken;
-    }
-    
+    logger.info('Outgoing request', { url: config.url, method: config.method });
     return config;
   },
   (error) => {
-    console.error('Request interceptor error:', error);
+    logger.error('Request interceptor error', { error: error.message });
     return Promise.reject(error);
   }
 );
 
-
-// Response interceptor for API calls
+// Response interceptor
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    logger.info('Response received', { status: response.status, url: response.config.url });
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     
     if (error.response) {
-      console.error('Response error:', error.response.status, error.response.data);
+      logger.error('Response error', { 
+        status: error.response.status, 
+        data: error.response.data,
+        url: originalRequest.url 
+      });
       
-      // Handle 401 (Unauthorized) errors
       if (error.response.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
         
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
-          // No refresh token, redirect to login
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-          }
-          return Promise.reject(error);
-        }
-        
         try {
+          const refreshToken = localStorage.getItem('refreshToken');
+          if (!refreshToken) {
+            throw new Error('No refresh token available');
+          }
+          
           const response = await axios.post(`${baseURL}/api/token/refresh/`, { refresh: refreshToken });
           const newToken = response.data.access;
           
           localStorage.setItem('token', newToken);
           
-          // Retry the original request with the new token
+          logger.info('Token refreshed successfully');
           originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
           return axiosInstance(originalRequest);
         } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError);
-          // If refresh token fails, redirect to login
+          logger.error('Token refresh failed', { error: refreshError.message });
+          // Handle navigation to login page
           if (typeof window !== 'undefined') {
             window.location.href = '/login';
           }
@@ -88,21 +82,14 @@ axiosInstance.interceptors.response.use(
         }
       }
       
-      // Handle 403 (Forbidden) errors
       if (error.response.status === 403) {
-        console.error('Permission denied:', error.response.data);
-        // You might want to redirect to an "Access Denied" page or show a message
-        if (typeof window !== 'undefined') {
-          // Replace this with your preferred way of showing "Access Denied" messages
-          alert('Access Denied: You do not have permission to perform this action.');
-        }
+        logger.warn('Permission denied', { url: originalRequest.url });
+        // Handle permission denied scenario
       }
     } else if (error.request) {
-      // The request was made but no response was received
-      console.error('No response received:', error.request);
+      logger.error('No response received', { url: originalRequest.url });
     } else {
-      // Something happened in setting up the request that triggered an Error
-      console.error('Error setting up the request:', error.message);
+      logger.error('Error setting up the request', { error: error.message });
     }
     
     return Promise.reject(error);

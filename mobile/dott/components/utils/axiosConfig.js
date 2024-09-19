@@ -1,8 +1,9 @@
-// /Users/kuoldeng/projectx/mobile/dott/components/utils/axiosConfig.js
+// src/components/utils/axiosConfig.js
+
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const baseURL = 'http://localhost:8000';  // Use your local IP address if running on a physical device
+const baseURL = 'http://localhost:8000'; // Replace with your actual API URL
 const noAuthRequired = ['/api/register/', '/api/token/', '/api/token/refresh/'];
 
 const axiosInstance = axios.create({
@@ -10,7 +11,7 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // Set a timeout of 30 seconds
+  timeout: 30000, // 30 seconds timeout
 });
 
 const getToken = async () => {
@@ -22,9 +23,23 @@ const getToken = async () => {
   }
 };
 
+// Simple internet connection check
+const checkInternetConnection = () => {
+  return new Promise((resolve) => {
+    fetch('https://www.google.com', { mode: 'no-cors' })
+      .then(() => resolve(true))
+      .catch(() => resolve(false));
+  });
+};
+
 // Request interceptor
 axiosInstance.interceptors.request.use(
   async (config) => {
+    const isConnected = await checkInternetConnection();
+    if (!isConnected) {
+      return Promise.reject(new Error('No internet connection'));
+    }
+
     const token = await getToken();
     const isAuthRequired = !noAuthRequired.some(url => config.url.includes(url));
     
@@ -45,24 +60,24 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
+
     if (error.response) {
       console.error('Response error:', error.response.status, error.response.data);
-      
+
       if (error.response.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
-        
+
         try {
           const refreshToken = await AsyncStorage.getItem('refreshToken');
           if (!refreshToken) {
             throw new Error('No refresh token available');
           }
-          
+
           const response = await axios.post(`${baseURL}/api/token/refresh/`, { refresh: refreshToken });
           const newToken = response.data.access;
-          
+
           await AsyncStorage.setItem('token', newToken);
-          
+
           originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
           return axiosInstance(originalRequest);
         } catch (refreshError) {
@@ -73,7 +88,7 @@ axiosInstance.interceptors.response.use(
           return Promise.reject(refreshError);
         }
       }
-      
+
       if (error.response.status === 403) {
         console.error('Permission denied:', error.response.data);
         // Handle "Access Denied" scenario
@@ -82,10 +97,12 @@ axiosInstance.interceptors.response.use(
       }
     } else if (error.request) {
       console.error('No response received:', error.request);
+      error.message = 'No response from server. Please try again.';
     } else {
       console.error('Error setting up the request:', error.message);
+      error.message = 'An unexpected error occurred. Please try again.';
     }
-    
+
     return Promise.reject(error);
   }
 );

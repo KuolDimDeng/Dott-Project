@@ -1,7 +1,6 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/pages/_app.js
-import '@/src/app/globals.css';
-import { UserMessageProvider } from '@/contexts/UserMessageContext';
-
+import '@app/globals.css';
+import { UserMessageProvider } from '@contexts/userMessageContext';
 
 function MyApp({ Component, pageProps }) {
   return (

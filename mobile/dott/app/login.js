@@ -1,108 +1,209 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Text, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Text,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from '../components/utils/axiosConfig';
 
-export default function Login() {
+const MAX_RETRIES = 3;
+
+function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const navigation = useNavigation();
+
+  const checkInternetConnection = () => {
+    return new Promise((resolve) => {
+      fetch('https://8.8.8.8', { mode: 'no-cors', cache: 'no-store' })
+        .then(() => resolve(true))
+        .catch(() => resolve(false));
+    });
+  };
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+
     setLoading(true);
     setError('');
+
+    const isConnected = await checkInternetConnection();
+    if (!isConnected) {
+      setError('No internet connection. Please check your network settings.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await axiosInstance.post('/api/token/', {
-        email,
-        password,
-      });
+      let retries = 0;
+      while (retries < MAX_RETRIES) {
+        try {
+          console.log('Attempting login', { email, retryCount: retries });
+          const response = await axiosInstance.post('/api/token/', { email, password });
 
-      if (response.data.access) {
-        await AsyncStorage.setItem('token', response.data.access);
-        await AsyncStorage.setItem('refreshToken', response.data.refresh);
-        
-        // Fetch user profile after successful login
-        const profileResponse = await axiosInstance.get('/api/profile/');
-        const fullName = `${profileResponse.data.first_name} ${profileResponse.data.last_name}`;
-        await AsyncStorage.setItem('userFullName', fullName);
+          if (response.data.access) {
+            await AsyncStorage.setItem('token', response.data.access);
+            await AsyncStorage.setItem('refreshToken', response.data.refresh);
+            
+            console.log('Login successful, fetching user profile');
+            const profileResponse = await axiosInstance.get('/api/profile/');
+            const fullName = `${profileResponse.data.first_name} ${profileResponse.data.last_name}`;
+            await AsyncStorage.setItem('userFullName', fullName);
 
-        router.replace('/MenuPage');
+            console.log('Login and profile fetch successful');
+            navigation.replace('MenuPage');
+            return;
+          } else {
+            throw new Error('Invalid response from server');
+          }
+        } catch (error) {
+          retries++;
+          if (retries === MAX_RETRIES) {
+            throw error;
+          } else {
+            console.warn(`Login attempt failed, retrying (${retries}/${MAX_RETRIES})`, { error: error.message });
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
       }
     } catch (error) {
-      setError(
-        error.response?.data?.detail 
-        ? error.response.data.detail 
-        : 'Invalid credentials. Please try again.'
-      );
-      console.error('Login error:', error.response ? error.response.data : error.message);
+      console.error('Login failed', { error: error.message });
+      if (error.response) {
+        setError(error.response.data.detail || 'An error occurred. Please try again.');
+      } else if (error.request) {
+        setError('No response from server. Please try again later.');
+      } else {
+        setError(error.message || 'An unexpected error occurred. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  const handleForgotPassword = () => {
+    navigation.navigate('ForgotPassword');
+  };
+
+  const handleRegister = () => {
+    navigation.navigate('Register');
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.contentContainer}>
-        <Text style={styles.title}>Sign In</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-        {loading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
-        ) : (
-          <Button title="Login" onPress={handleLogin} />
-        )}
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      </View>
-      <Text style={styles.copyright}>© {new Date().getFullYear()} Pyfactor</Text>
-    </View>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
+      <ScrollView contentContainerStyle={styles.scrollView}>
+        <View style={styles.innerContainer}>
+          <Text style={styles.title}>Sign In</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCompleteType="email"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCompleteType="password"
+          />
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {loading ? (
+            <ActivityIndicator size="large" color="#0000ff" />
+          ) : (
+            <TouchableOpacity style={styles.button} onPress={handleLogin}>
+              <Text style={styles.buttonText}>Login</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={handleForgotPassword}>
+            <Text style={styles.forgotPassword}>Forgot Password?</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleRegister}>
+            <Text style={styles.register}>Don't have an account? Register</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'space-between',
-    padding: 20,
+    backgroundColor: '#f5f5f5',
   },
-  contentContainer: {
-    flex: 1,
+  scrollView: {
+    flexGrow: 1,
     justifyContent: 'center',
+  },
+  innerContainer: {
+    padding: 20,
+    alignItems: 'center',
   },
   title: {
     fontSize: 24,
+    fontWeight: 'bold',
     marginBottom: 20,
-    textAlign: 'center',
+    color: '#333',
   },
   input: {
-    height: 40,
-    borderColor: 'gray',
+    width: '100%',
+    height: 50,
+    borderColor: '#ddd',
     borderWidth: 1,
-    marginBottom: 10,
+    marginBottom: 15,
     paddingHorizontal: 10,
+    borderRadius: 5,
+    backgroundColor: '#fff',
+  },
+  button: {
+    backgroundColor: '#007AFF',
+    padding: 15,
+    borderRadius: 5,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   errorText: {
     color: 'red',
-    marginTop: 10,
-  },
-  copyright: {
-    textAlign: 'center',
-    color: 'gray',
     marginBottom: 10,
+    textAlign: 'center',
+  },
+  forgotPassword: {
+    marginTop: 15,
+    color: '#007AFF',
+    textDecorationLine: 'underline',
+  },
+  register: {
+    marginTop: 15,
+    color: '#007AFF',
+    textDecorationLine: 'underline',
   },
 });
+
+export default Login;

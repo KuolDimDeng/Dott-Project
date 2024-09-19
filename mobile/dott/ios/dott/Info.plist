@@ -7,7 +7,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>dott</string>
+    <string>Dott</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -51,15 +51,24 @@
     </dict>
     <key>NSCameraUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your camera</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your Face ID biometric data.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your microphone</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to use your local network for debugging purposes.</string>
+    <key>NSBonjourServices</key>
+    <array>
+      <string>_exponent._tcp</string>
+    </array>
     <key>NSUserActivityTypes</key>
     <array>
-      <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
     </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
     <key>UIRequiredDeviceCapabilities</key>
     <array>
       <string>arm64</string>
@@ -84,5 +93,14 @@
     <string>Automatic</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
+    <key>UIBackgroundModes</key>
+    <array>
+      <string>fetch</string>
+      <string>remote-notification</string>
+    </array>
+    <key>EXUpdatesEnabled</key>
+    <true/>
+    <key>EXUpdatesLaunchWaitMs</key>
+    <integer>0</integer>
   </dict>
 </plist>

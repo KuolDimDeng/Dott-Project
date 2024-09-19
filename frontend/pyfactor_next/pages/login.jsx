@@ -1,10 +1,9 @@
+// src/app/login/page.js
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-// MUI Imports
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -19,16 +18,11 @@ import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import InputAdornment from '@mui/material/InputAdornment';
 import IconButton from '@mui/material/IconButton';
-
-// Third-party Imports
 import { Controller, useForm } from 'react-hook-form';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { object, minLength, string, email } from 'valibot';
 import { logger } from '@/utils/logger';
-
-
-// Util Imports
-import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
+import axiosInstance from '@/app/dashboard/components/axiosConfig';
 
 const theme = createTheme({
   palette: {
@@ -82,27 +76,27 @@ export default function SignIn() {
 
   const onSubmit = async (data) => {
     try {
-        console.log('Sending login request with data:', data);
-        const response = await axiosInstance.post('/api/token/', data);
-        console.log('Response from the backend:', response);
-        
-        if (response.status === 200 && response.data.access) {
-            const token = response.data.access;
-            localStorage.setItem('token', token);  // Ensure this key is consistent
-            if (response.data.refresh) {
-                localStorage.setItem('refreshToken', response.data.refresh);
-            }
-            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            router.push('/dashboard');
-        } else {
-            setErrorState({ message: 'Invalid response from server' });
+      logger.info('Sending login request', { email: data.email });
+      const response = await axiosInstance.post('/api/token/', data);
+      logger.info('Received response from server', { status: response.status });
+      
+      if (response.status === 200 && response.data.access) {
+        const token = response.data.access;
+        localStorage.setItem('token', token);
+        if (response.data.refresh) {
+          localStorage.setItem('refreshToken', response.data.refresh);
         }
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        router.push('/dashboard');
+      } else {
+        setErrorState({ message: 'Invalid response from server' });
+        logger.warn('Invalid response from server', { status: response.status });
+      }
     } catch (error) {
-        setErrorState({ message: 'Failed to login. Please check your credentials.' });
-        console.error('Error during login:', error);
+      setErrorState({ message: 'Failed to login. Please check your credentials.' });
+      logger.error('Error during login', { error: error.message });
     }
-};
-
+  };
 
   return (
     <ThemeProvider theme={theme}>
@@ -152,10 +146,10 @@ export default function SignIn() {
                     autoFocus
                     onChange={(e) => {
                       field.onChange(e.target.value);
-                      errorState !== null && setErrorState(null);
+                      errorState && setErrorState(null);
                     }}
-                    error={!!errors.email || errorState !== null}
-                    helperText={errors?.email?.message || errorState?.message?.[0]}
+                    error={!!errors.email || !!errorState}
+                    helperText={errors?.email?.message || errorState?.message}
                   />
                 )}
               />
@@ -176,7 +170,7 @@ export default function SignIn() {
                     autoComplete="current-password"
                     onChange={(e) => {
                       field.onChange(e.target.value);
-                      errorState !== null && setErrorState(null);
+                      errorState && setErrorState(null);
                     }}
                     InputProps={{
                       endAdornment: (
@@ -187,7 +181,7 @@ export default function SignIn() {
                             onMouseDown={(e) => e.preventDefault()}
                             aria-label="toggle password visibility"
                           >
-                            <i className={isPasswordShown ? 'ri-eye-off-line' : 'ri-eye-line'} />
+                            {isPasswordShown ? <i className="ri-eye-off-line" /> : <i className="ri-eye-line" />}
                           </IconButton>
                         </InputAdornment>
                       ),
@@ -197,8 +191,16 @@ export default function SignIn() {
                   />
                 )}
               />
-              <FormControlLabel control={<Checkbox value="remember" color="primary" />} label="Remember me" />
-              <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
+              <FormControlLabel
+                control={<Checkbox value="remember" color="primary" />}
+                label="Remember me"
+              />
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{ mt: 3, mb: 2 }}
+              >
                 Sign In
               </Button>
               <Grid container>

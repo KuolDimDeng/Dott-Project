@@ -24,7 +24,7 @@ def get_user(user_id):
 class TokenAuthMiddleware(BaseMiddleware):
     async def __call__(self, scope, receive, send):
         logger.debug("TokenAuthMiddleware called")
-        query_string = scope['query_string'].decode()
+        query_string = scope.get('query_string', b'').decode()
         params = parse_qs(query_string)
         token = params.get('token', [None])[0]
         logger.debug(f"Token from query string: {token}")
@@ -32,7 +32,8 @@ class TokenAuthMiddleware(BaseMiddleware):
         try:
             if token and token != 'null':
                 logger.debug("Attempting to decode token")
-                decoded_token = UntypedToken(token)
+                # Use jwt_decode instead of UntypedToken for more control
+                decoded_token = jwt_decode(token, settings.SECRET_KEY, algorithms=["HS256"])
                 logger.debug(f"Decoded token: {decoded_token}")
                 if 'user_id' in decoded_token:
                     user = await get_user(decoded_token['user_id'])
@@ -44,7 +45,7 @@ class TokenAuthMiddleware(BaseMiddleware):
             else:
                 logger.warning("No valid token provided. Setting AnonymousUser.")
                 scope['user'] = AnonymousUser()
-        except (InvalidToken, TokenError) as e:
+        except Exception as e:
             logger.error(f"Token error: {str(e)}")
             scope['user'] = AnonymousUser()
         
