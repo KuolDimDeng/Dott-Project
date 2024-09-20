@@ -10,10 +10,10 @@ from rest_framework.response import Response
 from django.utils import timezone
 from finance.utils import generate_financial_statements, get_or_create_chart_account
 from finance.views import get_user_database
-from .models import Estimate, EstimateItem, Invoice, Customer, Product, Sale, Service, default_due_datetime, SalesOrder, SalesOrderItem
+from .models import Estimate, EstimateItem, Invoice, Customer, InvoiceItem, Product, Refund, Sale, Service, default_due_datetime, SalesOrder, SalesOrderItem
 from finance.models import Account, AccountType, FinanceTransaction
 from users.models import UserProfile
-from .serializers import CustomerIncomeSerializer, InvoiceSerializer, CustomerSerializer, ProductSerializer, SaleSerializer, ServiceSerializer,  EstimateSerializer, EstimateAttachmentSerializer, SalesOrderSerializer, EstimateAttachmentSerializer, EstimateItemSerializer, SalesOrderItemSerializer, InvoiceItemSerializer
+from .serializers import CustomerIncomeSerializer, InvoiceSerializer, CustomerSerializer, ProductSerializer, RefundSerializer, SaleSerializer, ServiceSerializer,  EstimateSerializer, EstimateAttachmentSerializer, SalesOrderSerializer, EstimateAttachmentSerializer, EstimateItemSerializer, SalesOrderItemSerializer, InvoiceItemSerializer
 from finance.serializers import TransactionSerializer
 from django.conf import settings
 from django.db import connections, transaction as db_transaction
@@ -1189,11 +1189,71 @@ def create_sale(request):
     user = request.user
     database_name = get_user_database(user)
 
-    serializer = SaleSerializer(data=request.data, context={'database_name': database_name})
-    if serializer.is_valid():
-        sale = serializer.save(created_by=user)
-        return Response(SaleSerializer(sale).data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    with transaction.atomic(using=database_name):
+        serializer = SaleSerializer(data=request.data, context={'database_name': database_name})
+        if serializer.is_valid():
+            # Create the sale
+            sale = serializer.save(created_by=user)
+
+            # Create the invoice
+            invoice = Invoice.objects.using(database_name).create(
+                customer=sale.customer,
+                totalAmount=sale.total_amount,
+                date=sale.created_at,
+                due_date=sale.created_at + timedelta(days=30),  # Adjust as needed
+                status='paid'
+            )
+
+            # Link the sale to the invoice
+            sale.invoice = invoice
+            sale.save(using=database_name)
+
+            # Create invoice items
+            for item in sale.items.all():
+                InvoiceItem.objects.using(database_name).create(
+                    invoice=invoice,
+                    product=item.product,
+                    quantity=item.quantity,
+                    unit_price=item.unit_price
+                )
+
+            # Update accounts
+            update_accounts_for_sale(sale, database_name)
+
+            return Response(SaleSerializer(sale).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def update_accounts_for_sale(sale, database_name):
+        # Get or create necessary accounts
+        cash_account = Account.objects.using(database_name).get_or_create(name='Cash')[0]
+        sales_revenue_account = Account.objects.using(database_name).get_or_create(name='Sales Revenue')[0]
+        accounts_receivable = Account.objects.using(database_name).get_or_create(name='Accounts Receivable')[0]
+        inventory_account = Account.objects.using(database_name).get_or_create(name='Inventory')[0]
+        cogs_account = Account.objects.using(database_name).get_or_create(name='Cost of Goods Sold')[0]
+
+        # Record the sale
+        if sale.payment_method == 'cash':
+            create_general_ledger_entry(database_name, cash_account, sale.total_amount, 'debit', f"Cash sale {sale.id}")
+        else:
+            create_general_ledger_entry(database_name, accounts_receivable, sale.total_amount, 'debit', f"Credit sale {sale.id}")
+
+        create_general_ledger_entry(database_name, sales_revenue_account, sale.total_amount, 'credit', f"Revenue from sale {sale.id}")
+
+        # Update inventory and record COGS
+        for item in sale.items.all():
+            product = item.product
+            cost = product.price * item.quantity  # Assuming product.price is the cost price
+            
+            # Reduce inventory
+            create_general_ledger_entry(database_name, inventory_account, cost, 'credit', f"Inventory reduction for sale {sale.id}")
+            
+            # Record COGS
+            create_general_ledger_entry(database_name, cogs_account, cost, 'debit', f"COGS for sale {sale.id}")
+
+            # Update product quantity
+            product.stock_quantity -= item.quantity
+            product.save(using=database_name)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -1259,3 +1319,39 @@ def print_barcode(request, product_id):
     except Exception as e:
         logger.exception(f"Error generating barcode for product {product_id}: {str(e)}")
         return Response({'error': 'Failed to generate barcode'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_refund(request):
+    user = request.user
+    database_name = get_user_database(user)
+
+    serializer = RefundSerializer(data=request.data, context={'database_name': database_name})
+    if serializer.is_valid():
+        refund = serializer.save()
+        return Response(RefundSerializer(refund).data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def refund_list(request):
+    user = request.user
+    database_name = get_user_database(user)
+
+    refunds = Refund.objects.using(database_name).all()
+    serializer = RefundSerializer(refunds, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def refund_detail(request, pk):
+    user = request.user
+    database_name = get_user_database(user)
+
+    try:
+        refund = Refund.objects.using(database_name).get(pk=pk)
+    except Refund.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = RefundSerializer(refund)
+    return Response(serializer.data)

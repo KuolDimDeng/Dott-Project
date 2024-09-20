@@ -937,7 +937,6 @@ function DashboardContent() {
             maxWidth={false}
             sx={{ 
               flexGrow: 1,
-              p: 2,
               ml: drawerOpen ? 2 : 1, 
               display: 'flex', 
               flexDirection: 'column', 

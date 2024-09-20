@@ -3,7 +3,7 @@ from django.db import connections, transaction as db_transaction
 from rest_framework import serializers
 from .utils import get_or_create_account, calculate_due_date
 from finance.models import Account, FinanceTransaction
-from .models import Product, Service, Customer, Invoice, Estimate, SalesOrder, SalesOrderItem, Department, default_due_datetime, EstimateItem, EstimateAttachment, InvoiceItem, Sale
+from .models import Product, Refund, RefundItem, SaleItem, Service, Customer, Invoice, Estimate, SalesOrder, SalesOrderItem, Department, default_due_datetime, EstimateItem, EstimateAttachment, InvoiceItem, Sale
 from pyfactor.logging_config import get_logger
 from django.utils import timezone
 from decimal import Decimal
@@ -679,14 +679,43 @@ class DepartmentSerializer(serializers.ModelSerializer):
         model = Department
         fields = ['id', 'dept_code', 'dept_name', 'created_at']
         
+class SaleItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SaleItem
+        fields = ['product', 'quantity', 'unit_price']
 
         
 class SaleSerializer(serializers.ModelSerializer):
+    items = SaleItemSerializer(many=True)
+    invoice = InvoiceSerializer(read_only=True)
+
     class Meta:
         model = Sale
-        fields = ['id', 'product', 'customer', 'quantity', 'total_amount', 'payment_method', 'amount_given', 'change_due', 'created_at', 'created_by']
-        read_only_fields = ['id', 'total_amount', 'change_due', 'created_at', 'created_by']
-        
+        fields = ['id', 'product', 'customer', 'quantity', 'total_amount', 'payment_method', 'amount_given', 'change_due', 'created_at', 'created_by', 'items', 'invoice']
+        read_only_fields = ['id', 'total_amount', 'change_due', 'created_at', 'created_by', 'invoice']
+
     def create(self, validated_data):
-        database_name = self.context.get('database_name')
-        return Sale.objects.using(database_name).create(**validated_data)
+        items_data = validated_data.pop('items')
+        sale = Sale.objects.using(self.context['database_name']).create(**validated_data)
+        for item_data in items_data:
+            SaleItem.objects.using(self.context['database_name']).create(sale=sale, **item_data)
+        return sale
+    
+class RefundItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RefundItem
+        fields = ['id', 'product', 'quantity', 'unit_price']
+
+class RefundSerializer(serializers.ModelSerializer):
+    items = RefundItemSerializer(many=True)
+
+    class Meta:
+        model = Refund
+        fields = ['id', 'sale', 'date', 'total_amount', 'reason', 'items']
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items')
+        refund = Refund.objects.create(**validated_data)
+        for item_data in items_data:
+            RefundItem.objects.create(refund=refund, **item_data)
+        return refund

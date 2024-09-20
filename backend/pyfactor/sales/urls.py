@@ -33,6 +33,9 @@ from .views import (
     product_by_barcode,
     create_sale,
     print_barcode,
+    create_refund,
+    refund_list,
+    refund_detail
 
 )
 
@@ -70,6 +73,9 @@ urlpatterns = [
     path('api/products/barcode/<str:barcode>/', product_by_barcode, name='product-by-barcode'),
     path('api/sales/create/', create_sale, name='create-sale'),
     path('api/products/<uuid:product_id>/print-barcode/', print_barcode, name='print-barcode'),
+    path('api/refunds/create/', create_refund, name='create-refund'),
+    path('api/refunds/', refund_list, name='refund-list'),
+    path('api/refunds/<uuid:pk>/', refund_detail, name='refund-detail'),
 
 
 ]
