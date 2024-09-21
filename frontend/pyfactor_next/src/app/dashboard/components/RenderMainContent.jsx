@@ -111,6 +111,9 @@ import BusinessSettings from '@/app/settings/components/BusinessSettings';
 import AccountingSettings from '@/app/settings/components/AccountingSettings';
 import PayrollSettings from '@/app/settings/components/PayrollSettings';
 import DeviceSettings from '@/app/settings/components/DeviceSettings';
+import HelpCenter from '@app/helpcenter/components/HelpCenter';
+import TermsAndConditions from '@app/Terms&Privacy/components/TermsOfUse';
+import PrivacyPolicy from '@app/Terms&Privacy/components/PrivacyPolicy';
 
 
 import StatusMessage from './components/StatusMessage.jsx';
@@ -189,6 +192,12 @@ const RenderMainContent = ({
     showKPIDashboard,
     showDeviceSettings,
     selectedSettingsOption,
+    showHelpCenter,
+    showPrivacyPolicy,
+    showTermsAndConditions,
+ 
+  
+
 
   }) => {
     console.log('RenderMainContent: Rendering with selectedSettingsOption:', selectedSettingsOption);
@@ -287,6 +296,14 @@ const RenderMainContent = ({
       }
       if (showPurchaseOrderManagement) {
         return <PurchaseOrderManagement />;
+      }
+
+      if (showTermsAndConditions) {
+        return <TermsAndConditions />;
+      }
+      
+      if (showPrivacyPolicy) {
+        return <PrivacyPolicy />;
       }
 
       if (showExpensesManagement) {
@@ -388,6 +405,10 @@ const RenderMainContent = ({
 
       if (showBalanceSheetAnalysis) {
         return <BalanceSheetAnalysis/>;
+      }
+
+      if (showHelpCenter) {
+        return <HelpCenter />;
       }
 
       if (showCashFlowAnalysis) {
@@ -519,7 +540,7 @@ const RenderMainContent = ({
           display: 'flex',
           flexDirection: 'column',
           top: '10px',
-          overflow: 'hidden',
+          overflow: 'auto',
           //background: 'linear-gradient(to bottom, #e3f2fd, #ffffff)', // Light blue to white gradient
         }}
       >
@@ -529,7 +550,7 @@ const RenderMainContent = ({
             flexGrow: 1,
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden',
+            overflow: 'auto',
             backgroundColor: 'transparent', // Make paper transparent to show gradient
             borderRadius: 2,
             m: 1, // Add margin to show gradient around the paper

@@ -3,19 +3,22 @@ import {
   Box, 
   Typography, 
   TextField, 
-  FormControlLabel, 
   Button, 
-  Switch,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
   Select,
   MenuItem,
   InputLabel,
   FormControl,
+  FormLabel,
   Grid,
   Paper,
   Tooltip,
   IconButton,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Link
 } from '@mui/material';
 import axiosInstance from '../components/axiosConfig';
 import { logger } from '@/utils/logger';
@@ -30,8 +33,7 @@ const ServiceForm = () => {
     name: '',
     description: '',
     price: '',
-    is_for_sale: true,
-    is_for_rent: false,
+    saleType: 'sale',
     salesTax: '',
     duration: '',
     is_recurring: false,
@@ -53,7 +55,7 @@ const ServiceForm = () => {
   const validateForm = () => {
     let tempErrors = {};
     if (!service.name.trim()) tempErrors.name = "Name is required";
-    if (!service.price) tempErrors.price = "Price is required";
+    if (service.saleType === 'sale' && !service.price) tempErrors.price = "Price is required";
     return tempErrors;
   };
 
@@ -74,8 +76,7 @@ const ServiceForm = () => {
         name: '',
         description: '',
         price: '',
-        is_for_sale: true,
-        is_for_rent: false,
+        saleType: 'sale',
         salesTax: '',
         duration: '',
         is_recurring: false,
@@ -117,17 +118,19 @@ const ServiceForm = () => {
             />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField 
-              label="Price" 
-              name="price" 
-              type="number" 
-              value={service.price} 
-              onChange={handleChange} 
-              fullWidth 
-              error={!!errors.price}
-              helperText={errors.price}
-              required
-            />
+            <FormControl component="fieldset">
+              <FormLabel component="legend">Service Type</FormLabel>
+              <RadioGroup
+                row
+                aria-label="saleType"
+                name="saleType"
+                value={service.saleType}
+                onChange={handleChange}
+              >
+                <FormControlLabel value="sale" control={<Radio />} label="For Sale" />
+                <FormControlLabel value="rent" control={<Radio />} label="For Rent" />
+              </RadioGroup>
+            </FormControl>
           </Grid>
           <Grid item xs={12}>
             <TextField 
@@ -140,28 +143,33 @@ const ServiceForm = () => {
               rows={3}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControlLabel
-              control={<Switch checked={service.is_for_sale} onChange={handleChange} name="is_for_sale" />}
-              label="For Sale"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControlLabel
-              control={<Switch checked={service.is_for_rent} onChange={handleChange} name="is_for_rent" />}
-              label="For Rent"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField 
-              label="Sales Tax (%)" 
-              name="salesTax" 
-              type="number" 
-              value={service.salesTax} 
-              onChange={handleChange} 
-              fullWidth 
-            />
-          </Grid>
+          {service.saleType === 'sale' && (
+            <>
+              <Grid item xs={12} sm={6}>
+                <TextField 
+                  label="Price" 
+                  name="price" 
+                  type="number" 
+                  value={service.price} 
+                  onChange={handleChange} 
+                  fullWidth 
+                  error={!!errors.price}
+                  helperText={errors.price}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField 
+                  label="Sales Tax (%)" 
+                  name="salesTax" 
+                  type="number" 
+                  value={service.salesTax} 
+                  onChange={handleChange} 
+                  fullWidth 
+                />
+              </Grid>
+            </>
+          )}
           <Grid item xs={12} sm={6}>
             <TextField 
               label="Duration (in minutes)" 
@@ -172,33 +180,32 @@ const ServiceForm = () => {
               fullWidth 
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControlLabel
-              control={<Switch checked={service.is_recurring} onChange={handleChange} name="is_recurring" />}
-              label="Is Recurring"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel>Charge Period</InputLabel>
-              <Select name="charge_period" value={service.charge_period} onChange={handleChange}>
-                <MenuItem value="hour">Hour</MenuItem>
-                <MenuItem value="day">Day</MenuItem>
-                <MenuItem value="month">Month</MenuItem>
-                <MenuItem value="year">Year</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField 
-              label="Charge Amount" 
-              name="charge_amount" 
-              type="number" 
-              value={service.charge_amount} 
-              onChange={handleChange} 
-              fullWidth 
-            />
-          </Grid>
+          {service.saleType === 'rent' && (
+            <>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Charge Period</InputLabel>
+                  <Select name="charge_period" value={service.charge_period} onChange={handleChange}>
+                  <MenuItem value="hour">Hour</MenuItem>
+                    <MenuItem value="day">Day</MenuItem>
+                    <MenuItem value="week">Week</MenuItem>
+                    <MenuItem value="month">Month</MenuItem>
+                    <MenuItem value="year">Year</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField 
+                  label="Charge Amount" 
+                  name="charge_amount" 
+                  type="number" 
+                  value={service.charge_amount} 
+                  onChange={handleChange} 
+                  fullWidth 
+                />
+              </Grid>
+            </>
+          )}
           <Grid item xs={12}>
             <Box display="flex" justifyContent="space-between" alignItems="center">
               <Button type="submit" variant="contained" color="primary" size="large">
@@ -213,6 +220,14 @@ const ServiceForm = () => {
           </Grid>
         </Grid>
       </form>
+
+      {service.saleType === 'rent' && (
+        <Box mt={2}>
+          <Typography variant="body2" color="text.secondary">
+            Create a custom rental plan <Link href="/settings/business-settings/custom-charge-settings">here</Link> and use when making a sales transaction.
+          </Typography>
+        </Box>
+      )}
     </Paper>
   );
 };

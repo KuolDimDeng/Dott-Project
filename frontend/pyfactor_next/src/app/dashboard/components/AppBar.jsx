@@ -4,11 +4,14 @@ import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import SettingsIcon from '@mui/icons-material/Settings';
+import PersonIcon from '@mui/icons-material/Person';
 import Image from 'next/image';
 import logoPath from '/public/static/images/Pyfactor.png';
 import DateTime from './components/DateTime';
 import SettingsMenu from './components/SettingsMenu';
 import HomeIcon from '@mui/icons-material/Home';
+
+const menuBackgroundColor = '#f5f5f5';  // Light grey background
 
 const AppBar = ({
   drawerOpen,
@@ -32,6 +35,10 @@ const AppBar = ({
   handleSendGlobalAlertClick,
   handleSettingsOptionSelect,
   selectedSettingsOption,
+  handleLogout,
+  handleHelpClick,
+  handlePrivacyClick,
+  handleTermsClick,
 }) => {
 
   // Generate initials from the first and last name
@@ -43,26 +50,33 @@ const AppBar = ({
 
   const initials = userData ? getInitials(`${userData.first_name} ${userData.last_name}`) : '';
 
+
+
   return (
     <MuiAppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: '#000080', height: '60px'}}>
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '60px', minHeight: '60px'}}>
+      <Toolbar sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        height: '60px', 
+        minHeight: '60px',
+        paddingLeft: '8px',
+      }}>
         <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-          <IconButton color="inherit" aria-label="open drawer" edge="start" onClick={handleDrawerToggle} sx={{ mr: 1, display: 'flex', alignItems: 'center', height: '100%' }}>
+          <Image
+            src={logoPath}
+            alt="PyFactor Logo"
+            width={90}
+            height={22}
+            style={{ marginLeft: '-30px' }}
+          />
+        
+          <IconButton color="inherit" aria-label="open drawer" edge="start" onClick={handleDrawerToggle} sx={{ ml: 1, display: 'flex', alignItems: 'center', height: '100%' }}>
             <MenuIcon />
           </IconButton>
           <IconButton color="inherit" aria-label="home" onClick={handleDashboardClick} sx={{ ml: 0.5, display: 'flex', alignItems: 'center', height: '100%' }}>
             <HomeIcon />
           </IconButton>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-            <Image
-              src={logoPath}
-              alt="PyFactor Logo"
-              width={90}
-              height={22}
-              style={{ marginLeft: '-8px' }}
-            />
-          </Box>
 
           {userData && userData.business_name && (
             <Typography variant="h6" sx={{ ml: 2, whiteSpace: 'nowrap' }}>
@@ -85,8 +99,8 @@ const AppBar = ({
               <NotificationsIcon />
             </Badge>
           </IconButton>
-          <IconButton color="inherit" sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-            <HelpOutlineIcon />
+          <IconButton color="inherit" onClick={handleHelpClick} sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+          <HelpOutlineIcon />
           </IconButton>
           <IconButton color="inherit" onClick={handleSettingsClick} sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
             <SettingsIcon />
@@ -113,28 +127,74 @@ const AppBar = ({
               {initials}
             </Avatar>
           </IconButton>
-
           <Menu
-            id="user-menu"
-            anchorEl={anchorEl}
-            open={openMenu}
-            onClose={handleClose}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          >
-            {userData && (
-              <div>
-                <MenuItem disabled>{userData.full_name}</MenuItem>
-                <MenuItem disabled>{userData.occupation}</MenuItem>
-                <MenuItem disabled>{userData.business_name}</MenuItem>
-                <MenuItem onClick={handleUserProfileClick}>Profile Settings</MenuItem>
-                <MenuItem onClick={handleAccountClick}>Account</MenuItem>
-                {userData.is_staff && (
-                  <MenuItem onClick={handleSendGlobalAlertClick}>Send Global Alert</MenuItem>
-                )}
-              </div>
-            )}
-          </Menu>
+                  id="user-menu"
+                  anchorEl={anchorEl}
+                  open={openMenu}
+                  onClose={handleClose}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                  PaperProps={{
+                    sx: {
+                      width: '150px',
+                      backgroundColor: menuBackgroundColor,
+                    }
+                  }}
+                >
+                  {userData && (
+                    <>
+                      <MenuItem sx={{ pointerEvents: 'none', opacity: 0.7 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                          <PersonIcon sx={{ mr: 1, color: '#000080' }} />
+                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                              {userData.full_name}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                              {userData.occupation}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </MenuItem>
+                      {userData.is_staff && (
+                        <MenuItem onClick={handleSendGlobalAlertClick}>Send Global Alert</MenuItem>
+                      )}
+                        <MenuItem 
+                          onClick={handleTermsClick}
+                          sx={{ 
+                            justifyContent: 'left', 
+                            '&:hover': { 
+                              backgroundColor: 'rgba(0, 0, 128, 0.08)' 
+                            } 
+                          }}
+                        >
+                          Terms
+                    </MenuItem>
+                    <MenuItem 
+                          onClick={handlePrivacyClick}
+                          sx={{ 
+                            justifyContent: 'left', 
+                            '&:hover': { 
+                              backgroundColor: 'rgba(0, 0, 128, 0.08)' 
+                            } 
+                          }}
+                        >
+                          Privacy
+                    </MenuItem>
+                        <MenuItem 
+                          onClick={handleLogout}
+                          sx={{ 
+                            justifyContent: 'left', 
+                            '&:hover': { 
+                              backgroundColor: 'rgba(0, 0, 128, 0.08)' 
+                            } 
+                          }}
+                        >
+                          Logout
+                    </MenuItem>
+                    </>
+                  )}
+                </Menu>
         </Box>
       </Toolbar>
       <SettingsMenu
@@ -145,6 +205,8 @@ const AppBar = ({
         onDeviceSettingsClick={handleDeviceSettingsClick}
         onOptionSelect={handleSettingsOptionSelect}
         selectedOption={selectedSettingsOption}
+        backgroundColor={menuBackgroundColor}
+
       />
     </MuiAppBar>
   );

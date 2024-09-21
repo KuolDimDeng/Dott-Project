@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Typography, TextField, Button, Grid } from '@mui/material';
+import CustomChargeSettings from './CustomChargeSettings';
 
 const BusinessSettings = ({ selectedTab }) => {
   const renderContent = () => {
@@ -58,13 +59,6 @@ const EmailTemplates = () => (
   <Box>
     <Typography variant="h6" gutterBottom>Email Templates</Typography>
     {/* Add form fields for email template customization */}
-  </Box>
-);
-
-const CustomChargeSettings = () => (
-  <Box>
-    <Typography variant="h6" gutterBottom>Custom Charge Settings</Typography>
-    {/* Add form fields for custom charge settings */}
   </Box>
 );
 

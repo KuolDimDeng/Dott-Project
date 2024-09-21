@@ -130,6 +130,9 @@ function DashboardContent() {
   const [showKPIDashboard, setShowKPIDashboard] = useState(false);
   const [showDeviceSettings, setShowDeviceSettings] = useState(false);
   const [selectedSettingsOption, setSelectedSettingsOption] = useState(null);
+  const [showHelpCenter, setShowHelpCenter] = useState(false);
+  const [showTermsAndConditions, setShowTermsAndConditions] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
 
   const router = useRouter();
@@ -198,6 +201,9 @@ function DashboardContent() {
     setShowKPIDashboard,
     setShowDeviceSettings,
     setSelectedSettingsOption,
+    setShowHelpCenter,
+    setShowTermsAndConditions,
+    setShowPrivacyPolicy,
   ];
 
   const resetAllStatesExcept = (exceptionSetter) => {
@@ -253,11 +259,36 @@ function DashboardContent() {
     setShowDeviceSettings(true);
   };
 
-  
+  const handleLogout = () => {
+    console.log('Logout clicked');
+    // Clear any user-related data from local storage
+    localStorage.removeItem('token');
+    // Redirect to the landing page
+    router.push('/');
+  };
+
+  const handleTermsClick = () => {
+    console.log('Terms clicked');
+    // Implement Terms and Conditions functionality here
+    resetAllStates();
+    setShowTermsAndConditions(true);
+  };
+
+  const handlePrivacyClick = () => {
+    console.log('Privacy clicked');
+    // Implement Privacy Policy functionality here
+   resetAllStates();
+   setShowPrivacyPolicy(true);
+  };
 
   const handleUserProfileUpdate = (updatedUserData) => {
     setUserData(updatedUserData);
     addMessage('info', 'User profile updated successfully');
+  };
+
+  const handleHelpClick = () => {
+    resetAllStates();
+    setShowHelpCenter(true);
   };
 
   const handleAPIIntegrationsClick = () => {
@@ -907,6 +938,12 @@ function DashboardContent() {
           handleDeviceSettingsClick={handleDeviceSettingsClick}
           selectedSettingsOption={selectedSettingsOption}
           handleSettingsOptionSelect={handleSettingsOptionSelect}
+          handleLogout={handleLogout}
+          handleHelpClick={handleHelpClick}
+          handlePrivacyClick={handlePrivacyClick}
+          handleTermsClick={handleTermsClick}
+
+
     
         >
           <AlertsComponent onAlertClick={handleAlertClick} />
@@ -1097,6 +1134,9 @@ function DashboardContent() {
                 handleUserProfileUpdate,
                 showDeviceSettings,
                 selectedSettingsOption,
+                showHelpCenter,
+                showPrivacyPolicy,
+                showTermsAndConditions,
              
               })}
             </Box>

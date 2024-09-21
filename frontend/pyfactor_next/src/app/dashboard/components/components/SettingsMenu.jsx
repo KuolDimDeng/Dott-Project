@@ -2,10 +2,12 @@ import React from 'react';
 import { Menu, MenuItem, styled } from '@mui/material';
 import { menuItemStyle } from '../../../../styles/menuStyles';
 
-const StyledMenu = styled(Menu)(({ theme }) => ({
+const StyledMenu = styled(Menu)(({ theme, backgroundColor }) => ({
   '& .MuiPaper-root': {
     marginTop: theme.spacing(2),
     minWidth: 180,
+    backgroundColor: backgroundColor,
+
     boxShadow: 'rgb(255, 255, 255) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.05) 0px 4px 6px -2px',
   },
 }));
@@ -24,6 +26,7 @@ const SettingsMenu = ({ anchorEl, open, onClose, onOptionSelect, selectedOption 
     'Accounting Settings',
     'Payroll Settings',
     'Device Settings',
+    'Subscriptions & Billing',
   ];
 
   // Handle option click and call the onOptionSelect callback
