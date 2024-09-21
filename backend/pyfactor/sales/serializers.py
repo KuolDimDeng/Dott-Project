@@ -3,7 +3,7 @@ from django.db import connections, transaction as db_transaction
 from rest_framework import serializers
 from .utils import get_or_create_account, calculate_due_date
 from finance.models import Account, FinanceTransaction
-from .models import Product, Refund, RefundItem, SaleItem, Service, Customer, Invoice, Estimate, SalesOrder, SalesOrderItem, Department, default_due_datetime, EstimateItem, EstimateAttachment, InvoiceItem, Sale
+from .models import CustomChargePlan, Item, Product, Refund, RefundItem, SaleItem, Service, Customer, Invoice, Estimate, SalesOrder, SalesOrderItem, Department, default_due_datetime, EstimateItem, EstimateAttachment, InvoiceItem, Sale
 from pyfactor.logging_config import get_logger
 from django.utils import timezone
 from decimal import Decimal
@@ -13,17 +13,31 @@ from django.utils.dateparse import parse_date
 
 logger = get_logger()
 
-class ProductSerializer(serializers.ModelSerializer):
+class CustomChargePlanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomChargePlan
+        fields = ['id', 'name', 'quantity', 'unit', 'custom_unit', 'period', 'custom_period', 'price']
+
+class ItemSerializer(serializers.ModelSerializer):
+    custom_charge_plans = CustomChargePlanSerializer(many=True, read_only=True)
+    
+    class Meta:
+        abstract = True
+        model = Item  # Make sure this is your base Item model
+        fields = [
+            'id', 'name', 'description', 'price', 'is_for_sale', 'is_for_rent', 'salesTax', 
+            'created_at', 'updated_at', 'height', 'width', 'height_unit', 'width_unit', 
+            'weight', 'weight_unit', 'charge_period', 'charge_amount', 'custom_charge_plans'
+        ]
+        
+        
+class ProductSerializer(ItemSerializer):
     days_in_stock = serializers.ReadOnlyField()
 
-    class Meta:
+    class Meta(ItemSerializer.Meta):
         model = Product
-        fields = ['id', 'name', 'description', 'price', 'is_for_sale', 'is_for_rent', 
-                  'salesTax', 'created_at', 'updated_at', 'height', 'width', 'height_unit', 
-                  'width_unit', 'weight', 'weight_unit', 'charge_period', 'charge_amount', 
-                  'days_in_stock', 'product_code', 'department', 'stock_quantity', 'reorder_level']
+        fields = ItemSerializer.Meta.fields + ['product_code', 'department', 'stock_quantity', 'reorder_level', 'days_in_stock']
         read_only_fields = ['id', 'product_code', 'days_in_stock']
-
 
     def create(self, validated_data):
         database_name = self.context.get('database_name')
@@ -37,15 +51,12 @@ class ProductSerializer(serializers.ModelSerializer):
         
         return product
 
-class ServiceSerializer(serializers.ModelSerializer):
+class ServiceSerializer(ItemSerializer):
     days_in_stock = serializers.ReadOnlyField()
 
-    class Meta:
+    class Meta(ItemSerializer.Meta):
         model = Service
-        fields = ['id', 'name', 'description', 'price', 'is_for_sale', 'is_for_rent', 
-                  'salesTax', 'created_at', 'updated_at', 'height', 'width', 'height_unit', 
-                  'width_unit', 'weight', 'weight_unit', 'charge_period', 'charge_amount', 
-                  'days_in_stock', 'service_code', 'duration', 'is_recurring']
+        fields = ItemSerializer.Meta.fields + ['service_code', 'duration', 'is_recurring', 'days_in_stock']
         read_only_fields = ['id', 'service_code', 'days_in_stock']
 
     def create(self, validated_data):

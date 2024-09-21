@@ -10,10 +10,10 @@ from rest_framework.response import Response
 from django.utils import timezone
 from finance.utils import generate_financial_statements, get_or_create_chart_account
 from finance.views import get_user_database
-from .models import Estimate, EstimateItem, Invoice, Customer, InvoiceItem, Product, Refund, Sale, Service, default_due_datetime, SalesOrder, SalesOrderItem
+from .models import CustomChargePlan, Estimate, EstimateItem, Invoice, Customer, InvoiceItem, Product, Refund, Sale, Service, default_due_datetime, SalesOrder, SalesOrderItem
 from finance.models import Account, AccountType, FinanceTransaction
 from users.models import UserProfile
-from .serializers import CustomerIncomeSerializer, InvoiceSerializer, CustomerSerializer, ProductSerializer, RefundSerializer, SaleSerializer, ServiceSerializer,  EstimateSerializer, EstimateAttachmentSerializer, SalesOrderSerializer, EstimateAttachmentSerializer, EstimateItemSerializer, SalesOrderItemSerializer, InvoiceItemSerializer
+from .serializers import CustomChargePlanSerializer, CustomerIncomeSerializer, InvoiceSerializer, CustomerSerializer, ProductSerializer, RefundSerializer, SaleSerializer, ServiceSerializer,  EstimateSerializer, EstimateAttachmentSerializer, SalesOrderSerializer, EstimateAttachmentSerializer, EstimateItemSerializer, SalesOrderItemSerializer, InvoiceItemSerializer
 from finance.serializers import TransactionSerializer
 from django.conf import settings
 from django.db import connections, transaction as db_transaction
@@ -50,7 +50,21 @@ import uuid
 logger = get_logger()
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_custom_charge_plan(request):
+    serializer = CustomChargePlanSerializer(data=request.data)
+    if serializer.is_valid():
+        plan = serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_custom_charge_plans(request):
+    plans = CustomChargePlan.objects.all()
+    serializer = CustomChargePlanSerializer(plans, many=True)
+    return Response(serializer.data)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -374,11 +388,32 @@ def create_product(request):
         logger.debug("Database name: %s", database_name)
 
         with transaction.atomic(using=database_name):
-            serializer = ProductSerializer(data=request.data)
+            # Extract custom_charge_plans data from request
+            custom_charge_plans_data = request.data.pop('custom_charge_plans', [])
+            
+            serializer = ProductSerializer(data=request.data, context={'database_name': database_name})
             if serializer.is_valid():
                 product = serializer.save()
+                
+                # Handle custom charge plans
+                for plan_data in custom_charge_plans_data:
+                    plan_id = plan_data.get('id')
+                    if plan_id:
+                        try:
+                            plan = CustomChargePlan.objects.using(database_name).get(id=plan_id)
+                            product.custom_charge_plans.add(plan)
+                        except CustomChargePlan.DoesNotExist:
+                            logger.warning(f"Custom charge plan with id {plan_id} does not exist.")
+                    else:
+                        plan_serializer = CustomChargePlanSerializer(data=plan_data)
+                        if plan_serializer.is_valid():
+                            plan = plan_serializer.save()
+                            product.custom_charge_plans.add(plan)
+                        else:
+                            logger.error(f"Invalid custom charge plan data: {plan_serializer.errors}")
+
                 logger.info(f"Product created: {product.id} - {product.name}")
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(ProductSerializer(product).data, status=status.HTTP_201_CREATED)
             else:
                 logger.error("Validation errors: %s", serializer.errors)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -401,11 +436,32 @@ def create_service(request):
         logger.debug("Database name: %s", database_name)
 
         with transaction.atomic(using=database_name):
-            serializer = ServiceSerializer(data=request.data)
+            # Extract custom_charge_plans data from request
+            custom_charge_plans_data = request.data.pop('custom_charge_plans', [])
+            
+            serializer = ServiceSerializer(data=request.data, context={'database_name': database_name})
             if serializer.is_valid():
                 service = serializer.save()
+                
+                # Handle custom charge plans
+                for plan_data in custom_charge_plans_data:
+                    plan_id = plan_data.get('id')
+                    if plan_id:
+                        try:
+                            plan = CustomChargePlan.objects.using(database_name).get(id=plan_id)
+                            service.custom_charge_plans.add(plan)
+                        except CustomChargePlan.DoesNotExist:
+                            logger.warning(f"Custom charge plan with id {plan_id} does not exist.")
+                    else:
+                        plan_serializer = CustomChargePlanSerializer(data=plan_data)
+                        if plan_serializer.is_valid():
+                            plan = plan_serializer.save()
+                            service.custom_charge_plans.add(plan)
+                        else:
+                            logger.error(f"Invalid custom charge plan data: {plan_serializer.errors}")
+
                 logger.info(f"Service created: {service.id} - {service.name}")
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(ServiceSerializer(service).data, status=status.HTTP_201_CREATED)
             else:
                 logger.error("Validation errors: %s", serializer.errors)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -415,7 +471,6 @@ def create_service(request):
     except Exception as e:
         logger.exception("Error creating service: %s", str(e))
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

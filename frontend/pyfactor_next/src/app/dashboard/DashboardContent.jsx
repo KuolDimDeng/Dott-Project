@@ -2,6 +2,8 @@
 'use client';
 import React, { useState, useCallback, useEffect } from 'react';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import { CssBaseline, Box, Container, AppBar as MuiAppBar, Toolbar, Typography } from '@mui/material';
 import ConsoleMessages from './components/components/ConsoleMessages';
 import Drawer from './components/Drawer';
@@ -26,7 +28,6 @@ import AlertsPage from '../alerts/components/AlertsPage';
 import SendGlobalAlert from '../alerts/components/SendGlobalAlert';
 import AlertsComponent from '../alerts/components/AlertsComponents';
 import KPIDashboard from './components/forms/KPIDashboard';
-import DeviceSettings from '../Settings/DeviceSettings/components/DeviceSettings';
 
 
 
@@ -128,6 +129,7 @@ function DashboardContent() {
   const [showExpenseAnalysis, setShowExpenseAnalysis] = useState(false);
   const [showKPIDashboard, setShowKPIDashboard] = useState(false);
   const [showDeviceSettings, setShowDeviceSettings] = useState(false);
+  const [selectedSettingsOption, setSelectedSettingsOption] = useState(null);
 
 
   const router = useRouter();
@@ -195,6 +197,7 @@ function DashboardContent() {
     setShowExpenseAnalysis,
     setShowKPIDashboard,
     setShowDeviceSettings,
+    setSelectedSettingsOption,
   ];
 
   const resetAllStatesExcept = (exceptionSetter) => {
@@ -278,9 +281,19 @@ function DashboardContent() {
     setSettingsAnchorEl(event.currentTarget);
   };
 
-  const handleSettingsMenuClose = () => {
+  const handleSettingsClose = () => {
     setSettingsAnchorEl(null);
   };
+
+  const handleSettingsOptionSelect = (option) => {
+    console.log('Selected option:', option);
+    resetAllStates(); // Reset all other states
+    setSelectedSettingsOption(option); // Update the selected settings option
+    handleSettingsClose(); // Close the settings menu after selecting an option
+  };
+  
+  
+
 
   const handleIntegrationsClick = () => {
     console.log('handleIntegrationsClick called');
@@ -751,6 +764,7 @@ function DashboardContent() {
     fetchProducts();
   };
 
+
   const handleServicesClick = () => {
     setView('serviceList');
     setShowServiceList(true);
@@ -885,12 +899,15 @@ function DashboardContent() {
           handleSettingsClick={handleSettingsClick}
           settingsAnchorEl={settingsAnchorEl}
           settingsMenuOpen={settingsMenuOpen}
-          handleSettingsMenuClose={handleSettingsMenuClose}
+          handleSettingsClose={handleSettingsClose}
           handleIntegrationsClick={handleIntegrationsClick}
           isShopifyConnected={isShopifyConnected}
           handleUserProfileClick={handleUserProfileClick}
           handleAlertClick={handleAlertClick}
           handleDeviceSettingsClick={handleDeviceSettingsClick}
+          selectedSettingsOption={selectedSettingsOption}
+          handleSettingsOptionSelect={handleSettingsOptionSelect}
+    
         >
           <AlertsComponent onAlertClick={handleAlertClick} />
         </AppBar>
@@ -1079,6 +1096,8 @@ function DashboardContent() {
                 showUserProfileSettings,
                 handleUserProfileUpdate,
                 showDeviceSettings,
+                selectedSettingsOption,
+             
               })}
             </Box>
           </Container>

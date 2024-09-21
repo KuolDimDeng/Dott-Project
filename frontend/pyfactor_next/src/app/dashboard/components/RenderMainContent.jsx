@@ -1,9 +1,11 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/RenderMainContent.jsx
 
 import React from 'react';
-import CustomerList from './lists/CustomerList';
+import CustomerList from './lists/CustomerList.js';
 import Grid from '@mui/material/Grid';
 import { useState, useCallback, useEffect } from 'react';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import { Button } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -25,89 +27,94 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import Chart from '../Chart';
-import Deposits from '../Deposits';
-import Orders from '../Orders';
+import Chart from '../Chart.jsx';
+import Deposits from '../Deposits.jsx';
+import Orders from '../Orders.jsx';
 import InputBase from '@mui/material/InputBase';
 import SearchIcon from '@mui/icons-material/Search';
 import DateTime from './components/DateTime.jsx';
 import ConsoleMessages from './components/ConsoleMessages.jsx';
 import Image from 'next/image';
 import logoPath from '/public/static/images/Pyfactor.png';
-import InvoiceTemplateBuilder from './forms/InvoiceTemplateBuilder';
-import ProductForm from './forms/ProductForm';
-import ServiceForm from './forms/ServiceForm';
+import InvoiceTemplateBuilder from './forms/InvoiceTemplateBuilder.jsx';
+import ProductForm from './forms/ProductForm.jsx';
+import ServiceForm from './forms/ServiceForm.jsx';
 import logger from '@utils/logger';
 import CustomerForm from '@components/CustomerForm';
-import BillForm from './forms/BillForm';
-import InvoiceForm from './forms/InvoiceForm';
-import VendorForm from './forms/VendorForm';
-import EstimateForm from './forms/EstimateForm';
-import SalesOrderForm from './forms/SalesOrderForm';
-import TransactionForm from '../../CreateNew/forms/TransactionForm';
-import TransactionList from './lists/TransactionList';
-import ReportDisplay from './forms/ReportDisplay';
+import BillForm from './forms/BillForm.jsx';
+import InvoiceForm from './forms/InvoiceForm.jsx';
+import VendorForm from './forms/VendorForm.jsx';
+import EstimateForm from './forms/EstimateForm.jsx';
+import SalesOrderForm from './forms/SalesOrderForm.jsx';
+import TransactionForm from '../../CreateNew/forms/TransactionForm.jsx';
+import TransactionList from './lists/TransactionList.jsx';
+import ReportDisplay from './forms/ReportDisplay.jsx';
 import MenuIcon from '@mui/icons-material/Menu';
-import BankingDashboard from './forms/BankingDashboard';
-import Reports from './components/Reports';
+import BankingDashboard from './forms/BankingDashboard.jsx';
+import Reports from './components/Reports.jsx';
 import Chatbot from './forms/ChatBot.jsx';
-import InvoiceDetails from './forms/InvoiceDetails';
-import CustomerDetails from './forms/CustomerDetails';
+import InvoiceDetails from './forms/InvoiceDetails.jsx';
+import CustomerDetails from './forms/CustomerDetails.js';
 //import BankingDashboard from './forms/BankingDashboard';
 //import HRDashboard from './forms/HRDashboard';
 //import PayrollDashboard from './forms/PayrollDashboard';
-import AnalysisPage from './forms/AnalysisPage';
+import AnalysisPage from './forms/AnalysisPage.jsx';
 import HomeIcon from '@mui/icons-material/Home';
 //import AccountPage from './forms/AccountPage';
 //import ReportPage from './forms/ReportPage';
-import renderForm from './RenderForm';
-import ProductManagement from './forms/ProductManagement';
-import ServiceManagement from './forms/ServiceManagement';
-import EstimateManagement from './forms/EstimateManagement';
-import SalesOrderManagement from './forms/SalesOrderManagement';
-import InvoiceManagement from './forms/InvoiceManagement'
-import VendorManagement from './forms/VendorManagement';
-import BillManagement from './forms/BillManagement';
-import PurchaseOrderManagement from './forms/PurchaseOrderManagement';
-import ExpensesManagement from './forms/ExpensesManagement';
-import PurchaseReturnsManagement from './forms/PurchaseReturnsManagement';
-import ProcurementManagement from './forms/ProcurementManagement';
-import EmployeeManagement from './forms/EmployeeManagement';
-import PayrollManagement from './forms/PayrollManagement';
-import TimesheetManagement from './forms/TimesheetManagement';
-import ChartOfAccountsManagement from './forms/ChartOfAccountsManagement';
-import JournalEntryManagement from './forms/JournalEntryManagement';
-import GeneralLedgerManagement from './forms/GeneralLedgerManagement';
-import AccountReconManagement from './forms/AccountReconManagement';
-import MonthEndManagement from './forms/MonthEndManagement';
-import FinancialManagement from './forms/FinancialStatementsManagement';
-import FixedAssetManagement from './forms/FixedAssetManagement'
+import renderForm from './RenderForm.jsx';
+import ProductManagement from './forms/ProductManagement.jsx';
+import ServiceManagement from './forms/ServiceManagement.jsx';
+import EstimateManagement from './forms/EstimateManagement.jsx';
+import SalesOrderManagement from './forms/SalesOrderManagement.jsx';
+import InvoiceManagement from './forms/InvoiceManagement.jsx'
+import VendorManagement from './forms/VendorManagement.jsx';
+import BillManagement from './forms/BillManagement.jsx';
+import PurchaseOrderManagement from './forms/PurchaseOrderManagement.jsx';
+import ExpensesManagement from './forms/ExpensesManagement.jsx';
+import PurchaseReturnsManagement from './forms/PurchaseReturnsManagement.jsx';
+import ProcurementManagement from './forms/ProcurementManagement.jsx';
+import EmployeeManagement from './forms/EmployeeManagement.jsx';
+import PayrollManagement from './forms/PayrollManagement.jsx';
+import TimesheetManagement from './forms/TimesheetManagement.jsx';
+import ChartOfAccountsManagement from './forms/ChartOfAccountsManagement.jsx';
+import JournalEntryManagement from './forms/JournalEntryManagement.jsx';
+import GeneralLedgerManagement from './forms/GeneralLedgerManagement.jsx';
+import AccountReconManagement from './forms/AccountReconManagement.jsx';
+import MonthEndManagement from './forms/MonthEndManagement.jsx';
+import FinancialManagement from './forms/FinancialStatementsManagement.jsx';
+import FixedAssetManagement from './forms/FixedAssetManagement.jsx'
 import BudgetManagement from './forms/BudgetManagement.jsx';
-import CostAccountingManagement from './forms/CostAccountingManagement';
-import IntercompanyManagement from './forms/IntercompanyManagement';
-import AuditTrailManagement from './forms/AuditTrailManagement';
-import ProfitAndLossReport from './forms/ProfitAndLossReport';
-import BalanceSheetReport from './forms/BalanceSheetReport';
-import CashFlowReport from './forms/CashFlowReport';
-import IncomeByCustomer from './forms/IncomeByCustomer';
-import AgedReceivables from './forms/AgedReceivables';
-import AgedPayables from './forms/AgedPayables';
-import AccountBalances from './forms/AccountBalances';
-import TrialBalances from './forms/TrialBalances';
-import ProfitAndLossAnalysis from './forms/ProfitAndLossAnalysis';
-import CashFlowAnalysis from './forms/CashFlowAnalysis';
-import BudgetVsActualAnalysis from './forms/BudgetVsActualAnalysis';
-import SalesAnalysis from './forms/SalesAnalysis';
-import ExpenseAnalysis from './forms/ExpenseAnalysis';
-import KPIDashboard from './forms/KPIDashboard';
-import DeviceSettings from '@/app/Settings/DeviceSettings/components/DeviceSettings';
-import BalanceSheet from './forms/BalanceSheetAnalysis';
+import CostAccountingManagement from './forms/CostAccountingManagement.jsx';
+import IntercompanyManagement from './forms/IntercompanyManagement.jsx';
+import AuditTrailManagement from './forms/AuditTrailManagement.jsx';
+import ProfitAndLossReport from './forms/ProfitAndLossReport.jsx';
+import BalanceSheetReport from './forms/BalanceSheetReport.jsx';
+import CashFlowReport from './forms/CashFlowReport.jsx';
+import IncomeByCustomer from './forms/IncomeByCustomer.jsx';
+import AgedReceivables from './forms/AgedReceivables.jsx';
+import AgedPayables from './forms/AgedPayables.jsx';
+import AccountBalances from './forms/AccountBalances.jsx';
+import TrialBalances from './forms/TrialBalances.jsx';
+import ProfitAndLossAnalysis from './forms/ProfitAndLossAnalysis.jsx';
+import CashFlowAnalysis from './forms/CashFlowAnalysis.jsx';
+import BudgetVsActualAnalysis from './forms/BudgetVsActualAnalysis.jsx';
+import SalesAnalysis from './forms/SalesAnalysis.jsx';
+import ExpenseAnalysis from './forms/ExpenseAnalysis.jsx';
+import KPIDashboard from './forms/KPIDashboard.jsx';
+import BalanceSheet from './forms/BalanceSheetAnalysis.jsx';
 import ChartContainer from '@/app/chart/component/ChartContainer';
-import IntegrationSettings from '../../Settings/integrations/components/IntegrationSettings';
+import IntegrationSettings from '../../Settings/integrations/components/IntegrationSettings.jsx';
 import UserProfileSettings from '@/app/Settings/UserProfile/components/UserProfileSettings';
+import ProfileSettings from '@/app/settings/components/ProfileSettings';
+import BusinessSettings from '@/app/settings/components/BusinessSettings';
+import AccountingSettings from '@/app/settings/components/AccountingSettings';
+import PayrollSettings from '@/app/settings/components/PayrollSettings';
+import DeviceSettings from '@/app/settings/components/DeviceSettings';
 
-import StatusMessage from './components/StatusMessage';
-import BalanceSheetAnalysis from './forms/BalanceSheetAnalysis';
+
+import StatusMessage from './components/StatusMessage.jsx';
+import BalanceSheetAnalysis from './forms/BalanceSheetAnalysis.jsx';
 
 
 const RenderMainContent = ({
@@ -181,26 +188,76 @@ const RenderMainContent = ({
     showExpenseAnalysis,
     showKPIDashboard,
     showDeviceSettings,
+    selectedSettingsOption,
 
   }) => {
+    console.log('RenderMainContent: Rendering with selectedSettingsOption:', selectedSettingsOption);
+
+    const [selectedTab, setSelectedTab] = useState(0);
+
+    const handleTabChange = (event, newValue) => {
+      setSelectedTab(newValue);
+    };
+    
+    const renderSettingsTabs = () => {
+      console.log('RenderMainContent: renderSettingsTabs called with selectedSettingsOption:', selectedSettingsOption);
+
+      let tabs = [];
+      let content = null;
+  
+      switch (selectedSettingsOption) {
+        case 'Profile Settings':
+          tabs = ['Personal Information', 'Password and Security', 'Notifications', 'Businesses', 'Billing and Subscriptions'];
+          content = <ProfileSettings selectedTab={selectedTab} />;
+          break;
+        case 'Business Settings':
+          tabs = ['User Management', 'Invoices and Estimates', 'Payments', 'Email Templates', 'Custom Charge Settings'];
+          content = <BusinessSettings selectedTab={selectedTab} />;
+          break;
+        case 'Accounting Settings':
+          tabs = ['Dates and Currency', 'Sales Tax'];
+          content = <AccountingSettings selectedTab={selectedTab} />;
+          break;
+        case 'Payroll Settings':
+          tabs = ['Business Profile', 'Company Signatory', 'Source Bank Account', 'Tax Profile', 'Payroll Setup'];
+          content = <PayrollSettings selectedTab={selectedTab} />;
+          break;
+        case 'Device Settings':
+          content = <DeviceSettings />;
+          break;
+        default:
+          return null;
+      }
+  
+      return (
+        <Box sx={{ width: '100%' }}>
+          {tabs.length > 0 && (
+            <Tabs value={selectedTab} onChange={handleTabChange}>
+              {tabs.map((tab, index) => (
+                <Tab key={index} label={tab} />
+              ))}
+            </Tabs>
+          )}
+          <Box sx={{ p: 1 }}>
+            {content}
+          </Box>
+        </Box>
+      );
+    };
+
+
     const renderContent = () => {
+      if (selectedSettingsOption) {
+        return renderSettingsTabs();
+      }
+
+
+
       if (showUserProfileSettings) {
         return <UserProfileSettings userData={userData} onUpdate={handleUserProfileUpdate} />;
       }
       if (showIntegrationSettings) return null;
-      if (showDashboard) {
-
-      return (
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Dashboard
-          </Typography>
-          <Typography variant="body1">
-            Welcome to your dashboard. Here you can view an overview of your business activities.
-          </Typography>
-        </Box>
-      );
-    }
+      
   
       if (showProductManagement) {
         return <ProductManagement />;
@@ -378,7 +435,8 @@ const RenderMainContent = ({
       if (showAnalysisPage) {
         return <AnalysisPage />;
       }
-  
+
+   
       if (showCustomerList) {
         return (
           <CustomerList 
@@ -457,10 +515,12 @@ const RenderMainContent = ({
       <Box
         sx={{
           height: '100%',
+          width: '100%',
           display: 'flex',
           flexDirection: 'column',
+          top: '10px',
           overflow: 'hidden',
-          background: 'linear-gradient(to bottom, #e3f2fd, #ffffff)', // Light blue to white gradient
+          //background: 'linear-gradient(to bottom, #e3f2fd, #ffffff)', // Light blue to white gradient
         }}
       >
         <Paper 
@@ -472,14 +532,14 @@ const RenderMainContent = ({
             overflow: 'hidden',
             backgroundColor: 'transparent', // Make paper transparent to show gradient
             borderRadius: 2,
-            m: 2, // Add margin to show gradient around the paper
+            m: 1, // Add margin to show gradient around the paper
           }}
         >
           <Box
             sx={{
               flexGrow: 1,
               overflow: 'auto',
-              p: 4,
+              p: 2,
               backgroundColor: 'rgba(255, 255, 255, 0.8)', // Semi-transparent white
             }}
           >

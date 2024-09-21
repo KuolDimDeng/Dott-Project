@@ -26,6 +26,37 @@ def get_current_datetime():
 def default_due_datetime():
     return get_current_datetime() + timedelta(days=30)
 
+class CustomChargePlan(models.Model):
+    name = models.CharField(max_length=100)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    UNIT_CHOICES = [
+        ('kg', 'Kilogram'),
+        ('unit', 'Per Unit'),
+        ('hour', 'Per Hour'),
+        ('day', 'Per Day'),
+        ('week', 'Per Week'),
+        ('month', 'Per Month'),
+        ('custom', 'Custom'),
+    ]
+    unit = models.CharField(max_length=10, choices=UNIT_CHOICES)
+    custom_unit = models.CharField(max_length=50, blank=True, null=True)
+    PERIOD_CHOICES = [
+        ('hour', 'Hour'),
+        ('day', 'Day'),
+        ('week', 'Week'),
+        ('month', 'Month'),
+        ('custom', 'Custom'),
+    ]
+    period = models.CharField(max_length=10, choices=PERIOD_CHOICES)
+    custom_period = models.CharField(max_length=50, blank=True, null=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        unit = self.custom_unit if self.unit == 'custom' else self.get_unit_display()
+        period = self.custom_period if self.period == 'custom' else self.get_period_display()
+        return f"{self.name}: {self.quantity} {unit} per {period} for {self.price}"
+
+
 class ProductManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().using(self._db)
@@ -53,6 +84,8 @@ class Item(models.Model):
     weight_unit = models.CharField(max_length=10, choices=[('kg', 'Kilogram'), ('lb', 'Pound'), ('g', 'Gram')], default='kg')
     charge_period = models.CharField(max_length=10, choices=[('hour', 'Hour'), ('day', 'Day'), ('month', 'Month'), ('year', 'Year')], default='day')
     charge_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    custom_charge_plans = models.ManyToManyField(CustomChargePlan, blank=True)
+
 
     class Meta:
         abstract = True
@@ -467,3 +500,4 @@ class RefundItem(models.Model):
     product = models.ForeignKey('Product', on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    

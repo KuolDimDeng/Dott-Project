@@ -16,7 +16,7 @@ import Alert from '@mui/material/Alert';
 import axiosInstance from '../components/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
-import EstimatePreviewModal from '../forms/EstimatePreview';
+import EstimatePreviewModal from './EstimatePreview';
 import { saveEstimate, printEstimate, emailEstimate, getEstimatePdf } from '../actions/estimateActions';
 
 const EstimateForm = ({ onSave, onPreview, initialData }) => {

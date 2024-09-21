@@ -1,19 +1,44 @@
 import React from 'react';
-import { Menu, MenuItem } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import { Menu, MenuItem, styled } from '@mui/material';
+import { menuItemStyle } from '../../../../styles/menuStyles';
 
-const StyledMenuItem = styled(MenuItem)({
-  backgroundColor: 'white',
-  color: 'navy',
-  '&:hover': {
-    backgroundColor: 'navy',
-    color: 'white',
+const StyledMenu = styled(Menu)(({ theme }) => ({
+  '& .MuiPaper-root': {
+    marginTop: theme.spacing(2),
+    minWidth: 180,
+    boxShadow: 'rgb(255, 255, 255) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.05) 0px 4px 6px -2px',
   },
-});
+}));
 
-const SettingsMenu = ({ anchorEl, open, onClose, onIntegrationsClick, onDeviceSettingsClick }) => {
+const StyledMenuItem = styled(MenuItem)(({ theme }) => ({
+  ...menuItemStyle,
+}));
+
+const SettingsMenu = ({ anchorEl, open, onClose, onOptionSelect, selectedOption }) => {
+  console.log('SettingsMenu: Rendering with selectedOption:', selectedOption);
+
+  // Menu options array
+  const options = [
+    'Profile Settings',
+    'Business Settings',
+    'Accounting Settings',
+    'Payroll Settings',
+    'Device Settings',
+  ];
+
+  // Handle option click and call the onOptionSelect callback
+  const handleOptionClick = (option) => {
+    console.log('SettingsMenu: handleOptionClick called with option:', option);
+    if (typeof onOptionSelect === 'function') {
+      onOptionSelect(option); // Call the callback passed as a prop
+    } else {
+      console.error('SettingsMenu: onOptionSelect is not a function');
+    }
+    onClose(); // Close the menu after selection
+  };
+
   return (
-    <Menu
+    <StyledMenu
       anchorEl={anchorEl}
       open={open}
       onClose={onClose}
@@ -26,26 +51,16 @@ const SettingsMenu = ({ anchorEl, open, onClose, onIntegrationsClick, onDeviceSe
         horizontal: 'right',
       }}
     >
-      <StyledMenuItem>User Profile</StyledMenuItem>
-      <StyledMenuItem>Business Settings</StyledMenuItem>
-      <StyledMenuItem>Notification Preferences</StyledMenuItem>
-      <StyledMenuItem>Security Settings</StyledMenuItem>
-      <StyledMenuItem onClick={onIntegrationsClick}> API & Integrations</StyledMenuItem>
-      <StyledMenuItem>Billing & Subscription</StyledMenuItem>
-      <StyledMenuItem>Theme & Appearance</StyledMenuItem>
-      <StyledMenuItem>Data Management</StyledMenuItem>
-      <StyledMenuItem>Team Management</StyledMenuItem>
-      <StyledMenuItem>Audit Log</StyledMenuItem>
-      <StyledMenuItem>Tax Settings</StyledMenuItem>
-      <StyledMenuItem>Currency Settings</StyledMenuItem>
-      <StyledMenuItem>Reporting Preferences</StyledMenuItem>
-      <StyledMenuItem>Email Templates</StyledMenuItem>
-      <StyledMenuItem>Product/Service Catalog</StyledMenuItem>
-      <StyledMenuItem>Payment Gateway Settings</StyledMenuItem>
-      <StyledMenuItem onClick={onDeviceSettingsClick}>Device Settings</StyledMenuItem>
-
-      {/* Add more menu items here as needed */}
-    </Menu>
+      {options.map((option) => (
+        <StyledMenuItem
+          key={option}
+          onClick={() => handleOptionClick(option)} // Handle item click
+          selected={option === selectedOption} // Highlight the selected option
+        >
+          {option}
+        </StyledMenuItem>
+      ))}
+    </StyledMenu>
   );
 };
 

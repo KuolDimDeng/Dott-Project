@@ -35,7 +35,9 @@ from .views import (
     print_barcode,
     create_refund,
     refund_list,
-    refund_detail
+    refund_detail,
+    create_custom_charge_plan,
+    list_custom_charge_plans
 
 )
 
@@ -76,6 +78,6 @@ urlpatterns = [
     path('api/refunds/create/', create_refund, name='create-refund'),
     path('api/refunds/', refund_list, name='refund-list'),
     path('api/refunds/<uuid:pk>/', refund_detail, name='refund-detail'),
-
-
+    path('api/custom-charge-plans/create/', create_custom_charge_plan, name='create-custom-charge-plan'),
+    path('api/custom-charge-plans/', list_custom_charge_plans, name='list-custom-charge-plans'),
 ]

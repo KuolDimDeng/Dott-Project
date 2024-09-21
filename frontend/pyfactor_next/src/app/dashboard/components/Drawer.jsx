@@ -11,7 +11,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 
 
-const drawerWidth = 270;
+const drawerWidth = 210;
 
 const Drawer = ({ 
   drawerOpen, 
@@ -42,6 +42,7 @@ const Drawer = ({
   };
 
   return (
+    
     <MuiDrawer
       variant="persistent"
       open={drawerOpen}
@@ -51,14 +52,14 @@ const Drawer = ({
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',
-          top: '50px',
-          height: 'calc(100% - 64px)',
+          top: '40px',
+          height: 'calc(100% - 60px)',
           borderRight: 'none',
-          overflowX: 'hidden',
+          
         },
       }}
     >
-      <Box sx={{ overflow: 'auto', pl: 0, pr: 0 }}>
+      <Box sx={{ overflow: 'hidden', pl: 0, pr: 0 }}>
         <MainListItems
           showInvoiceBuilder={handleShowInvoiceBuilder}
           hideInvoiceBuilder={handleCloseInvoiceBuilder}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   Typography, 
@@ -19,7 +19,8 @@ import {
   Tooltip,
   IconButton,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Chip
 } from '@mui/material';
 import axiosInstance from '../components/axiosConfig';
 import { logger } from '@/utils/logger';
@@ -48,16 +49,82 @@ const ProductForm = () => {
     weight_unit: 'kg',
     charge_period: 'day',
     charge_amount: 0,
+    custom_charge_plans: []
   });
   const { addMessage } = useUserMessageContext();
   const [error, setError] = useState('');
   const [openPrintDialog, setOpenPrintDialog] = useState(false);
+  const [customChargePlans, setCustomChargePlans] = useState([]);
+  const [openCustomPlanDialog, setOpenCustomPlanDialog] = useState(false);
+  const [newCustomPlan, setNewCustomPlan] = useState({
+    name: '',
+    quantity: 0,
+    unit: 'unit',
+    custom_unit: '',
+    period: 'day',
+    custom_period: '',
+    price: 0,
+  });
+
+  useEffect(() => {
+    fetchCustomChargePlans();
+  }, []);
+
+  const fetchCustomChargePlans = async () => {
+    try {
+      const response = await axiosInstance.get('/api/custom-charge-plans/');
+      setCustomChargePlans(response.data);
+    } catch (error) {
+      logger.error('Error fetching custom charge plans:', error);
+      addMessage('error', 'Error fetching custom charge plans');
+    }
+  };
 
   const handleChange = (event) => {
     const { name, value, checked, type } = event.target;
     setProduct(prevState => ({
       ...prevState,
       [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleCustomPlanChange = (event) => {
+    const { name, value } = event.target;
+    setNewCustomPlan(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateCustomPlan = async () => {
+    try {
+      const response = await axiosInstance.post('/api/custom-charge-plans/create/', newCustomPlan);
+      setCustomChargePlans(prev => [...prev, response.data]);
+      setOpenCustomPlanDialog(false);
+      setNewCustomPlan({
+        name: '',
+        quantity: 0,
+        unit: 'unit',
+        custom_unit: '',
+        period: 'day',
+        custom_period: '',
+        price: 0,
+      });
+      addMessage('success', 'Custom charge plan created successfully');
+    } catch (error) {
+      logger.error('Error creating custom charge plan:', error);
+      addMessage('error', 'Error creating custom charge plan');
+    }
+  };
+
+  const handleAddCustomPlan = (plan) => {
+    setProduct(prev => ({
+      ...prev,
+      custom_charge_plans: [...prev.custom_charge_plans, plan.id]
+    }));
+  };
+
+  const handleRemoveCustomPlan = (planId) => {
+    setProduct(prev => ({
+      ...prev,
+      custom_charge_plans: prev.custom_charge_plans.filter(id => id !== planId)
     }));
   };
 
@@ -111,7 +178,8 @@ const ProductForm = () => {
     }
   };
 
-  return (
+
+ return (
     <Paper elevation={3} sx={{ p: 3, backgroundColor: theme.palette.background.paper }}>
       <Box display="flex" alignItems="center" mb={2}>
         <InventoryIcon sx={{ fontSize: 40, color: theme.palette.primary.main, mr: 2 }} />
@@ -124,6 +192,7 @@ const ProductForm = () => {
           </Typography>
         </Box>
       </Box>
+
 
       {error && <Typography color="error" mb={2}>{error}</Typography>}
 
@@ -139,17 +208,17 @@ const ProductForm = () => {
             <TextField label="Description" name="description" value={product.description} onChange={handleChange} fullWidth multiline rows={3} />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <FormControlLabel
-              control={<Switch checked={product.is_for_sale} onChange={handleChange} name="is_for_sale" />}
-              label="For Sale"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControlLabel
-              control={<Switch checked={product.is_for_rent} onChange={handleChange} name="is_for_rent" />}
-              label="For Rent"
-            />
-          </Grid>
+          <FormControlLabel
+            control={<Switch checked={product.is_for_sale} onChange={handleChange} name="is_for_sale" />}
+            label="For Sale"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <FormControlLabel
+            control={<Switch checked={product.is_for_rent} onChange={handleChange} name="is_for_rent" />}
+            label="For Rent"
+          />
+        </Grid>
           <Grid item xs={12} sm={4}>
             <TextField label="Sales Tax (%)" name="salesTax" type="number" value={product.salesTax} onChange={handleChange} fullWidth />
           </Grid>
@@ -198,20 +267,40 @@ const ProductForm = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel>Charge Period</InputLabel>
-              <Select name="charge_period" value={product.charge_period} onChange={handleChange}>
-                <MenuItem value="hour">Hour</MenuItem>
-                <MenuItem value="day">Day</MenuItem>
-                <MenuItem value="month">Month</MenuItem>
-                <MenuItem value="year">Year</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField label="Charge Amount" name="charge_amount" type="number" value={product.charge_amount} onChange={handleChange} fullWidth />
-          </Grid>
+          {product.is_for_rent && (
+          <>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Charge Period</InputLabel>
+                <Select name="charge_period" value={product.charge_period} onChange={handleChange}>
+                  <MenuItem value="hour">Hour</MenuItem>
+                  <MenuItem value="day">Day</MenuItem>
+                  <MenuItem value="month">Month</MenuItem>
+                  <MenuItem value="year">Year</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField label="Charge Amount" name="charge_amount" type="number" value={product.charge_amount} onChange={handleChange} fullWidth />
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="h6">Custom Charge Plans</Typography>
+              <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
+                {customChargePlans.map(plan => (
+                  <Chip
+                    key={plan.id}
+                    label={plan.name}
+                    onClick={() => handleAddCustomPlan(plan)}
+                    onDelete={() => handleRemoveCustomPlan(plan.id)}
+                    color={product.custom_charge_plans.includes(plan.id) ? "primary" : "default"}
+                  />
+                ))}
+              </Box>
+              <Button onClick={() => setOpenCustomPlanDialog(true)}>Create New Custom Plan</Button>
+            </Grid>
+          </>
+        )}
+          
           <Grid item xs={12}>
             <Box display="flex" justifyContent="space-between" alignItems="center">
               <Button type="submit" variant="contained" color="primary" size="large">
@@ -245,6 +334,47 @@ const ProductForm = () => {
           >
             Generate Barcode
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openCustomPlanDialog} onClose={() => setOpenCustomPlanDialog(false)}>
+        <DialogTitle>Create Custom Charge Plan</DialogTitle>
+        <DialogContent>
+          <TextField label="Name" name="name" value={newCustomPlan.name} onChange={handleCustomPlanChange} fullWidth />
+          <TextField label="Quantity" name="quantity" type="number" value={newCustomPlan.quantity} onChange={handleCustomPlanChange} fullWidth />
+          <FormControl fullWidth>
+            <InputLabel>Unit</InputLabel>
+            <Select name="unit" value={newCustomPlan.unit} onChange={handleCustomPlanChange}>
+              <MenuItem value="kg">Kilogram</MenuItem>
+              <MenuItem value="unit">Per Unit</MenuItem>
+              <MenuItem value="hour">Per Hour</MenuItem>
+              <MenuItem value="day">Per Day</MenuItem>
+              <MenuItem value="week">Per Week</MenuItem>
+              <MenuItem value="month">Per Month</MenuItem>
+              <MenuItem value="custom">Custom</MenuItem>
+            </Select>
+          </FormControl>
+          {newCustomPlan.unit === 'custom' && (
+            <TextField label="Custom Unit" name="custom_unit" value={newCustomPlan.custom_unit} onChange={handleCustomPlanChange} fullWidth />
+          )}
+          <FormControl fullWidth>
+            <InputLabel>Period</InputLabel>
+            <Select name="period" value={newCustomPlan.period} onChange={handleCustomPlanChange}>
+              <MenuItem value="hour">Hour</MenuItem>
+              <MenuItem value="day">Day</MenuItem>
+              <MenuItem value="week">Week</MenuItem>
+              <MenuItem value="month">Month</MenuItem>
+              <MenuItem value="custom">Custom</MenuItem>
+            </Select>
+          </FormControl>
+          {newCustomPlan.period === 'custom' && (
+            <TextField label="Custom Period" name="custom_period" value={newCustomPlan.custom_period} onChange={handleCustomPlanChange} fullWidth />
+          )}
+          <TextField label="Price" name="price" type="number" value={newCustomPlan.price} onChange={handleCustomPlanChange} fullWidth />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCustomPlanDialog(false)}>Cancel</Button>
+          <Button onClick={handleCreateCustomPlan} variant="contained" color="primary">Create</Button>
         </DialogActions>
       </Dialog>
     </Paper>

@@ -23,7 +23,7 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 
 import MenuIcon from '@mui/icons-material/Menu'; 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-const MENU_WIDTH = 220; // Adjust this value to change the menu width
+const MENU_WIDTH = 210; // Adjust this value to change the menu width
 
 const SUBMENU_LEFT_POSITION = MENU_WIDTH; // Adjust this offset as needed
 
@@ -245,38 +245,31 @@ export const MainListItems = ({
       my: 2, 
       width: MENU_WIDTH, 
       height: '100vh', 
-      overflow: 'hidden',
       background: 'linear-gradient(to bottom, #e3f2fd, #ffffff)', // Light blue to white gradient
     }}
   >
-    <Box sx={{ 
-      height: '100%',
-      overflow: 'auto',
-      '&::-webkit-scrollbar': {
-        display: 'none',
-      },
-      '-ms-overflow-style': 'none',
-      'scrollbar-width': 'none',
+   <Box 
+    sx={{ 
+      height: '100%', // Full height
+      display: 'flex', 
+      flexDirection: 'column',
+      justifyContent: 'space-between', // Optional: Space items evenly
+      backgroundColor: 'transparent', // Make Box background transparent
       '& .MuiListItemButton-root': {
         ...listItemStyle,
         paddingLeft: 2,
         paddingRight: 2,
-        backgroundColor: 'rgba(255, 255, 255, 0.7)', // Semi-transparent white background
+        backgroundColor: 'transparent', // Make Box background transparent
         '&:hover': {
-          backgroundColor: 'rgba(255, 255, 255, 0.9)', // More opaque on hover
-        },
+          backgroundColor: 'rgba(0, 0, 128, 0.15)', // Darker navy blue on hover
+                  },
       },
       '& .MuiListItemButton-root:last-child': {
         marginBottom: 0,
       },
     }}>
       <List disablePadding>
-        <ListItemButton onClick={handleDrawerToggle}>
-          <ListItemIcon>
-            {drawerOpen ? <ChevronLeftIcon style={{ color: iconColor }} /> : <MenuIcon style={{ color: iconColor }} />}
-          </ListItemIcon>
-          <ListItemText primary={drawerOpen ? "Close Menu" : "Open Menu"} sx={{ color: textColor }} />
-        </ListItemButton>
+       
         
         {drawerOpen && (
             <>

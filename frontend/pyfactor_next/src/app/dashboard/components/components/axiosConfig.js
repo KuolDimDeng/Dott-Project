@@ -1,4 +1,4 @@
-// src/app/dashboard/components/axiosConfig.js
+// src/app/Dashboard/components/axiosConfig.js
 import axios from 'axios';
 import { logger } from '@/utils/logger';
 
