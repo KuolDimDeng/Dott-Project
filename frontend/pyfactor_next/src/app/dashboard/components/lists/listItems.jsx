@@ -474,7 +474,7 @@ export const MainListItems = ({
           anchorPosition={{ left: SUBMENU_LEFT_POSITION, top: bankingAnchorEl ? bankingAnchorEl.getBoundingClientRect().top : 0}}
         >
           <MenuItem onClick={() => handleBankingClick('dashboard')} sx={menuItemStyle}>Banking Dashboard</MenuItem>
-          <MenuItem onClick={() => handleBankingClick('reconciliation')} sx={menuItemStyle}>Reconciliation</MenuItem>
+          <MenuItem onClick={() => handleBankingClick('reconciliation')} sx={menuItemStyle}>Bank Reconciliation</MenuItem>
           <MenuItem onClick={() => handleBankingClick('bank-balances')} sx={menuItemStyle}>Bank Balances</MenuItem>
            <MenuItem onClick={() => handleBankingClick('bank-reports')} sx={menuItemStyle}>Banking Reports</MenuItem>
         </Menu>

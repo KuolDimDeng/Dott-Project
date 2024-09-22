@@ -16,6 +16,13 @@ import {
   CardActions,
   IconButton,
   InputAdornment,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -234,52 +241,69 @@ const BankingDashboard = () => {
           </StyledCard>
         </Grid>
         <Grid item xs={12}>
-      <StyledCard>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Recent Transactions
-          </Typography>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Search transactions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ mb: 2 }}
-          />
-          {filteredTransactions.length > 0 ? (
-            <List>
-              {filteredTransactions.map((transaction) => (
-                <ListItem key={transaction.id}>
-                  <ListItemText
-                    primary={transaction.description}
-                    secondary={`$${transaction.amount} - ${new Date(transaction.date).toLocaleDateString()}`}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          ) : (
-            <Typography>No transactions found.</Typography>
-          )}
-        </CardContent>
-        <CardActions>
-          <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={fetchRecentTransactions}
-          >
-            Refresh Transactions
-          </Button>
-        </CardActions>
-      </StyledCard>
-    </Grid>
+          <StyledCard>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Recent Transactions
+              </Typography>
+              <TextField
+                fullWidth
+                variant="outlined"
+                placeholder="Search transactions..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ mb: 2 }}
+              />
+              <TableContainer component={Paper}>
+                <Table sx={{ minWidth: 650 }} aria-label="transactions table">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell><strong>Description</strong></TableCell>
+                      <TableCell align="right"><strong>Date</strong></TableCell>
+                      <TableCell align="right"><strong>Amount</strong></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredTransactions.length > 0 ? (
+                      filteredTransactions.map((transaction) => (
+                        <TableRow
+                          key={transaction.id}
+                          sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                        >
+                          <TableCell component="th" scope="row">
+                            {transaction.description}
+                          </TableCell>
+                          <TableCell align="right">{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                          <TableCell align="right">${transaction.amount.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={3} align="center">No transactions found.</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+            <CardActions>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={fetchRecentTransactions}
+              >
+                Refresh Transactions
+              </Button>
+            </CardActions>
+          </StyledCard>
+        </Grid>
       </Grid>
     </Box>
   );
