@@ -114,6 +114,7 @@ import DeviceSettings from '@/app/settings/components/DeviceSettings';
 import HelpCenter from '@app/helpcenter/components/HelpCenter';
 import TermsAndConditions from '@app/Terms&Privacy/components/TermsOfUse';
 import PrivacyPolicy from '@app/Terms&Privacy/components/PrivacyPolicy';
+import DownloadTransactions from './forms/DownloadTransactions';
 
 
 import StatusMessage from './components/StatusMessage.jsx';
@@ -195,7 +196,7 @@ const RenderMainContent = ({
     showHelpCenter,
     showPrivacyPolicy,
     showTermsAndConditions,
- 
+    showDownloadTransactions,
   
 
 
@@ -320,6 +321,10 @@ const RenderMainContent = ({
 
       if (showPayrollManagement) {
         return <PayrollManagement/>;
+      }
+
+      if (showDownloadTransactions) {
+        return <DownloadTransactions />;
       }
 
       if (showTimesheetManagement) {

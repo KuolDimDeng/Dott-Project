@@ -474,15 +474,9 @@ export const MainListItems = ({
           anchorPosition={{ left: SUBMENU_LEFT_POSITION, top: bankingAnchorEl ? bankingAnchorEl.getBoundingClientRect().top : 0}}
         >
           <MenuItem onClick={() => handleBankingClick('dashboard')} sx={menuItemStyle}>Banking Dashboard</MenuItem>
-          <MenuItem onClick={() => handleBankingClick('connect-account')} sx={menuItemStyle}>Connect Bank Account</MenuItem>
-          <MenuItem onClick={() => handleBankingClick('manage-accounts')} sx={menuItemStyle}>Manage Connected Accounts</MenuItem>
-          <MenuItem onClick={() => handleBankingClick('download-transactions')} sx={menuItemStyle}>Download Transactions</MenuItem>
           <MenuItem onClick={() => handleBankingClick('reconciliation')} sx={menuItemStyle}>Reconciliation</MenuItem>
           <MenuItem onClick={() => handleBankingClick('bank-balances')} sx={menuItemStyle}>Bank Balances</MenuItem>
-          <MenuItem onClick={() => handleBankingClick('deposits')} sx={menuItemStyle}>Deposits</MenuItem>
-          <MenuItem onClick={() => handleBankingClick('categorize-transactions')} sx={menuItemStyle}>Categorize Transactions</MenuItem>
-          <MenuItem onClick={() => handleBankingClick('bank-rules')} sx={menuItemStyle}>Bank Rules</MenuItem>
-          <MenuItem onClick={() => handleBankingClick('bank-reports')} sx={menuItemStyle}>Banking Reports</MenuItem>
+           <MenuItem onClick={() => handleBankingClick('bank-reports')} sx={menuItemStyle}>Banking Reports</MenuItem>
         </Menu>
         <Menu
           anchorEl={hrAnchorEl}

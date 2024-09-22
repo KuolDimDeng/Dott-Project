@@ -1,218 +1,286 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Typography, Box, List, ListItem, ListItemText, CircularProgress, Snackbar, Alert } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import VisibilityIcon from '@mui/icons-material/Visibility';
+// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/BankingDashboard.jsx
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  Box, 
+  Button, 
+  Typography, 
+  Grid, 
+  TextField,
+  List, 
+  ListItem, 
+  ListItemText, 
+  CircularProgress,
+  Card,
+  CardContent,
+  CardActions,
+  IconButton,
+  InputAdornment,
+} from '@mui/material';
+import { styled } from '@mui/material/styles';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import AddIcon from '@mui/icons-material/Add';
+import DownloadIcon from '@mui/icons-material/Download';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import SearchIcon from '@mui/icons-material/Search';
 import { usePlaidLink } from 'react-plaid-link';
-import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
+import axiosInstance from '../components/axiosConfig';
+
+const StyledCard = styled(Card)(({ theme }) => ({
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+}));
 
 const BankingDashboard = () => {
   const [accounts, setAccounts] = useState([]);
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [linkToken, setLinkToken] = useState(null);
   const [error, setError] = useState(null);
-  const [linkTokenLoading, setLinkTokenLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const onSuccess = async (public_token, metadata) => {
-    console.log("Plaid Link success. Exchanging public token for access token...");
+  const fetchBankingAccounts = useCallback(async () => {
     try {
-      const response = await axiosInstance.post('/api/banking/exchange_token/', { public_token });
-      console.log("Token exchange successful:", response.data);
-      fetchBankingAccounts();
-      setSnackbar({ open: true, message: 'Bank account linked successfully', severity: 'success' });
-    } catch (error) {
-      console.error('Error exchanging token:', error);
-      setError('Failed to link bank account. Please try again.');
-      setSnackbar({ open: true, message: 'Failed to link bank account', severity: 'error' });
-    }
-  };
-
-  const { open, ready } = usePlaidLink({
-    token: linkToken,
-    onSuccess,
-    onExit: (err, metadata) => {
-      console.log('Plaid Link exited', err, metadata);
-    },
-  });
-
-  useEffect(() => {
-    console.log("Component mounted. Initializing...");
-    fetchBankingAccounts();
-    getLinkToken();
-  }, []);
-
-  useEffect(() => {
-    console.log("Link token updated:", linkToken);
-  }, [linkToken]);
-
-  useEffect(() => {
-    console.log("Plaid Link ready state changed:", ready);
-  }, [ready]);
-
-  useEffect(() => {
-    console.log("State updated:", {
-      accountsCount: accounts.length,
-      loading,
-      linkTokenLoading,
-      ready,
-      linkToken: linkToken ? 'Set' : 'Not Set'
-    });
-  }, [accounts, loading, linkTokenLoading, ready, linkToken]);
-
-  const fetchBankingAccounts = async () => {
-    console.log("Fetching banking accounts...");
-    setLoading(true);
-    setError(null);
-    try {
+      setLoading(true);
       const response = await axiosInstance.get('/api/banking/accounts/');
-      console.log("Raw API response:", response);
-      console.log("Accounts data:", response.data);
-      console.log("Accounts array:", response.data.accounts);
       if (response.data.accounts && Array.isArray(response.data.accounts)) {
         setAccounts(response.data.accounts);
       } else {
-        console.error("Unexpected accounts data structure:", response.data);
         setAccounts([]);
       }
-      setSnackbar({ open: true, message: 'Accounts fetched successfully', severity: 'success' });
     } catch (error) {
       console.error('Error fetching banking accounts:', error);
       setError('Failed to fetch banking accounts. Please try again later.');
-      setAccounts([]);
-      setSnackbar({ open: true, message: 'Failed to fetch accounts', severity: 'error' });
     } finally {
       setLoading(false);
-      console.log("Finished fetching accounts. Accounts state:", accounts);
-      console.log("Loading state:", loading);
     }
-  };
+  }, []);
+
+  const fetchRecentTransactions = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get('/api/banking/recent-transactions/', {
+        params: { limit: 10 }
+      });
+      if (response.data.transactions && Array.isArray(response.data.transactions)) {
+        setTransactions(response.data.transactions);
+      } else {
+        setTransactions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching recent transactions:', error);
+      setError('Failed to fetch recent transactions. Please try again later.');
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBankingAccounts();
+    fetchRecentTransactions();
+    getLinkToken();
+  }, [fetchBankingAccounts, fetchRecentTransactions]);
 
   const getLinkToken = async () => {
-    console.log("Requesting link token from server...");
-    setLinkTokenLoading(true);
     try {
       const response = await axiosInstance.post('/api/banking/create_link_token/');
-      console.log('Link token received:', response.data);
       if (response.data && response.data.link_token) {
         setLinkToken(response.data.link_token);
       } else {
-        console.error("Unexpected link token response:", response.data);
         setError('Failed to initialize bank link. Invalid server response.');
       }
     } catch (error) {
       console.error('Error getting link token:', error);
       setError('Failed to initialize bank link. Please try again later.');
-    } finally {
-      setLinkTokenLoading(false);
-      console.log("Link token loading finished. linkTokenLoading state:", linkTokenLoading);
     }
   };
 
-
-  useEffect(() => {
-    console.log("Plaid Link ready state changed:", ready);
-  }, [ready]);
-
-  const handleSetupBankLink = () => {
-    console.log("Setup Bank Link button clicked");
-    console.log("Current states - ready:", ready, "linkToken:", linkToken, "loading:", loading, "linkTokenLoading:", linkTokenLoading);
-    if (ready && linkToken) {
-      console.log("Opening Plaid Link...");
-      open();
-    } else {
-      console.log("Plaid Link not ready or no link token available");
-      setError('Plaid Link is not ready. Please try again later.');
-    }
-  };
-
-  const handleViewTransactions = async (accountId) => {
-    console.log(`Fetching transactions for account ${accountId}...`);
-    try {
-      const response = await axiosInstance.get(`/api/banking/transactions/${accountId}/`);
-      console.log('Transactions fetched:', response.data.transactions);
-      setSnackbar({ open: true, message: 'Transactions fetched successfully', severity: 'success' });
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-      setError('Failed to fetch transactions. Please try again.');
-      setSnackbar({ open: true, message: 'Failed to fetch transactions', severity: 'error' });
-    }
-  };
-
-  const handleCloseSnackbar = (event, reason) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setSnackbar({ ...snackbar, open: false });
-  };
-
-  console.log("Rendering BankingDashboard");
-  console.log("Current states - loading:", loading, "linkTokenLoading:", linkTokenLoading, "ready:", ready, "linkToken:", linkToken);
-  console.log("Button state conditions:", {
-    ready: ready,
-    loading: loading,
-    linkTokenLoading: linkTokenLoading
+  const { open, ready } = usePlaidLink({
+    token: linkToken,
+    onSuccess: (public_token, metadata) => {
+      console.log("Plaid Link success. Exchanging public token for access token...");
+      exchangePublicToken(public_token);
+    },
   });
 
+  const exchangePublicToken = async (public_token) => {
+    try {
+      await axiosInstance.post('/api/banking/exchange_token/', { public_token });
+      fetchBankingAccounts();
+    } catch (error) {
+      console.error('Error exchanging token:', error);
+      setError('Failed to link bank account. Please try again.');
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      const response = await axiosInstance.get('/api/banking/download-transactions/', {
+        params: { start_date: startDate, end_date: endDate },
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `transactions_${startDate}_to_${endDate}.csv`);
+      document.body.appendChild(link);
+      link.click();
+    } catch (error) {
+      console.error('Error downloading transactions:', error);
+      setError('Failed to download transactions. Please try again.');
+    }
+  };
+
+  const filteredTransactions = transactions.filter(transaction => 
+    transaction.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) {
+    return <CircularProgress />;
+  }
+
+  if (error) {
+    return <Typography color="error">{error}</Typography>;
+  }
+
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
+    <Box sx={{ flexGrow: 1, p: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+        <AccountBalanceIcon sx={{ mr: 2, fontSize: 40 }} />
         Banking Dashboard
       </Typography>
-      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleSetupBankLink}
-          disabled={!ready || loading || linkTokenLoading}
-        >
-          Set Up Bank Account Link
-        </Button>
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={fetchBankingAccounts}
-          disabled={loading}
-        >
-          Refresh Accounts
-        </Button>
-      </Box>
-      {error && (
-        <Typography color="error" sx={{ mb: 2 }}>
-          {error}
-        </Typography>
-      )}
-      {loading ? (
-        <CircularProgress />
-      ) : accounts && accounts.length > 0 ? (
-        <List>
-          {accounts.map((account) => (
-            <ListItem
-              key={account.id}
-              secondaryAction={
-                <Button
-                  startIcon={<VisibilityIcon />}
-                  onClick={() => handleViewTransactions(account.id)}
-                >
-                  View Transactions
-                </Button>
-              }
-            >
-              <ListItemText
-                primary={account.name}
-                secondary={`Balance: $${account.balances?.current || 'N/A'}`}
+      <Typography variant="subtitle1" gutterBottom sx={{ ml: 6, mb: 3, color: 'text.secondary' }}>
+        Manage your accounts, download transactions, and view recent activity
+      </Typography>
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <StyledCard>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Bank Accounts
+              </Typography>
+              {accounts.length > 0 ? (
+                <List>
+                  {accounts.map((account) => (
+                    <ListItem key={account.account_id}>
+                      <ListItemText
+                        primary={account.name}
+                        secondary={`Balance: $${account.balances?.current || 'N/A'}`}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              ) : (
+                <Typography>No accounts found. Link a bank account to get started.</Typography>
+              )}
+            </CardContent>
+            <CardActions>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => ready && open()}
+                disabled={!ready}
+              >
+                Set Up Bank Account Link
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={fetchBankingAccounts}
+              >
+                Refresh Accounts
+              </Button>
+            </CardActions>
+          </StyledCard>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <StyledCard>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Download Transactions
+              </Typography>
+              <TextField
+                label="Start Date"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
               />
-            </ListItem>
-          ))}
-        </List>
-      ) : (
-        <Typography>No accounts found. Link a bank account to get started.</Typography>
-      )}
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+              <TextField
+                label="End Date"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                fullWidth
+                margin="normal"
+                InputLabelProps={{ shrink: true }}
+              />
+            </CardContent>
+            <CardActions>
+              <Button
+                variant="contained"
+                startIcon={<DownloadIcon />}
+                onClick={handleDownload}
+                disabled={!startDate || !endDate}
+                fullWidth
+              >
+                Download Transactions
+              </Button>
+            </CardActions>
+          </StyledCard>
+        </Grid>
+        <Grid item xs={12}>
+      <StyledCard>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Recent Transactions
+          </Typography>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search transactions..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ mb: 2 }}
+          />
+          {filteredTransactions.length > 0 ? (
+            <List>
+              {filteredTransactions.map((transaction) => (
+                <ListItem key={transaction.id}>
+                  <ListItemText
+                    primary={transaction.description}
+                    secondary={`$${transaction.amount} - ${new Date(transaction.date).toLocaleDateString()}`}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          ) : (
+            <Typography>No transactions found.</Typography>
+          )}
+        </CardContent>
+        <CardActions>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={fetchRecentTransactions}
+          >
+            Refresh Transactions
+          </Button>
+        </CardActions>
+      </StyledCard>
+    </Grid>
+      </Grid>
     </Box>
   );
 };

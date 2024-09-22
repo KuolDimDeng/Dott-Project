@@ -133,6 +133,8 @@ function DashboardContent() {
   const [showHelpCenter, setShowHelpCenter] = useState(false);
   const [showTermsAndConditions, setShowTermsAndConditions] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showDownloadTransactions, setShowDownloadTransactions] = useState(false);
+
 
 
   const router = useRouter();
@@ -204,6 +206,8 @@ function DashboardContent() {
     setShowHelpCenter,
     setShowTermsAndConditions,
     setShowPrivacyPolicy,
+    setShowDownloadTransactions,
+    
   ];
 
   const resetAllStatesExcept = (exceptionSetter) => {
@@ -257,6 +261,22 @@ function DashboardContent() {
   const handleDeviceSettingsClick = () => {
     resetAllStates();
     setShowDeviceSettings(true);
+  };
+
+  const handleBankingClick = (section) => {
+    console.log('handleBankingClick called with section:', section);
+    
+    resetAllStates();
+  
+    switch(section) {
+      case 'dashboard':
+        setShowBankingDashboard(true);
+        break;
+      case 'download-transactions':
+        setShowDownloadTransactions(true);
+        break;
+      // ... (other cases)
+    }
   };
 
   const handleLogout = () => {
@@ -635,11 +655,6 @@ function DashboardContent() {
 
   const handleDrawerToggle = () => {
     setDrawerOpen(!drawerOpen);
-  };
-
-  const handleBankingClick = () => {
-    resetAllStates();
-    setShowBankingDashboard(true);
   };
 
 
@@ -1137,6 +1152,7 @@ function DashboardContent() {
                 showHelpCenter,
                 showPrivacyPolicy,
                 showTermsAndConditions,
+                showDownloadTransactions,
              
               })}
             </Box>

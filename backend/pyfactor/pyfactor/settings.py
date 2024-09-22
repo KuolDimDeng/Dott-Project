@@ -23,33 +23,27 @@ from cryptography.fernet import Fernet
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
 # Load environment variables from .env file
-env_path = BASE_DIR / '.env'
-load_dotenv(dotenv_path=env_path)
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-print(f"PLAID_CLIENT_ID: {os.getenv('PLAID_CLIENT_ID')}")
-print(f"PLAID_SECRET: {os.getenv('PLAID_SECRET')}")
-print(f"PLAID_ENV: {os.getenv('PLAID_ENV')}")
 
+# Accessing Plaid credentials from environment variables
+PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID')
+PLAID_SECRET = os.getenv('PLAID_SECRET')
+PLAID_ENV = os.getenv('PLAID_ENV', 'sandbox')
+
+if not PLAID_CLIENT_ID or not PLAID_SECRET:
+    raise ValueError("Plaid credentials are not set in the environment variables.")
 
 ENCRYPTION_KEY = Fernet.generate_key()
 
+print("PLAID_CLIENT_ID: ", PLAID_CLIENT_ID)
+print("PLAID_SECRET: ", PLAID_SECRET)
 
 SECRET_KEY = 'sdbf6s8!9#w9@j_!w=2-s&+=x&g(9tvq&*p@g=%_&%fy$65-z%'
 
 
-# Add these lines to your settings file
-PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID', '')
-PLAID_SECRET = os.getenv('PLAID_SECRET', '')
-if not PLAID_CLIENT_ID or not PLAID_SECRET:
-    raise ValueError("Plaid credentials are not set in the environment variables.")
-
-PLAID_ENV = os.getenv('PLAID_ENV', 'sandbox')
-
-# Ensure these are set
-if not PLAID_CLIENT_ID or not PLAID_SECRET:
-    raise ValueError("Plaid credentials are not set in the environment variables.")
-# Load environment variables from .env file
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join(PROJECT_ROOT, '.venv/lib/python3.12/site-packages'))
@@ -62,8 +56,7 @@ APP_URL = 'http://localhost:8000'  # or whatever your app's URL is
 
 SHOPIFY_API_VERSION = '2023-07'  # or whatever the latest version is
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 USE_TZ = True
 SITE_ID = 1
