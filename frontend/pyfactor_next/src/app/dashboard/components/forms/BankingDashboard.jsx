@@ -14,48 +14,12 @@ const BankingDashboard = () => {
   const [linkTokenLoading, setLinkTokenLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
-  useEffect(() => {
-    fetchBankingAccounts();
-    getLinkToken();
-  }, []);
-
-  const fetchBankingAccounts = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await axiosInstance.get('/api/banking/accounts/');
-      setAccounts(response.data.accounts || []);
-      setSnackbar({ open: true, message: 'Accounts fetched successfully', severity: 'success' });
-    } catch (error) {
-      console.error('Error fetching banking accounts:', error);
-      setError('Failed to fetch banking accounts. Please try again later.');
-      setAccounts([]);
-      setSnackbar({ open: true, message: 'Failed to fetch accounts', severity: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getLinkToken = async () => {
-    setLinkTokenLoading(true);
-    try {
-      const response = await axiosInstance.post('/api/banking/create_link_token/');
-      console.log('Link token response:', response.data);
-      setLinkToken(response.data.link_token);
-    } catch (error) {
-      console.error('Error getting link token:', error);
-      console.error('Error response:', error.response);
-      console.error('Error request:', error.request);
-      setError('Failed to initialize bank link. Please try again later.');
-    } finally {
-      setLinkTokenLoading(false);
-    }
-  };
-
   const onSuccess = async (public_token, metadata) => {
+    console.log("Plaid Link success. Exchanging public token for access token...");
     try {
-      await axiosInstance.post('/api/banking/exchange_token/', { public_token });
-      fetchBankingAccounts(); // Refresh accounts after linking
+      const response = await axiosInstance.post('/api/banking/exchange_token/', { public_token });
+      console.log("Token exchange successful:", response.data);
+      fetchBankingAccounts();
       setSnackbar({ open: true, message: 'Bank account linked successfully', severity: 'success' });
     } catch (error) {
       console.error('Error exchanging token:', error);
@@ -66,45 +30,107 @@ const BankingDashboard = () => {
 
   const { open, ready } = usePlaidLink({
     token: linkToken,
-    onSuccess: (public_token, metadata) => {
-      // Handle success
-      handleOnSuccess(public_token, metadata);
-    },
+    onSuccess,
     onExit: (err, metadata) => {
-      // Handle exit
       console.log('Plaid Link exited', err, metadata);
     },
   });
 
-  const handleOnSuccess = async (public_token, metadata) => {
+  useEffect(() => {
+    console.log("Component mounted. Initializing...");
+    fetchBankingAccounts();
+    getLinkToken();
+  }, []);
+
+  useEffect(() => {
+    console.log("Link token updated:", linkToken);
+  }, [linkToken]);
+
+  useEffect(() => {
+    console.log("Plaid Link ready state changed:", ready);
+  }, [ready]);
+
+  useEffect(() => {
+    console.log("State updated:", {
+      accountsCount: accounts.length,
+      loading,
+      linkTokenLoading,
+      ready,
+      linkToken: linkToken ? 'Set' : 'Not Set'
+    });
+  }, [accounts, loading, linkTokenLoading, ready, linkToken]);
+
+  const fetchBankingAccounts = async () => {
+    console.log("Fetching banking accounts...");
+    setLoading(true);
+    setError(null);
     try {
-      await axiosInstance.post('/api/banking/exchange_token/', { public_token });
-      console.log('Token exchange successful');
-      fetchBankingAccounts(); // Refresh the accounts list
+      const response = await axiosInstance.get('/api/banking/accounts/');
+      console.log("Raw API response:", response);
+      console.log("Accounts data:", response.data);
+      console.log("Accounts array:", response.data.accounts);
+      if (response.data.accounts && Array.isArray(response.data.accounts)) {
+        setAccounts(response.data.accounts);
+      } else {
+        console.error("Unexpected accounts data structure:", response.data);
+        setAccounts([]);
+      }
+      setSnackbar({ open: true, message: 'Accounts fetched successfully', severity: 'success' });
     } catch (error) {
-      console.error('Error exchanging token:', error);
-      setError('Failed to link bank account. Please try again.');
+      console.error('Error fetching banking accounts:', error);
+      setError('Failed to fetch banking accounts. Please try again later.');
+      setAccounts([]);
+      setSnackbar({ open: true, message: 'Failed to fetch accounts', severity: 'error' });
+    } finally {
+      setLoading(false);
+      console.log("Finished fetching accounts. Accounts state:", accounts);
+      console.log("Loading state:", loading);
     }
   };
 
-  const handleSetupBankLink = async () => {
-    if (ready) {
-      try {
-        const response = await axiosInstance.get('/api/banking/create_link_token/');
-        const { link_token } = response.data;
-        open({ token: link_token });
-      } catch (error) {
-        console.error('Error getting link token:', error);
-        setError('Failed to initialize bank link. Please try again later.');
+  const getLinkToken = async () => {
+    console.log("Requesting link token from server...");
+    setLinkTokenLoading(true);
+    try {
+      const response = await axiosInstance.post('/api/banking/create_link_token/');
+      console.log('Link token received:', response.data);
+      if (response.data && response.data.link_token) {
+        setLinkToken(response.data.link_token);
+      } else {
+        console.error("Unexpected link token response:", response.data);
+        setError('Failed to initialize bank link. Invalid server response.');
       }
+    } catch (error) {
+      console.error('Error getting link token:', error);
+      setError('Failed to initialize bank link. Please try again later.');
+    } finally {
+      setLinkTokenLoading(false);
+      console.log("Link token loading finished. linkTokenLoading state:", linkTokenLoading);
+    }
+  };
+
+
+  useEffect(() => {
+    console.log("Plaid Link ready state changed:", ready);
+  }, [ready]);
+
+  const handleSetupBankLink = () => {
+    console.log("Setup Bank Link button clicked");
+    console.log("Current states - ready:", ready, "linkToken:", linkToken, "loading:", loading, "linkTokenLoading:", linkTokenLoading);
+    if (ready && linkToken) {
+      console.log("Opening Plaid Link...");
+      open();
+    } else {
+      console.log("Plaid Link not ready or no link token available");
+      setError('Plaid Link is not ready. Please try again later.');
     }
   };
 
   const handleViewTransactions = async (accountId) => {
+    console.log(`Fetching transactions for account ${accountId}...`);
     try {
       const response = await axiosInstance.get(`/api/banking/transactions/${accountId}/`);
-      console.log('Transactions:', response.data.transactions);
-      // Handle the response, perhaps by setting state or opening a modal
+      console.log('Transactions fetched:', response.data.transactions);
       setSnackbar({ open: true, message: 'Transactions fetched successfully', severity: 'success' });
     } catch (error) {
       console.error('Error fetching transactions:', error);
@@ -119,6 +145,14 @@ const BankingDashboard = () => {
     }
     setSnackbar({ ...snackbar, open: false });
   };
+
+  console.log("Rendering BankingDashboard");
+  console.log("Current states - loading:", loading, "linkTokenLoading:", linkTokenLoading, "ready:", ready, "linkToken:", linkToken);
+  console.log("Button state conditions:", {
+    ready: ready,
+    loading: loading,
+    linkTokenLoading: linkTokenLoading
+  });
 
   return (
     <Box sx={{ p: 3 }}>
@@ -150,7 +184,7 @@ const BankingDashboard = () => {
       )}
       {loading ? (
         <CircularProgress />
-      ) : accounts.length > 0 ? (
+      ) : accounts && accounts.length > 0 ? (
         <List>
           {accounts.map((account) => (
             <ListItem

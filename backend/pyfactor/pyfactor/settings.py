@@ -19,7 +19,17 @@ import logging.config
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 
-load_dotenv()
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+env_path = BASE_DIR / '.env'
+load_dotenv(dotenv_path=env_path)
+
+print(f"PLAID_CLIENT_ID: {os.getenv('PLAID_CLIENT_ID')}")
+print(f"PLAID_SECRET: {os.getenv('PLAID_SECRET')}")
+print(f"PLAID_ENV: {os.getenv('PLAID_ENV')}")
 
 
 ENCRYPTION_KEY = Fernet.generate_key()
@@ -29,8 +39,11 @@ SECRET_KEY = 'sdbf6s8!9#w9@j_!w=2-s&+=x&g(9tvq&*p@g=%_&%fy$65-z%'
 
 
 # Add these lines to your settings file
-PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID')
-PLAID_SECRET = os.getenv('PLAID_SECRET')
+PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID', '')
+PLAID_SECRET = os.getenv('PLAID_SECRET', '')
+if not PLAID_CLIENT_ID or not PLAID_SECRET:
+    raise ValueError("Plaid credentials are not set in the environment variables.")
+
 PLAID_ENV = os.getenv('PLAID_ENV', 'sandbox')
 
 # Ensure these are set
