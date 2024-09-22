@@ -2,8 +2,8 @@
 from django.db import models
 
 # Create your models here.
-from django.db import models
 from django.conf import settings
+
 
 class BankAccount(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -24,3 +24,11 @@ class BankTransaction(models.Model):
     description = models.CharField(max_length=255)
     date = models.DateTimeField()
     is_reconciled = models.BooleanField(default=False)
+    
+
+class PlaidItem(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    access_token = models.CharField(max_length=100)
+    item_id = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

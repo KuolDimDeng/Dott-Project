@@ -19,14 +19,24 @@ import logging.config
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 
+load_dotenv()
+
+
 ENCRYPTION_KEY = Fernet.generate_key()
 
 
 SECRET_KEY = 'sdbf6s8!9#w9@j_!w=2-s&+=x&g(9tvq&*p@g=%_&%fy$65-z%'
 
 
+# Add these lines to your settings file
+PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID')
+PLAID_SECRET = os.getenv('PLAID_SECRET')
+PLAID_ENV = os.getenv('PLAID_ENV', 'sandbox')
+
+# Ensure these are set
+if not PLAID_CLIENT_ID or not PLAID_SECRET:
+    raise ValueError("Plaid credentials are not set in the environment variables.")
 # Load environment variables from .env file
-load_dotenv()
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join(PROJECT_ROOT, '.venv/lib/python3.12/site-packages'))

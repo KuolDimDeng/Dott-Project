@@ -13,7 +13,7 @@
   "dependencies": {
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
-    "@hookform/resolvers": "^3.3.4",
+    "@hookform/resolvers": "^3.2.0",
     "@mui/icons-material": "^5.15.17",
     "@mui/material": "^5.15.17",
     "@mui/x-charts": "^7.3.2",
@@ -31,7 +31,7 @@
     "jsbarcode": "^3.11.6",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
-    "next": "14.2.5",
+    "next": "^14.2.13",
     "next-auth": "^4.24.7",
     "pdfjs-dist": "^4.4.168",
     "react": "^18.3.1",
@@ -39,10 +39,10 @@
     "react-color": "^2.19.3",
     "react-country-region-selector": "^3.6.1",
     "react-dom": "^18.3.1",
-    "react-google-maps": "^9.4.5",
     "react-hook": "^0.0.1",
     "react-hook-form": "^7.51.4",
     "react-pdf": "^9.1.0",
+    "react-plaid-link": "^3.6.0",
     "react-select": "^5.8.0",
     "react-svg": "^16.1.34",
     "recharts": "^2.12.7",
@@ -50,7 +50,7 @@
     "socket.io-client": "^4.7.5",
     "tailwind": "^4.0.0",
     "uuid": "^9.0.1",
-    "valibot": "^0.30.0",
+    "valibot": "^0.12.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

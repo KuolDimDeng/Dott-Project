@@ -12,7 +12,7 @@ import {
   ListItemText
 } from '@mui/material';
 
-const TermsOfUse = () => {
+const PrivacyPolicy = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -43,34 +43,46 @@ const TermsOfUse = () => {
     </Typography>
   );
 
-  const terms = [
+  const privacySections = [
     {
-      title: "1. Acceptance of Terms",
-      content: "By using Dott, you agree to be bound by this Agreement. If you do not agree to these terms, please do not use our services."
+      title: "A. Scope",
+      content: "Protecting your personal information is important to us. This privacy policy applies to our products and services offered under the Dott brand, our websites, and our mobile applications that incorporate this privacy policy. Our products and services are offered by Pyfactor, LLC."
     },
     {
-      title: "2. Description of Service",
-      content: "Dott is a [brief description of your app's main features and purpose]."
+      title: "B. Personal Information",
+      content: "As part of providing our services, we may collect personal information about you and your business. 'Personal Information' is data that can be used to identify a person individually. This policy outlines our collection, protection, use, retention, disclosure and other processing of Personal Information and your rights relating to these activities."
     },
     {
-      title: "3. User Conduct",
-      content: "You agree to use Dott only for lawful purposes and in accordance with this Agreement."
+      title: "C. Categories of Personal Information Collected",
+      content: "The information we may collect includes, but is not limited to: Contact Information, Government Identification Numbers, Date of Birth, Financial Information, Payment Data, Geo-Location Information, Device Information, Login Information, Demographic Information, and Professional or employment-related information."
     },
     {
-      title: "4. Intellectual Property",
-      content: "All content and functionality on Dott is the property of Pyfactor, LLC or its licensors and is protected by copyright and other intellectual property laws."
+      title: "D. How We Use Your Information",
+      content: "We use your information to provide you with the products and services you request. We may also use your information to improve our services, communicate with you, and comply with legal obligations. We do not sell your Personal Information to other companies."
     },
     {
-      title: "5. Privacy",
-      content: "Your privacy is important to us. Please refer to our Privacy Policy for information on how we collect, use, and disclose your personal information."
+      title: "E. Information Sharing and Disclosure",
+      content: "We may disclose your Personal Information to our affiliates, service providers, and business partners as necessary to provide our services or as permitted by law. We require all third parties to respect the security of your Personal Information and to treat it in accordance with the law."
     },
     {
-      title: "6. Limitation of Liability",
-      content: "Pyfactor, LLC shall not be liable for any indirect, incidental, special, consequential or punitive damages resulting from your use of or inability to use Dott."
+      title: "F. Your Choices and Rights",
+      content: "Depending on your jurisdiction, you may have the right to access, correct, or delete your Personal Information. You may also have the right to object to or restrict certain types of processing. To exercise these rights, please contact us at privacy@dott.com."
     },
     {
-      title: "7. Changes to Agreement",
-      content: "We reserve the right to modify this Agreement at any time. We will notify users of any significant changes."
+      title: "G. Data Security",
+      content: "We implement appropriate technical and organizational measures to protect your personal information against unauthorized or unlawful processing, accidental loss, destruction, or damage."
+    },
+    {
+      title: "H. International Data Transfers",
+      content: "Your information may be transferred to and processed in countries other than the country you live in. These countries may have data protection laws different from the laws of your country."
+    },
+    {
+      title: "I. Changes to This Privacy Policy",
+      content: "We may update this privacy policy from time to time. We will notify you of any significant changes by posting the new Privacy Policy on this page and updating the effective date at the top of this page."
+    },
+    {
+      title: "J. Contact Us",
+      content: "If you have any questions about this Privacy Policy, please contact us at privacy@dott.com or at the address provided below."
     }
   ];
 
@@ -90,7 +102,7 @@ const TermsOfUse = () => {
           align="center"
           sx={{ fontWeight: 'bold', mb: 2 }}
         >
-          Dott Terms of Use Agreement
+          Dott Privacy Policy
         </Typography>
         
         <Typography 
@@ -105,23 +117,19 @@ const TermsOfUse = () => {
         <Divider sx={{ mb: 4 }} />
 
         <SectionContent>
-          Welcome to Dott, a service provided by Pyfactor, LLC. This Terms of Use Agreement ("Agreement") governs your use of the Dott website and any related services offered by Pyfactor, LLC.
+          We value your trust and respect your privacy. We exist to support users like you by offering a fast and easy way to manage your tasks and projects. We've worked hard to explain—clearly and in plain language—what we do, what information we collect, and why, so you can feel confident about using Dott.
         </SectionContent>
 
         <List>
-          {terms.map((term, index) => (
+          {privacySections.map((section, index) => (
             <ListItem key={index} sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 2 }}>
-              <SectionTitle>{term.title}</SectionTitle>
-              <SectionContent>{term.content}</SectionContent>
-              {index !== terms.length - 1 && <Divider sx={{ width: '100%', mt: 2 }} />}
+              <SectionTitle>{section.title}</SectionTitle>
+              <SectionContent>{section.content}</SectionContent>
+              {index !== privacySections.length - 1 && <Divider sx={{ width: '100%', mt: 2 }} />}
             </ListItem>
           ))}
         </List>
 
-        <SectionTitle>8. Contact Information</SectionTitle>
-        <SectionContent>
-          If you have any questions about this Agreement, please contact us at:
-        </SectionContent>
         <Box 
           sx={{ 
             bgcolor: theme.palette.background.default, 
@@ -133,7 +141,7 @@ const TermsOfUse = () => {
           <Typography variant="body2" component="address" sx={{ fontStyle: 'normal' }}>
             <strong>Pyfactor, LLC</strong><br />
             [Enter Address Here]<br />
-            Email: [Your contact email]
+            Email: privacy@dott.com
           </Typography>
         </Box>
       </Paper>
@@ -141,4 +149,4 @@ const TermsOfUse = () => {
   );
 };
 
-export default TermsOfUse;
+export default PrivacyPolicy;
