@@ -134,6 +134,7 @@ function DashboardContent() {
   const [showTermsAndConditions, setShowTermsAndConditions] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showDownloadTransactions, setShowDownloadTransactions] = useState(false);
+  const [showConnectBank, setShowConnectBank] = useState(false);
 
 
 
@@ -207,6 +208,7 @@ function DashboardContent() {
     setShowTermsAndConditions,
     setShowPrivacyPolicy,
     setShowDownloadTransactions,
+    setShowConnectBank,
     
   ];
 
@@ -272,10 +274,21 @@ function DashboardContent() {
       case 'dashboard':
         setShowBankingDashboard(true);
         break;
-      case 'download-transactions':
-        setShowDownloadTransactions(true);
+      case 'connect':
+        setShowConnectBank(true);
         break;
-      // ... (other cases)
+      case 'reconciliation':
+        // Handle reconciliation
+        break;
+      case 'bank-balances':
+        // Handle bank balances
+        break;
+      case 'bank-reports':
+        // Handle bank reports
+        break;
+      default:
+        console.log('Unknown banking section:', section);
+        break;
     }
   };
 
@@ -342,7 +355,6 @@ function DashboardContent() {
     setSelectedSettingsOption(option); // Update the selected settings option
     handleSettingsClose(); // Close the settings menu after selecting an option
   };
-  
   
 
 
@@ -1153,6 +1165,7 @@ function DashboardContent() {
                 showPrivacyPolicy,
                 showTermsAndConditions,
                 showDownloadTransactions,
+                showConnectBank,
              
               })}
             </Box>

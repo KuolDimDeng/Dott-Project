@@ -115,6 +115,7 @@ import HelpCenter from '@app/helpcenter/components/HelpCenter';
 import TermsAndConditions from '@app/Terms&Privacy/components/TermsOfUse';
 import PrivacyPolicy from '@app/Terms&Privacy/components/PrivacyPolicy';
 import DownloadTransactions from './forms/DownloadTransactions';
+import ConnectBank from './forms/ConnectBank';
 
 
 import StatusMessage from './components/StatusMessage.jsx';
@@ -197,6 +198,7 @@ const RenderMainContent = ({
     showPrivacyPolicy,
     showTermsAndConditions,
     showDownloadTransactions,
+    showConnectBank,
   
 
 
@@ -271,6 +273,10 @@ const RenderMainContent = ({
   
       if (showProductManagement) {
         return <ProductManagement />;
+      }
+
+      if (showConnectBank) {
+        return <ConnectBank />;
       }
   
       if (showServiceManagement) {

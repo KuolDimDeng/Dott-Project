@@ -14,7 +14,6 @@ import {
   Card,
   CardContent,
   CardActions,
-  IconButton,
   InputAdornment,
   Table,
   TableBody,
@@ -23,15 +22,15 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Link,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import AddIcon from '@mui/icons-material/Add';
 import DownloadIcon from '@mui/icons-material/Download';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import SearchIcon from '@mui/icons-material/Search';
-import { usePlaidLink } from 'react-plaid-link';
 import axiosInstance from '../components/axiosConfig';
+import NextLink from 'next/link';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   height: '100%',
@@ -44,11 +43,11 @@ const BankingDashboard = () => {
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [linkToken, setLinkToken] = useState(null);
   const [error, setError] = useState(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [connectedBank, setConnectedBank] = useState(null);
 
   const fetchBankingAccounts = useCallback(async () => {
     try {
@@ -56,18 +55,29 @@ const BankingDashboard = () => {
       const response = await axiosInstance.get('/api/banking/accounts/');
       if (response.data.accounts && Array.isArray(response.data.accounts)) {
         setAccounts(response.data.accounts);
+        if (response.data.accounts.length > 0) {
+          setConnectedBank(response.data.accounts[0].name.split(' ')[0]); // Assuming the bank name is the first word in the account name
+        } else {
+          setConnectedBank(null);
+        }
       } else {
         setAccounts([]);
+        setConnectedBank(null);
       }
     } catch (error) {
       console.error('Error fetching banking accounts:', error);
       setError('Failed to fetch banking accounts. Please try again later.');
+      setConnectedBank(null);
     } finally {
       setLoading(false);
     }
   }, []);
 
   const fetchRecentTransactions = useCallback(async () => {
+    if (!connectedBank) {
+      setTransactions([]);
+      return;
+    }
     try {
       const response = await axiosInstance.get('/api/banking/recent-transactions/', {
         params: { limit: 10 }
@@ -81,47 +91,21 @@ const BankingDashboard = () => {
       console.error('Error fetching recent transactions:', error);
       setError('Failed to fetch recent transactions. Please try again later.');
     }
-  }, []);
+  }, [connectedBank]);
 
   useEffect(() => {
     fetchBankingAccounts();
+  }, [fetchBankingAccounts]);
+
+  useEffect(() => {
     fetchRecentTransactions();
-    getLinkToken();
-  }, [fetchBankingAccounts, fetchRecentTransactions]);
-
-  const getLinkToken = async () => {
-    try {
-      const response = await axiosInstance.post('/api/banking/create_link_token/');
-      if (response.data && response.data.link_token) {
-        setLinkToken(response.data.link_token);
-      } else {
-        setError('Failed to initialize bank link. Invalid server response.');
-      }
-    } catch (error) {
-      console.error('Error getting link token:', error);
-      setError('Failed to initialize bank link. Please try again later.');
-    }
-  };
-
-  const { open, ready } = usePlaidLink({
-    token: linkToken,
-    onSuccess: (public_token, metadata) => {
-      console.log("Plaid Link success. Exchanging public token for access token...");
-      exchangePublicToken(public_token);
-    },
-  });
-
-  const exchangePublicToken = async (public_token) => {
-    try {
-      await axiosInstance.post('/api/banking/exchange_token/', { public_token });
-      fetchBankingAccounts();
-    } catch (error) {
-      console.error('Error exchanging token:', error);
-      setError('Failed to link bank account. Please try again.');
-    }
-  };
+  }, [fetchRecentTransactions]);
 
   const handleDownload = async () => {
+    if (!connectedBank) {
+      setError('Please connect a bank account before downloading transactions.');
+      return;
+    }
     try {
       const response = await axiosInstance.get('/api/banking/download-transactions/', {
         params: { start_date: startDate, end_date: endDate },
@@ -161,6 +145,17 @@ const BankingDashboard = () => {
       <Typography variant="subtitle1" gutterBottom sx={{ ml: 6, mb: 3, color: 'text.secondary' }}>
         Manage your accounts, download transactions, and view recent activity
       </Typography>
+      <Typography variant="h6" gutterBottom sx={{ mb: 3, color: 'primary.main' }}>
+        Connected Bank: {connectedBank || 'None'} 
+        {!connectedBank && (
+          <Typography component="span" variant="body1" sx={{ ml: 2 }}>
+            Please link a banking institution 
+            <NextLink href="/connect-bank" passHref>
+              <Link sx={{ ml: 1 }}>here</Link>
+            </NextLink>.
+          </Typography>
+        )}
+      </Typography>
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
           <StyledCard>
@@ -180,18 +175,10 @@ const BankingDashboard = () => {
                   ))}
                 </List>
               ) : (
-                <Typography>No accounts found. Link a bank account to get started.</Typography>
+                <Typography>No accounts found. Please connect a bank account to get started.</Typography>
               )}
             </CardContent>
             <CardActions>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => ready && open()}
-                disabled={!ready}
-              >
-                Set Up Bank Account Link
-              </Button>
               <Button
                 variant="outlined"
                 startIcon={<RefreshIcon />}
@@ -216,6 +203,7 @@ const BankingDashboard = () => {
                 fullWidth
                 margin="normal"
                 InputLabelProps={{ shrink: true }}
+                disabled={!connectedBank}
               />
               <TextField
                 label="End Date"
@@ -225,6 +213,7 @@ const BankingDashboard = () => {
                 fullWidth
                 margin="normal"
                 InputLabelProps={{ shrink: true }}
+                disabled={!connectedBank}
               />
             </CardContent>
             <CardActions>
@@ -232,7 +221,7 @@ const BankingDashboard = () => {
                 variant="contained"
                 startIcon={<DownloadIcon />}
                 onClick={handleDownload}
-                disabled={!startDate || !endDate}
+                disabled={!connectedBank || !startDate || !endDate}
                 fullWidth
               >
                 Download Transactions
@@ -260,44 +249,50 @@ const BankingDashboard = () => {
                   ),
                 }}
                 sx={{ mb: 2 }}
+                disabled={!connectedBank}
               />
-              <TableContainer component={Paper}>
-                <Table sx={{ minWidth: 650 }} aria-label="transactions table">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell><strong>Description</strong></TableCell>
-                      <TableCell align="right"><strong>Date</strong></TableCell>
-                      <TableCell align="right"><strong>Amount</strong></TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredTransactions.length > 0 ? (
-                      filteredTransactions.map((transaction) => (
-                        <TableRow
-                          key={transaction.id}
-                          sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                        >
-                          <TableCell component="th" scope="row">
-                            {transaction.description}
-                          </TableCell>
-                          <TableCell align="right">{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                          <TableCell align="right">${transaction.amount.toFixed(2)}</TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
+              {connectedBank ? (
+                <TableContainer component={Paper}>
+                  <Table sx={{ minWidth: 650 }} aria-label="transactions table">
+                    <TableHead>
                       <TableRow>
-                        <TableCell colSpan={3} align="center">No transactions found.</TableCell>
+                        <TableCell><strong>Description</strong></TableCell>
+                        <TableCell align="right"><strong>Date</strong></TableCell>
+                        <TableCell align="right"><strong>Amount</strong></TableCell>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {filteredTransactions.length > 0 ? (
+                        filteredTransactions.map((transaction) => (
+                          <TableRow
+                            key={transaction.id}
+                            sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                          >
+                            <TableCell component="th" scope="row">
+                              {transaction.description}
+                            </TableCell>
+                            <TableCell align="right">{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                            <TableCell align="right">${transaction.amount.toFixed(2)}</TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={3} align="center">No transactions found.</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Typography>Please connect a bank account to view recent transactions.</Typography>
+              )}
             </CardContent>
             <CardActions>
               <Button
                 variant="outlined"
                 startIcon={<RefreshIcon />}
                 onClick={fetchRecentTransactions}
+                disabled={!connectedBank}
               >
                 Refresh Transactions
               </Button>

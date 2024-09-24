@@ -1,4 +1,3 @@
-
 # hr/views.py
 
 from django.http import JsonResponse
@@ -6,8 +5,14 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Employee, Role, EmployeeRole, AccessPermission
-from .serializers import EmployeeSerializer, RoleSerializer, EmployeeRoleSerializer, AccessPermissionSerializer
+from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm
+from .serializers import (
+    EmployeeSerializer, 
+    RoleSerializer, 
+    EmployeeRoleSerializer, 
+    AccessPermissionSerializer,
+    PreboardingFormSerializer
+)
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
@@ -30,10 +35,17 @@ def employee_list(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_employee(request):
+    logger.info(f"Received employee data: {request.data}")
     serializer = EmployeeSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        try:
+            employee = serializer.save()
+            logger.info(f"Employee created successfully: {employee}")
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(f"Error creating employee: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    logger.error(f"Invalid data: {serializer.errors}")
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET', 'PUT', 'DELETE'])
@@ -108,7 +120,6 @@ def role_detail(request, pk):
         role.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-# EmployeeRole views
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def employee_role_list(request):
@@ -141,7 +152,6 @@ def employee_role_detail(request, pk):
         employee_role.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-# AccessPermission views
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def access_permission_list(request):
@@ -173,8 +183,35 @@ def access_permission_detail(request, pk):
     elif request.method == 'DELETE':
         access_permission.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
 def preboarding_form_list(request):
-    # Example logic for returning preboarding forms
-    data = {"forms": ["Form A", "Form B", "Form C"]}
-    return JsonResponse(data)
+    if request.method == 'GET':
+        preboarding_forms = PreboardingForm.objects.all()
+        serializer = PreboardingFormSerializer(preboarding_forms, many=True)
+        return Response(serializer.data)
+    elif request.method == 'POST':
+        serializer = PreboardingFormSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def preboarding_form_detail(request, pk):
+    preboarding_form = get_object_or_404(PreboardingForm, pk=pk)
+
+    if request.method == 'GET':
+        serializer = PreboardingFormSerializer(preboarding_form)
+        return Response(serializer.data)
+    elif request.method == 'PUT':
+        serializer = PreboardingFormSerializer(preboarding_form, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == 'DELETE':
+        preboarding_form.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

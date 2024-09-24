@@ -21,6 +21,9 @@ import {
   IconButton,
   InputAdornment,
   LinearProgress,
+  Alert,
+  Snackbar,
+
 
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
@@ -33,6 +36,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axiosInstance from '../components/axiosConfig';
+import { format, parseISO } from 'date-fns'; // Add this import
 
 const EmployeeManagement = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -40,6 +44,8 @@ const EmployeeManagement = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [payrollProgress, setPayrollProgress] = useState(10);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
 
   const [newEmployee, setNewEmployee] = useState({
     first_name: '',
@@ -53,6 +59,7 @@ const EmployeeManagement = () => {
     postcode: '',
     city: '',
     country: '',
+    email: '',
     security_number_type: 'SSN',
     security_number: '',
     invite_to_onboard: false,
@@ -140,20 +147,73 @@ const EmployeeManagement = () => {
     }));
   };
 
+  const formatDate = (date) => {
+    if (!date) return null;
+    const parsedDate = typeof date === 'string' ? parseISO(date) : date;
+    return format(parsedDate, 'yyyy-MM-dd');
+  };
+
+
   const handleCreateEmployee = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
+    setSnackbar({ open: false, message: '', severity: 'success' });
     try {
-      const response = await axiosInstance.post('/api/hr/employees/create/', newEmployee);
+      const formattedEmployee = {
+        ...newEmployee,
+        dob: formatDate(newEmployee.dob),
+        date_joined: formatDate(newEmployee.date_joined),
+      };
+  
+      console.log('Sending employee data:', formattedEmployee);
+      const response = await axiosInstance.post('/api/hr/employees/create/', formattedEmployee);
       console.log('Employee created:', response.data);
-      if (newEmployee.invite_to_onboard) {
-        await axiosInstance.post('/api/hr/invite-employee/', { email: newEmployee.email });
-        console.log('Invitation sent to employee');
-      }
+      
       fetchEmployees();
       setActiveTab(2);
       setPayrollProgress(20); // Increase progress when employee is added
+      setSnackbar({ open: true, message: 'Employee created successfully', severity: 'success' });
+      
+      // Reset the form
+      setNewEmployee({
+        first_name: '',
+        middle_name: '',
+        last_name: '',
+        email: '',
+        dob: null,
+        gender: '',
+        marital_status: '',
+        nationality: '',
+        street: '',
+        postcode: '',
+        city: '',
+        country: '',
+        security_number_type: 'SSN',
+        security_number: '',
+        invite_to_onboard: false,
+        date_joined: null,
+        wage_type: 'salary',
+        salary: '',
+        wage_rate: '',
+        direct_deposit: false,
+        department: '',
+        job_title: '',
+      });
     } catch (error) {
       console.error('Error creating employee:', error);
+      let errorMessage = 'Failed to create employee. Please try again.';
+      if (error.response && error.response.data) {
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        } else if (typeof error.response.data === 'object') {
+          errorMessage = Object.entries(error.response.data)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join(', ');
+        }
+      }
+      setSnackbar({ open: true, message: errorMessage, severity: 'error' });
     }
   };
 
@@ -168,6 +228,20 @@ const EmployeeManagement = () => {
 
   const handleSearch = () => {
     fetchEmployees();
+  };
+
+  const validateForm = () => {
+    const requiredFields = ['first_name', 'last_name', 'email', 'dob', 'date_joined', 'email'];
+    const missingFields = requiredFields.filter(field => !newEmployee[field]);
+    if (missingFields.length > 0) {
+      setSnackbar({ 
+        open: true, 
+        message: `Please fill in the following required fields: ${missingFields.join(', ')}`, 
+        severity: 'error' 
+      });
+      return false;
+    }
+    return true;
   };
 
   return (
@@ -236,6 +310,16 @@ const EmployeeManagement = () => {
                       <TextField label="First Name" name="first_name" value={newEmployee.first_name} onChange={handleInputChange} fullWidth margin="normal" />
                       <TextField label="Middle Name" name="middle_name" value={newEmployee.middle_name} onChange={handleInputChange} fullWidth margin="normal" />
                       <TextField label="Last Name" name="last_name" value={newEmployee.last_name} onChange={handleInputChange} fullWidth margin="normal" />
+                      <TextField 
+                            label="Email" 
+                            name="email" 
+                            type="email"
+                            value={newEmployee.email} 
+                            onChange={handleInputChange} 
+                            fullWidth 
+                            margin="normal" 
+                            required
+                          />
                       <DatePicker
                         label="Date of Birth"
                         value={newEmployee.dob}
@@ -342,7 +426,13 @@ const EmployeeManagement = () => {
                     </Paper>
                   </Grid>
                 </Grid>
-                <Button type="submit" variant="contained" color="primary" sx={{ mt: 3 }}>
+                <Button 
+                  type="submit" 
+                  variant="contained" 
+                  color="primary" 
+                  sx={{ mt: 3 }}
+                  disabled={!newEmployee.first_name || !newEmployee.last_name || !newEmployee.email || !newEmployee.dob || !newEmployee.date_joined}
+                >
                   Add Employee
                 </Button>
               </form>
@@ -361,6 +451,16 @@ const EmployeeManagement = () => {
                       <TextField label="Middle Name" value={selectedEmployee.middle_name} fullWidth margin="normal" />
                       <TextField label="Last Name" value={selectedEmployee.last_name} fullWidth margin="normal" />
                       <TextField label="Date of Birth" value={new Date(selectedEmployee.dob).toLocaleDateString()} fullWidth margin="normal" />
+                      <TextField 
+                              label="Email" 
+                              name="email" 
+                              type="email"
+                              value={newEmployee.email} 
+                              onChange={handleInputChange} 
+                              fullWidth 
+                              margin="normal" 
+                              required
+                            />
                       <TextField label="Gender" value={selectedEmployee.gender} fullWidth margin="normal" />
                       <TextField label="Marital Status" value={selectedEmployee.marital_status} fullWidth margin="normal" />
                       <TextField label="Nationality" value={selectedEmployee.nationality} fullWidth margin="normal" />
@@ -445,6 +545,15 @@ const EmployeeManagement = () => {
           )}
         </Box>
       </Box>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </LocalizationProvider>
   );
 };

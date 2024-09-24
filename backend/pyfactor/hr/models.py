@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 from phonenumber_field.modelfields import PhoneNumberField
 from .custom_fields import EncryptedCharField
+from decimal import Decimal  # Add this import
 
 def get_current_datetime():
     return timezone.now()
@@ -98,9 +99,9 @@ class Employee(models.Model):
     emergency_contact_phone = models.CharField(max_length=20, blank=True, null=True)
     skills = models.TextField(blank=True, null=True)
     documents = models.FileField(upload_to='employee_documents/', blank=True, null=True)
-    wage_per_hour = models.DecimalField(max_digits=6, decimal_places=2, validators=[MinValueValidator(0)], default=0)
-    hours_per_day = models.DecimalField(max_digits=4, decimal_places=2, validators=[MinValueValidator(0), MaxValueValidator(24)], default=0)
-    overtime_rate = models.DecimalField(max_digits=6, decimal_places=2, validators=[MinValueValidator(0)], default=0)
+    wage_per_hour = models.DecimalField(max_digits=6, decimal_places=2, validators=[MinValueValidator(Decimal('0'))], default=Decimal('0'))
+    hours_per_day = models.DecimalField(max_digits=4, decimal_places=2, validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('24'))], default=Decimal('0'))
+    overtime_rate = models.DecimalField(max_digits=6, decimal_places=2, validators=[MinValueValidator(Decimal('0'))], default=Decimal('0'))
     days_per_week = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(7)], default=0)
     employment_type = models.CharField(max_length=2, choices=EMPLOYMENT_TYPE_CHOICES, default='FT')
     supervisor = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='subordinates')
@@ -124,11 +125,11 @@ class Employee(models.Model):
             self.employee_number = self.generate_employee_number()
         super().save(*args, **kwargs)
 
-    @staticmethod
-    def generate_employee_number():
-        last_employee = Employee.objects.order_by('-id').first()
+    @classmethod
+    def generate_employee_number(cls):
+        last_employee = cls.objects.order_by('-employee_number').first()
         if last_employee:
-            last_number = int(last_employee.employee_number[3:])
+            last_number = int(last_employee.employee_number[4:])  # Changed from [3:] to [4:]
             new_number = last_number + 1
         else:
             new_number = 1

@@ -129,10 +129,10 @@ class PlaidExchangeTokenView(APIView):
                 defaults={'access_token': access_token, 'item_id': item_id}
             )
 
-            return JsonResponse({'success': True})
+            return JsonResponse({'success': True, 'message': 'Bank connected successfully'})
         except Exception as e:
             logger.error(f"Error exchanging public token: {str(e)}", exc_info=True)
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({'success': False, 'error': 'Failed to connect bank'}, status=500)
 
 # Plaid Accounts View
 class PlaidAccountsView(APIView):
@@ -287,3 +287,156 @@ class RecentTransactionsView(APIView):
                 {"error": "An error occurred while fetching recent transactions"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+            
+
+class CreateLinkTokenView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        region = request.data.get('region')
+        provider = request.data.get('provider')
+        
+        try:
+            if provider == 'plaid':
+                return self.create_plaid_link_token(request)
+            elif region == 'Africa':
+                sub_option = request.data.get('sub_option')
+                if sub_option == 'Mobile Money':
+                    return self.create_africas_talking_link(request)
+                elif sub_option == 'Banks':
+                    return self.create_african_bank_link(request)
+            elif provider == 'tink':
+                return self.create_tink_link_token(request)
+            elif provider == 'setu':
+                return self.create_setu_link_token(request)
+            elif provider == 'salt_edge':
+                return self.create_salt_edge_link_token(request)
+            else:
+                return Response({'error': 'Invalid region or provider'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Error creating link token: {str(e)}", exc_info=True)
+            return Response({'error': 'Failed to create link token'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def create_plaid_link_token(self, request):
+        try:
+            user = request.user
+            plaid_service = PlaidService()
+            link_token = plaid_service.create_link_token(str(user.id))
+            return Response({'link_token': link_token})
+        except Exception as e:
+            logger.error(f"Error creating Plaid link token: {str(e)}", exc_info=True)
+            return Response({'error': 'Failed to create Plaid link token'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def create_tink_link_token(self, request):
+        # Implement Tink link token creation
+        return Response({'message': 'Tink integration not implemented yet'}, status=status.HTTP_501_NOT_IMPLEMENTED)
+
+    def create_setu_link_token(self, request):
+        # Implement Setu link token creation
+        return Response({'message': 'Setu integration not implemented yet'}, status=status.HTTP_501_NOT_IMPLEMENTED)
+
+    def create_salt_edge_link_token(self, request):
+        # Implement Salt Edge link token creation
+        return Response({'message': 'Salt Edge integration not implemented yet'}, status=status.HTTP_501_NOT_IMPLEMENTED)
+
+    def create_africas_talking_link(self, request):
+        # Implement Africa's Talking Mobile Money integration
+        return Response({
+            'message': 'Africa\'s Talking Mobile Money integration initialized',
+            'payment_url': '/api/initiate-mobile-money-payment/'  # Example endpoint
+        })
+
+    def create_african_bank_link(self, request):
+        bank_provider = request.data.get('bank_provider')
+        if bank_provider == 'Mono':
+            return self.create_mono_link_token(request)
+        elif bank_provider == 'Stitch':
+            return self.create_stitch_link_token(request)
+        else:
+            return Response({'error': 'Invalid African bank provider'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def create_mono_link_token(self, request):
+        # Implement Mono link token creation
+        return Response({
+            'message': 'Mono integration initialized',
+            'auth_url': 'https://mono.co/auth?key=your_mono_public_key'  # Replace with actual Mono auth URL
+        })
+
+    def create_stitch_link_token(self, request):
+        # Implement Stitch link token creation
+        client_id = settings.STITCH_CLIENT_ID
+        redirect_uri = settings.STITCH_REDIRECT_URI
+        scope = 'transactions'  # Adjust based on Stitch's available scopes
+        
+        auth_url = f"https://secure.stitch.money/connect/oauth2/authorize?client_id={client_id}&scope={scope}&response_type=code&redirect_uri={redirect_uri}"
+        
+        return Response({'auth_url': auth_url})
+    
+class ConnectedAccountsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            logger.debug(f"Fetching connected accounts for user: {request.user.id}")
+            accounts = BankAccount.objects.filter(user=request.user)
+            logger.debug(f"Found {accounts.count()} accounts")
+            serialized_accounts = [{
+                'id': account.id,
+                'name': account.bank_name,
+                'balance': float(account.balance),  # Ensure balance is serializable
+                'account_type': account.account_type or 'Unknown',
+                'provider': account.integration_type.model_class().__name__
+            } for account in accounts]
+            logger.debug(f"Serialized accounts: {serialized_accounts}")
+            return Response(serialized_accounts)
+        except Exception as e:
+            logger.error(f"Failed to fetch connected accounts: {str(e)}", exc_info=True)
+            return Response({'error': f'Failed to fetch connected accounts: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class ConnectBankAccountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        provider_data = request.data
+
+        region = provider_data.get('region')
+        provider = provider_data.get('provider')
+
+        try:
+            if provider == 'plaid':
+                integration = PlaidItem.objects.create(
+                    user=user,
+                    access_token=provider_data['access_token'],
+                    item_id=provider_data['item_id']
+                )
+                integration_type = ContentType.objects.get_for_model(PlaidItem)
+            elif provider == 'tink':
+                integration = TinkItem.objects.create(
+                    user=user,
+                    access_token=provider_data['access_token'],
+                    item_id=provider_data['item_id']
+                )
+                integration_type = ContentType.objects.get_for_model(TinkItem)
+            else:
+                return Response({'error': 'Unsupported provider'}, status=status.HTTP_400_BAD_REQUEST)
+
+            bank_account = BankAccount.objects.create(
+                user=user,
+                bank_name=provider_data['bank_name'],
+                account_number=provider_data['account_number'],
+                balance=provider_data['balance'],
+                account_type=provider_data.get('account_type'),
+                integration_type=integration_type,
+                integration_id=integration.id
+            )
+
+            return Response({
+                'message': 'Bank account connected successfully',
+                'account_id': bank_account.id
+            }, status=status.HTTP_201_CREATED)
+
+        except KeyError as e:
+            return Response({'error': f'Missing required field: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': f'Failed to connect bank account: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
