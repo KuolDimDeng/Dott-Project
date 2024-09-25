@@ -28,7 +28,7 @@ from django.db.models import Q
 from django.http import FileResponse, HttpResponse
 from django.core.mail import EmailMessage
 from django.db.models import Sum, DecimalField, F, Case, When, Value
-
+from inventory.serializers import InventoryItemSerializer
 from .utils import generate_pdf
 from dateutil import parser
 from django.core.exceptions import ObjectDoesNotExist
@@ -387,13 +387,21 @@ def create_product(request):
         database_name = user_profile.database_name
         logger.debug("Database name: %s", database_name)
 
+        # Ensure the database exists
+        router = UserDatabaseRouter()
+        router.create_dynamic_database(database_name)
+
+        # Check if the connection exists
+        if database_name not in connections:
+            raise ConnectionDoesNotExist(f"The connection '{database_name}' doesn't exist.")
+
         with transaction.atomic(using=database_name):
             # Extract custom_charge_plans data from request
             custom_charge_plans_data = request.data.pop('custom_charge_plans', [])
             
-            serializer = ProductSerializer(data=request.data, context={'database_name': database_name})
-            if serializer.is_valid():
-                product = serializer.save()
+            product_serializer = ProductSerializer(data=request.data, context={'database_name': database_name})
+            if product_serializer.is_valid():
+                product = product_serializer.save()
                 
                 # Handle custom charge plans
                 for plan_data in custom_charge_plans_data:
@@ -412,14 +420,37 @@ def create_product(request):
                         else:
                             logger.error(f"Invalid custom charge plan data: {plan_serializer.errors}")
 
+                # Create corresponding inventory item
+                inventory_data = {
+                    'name': product.name,
+                    'sku': product.product_code,
+                    'description': product.description,
+                    'quantity': product.stock_quantity,
+                    'reorder_level': product.reorder_level,
+                    'unit_price': product.price
+                }
+                inventory_serializer = InventoryItemSerializer(data=inventory_data, context={'database_name': database_name})
+                if inventory_serializer.is_valid():
+                    inventory_item = inventory_serializer.save()
+                    logger.info(f"Inventory item created: {inventory_item.id} - {inventory_item.name}")
+                else:
+                    logger.error(f"Error creating inventory item: {inventory_serializer.errors}")
+                    raise ValidationError(inventory_serializer.errors)
+
                 logger.info(f"Product created: {product.id} - {product.name}")
                 return Response(ProductSerializer(product).data, status=status.HTTP_201_CREATED)
             else:
-                logger.error("Validation errors: %s", serializer.errors)
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                logger.error("Validation errors: %s", product_serializer.errors)
+                return Response(product_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except UserProfile.DoesNotExist:
         logger.error("UserProfile does not exist for user: %s", user)
         return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except ConnectionDoesNotExist as e:
+        logger.error(f"Database connection error: {str(e)}")
+        return Response({'error': 'Database connection error. Please try again later.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except ValidationError as e:
+        logger.error(f"Validation error: {str(e)}")
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         logger.exception("Error creating product: %s", str(e))
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -44,6 +44,12 @@ class BankAccount(models.Model):
             raise ValidationError('Either user or employee must be set.')
         if self.user and self.employee:
             raise ValidationError('Only one of user or employee can be set.')
+        
+    def get_balance_at_date(self, date):
+        transactions = self.banktransaction_set.filter(date__lte=date)
+        credits = transactions.filter(transaction_type='CREDIT').aggregate(Sum('amount'))['amount__sum'] or 0
+        debits = transactions.filter(transaction_type='DEBIT').aggregate(Sum('amount'))['amount__sum'] or 0
+        return self.balance - credits + debits
 
 class BankTransaction(models.Model):
     TRANSACTION_TYPES = [

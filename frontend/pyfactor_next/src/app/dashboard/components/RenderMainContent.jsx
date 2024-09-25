@@ -116,6 +116,12 @@ import TermsAndConditions from '@app/Terms&Privacy/components/TermsOfUse';
 import PrivacyPolicy from '@app/Terms&Privacy/components/PrivacyPolicy';
 import DownloadTransactions from './forms/DownloadTransactions';
 import ConnectBank from './forms/ConnectBank';
+import PayrollTransactions from './forms/PayrollTransactions';
+import BankReconciliation from './forms/BankReconciliation';
+import PayrollReport from './forms/PayrollReport';
+import BankReport from './forms/BankReport';
+import InventoryItems from '@/app/inventory/components/InventoryItemList';
+import Dashboard from './forms/Dashboard';
 
 
 import StatusMessage from './components/StatusMessage.jsx';
@@ -199,6 +205,11 @@ const RenderMainContent = ({
     showTermsAndConditions,
     showDownloadTransactions,
     showConnectBank,
+    showPayrollTransactions,
+    showBankRecon,
+    showPayrollReport,
+    showBankReport,
+    showInventoryItems,
   
 
 
@@ -278,6 +289,24 @@ const RenderMainContent = ({
       if (showConnectBank) {
         return <ConnectBank />;
       }
+
+      if (showInventoryItems) {
+        return <InventoryItems />;
+      }
+
+      if (showPayrollReport) {
+        return <PayrollReport/>;
+      }
+
+      if (showBankReport) {
+        return <BankReport/>;
+      }
+
+      if (showDashboard) {
+        return <Dashboard />;
+      }
+
+  
   
       if (showServiceManagement) {
         return <ServiceManagement />;
@@ -308,6 +337,10 @@ const RenderMainContent = ({
       if (showTermsAndConditions) {
         return <TermsAndConditions />;
       }
+
+      if (showBankRecon) {
+        return <BankReconciliation />;
+      }
       
       if (showPrivacyPolicy) {
         return <PrivacyPolicy />;
@@ -327,6 +360,10 @@ const RenderMainContent = ({
 
       if (showPayrollManagement) {
         return <PayrollManagement/>;
+      }
+
+      if (showPayrollTransactions) {
+        return <PayrollTransactions />;
       }
 
       if (showDownloadTransactions) {
@@ -556,7 +593,7 @@ const RenderMainContent = ({
         }}
       >
         <Paper 
-          elevation={3} 
+          elevation={0} 
           sx={{ 
             flexGrow: 1,
             display: 'flex',

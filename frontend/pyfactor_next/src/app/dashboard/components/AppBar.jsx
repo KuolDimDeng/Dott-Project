@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppBar as MuiAppBar, Toolbar, IconButton, Badge, Box, Menu, MenuItem, Typography, Avatar } from '@mui/material';
+import { AppBar as MuiAppBar, Toolbar, IconButton, Badge, Box, Menu, MenuItem, Typography, Avatar, Tooltip } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -7,7 +7,6 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import PersonIcon from '@mui/icons-material/Person';
 import Image from 'next/image';
 import logoPath from '/public/static/images/Pyfactor.png';
-import DateTime from './components/DateTime';
 import SettingsMenu from './components/SettingsMenu';
 import HomeIcon from '@mui/icons-material/Home';
 
@@ -39,6 +38,9 @@ const AppBar = ({
   handleHelpClick,
   handlePrivacyClick,
   handleTermsClick,
+  mainBackground,
+  textAppColor,
+  
 }) => {
 
   // Generate initials from the first and last name
@@ -50,10 +52,8 @@ const AppBar = ({
 
   const initials = userData ? getInitials(`${userData.first_name} ${userData.last_name}`) : '';
 
-
-
   return (
-    <MuiAppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: '#000080', height: '60px'}}>
+    <MuiAppBar position="fixed" elevation={1} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: mainBackground, height: '60px', color: textAppColor }}>
       <Toolbar sx={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -66,135 +66,142 @@ const AppBar = ({
           <Image
             src={logoPath}
             alt="PyFactor Logo"
-            width={90}
+            width={80}
             height={22}
-            style={{ marginLeft: '-30px' }}
+            style={{ marginLeft: '-20px' }}
           />
         
-          <IconButton color="inherit" aria-label="open drawer" edge="start" onClick={handleDrawerToggle} sx={{ ml: 1, display: 'flex', alignItems: 'center', height: '100%' }}>
-            <MenuIcon />
-          </IconButton>
-          <IconButton color="inherit" aria-label="home" onClick={handleDashboardClick} sx={{ ml: 0.5, display: 'flex', alignItems: 'center', height: '100%' }}>
-            <HomeIcon />
-          </IconButton>
-
-          {userData && userData.business_name && (
-            <Typography variant="h6" sx={{ ml: 2, whiteSpace: 'nowrap' }}>
-              {userData.business_name}
-            </Typography>
-          )}
+        
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-          <Box sx={{ ml: 2, display: 'flex', alignItems: 'center', height: '100%' }}>
-            <DateTime />
-          </Box>
+          {userData && userData.business_name && (
+            <Typography variant="h6" sx={{ mr: 2, whiteSpace: 'nowrap', alignItems: 'center', color: textAppColor }}>
+              {userData.business_name}
+            </Typography>
+          )}
           {isShopifyConnected && (
             <Typography variant="body2" sx={{ color: 'lightgreen', mr: 2, display: 'flex', alignItems: 'center', height: '100%' }}>
               Connected to Shopify
             </Typography>
           )}
-          <IconButton color="inherit" onClick={handleAlertClick} sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-            <Badge badgeContent={4} color="secondary">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
-          <IconButton color="inherit" onClick={handleHelpClick} sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-          <HelpOutlineIcon />
-          </IconButton>
-          <IconButton color="inherit" onClick={handleSettingsClick} sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-            <SettingsIcon />
-          </IconButton>
+            <Tooltip title="Open and close menu">
+            <IconButton 
+              sx={{ display: 'flex', alignItems: 'center', height: '100%', color: textAppColor }} 
+              aria-label="open drawer" 
+              edge="start" 
+              onClick={handleDrawerToggle}
+            >
+              <MenuIcon />
+            </IconButton>
+          </Tooltip>
+          
+       
+          <Tooltip title="Help">
+            <IconButton 
+              sx={{ display: 'flex', alignItems: 'center', height: '100%', color: textAppColor }} 
+              onClick={handleHelpClick}
+            >
+              <HelpOutlineIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Settings">
+            <IconButton 
+              sx={{ display: 'flex', alignItems: 'center', height: '100%', color: textAppColor }} 
+              onClick={handleSettingsClick}
+            >
+              <SettingsIcon />
+            </IconButton>
+          </Tooltip>
 
           <IconButton
-            color="inherit"
             onClick={handleClick}
             aria-controls={openMenu ? 'user-menu' : undefined}
             aria-haspopup="true"
             aria-expanded={openMenu ? 'true' : undefined}
-            sx={{ display: 'flex', alignItems: 'center', height: '100%', p: 0 }}
+            sx={{ display: 'flex', alignItems: 'center', height: '100%', color: textAppColor }}
           >
             <Avatar
               sx={{
-                width: 32,
-                height: 32,
-                fontSize: 16,
-                bgcolor: '#000080',
-                color: '#fff',
-                border: '2px solid white',
+                width: 28,
+                height: 28,
+                fontSize: 14,
+                bgcolor: mainBackground,
+                color: textAppColor,
+                border: `2px solid ${textAppColor}`,
               }}
             >
               {initials}
             </Avatar>
           </IconButton>
           <Menu
-                  id="user-menu"
-                  anchorEl={anchorEl}
-                  open={openMenu}
-                  onClose={handleClose}
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                  transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                  PaperProps={{
-                    sx: {
-                      width: '150px',
-                      backgroundColor: menuBackgroundColor,
-                    }
+            id="user-menu"
+            anchorEl={anchorEl}
+            open={openMenu}
+            onClose={handleClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            PaperProps={{
+              sx: {
+                width: '150px',
+                backgroundColor: menuBackgroundColor,
+              }
+            }}
+          >
+            {userData && (
+              <>
+                <MenuItem sx={{ pointerEvents: 'none', opacity: 0.7 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <PersonIcon sx={{ mr: 1, color: mainBackground }} />
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                        {userData.full_name}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        {userData.occupation}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </MenuItem>
+                {userData.is_staff && (
+                  <MenuItem onClick={handleSendGlobalAlertClick}>Send Global Alert</MenuItem>
+                )}
+                <MenuItem 
+                  onClick={handleTermsClick}
+                  sx={{ 
+                    justifyContent: 'left', 
+                    '&:hover': { 
+                      backgroundColor: 'rgba(0, 0, 128, 0.08)' 
+                    } 
                   }}
                 >
-                  {userData && (
-                    <>
-                      <MenuItem sx={{ pointerEvents: 'none', opacity: 0.7 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                          <PersonIcon sx={{ mr: 1, color: '#000080' }} />
-                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                              {userData.full_name}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                              {userData.occupation}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </MenuItem>
-                      {userData.is_staff && (
-                        <MenuItem onClick={handleSendGlobalAlertClick}>Send Global Alert</MenuItem>
-                      )}
-                        <MenuItem 
-                          onClick={handleTermsClick}
-                          sx={{ 
-                            justifyContent: 'left', 
-                            '&:hover': { 
-                              backgroundColor: 'rgba(0, 0, 128, 0.08)' 
-                            } 
-                          }}
-                        >
-                          Terms
-                    </MenuItem>
-                    <MenuItem 
-                          onClick={handlePrivacyClick}
-                          sx={{ 
-                            justifyContent: 'left', 
-                            '&:hover': { 
-                              backgroundColor: 'rgba(0, 0, 128, 0.08)' 
-                            } 
-                          }}
-                        >
-                          Privacy
-                    </MenuItem>
-                        <MenuItem 
-                          onClick={handleLogout}
-                          sx={{ 
-                            justifyContent: 'left', 
-                            '&:hover': { 
-                              backgroundColor: 'rgba(0, 0, 128, 0.08)' 
-                            } 
-                          }}
-                        >
-                          Logout
-                    </MenuItem>
-                    </>
-                  )}
-                </Menu>
+                  Terms
+                </MenuItem>
+                <MenuItem 
+                  onClick={handlePrivacyClick}
+                  sx={{ 
+                    justifyContent: 'left', 
+                    '&:hover': { 
+                      backgroundColor: 'rgba(0, 0, 128, 0.08)' 
+                    } 
+                  }}
+                >
+                  Privacy
+                </MenuItem>
+                <MenuItem 
+                  onClick={handleLogout}
+                  sx={{ 
+                    justifyContent: 'left', 
+                    '&:hover': { 
+                      backgroundColor: 'rgba(0, 0, 128, 0.08)' 
+                    } 
+                  }}
+                >
+                  Logout
+                </MenuItem>
+              </>
+            )}
+          </Menu>
         </Box>
       </Toolbar>
       <SettingsMenu
@@ -206,7 +213,6 @@ const AppBar = ({
         onOptionSelect={handleSettingsOptionSelect}
         selectedOption={selectedSettingsOption}
         backgroundColor={menuBackgroundColor}
-
       />
     </MuiAppBar>
   );

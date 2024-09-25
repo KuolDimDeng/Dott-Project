@@ -11,7 +11,8 @@ from django.views.decorators.csrf import csrf_exempt
 import plaid
 from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
 from plaid.model.transactions_get_request import TransactionsGetRequest
-
+from .utils import get_reconciliation_summary
+from rest_framework import status
 from plaid.api import plaid_api
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
@@ -440,3 +441,67 @@ class ConnectBankAccountView(APIView):
             return Response({'error': f'Missing required field: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': f'Failed to connect bank account: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
+class BankingReportView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            account_id = request.query_params.get('account_id')
+            start_date = request.query_params.get('start_date')
+            end_date = request.query_params.get('end_date')
+
+            if not account_id or not start_date or not end_date:
+                return Response(
+                    {"error": "account_id, start_date, and end_date are required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=status.HTTP_400_BAD_REQUEST)
+
+            account = BankAccount.objects.get(id=account_id, user=request.user)
+            transactions = BankTransaction.objects.filter(
+                account=account,
+                date__range=[start_date, end_date]
+            ).order_by('date')
+
+            # Calculate balances
+            beginning_balance = account.get_balance_at_date(start_date)
+            ending_balance = account.get_balance_at_date(end_date)
+
+            # Prepare transaction data
+            transaction_data = BankTransactionSerializer(transactions, many=True).data
+
+            # Calculate totals
+            total_credits = transactions.filter(transaction_type='CREDIT').aggregate(Sum('amount'))['amount__sum'] or 0
+            total_debits = transactions.filter(transaction_type='DEBIT').aggregate(Sum('amount'))['amount__sum'] or 0
+
+            # Get reconciliation summary
+            reconciliation_summary = get_reconciliation_summary(account, end_date)
+
+            report_data = {
+                "bank_name": account.bank_name,
+                "account_number": account.account_number,
+                "beginning_balance": float(beginning_balance),
+                "ending_balance": float(ending_balance),
+                "transactions": transaction_data,
+                "total_credits": float(total_credits),
+                "total_debits": float(total_debits),
+                "net_change": float(ending_balance - beginning_balance),
+                "outstanding_checks": reconciliation_summary['outstanding_checks'],
+                "deposits_in_transit": reconciliation_summary['deposits_in_transit']
+            }
+
+            return Response(report_data)
+        except BankAccount.DoesNotExist:
+            return Response({"error": "Bank account not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

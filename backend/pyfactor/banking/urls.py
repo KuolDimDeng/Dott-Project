@@ -10,6 +10,7 @@ from .views import (
     RecentTransactionsView,
     ConnectedAccountsView,
     ConnectBankAccountView,
+    BankingReportView,
 )
 
 urlpatterns = [
@@ -23,4 +24,6 @@ urlpatterns = [
     path('recent-transactions/', RecentTransactionsView.as_view(), name='recent-transactions'),
     path('connected-accounts/', ConnectedAccountsView.as_view(), name='connected-accounts'),
     path('connect-bank-account/', ConnectBankAccountView.as_view(), name='connect-bank-account'),
+    path('report/', BankingReportView.as_view(), name='banking-report'),
+
 ]

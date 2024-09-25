@@ -1,73 +1,52 @@
 import React from 'react';
-import { Drawer as MuiDrawer, Box, List, ListItem, ListItemIcon, ListItemText, Collapse } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import { MainListItems } from './lists/listItems';
-import Search from './Search';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import PeopleIcon from '@mui/icons-material/People';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-
+import { Drawer as MuiDrawer, Box } from '@mui/material';
+import MainListItems from './lists/listItems';
 
 const drawerWidth = 210;
 
-const Drawer = ({ 
-  drawerOpen, 
-  handleDrawerToggle, 
-  handleShowInvoiceBuilder, 
-  handleCloseInvoiceBuilder, 
-  handleShowCreateOptions, 
-  handleShowTransactionForm, 
-  handleReportClick, 
-  handleBankingClick, 
-  handleHRClick, 
-  handlePayrollClick, 
-  handleAnalysisClick, 
-  showCustomerList, 
-  setShowCustomerList, 
-  handleCreateCustomer, 
+const Drawer = ({
+  drawerOpen,
+  handleDrawerToggle,
+  handleShowInvoiceBuilder,
+  handleCloseInvoiceBuilder,
+  handleShowCreateOptions,
+  handleShowTransactionForm,
+  handleReportClick,
+  handleBankingClick,
+  handleHRClick,
+  handlePayrollClick,
+  handleAnalysisClick,
+  showCustomerList,
+  setShowCustomerList,
+  handleCreateCustomer,
   handleSalesClick,
-  handleProductsClick,
-  handleServicesClick,
   handleDashboardClick,
   handlePurchasesClick,
   handleAccountingClick,
+  handleInventoryClick,
 }) => {
-  const [salesOpen, setSalesOpen] = React.useState(false);
-
-  const toggleSalesMenu = () => {
-    setSalesOpen(!salesOpen);
-  };
-
   return (
-    
     <MuiDrawer
-      variant="persistent"
+      variant="temporary"
       open={drawerOpen}
+      onClose={handleDrawerToggle}
+      ModalProps={{
+        keepMounted: true, // Better open performance on mobile.
+      }}
       sx={{
-        width: drawerWidth,
-        flexShrink: 0,
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',
-          top: '40px',
-          height: 'calc(100% - 60px)',
-          borderRight: 'none',
-          
         },
       }}
     >
-      <Box sx={{ overflow: 'hidden', pl: 0, pr: 0 }}>
+      <Box sx={{ overflow: 'auto' }}>
         <MainListItems
-          showInvoiceBuilder={handleShowInvoiceBuilder}
-          hideInvoiceBuilder={handleCloseInvoiceBuilder}
-          showCreateOptions={handleShowCreateOptions}
-          showTransactionForm={handleShowTransactionForm}
+          handleShowInvoiceBuilder={handleShowInvoiceBuilder}
+          handleCloseInvoiceBuilder={handleCloseInvoiceBuilder}
+          handleShowCreateOptions={handleShowCreateOptions}
+          handleShowTransactionForm={handleShowTransactionForm}
           handleReportClick={handleReportClick}
-          drawerOpen={drawerOpen}
-          handleDrawerToggle={handleDrawerToggle}
           handleBankingClick={handleBankingClick}
           handleHRClick={handleHRClick}
           handlePayrollClick={handlePayrollClick}
@@ -79,9 +58,8 @@ const Drawer = ({
           handleDashboardClick={handleDashboardClick}
           handlePurchasesClick={handlePurchasesClick}
           handleAccountingClick={handleAccountingClick}
+          handleInventoryClick={handleInventoryClick}
         />
- 
-
       </Box>
     </MuiDrawer>
   );

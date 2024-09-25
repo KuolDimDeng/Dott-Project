@@ -10,4 +10,9 @@ class BankAccountSerializer(serializers.ModelSerializer):
 class BankTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = BankTransaction
-        fields = ['id', 'account', 'amount', 'transaction_type', 'description', 'date', 'is_reconciled']
+        fields = ['id', 'amount', 'transaction_type', 'description', 'date', 'is_reconciled']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['amount'] = float(representation['amount'])
+        return representation

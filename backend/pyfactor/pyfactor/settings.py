@@ -44,6 +44,9 @@ print("PLAID_SECRET: ", PLAID_SECRET)
 SECRET_KEY = 'sdbf6s8!9#w9@j_!w=2-s&+=x&g(9tvq&*p@g=%_&%fy$65-z%'
 
 
+# Stripe settings
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join(PROJECT_ROOT, '.venv/lib/python3.12/site-packages'))
@@ -273,6 +276,7 @@ INSTALLED_APPS = [
     'banking',
     'hr',
     'payroll',
+    'inventory',
     'analysis',
     'chatbot',
     'chart',

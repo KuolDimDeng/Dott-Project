@@ -3,11 +3,12 @@ import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Button, TextField, Select, MenuItem, FormControl, 
   InputLabel, IconButton, Toolbar, InputAdornment, Drawer, List, ListItem, 
-  ListItemText, Checkbox
+  ListItemText, Checkbox, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import { 
-  Add, FilterList, Search, Edit, Delete, ImportExport, Settings
+  Add, FilterList, Search, Edit, Delete, ImportExport, Settings, Visibility
 } from '@mui/icons-material';
+import Link from 'next/link';
 import axiosInstance from '../components/axiosConfig';
 
 const ChartOfAccountsManagement = () => {
@@ -28,6 +29,8 @@ const ChartOfAccountsManagement = () => {
     status: 'all',
     dateRange: { start: null, end: null }
   });
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState(null);
 
   useEffect(() => {
     fetchAccounts();
@@ -79,12 +82,20 @@ const ChartOfAccountsManagement = () => {
     setFilters({ ...filters, [filterType]: value });
   };
 
+  const handleViewTransactions = (account) => {
+    setSelectedAccount(account);
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedAccount(null);
+  };
+
   const filteredAccounts = accounts ? accounts.filter(account => 
     (account.name && account.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (account.account_number && account.account_number.includes(searchTerm))
   ) : [];
-
-  console.log('Rendering accounts:', filteredAccounts);
 
   return (
     <Box>
@@ -146,6 +157,7 @@ const ChartOfAccountsManagement = () => {
                     <Checkbox checked={filters.accountTypes.indexOf('Liability') > -1} />
                     <ListItemText primary="Liability" />
                   </MenuItem>
+                  {/* Add more account types as needed */}
                 </Select>
               </FormControl>
             </ListItem>
@@ -190,6 +202,11 @@ const ChartOfAccountsManagement = () => {
                   <TableCell>
                     <IconButton size="small"><Edit /></IconButton>
                     <IconButton size="small"><Delete /></IconButton>
+                    <Link href={`/general-ledger?account_id=${account.id}`} passHref>
+                      <IconButton size="small">
+                        <Visibility />
+                      </IconButton>
+                    </Link>
                   </TableCell>
                 </TableRow>
               ))
@@ -209,6 +226,21 @@ const ChartOfAccountsManagement = () => {
         <Typography>Total Accounts: {accounts.length}</Typography>
         <Typography>Active Accounts: {accounts.filter(a => a.is_active).length}</Typography>
       </Box>
+
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>Account Transactions</DialogTitle>
+        <DialogContent>
+          {selectedAccount && (
+            <Typography>
+              Viewing transactions for account: {selectedAccount.name} ({selectedAccount.account_number})
+            </Typography>
+            // You can add a table or list of transactions here
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

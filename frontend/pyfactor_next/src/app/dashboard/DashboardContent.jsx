@@ -36,7 +36,7 @@ import KPIDashboard from './components/forms/KPIDashboard';
 
 const theme = createTheme({
   palette: {
-    primary: { main: '#000080' }, // Navy blue color
+    primary: { main: '#b3e5fc' }, // Navy blue color
     secondary: { main: '#81d4fa' } // Light blue color
   },
 });
@@ -135,6 +135,11 @@ function DashboardContent() {
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showDownloadTransactions, setShowDownloadTransactions] = useState(false);
   const [showConnectBank, setShowConnectBank] = useState(false);
+  const [showPayrollTransactions, setShowPayrollTransactions] = useState(false);
+  const [showBankRecon, setShowBankRecon] = useState(false);
+  const [showPayrollReport, setShowPayrollReport] = useState(false);
+  const [showBankReport, setShowBankReport] = useState(false);
+  const [showInventoryItems,setShowInventoryItems] = useState(false);
 
 
 
@@ -209,21 +214,33 @@ function DashboardContent() {
     setShowPrivacyPolicy,
     setShowDownloadTransactions,
     setShowConnectBank,
+    setShowPayrollTransactions,
+    setShowBankRecon,
+    setShowPayrollReport,
+    setShowBankReport,
+    setShowInventoryItems,
     
   ];
 
   const resetAllStatesExcept = (exceptionSetter) => {
     AllResetState.forEach(setter => {
-      if (setter !== exceptionSetter) {
+      if (typeof setter === 'function' && setter !== exceptionSetter) {
         setter(false);
+      } else if (typeof setter !== 'function') {
+        console.warn('Non-function setter found in AllResetState:', setter);
       }
     });
   };
 
   const resetAllStates = () => {
-    AllResetState.forEach(setter => setter(false));
+    AllResetState.forEach(setter => {
+      if (typeof setter === 'function') {
+        setter(false);
+      } else {
+        console.warn('Non-function setter found in AllResetState:', setter);
+      }
+    });
   };
-
   const fetchUserData = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
@@ -279,12 +296,14 @@ function DashboardContent() {
         break;
       case 'reconciliation':
         // Handle reconciliation
+        setShowBankRecon(true);
         break;
       case 'bank-balances':
         // Handle bank balances
         break;
       case 'bank-reports':
         // Handle bank reports
+        setShowBankReport(true);
         break;
       default:
         console.log('Unknown banking section:', section);
@@ -380,8 +399,6 @@ function DashboardContent() {
   };
   
 
-
-
   const handleSalesClick = (section) => {
     console.log('handleSalesClick called with section:', section);
     resetAllStatesExcept(setShowCustomerList);
@@ -433,12 +450,30 @@ function DashboardContent() {
     setShowIntegrationSettings(false);
   };
 
+  const handleInventoryClick = (section) => {
+    console.log('handleInventoryClick called with section:', section);
+    resetAllStates();
+    switch(section) {
+      case 'inventorydashboard':
+        setShowInventoryDashboard(true);
+        break;
+      case 'items':
+        setShowInventoryItems(true);
+        break;
+      case 'categories':
+        setShowInventoryCategories(true);
+        break;
+      // ... handle other cases
+      default:
+        console.log('Unknown inventory section:', section);
+    }
+  };
+
 
   const handleDashboardClick = () => {
     console.log('handleDashboardClick called.');
     resetAllStates();
-    setShowKPIDashboard(true);
-    setView('dashboard');
+    setShowDashboard(true);
     console.log('view set to: dashboard');
   };
   
@@ -453,6 +488,8 @@ function DashboardContent() {
   const handleInvoiceSelect = (invoiceId) => {
     setSelectedInvoiceId(invoiceId);
   };
+
+
 
   const handleAnalysisClick = (analysisType) => {
     console.log('handleAnalysisClick called with analysisType:', analysisType);
@@ -594,7 +631,7 @@ function DashboardContent() {
         setPayrollSection('timesheets');
         break;
       case 'transactions':
-        setShowPayrollManagement(true);
+        setShowPayrollTransactions(true);
         setPayrollSection('transactions');
         break;
       case 'taxes':
@@ -606,7 +643,7 @@ function DashboardContent() {
         setPayrollSection('taxForms');
         break;
       case 'payroll-reports':
-        setShowPayrollManagement(true);
+        setShowPayrollReport(true);
         setPayrollSection('reports');
         break;
       case 'dashboard':
@@ -946,6 +983,8 @@ function DashboardContent() {
       <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
         <CssBaseline />
         <AppBar 
+          mainBackground="#42a5f5"
+          textAppColor="black"
           drawerOpen={drawerOpen}
           handleDrawerToggle={handleDrawerToggle}
           userData={userData}
@@ -996,6 +1035,7 @@ function DashboardContent() {
           handleDashboardClick={handleDashboardClick}
           handlePurchasesClick={handlePurchasesClick}
           handleAccountingClick={handleAccountingClick}
+          handleInventoryClick={handleInventoryClick}
         />
          <Box
         component="main"
@@ -1009,7 +1049,7 @@ function DashboardContent() {
           }),
           pt: '64px', // Adjust this value based on your AppBar height
           height: '100vh',
-          overflow: 'hidden',
+          overflow: 'auto',
           display: 'flex',
           flexDirection: 'column',
         }}
@@ -1048,7 +1088,7 @@ function DashboardContent() {
               )}
               {showDashboard && (
                 <Box sx={{ width: '100%', overflow: 'auto' }}>
-                  <KPIDashboard />
+                  <Dashboard />
                 </Box>
               )}
               {showIntegrationSettings && (
@@ -1166,6 +1206,11 @@ function DashboardContent() {
                 showTermsAndConditions,
                 showDownloadTransactions,
                 showConnectBank,
+                showPayrollTransactions,
+                showBankRecon,
+                showPayrollReport,
+                showBankReport,
+                showInventoryItems,
              
               })}
             </Box>
