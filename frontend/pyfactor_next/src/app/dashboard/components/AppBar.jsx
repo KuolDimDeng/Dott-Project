@@ -1,5 +1,5 @@
-import React from 'react';
-import { AppBar as MuiAppBar, Toolbar, IconButton, Badge, Box, Menu, MenuItem, Typography, Avatar, Tooltip } from '@mui/material';
+import React, { useState } from 'react';
+import { AppBar as MuiAppBar, Toolbar, IconButton, Badge, Box, Menu, MenuItem, Typography, Avatar, Tooltip, Collapse, Paper, Popover } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -9,8 +9,11 @@ import Image from 'next/image';
 import logoPath from '/public/static/images/Pyfactor.png';
 import SettingsMenu from './components/SettingsMenu';
 import HomeIcon from '@mui/icons-material/Home';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
-const menuBackgroundColor = '#f5f5f5';  // Light grey background
+
+const menuBackgroundColor = '#e3f2fd';  // Light grey background
 
 const AppBar = ({
   drawerOpen,
@@ -42,7 +45,6 @@ const AppBar = ({
   textAppColor,
   
 }) => {
-
   // Generate initials from the first and last name
   const getInitials = (name) => {
     if (!name) return '';
@@ -51,9 +53,31 @@ const AppBar = ({
   };
 
   const initials = userData ? getInitials(`${userData.first_name} ${userData.last_name}`) : '';
+  console.log("userData in AppBar:", userData);  // Add this log statement
+  const [subscriptionMenuOpen, setSubscriptionMenuOpen] = useState(false);
+  const [subscriptionAnchorEl, setSubscriptionAnchorEl] = useState(null);
+  const [isSubscriptionMenuOpen, setIsSubscriptionMenuOpen] = useState(false);
+
+
+ // In your handleSubscriptionClick function:
+const handleSubscriptionClick = (event) => {
+  if (userData.subscription_type === 'free') {
+    setIsSubscriptionMenuOpen(!isSubscriptionMenuOpen);
+    setSubscriptionAnchorEl(subscriptionAnchorEl ? null : event.currentTarget);
+  }
+};
+
+  const handleSubscriptionClose = () => {
+    setSubscriptionAnchorEl(null);
+  };
+
+  const subscriptionOpen = Boolean(subscriptionAnchorEl);
+
 
   return (
-    <MuiAppBar position="fixed" elevation={1} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: mainBackground, height: '60px', color: textAppColor }}>
+    <MuiAppBar position="fixed" elevation={0} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: mainBackground, height: '60px', color: textAppColor,
+      borderBottom: '2px solid #bbdefb', 
+     }}>
       <Toolbar sx={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -66,8 +90,8 @@ const AppBar = ({
           <Image
             src={logoPath}
             alt="PyFactor Logo"
-            width={80}
-            height={22}
+            width={100}
+            height={28}
             style={{ marginLeft: '-20px' }}
           />
         
@@ -75,11 +99,55 @@ const AppBar = ({
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-          {userData && userData.business_name && (
-            <Typography variant="h6" sx={{ mr: 2, whiteSpace: 'nowrap', alignItems: 'center', color: textAppColor }}>
+        {userData && userData.business_name && (
+          <Paper elevation={0} sx={{ 
+            mr: 2, 
+            pl: 1.5,
+            pr: 0.5,
+            py: 0.5,
+            ml: -0.5,
+            backgroundColor: '#e3f2fd',
+            border: '#1976d2',
+            borderRadius: '5px'
+          }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6" sx={{ whiteSpace: 'nowrap', color: textAppColor, lineHeight: 1, mr: 1 }}>
               {userData.business_name}
             </Typography>
+            <Box 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              cursor: userData.subscription_type === 'free' ? 'pointer' : 'default',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              transition: 'background-color 0.3s',
+              '&:hover': userData.subscription_type === 'free' ? {
+                backgroundColor: '#bbdefb',
+                opacity: 1,
+              } : {},
+              '&.Mui-selected': {
+                backgroundColor: '#90caf9',
+                '&:hover': {
+                  backgroundColor: '#64b5f6',
+                },
+              },
+            }} 
+            onClick={handleSubscriptionClick}
+            className={isSubscriptionMenuOpen ? 'Mui-selected' : ''}
+          >
+          <Typography variant="caption" sx={{ color: textAppColor, lineHeight: 1, pr: 0.5 }}>
+            {userData.subscription_type === 'professional' ? 'Professional Plan' : 'Free Plan'}
+          </Typography>
+          {userData.subscription_type === 'free' && (
+            <IconButton size="small" sx={{ padding: 0, ml: 0.5, color: textAppColor }}>
+              {subscriptionOpen ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+            </IconButton>
           )}
+        </Box>
+      </Box>
+          </Paper>
+        )}
           {isShopifyConnected && (
             <Typography variant="body2" sx={{ color: 'lightgreen', mr: 2, display: 'flex', alignItems: 'center', height: '100%' }}>
               Connected to Shopify
@@ -152,12 +220,12 @@ const AppBar = ({
               <>
                 <MenuItem sx={{ pointerEvents: 'none', opacity: 0.7 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                    <PersonIcon sx={{ mr: 1, color: mainBackground }} />
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                    <PersonIcon sx={{ mr: 1, color: 'blue' }} />
+                    <Box sx={{ mr: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                      <Typography variant="h6" sx={{ whiteSpace: 'nowrap', color: textAppColor, fontSize: "15px" }}>
                         {userData.full_name}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      <Typography variant="caption" sx={{ color: textAppColor, opacity: 0.7 }}>
                         {userData.occupation}
                       </Typography>
                     </Box>
@@ -169,18 +237,18 @@ const AppBar = ({
                 <MenuItem 
                   onClick={handleTermsClick}
                   sx={{ 
-                    justifyContent: 'left', 
+                    justifyContent: 'center', 
                     '&:hover': { 
                       backgroundColor: 'rgba(0, 0, 128, 0.08)' 
                     } 
                   }}
                 >
-                  Terms
+                  Terms of Service
                 </MenuItem>
                 <MenuItem 
                   onClick={handlePrivacyClick}
                   sx={{ 
-                    justifyContent: 'left', 
+                    justifyContent: 'center', 
                     '&:hover': { 
                       backgroundColor: 'rgba(0, 0, 128, 0.08)' 
                     } 
@@ -191,7 +259,7 @@ const AppBar = ({
                 <MenuItem 
                   onClick={handleLogout}
                   sx={{ 
-                    justifyContent: 'left', 
+                    justifyContent: 'center', 
                     '&:hover': { 
                       backgroundColor: 'rgba(0, 0, 128, 0.08)' 
                     } 
@@ -214,6 +282,25 @@ const AppBar = ({
         selectedOption={selectedSettingsOption}
         backgroundColor={menuBackgroundColor}
       />
+
+        <Popover
+        open={subscriptionOpen}
+        anchorEl={subscriptionAnchorEl}
+        onClose={handleSubscriptionClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+      >
+        <Box sx={{ p: 2, maxWidth: 300 }}>
+          <Typography variant="body2">Upgrade plan here for more features</Typography>
+          {/* You can add a button or link here for the upgrade action */}
+        </Box>
+      </Popover>
     </MuiAppBar>
   );
 };

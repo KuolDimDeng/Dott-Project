@@ -222,6 +222,8 @@ function DashboardContent() {
     
   ];
 
+  const drawerWidth = 225; // or whatever width you want for your drawer
+
   const resetAllStatesExcept = (exceptionSetter) => {
     AllResetState.forEach(setter => {
       if (typeof setter === 'function' && setter !== exceptionSetter) {
@@ -256,8 +258,14 @@ function DashboardContent() {
         logger.log('Dashboard User data:', data);
         data.first_name = data.first_name || data.email.split('@')[0];
         data.full_name = data.full_name || `${data.first_name} ${data.last_name}`;
-        setUserData(data);
-        addMessage('info', `Hello, ${data.full_name}.`);
+        const activeSubscription = data.active_subscription;
+        const subscriptionType = activeSubscription ? activeSubscription.subscription_type : 'free';
+  
+        setUserData({
+          ...data,
+          subscription_type: subscriptionType       
+          });
+
       } else {
         logger.error('Error fetching user data:', response.statusText);
         addMessage('error', `Error fetching user data: ${response.statusText}`);
@@ -983,8 +991,8 @@ function DashboardContent() {
       <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
         <CssBaseline />
         <AppBar 
-          mainBackground="#42a5f5"
-          textAppColor="black"
+          mainBackground="#fafafa"
+          textAppColor="#263238"
           drawerOpen={drawerOpen}
           handleDrawerToggle={handleDrawerToggle}
           userData={userData}
@@ -1037,34 +1045,32 @@ function DashboardContent() {
           handleAccountingClick={handleAccountingClick}
           handleInventoryClick={handleInventoryClick}
         />
-         <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          width: '100%',
-          marginLeft: drawerOpen ? `${270 - 290}px` : '-220px',
-          transition: theme.transitions.create(['margin', 'width'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-          pt: '64px', // Adjust this value based on your AppBar height
-          height: '100vh',
-          overflow: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-          <Container 
-            maxWidth={false}
-            sx={{ 
-              flexGrow: 1,
-              ml: drawerOpen ? 2 : 1, 
-              display: 'flex', 
-              flexDirection: 'column', 
-              overflow: 'hidden',
-            }}
-          >
-            <Box sx={{ flexGrow: 1, overflow: 'hidden', p: 2 }}>
+              <Box
+                component="main"
+                sx={{
+                  flexGrow: 1,
+                  width: `calc(100% - ${drawerOpen ? drawerWidth : 0}px)`,
+                  marginLeft: drawerOpen ? `${drawerWidth}px` : 0,
+                  transition: theme.transitions.create(['margin', 'width'], {
+                    easing: theme.transitions.easing.sharp,
+                    duration: theme.transitions.duration.leavingScreen,
+                  }),
+                  height: '100vh',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <Toolbar /> {/* This pushes content below AppBar */}
+                <Box
+                  sx={{
+                    flexGrow: 1,
+                    overflow: 'hidden',
+                    p: 3,
+                    mt: '64px', // Adjust based on your AppBar height
+                    height: 'calc(100vh - 60px)', // Adjust based on your AppBar height
+                  }}
+                >
               {showAlerts && (
                 <AlertsPage alerts={alerts} onMarkAsRead={handleMarkAsRead} />
               )}
@@ -1214,7 +1220,7 @@ function DashboardContent() {
              
               })}
             </Box>
-          </Container>
+          
         </Box>
       </Box>
     </ThemeProvider>

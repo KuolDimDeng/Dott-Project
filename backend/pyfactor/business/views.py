@@ -111,5 +111,4 @@ def get_business_data(request):
     except UserProfile.DoesNotExist:
         return Response({'error': 'User profile not found'}, status=404)
     except Exception as e:
-        logger.exception(f"An error occurred while fetching business data: {str(e)}")
         return Response({'error': 'An internal server error occurred'}, status=500)

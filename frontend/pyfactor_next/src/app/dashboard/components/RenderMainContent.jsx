@@ -128,6 +128,40 @@ import StatusMessage from './components/StatusMessage.jsx';
 import BalanceSheetAnalysis from './forms/BalanceSheetAnalysis.jsx';
 
 
+const ContentWrapper = ({ children }) => (
+  <Box
+    sx={{
+      flexGrow: 1,
+      width: '100%',
+      maxWidth: '1200px', // Adjust this value to change the maximum width
+      height: '100%', // This will make it take full height of its parent
+      margin: '0 auto',
+      padding: '20px',
+      display: 'flex',
+      flexDirection: 'column',
+    }}
+  >
+    {children}
+  </Box>
+);
+
+const FormWrapper = ({ children }) => (
+  <Box
+    sx={{
+      width: '100%',
+      maxWidth: '1000px', // Adjust this for form width
+      minHeight: '600px', // Adjust this for minimum form height
+      margin: '0 auto',
+      padding: '20px',
+      display: 'flex',
+      flexDirection: 'column',
+    }}
+  >
+    {children}
+  </Box>
+);
+
+
 const RenderMainContent = ({
     showTransactionForm,
     showInvoiceBuilder,
@@ -270,270 +304,152 @@ const RenderMainContent = ({
 
 
     const renderContent = () => {
+      let content = null;
+  
       if (selectedSettingsOption) {
-        return renderSettingsTabs();
-      }
-
-
-
-      if (showUserProfileSettings) {
-        return <UserProfileSettings userData={userData} onUpdate={handleUserProfileUpdate} />;
-      }
-      if (showIntegrationSettings) return null;
-      
-  
-      if (showProductManagement) {
-        return <ProductManagement />;
-      }
-
-      if (showConnectBank) {
-        return <ConnectBank />;
-      }
-
-      if (showInventoryItems) {
-        return <InventoryItems />;
-      }
-
-      if (showPayrollReport) {
-        return <PayrollReport/>;
-      }
-
-      if (showBankReport) {
-        return <BankReport/>;
-      }
-
-      if (showDashboard) {
-        return <Dashboard />;
-      }
-
-  
-  
-      if (showServiceManagement) {
-        return <ServiceManagement />;
-      }
-      if (showEstimateManagement) {
-        return <EstimateManagement />;
-      }
-
-      if (showSalesOrderManagement) {
-        return <SalesOrderManagement />;
-      }
-
-      if (showInvoiceManagement) {
-        return <InvoiceManagement />;
-      }
-
-      if (showVendorManagement) {
-        return <VendorManagement />;
-      }
-
-      if (showBillManagement) {
-        return <BillManagement />;
-      }
-      if (showPurchaseOrderManagement) {
-        return <PurchaseOrderManagement />;
-      }
-
-      if (showTermsAndConditions) {
-        return <TermsAndConditions />;
-      }
-
-      if (showBankRecon) {
-        return <BankReconciliation />;
-      }
-      
-      if (showPrivacyPolicy) {
-        return <PrivacyPolicy />;
-      }
-
-      if (showExpensesManagement) {
-        return <ExpensesManagement />;
-      }
-
-      if (showPurchaseReturnManagement) {
-        return <PurchaseReturnsManagement/>;
-      }
-
-      if (showProcurementManagement) {
-        return <ProcurementManagement />;
-      }
-
-      if (showPayrollManagement) {
-        return <PayrollManagement/>;
-      }
-
-      if (showPayrollTransactions) {
-        return <PayrollTransactions />;
-      }
-
-      if (showDownloadTransactions) {
-        return <DownloadTransactions />;
-      }
-
-      if (showTimesheetManagement) {
-        return <TimesheetManagement/>;
-      }
-
-      if (showChartOfAccounts) {
-        return <ChartOfAccountsManagement/>;
-      }
-
-      if (showGeneralLedgerManagement) {
-        return <GeneralLedgerManagement/>
-      }
-
-      if (showAccountReconManagement) {
-        return <AccountReconManagement />;
-      }
-
-      if (showMonthEndManagement) {
-        return <MonthEndManagement />;
-
-      }
-
-      if (showFinancialStatements) {
-        return <FinancialManagement/>;
-      }
-
-      if (showFixedAssetManagement) {
-        return <FixedAssetManagement/>;
-      }
-
-      if (showBudgetManagement) {
-        return <BudgetManagement/>;
-      }
-
-      if (showCostAccountingManagement) {
-        return <CostAccountingManagement/>;
-      }
-
-      if (showIntercompanyManagement) {
-        return <IntercompanyManagement />;
-      }
-
-      if (showAuditTrailManagement) {
-        return <AuditTrailManagement />;
-      }
-
-      if (showProfitAndLossReport) {
-        return <ProfitAndLossReport />;
-      }
-
-      if (showBalanceSheetReport) {
-        return <BalanceSheetReport/>;
-      }
-
-      if (showCashFlowReport) {
-        return <CashFlowReport/>;
-      }
-
-      if (showIncomeByCustomer) {
-        return <IncomeByCustomer />;
-      }
-
-      if (showAgedReceivables) {
-        return <AgedReceivables />;
-      }
-
-      if (showAgedPayables) {
-        return <AgedPayables />;
-      }
-
-      if (showAccountBalances) {
-        return <AccountBalances />;
-      }
-
-      if (showTrialBalances) {
-        return <TrialBalances />;
-      }
-
-      if (showProfitAndLossAnalysis) {
-        return < ProfitAndLossAnalysis/>;
-      }
-
-      if (showBalanceSheetAnalysis) {
-        return <BalanceSheetAnalysis/>;
-      }
-
-      if (showHelpCenter) {
-        return <HelpCenter />;
-      }
-
-      if (showCashFlowAnalysis) {
-        return <CashFlowAnalysis/>;
-      }
-
-      if (showBudgetVsActualAnalysis) {
-        return <BudgetVsActualAnalysis/>;
-      }
-
-      if (showSalesAnalysis) {
-        return <SalesAnalysis/>;
-      }
-
-      if (showDeviceSettings) {
-        return <DeviceSettings/>;
-      }
-
-      if (showExpenseAnalysis) {
-        return <ExpenseAnalysis/>;
-      }
-
-      if (showKPIDashboard) {
-        return <KPIDashboard/>
-      }
-
-      if (showEmployeeManagement) {
+        content = renderSettingsTabs();
+      } else if (showUserProfileSettings) {
+        content = <UserProfileSettings userData={userData} onUpdate={handleUserProfileUpdate} />;
+      } else if (showIntegrationSettings) {
+        return null;
+      } else if (showProductManagement) {
+        content = (
+          <FormWrapper>
+            <ProductManagement />
+          </FormWrapper>
+        );
+      } else if (showServiceManagement) {
+        content = (
+          <FormWrapper>
+            <ServiceManagement />
+          </FormWrapper>
+        );
+      } else if (showConnectBank) {
+        content = <ConnectBank />;
+      } else if (showInventoryItems) {
+        content = <InventoryItems />;
+      } else if (showPayrollReport) {
+        content = <PayrollReport />;
+      } else if (showBankReport) {
+        content = <BankReport />;
+      } else if (showDashboard) {
+        content = <Dashboard />;
+      } else if (showEstimateManagement) {
+        content = <EstimateManagement />;
+      } else if (showSalesOrderManagement) {
+        content = <SalesOrderManagement />;
+      } else if (showInvoiceManagement) {
+        content = <InvoiceManagement />;
+      } else if (showVendorManagement) {
+        content = <VendorManagement />;
+      } else if (showBillManagement) {
+        content = <BillManagement />;
+      } else if (showPurchaseOrderManagement) {
+        content = <PurchaseOrderManagement />;
+      } else if (showTermsAndConditions) {
+        content = <TermsAndConditions />;
+      } else if (showBankRecon) {
+        content = <BankReconciliation />;
+      } else if (showPrivacyPolicy) {
+        content = <PrivacyPolicy />;
+      } else if (showExpensesManagement) {
+        content = <ExpensesManagement />;
+      } else if (showPurchaseReturnManagement) {
+        content = <PurchaseReturnsManagement />;
+      } else if (showProcurementManagement) {
+        content = <ProcurementManagement />;
+      } else if (showPayrollManagement) {
+        content = <PayrollManagement />;
+      } else if (showPayrollTransactions) {
+        content = <PayrollTransactions />;
+      } else if (showDownloadTransactions) {
+        content = <DownloadTransactions />;
+      } else if (showTimesheetManagement) {
+        content = <TimesheetManagement />;
+      } else if (showChartOfAccounts) {
+        content = <ChartOfAccountsManagement />;
+      } else if (showGeneralLedgerManagement) {
+        content = <GeneralLedgerManagement />;
+      } else if (showAccountReconManagement) {
+        content = <AccountReconManagement />;
+      } else if (showMonthEndManagement) {
+        content = <MonthEndManagement />;
+      } else if (showFinancialStatements) {
+        content = <FinancialManagement />;
+      } else if (showFixedAssetManagement) {
+        content = <FixedAssetManagement />;
+      } else if (showBudgetManagement) {
+        content = <BudgetManagement />;
+      } else if (showCostAccountingManagement) {
+        content = <CostAccountingManagement />;
+      } else if (showIntercompanyManagement) {
+        content = <IntercompanyManagement />;
+      } else if (showAuditTrailManagement) {
+        content = <AuditTrailManagement />;
+      } else if (showProfitAndLossReport) {
+        content = <ProfitAndLossReport />;
+      } else if (showBalanceSheetReport) {
+        content = <BalanceSheetReport />;
+      } else if (showCashFlowReport) {
+        content = <CashFlowReport />;
+      } else if (showIncomeByCustomer) {
+        content = <IncomeByCustomer />;
+      } else if (showAgedReceivables) {
+        content = <AgedReceivables />;
+      } else if (showAgedPayables) {
+        content = <AgedPayables />;
+      } else if (showAccountBalances) {
+        content = <AccountBalances />;
+      } else if (showTrialBalances) {
+        content = <TrialBalances />;
+      } else if (showProfitAndLossAnalysis) {
+        content = <ProfitAndLossAnalysis />;
+      } else if (showBalanceSheetAnalysis) {
+        content = <BalanceSheetAnalysis />;
+      } else if (showHelpCenter) {
+        content = <HelpCenter />;
+      } else if (showCashFlowAnalysis) {
+        content = <CashFlowAnalysis />;
+      } else if (showBudgetVsActualAnalysis) {
+        content = <BudgetVsActualAnalysis />;
+      } else if (showSalesAnalysis) {
+        content = <SalesAnalysis />;
+      } else if (showDeviceSettings) {
+        content = <DeviceSettings />;
+      } else if (showExpenseAnalysis) {
+        content = <ExpenseAnalysis />;
+      } else if (showKPIDashboard) {
+        content = <KPIDashboard />;
+      } else if (showEmployeeManagement) {
         console.log('Rendering EmployeeManagement component');
-        return <EmployeeManagement />;
-      }
-
-      if (showJournalEntryManagement) {
-        console.log('Rendering Journal Entry Management Component')
-        return <JournalEntryManagement/>;
-      }
-  
-      if (selectedInvoiceId !== null) {
-        return <InvoiceDetails invoiceId={selectedInvoiceId} onBack={handleBackFromInvoice} />;
-      }
-  
-      if (showCustomerDetails && selectedCustomer) {
-        return <CustomerDetails customer={selectedCustomer} onInvoiceSelect={handleInvoiceSelect} onBack={handleBackToCustomerDetails} />;
-      }
-  
-      if (showAnalysisPage) {
-        return <AnalysisPage />;
-      }
-
-   
-      if (showCustomerList) {
-        return (
+        content = <EmployeeManagement />;
+      } else if (showJournalEntryManagement) {
+        console.log('Rendering Journal Entry Management Component');
+        content = <JournalEntryManagement />;
+      } else if (selectedInvoiceId !== null) {
+        content = <InvoiceDetails invoiceId={selectedInvoiceId} onBack={handleBackFromInvoice} />;
+      } else if (showCustomerDetails && selectedCustomer) {
+        content = <CustomerDetails customer={selectedCustomer} onInvoiceSelect={handleInvoiceSelect} onBack={handleBackToCustomerDetails} />;
+      } else if (showAnalysisPage) {
+        content = <AnalysisPage />;
+      } else if (showCustomerList) {
+        content = (
           <CustomerList 
             onCreateCustomer={handleCreateCustomer} 
             onInvoiceSelect={handleInvoiceSelect}
             onCustomerSelect={handleCustomerSelect}
           />
         );
-      }
-  
-      if (showReports && selectedReport) {
-        return <ReportDisplay reportType={selectedReport} />;
-      }
-  
-      if (showBankingDashboard) {
-        return <BankingDashboard />;
-      }
-  
-      if (showHRDashboard) {
-        return <HRDashboard section={hrSection} />;
-      }
-  
-      if (showPayrollDashboard) {
-        return <PayrollDashboard section={payrollSection} />;
-      }
-  
-      if (showAccountPage) {
-        return (
+      } else if (showReports && selectedReport) {
+        content = <ReportDisplay reportType={selectedReport} />;
+      } else if (showBankingDashboard) {
+        content = <BankingDashboard />;
+      } else if (showHRDashboard) {
+        content = <HRDashboard section={hrSection} />;
+      } else if (showPayrollDashboard) {
+        content = <PayrollDashboard section={payrollSection} />;
+      } else if (showAccountPage) {
+        content = (
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <Button variant="contained" color="error" onClick={handleDeleteAccount}>
@@ -542,10 +458,8 @@ const RenderMainContent = ({
             </Grid>
           </Grid>
         );
-      }
-  
-      if (showTransactionForm) {
-        return (
+      } else if (showTransactionForm) {
+        content = (
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <TransactionForm />
@@ -555,19 +469,15 @@ const RenderMainContent = ({
             </Grid>
           </Grid>
         );
-      }
-  
-      if (showInvoiceBuilder) {
-        return (
+      } else if (showInvoiceBuilder) {
+        content = (
           <InvoiceTemplateBuilder
             handleClose={handleCloseInvoiceBuilder}
             userData={userData}
           />
         );
-      }
-  
-      if (showCreateOptions) {
-        return (
+      } else if (showCreateOptions) {
+        content = (
           <Grid container spacing={3}>
             <Grid item xs={12} md={8}>
               {renderForm(selectedOption, userData)}
@@ -576,20 +486,17 @@ const RenderMainContent = ({
         );
       }
   
-      return null;
+      return content ? <ContentWrapper>{content}</ContentWrapper> : null;
     };
-  
     
     return (
       <Box
         sx={{
-          height: '100%',
+          height: 'calc(100vh - 60px)',
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          top: '10px',
-          overflow: 'auto',
-          //background: 'linear-gradient(to bottom, #e3f2fd, #ffffff)', // Light blue to white gradient
+          overflow: 'hidden',
         }}
       >
         <Paper 
@@ -599,21 +506,12 @@ const RenderMainContent = ({
             display: 'flex',
             flexDirection: 'column',
             overflow: 'auto',
-            backgroundColor: 'transparent', // Make paper transparent to show gradient
+            backgroundColor: 'transparent',
             borderRadius: 2,
-            m: 1, // Add margin to show gradient around the paper
+            m: 1,
           }}
         >
-          <Box
-            sx={{
-              flexGrow: 1,
-              overflow: 'auto',
-              p: 2,
-              backgroundColor: 'rgba(255, 255, 255, 0.8)', // Semi-transparent white
-            }}
-          >
-            {renderContent()}
-          </Box>
+          {renderContent()}
         </Paper>
       </Box>
     );

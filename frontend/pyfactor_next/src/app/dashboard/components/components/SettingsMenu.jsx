@@ -2,18 +2,29 @@ import React from 'react';
 import { Menu, MenuItem, styled } from '@mui/material';
 import { menuItemStyle } from '../../../../styles/menuStyles';
 
-const StyledMenu = styled(Menu)(({ theme, backgroundColor }) => ({
+const StyledMenu = styled(Menu)(({ theme }) => ({
   '& .MuiPaper-root': {
-    marginTop: theme.spacing(2),
+    marginTop: theme.spacing(0),  // Move up
+    marginRight: theme.spacing(-3),  // Move right
     minWidth: 180,
-    backgroundColor: backgroundColor,
-
+    backgroundColor: "#e1f5fe",
+    color: "#263238",  // Change this to your desired text color
     boxShadow: 'rgb(255, 255, 255) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.05) 0px 4px 6px -2px',
   },
 }));
 
 const StyledMenuItem = styled(MenuItem)(({ theme }) => ({
   ...menuItemStyle,
+  color: "#263238",  // Change this to your desired text color
+  '&:hover': {
+    backgroundColor: '#bbdefb',  // Change this to your desired hover color
+  },
+  '&.Mui-selected': {
+    backgroundColor: '#90caf9',  // Change this to your desired selected color
+    '&:hover': {
+      backgroundColor: '#64b5f6',  // Change this to your desired selected hover color
+    },
+  },
 }));
 
 const SettingsMenu = ({ anchorEl, open, onClose, onOptionSelect, selectedOption }) => {

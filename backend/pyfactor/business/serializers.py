@@ -15,7 +15,12 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
 class BusinessSerializer(serializers.ModelSerializer):
     subscriptions = SubscriptionSerializer(many=True, read_only=True)
+    active_subscription = serializers.SerializerMethodField()
 
     class Meta:
         model = Business
-        fields = ['name', 'business_type', 'subscriptions']
+        fields = ['name', 'business_type', 'subscriptions', 'active_subscription']
+
+    def get_active_subscription(self, obj):
+        active_sub = obj.subscriptions.filter(is_active=True).first()
+        return SubscriptionSerializer(active_sub).data if active_sub else None

@@ -149,199 +149,209 @@ const ProductForm = () => {
   
   return (
     <Paper elevation={3} sx={{ p: 3, backgroundColor: theme.palette.background.paper }}>
-      <Box display="flex" alignItems="center" mb={2}>
-        <InventoryIcon sx={{ fontSize: 40, color: theme.palette.primary.main, mr: 2 }} />
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Add a Product
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            Create and manage your product inventory
-          </Typography>
-        </Box>
-      </Box>
-  
-      {error && <Typography color="error" mb={2}>{error}</Typography>}
-  
-      <form onSubmit={handleSubmit}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <TextField 
-              label="Name" 
-              name="name" 
-              value={product.name} 
-              onChange={handleChange} 
-              fullWidth 
-              required 
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControl component="fieldset">
-              <FormLabel component="legend">Product Type</FormLabel>
-              <RadioGroup
-                row
-                aria-label="saleType"
-                name="saleType"
-                value={product.saleType}
-                onChange={handleChange}
-              >
-                <FormControlLabel value="sale" control={<Radio />} label="For Sale" />
-                <FormControlLabel value="rent" control={<Radio />} label="For Rent" />
-              </RadioGroup>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12}>
-            <TextField 
-              label="Description" 
-              name="description" 
-              value={product.description} 
-              onChange={handleChange} 
-              fullWidth 
-              multiline 
-              rows={3} 
-            />
-          </Grid>
-          {product.saleType === 'sale' && (
-            <>
-              <Grid item xs={12} sm={6}>
-                <TextField 
-                  label="Price" 
-                  name="price" 
-                  type="number" 
-                  value={product.price} 
-                  onChange={handleChange} 
-                  fullWidth 
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField 
-                  label="Sales Tax (%)" 
-                  name="salesTax" 
-                  type="number" 
-                  value={product.salesTax} 
-                  onChange={handleChange} 
-                  fullWidth 
-                />
-              </Grid>
-            </>
-          )}
-          <Grid item xs={12} sm={6}>
-            <TextField 
-              label="Stock Quantity" 
-              name="stock_quantity" 
-              type="number" 
-              value={product.stock_quantity} 
-              onChange={handleChange} 
-              fullWidth 
-            />
-          </Grid>
-          {product.saleType === 'sale' && (
-            <Grid item xs={12} sm={6}>
-              <TextField 
-                label="Reorder Level" 
-                name="reorder_level" 
-                type="number" 
-                value={product.reorder_level} 
-                onChange={handleChange} 
-                fullWidth 
-              />
-            </Grid>
-          )}
-          <Grid item xs={12}>
-            <Grid container spacing={2}>
-              <Grid item xs={8}>
-                <TextField 
-                  label="Height" 
-                  name="height" 
-                  type="number" 
-                  value={product.height} 
-                  onChange={handleChange} 
-                  fullWidth 
-                />
-              </Grid>
-              <Grid item xs={4}>
-                <FormControl fullWidth>
-                  <InputLabel>Height Unit</InputLabel>
-                  <Select name="height_unit" value={product.height_unit} onChange={handleChange}>
-                    <MenuItem value="cm">Centimeter</MenuItem>
-                    <MenuItem value="m">Meter</MenuItem>
-                    <MenuItem value="in">Inch</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </Grid>
-          <Grid item xs={12}>
-            <Grid container spacing={2}>
-              <Grid item xs={8}>
-                <TextField 
-                  label="Width" 
-                  name="width" 
-                  type="number" 
-                  value={product.width} 
-                  onChange={handleChange} 
-                  fullWidth 
-                />
-              </Grid>
-              <Grid item xs={4}>
-                <FormControl fullWidth>
-                  <InputLabel>Width Unit</InputLabel>
-                  <Select name="width_unit" value={product.width_unit} onChange={handleChange}>
-                    <MenuItem value="cm">Centimeter</MenuItem>
-                    <MenuItem value="m">Meter</MenuItem>
-                    <MenuItem value="in">Inch</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </Grid>
-          <Grid item xs={12}>
-            <Grid container spacing={2}>
-              <Grid item xs={8}>
-                <TextField 
-                  label="Weight" 
-                  name="weight" 
-                  type="number" 
-                  value={product.weight} 
-                  onChange={handleChange} 
-                  fullWidth 
-                />
-              </Grid>
-              <Grid item xs={4}>
-                <FormControl fullWidth>
-                  <InputLabel>Weight Unit</InputLabel>
-                  <Select name="weight_unit" value={product.weight_unit} onChange={handleChange}>
-                    <MenuItem value="kg">Kilogram</MenuItem>
-                    <MenuItem value="lb">Pound</MenuItem>
-                    <MenuItem value="g">Gram</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </Grid>
-          <Grid item xs={12}>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Button type="submit" variant="contained" color="primary" size="large">
-                Create Product
-              </Button>
-              <Tooltip title="Learn more about product creation">
-                <IconButton color="primary">
-                  <HelpOutlineIcon />
-                </IconButton>
-              </Tooltip>
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <Box display="flex" alignItems="center">
+            <InventoryIcon sx={{ fontSize: 40, color: theme.palette.primary.main, mr: 2 }} />
+            <Box>
+              <Typography variant="h4" component="h1" gutterBottom>
+                Add a Product
+              </Typography>
+              <Typography variant="subtitle1" color="text.secondary">
+                Create and manage your product inventory
+              </Typography>
             </Box>
-          </Grid>
+          </Box>
         </Grid>
-      </form>
-  
-      {product.saleType === 'rent' && (
-        <Box mt={2}>
-          <Typography variant="body2" color="text.secondary">
-            Create a custom rental plan <Link href="/settings/business-settings/custom-charge-settings">here</Link> and use when making a sales transaction.
-          </Typography>
-        </Box>
-      )}
-  
+
+        {error && (
+          <Grid item xs={12}>
+            <Typography color="error">{error}</Typography>
+          </Grid>
+        )}
+
+        <Grid item xs={12}>
+          <form onSubmit={handleSubmit}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Name"
+                  name="name"
+                  value={product.name}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl component="fieldset">
+                  <FormLabel component="legend">Product Type</FormLabel>
+                  <RadioGroup
+                    row
+                    aria-label="saleType"
+                    name="saleType"
+                    value={product.saleType}
+                    onChange={handleChange}
+                  >
+                    <FormControlLabel value="sale" control={<Radio />} label="For Sale" />
+                    <FormControlLabel value="rent" control={<Radio />} label="For Rent" />
+                  </RadioGroup>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Description"
+                  name="description"
+                  value={product.description}
+                  onChange={handleChange}
+                  fullWidth
+                  multiline
+                  rows={3}
+                />
+              </Grid>
+              {product.saleType === 'sale' && (
+                <>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Price"
+                      name="price"
+                      type="number"
+                      value={product.price}
+                      onChange={handleChange}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Sales Tax (%)"
+                      name="salesTax"
+                      type="number"
+                      value={product.salesTax}
+                      onChange={handleChange}
+                      fullWidth
+                    />
+                  </Grid>
+                </>
+              )}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Stock Quantity"
+                  name="stock_quantity"
+                  type="number"
+                  value={product.stock_quantity}
+                  onChange={handleChange}
+                  fullWidth
+                />
+              </Grid>
+              {product.saleType === 'sale' && (
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Reorder Level"
+                    name="reorder_level"
+                    type="number"
+                    value={product.reorder_level}
+                    onChange={handleChange}
+                    fullWidth
+                  />
+                </Grid>
+              )}
+              <Grid item xs={12} sm={6}>
+                <Grid container spacing={2}>
+                  <Grid item xs={8}>
+                    <TextField
+                      label="Height"
+                      name="height"
+                      type="number"
+                      value={product.height}
+                      onChange={handleChange}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <FormControl fullWidth>
+                      <InputLabel>Height Unit</InputLabel>
+                      <Select name="height_unit" value={product.height_unit} onChange={handleChange}>
+                        <MenuItem value="cm">Centimeter</MenuItem>
+                        <MenuItem value="m">Meter</MenuItem>
+                        <MenuItem value="in">Inch</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Grid container spacing={2}>
+                  <Grid item xs={8}>
+                    <TextField
+                      label="Width"
+                      name="width"
+                      type="number"
+                      value={product.width}
+                      onChange={handleChange}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <FormControl fullWidth>
+                      <InputLabel>Width Unit</InputLabel>
+                      <Select name="width_unit" value={product.width_unit} onChange={handleChange}>
+                        <MenuItem value="cm">Centimeter</MenuItem>
+                        <MenuItem value="m">Meter</MenuItem>
+                        <MenuItem value="in">Inch</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </Grid>
+              <Grid item xs={12}>
+                <Grid container spacing={2}>
+                  <Grid item xs={8}>
+                    <TextField
+                      label="Weight"
+                      name="weight"
+                      type="number"
+                      value={product.weight}
+                      onChange={handleChange}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <FormControl fullWidth>
+                      <InputLabel>Weight Unit</InputLabel>
+                      <Select name="weight_unit" value={product.weight_unit} onChange={handleChange}>
+                        <MenuItem value="kg">Kilogram</MenuItem>
+                        <MenuItem value="lb">Pound</MenuItem>
+                        <MenuItem value="g">Gram</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </Grid>
+              <Grid item xs={12}>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Button type="submit" variant="contained" color="primary" size="large">
+                    Create Product
+                  </Button>
+                  <Tooltip title="Learn more about product creation">
+                    <IconButton color="primary">
+                      <HelpOutlineIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Grid>
+            </Grid>
+          </form>
+        </Grid>
+
+        {product.saleType === 'rent' && (
+          <Grid item xs={12}>
+            <Typography variant="body2" color="text.secondary">
+              Create a custom rental plan <Link href="/settings/business-settings/custom-charge-settings">here</Link> and use when making a sales transaction.
+            </Typography>
+          </Grid>
+        )}
+      </Grid>
+
       <Dialog open={openPrintDialog} onClose={() => setOpenPrintDialog(false)}>
         <DialogTitle>Print Barcode</DialogTitle>
         <DialogContent>
@@ -351,10 +361,10 @@ const ProductForm = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenPrintDialog(false)}>Cancel</Button>
-          <Button 
-            onClick={handlePrintBarcode} 
-            startIcon={<PrintIcon />} 
-            variant="contained" 
+          <Button
+            onClick={handlePrintBarcode}
+            startIcon={<PrintIcon />}
+            variant="contained"
             color="secondary"
             disabled={!product.id}
           >
@@ -362,11 +372,12 @@ const ProductForm = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
       <Snackbar open={openSnackbar} autoHideDuration={3000} onClose={handleCloseSnackbar}>
-    <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
-      {snackbarMessage}
-    </Alert>
-  </Snackbar>
+        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Paper>
   );
 };

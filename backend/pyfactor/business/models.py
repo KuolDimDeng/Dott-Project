@@ -48,8 +48,8 @@ class Business(models.Model):
 class Subscription(models.Model):
 
     SUBSCRIPTION_TYPES = (
-        ('free', 'Free'),
-        ('professional', 'Professional'),
+        ('free', 'Free Plan'),
+        ('professional', 'Professional Plan'),
 
     )
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='subscriptions')
