@@ -174,6 +174,7 @@ const MainListItems = ({
       { label: "Taxes", onClick: handlePayrollClick, value: 'taxes' },
       { label: "Benefits", onClick: handlePayrollClick, value: 'benefits' },
       { label: "Run Payroll", onClick: handlePayrollClick, value: 'run' },
+      { label: "Payroll Transactions", onClick: handlePayrollClick, value: 'transactions' },
       { label: "Reports", onClick: handlePayrollClick, value: 'reports' },
     ]
   },
@@ -216,13 +217,12 @@ const MainListItems = ({
     icon: <AnalyticsIcon />,
     label: "Analytics",
     subItems: [
-      { label: "Dashboard", onClick: handleAnalysisClick, value: 'dashboard' },
-      { label: "Sales Analysis", onClick: handleAnalysisClick, value: 'sales' },
-      { label: "Expense Analysis", onClick: handleAnalysisClick, value: 'expenses' },
-      { label: "Profit & Loss", onClick: handleAnalysisClick, value: 'profit-loss' },
+      { label: "KPI Dashboard", onClick: handleAnalysisClick, value: 'kpi-data' },
+      { label: "Sales Analysis", onClick: handleAnalysisClick, value: 'sales-analysis' },
+      { label: "Expense Analysis", onClick: handleAnalysisClick, value: 'expenses-analysis' },
+      { label: "Profit & Loss", onClick: handleAnalysisClick, value: 'profit-loss-analysis' },
       { label: "Cash Flow", onClick: handleAnalysisClick, value: 'cash-flow' },
       { label: "Budget vs. Actual", onClick: handleAnalysisClick, value: 'budget-vs-actual' },
-      { label: "KPI Dashboard", onClick: handleAnalysisClick, value: 'kpi' },
     ]
   },
   {
@@ -307,7 +307,7 @@ const MainListItems = ({
           onClick={handleCreateClick}
           sx={{
             justifyContent: 'flex-start',
-            pl: 3,
+            pl: 2,
             py: 1,
             mb: 2,
             mx: 1,
@@ -315,34 +315,40 @@ const MainListItems = ({
             border: '2px solid',
             borderColor: isCreateOpen ? 'primary.dark' : 'primary.main',
             borderRadius: '50px',
+            maxWidth: '160px', // Adjust this value as needed
             width: `${buttonWidth}px`,
-            color: isCreateOpen ? 'white' : 'menu.text',
-            backgroundColor: isCreateOpen ? 'primary.main' : '#e3f2fd',
+            color: isCreateOpen ? 'primary.dark' : 'menu.text',
+            backgroundColor: isCreateOpen ? '#e3f2fd' : '#e3f2fd',
             fontSize: '16px',
             fontWeight: isCreateOpen ? 'bold' : 'normal',
             transition: 'all 0.3s ease',
             '&:hover, &.Mui-focusVisible': {
-              backgroundColor: 'primary.main',
+              backgroundColor: '#e3f2fd',
               borderColor: 'primary.dark',
-              color: 'white',
+              color: 'primary.dark',
               fontWeight: 'bold',
               '& .MuiSvgIcon-root': {
-                color: 'white',
+                color: 'primary.dark',
               },
             },
           }}
         >
-          <ListItemIcon
-            sx={{
-              minWidth: 32,
-              mr: 1,
-              '& .MuiSvgIcon-root': {
-                fontSize: '24px',
-                color: isCreateOpen ? 'white' : 'menu.icon', // Light blue when not hovered/selected
-                transition: 'color 0.3s ease',
-              },
-            }}
-          >
+            <ListItemIcon
+              sx={{
+                minWidth: 25,
+                mr: 1,
+                '& .MuiSvgIcon-root': {
+                  fontSize: '24px',
+                  color: isCreateOpen ? 'primary.dark' : 'menu.icon',
+                  transition: 'color 0.3s ease',
+                },
+                '$:hover &, .Mui-focusVisible &': {
+                  '& .MuiSvgIcon-root': {
+                    color: 'primary.dark',
+                  },
+                },
+              }}
+            >
             <AddCircleOutlineIcon />
           </ListItemIcon>
           <ListItemText 

@@ -10,7 +10,8 @@ import {
   Typography,
   Collapse,
   IconButton,
-  Box
+  Box,
+  useTheme
 } from '@mui/material';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 import axiosInstance from '../components/axiosConfig';
@@ -22,6 +23,11 @@ const formatAmount = (amount) => {
 const ExpandableRow = ({ name, data }) => {
   const [open, setOpen] = React.useState(false);
 
+  // Check if data exists and has a total property
+  const total = data && data.total ? data.total : 0;
+  const accounts = data && data.accounts ? data.accounts : [];
+
+
   return (
     <>
       <TableRow>
@@ -31,7 +37,7 @@ const ExpandableRow = ({ name, data }) => {
           </IconButton>
           {name}
         </TableCell>
-        <TableCell align="right">${formatAmount(data.total)}</TableCell>
+        <TableCell align="right">${formatAmount(total)}</TableCell>
       </TableRow>
       <TableRow>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={2}>
@@ -39,7 +45,7 @@ const ExpandableRow = ({ name, data }) => {
             <Box margin={1}>
               <Table size="small">
                 <TableBody>
-                  {data.accounts.map((account, index) => (
+                  {accounts.map((account, index) => (
                     <TableRow key={index}>
                       <TableCell>{account.name}</TableCell>
                       <TableCell align="right">${formatAmount(account.amount)}</TableCell>
@@ -59,15 +65,18 @@ export default function ProfitAndLossReport() {
   const [data, setData] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+  const theme = useTheme();
+
 
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axiosInstance.get('/api/profit-and-loss/');
+        const response = await axiosInstance.get('/api/reports/profit-and-loss/');
+        console.log('API Response:', response.data); // Log the response data
         setData(response.data);
       } catch (error) {
-        console.error('Error fetching data:', error);
-        setError(error.response?.data?.error || 'An error occurred');
+        console.error('Error fetching data:', error.response || error);
+        setError(error.response?.data?.error || error.message || 'An error occurred');
       } finally {
         setLoading(false);
       }
@@ -80,6 +89,8 @@ export default function ProfitAndLossReport() {
   if (!data) return <Typography>No data available for the current date.</Typography>;
 
   return (
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+
     <TableContainer component={Paper}>
       <Typography variant="h4" gutterBottom>Profit and Loss Statement</Typography>
       <Table>
@@ -90,13 +101,13 @@ export default function ProfitAndLossReport() {
           </TableRow>
         </TableHead>
         <TableBody>
-          <ExpandableRow name="Revenue" data={data.Revenue} />
-          <ExpandableRow name="Cost of Goods Sold" data={data['Cost of Goods Sold']} />
+          {data.Revenue && <ExpandableRow name="Revenue" data={data.Revenue} />}
+          {data['Cost of Goods Sold'] && <ExpandableRow name="Cost of Goods Sold" data={data['Cost of Goods Sold']} />}
           <TableRow>
             <TableCell><strong>Gross Profit</strong></TableCell>
             <TableCell align="right"><strong>${formatAmount(data['Gross Profit'])}</strong></TableCell>
           </TableRow>
-          <ExpandableRow name="Operating Expenses" data={data['Operating Expenses']} />
+          {data['Operating Expenses'] && <ExpandableRow name="Operating Expenses" data={data['Operating Expenses']} />}
           <TableRow>
             <TableCell><strong>Net Income</strong></TableCell>
             <TableCell align="right"><strong>${formatAmount(data['Net Income'])}</strong></TableCell>
@@ -108,5 +119,6 @@ export default function ProfitAndLossReport() {
       </Typography>
       <pre>{JSON.stringify(data, null, 2)}</pre>
     </TableContainer>
+    </Box>
   );
 }

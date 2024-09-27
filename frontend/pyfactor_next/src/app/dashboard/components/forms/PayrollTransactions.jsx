@@ -20,6 +20,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  useTheme
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -37,6 +38,8 @@ const PayrollTransactions = () => {
   const [selectedRun, setSelectedRun] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const { addMessage } = useUserMessageContext();
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchPayrollRuns();
@@ -90,8 +93,8 @@ const PayrollTransactions = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box>
-        <Typography variant="h4" gutterBottom>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+    <Typography variant="h4" gutterBottom>
           Payroll Transactions
         </Typography>
         <Typography variant="subtitle1" gutterBottom>

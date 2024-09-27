@@ -77,7 +77,7 @@ export default function BalanceSheetReport() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axiosInstance.get('/api/balance-sheet/');
+        const response = await axiosInstance.get('/api/reports/balance-sheet/');
         console.log('API Response:', response);
         if (response.data) {
           setData(response.data);

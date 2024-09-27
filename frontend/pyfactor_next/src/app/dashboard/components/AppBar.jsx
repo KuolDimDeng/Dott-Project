@@ -115,36 +115,25 @@ const handleSubscriptionClick = (event) => {
               {userData.business_name}
             </Typography>
             <Box 
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              cursor: userData.subscription_type === 'free' ? 'pointer' : 'default',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              transition: 'background-color 0.3s',
-              '&:hover': userData.subscription_type === 'free' ? {
-                backgroundColor: '#bbdefb',
-                opacity: 1,
-              } : {},
-              '&.Mui-selected': {
-                backgroundColor: '#90caf9',
-                '&:hover': {
-                  backgroundColor: '#64b5f6',
-                },
-              },
-            }} 
-            onClick={handleSubscriptionClick}
-            className={isSubscriptionMenuOpen ? 'Mui-selected' : ''}
-          >
-          <Typography variant="caption" sx={{ color: textAppColor, lineHeight: 1, pr: 0.5 }}>
-            {userData.subscription_type === 'professional' ? 'Professional Plan' : 'Basic Plan'}
-          </Typography>
-          {userData.subscription_type === 'free' && (
-            <IconButton size="small" sx={{ padding: 0, ml: 0.5, color: textAppColor }}>
-              {subscriptionOpen ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
-            </IconButton>
-          )}
-        </Box>
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  cursor: userData.subscription_type === 'free' ? 'pointer' : 'default',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  backgroundColor: '#90caf9', // This is the color used for the selected state
+                }} 
+                onClick={handleSubscriptionClick}
+              >
+                <Typography variant="caption" sx={{ color: textAppColor, lineHeight: 2, pr: 0.5 }}>
+                  {userData.subscription_type === 'professional' ? 'Professional Plan' : 'Basic Plan'}
+                </Typography>
+                {userData.subscription_type === 'free' && (
+                  <IconButton size="small" sx={{ padding: 0, ml: 0.5, color: textAppColor }}>
+                    {subscriptionOpen ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                  </IconButton>
+                )}
+              </Box>
       </Box>
           </Paper>
         )}

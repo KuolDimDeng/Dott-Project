@@ -10,7 +10,8 @@ import {
   Typography,
   Collapse,
   IconButton,
-  Box
+  Box,
+  useTheme
 } from '@mui/material';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 import axiosInstance from '../components/axiosConfig';
@@ -69,11 +70,13 @@ export default function CashFlowReport() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const theme = useTheme();
+
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axiosInstance.get('/api/cash-flow/');
+        const response = await axiosInstance.get('/api/reports/cash-flow/');
         console.log('API Response:', response);
         if (response.data) {
           setData(response.data);
@@ -99,6 +102,8 @@ export default function CashFlowReport() {
   const financing = data.Financing || {};
 
   return (
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+
     <TableContainer component={Paper}>
       <Typography variant="h4" gutterBottom>Cash Flow Statement</Typography>
       <Table>
@@ -141,5 +146,6 @@ export default function CashFlowReport() {
         </>
       )}
     </TableContainer>
+    </Box>
   );
 }

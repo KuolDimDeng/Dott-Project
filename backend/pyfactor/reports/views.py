@@ -396,3 +396,44 @@ def trial_balance(request):
         return Response({"error": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def profit_and_loss(request):
+    print("Profit and Loss view called")  # Add this line
+    user = request.user
+    database_name = get_user_database(user)
+    try:
+        data = generate_income_statement(database_name)
+        return Response(data, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.exception(f"Error generating profit and loss report: {str(e)}")
+        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def balance_sheet(request):
+    print("Balance Sheet view called")
+    user = request.user
+    database_name = get_user_database(user)
+    try:
+        data = generate_balance_sheet(database_name)
+        return Response(data, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.exception(f"Error generating balance sheet: {str(e)}")
+        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cash_flow(request):
+    print("Cash Flow view called")
+    user = request.user
+    database_name = get_user_database(user)
+    try:
+        data = generate_cash_flow(database_name)
+        return Response(data, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.exception(f"Error generating cash flow statement: {str(e)}")
+        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

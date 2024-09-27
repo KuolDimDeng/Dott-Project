@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Typography, Box, FormControl, InputLabel, Select, MenuItem, useTheme } from '@mui/material';
 import { Pie, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title } from 'chart.js';
 import axiosInstance from '../components/axiosConfig';
@@ -21,6 +21,8 @@ const formatAmount = (amount) => {
 export default function BalanceSheetAnalysis() {
   const [timeRange, setTimeRange] = useState('12');
   const [data, setData] = useState(null);
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchData();
@@ -87,7 +89,7 @@ export default function BalanceSheetAnalysis() {
   };
 
   return (
-    <Box>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Typography variant="h4" gutterBottom>Balance Sheet Analysis</Typography>
       
       <FormControl fullWidth margin="normal">
