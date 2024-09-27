@@ -58,7 +58,7 @@ SHOPIFY_SHOP_URL = os.getenv('SHOPIFY_SHOP_URL')
 APP_URL = 'http://localhost:8000'  # or whatever your app's URL is
 
 SHOPIFY_API_VERSION = '2023-07'  # or whatever the latest version is
-
+DEFAULT_USER_ID = 1  # or whatever default value you want to use
 
 
 USE_TZ = True
@@ -132,12 +132,7 @@ REST_FRAMEWORK = {
 
 # Celery Configuration
 # Celery settings
-CELERY_BROKER_URL = 'redis://redis:6379/0'
-CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
+
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
@@ -282,12 +277,12 @@ INSTALLED_APPS = [
     'chart',
     'integrations',
     'alerts',
+    'taxes',
     'purchases',
     'barcode',
     'debug_toolbar',
     'django_extensions',
-    'django_celery_beat',
-    'django_celery_results',
+
 ]
 
 MIDDLEWARE = [

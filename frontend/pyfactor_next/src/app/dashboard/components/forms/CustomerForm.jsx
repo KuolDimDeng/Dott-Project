@@ -1,5 +1,5 @@
-// src/app/dashboard/components/CustomerForm.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation'; // Updated import for Next.js 14
 import axiosInstance from '../components/axiosConfig';
 import {
   Box,
@@ -15,8 +15,6 @@ import {
 } from '@mui/material';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
-
-
 
 const initialState = {
   customerName: '',
@@ -39,15 +37,13 @@ const initialState = {
   city: '',
 };
 
-const CustomerForm = ({ router }) => {
-  console.log('CustomerForm router:', router);
-
+const CustomerForm = () => {
+  const router = useRouter(); // Using the Next.js 14 App Router
   const [formData, setFormData] = useState(initialState);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const { addMessage } = useUserMessageContext();
   const theme = useTheme();
-
 
   useEffect(() => {
     console.log('CustomerForm component mounted');
@@ -67,12 +63,10 @@ const CustomerForm = ({ router }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axiosInstance.post('http://localhost:8000/api/customers/create/', formData);
+      const response = await axiosInstance.post('/api/customers/create/', formData);
       console.log('Customer created successfully', response.data);
       addMessage('info', 'Customer created successfully');
-      if (router && router.push) {
-        router.push('/dashboard/customers');
-      }
+      router.push('/dashboard/customers'); // Use router.push for navigation
     } catch (error) {
       logger.error('Error creating customer', error);
       setError('Failed to create customer. Please try again.');
@@ -83,9 +77,7 @@ const CustomerForm = ({ router }) => {
   }, [formData, router, addMessage]);
 
   const handleCancel = () => {
-    if (router && router.back) {
-      router.back();
-    }
+    router.back(); // Use router.back for navigation
   };
 
   return (

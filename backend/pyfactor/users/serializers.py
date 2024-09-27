@@ -38,6 +38,7 @@ class CustomRegisterSerializer(RegisterSerializer):
     occupation = serializers.CharField(max_length=200, required=True)
     phone_number = serializers.CharField(max_length=200, required=False)
     subscription_type = serializers.ChoiceField(choices=Subscription.SUBSCRIPTION_TYPES)
+    occupation = serializers.ChoiceField(choices=User.OCCUPATION_CHOICES)
 
     class Meta:
         model = User
@@ -95,6 +96,7 @@ class CustomRegisterSerializer(RegisterSerializer):
 
                     # Create the Business in both databases
                     business_default = Business.objects.create(
+                        owner=user,  # Directly set the owner here
                         name=validated_data.get('business_name', ''),
                         business_type=validated_data.get('business_type', ''),
                         street=validated_data['street'],
@@ -106,6 +108,7 @@ class CustomRegisterSerializer(RegisterSerializer):
                     
                     business = Business.objects.using(database_name).create(
                         id=business_default.id,
+                        owner=user,  # Directly assign owner here
                         name=business_default.name,
                         business_type=business_default.business_type,
                         street=business_default.street,

@@ -1,4 +1,3 @@
-// src/app/login/page.js
 'use client';
 
 import { useState } from 'react';
@@ -18,6 +17,7 @@ import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import InputAdornment from '@mui/material/InputAdornment';
 import IconButton from '@mui/material/IconButton';
+import Image from 'next/image'; // Import Next.js Image component
 import { Controller, useForm } from 'react-hook-form';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { object, minLength, string, email } from 'valibot';
@@ -39,7 +39,7 @@ function Copyright(props) {
     <Typography variant="body2" color="text.secondary" align="center" {...props}>
       {'Copyright © '}
       <Link color="inherit" href="#">
-        PyFactor
+        Pyfactor LLC
       </Link>{' '}
       {new Date().getFullYear()}
       {'.'}
@@ -122,12 +122,24 @@ export default function SignIn() {
               padding: 3,
             }}
           >
-            <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
-              <LockOutlinedIcon />
-            </Avatar>
-            <Typography component="h1" variant="h5">
-              Sign in
-            </Typography>
+            {/* Pyfactor Logo at the Top */}
+            <Box sx={{ mb: 3 }}> {/* Push the logo up using negative margin */}
+              <Image
+                src="/static/images/Pyfactor.png"  // Path to your Pyfactor logo
+                alt="Pyfactor Logo"
+                width={150} // Adjust size as needed
+                height={50} // Adjust size as needed
+                priority
+              />
+            </Box>
+        
+            <Typography 
+                  component="h1" 
+                  variant="h5" 
+                  sx={{ color: 'primary.main' }} // Example of using sx for custom blue color
+                >
+                  Sign in
+                </Typography>
             <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 1 }}>
               <Controller
                 name="email"
@@ -194,6 +206,9 @@ export default function SignIn() {
               <FormControlLabel
                 control={<Checkbox value="remember" color="primary" />}
                 label="Remember me"
+                sx={{
+                  color: 'text.primary', // Customize Remember me text color
+                }}
               />
               <Button
                 type="submit"
@@ -206,19 +221,80 @@ export default function SignIn() {
               <Grid container>
                 <Grid item xs>
                   <Link href="/forgot-password" passHref>
-                    <Typography variant="body2" sx={{ cursor: 'pointer', textDecoration: 'underline' }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        color: 'text.secondary', // Customize Forgot Password text color
+                        '&:hover': {
+                          color: 'primary.main', // Change color on hover
+                        },
+                      }}
+                    >
                       Forgot password?
                     </Typography>
                   </Link>
                 </Grid>
                 <Grid item>
                   <Link href="/register" passHref>
-                    <Typography variant="body2" sx={{ cursor: 'pointer', textDecoration: 'underline' }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        color: 'text.secondary', // Customize Register text color
+                        '&:hover': {
+                          color: 'primary.main', // Change color on hover
+                        },
+                      }}
+                    >
                       {"Don't have an account? Register here"}
                     </Typography>
                   </Link>
                 </Grid>
               </Grid>
+              {/* Add the new text "Having trouble signing in? Contact customer support" */}
+                <Typography
+                  variant="body2"
+                  align="center"
+                  sx={{
+                    mt: 2,
+                    color: 'text.secondary', // Customize the text color
+                  }}
+                >
+                  Having trouble signing in? Contact{' '}
+                  <Link href="/support" passHref>
+                    <Typography component="span" sx={{ textDecoration: 'underline', color: 'primary.main' }}>
+                      customer support
+                    </Typography>
+                  </Link>
+                </Typography>
+
+              <Typography
+                variant="body2"
+                align="center"
+                sx={{
+                  mt: 2,
+                  color: 'text.secondary', // Customize the text color
+                }}
+              >
+                By continuing, you are indicating that you have read and agree to the{' '}
+                <Link href="/terms-of-use" passHref>
+                  <Typography component="span" sx={{ textDecoration: 'underline', color: 'primary.main' }}>
+                    Terms of Use
+                  </Typography>
+                </Link>{' '}
+                and{' '}
+                <Link href="/privacy-policy" passHref>
+                  <Typography component="span" sx={{ textDecoration: 'underline', color: 'primary.main' }}>
+                    Privacy Policy
+                  </Typography>
+                </Link>
+                .
+              </Typography>
+
+
             </Box>
           </Box>
           <Copyright sx={{ mt: 8, mb: 4 }} />

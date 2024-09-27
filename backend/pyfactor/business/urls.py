@@ -6,7 +6,8 @@ from .views import (
     EcommerceIntegrationView, 
     WooCommerceIntegrationView, 
     ecommerce_platform_selection,
-    get_business_data  # Changed this import
+    get_business_data,  # Changed this import
+    AddBusinessMemberView  # Added this import
 )
 
 urlpatterns = [
@@ -15,4 +16,6 @@ urlpatterns = [
     path('integrate/woocommerce/', WooCommerceIntegrationView.as_view(), name='woocommerce-integration'),
     path('ecommerce-platform-selection/', ecommerce_platform_selection, name='ecommerce_platform_selection'),
     path('api/business/data/', get_business_data, name='business_data'),  # Changed this line
+    path('add-member/', AddBusinessMemberView.as_view(), name='add-business-member'),
+
 ]

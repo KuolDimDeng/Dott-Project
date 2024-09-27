@@ -1,18 +1,23 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, render, redirect
 from django.views import View
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Business
+from .models import Business, BusinessMember
 from integrations.models import Integration
 from .forms import BusinessRegistrationForm
-from .serializers import BusinessSerializer, BusinessRegistrationSerializer
+from .serializers import AddBusinessMemberSerializer, BusinessSerializer, BusinessRegistrationSerializer
 from users.models import UserProfile
 import requests
+from django.contrib.auth import get_user_model
+
 from pyfactor.logging_config import get_logger  # Change this line
 from rest_framework.decorators import api_view, permission_classes
 from .models import Business, Subscription
+
+User = get_user_model()
+
 
 
 logger = get_logger()
@@ -112,3 +117,42 @@ def get_business_data(request):
         return Response({'error': 'User profile not found'}, status=404)
     except Exception as e:
         return Response({'error': 'An internal server error occurred'}, status=500)
+
+class AddBusinessMemberView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = AddBusinessMemberSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            role = serializer.validated_data['role']
+            business_id = serializer.validated_data['business_id']
+
+            try:
+                business = Business.objects.get(id=business_id)
+                if not business.members.filter(id=request.user.id, businessmember__role='OWNER').exists():
+                    return Response({"detail": "You don't have permission to add members to this business."}, status=status.HTTP_403_FORBIDDEN)
+
+                user_to_add = User.objects.get(email=email)
+
+                if BusinessMember.objects.filter(business=business, user=user_to_add).exists():
+                    return Response({"detail": "This user is already associated with the business."}, status=status.HTTP_400_BAD_REQUEST)
+
+                business_member = BusinessMember.objects.create(
+                    business=business,
+                    user=user_to_add,
+                    role=role
+                )
+
+                logger.info(f"User {email} added to business {business.name} with role {role}")
+                return Response({"detail": f"User {email} added to the business with role {role}."}, status=status.HTTP_201_CREATED)
+
+            except Business.DoesNotExist:
+                return Response({"detail": "Business not found."}, status=status.HTTP_404_NOT_FOUND)
+            except User.DoesNotExist:
+                return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+            except Exception as e:
+                logger.error(f"Error adding business member: {str(e)}")
+                return Response({"detail": "An error occurred while adding the business member."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

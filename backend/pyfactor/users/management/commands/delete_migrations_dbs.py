@@ -4,7 +4,6 @@ import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.core.management import call_command
 from django.db import connection
 from django.apps import apps
 import django
@@ -45,6 +44,9 @@ class Command(BaseCommand):
             self.stdout.write("Operation cancelled by user.")
             return
 
+        table_status = {}
+        database_status = {}
+
         # Step 1: Delete migration files
         migration_files = self.find_migration_files()
         if migration_files:
@@ -67,19 +69,19 @@ class Command(BaseCommand):
                     self.drop_public_schema(cur)
                     self.clear_user_data(cur)
 
-            self.drop_non_template_databases(conn_details)
-            self.stdout.write("All tables in public schema and non-template databases dropped successfully.")
+            database_status = self.drop_non_template_databases(conn_details)
+            self.stdout.write("All tables in public schema and non-template databases processed.")
         except Exception as e:
             self.stdout.write(f"Error connecting to the database: {e}")
 
-        # Step 3: Use Django's flush command
-        self.stdout.write("Flushing database...")
-        call_command('flush', interactive=False, verbosity=0)
-        self.stdout.write("Database flushed successfully.")
+        # Step 3: Custom flush
+        table_status = self.custom_flush()
 
-        # Step 4: Recreate and apply migrations
+        # Step 4: Drop all sequences
+        self.drop_all_sequences()
+
+        # Step 5: Recreate and apply migrations
         self.recreate_and_apply_migrations()
-
         # Step 5: Check for lingering data
         self.check_and_clear_lingering_data()
 
@@ -89,12 +91,14 @@ class Command(BaseCommand):
         # Step 7: Check for any remaining model changes
         self.check_and_apply_remaining_changes()
 
+        self.print_summary(table_status, database_status)
+
         self.stdout.write("Database reset and migrations recreated successfully.")
 
     def get_db_connection_details(self):
         default_db = settings.DATABASES['default']
         return {
-            'dbname': default_db['NAME'],
+            'dbname': 'postgres',  # Connect to 'postgres' database for administrative tasks
             'user': default_db['USER'],
             'password': default_db['PASSWORD'],
             'host': default_db['HOST'],
@@ -103,51 +107,99 @@ class Command(BaseCommand):
 
     def drop_public_schema(self, cursor):
         try:
-            cursor.execute("DROP SCHEMA public CASCADE;")
+            cursor.execute("DROP SCHEMA IF EXISTS public CASCADE;")
             cursor.execute("CREATE SCHEMA public;")
+            cursor.execute("GRANT ALL ON SCHEMA public TO postgres;")
+            cursor.execute("GRANT ALL ON SCHEMA public TO public;")
             self.stdout.write("Public schema dropped and recreated successfully.")
         except Exception as e:
             self.stdout.write(f"Error dropping public schema: {e}")
 
     def clear_user_data(self, cursor):
         try:
-            cursor.execute("TRUNCATE TABLE auth_user CASCADE;")
+            cursor.execute("TRUNCATE TABLE users_user CASCADE;")  # Adjust if your User model table name is different
             self.stdout.write("User data cleared successfully.")
         except Exception as e:
             self.stdout.write(f"Error clearing user data: {e}")
 
     def drop_non_template_databases(self, conn_details):
+        database_status = {}
         try:
-            # First, get the list of databases to drop
             with psycopg2.connect(**conn_details) as conn:
                 conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
                 with conn.cursor() as cur:
                     cur.execute("SELECT datname FROM pg_database WHERE datistemplate = false;")
                     databases = cur.fetchall()
 
-            # Now drop each database in a separate connection
             for db in databases:
                 db_name = db[0]
                 if db_name not in ['postgres', 'template0', 'template1', 'rdsadmin']:
                     try:
-                        # Create a new connection for each DROP DATABASE command
                         with psycopg2.connect(**conn_details) as conn:
                             conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
                             with conn.cursor() as cur:
+                                # Terminate existing connections
+                                cur.execute(f"""
+                                    SELECT pg_terminate_backend(pid)
+                                    FROM pg_stat_activity
+                                    WHERE datname = %s AND pid <> pg_backend_pid()
+                                """, (db_name,))
+                                
+                                # Drop the database
                                 cur.execute(f'DROP DATABASE IF EXISTS "{db_name}";')
+                        database_status[db_name] = "Dropped"
                         self.stdout.write(f"Database {db_name} dropped successfully.")
                     except Exception as e:
+                        database_status[db_name] = f"Error: {str(e)}"
                         self.stdout.write(f"Error dropping database {db_name}: {e}")
 
+            self.stdout.write("\nDatabase Status:")
+            for db, status in database_status.items():
+                self.stdout.write(f"{db}: {status}")
+
         except Exception as e:
-            self.stdout.write(f"Error fetching or dropping databases: {e}")
+            self.stdout.write(f"Error in drop_non_template_databases: {e}")
+        
+        return database_status
+
+    def custom_flush(self):
+        self.stdout.write("Flushing database...")
+        table_status = {}
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT tablename FROM pg_tables WHERE schemaname = 'public';")
+            tables = cursor.fetchall()
+            for table in tables:
+                try:
+                    cursor.execute(f'DROP TABLE IF EXISTS "{table[0]}" CASCADE;')
+                    table_status[table[0]] = "Dropped"
+                except Exception as e:
+                    table_status[table[0]] = f"Error: {str(e)}"
+                    self.stdout.write(f"Error dropping table {table[0]}: {e}")
+        
+        self.stdout.write("Database flush attempt completed.")
+        self.stdout.write("\nTable Status:")
+        for table, status in table_status.items():
+            self.stdout.write(f"{table}: {status}")
+        return table_status
+    
+    def drop_all_sequences(self):
+        self.stdout.write("Dropping all sequences...")
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public';")
+            sequences = cursor.fetchall()
+            for seq in sequences:
+                try:
+                    cursor.execute(f'DROP SEQUENCE IF EXISTS "{seq[0]}" CASCADE;')
+                    self.stdout.write(f"Dropped sequence: {seq[0]}")
+                except Exception as e:
+                    self.stdout.write(f"Error dropping sequence {seq[0]}: {e}")
 
     def recreate_and_apply_migrations(self):
         self.stdout.write("Making new migrations...")
-        call_command('makemigrations')
+        django.core.management.call_command('makemigrations')
 
         self.stdout.write("Applying migrations...")
-        call_command('migrate')
+        django.core.management.call_command('migrate')
 
         self.stdout.write("Migrations recreated and applied.")
 
@@ -180,9 +232,19 @@ class Command(BaseCommand):
 
     def check_and_apply_remaining_changes(self):
         self.stdout.write("Checking for any remaining model changes...")
-        call_command('makemigrations')
-        call_command('migrate')
+        django.core.management.call_command('makemigrations')
+        django.core.management.call_command('migrate')
         self.stdout.write("Any remaining changes have been captured and applied.")
+
+    def print_summary(self, table_status, database_status):
+        self.stdout.write("\nOperation Summary:")
+        self.stdout.write(f"Tables attempted to flush: {len(table_status)}")
+        self.stdout.write(f"Tables successfully flushed: {sum(1 for status in table_status.values() if status == 'Dropped')}")
+        self.stdout.write(f"Tables with errors: {sum(1 for status in table_status.values() if status.startswith('Error'))}")
+
+        self.stdout.write(f"\nDatabases attempted to drop: {len(database_status)}")
+        self.stdout.write(f"Databases successfully dropped: {sum(1 for status in database_status.values() if status == 'Dropped')}")
+        self.stdout.write(f"Databases with errors: {sum(1 for status in database_status.values() if status.startswith('Error'))}")
 
 # Ensure Django settings are configured
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')

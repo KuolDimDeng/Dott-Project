@@ -14,7 +14,7 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Select, MenuItem, FormControl, InputLabel, FormControlLabel, Checkbox } from '@mui/material';
 import { countries } from 'countries-list';
 import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
 
@@ -40,6 +40,39 @@ const SUBSCRIPTION_CHOICES = [
   { value: 'professional', label: 'Professional' },
 ];
 
+const OCCUPATION_CHOICES = [
+  { value: 'OWNER', label: 'Owner' },
+  { value: 'FREELAMCER', label: 'Freelancer' },
+  { value: 'CEO', label: 'Chief Executive Officer' },
+  { value: 'CFO', label: 'Chief Financial Officer' },
+  { value: 'CTO', label: 'Chief Technology Officer' },
+  { value: 'COO', label: 'Chief Operating Officer' },
+  { value: 'MANAGER', label: 'Manager' },
+  { value: 'DIRECTOR', label: 'Director' },
+  { value: 'SUPERVISOR', label: 'Supervisor' },
+  { value: 'TEAM_LEAD', label: 'Team Lead' },
+  { value: 'ACCOUNTANT', label: 'Accountant' },
+  { value: 'FINANCIAL_ANALYST', label: 'Financial Analyst' },
+  { value: 'HR_MANAGER', label: 'HR Manager' },
+  { value: 'MARKETING_MANAGER', label: 'Marketing Manager' },
+  { value: 'SALES_MANAGER', label: 'Sales Manager' },
+  { value: 'CUSTOMER_SERVICE_REP', label: 'Customer Service Representative' },
+  { value: 'ADMINISTRATIVE_ASSISTANT', label: 'Administrative Assistant' },
+  { value: 'CLERK', label: 'Clerk' },
+  { value: 'DEVELOPER', label: 'Developer' },
+  { value: 'DESIGNER', label: 'Designer' },
+  { value: 'CONSULTANT', label: 'Consultant' },
+  { value: 'STAFF', label: 'Staff' },
+  { value: 'EMPLOYEE', label: 'Employee' },
+  { value: 'ENGINEER', label: 'Engineer' },
+  { value: 'CONTRACTOR', label: 'Contractor' },
+  { value: 'TRAINER', label: 'Trainer' },
+  { value: 'IT_ADMIN', label: 'IT Administrator' },
+  { value: 'IT_SUPPORT', label: 'IT Support' },
+  { value: 'OTHER', label: 'Other' },
+];
+
+
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
     email: '',
@@ -50,23 +83,48 @@ export default function RegisterPage() {
     occupation: '',
     phone_number: '',
     street: '',
-    postcode: '',
+    city: '',
     state: '',
+    postcode: '',
     country: '',
     subscription_type: '',
     business_name: '',
     business_type: '',
-    business_address: '',
+    business_street: '',
+    business_city: '',
+    business_state: '',
+    business_postcode: '',
+    business_country: '',
     business_phone_number: '',
     business_email: '',
+    use_same_address: false, // New field for the checkbox
+
   });
   const router = useRouter();
   const [successMessage, setSuccessMessage] = useState('');
  
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value, type, checked } = e.target;
+    if (type === 'checkbox') {
+      setFormData(prevState => {
+        const newState = { ...prevState, [name]: checked };
+        if (checked) {
+          // If checkbox is checked, copy home address to business address
+          return {
+            ...newState,
+            business_street: prevState.street,
+            business_city: prevState.city,
+            business_state: prevState.state,
+            business_postcode: prevState.postcode,
+            business_country: prevState.country,
+          };
+        }
+        return newState;
+      });
+    } else {
+      setFormData(prevState => ({ ...prevState, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -191,17 +249,25 @@ export default function RegisterPage() {
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <TextField
-                    required
-                    fullWidth
-                    id="occupation"
-                    label="Occupation"
-                    name="occupation"
-                    autoComplete="occupation"
-                    value={formData.occupation}
-                    onChange={handleChange}
-                  />
-                </Grid>
+                    <FormControl fullWidth>
+                      <InputLabel id="occupation-label">Occupation</InputLabel>
+                      <Select
+                        labelId="occupation-label"
+                        id="occupation"
+                        name="occupation"
+                        value={formData.occupation}
+                        onChange={handleChange}
+                        label="Occupation"
+                        required
+                      >
+                        {OCCUPATION_CHOICES.map((choice) => (
+                          <MenuItem key={choice.value} value={choice.value}>
+                            {choice.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
@@ -322,18 +388,7 @@ export default function RegisterPage() {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    required
-                    fullWidth
-                    id="business_address"
-                    label="Business Address"
-                    name="business_address"
-                    autoComplete="street-address"
-                    value={formData.business_address}
-                    onChange={handleChange}
-                  />
-                </Grid>
+          
                 <Grid item xs={12}>
                   <TextField
                     required
@@ -358,6 +413,99 @@ export default function RegisterPage() {
                     onChange={handleChange}
                   />
                 </Grid>
+                <Grid item xs={12}>
+  <FormControlLabel
+    control={
+      <Checkbox
+        checked={formData.use_same_address}
+        onChange={handleChange}
+        name="use_same_address"
+        color="primary"
+      />
+    }
+    label="Is your business address the same as home?"
+    sx={{ 
+      display: 'flex',
+      alignItems: 'center',
+      '& .MuiFormControlLabel-label': {
+        fontSize: '1rem',
+        color: 'text.primary',
+      }
+    }}
+  />
+</Grid>
+
+          {!formData.use_same_address && (
+            <>
+              <Grid item xs={12}>
+                <TextField
+                  required
+                  fullWidth
+                  id="business_street"
+                  label="Business Street Address"
+                  name="business_street"
+                  autoComplete="street-address"
+                  value={formData.business_street}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  required
+                  fullWidth
+                  id="business_city"
+                  label="Business City"
+                  name="business_city"
+                  autoComplete="address-level2"
+                  value={formData.business_city}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  required
+                  fullWidth
+                  id="business_state"
+                  label="Business State/Province"
+                  name="business_state"
+                  autoComplete="address-level1"
+                  value={formData.business_state}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  required
+                  fullWidth
+                  id="business_postcode"
+                  label="Business Postal Code"
+                  name="business_postcode"
+                  autoComplete="postal-code"
+                  value={formData.business_postcode}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth required>
+                  <InputLabel id="business-country-select-label">Business Country</InputLabel>
+                  <Select
+                    labelId="business-country-select-label"
+                    id="business_country"
+                    name="business_country"
+                    value={formData.business_country || formData.country}
+                    onChange={handleChange}
+                    label="Business Country"
+                  >
+                    {countryOptions.map((country) => (
+                      <MenuItem key={country.value} value={country.value}>
+                        {country.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            </>
+          )}
               </Grid>
               <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
                 Sign Up

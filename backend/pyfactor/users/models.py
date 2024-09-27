@@ -59,6 +59,38 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('ANALYST','Analyst')
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='EMPLOYEE')
+    OCCUPATION_CHOICES = [
+        ('OWNER', 'Owner'),
+        ('Freelaancer', 'Freelancer'),
+        ('CEO', 'Chief Executive Officer'),
+        ('CFO', 'Chief Financial Officer'),
+        ('CTO', 'Chief Technology Officer'),
+        ('COO', 'Chief Operating Officer'),
+        ('MANAGER', 'Manager'),
+        ('DIRECTOR', 'Director'),
+        ('SUPERVISOR', 'Supervisor'),
+        ('TEAM_LEAD', 'Team Lead'),
+        ('ACCOUNTANT', 'Accountant'),
+        ('FINANCIAL_ANALYST', 'Financial Analyst'),
+        ('HR_MANAGER', 'HR Manager'),
+        ('MARKETING_MANAGER', 'Marketing Manager'),
+        ('SALES_MANAGER', 'Sales Manager'),
+        ('CUSTOMER_SERVICE_REP', 'Customer Service Representative'),
+        ('ADMINISTRATIVE_ASSISTANT', 'Administrative Assistant'),
+        ('CLERK', 'Clerk'),
+        ('DEVELOPER', 'Developer'),
+        ('DESIGNER', 'Designer'),
+        ('CONSULTANT', 'Consultant'),
+        ('STAFF', 'Staff'),
+        ('EMPLOYEE', 'Employee'),
+        ('ENGINEER', 'Engineer'),
+        ('CONTRACTOR', 'Contractor'),
+        ('TRAINER', 'Trainer'),
+        ('IT_ADMIN', 'IT Admin'),
+        ('IT_SUPPORT', 'IT Support'),
+        ('OTHER', 'Other'),
+    ]
+    occupation = models.CharField(max_length=50, choices=OCCUPATION_CHOICES, default='OTHER')
 
 
     class Meta:
