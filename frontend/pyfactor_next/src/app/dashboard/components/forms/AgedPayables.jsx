@@ -4,7 +4,7 @@ import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 import {
   Box, Typography, Paper, CircularProgress, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, TextField
+  TableCell, TableContainer, TableHead, TableRow, TextField, useTheme
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -15,6 +15,8 @@ const AgedPayables = () => {
   const [loading, setLoading] = useState(false);
   const [asOfDate, setAsOfDate] = useState(new Date());
   const { addMessage } = useUserMessageContext();
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchAgedPayables();
@@ -45,7 +47,7 @@ const AgedPayables = () => {
   ];
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Typography variant="h4" gutterBottom>
         Aged Payables
       </Typography>

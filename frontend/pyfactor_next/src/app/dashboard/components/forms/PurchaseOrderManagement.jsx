@@ -24,7 +24,8 @@ import {
   MenuItem,
   IconButton,
   Grid,
-  Autocomplete
+  Autocomplete,
+  useTheme,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -54,6 +55,8 @@ const PurchaseOrderManagement = () => {
   const [vendors, setVendors] = useState([]);
   const [products, setProducts] = useState([]);
   const [customProduct, setCustomProduct] = useState('');
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchPurchaseOrders();
@@ -235,8 +238,8 @@ const PurchaseOrderManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Paper elevation={3} sx={{ p: 3, mt: 3 }}>
-        <Box>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+    <Box>
           <Typography variant="h4" gutterBottom>
             Purchase Order Management
           </Typography>
@@ -488,7 +491,7 @@ const PurchaseOrderManagement = () => {
             </DialogActions>
           </Dialog>
         </Box>
-      </Paper>
+      </Box>
     </LocalizationProvider>
   );
 

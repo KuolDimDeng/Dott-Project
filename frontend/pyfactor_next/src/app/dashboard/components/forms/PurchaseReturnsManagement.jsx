@@ -24,6 +24,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  useTheme,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -34,6 +35,8 @@ const PurchaseReturnsManagement = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [purchaseReturns, setPurchaseReturns] = useState([]);
   const [selectedPurchaseReturn, setSelectedPurchaseReturn] = useState(null);
+  const theme = useTheme();
+
   const [newPurchaseReturn, setNewPurchaseReturn] = useState({
     purchase_order: '',
     date: new Date(),
@@ -94,8 +97,8 @@ const PurchaseReturnsManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box>
-        <Typography variant="h4" gutterBottom>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+    <Typography variant="h4" gutterBottom>
           Purchase Returns Management
         </Typography>
         <Tabs value={activeTab} onChange={handleTabChange}>

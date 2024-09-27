@@ -23,6 +23,7 @@ import {
   LinearProgress,
   Alert,
   Snackbar,
+  useTheme,
 
 
 } from '@mui/material';
@@ -45,6 +46,7 @@ const EmployeeManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [payrollProgress, setPayrollProgress] = useState(10);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const theme = useTheme();
 
 
   const [newEmployee, setNewEmployee] = useState({
@@ -246,29 +248,29 @@ const EmployeeManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ flexGrow: 1, bgcolor: 'background.paper' }}>
-      <Box sx={{ position: 'relative', mt: 2, mb: 2 }}>
-  {/* Progress Bar Section */}
-  <Box sx={{ width: '50%' }}>
-    <GreenLinearProgress variant="determinate" value={payrollProgress} />
-  </Box>
-  <Typography variant="body2" color="text.secondary" align="left" sx={{ mt: 1 }}>
-    Payroll setup {payrollProgress}% completed
-  </Typography>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+    <Box sx={{ position: 'relative', mt: 2, mb: 2 }}>
+              {/* Progress Bar Section */}
+              <Box sx={{ width: '50%' }}>
+                <GreenLinearProgress variant="determinate" value={payrollProgress} />
+              </Box>
+              <Typography variant="body2" color="text.secondary" align="left" sx={{ mt: 1 }}>
+                Payroll setup {payrollProgress}% completed
+              </Typography>
 
-  {/* Image Section */}
-  <Box sx={{ position: 'absolute', right: 0, top: 0 }}>
-    <img
-      src="/static/images/good4.png"
-      alt="Good icon"
-      style={{ width: 100, height: 100, // Adjust the size as needed
-      borderRadius: '50%', // If the image is circular
-      imageRendering: 'auto', // For smooth scaling
-      objectFit: 'contain', // Adjust how the image fits in the space
-    }}
-  />
-</Box>
-</Box>
+              {/* Image Section */}
+              <Box sx={{ position: 'absolute', right: 0, top: 0 }}>
+                <img
+                  src="/static/images/good4.png"
+                  alt="Good icon"
+                  style={{ width: 100, height: 100, // Adjust the size as needed
+                  borderRadius: '50%', // If the image is circular
+                  imageRendering: 'auto', // For smooth scaling
+                  objectFit: 'contain', // Adjust how the image fits in the space
+                }}
+          />
+          </Box>
+        </Box>
 
         <Tabs
           value={activeTab}
@@ -544,7 +546,6 @@ const EmployeeManagement = () => {
             </Box>
           )}
         </Box>
-      </Box>
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
@@ -554,6 +555,7 @@ const EmployeeManagement = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      </Box>
     </LocalizationProvider>
   );
 };

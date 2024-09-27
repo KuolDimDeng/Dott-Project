@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Tabs, Tab, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Menu, MenuItem, FormControl, InputLabel, Select, IconButton, Grid, FormHelperText } from '@mui/material';
+import { Box, useTheme, Typography, Tabs, Tab, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Menu, MenuItem, FormControl, InputLabel, Select, IconButton, Grid, FormHelperText } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -30,6 +30,8 @@ const SalesOrderManagement = () => {
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchSalesOrders();
@@ -194,6 +196,16 @@ const SalesOrderManagement = () => {
       addMessage('error', 'Failed to create invoice');
     }
   };
+  const handleCreateSalesOrder = (event) => {
+    event.preventDefault();
+    // Here you would typically send this data to your backend
+    console.log('Creating sales order with:', { customer, product, quantity });
+    // Reset form fields after submission
+    setCustomer('');
+    setProduct('');
+    setQuantity('');
+  };
+
 
   const handleSalesOrderSelect = (salesOrder) => {
     setSelectedSalesOrder(salesOrder);
@@ -257,8 +269,8 @@ const SalesOrderManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box>
-        <Typography variant="h4" gutterBottom>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+    <Typography variant="h4" gutterBottom>
           Sales Order Management
         </Typography>
         <Tabs value={activeTab} onChange={handleTabChange}>

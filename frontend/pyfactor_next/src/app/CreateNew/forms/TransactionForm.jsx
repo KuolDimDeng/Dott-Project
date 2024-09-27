@@ -157,7 +157,7 @@ const TransactionForm = () => {
   };
 
   return (
-    <Box sx={{ p: 3, backgroundColor: theme.palette.background.default }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Paper 
         elevation={3} 
         sx={{ 

@@ -3,7 +3,7 @@ import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Button, TextField, Select, MenuItem, FormControl, 
   InputLabel, IconButton, Toolbar, InputAdornment, Drawer, List, ListItem, 
-  ListItemText, Checkbox
+  ListItemText, Checkbox, useTheme,
 } from '@mui/material'; 
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -13,6 +13,8 @@ import axiosInstance from '../components/axiosConfig';
 const AccountReconManagement = () => {
   const [reconciliations, setReconciliations] = useState([]);
   const [loading, setLoading] = useState(false);
+  const theme = useTheme();
+
   const [formData, setFormData] = useState({
     bank_account: '',
     reconciliation_date: null,
@@ -67,7 +69,7 @@ const AccountReconManagement = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Typography variant="h4" gutterBottom>Account Reconciliation</Typography>
       <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2, mb: 2 }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>

@@ -10,7 +10,8 @@ import {
   Typography,
   Collapse,
   IconButton,
-  Box
+  Box,
+  useTheme
 } from '@mui/material';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 import axiosInstance from '../components/axiosConfig';
@@ -22,6 +23,7 @@ const formatAmount = (amount) => {
 const ExpandableRow = ({ name, data }) => {
   const [open, setOpen] = useState(false);
 
+
   if (!data || typeof data !== 'object') {
     return null;
   }
@@ -31,6 +33,7 @@ const ExpandableRow = ({ name, data }) => {
 
   return (
     <>
+    
       <TableRow>
         <TableCell>
           <IconButton size="small" onClick={() => setOpen(!open)}>
@@ -68,6 +71,8 @@ export default function BalanceSheetReport() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const theme = useTheme();
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -98,6 +103,8 @@ export default function BalanceSheetReport() {
   const equity = data.Equity || {};
 
   return (
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+
     <TableContainer component={Paper}>
       <Typography variant="h4" gutterBottom>Balance Sheet</Typography>
       <Table>
@@ -152,5 +159,6 @@ export default function BalanceSheetReport() {
         </>
       )}
     </TableContainer>
+    </Box>
   );
 }

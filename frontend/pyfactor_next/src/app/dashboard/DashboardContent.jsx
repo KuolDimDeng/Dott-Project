@@ -27,7 +27,6 @@ import APIIntegrations from './components/APIIntegrations';
 import AlertsPage from '../alerts/components/AlertsPage';
 import SendGlobalAlert from '../alerts/components/SendGlobalAlert';
 import AlertsComponent from '../alerts/components/AlertsComponents';
-import KPIDashboard from './components/forms/KPIDashboard';
 
 
 
@@ -76,7 +75,6 @@ function DashboardContent() {
   const [showServiceManagement, setShowServiceManagement] = useState(false);
   const [showEstimateManagement, setShowEstimateManagement] = useState(false);
   const [showChart, setShowChart] = useState(false);
-  const [showDashboard, setShowDashboard] = useState(false);
   const [showSalesAnalysis, setShowSalesAnalysis] = useState(false);
   const [showIntegrationSettings, setShowIntegrationSettings] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
@@ -140,6 +138,9 @@ function DashboardContent() {
   const [showPayrollReport, setShowPayrollReport] = useState(false);
   const [showBankReport, setShowBankReport] = useState(false);
   const [showInventoryItems,setShowInventoryItems] = useState(false);
+  const [showInventoryManagement, setShowInventoryManagement] = useState(false);
+  const [showMainDashboard, setShowMainDashboard] = useState(false);
+  const [showBankTransactions, setShowBankTransactions] = useState(false);
 
 
 
@@ -163,7 +164,6 @@ function DashboardContent() {
     setShowServiceManagement,
     setShowEstimateManagement,
     setShowChart,
-    setShowDashboard,
     setShowSalesAnalysis,
     setShowIntegrationSettings,
     setShowAPIIntegrations,
@@ -219,6 +219,9 @@ function DashboardContent() {
     setShowPayrollReport,
     setShowBankReport,
     setShowInventoryItems,
+    setShowMainDashboard,
+    setShowBankTransactions,
+    setShowInventoryManagement,
     
   ];
 
@@ -306,8 +309,9 @@ function DashboardContent() {
         // Handle reconciliation
         setShowBankRecon(true);
         break;
-      case 'bank-balances':
+      case 'transactions':
         // Handle bank balances
+        setShowBankTransactions(true);
         break;
       case 'bank-reports':
         // Handle bank reports
@@ -401,7 +405,6 @@ function DashboardContent() {
     setShowReports(false);
     setShowTransactionForm(false);
     setShowAccountPage(false);
-    setShowDashboard(false);
     setShowSalesAnalysis(false);
     setShowIntegrationSettings(false);
   };
@@ -453,7 +456,6 @@ function DashboardContent() {
     setShowReports(false);
     setShowTransactionForm(false);
     setShowAccountPage(false);
-    setShowDashboard(false);
     setShowSalesAnalysis(false);
     setShowIntegrationSettings(false);
   };
@@ -463,7 +465,7 @@ function DashboardContent() {
     resetAllStates();
     switch(section) {
       case 'inventorydashboard':
-        setShowInventoryDashboard(true);
+        setShowInventoryManagement(true);
         break;
       case 'items':
         setShowInventoryItems(true);
@@ -478,11 +480,21 @@ function DashboardContent() {
   };
 
 
-  const handleDashboardClick = () => {
+  const handleMainDashboardClick = () => {
     console.log('handleDashboardClick called.');
     resetAllStates();
-    setShowDashboard(true);
+    setShowMainDashboard(true);
     console.log('view set to: dashboard');
+    setShowKPIDashboard(false); // Ensure KPI Dashboard is not visible
+
+  };
+
+  const handleKPIDashboardClick = () => {
+    console.log('handleDashboardClick called.');
+    resetAllStates();
+    console.log('view set to: dashboard');
+    setShowKPIDashboard(true); // Ensure KPI Dashboard is not visible
+
   };
   
   const handleCustomerSelect = (customerId) => {
@@ -569,7 +581,6 @@ function DashboardContent() {
     setShowReports(false);
     setShowTransactionForm(false);
     setShowAccountPage(false);
-    setShowDashboard(false);
     setShowSalesAnalysis(false);
     setShowIntegrationSettings(false);
   
@@ -705,7 +716,6 @@ function DashboardContent() {
     setShowReports(false);
     setShowTransactionForm(false);
     setShowAccountPage(false);
-    setShowDashboard(false);
     setShowSalesAnalysis(false);
     setShowIntegrationSettings(false);
   };
@@ -786,6 +796,7 @@ function DashboardContent() {
   };
 
   const handleShowCreateOptions = (option) => {
+    console.log('Selected Option:', option); // Add this line
     resetAllStates();
     setShowCreateOptions(true);
     setSelectedOption(option);
@@ -988,7 +999,6 @@ function DashboardContent() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
         <CssBaseline />
         <AppBar 
           mainBackground="#fafafa"
@@ -1040,37 +1050,24 @@ function DashboardContent() {
           handleSalesClick={handleSalesClick}
           handleProductsClick={handleProductsClick}
           handleServicesClick={handleServicesClick}
-          handleDashboardClick={handleDashboardClick}
+          handleMainDashboardClick={handleMainDashboardClick}
           handlePurchasesClick={handlePurchasesClick}
           handleAccountingClick={handleAccountingClick}
           handleInventoryClick={handleInventoryClick}
+          handleKPIDashboardClick={handleKPIDashboardClick}
         />
-              <Box
-                component="main"
-                sx={{
-                  flexGrow: 1,
-                  width: `calc(100% - ${drawerOpen ? drawerWidth : 0}px)`,
-                  marginLeft: drawerOpen ? `${drawerWidth}px` : 0,
-                  transition: theme.transitions.create(['margin', 'width'], {
-                    easing: theme.transitions.easing.sharp,
-                    duration: theme.transitions.duration.leavingScreen,
-                  }),
-                  height: '100vh',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <Toolbar /> {/* This pushes content below AppBar */}
-                <Box
-                  sx={{
-                    flexGrow: 1,
-                    overflow: 'hidden',
-                    p: 3,
-                    mt: '64px', // Adjust based on your AppBar height
-                    height: 'calc(100vh - 60px)', // Adjust based on your AppBar height
-                  }}
-                >
+
+         <Container
+         sx={{
+           marginLeft: drawerOpen ? `${drawerWidth}px` : '0px', // Adjust margin based on drawer state
+           width: drawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%', // Adjust width based on drawer state
+           transition: 'margin-left 0.3s ease, width 0.3s ease', // Smooth transition for drawer
+           padding: 2,
+           paddingTop: '66px', // Adjust padding-top based on the AppBar height
+           height: '100vh',
+           overflow: 'auto',
+         }}
+       >
               {showAlerts && (
                 <AlertsPage alerts={alerts} onMarkAsRead={handleMarkAsRead} />
               )}
@@ -1092,11 +1089,7 @@ function DashboardContent() {
                   title="E-Commerce Platform API"
                 />
               )}
-              {showDashboard && (
-                <Box sx={{ width: '100%', overflow: 'auto' }}>
-                  <Dashboard />
-                </Box>
-              )}
+        
               {showIntegrationSettings && (
                 <IntegrationSettings
                   initialStatus={status}
@@ -1201,7 +1194,6 @@ function DashboardContent() {
                 showSalesAnalysis,
                 showExpenseAnalysis,
                 showKPIDashboard,
-                showDashboard,
                 showIntegrationSettings,
                 showUserProfileSettings,
                 handleUserProfileUpdate,
@@ -1217,12 +1209,12 @@ function DashboardContent() {
                 showPayrollReport,
                 showBankReport,
                 showInventoryItems,
+                showMainDashboard,
+                showBankTransactions,
+                showInventoryManagement,
              
               })}
-            </Box>
-          
-        </Box>
-      </Box>
+          </Container>
     </ThemeProvider>
   );
 }

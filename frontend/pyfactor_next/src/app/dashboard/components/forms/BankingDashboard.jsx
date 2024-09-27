@@ -23,6 +23,7 @@ import {
   TableRow,
   Paper,
   Link,
+  useTheme,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -48,6 +49,8 @@ const BankingDashboard = () => {
   const [endDate, setEndDate] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [connectedBank, setConnectedBank] = useState(null);
+  const theme = useTheme();
+
 
   const fetchBankingAccounts = useCallback(async () => {
     try {
@@ -137,7 +140,7 @@ const BankingDashboard = () => {
   }
 
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
         <AccountBalanceIcon sx={{ mr: 2, fontSize: 40 }} />
         Banking Dashboard

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from '@mui/material';
+import { Table, useTheme, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from '@mui/material';
 import axiosInstance from '../components/axiosConfig';
 
 export default function BalanceSheet() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const theme = useTheme();
+
 
 
   useEffect(() => {
@@ -34,6 +36,8 @@ export default function BalanceSheet() {
   }
 
   return (
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+
     <TableContainer component={Paper}>
       <Table>
         <TableHead>
@@ -52,5 +56,6 @@ export default function BalanceSheet() {
         </TableBody>
       </Table>
     </TableContainer>
+    </Box>
   );
 }

@@ -17,6 +17,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  useTheme,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -32,6 +33,8 @@ const TimesheetManagement = () => {
   const [selectedTimesheet, setSelectedTimesheet] = useState(null);
   const [summary, setSummary] = useState([]);
   const { addMessage } = useUserMessageContext();
+  const theme = useTheme();
+
 
 
   useEffect(() => {
@@ -90,8 +93,8 @@ const TimesheetManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box>
-        <Typography variant="h4" gutterBottom>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+    <Typography variant="h4" gutterBottom>
           Timesheet Management
         </Typography>
         

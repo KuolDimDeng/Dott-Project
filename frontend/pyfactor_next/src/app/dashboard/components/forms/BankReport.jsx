@@ -16,6 +16,7 @@ import {
   TextField,
   Alert,
   CircularProgress,
+  useTheme,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -30,6 +31,8 @@ const BankingReport = () => {
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchBankAccounts();
@@ -111,8 +114,8 @@ const BankingReport = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+    <Typography variant="h4" gutterBottom>
           Banking Report
         </Typography>
 

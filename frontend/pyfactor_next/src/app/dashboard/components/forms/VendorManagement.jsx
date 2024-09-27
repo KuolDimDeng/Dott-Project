@@ -14,6 +14,7 @@ import {
   Button,
   TextField,
   Grid,
+  useTheme,
 } from '@mui/material';
 import axiosInstance from '../components/axiosConfig';
 
@@ -21,6 +22,8 @@ const VendorManagement = () => {
   const [tabValue, setTabValue] = useState(0);
   const [vendors, setVendors] = useState([]);
   const [selectedVendor, setSelectedVendor] = useState(null);
+  const theme = useTheme();
+
   const [formData, setFormData] = useState({
     vendor_name: '',
     street: '',
@@ -81,7 +84,7 @@ const VendorManagement = () => {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3 }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Typography variant="h5" gutterBottom>Vendor Management</Typography>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={tabValue} onChange={handleTabChange}>
@@ -204,7 +207,7 @@ const VendorManagement = () => {
           </Table>
         </TableContainer>
       )}
-    </Paper>
+    </Box>
   );
 };
 

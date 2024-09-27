@@ -3,7 +3,7 @@ import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Button, TextField, Select, MenuItem, FormControl, 
   InputLabel, IconButton, Toolbar, InputAdornment, Drawer, List, ListItem, 
-  ListItemText, Checkbox, Dialog, DialogTitle, DialogContent, DialogActions
+  ListItemText, Checkbox, Dialog, DialogTitle, DialogContent, DialogActions, useTheme
 } from '@mui/material';
 import { 
   Add, FilterList, Search, Edit, Delete, ImportExport, Settings, Visibility
@@ -31,6 +31,8 @@ const ChartOfAccountsManagement = () => {
   });
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchAccounts();
@@ -98,7 +100,7 @@ const ChartOfAccountsManagement = () => {
   ) : [];
 
   return (
-    <Box>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Toolbar>
         <Typography variant="h4" component="div" sx={{ flexGrow: 1 }}>
           Chart of Accounts

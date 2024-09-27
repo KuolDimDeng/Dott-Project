@@ -19,6 +19,7 @@ import {
   TableHead,
   TableRow,
   Paper,
+  useTheme,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -39,6 +40,8 @@ const ExpensesManagement = () => {
     payment_method: '',
   });
   const { addMessage } = useUserMessageContext();
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchExpenses();
@@ -94,8 +97,8 @@ const ExpensesManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Paper elevation={3} sx={{ p: 3 }}>
-        <Typography variant="h5" gutterBottom>Expense Management</Typography>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+    <Typography variant="h5" gutterBottom>Expense Management</Typography>
         <Tabs value={activeTab} onChange={handleTabChange}>
           <Tab label="Create Expense" />
           <Tab label="Expense Detail" />
@@ -211,7 +214,7 @@ const ExpensesManagement = () => {
             </Table>
           </TableContainer>
         )}
-      </Paper>
+      </Box>
     </LocalizationProvider>
   );
 };

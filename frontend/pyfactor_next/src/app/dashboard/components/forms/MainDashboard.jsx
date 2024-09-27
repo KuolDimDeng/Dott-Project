@@ -13,7 +13,6 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import DescriptionIcon from '@mui/icons-material/Description';
 import PeopleIcon from '@mui/icons-material/People';
 import InventoryIcon from '@mui/icons-material/Inventory';
-import KPIDashboard from './KPIDashboard'; // Import the KPIDashboard component
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),

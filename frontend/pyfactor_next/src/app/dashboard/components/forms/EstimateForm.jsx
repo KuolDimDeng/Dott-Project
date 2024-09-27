@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Button, TextField, Typography, Grid, Paper, Select, MenuItem, InputLabel,
-  FormControl, IconButton, Divider, CircularProgress, Snackbar
+  FormControl, IconButton, Divider, CircularProgress, Snackbar, useTheme, useMediaQuery,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -20,6 +20,8 @@ import EstimatePreviewModal from './EstimatePreview';
 import { saveEstimate, printEstimate, emailEstimate, getEstimatePdf } from '../actions/estimateActions';
 
 const EstimateForm = ({ onSave, onPreview, initialData }) => {
+  const theme = useTheme();
+
   const [estimate, setEstimate] = useState(initialData || {
     title: 'Estimate',
     summary: '',
@@ -353,7 +355,7 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Paper elevation={3} sx={{ p: 3, my: 2 }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
         <Typography variant="h4" gutterBottom>
           Create New Estimate
         </Typography>
@@ -582,7 +584,6 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
             </Button>
           </Grid>
         </Grid>
-      </Paper>
       <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError('')}>
         <Alert onClose={() => setError('')} severity="error" sx={{ width: '100%' }}>
           {error}
@@ -601,6 +602,7 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
         onPrint={handlePrintEstimate}
         onEmail={handleEmailEstimate}
       />
+      </Box>
   </LocalizationProvider>
 );
 };

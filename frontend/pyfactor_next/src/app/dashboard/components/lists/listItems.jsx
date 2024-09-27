@@ -32,7 +32,8 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 const MENU_WIDTH = 228;
 
 const MainListItems = ({
-  handleDashboardClick,
+  handleMainDashboardClick,
+
   handleSalesClick,
   handlePaymentsClick,
   handlePurchasesClick,
@@ -91,7 +92,7 @@ const MainListItems = ({
     {
       icon: <DashboardCustomizeIcon />,
       label: "Dashboard",
-      onClick: handleDashboardClick
+      onClick: handleMainDashboardClick
     },
     {
       icon: <PointOfSaleIcon />,
@@ -104,7 +105,6 @@ const MainListItems = ({
         { label: "Estimates", onClick: handleSalesClick, value: 'estimates' },
         { label: "Orders", onClick: handleSalesClick, value: 'orders' },
         { label: "Invoices", onClick: handleSalesClick, value: 'invoices' },
-        { label: "Sales Team", onClick: handleSalesClick, value: 'sales-team' },
         { label: "Reports", onClick: handleSalesClick, value: 'reports' },
       ]
     },
@@ -158,13 +158,12 @@ const MainListItems = ({
     label: "Banking",
     subItems: [
       { label: "Dashboard", onClick: handleBankingClick, value: 'dashboard' },
-      { label: "Bank Accounts", onClick: handleBankingClick, value: 'bank-accounts' },
-      { label: "Transactions", onClick: handleBankingClick, value: 'transactions' },
-      { label: "Transfers", onClick: handleBankingClick, value: 'transfers' },
-      { label: "Reconciliation", onClick: handleBankingClick, value: 'reconciliation' },
-      { label: "Reports", onClick: handleBankingClick, value: 'reports' },
+      { label: "Connect to Bank", onClick: handleBankingClick, value: 'connect' },
+      { label: "Bank Transactions", onClick: handleBankingClick, value: 'transactions' },
+      { label: "Bank Reconciliation", onClick: handleBankingClick, value: 'reconciliation' },
+      { label: "Reports", onClick: handleBankingClick, value: 'bank-reports' },
     ]
-  },
+  },  
   {
     icon: <PaymentsIcon />,
     label: "Payroll",
@@ -172,9 +171,9 @@ const MainListItems = ({
       { label: "Dashboard", onClick: handlePayrollClick, value: 'dashboard' },
       { label: "Employees", onClick: handlePayrollClick, value: 'employees' },
       { label: "Timesheets", onClick: handlePayrollClick, value: 'timesheets' },
-      { label: "Payrun", onClick: handlePayrollClick, value: 'payrun' },
       { label: "Taxes", onClick: handlePayrollClick, value: 'taxes' },
       { label: "Benefits", onClick: handlePayrollClick, value: 'benefits' },
+      { label: "Run Payroll", onClick: handlePayrollClick, value: 'run' },
       { label: "Reports", onClick: handlePayrollClick, value: 'reports' },
     ]
   },
@@ -182,11 +181,12 @@ const MainListItems = ({
     icon: <Inventory2OutlinedIcon />,
     label: "Inventory",
     subItems: [
-      { label: "Dashboard", onClick: handleInventoryClick, value: 'dashboard' },
-      { label: "Items", onClick: handleInventoryClick, value: 'items' },
+      { label: "Dashboard", onClick: handleInventoryClick, value: 'inventorydashboard' },
+      { label: "Products", onClick: handleInventoryClick, value: 'items' },
       { label: "Stock Adjustments", onClick: handleInventoryClick, value: 'stock-adjustments' },
-      { label: "Transfers", onClick: handleInventoryClick, value: 'transfers' },
-      { label: "Warehouses", onClick: handleInventoryClick, value: 'warehouses' },
+      { label: "Locations", onClick: handleInventoryClick, value: 'locations' },
+      { label: "Suppliers", onClick: handleInventoryClick, value: 'suppliers' },
+      { label: "Transactions", onClick: handleInventoryClick, value: 'transactions' },
       { label: "Reports", onClick: handleInventoryClick, value: 'reports' },
     ]
   },
@@ -194,13 +194,22 @@ const MainListItems = ({
     icon: <AssessmentIcon />,
     label: "Reports",
     subItems: [
-      { label: "Financial", onClick: handleReportClick, value: 'financial' },
-      { label: "Sales", onClick: handleReportClick, value: 'sales' },
-      { label: "Purchases", onClick: handleReportClick, value: 'purchases' },
-      { label: "Inventory", onClick: handleReportClick, value: 'inventory' },
-      { label: "Payroll", onClick: handleReportClick, value: 'payroll' },
-      { label: "Taxes", onClick: handleReportClick, value: 'taxes' },
-      { label: "Custom Reports", onClick: handleReportClick, value: 'custom' },
+      { label: "Profit & Loss Statement", onClick: handleReportClick, value: 'income_statement' },
+      { label: "Balance Sheet", onClick: handleReportClick, value: 'balance_sheet' },
+      { label: "Cash Flow", onClick: handleReportClick, value: 'cash_flow' },
+      { label: "Sales Tax ", onClick: handleReportClick, value: 'sales_tax_report' },
+      { label: "Payroll Wage Tax", onClick: handleReportClick, value: 'payroll_wage_tax_report' },
+      { label: "Income by Customer", onClick: handleReportClick, value: 'income_by_customer' },
+      { label: "Aged Receivables", onClick: handleReportClick, value: 'aged_receivables' },
+      { label: "Purchases by Vendor", onClick: handleReportClick, value: 'purchases_by_vendor' },
+      { label: "Aged Payables", onClick: handleReportClick, value: 'aged_payables' },
+      { label: "Account Balances", onClick: handleReportClick, value: 'account_balances' },
+      { label: "Trial Balances", onClick: handleReportClick, value: 'trial_balance' },
+      { label: "General Ledger", onClick: handleReportClick, value: 'general_ledger' },
+
+
+
+
     ]
   },
   {
@@ -384,9 +393,9 @@ const MainListItems = ({
               {menuItems.map((item, index) => (
                 <React.Fragment key={index}>
                   <ListItemButton
-                    onClick={() => item.subItems ? handleMenuToggle(item.label) : item.onClick()}
-                    onMouseEnter={() => handleMouseEnter(item.label)}
-                    onMouseLeave={handleMouseLeave}
+            onClick={() => item.subItems ? handleMenuToggle(item.label) : item.onClick && item.onClick()}
+            onMouseEnter={() => handleMouseEnter(item.label)}
+                              onMouseLeave={handleMouseLeave}
                     sx={{
                       color: 'menu.text',
                       position: 'relative',
@@ -466,7 +475,9 @@ const MainListItems = ({
                     sx: { 
                       marginTop: '70px',
                       marginLeft: '220px',
-                      background: menuTheme.palette.menu.background,
+                      backgroundColor: '#ffffff', // Set the background to a solid color (white in this case)
+                      boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)', // Optional: Add a shadow for better visibility
+                      borderRadius: '8px', // Optional: Add rounded corners
                     },
                   },
                 }}

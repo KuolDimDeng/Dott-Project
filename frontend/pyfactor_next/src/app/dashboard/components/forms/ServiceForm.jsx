@@ -90,7 +90,7 @@ const ServiceForm = () => {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, backgroundColor: theme.palette.background.paper }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Box display="flex" alignItems="center" mb={2}>
         <MiscellaneousServicesIcon sx={{ fontSize: 40, color: theme.palette.primary.main, mr: 2 }} />
         <Box>
@@ -228,7 +228,7 @@ const ServiceForm = () => {
           </Typography>
         </Box>
       )}
-    </Paper>
+</Box>
   );
 };
 

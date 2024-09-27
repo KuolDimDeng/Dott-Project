@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
   Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle,
-  IconButton, Typography, Box
+  IconButton, Typography, Box, useTheme
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -14,6 +14,8 @@ const InventoryItemList = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [currentItem, setCurrentItem] = useState({ name: '', sku: '', description: '', quantity: 0, reorder_level: 0, unit_price: 0 });
   const [isEditing, setIsEditing] = useState(false);
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchItems();
@@ -76,7 +78,7 @@ const InventoryItemList = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4">Inventory Items</Typography>
         <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>

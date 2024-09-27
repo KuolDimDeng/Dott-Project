@@ -19,6 +19,7 @@ import {
   ListItem,
   ListItemText,
   Link,
+  useTheme,
 } from '@mui/material';
 import { usePlaidLink } from 'react-plaid-link';
 import axiosInstance from '../components/axiosConfig';
@@ -32,6 +33,7 @@ const ConnectBank = () => {
   const [linkToken, setLinkToken] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [connectedBankInfo, setConnectedBankInfo] = useState(null);
+  const theme = useTheme();
 
   const handleRegionChange = (event) => {
     setRegion(event.target.value);
@@ -149,8 +151,7 @@ const ConnectBank = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
-      <Paper elevation={3} sx={{ p: 4 }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
         <Typography variant="h4" gutterBottom>
           Connect Your Bank
         </Typography>
@@ -237,7 +238,6 @@ const ConnectBank = () => {
             {error}
           </Typography>
         )}
-      </Paper>
       <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}

@@ -11,6 +11,7 @@ import {
   Select,
   MenuItem,
   Grid,
+  useTheme,
 } from '@mui/material';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
@@ -45,6 +46,8 @@ const CustomerForm = ({ router }) => {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const { addMessage } = useUserMessageContext();
+  const theme = useTheme();
+
 
   useEffect(() => {
     console.log('CustomerForm component mounted');
@@ -86,7 +89,7 @@ const CustomerForm = ({ router }) => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Typography variant="h5" gutterBottom>New Customer</Typography>
       {error && <Typography color="error">{error}</Typography>}
       <form onSubmit={handleSubmit}>

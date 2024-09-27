@@ -20,6 +20,7 @@ import {
   Select,
   MenuItem,
   Autocomplete,
+  useTheme
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -32,6 +33,8 @@ const BillManagement = () => {
   const [bills, setBills] = useState([]);
   const [selectedBill, setSelectedBill] = useState(null);
   const [vendors, setVendors] = useState([]);
+  const theme = useTheme();
+
   const [formData, setFormData] = useState({
     vendor: null,
     currency: 'USD',
@@ -153,7 +156,7 @@ const BillManagement = () => {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3 }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Typography variant="h5" gutterBottom>Bill Management</Typography>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={tabValue} onChange={handleTabChange}>
@@ -362,7 +365,7 @@ const BillManagement = () => {
           </Table>
         </TableContainer>
       )}
-    </Paper>
+    </Box>
   );
 };
 

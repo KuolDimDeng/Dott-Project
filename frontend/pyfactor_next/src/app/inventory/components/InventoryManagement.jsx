@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
-import { Box, Typography, Tabs, Tab } from '@mui/material';
+import { Box, Typography, Tabs, Tab, useTheme } from '@mui/material';
 import InventoryItemList from './InventoryItemList';
-import CategoryList from './CategoryList';
-import SupplierList from './SupplierList';
-import LocationList from './LocationList';
-import TransactionList from './TransactionList';
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -19,22 +15,30 @@ function TabPanel(props) {
     >
       {value === index && (
         <Box sx={{ p: 3 }}>
-          <Typography>{children}</Typography>
+          {children}
         </Box>
       )}
     </div>
   );
 }
 
+// Placeholder components for other tabs
+const CategoryList = () => <Typography>Category List (To be implemented)</Typography>;
+const SupplierList = () => <Typography>Supplier List (To be implemented)</Typography>;
+const LocationList = () => <Typography>Location List (To be implemented)</Typography>;
+const TransactionList = () => <Typography>Transaction List (To be implemented)</Typography>;
+
 function InventoryManagement() {
   const [value, setValue] = useState(0);
+  const theme = useTheme();
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+      <Typography variant="h4" gutterBottom>Inventory Management</Typography>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={value} onChange={handleChange} aria-label="inventory management tabs">
           <Tab label="Inventory Items" />

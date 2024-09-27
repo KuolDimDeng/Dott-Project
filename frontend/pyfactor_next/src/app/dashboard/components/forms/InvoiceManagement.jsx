@@ -24,7 +24,8 @@ import {
   InputLabel, 
   Select,
   Grid,
-  IconButton
+  IconButton,
+  useTheme
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -56,6 +57,8 @@ const InvoiceManagement = () => {
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchInvoices();
@@ -270,7 +273,8 @@ const InvoiceManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box>
+      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+
         <Typography variant="h4" gutterBottom>
           Invoice Management
         </Typography>

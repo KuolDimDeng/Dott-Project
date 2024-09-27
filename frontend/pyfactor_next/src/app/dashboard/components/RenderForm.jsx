@@ -9,9 +9,12 @@ import InvoiceForm from './forms/InvoiceForm';
 import VendorForm from './forms/VendorForm';
 import EstimateForm from './forms/EstimateForm';
 import SalesOrderForm from './forms/SalesOrderForm';
+import TransactionForm from '../../CreateNew/forms/TransactionForm.jsx';
 
 const renderForm = (option, userData) => {
   switch (option) {
+    case 'Transaction':
+      return <TransactionForm/>
     case 'Product':
       return <ProductForm />;
     case 'Service':

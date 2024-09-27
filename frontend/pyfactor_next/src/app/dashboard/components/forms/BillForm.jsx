@@ -12,6 +12,7 @@ import {
   Grid,
   Autocomplete,
   Paper,
+  useTheme
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -33,6 +34,8 @@ const BillForm = () => {
   const [vendorsLoading, setVendorsLoading] = useState(true);
   const [vendorsError, setVendorsError] = useState(null);
   const { addMessage } = useUserMessageContext();
+  const theme = useTheme();
+
 
 
   useEffect(() => {
@@ -104,7 +107,7 @@ const BillForm = () => {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 4, maxWidth: 800, mx: 'auto' }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Typography variant="h5" gutterBottom>
         Add Bill
       </Typography>
@@ -204,7 +207,7 @@ const BillForm = () => {
           </Button>
         </Box>
       </form>
-    </Paper>
+    </Box>
   );
 };
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Button, TextField, MenuItem, IconButton, Dialog, DialogTitle, DialogContent, DialogActions
+  Button, TextField, MenuItem, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, useTheme
 } from '@mui/material';
 import { Add, Edit, Delete, Check, Close } from '@mui/icons-material';
 import axiosInstance from '../components/axiosConfig';
@@ -11,6 +11,8 @@ const JournalEntryManagement = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [currentEntry, setCurrentEntry] = useState(null);
   const [accounts, setAccounts] = useState([]);
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchJournalEntries();
@@ -98,7 +100,7 @@ const JournalEntryManagement = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Typography variant="h4" gutterBottom>Journal Entry Management</Typography>
       <Button variant="contained" color="primary" startIcon={<Add />} onClick={handleCreateEntry}>
         Create Journal Entry

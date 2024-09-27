@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, useTheme } from '@mui/material';
 import axiosInstance from '../components/axiosConfig';
 
 export default function ProfitAndLoss() {  // or BalanceSheet or CashFlow
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const theme = useTheme();
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,6 +36,8 @@ export default function ProfitAndLoss() {  // or BalanceSheet or CashFlow
 
 
   return (
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+
     <TableContainer component={Paper}>
       <Table>
         <TableHead>
@@ -52,5 +56,6 @@ export default function ProfitAndLoss() {  // or BalanceSheet or CashFlow
         </TableBody>
       </Table>
     </TableContainer>
+    </Box>
   );
 }

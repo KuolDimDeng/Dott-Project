@@ -19,7 +19,7 @@ import {
   AccordionDetails,
   Alert,
   CircularProgress,
-
+  useTheme,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -45,6 +45,7 @@ const BankReconciliation = () => {
   const [interestEarned, setInterestEarned] = useState(0);
   const [connectedBanks, setConnectedBanks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const theme = useTheme();
 
 
   useEffect(() => {
@@ -148,8 +149,8 @@ const BankReconciliation = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
           <AccountBalanceIcon sx={{ fontSize: 40, mr: 2, color: 'primary.main' }} />
           <Typography variant="h4" component="h1">
             Bank Reconciliation

@@ -27,6 +27,7 @@ import {
   Checkbox,
   RadioGroup,
   Radio,
+  useTheme
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -54,6 +55,8 @@ const PayrollManagement = () => {
   const [payPeriodType, setPayPeriodType] = useState('monthly');
   const [biWeeklyStartDate, setBiWeeklyStartDate] = useState(null);
   const [scheduledPayrolls, setScheduledPayrolls] = useState([]);
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchPayPeriods();
@@ -209,11 +212,11 @@ const PayrollManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
           <AttachMoneyIcon sx={{ fontSize: 40, mr: 1, color: 'primary.main' }} />
           <Typography variant="h4" component="h1">
-            Payroll Console
+            Payroll Management
           </Typography>
         </Box>
         <Typography variant="subtitle1" gutterBottom>

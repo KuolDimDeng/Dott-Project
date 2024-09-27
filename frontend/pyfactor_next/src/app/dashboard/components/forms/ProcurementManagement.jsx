@@ -19,6 +19,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  useTheme,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -38,6 +39,8 @@ const ProcurementManagement = () => {
     items: [],
   });
   const [vendors, setVendors] = useState([]);
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchProcurements();
@@ -100,8 +103,8 @@ const ProcurementManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box>
-        <Typography variant="h4" gutterBottom>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+    <Typography variant="h4" gutterBottom>
           Procurement Management
         </Typography>
         <Tabs value={activeTab} onChange={handleTabChange}>

@@ -18,6 +18,8 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  useTheme,
+  Box,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import axiosInstance from '../components/axiosConfig';
@@ -28,6 +30,8 @@ import { useUserMessageContext } from '@/contexts/UserMessageContext';
 const FixedAssetManagement = () => {
   const [assets, setAssets] = useState([]);
   const [open, setOpen] = useState(false);
+  const theme = useTheme();
+
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -100,7 +104,7 @@ const FixedAssetManagement = () => {
   };
 
   return (
-    <div>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Typography variant="h4" gutterBottom>
         Fixed Asset Management
       </Typography>
@@ -232,7 +236,7 @@ const FixedAssetManagement = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </div>
+    </Box>
   );
 };
 

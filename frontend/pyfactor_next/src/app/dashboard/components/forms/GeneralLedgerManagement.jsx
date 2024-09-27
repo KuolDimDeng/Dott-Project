@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  TextField, Button, MenuItem, Grid
+  TextField, Button, MenuItem, Grid, useTheme
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import axiosInstance from '../components/axiosConfig';
@@ -21,6 +21,8 @@ const GeneralLedgerManagement = () => {
   const { addMessage } = useUserMessageContext();
   const [generalLedgerEntries, setGeneralLedgerEntries] = useState([]);
   const [generalLedgerSummary, setGeneralLedgerSummary] = useState([]);
+  const theme = useTheme();
+
 
 
   useEffect(() => {
@@ -72,8 +74,8 @@ const GeneralLedgerManagement = () => {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
 
-    <Box>
-      <Typography variant="h4" gutterBottom>General Ledger</Typography>
+<Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+<Typography variant="h4" gutterBottom>General Ledger</Typography>
       
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} sm={4}>

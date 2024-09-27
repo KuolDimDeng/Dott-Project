@@ -11,6 +11,7 @@ import {
   TableRow,
   CircularProgress,
   Alert,
+  useTheme,
 } from '@mui/material';
 import axiosInstance from '../components/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
@@ -19,6 +20,8 @@ const TrialBalance = () => {
   const [trialBalanceData, setTrialBalanceData] = useState(null);
   const [loading, setLoading] = useState(true);
   const { addMessage } = useUserMessageContext();
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchTrialBalance();
@@ -46,7 +49,7 @@ const TrialBalance = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Typography variant="h4" gutterBottom>
         Trial Balance
       </Typography>

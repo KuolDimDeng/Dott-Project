@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Tabs, Tab, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Menu, MenuItem, FormControl, InputLabel, Select, IconButton, Grid, InputAdornment } from '@mui/material';
+import { Box, Typography, Tabs, useTheme, Tab, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Menu, MenuItem, FormControl, InputLabel, Select, IconButton, Grid, InputAdornment } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -38,6 +38,8 @@ const EstimateManagement = () => {
   const [services, setServices] = useState([]);
   const [customersLoading, setCustomersLoading] = useState(true);
   const [customersError, setCustomersError] = useState(null);
+  const theme = useTheme();
+
 
   useEffect(() => {
     fetchCustomers();
@@ -379,7 +381,7 @@ const handleDiscountChange = (event) => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
         <Typography variant="h4" gutterBottom>
           Estimate Management
         </Typography>

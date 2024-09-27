@@ -11,6 +11,7 @@ import {
   MenuItem,
   Grid,
   Paper,
+  useTheme, useMediaQuery,
 } from '@mui/material';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
@@ -28,6 +29,8 @@ const VendorForm = () => {
   const [formData, setFormData] = useState(initialState);
   const [error, setError] = useState(null);
   const { addMessage } = useUserMessageContext();
+  const theme = useTheme();
+;''
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -65,7 +68,7 @@ const VendorForm = () => {
   ];
 
   return (
-    <Paper elevation={3} sx={{ p: 4, maxWidth: 600, mx: 'auto' }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
         Add a Vendor
       </Typography>
@@ -148,8 +151,8 @@ const VendorForm = () => {
           </Button>
         </Box>
       </form>
-    </Paper>
-  );
+</Box> 
+ );
 };
 
 export default VendorForm;
