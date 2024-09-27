@@ -137,7 +137,7 @@ const handleSubscriptionClick = (event) => {
             className={isSubscriptionMenuOpen ? 'Mui-selected' : ''}
           >
           <Typography variant="caption" sx={{ color: textAppColor, lineHeight: 1, pr: 0.5 }}>
-            {userData.subscription_type === 'professional' ? 'Professional Plan' : 'Starter Plan'}
+            {userData.subscription_type === 'professional' ? 'Professional Plan' : 'Basic Plan'}
           </Typography>
           {userData.subscription_type === 'free' && (
             <IconButton size="small" sx={{ padding: 0, ml: 0.5, color: textAppColor }}>
