@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, TextField, Button, Grid } from '@mui/material';
+import { Box, Typography, TextField, Button, Grid, useTheme } from '@mui/material';
 import CustomChargeSettings from './CustomChargeSettings';
 
 const BusinessSettings = ({ selectedTab }) => {
@@ -19,9 +19,11 @@ const BusinessSettings = ({ selectedTab }) => {
         return null;
     }
   };
+  const theme = useTheme();
+
 
   return (
-    <Box>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       {renderContent()}
     </Box>
   );

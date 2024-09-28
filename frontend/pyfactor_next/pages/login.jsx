@@ -123,7 +123,7 @@ export default function SignIn() {
             }}
           >
             {/* Pyfactor Logo at the Top */}
-            <Box sx={{ mb: 3 }}> {/* Push the logo up using negative margin */}
+            <Box sx={{ mb: 2 }}> {/* Push the logo up using negative margin */}
               <Image
                 src="/static/images/Pyfactor.png"  // Path to your Pyfactor logo
                 alt="Pyfactor Logo"
@@ -132,6 +132,9 @@ export default function SignIn() {
                 priority
               />
             </Box>
+            <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
+              <LockOutlinedIcon />
+            </Avatar>
         
             <Typography 
                   component="h1" 

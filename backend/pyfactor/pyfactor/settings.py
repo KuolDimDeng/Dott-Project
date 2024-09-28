@@ -18,6 +18,8 @@ import logging
 import logging.config
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
+from celery.schedules import crontab
+
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -70,8 +72,21 @@ USER_DATABASE_OPTIONS = {
 }
 
 FRONTEND_URL = 'http://localhost:3000'  # Adjust this to your actual frontend URL
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
 
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BEAT_SCHEDULE = {
+    'update-irs-tax-data-daily': {
+        'task': 'taxes.tasks.update_irs_tax_data',
+        'schedule': crontab(hour=0, minute=0),  # Run daily at midnight
+    },
+}
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 

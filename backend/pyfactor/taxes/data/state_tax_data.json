@@ -1,0 +1,1786 @@
+{
+  "Utah": {
+    "timestamp": "2024-09-28T15:40:45.278713",
+    "data": {
+      "state": "Utah",
+      "tax_info": [
+        {
+          "date_range": "January 1, 2024 \u2013 current",
+          "tax_rate": "4.55% or .0455"
+        },
+        {
+          "date_range": "January 1, 2023 \u2013 December 31, 2023",
+          "tax_rate": "4.65% or .0465"
+        },
+        {
+          "date_range": "January 1, 2022 \u2013 December 31, 2022",
+          "tax_rate": "4.85% or .0485"
+        },
+        {
+          "date_range": "January 1, 2018 \u2013 December 31, 2021",
+          "tax_rate": "4.95% or .0495"
+        },
+        {
+          "date_range": "January 1, 2008 \u2013 December 31, 2017",
+          "tax_rate": "5% or .05"
+        },
+        {
+          "date_range": "Tax years prior to 2008",
+          "tax_rate": "Contact us for assistance"
+        }
+      ]
+    },
+    "source": "Web scraping"
+  },
+  "Alabama": {
+    "timestamp": "2024-09-28T15:40:39.936997",
+    "data": {
+      "state": "Alabama",
+      "tax_info": [
+        "Amendment No. 61 to the Constitution of Alabama of 1901 (proclaimed ratified September 11, 1947) provided for distribution of income tax receipts to (1) replace revenue lost to the funds affected by the state homestead exemption; and (2) the Education Trust Fund to be used only for the payment of public school teachers\u2019 salaries.",
+        "Amendment No. 225 to the Constitution of Alabama of 1901 (proclaimed ratified December 13, 1965) provided deduction for federal income taxes paid by individual taxpayers."
+      ]
+    },
+    "source": "Web scraping"
+  },
+  "Arizona": {
+    "timestamp": "2024-09-28T15:40:41.452534",
+    "data": {
+      "state": "Arizona",
+      "tax_info": [
+        "Single: $13,850",
+        "Married filing joint: $27,700",
+        "Married filing separate: $13,850",
+        "Head of household: $20,800"
+      ],
+      "source": "Manual input from file"
+    },
+    "source": "Manual input from file"
+  },
+  "California": {
+    "timestamp": "2024-09-28T15:40:47.622368",
+    "data": {
+      "state": "California",
+      "year": 2023,
+      "tax_brackets": [
+        {
+          "filing_status": "single",
+          "income_range": "Filing-1",
+          "base_tax": 0.0,
+          "rate": 0.03,
+          "extra_info": "(Single; Married/RDP Filing Separately) 2 or 5 (Married/RDP Filing Jointly; Qualifying Surviving Spouse/RDP) 4 (Head of Household)"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "51-1",
+          "base_tax": 0.0,
+          "rate": 0.01,
+          "extra_info": "6,551 6,650 66 66 66 13,051 13,150 158 131 131"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "151-2",
+          "base_tax": 0.0,
+          "rate": 0.02,
+          "extra_info": "6,651 6,750 67 67 67 13,151 13,250 160 132 132"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "251-3",
+          "base_tax": 0.0,
+          "rate": 0.03,
+          "extra_info": "6,751 6,850 68 68 68 13,251 13,350 162 133 133"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "351-4",
+          "base_tax": 0.0,
+          "rate": 0.04,
+          "extra_info": "6,851 6,950 69 69 69 13,351 13,450 164 134 134"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "451-5",
+          "base_tax": 0.0,
+          "rate": 0.05,
+          "extra_info": "6,951 7,050 70 70 70 13,451 13,550 166 135 135"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "551-6",
+          "base_tax": 0.0,
+          "rate": 0.06,
+          "extra_info": "7,051 7,150 71 71 71 13,551 13,650 168 136 136"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "651-7",
+          "base_tax": 0.0,
+          "rate": 0.07,
+          "extra_info": "7,151 7,250 72 72 72 13,651 13,750 170 137 137"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "751-8",
+          "base_tax": 0.0,
+          "rate": 0.08,
+          "extra_info": "7,251 7,350 73 73 73 13,751 13,850 172 138 138"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "851-9",
+          "base_tax": 0.0,
+          "rate": 0.09,
+          "extra_info": "7,351 7,450 74 74 74 13,851 13,950 174 139 139"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "951-10",
+          "base_tax": 0.0,
+          "rate": 0.1,
+          "extra_info": "7,451 7,550 75 75 75 13,951 14,050 176 140 140"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "1,051-11",
+          "base_tax": 0.0,
+          "rate": 0.11,
+          "extra_info": "7,551 7,650 76 76 76 14,051 14,150 178 141 141"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "1,151-12",
+          "base_tax": 0.0,
+          "rate": 0.12,
+          "extra_info": "7,651 7,750 77 77 77 14,151 14,250 180 142 142"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "1,251-13",
+          "base_tax": 0.0,
+          "rate": 0.13,
+          "extra_info": "7,751 7,850 78 78 78 14,251 14,350 182 143 143"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "1,351-14",
+          "base_tax": 0.0,
+          "rate": 0.14,
+          "extra_info": "7,851 7,950 79 79 79 14,351 14,450 184 144 144"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "1,451-15",
+          "base_tax": 0.0,
+          "rate": 0.15,
+          "extra_info": "7,951 8,050 80 80 80 14,451 14,550 186 145 145"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "1,551-16",
+          "base_tax": 0.0,
+          "rate": 0.16,
+          "extra_info": "8,051 8,150 81 81 81 14,551 14,650 188 146 146"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "1,651-17",
+          "base_tax": 0.0,
+          "rate": 0.17,
+          "extra_info": "8,151 8,250 82 82 82 14,651 14,750 190 147 147"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "1,751-18",
+          "base_tax": 0.0,
+          "rate": 0.18,
+          "extra_info": "8,251 8,350 83 83 83 14,751 14,850 192 148 148"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "1,851-19",
+          "base_tax": 0.0,
+          "rate": 0.19,
+          "extra_info": "8,351 8,450 84 84 84 14,851 14,950 194 149 149"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "1,951-20",
+          "base_tax": 0.0,
+          "rate": 0.2,
+          "extra_info": "8,451 8,550 85 85 85 14,951 15,050 196 150 150"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "2,051-21",
+          "base_tax": 0.0,
+          "rate": 0.21,
+          "extra_info": "8,551 8,650 86 86 86 15,051 15,150 198 151 151"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "2,151-22",
+          "base_tax": 0.0,
+          "rate": 0.22,
+          "extra_info": "8,651 8,750 87 87 87 15,151 15,250 200 152 152"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "2,251-23",
+          "base_tax": 0.0,
+          "rate": 0.23,
+          "extra_info": "8,751 8,850 88 88 88 15,251 15,350 202 153 153"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "2,351-24",
+          "base_tax": 0.0,
+          "rate": 0.24,
+          "extra_info": "8,851 8,950 89 89 89 15,351 15,450 204 154 154"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "2,451-25",
+          "base_tax": 0.0,
+          "rate": 0.25,
+          "extra_info": "8,951 9,050 90 90 90 15,451 15,550 206 155 155"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "2,551-26",
+          "base_tax": 0.0,
+          "rate": 0.26,
+          "extra_info": "9,051 9,150 91 91 91 15,551 15,650 208 156 156"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "2,651-27",
+          "base_tax": 0.0,
+          "rate": 0.27,
+          "extra_info": "9,151 9,250 92 92 92 15,651 15,750 210 157 157"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "2,751-28",
+          "base_tax": 0.0,
+          "rate": 0.28,
+          "extra_info": "9,251 9,350 93 93 93 15,751 15,850 212 158 158"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "2,851-29",
+          "base_tax": 0.0,
+          "rate": 0.29,
+          "extra_info": "9,351 9,450 94 94 94 15,851 15,950 214 159 159"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "2,951-30",
+          "base_tax": 0.0,
+          "rate": 0.3,
+          "extra_info": "9,451 9,550 95 95 95 15,951 16,050 216 160 160"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "3,051-31",
+          "base_tax": 0.0,
+          "rate": 0.31,
+          "extra_info": "9,551 9,650 96 96 96 16,051 16,150 218 161 161"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "3,151-32",
+          "base_tax": 0.0,
+          "rate": 0.32,
+          "extra_info": "9,651 9,750 97 97 97 16,151 16,250 220 162 162"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "3,251-33",
+          "base_tax": 0.0,
+          "rate": 0.33,
+          "extra_info": "9,751 9,850 98 98 98 16,251 16,350 222 163 163"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "3,351-34",
+          "base_tax": 0.0,
+          "rate": 0.34,
+          "extra_info": "9,851 9,950 99 99 99 16,351 16,450 224 164 164"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "3,451-35",
+          "base_tax": 0.0,
+          "rate": 0.35,
+          "extra_info": "9,951 10,050 100 100 100 16,451 16,550 226 165 165"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "3,551-36",
+          "base_tax": 0.0,
+          "rate": 0.36,
+          "extra_info": "10,051 10,150 101 101 101 16,551 16,650 228 166 166"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "3,651-37",
+          "base_tax": 0.0,
+          "rate": 0.37,
+          "extra_info": "10,151 10,250 102 102 102 16,651 16,750 230 167 167"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "3,751-38",
+          "base_tax": 0.0,
+          "rate": 0.38,
+          "extra_info": "10,251 10,350 103 103 103 16,751 16,850 232 168 168"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "3,851-39",
+          "base_tax": 0.0,
+          "rate": 0.39,
+          "extra_info": "10,351 10,450 104 104 104 16,851 16,950 234 169 169"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "3,951-40",
+          "base_tax": 0.0,
+          "rate": 0.4,
+          "extra_info": "10,451 10,550 106 105 105 16,951 17,050 236 170 170"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "4,051-41",
+          "base_tax": 0.0,
+          "rate": 0.41,
+          "extra_info": "10,551 10,650 108 106 106 17,051 17,150 238 171 171"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "4,151-42",
+          "base_tax": 0.0,
+          "rate": 0.42,
+          "extra_info": "10,651 10,750 110 107 107 17,151 17,250 240 172 172"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "4,251-43",
+          "base_tax": 0.0,
+          "rate": 0.43,
+          "extra_info": "10,751 10,850 112 108 108 17,251 17,350 242 173 173"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "4,351-44",
+          "base_tax": 0.0,
+          "rate": 0.44,
+          "extra_info": "10,851 10,950 114 109 109 17,351 17,450 244 174 174"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "4,451-45",
+          "base_tax": 0.0,
+          "rate": 0.45,
+          "extra_info": "10,951 11,050 116 110 110 17,451 17,550 246 175 175"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "4,551-46",
+          "base_tax": 0.0,
+          "rate": 0.46,
+          "extra_info": "11,051 11,150 118 111 111 17,551 17,650 248 176 176"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "4,651-47",
+          "base_tax": 0.0,
+          "rate": 0.47,
+          "extra_info": "11,151 11,250 120 112 112 17,651 17,750 250 177 177"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "4,751-48",
+          "base_tax": 0.0,
+          "rate": 0.48,
+          "extra_info": "11,251 11,350 122 113 113 17,751 17,850 252 178 178"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "4,851-49",
+          "base_tax": 0.0,
+          "rate": 0.49,
+          "extra_info": "11,351 11,450 124 114 114 17,851 17,950 254 179 179"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "4,951-50",
+          "base_tax": 0.0,
+          "rate": 0.5,
+          "extra_info": "11,451 11,550 126 115 115 17,951 18,050 256 180 180"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "5,051-51",
+          "base_tax": 0.0,
+          "rate": 0.51,
+          "extra_info": "11,551 11,650 128 116 116 18,051 18,150 258 181 181"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "5,151-52",
+          "base_tax": 0.0,
+          "rate": 0.52,
+          "extra_info": "11,651 11,750 130 117 117 18,151 18,250 260 182 182"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "5,251-53",
+          "base_tax": 0.0,
+          "rate": 0.53,
+          "extra_info": "11,751 11,850 132 118 118 18,251 18,350 262 183 183"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "5,351-54",
+          "base_tax": 0.0,
+          "rate": 0.54,
+          "extra_info": "11,851 11,950 134 119 119 18,351 18,450 264 184 184"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "5,451-55",
+          "base_tax": 0.0,
+          "rate": 0.55,
+          "extra_info": "11,951 12,050 136 120 120 18,451 18,550 266 185 185"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "5,551-56",
+          "base_tax": 0.0,
+          "rate": 0.56,
+          "extra_info": "12,051 12,150 138 121 121 18,551 18,650 268 186 186"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "5,651-57",
+          "base_tax": 0.0,
+          "rate": 0.57,
+          "extra_info": "12,151 12,250 140 122 122 18,651 18,750 270 187 187"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "5,751-58",
+          "base_tax": 0.0,
+          "rate": 0.58,
+          "extra_info": "12,251 12,350 142 123 123 18,751 18,850 272 188 188"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "5,851-59",
+          "base_tax": 0.0,
+          "rate": 0.59,
+          "extra_info": "12,351 12,450 144 124 124 18,851 18,950 274 189 189"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "5,951-60",
+          "base_tax": 0.0,
+          "rate": 0.6,
+          "extra_info": "12,451 12,550 146 125 125 18,951 19,050 276 190 190"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "6,051-61",
+          "base_tax": 0.0,
+          "rate": 0.61,
+          "extra_info": "12,551 12,650 148 126 126 19,051 19,150 278 191 191"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "6,151-62",
+          "base_tax": 0.0,
+          "rate": 0.62,
+          "extra_info": "12,651 12,750 150 127 127 19,151 19,250 280 192 192"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "6,251-63",
+          "base_tax": 0.0,
+          "rate": 0.63,
+          "extra_info": "12,751 12,850 152 128 128 19,251 19,350 282 193 193"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "6,351-64",
+          "base_tax": 0.0,
+          "rate": 0.64,
+          "extra_info": "12,851 12,950 154 129 129 19,351 19,450 284 194 194"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "Personal-Tax",
+          "base_tax": 0.0,
+          "rate": 20.23,
+          "extra_info": ""
+        },
+        {
+          "filing_status": "single",
+          "income_range": "Filing-1",
+          "base_tax": 0.0,
+          "rate": 0.03,
+          "extra_info": "(Single; Married/RDP Filing Separately) 2 or 5 (Married/RDP Filing Jointly; Qualifying Surviving Spouse/RDP) 4 (Head of Household)"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "19,451-286",
+          "base_tax": 0.0,
+          "rate": 1.95,
+          "extra_info": "26,451 26,550 462 322 322 33,451 33,550 742 462 462"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "19,551-288",
+          "base_tax": 0.0,
+          "rate": 1.96,
+          "extra_info": "26,551 26,650 466 324 324 33,551 33,650 746 464 464"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "19,651-290",
+          "base_tax": 0.0,
+          "rate": 1.97,
+          "extra_info": "26,651 26,750 470 326 326 33,651 33,750 750 466 466"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "19,751-292",
+          "base_tax": 0.0,
+          "rate": 1.98,
+          "extra_info": "26,751 26,850 474 328 328 33,751 33,850 754 468 468"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "19,851-294",
+          "base_tax": 0.0,
+          "rate": 1.99,
+          "extra_info": "26,851 26,950 478 330 330 33,851 33,950 758 470 470"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "19,951-296",
+          "base_tax": 0.0,
+          "rate": 2.0,
+          "extra_info": "26,951 27,050 482 332 332 33,951 34,050 762 472 472"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "20,051-298",
+          "base_tax": 0.0,
+          "rate": 2.01,
+          "extra_info": "27,051 27,150 486 334 334 34,051 34,150 766 474 474"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "20,151-300",
+          "base_tax": 0.0,
+          "rate": 2.02,
+          "extra_info": "27,151 27,250 490 336 336 34,151 34,250 770 476 476"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "20,251-302",
+          "base_tax": 0.0,
+          "rate": 2.03,
+          "extra_info": "27,251 27,350 494 338 338 34,251 34,350 774 478 478"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "20,351-304",
+          "base_tax": 0.0,
+          "rate": 2.04,
+          "extra_info": "27,351 27,450 498 340 340 34,351 34,450 778 480 480"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "20,451-306",
+          "base_tax": 0.0,
+          "rate": 2.05,
+          "extra_info": "27,451 27,550 502 342 342 34,451 34,550 782 482 482"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "20,551-308",
+          "base_tax": 0.0,
+          "rate": 2.06,
+          "extra_info": "27,551 27,650 506 344 344 34,551 34,650 786 484 484"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "20,651-310",
+          "base_tax": 0.0,
+          "rate": 2.07,
+          "extra_info": "27,651 27,750 510 346 346 34,651 34,750 790 486 486"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "20,751-312",
+          "base_tax": 0.0,
+          "rate": 2.08,
+          "extra_info": "27,751 27,850 514 348 348 34,751 34,850 794 488 488"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "20,851-314",
+          "base_tax": 0.0,
+          "rate": 2.1,
+          "extra_info": "27,851 27,950 518 350 350 34,851 34,950 798 490 490"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "20,951-316",
+          "base_tax": 0.0,
+          "rate": 2.12,
+          "extra_info": "27,951 28,050 522 352 352 34,951 35,050 802 492 492"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "21,051-318",
+          "base_tax": 0.0,
+          "rate": 2.14,
+          "extra_info": "28,051 28,150 526 354 354 35,051 35,150 806 494 494"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "21,151-320",
+          "base_tax": 0.0,
+          "rate": 2.16,
+          "extra_info": "28,151 28,250 530 356 356 35,151 35,250 810 496 496"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "21,251-322",
+          "base_tax": 0.0,
+          "rate": 2.18,
+          "extra_info": "28,251 28,350 534 358 358 35,251 35,350 814 498 498"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "21,351-324",
+          "base_tax": 0.0,
+          "rate": 2.2,
+          "extra_info": "28,351 28,450 538 360 360 35,351 35,450 818 500 500"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "21,451-326",
+          "base_tax": 0.0,
+          "rate": 2.22,
+          "extra_info": "28,451 28,550 542 362 362 35,451 35,550 822 502 502"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "21,551-328",
+          "base_tax": 0.0,
+          "rate": 2.24,
+          "extra_info": "28,551 28,650 546 364 364 35,551 35,650 826 504 504"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "21,651-330",
+          "base_tax": 0.0,
+          "rate": 2.26,
+          "extra_info": "28,651 28,750 550 366 366 35,651 35,750 830 506 506"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "21,751-332",
+          "base_tax": 0.0,
+          "rate": 2.28,
+          "extra_info": "28,751 28,850 554 368 368 35,751 35,850 834 508 508"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "21,851-334",
+          "base_tax": 0.0,
+          "rate": 2.3,
+          "extra_info": "28,851 28,950 558 370 370 35,851 35,950 838 510 510"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "21,951-336",
+          "base_tax": 0.0,
+          "rate": 2.32,
+          "extra_info": "28,951 29,050 562 372 372 35,951 36,050 842 512 512"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "22,051-338",
+          "base_tax": 0.0,
+          "rate": 2.34,
+          "extra_info": "29,051 29,150 566 374 374 36,051 36,150 846 514 514"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "22,151-340",
+          "base_tax": 0.0,
+          "rate": 2.36,
+          "extra_info": "29,151 29,250 570 376 376 36,151 36,250 850 516 516"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "22,251-342",
+          "base_tax": 0.0,
+          "rate": 2.38,
+          "extra_info": "29,251 29,350 574 378 378 36,251 36,350 854 518 518"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "22,351-344",
+          "base_tax": 0.0,
+          "rate": 2.4,
+          "extra_info": "29,351 29,450 578 380 380 36,351 36,450 858 520 520"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "22,451-346",
+          "base_tax": 0.0,
+          "rate": 2.42,
+          "extra_info": "29,451 29,550 582 382 382 36,451 36,550 862 522 522"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "22,551-348",
+          "base_tax": 0.0,
+          "rate": 2.44,
+          "extra_info": "29,551 29,650 586 384 384 36,551 36,650 866 524 524"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "22,651-350",
+          "base_tax": 0.0,
+          "rate": 2.46,
+          "extra_info": "29,651 29,750 590 386 386 36,651 36,750 870 526 526"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "22,751-352",
+          "base_tax": 0.0,
+          "rate": 2.48,
+          "extra_info": "29,751 29,850 594 388 388 36,751 36,850 874 528 528"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "22,851-354",
+          "base_tax": 0.0,
+          "rate": 2.5,
+          "extra_info": "29,851 29,950 598 390 390 36,851 36,950 878 530 530"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "22,951-356",
+          "base_tax": 0.0,
+          "rate": 2.52,
+          "extra_info": "29,951 30,050 602 392 392 36,951 37,050 882 532 532"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "23,051-358",
+          "base_tax": 0.0,
+          "rate": 2.54,
+          "extra_info": "30,051 30,150 606 394 394 37,051 37,150 886 534 534"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "23,151-360",
+          "base_tax": 0.0,
+          "rate": 2.56,
+          "extra_info": "30,151 30,250 610 396 396 37,151 37,250 890 536 536"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "23,251-362",
+          "base_tax": 0.0,
+          "rate": 2.58,
+          "extra_info": "30,251 30,350 614 398 398 37,251 37,350 894 538 538"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "23,351-364",
+          "base_tax": 0.0,
+          "rate": 2.6,
+          "extra_info": "30,351 30,450 618 400 400 37,351 37,450 898 540 540"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "23,451-366",
+          "base_tax": 0.0,
+          "rate": 2.62,
+          "extra_info": "30,451 30,550 622 402 402 37,451 37,550 902 542 542"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "23,551-368",
+          "base_tax": 0.0,
+          "rate": 2.64,
+          "extra_info": "30,551 30,650 626 404 404 37,551 37,650 906 544 544"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "23,651-370",
+          "base_tax": 0.0,
+          "rate": 2.66,
+          "extra_info": "30,651 30,750 630 406 406 37,651 37,750 910 546 546"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "23,751-372",
+          "base_tax": 0.0,
+          "rate": 2.68,
+          "extra_info": "30,751 30,850 634 408 408 37,751 37,850 914 548 548"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "23,851-374",
+          "base_tax": 0.0,
+          "rate": 2.7,
+          "extra_info": "30,851 30,950 638 410 410 37,851 37,950 918 550 550"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "23,951-376",
+          "base_tax": 0.0,
+          "rate": 2.72,
+          "extra_info": "30,951 31,050 642 412 412 37,951 38,050 922 552 552"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "24,051-378",
+          "base_tax": 0.0,
+          "rate": 2.74,
+          "extra_info": "31,051 31,150 646 414 414 38,051 38,150 926 554 554"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "24,151-380",
+          "base_tax": 0.0,
+          "rate": 2.76,
+          "extra_info": "31,151 31,250 650 416 416 38,151 38,250 930 556 556"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "24,251-382",
+          "base_tax": 0.0,
+          "rate": 2.78,
+          "extra_info": "31,251 31,350 654 418 418 38,251 38,350 934 558 558"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "24,351-384",
+          "base_tax": 0.0,
+          "rate": 2.8,
+          "extra_info": "31,351 31,450 658 420 420 38,351 38,450 938 560 560"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "24,451-386",
+          "base_tax": 0.0,
+          "rate": 2.82,
+          "extra_info": "31,451 31,550 662 422 422 38,451 38,550 942 562 562"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "24,551-388",
+          "base_tax": 0.0,
+          "rate": 2.84,
+          "extra_info": "31,551 31,650 666 424 424 38,551 38,650 946 564 564"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "24,651-390",
+          "base_tax": 0.0,
+          "rate": 2.86,
+          "extra_info": "31,651 31,750 670 426 426 38,651 38,750 950 566 566"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "24,751-394",
+          "base_tax": 0.0,
+          "rate": 2.88,
+          "extra_info": "31,751 31,850 674 428 428 38,751 38,850 954 568 568"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "24,851-398",
+          "base_tax": 0.0,
+          "rate": 2.9,
+          "extra_info": "31,851 31,950 678 430 430 38,851 38,950 958 570 570"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "24,951-402",
+          "base_tax": 0.0,
+          "rate": 2.92,
+          "extra_info": "31,951 32,050 682 432 432 38,951 39,050 963 572 572"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "25,051-406",
+          "base_tax": 0.0,
+          "rate": 2.94,
+          "extra_info": "32,051 32,150 686 434 434 39,051 39,150 969 574 574"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "25,151-410",
+          "base_tax": 0.0,
+          "rate": 2.96,
+          "extra_info": "32,151 32,250 690 436 436 39,151 39,250 975 576 576"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "25,251-414",
+          "base_tax": 0.0,
+          "rate": 2.98,
+          "extra_info": "32,251 32,350 694 438 438 39,251 39,350 981 578 578"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "25,351-418",
+          "base_tax": 0.0,
+          "rate": 3.0,
+          "extra_info": "32,351 32,450 698 440 440 39,351 39,450 987 580 580"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "25,451-422",
+          "base_tax": 0.0,
+          "rate": 3.02,
+          "extra_info": "32,451 32,550 702 442 442 39,451 39,550 993 582 582"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "25,551-426",
+          "base_tax": 0.0,
+          "rate": 3.04,
+          "extra_info": "32,551 32,650 706 444 444 39,551 39,650 999 584 584"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "25,651-430",
+          "base_tax": 0.0,
+          "rate": 3.06,
+          "extra_info": "32,651 32,750 710 446 446 39,651 39,750 1,005 586 586"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "25,751-434",
+          "base_tax": 0.0,
+          "rate": 3.08,
+          "extra_info": "32,751 32,850 714 448 448 39,751 39,850 1,011 588 588"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "25,851-438",
+          "base_tax": 0.0,
+          "rate": 3.1,
+          "extra_info": "32,851 32,950 718 450 450 39,851 39,950 1,017 590 590"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "25,951-442",
+          "base_tax": 0.0,
+          "rate": 3.12,
+          "extra_info": "32,951 33,050 722 452 452 39,951 40,050 1,023 592 592"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "26,051-446",
+          "base_tax": 0.0,
+          "rate": 3.14,
+          "extra_info": "33,051 33,150 726 454 454 40,051 40,150 1,029 594 594"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "26,151-450",
+          "base_tax": 0.0,
+          "rate": 3.16,
+          "extra_info": "33,151 33,250 730 456 456 40,151 40,250 1,035 596 596"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "26,251-454",
+          "base_tax": 0.0,
+          "rate": 3.18,
+          "extra_info": "33,251 33,350 734 458 458 40,251 40,350 1,041 598 598"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "26,351-458",
+          "base_tax": 0.0,
+          "rate": 3.2,
+          "extra_info": "33,351 33,450 738 460 460 40,351 40,450 1,047 600 600"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "Personal-Tax",
+          "base_tax": 0.0,
+          "rate": 20.23,
+          "extra_info": ""
+        },
+        {
+          "filing_status": "single",
+          "income_range": "Filing-1",
+          "base_tax": 0.0,
+          "rate": 0.03,
+          "extra_info": "(Single; Married/RDP Filing Separately) 2 or 5 (Married/RDP Filing Jointly; Qualifying Surviving Spouse/RDP) 4 (Head of Household)"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "40,451-1,053",
+          "base_tax": 0.0,
+          "rate": 6.02,
+          "extra_info": "47,451 47,550 1,473 742 742 54,451 54,550 1,901 984 984"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "40,551-1,059",
+          "base_tax": 0.0,
+          "rate": 6.04,
+          "extra_info": "47,551 47,650 1,479 744 744 54,551 54,650 1,909 988 988"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "40,651-1,065",
+          "base_tax": 0.0,
+          "rate": 6.06,
+          "extra_info": "47,651 47,750 1,485 746 746 54,651 54,750 1,917 992 992"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "40,751-1,071",
+          "base_tax": 0.0,
+          "rate": 6.08,
+          "extra_info": "47,751 47,850 1,491 748 748 54,751 54,850 1,925 996 996"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "40,851-1,077",
+          "base_tax": 0.0,
+          "rate": 6.1,
+          "extra_info": "47,851 47,950 1,497 750 750 54,851 54,950 1,933 1,000 1,000"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "40,951-1,083",
+          "base_tax": 0.0,
+          "rate": 6.12,
+          "extra_info": "47,951 48,050 1,503 752 752 54,951 55,050 1,941 1,004 1,004"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "41,051-1,089",
+          "base_tax": 0.0,
+          "rate": 6.14,
+          "extra_info": "48,051 48,150 1,509 754 754 55,051 55,150 1,949 1,008 1,008"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "41,151-1,095",
+          "base_tax": 0.0,
+          "rate": 6.16,
+          "extra_info": "48,151 48,250 1,515 756 756 55,151 55,250 1,957 1,012 1,012"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "41,251-1,101",
+          "base_tax": 0.0,
+          "rate": 6.18,
+          "extra_info": "48,251 48,350 1,521 758 758 55,251 55,350 1,965 1,016 1,016"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "41,351-1,107",
+          "base_tax": 0.0,
+          "rate": 6.2,
+          "extra_info": "48,351 48,450 1,527 760 760 55,351 55,450 1,973 1,020 1,020"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "41,451-1,113",
+          "base_tax": 0.0,
+          "rate": 6.22,
+          "extra_info": "48,451 48,550 1,533 762 762 55,451 55,550 1,981 1,024 1,024"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "41,551-1,119",
+          "base_tax": 0.0,
+          "rate": 6.24,
+          "extra_info": "48,551 48,650 1,539 764 764 55,551 55,650 1,989 1,028 1,028"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "41,651-1,125",
+          "base_tax": 0.0,
+          "rate": 6.26,
+          "extra_info": "48,651 48,750 1,545 766 766 55,651 55,750 1,997 1,032 1,032"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "41,751-1,131",
+          "base_tax": 0.0,
+          "rate": 6.28,
+          "extra_info": "48,751 48,850 1,551 768 768 55,751 55,850 2,005 1,036 1,036"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "41,851-1,137",
+          "base_tax": 0.0,
+          "rate": 6.3,
+          "extra_info": "48,851 48,950 1,557 770 770 55,851 55,950 2,013 1,040 1,040"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "41,951-1,143",
+          "base_tax": 0.0,
+          "rate": 6.32,
+          "extra_info": "48,951 49,050 1,563 772 772 55,951 56,050 2,021 1,044 1,044"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "42,051-1,149",
+          "base_tax": 0.0,
+          "rate": 6.34,
+          "extra_info": "49,051 49,150 1,569 774 774 56,051 56,150 2,029 1,048 1,048"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "42,151-1,155",
+          "base_tax": 0.0,
+          "rate": 6.36,
+          "extra_info": "49,151 49,250 1,575 776 776 56,151 56,250 2,037 1,052 1,052"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "42,251-1,161",
+          "base_tax": 0.0,
+          "rate": 6.38,
+          "extra_info": "49,251 49,350 1,581 778 778 56,251 56,350 2,045 1,056 1,056"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "42,351-1,167",
+          "base_tax": 0.0,
+          "rate": 6.4,
+          "extra_info": "49,351 49,450 1,587 780 780 56,351 56,450 2,053 1,060 1,060"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "42,451-1,173",
+          "base_tax": 0.0,
+          "rate": 6.42,
+          "extra_info": "49,451 49,550 1,593 784 784 56,451 56,550 2,061 1,064 1,064"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "42,551-1,179",
+          "base_tax": 0.0,
+          "rate": 6.44,
+          "extra_info": "49,551 49,650 1,599 788 788 56,551 56,650 2,069 1,068 1,068"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "42,651-1,185",
+          "base_tax": 0.0,
+          "rate": 6.46,
+          "extra_info": "49,651 49,750 1,605 792 792 56,651 56,750 2,077 1,072 1,072"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "42,751-1,191",
+          "base_tax": 0.0,
+          "rate": 6.48,
+          "extra_info": "49,751 49,850 1,611 796 796 56,751 56,850 2,085 1,076 1,076"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "42,851-1,197",
+          "base_tax": 0.0,
+          "rate": 6.5,
+          "extra_info": "49,851 49,950 1,617 800 800 56,851 56,950 2,093 1,080 1,080"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "42,951-1,203",
+          "base_tax": 0.0,
+          "rate": 6.52,
+          "extra_info": "49,951 50,050 1,623 804 804 56,951 57,050 2,101 1,084 1,084"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "43,051-1,209",
+          "base_tax": 0.0,
+          "rate": 6.54,
+          "extra_info": "50,051 50,150 1,629 808 808 57,051 57,150 2,109 1,088 1,088"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "43,151-1,215",
+          "base_tax": 0.0,
+          "rate": 6.56,
+          "extra_info": "50,151 50,250 1,635 812 812 57,151 57,250 2,117 1,092 1,092"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "43,251-1,221",
+          "base_tax": 0.0,
+          "rate": 6.58,
+          "extra_info": "50,251 50,350 1,641 816 816 57,251 57,350 2,125 1,096 1,096"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "43,351-1,227",
+          "base_tax": 0.0,
+          "rate": 6.6,
+          "extra_info": "50,351 50,450 1,647 820 820 57,351 57,450 2,133 1,100 1,100"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "43,451-1,233",
+          "base_tax": 0.0,
+          "rate": 6.62,
+          "extra_info": "50,451 50,550 1,653 824 824 57,451 57,550 2,141 1,104 1,104"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "43,551-1,239",
+          "base_tax": 0.0,
+          "rate": 6.64,
+          "extra_info": "50,551 50,650 1,659 828 828 57,551 57,650 2,149 1,108 1,108"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "43,651-1,245",
+          "base_tax": 0.0,
+          "rate": 6.66,
+          "extra_info": "50,651 50,750 1,665 832 832 57,651 57,750 2,157 1,112 1,112"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "43,751-1,251",
+          "base_tax": 0.0,
+          "rate": 6.68,
+          "extra_info": "50,751 50,850 1,671 836 836 57,751 57,850 2,165 1,116 1,116"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "43,851-1,257",
+          "base_tax": 0.0,
+          "rate": 6.7,
+          "extra_info": "50,851 50,950 1,677 840 840 57,851 57,950 2,173 1,120 1,120"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "43,951-1,263",
+          "base_tax": 0.0,
+          "rate": 6.72,
+          "extra_info": "50,951 51,050 1,683 844 844 57,951 58,050 2,181 1,124 1,124"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "44,051-1,269",
+          "base_tax": 0.0,
+          "rate": 6.74,
+          "extra_info": "51,051 51,150 1,689 848 848 58,051 58,150 2,189 1,128 1,128"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "44,151-1,275",
+          "base_tax": 0.0,
+          "rate": 6.76,
+          "extra_info": "51,151 51,250 1,695 852 852 58,151 58,250 2,197 1,132 1,132"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "44,251-1,281",
+          "base_tax": 0.0,
+          "rate": 6.78,
+          "extra_info": "51,251 51,350 1,701 856 856 58,251 58,350 2,205 1,136 1,136"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "44,351-1,287",
+          "base_tax": 0.0,
+          "rate": 6.8,
+          "extra_info": "51,351 51,450 1,707 860 860 58,351 58,450 2,213 1,140 1,140"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "44,451-1,293",
+          "base_tax": 0.0,
+          "rate": 6.82,
+          "extra_info": "51,451 51,550 1,713 864 864 58,451 58,550 2,221 1,144 1,144"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "44,551-1,299",
+          "base_tax": 0.0,
+          "rate": 6.84,
+          "extra_info": "51,551 51,650 1,719 868 868 58,551 58,650 2,229 1,148 1,148"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "44,651-1,305",
+          "base_tax": 0.0,
+          "rate": 6.86,
+          "extra_info": "51,651 51,750 1,725 872 872 58,651 58,750 2,237 1,152 1,152"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "44,751-1,311",
+          "base_tax": 0.0,
+          "rate": 6.88,
+          "extra_info": "51,751 51,850 1,731 876 876 58,751 58,850 2,245 1,156 1,156"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "44,851-1,317",
+          "base_tax": 0.0,
+          "rate": 6.9,
+          "extra_info": "51,851 51,950 1,737 880 880 58,851 58,950 2,253 1,160 1,160"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "44,951-1,323",
+          "base_tax": 0.0,
+          "rate": 6.92,
+          "extra_info": "51,951 52,050 1,743 884 884 58,951 59,050 2,261 1,164 1,164"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "45,051-1,329",
+          "base_tax": 0.0,
+          "rate": 6.94,
+          "extra_info": "52,051 52,150 1,749 888 888 59,051 59,150 2,269 1,168 1,168"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "45,151-1,335",
+          "base_tax": 0.0,
+          "rate": 6.96,
+          "extra_info": "52,151 52,250 1,755 892 892 59,151 59,250 2,277 1,172 1,172"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "45,251-1,341",
+          "base_tax": 0.0,
+          "rate": 6.98,
+          "extra_info": "52,251 52,350 1,761 896 896 59,251 59,350 2,285 1,176 1,176"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "45,351-1,347",
+          "base_tax": 0.0,
+          "rate": 7.0,
+          "extra_info": "52,351 52,450 1,767 900 900 59,351 59,450 2,293 1,180 1,180"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "45,451-1,353",
+          "base_tax": 0.0,
+          "rate": 7.02,
+          "extra_info": "52,451 52,550 1,773 904 904 59,451 59,550 2,301 1,184 1,184"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "45,551-1,359",
+          "base_tax": 0.0,
+          "rate": 7.04,
+          "extra_info": "52,551 52,650 1,779 908 908 59,551 59,650 2,309 1,188 1,188"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "45,651-1,365",
+          "base_tax": 0.0,
+          "rate": 7.06,
+          "extra_info": "52,651 52,750 1,785 912 912 59,651 59,750 2,317 1,192 1,192"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "45,751-1,371",
+          "base_tax": 0.0,
+          "rate": 7.08,
+          "extra_info": "52,751 52,850 1,791 916 916 59,751 59,850 2,325 1,196 1,196"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "45,851-1,377",
+          "base_tax": 0.0,
+          "rate": 7.1,
+          "extra_info": "52,851 52,950 1,797 920 920 59,851 59,950 2,333 1,200 1,200"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "45,951-1,383",
+          "base_tax": 0.0,
+          "rate": 7.12,
+          "extra_info": "52,951 53,050 1,803 924 924 59,951 60,050 2,341 1,204 1,204"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "46,051-1,389",
+          "base_tax": 0.0,
+          "rate": 7.14,
+          "extra_info": "53,051 53,150 1,809 928 928 60,051 60,150 2,349 1,208 1,208"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "46,151-1,395",
+          "base_tax": 0.0,
+          "rate": 7.16,
+          "extra_info": "53,151 53,250 1,815 932 932 60,151 60,250 2,357 1,212 1,212"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "46,251-1,401",
+          "base_tax": 0.0,
+          "rate": 7.18,
+          "extra_info": "53,251 53,350 1,821 936 936 60,251 60,350 2,365 1,216 1,216"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "46,351-1,407",
+          "base_tax": 0.0,
+          "rate": 7.2,
+          "extra_info": "53,351 53,450 1,827 940 940 60,351 60,450 2,373 1,220 1,220"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "46,451-1,413",
+          "base_tax": 0.0,
+          "rate": 7.22,
+          "extra_info": "53,451 53,550 1,833 944 944 60,451 60,550 2,381 1,224 1,224"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "46,551-1,419",
+          "base_tax": 0.0,
+          "rate": 7.24,
+          "extra_info": "53,551 53,650 1,839 948 948 60,551 60,650 2,389 1,228 1,228"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "46,651-1,425",
+          "base_tax": 0.0,
+          "rate": 7.26,
+          "extra_info": "53,651 53,750 1,845 952 952 60,651 60,750 2,397 1,232 1,232"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "46,751-1,431",
+          "base_tax": 0.0,
+          "rate": 7.28,
+          "extra_info": "53,751 53,850 1,851 956 956 60,751 60,850 2,405 1,236 1,236"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "46,851-1,437",
+          "base_tax": 0.0,
+          "rate": 7.3,
+          "extra_info": "53,851 53,950 1,857 960 960 60,851 60,950 2,413 1,240 1,240"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "46,951-1,443",
+          "base_tax": 0.0,
+          "rate": 7.32,
+          "extra_info": "53,951 54,050 1,863 964 964 60,951 61,050 2,421 1,244 1,244"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "47,051-1,449",
+          "base_tax": 0.0,
+          "rate": 7.34,
+          "extra_info": "54,051 54,150 1,869 968 968 61,051 61,150 2,429 1,248 1,248"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "47,151-1,455",
+          "base_tax": 0.0,
+          "rate": 7.36,
+          "extra_info": "54,151 54,250 1,877 972 972 61,151 61,250 2,437 1,252 1,252"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "47,251-1,461",
+          "base_tax": 0.0,
+          "rate": 7.38,
+          "extra_info": "54,251 54,350 1,885 976 976 61,251 61,350 2,445 1,256 1,256"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "47,351-1,467",
+          "base_tax": 0.0,
+          "rate": 7.4,
+          "extra_info": "54,351 54,450 1,893 980 980 61,351 61,450 2,453 1,260 1,260"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "Personal-Tax",
+          "base_tax": 0.0,
+          "rate": 20.23,
+          "extra_info": ""
+        },
+        {
+          "filing_status": "single",
+          "income_range": "Filing-1",
+          "base_tax": 0.0,
+          "rate": 0.03,
+          "extra_info": "(Single; Married/RDP Filing Separately) 2 or 5 (Married/RDP Filing Jointly; Qualifying Surviving Spouse/RDP) 4 (Head of Household)"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "Personal-Tax",
+          "base_tax": 0.0,
+          "rate": 20.23,
+          "extra_info": ""
+        },
+        {
+          "filing_status": "single",
+          "income_range": "Filing-1",
+          "base_tax": 0.0,
+          "rate": 0.03,
+          "extra_info": "(Single; Married/RDP Filing Separately) 2 or 5 (Married/RDP Filing Jointly; Qualifying Surviving Spouse/RDP) 4 (Head of Household)"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "Personal-Tax",
+          "base_tax": 0.0,
+          "rate": 20.23,
+          "extra_info": ""
+        }
+      ]
+    },
+    "source": "PDF parsing"
+  },
+  "Colorado": {
+    "timestamp": "2024-09-28T15:28:57.163953",
+    "data": {
+      "state": "Colorado",
+      "tax_info": [
+        "The passage of Proposition 121 recently changed the Colorado income tax rate. The new Colorado income tax rate is 4.40%,\u00a0beginning in the 2022 tax year.",
+        "In 2020, proposition 116 reduced the income tax rate to 4.55%. In 2019, the Colorado income tax rate was temporarily reduced to 4.50%, because a TABOR refund mechanism was triggered. From 2000 to 2018, the Colorado income\u00a0tax rate was 4.63%."
+      ]
+    },
+    "source": "Web scraping"
+  },
+  "Connecticut": {
+    "timestamp": "2024-09-28T15:45:57.023227",
+    "data": {
+      "state": "Connecticut",
+      "year": 2022,
+      "tax_brackets": [
+        {
+          "tax_rate": "5%",
+          "single_and_married_filing_separately": "tax to income",
+          "heads_of_household": "from to to",
+          "married_filing_jointly": "$50,000, to 5.5%"
+        },
+        {
+          "tax_rate": "3%",
+          "single_and_married_filing_separately": "$0 to $10,000",
+          "heads_of_household": "$0 to $16,000",
+          "married_filing_jointly": "$0 to 20,000"
+        },
+        {
+          "tax_rate": "5%",
+          "single_and_married_filing_separately": "$10,001 to $50,000",
+          "heads_of_household": "$16,001 to $80,000",
+          "married_filing_jointly": "$20,001 to $100,000"
+        },
+        {
+          "tax_rate": "5.5%",
+          "single_and_married_filing_separately": "$50,001 to $100,000",
+          "heads_of_household": "$80,001 to $160,000",
+          "married_filing_jointly": "$100,001 to $200,000"
+        },
+        {
+          "tax_rate": "6%",
+          "single_and_married_filing_separately": "$100,001 to $200,000",
+          "heads_of_household": "$160,001 to $320,000",
+          "married_filing_jointly": "$200,001 to $400,000"
+        },
+        {
+          "tax_rate": "6.5%",
+          "single_and_married_filing_separately": "$200,001 to $250,000",
+          "heads_of_household": "$320,001 to $400,000",
+          "married_filing_jointly": "$400,001 to $500,000"
+        },
+        {
+          "tax_rate": "6.9%",
+          "single_and_married_filing_separately": "$250,001 to $500,000",
+          "heads_of_household": "$400,001 to $800,000",
+          "married_filing_jointly": "$500,001 to $1,000,000"
+        }
+      ]
+    },
+    "source": "Web scraping"
+  },
+  "Delaware": {
+    "timestamp": "2024-09-28T15:45:57.768217",
+    "data": {
+      "state": "Delaware",
+      "tax_info": [
+        {
+          "income_range": "$0-$2,000",
+          "base_tax": "$0",
+          "rate": "0"
+        },
+        {
+          "income_range": "2,000-5,000",
+          "base_tax": "0",
+          "rate": ".022"
+        },
+        {
+          "income_range": "5,000-10,000",
+          "base_tax": "66",
+          "rate": ".039"
+        },
+        {
+          "income_range": "10,000-20,000",
+          "base_tax": "261",
+          "rate": ".048"
+        },
+        {
+          "income_range": "20,000-25,000",
+          "base_tax": "741",
+          "rate": ".052"
+        },
+        {
+          "income_range": "25,000-60,000",
+          "base_tax": "1,001",
+          "rate": ".0555"
+        },
+        {
+          "income_range": "$60,000-and above",
+          "base_tax": "$2943.50",
+          "rate": ".066"
+        }
+      ],
+      "calculation_examples": [
+        {
+          "income": "$12,345",
+          "calculation": "261 + (.048 * (12,345 - 10,000)) = 374"
+        },
+        {
+          "income": "$75,000",
+          "calculation": "2943.50 + (.066 * (75,000 - 60,000)) = 3934"
+        }
+      ]
+    },
+    "source": "Web scraping"
+  },
+  "Georgia": {
+    "timestamp": "2024-09-28T15:17:08.106226",
+    "data": {
+      "state": "Georgia",
+      "year": 2023,
+      "tax_brackets": [
+        {
+          "filing_status": "single",
+          "income_range": "$750-$8.00",
+          "base_tax": 0.0,
+          "rate": 0.02,
+          "extra_info": "of the amount over $750"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "$2,250-$38.00",
+          "base_tax": 0.0,
+          "rate": 0.03,
+          "extra_info": "of the amount over $2,250"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "$3,750-$83.00",
+          "base_tax": 0.0,
+          "rate": 0.04,
+          "extra_info": "of the amount over $3,750"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "$5,250-$143.00",
+          "base_tax": 0.0,
+          "rate": 0.05,
+          "extra_info": "of the amount over $5,250"
+        },
+        {
+          "filing_status": "married_filing_joint_or_hoh",
+          "income_range": "$1,000-$10.00",
+          "base_tax": 0.0,
+          "rate": 0.02,
+          "extra_info": "of the amount over $1,000"
+        },
+        {
+          "filing_status": "married_filing_joint_or_hoh",
+          "income_range": "$3,000-$50.00",
+          "base_tax": 0.0,
+          "rate": 0.03,
+          "extra_info": "of the amount over $3,000"
+        },
+        {
+          "filing_status": "married_filing_joint_or_hoh",
+          "income_range": "$5,000-$110.00",
+          "base_tax": 0.0,
+          "rate": 0.04,
+          "extra_info": "of the amount over $5,000"
+        },
+        {
+          "filing_status": "married_filing_joint_or_hoh",
+          "income_range": "$7,000-$190.00",
+          "base_tax": 0.0,
+          "rate": 0.05,
+          "extra_info": "of the amount over $7,000"
+        },
+        {
+          "filing_status": "married_filing_separate",
+          "income_range": "$500-$5.00",
+          "base_tax": 0.0,
+          "rate": 0.02,
+          "extra_info": "of the amount over $500"
+        },
+        {
+          "filing_status": "married_filing_separate",
+          "income_range": "$1,500-$25.00",
+          "base_tax": 0.0,
+          "rate": 0.03,
+          "extra_info": "of the amount over $1,500"
+        },
+        {
+          "filing_status": "married_filing_separate",
+          "income_range": "$2,500-$55.00",
+          "base_tax": 0.0,
+          "rate": 0.04,
+          "extra_info": "of the amount over $2,500"
+        },
+        {
+          "filing_status": "married_filing_separate",
+          "income_range": "$3,500-$95.00",
+          "base_tax": 0.0,
+          "rate": 0.05,
+          "extra_info": "of the amount over $3,500"
+        },
+        {
+          "filing_status": "single",
+          "income_range": "$3,750-$83.00",
+          "base_tax": 0.0,
+          "rate": 0.04,
+          "extra_info": "of the amount over $3,750"
+        }
+      ]
+    },
+    "source": "Web scraping"
+  }
+}
