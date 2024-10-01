@@ -1,26 +1,27 @@
 import * as React from 'react';
-import { alpha } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
-import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import Image from 'next/image';
 
 export default function Hero() {
+  const theme = useTheme();
+
+  const babyBlueMain = '#03a9f4';
+  const babyBlueDark = '#81d4fa';
+
   return (
     <Box
       id="hero"
-      sx={(theme) => ({
+      sx={{
         width: '100%',
-        backgroundImage:
-          theme.palette.mode === 'light'
-            ? 'linear-gradient(180deg, #CEE5FD, #FFF)'
-            : `linear-gradient(#02294F, ${alpha('#090E10', 0.0)})`,
-        backgroundSize: '100% 20%',
         backgroundRepeat: 'no-repeat',
-      })}
+        color: theme.palette.mode === 'light' ? '#333' : '#FFF',
+
+      }}
     >
       <Container
         sx={{
@@ -29,96 +30,89 @@ export default function Hero() {
           alignItems: 'center',
           pt: { xs: 14, sm: 20 },
           pb: { xs: 8, sm: 12 },
+          position: 'relative',
         }}
       >
-        <Stack spacing={2} useFlexGap sx={{ width: { xs: '100%', sm: '70%' } }}>
+        <Stack spacing={3} sx={{ width: { xs: '100%', sm: '80%' } }}>
           <Typography
             variant="h1"
+            align="center"
             sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', md: 'row' },
-              alignSelf: 'center',
-              textAlign: 'center',
-              fontSize: 'clamp(3.5rem, 10vw, 4rem)',
+              fontSize: 'clamp(2rem, 6vw, 3rem)',
+              color: theme.palette.mode === 'light' ? '#1976d2' : '#64b5f6',
+              fontFamily: '"Poppins", sans-serif',
+              fontWeight: 400,
+              letterSpacing: '-0.02em',
             }}
           >
-            Our latest&nbsp;
-            <Typography
-              component="span"
-              variant="h1"
+            Manage your business like a boss.
+          </Typography>
+
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 8 }}>
+            <Image
+              src="/static/images/avatar/Pyfactor Images/Work-Life-Balance-1--Streamline-Brooklyn.png"
+              alt="Business Management Illustration"
+              width={300}
+              height={180}
+              layout="intrinsic"
+            />
+          </Box>
+
+          <Typography
+            variant="h5"
+            align="center"
+            color="text.secondary"
+            sx={{
+              fontWeight: 'normal',
+              fontFamily: '"Inter", sans-serif',
+              letterSpacing: '0.01em',
+              fontSize: '1rem',
+              padding: 2,
+            }}
+          >
+            Accounting, Payroll, HR, Inventory, Reporting, Analytics, Banking and Mobile Money—all in one intuitive platform.
+          </Typography>
+
+          <Stack
+            direction="row"
+            spacing={2}
+            justifyContent="center"
+            alignItems="center"
+          >
+         <Button
+              variant="contained"
+              size="large"
               sx={{
-                fontSize: 'clamp(3rem, 10vw, 4rem)',
-                color: (theme) =>
-                  theme.palette.mode === 'light' ? 'primary.main' : 'primary.light',
+                fontSize: '1rem',
+                px: 4,
+                py: 1.5,
+                backgroundColor: babyBlueMain,
+                '&:hover': {
+                  backgroundColor: babyBlueDark,
+                },
+                boxShadow: `0 4px 14px ${alpha(babyBlueMain, 0.4)}`,
+                borderRadius: '50px',
+                fontFamily: '"Inter", sans-serif',
+                fontWeight: 600,
+                letterSpacing: '0.02em',
               }}
             >
-              products
-            </Typography>
-          </Typography>
-          <Typography
-            textAlign="center"
-            color="text.secondary"
-            sx={{ alignSelf: 'center', width: { sm: '100%', md: '80%' } }}
-          >
-            Explore our cutting-edge dashboard, delivering high-quality solutions
-            tailored to your needs. Elevate your experience with top-tier features
-            and services.
-          </Typography>
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            alignSelf="center"
-            spacing={1}
-            useFlexGap
-            sx={{ pt: 2, width: { xs: '100%', sm: 'auto' } }}
-          >
-            <TextField
-              id="outlined-basic"
-              hiddenLabel
-              size="small"
-              variant="outlined"
-              aria-label="Enter your email address"
-              placeholder="Your email address"
-              inputProps={{
-                autoComplete: 'off',
-                'aria-label': 'Enter your email address',
-              }}
-            />
-            <Button variant="contained" color="primary">
-              Start now
+              Get Started Free
             </Button>
           </Stack>
-          <Typography variant="caption" textAlign="center" sx={{ opacity: 0.8 }}>
-            By clicking &quot;Start now&quot; you agree to our&nbsp;
-            <Link href="#" color="primary">
-              Terms & Conditions
-            </Link>
-            .
-          </Typography>
+
+          <Box sx={{ width: '100%', mt: 2, padding: 4 }}>
+            <iframe
+              width="100%"
+              height="480"
+              src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
+              title="Dott Software Demo"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
+          </Box>
         </Stack>
-        <Box
-          id="image"
-          sx={(theme) => ({
-            mt: { xs: 8, sm: 10 },
-            alignSelf: 'center',
-            height: { xs: 200, sm: 700 },
-            width: '100%',
-            backgroundImage:
-              theme.palette.mode === 'light'
-                ? 'url("/static/images/templates/templates-images/hero-light.png")'
-                : 'url("/static/images/templates/templates-images/hero-dark.png")',
-            backgroundSize: 'cover',
-            borderRadius: '10px',
-            outline: '1px solid',
-            outlineColor:
-              theme.palette.mode === 'light'
-                ? alpha('#BFCCD9', 0.5)
-                : alpha('#9CCCFC', 0.1),
-            boxShadow:
-              theme.palette.mode === 'light'
-                ? `0 0 12px 8px ${alpha('#9CCCFC', 0.2)}`
-                : `0 0 24px 12px ${alpha('#033363', 0.2)}`,
-          })}
-        />
       </Container>
     </Box>
   );

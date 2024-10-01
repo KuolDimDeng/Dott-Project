@@ -2,7 +2,7 @@ import logging
 from .modules.irs_scraper import scrape_federal_tax_data
 # from .modules.fred_api import fetch_fred_data
 # from .modules.state_tax_fetcher import fetch_state_tax_api, scrape_state_tax_data
-from .utils.data_manager import load_cached_data, cache_data
+from ..utils.data_manager import load_cached_data, cache_data
 
 logger = logging.getLogger(__name__)
 

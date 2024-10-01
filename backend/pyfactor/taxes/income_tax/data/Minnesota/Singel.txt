@@ -1,0 +1,6 @@
+Rate​	Head of Household​	Head of Household​	Single	Single
+ 	More Than​	But not more than​	More than​	But not more than​
+5.35%​	$0	$39,010	$0	$31,690
+6.80%	$39,010	$156,760	$31,690	$104,090
+7.85%	$156,760	$256,880	$104,090	$193,240
+9.85%	$256,880	 	$193,240	 

@@ -1,119 +1,104 @@
 import * as React from 'react';
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import AutoFixHighRoundedIcon from '@mui/icons-material/AutoFixHighRounded';
-import ConstructionRoundedIcon from '@mui/icons-material/ConstructionRounded';
-import QueryStatsRoundedIcon from '@mui/icons-material/QueryStatsRounded';
-import SettingsSuggestRoundedIcon from '@mui/icons-material/SettingsSuggestRounded';
-import SupportAgentRoundedIcon from '@mui/icons-material/SupportAgentRounded';
-import ThumbUpAltRoundedIcon from '@mui/icons-material/ThumbUpAltRounded';
+import { Container, Grid, Paper, Typography, Box } from '@mui/material';
+import SpeedIcon from '@mui/icons-material/Speed';
+import SecurityIcon from '@mui/icons-material/Security';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import UpdateIcon from '@mui/icons-material/Update';
+import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
 
-const items = [
+const highlights = [
   {
-    icon: <SettingsSuggestRoundedIcon />,
-    title: 'Adaptable performance',
-    description:
-      'Our product effortlessly adjusts to your needs, boosting efficiency and simplifying your tasks.',
+    title: 'Lightning Fast',
+    description: 'Experience top speed and efficiency in managing your business processes with Dott.',
+    icon: SpeedIcon,
+    color: '#4caf50',
   },
   {
-    icon: <ConstructionRoundedIcon />,
-    title: 'Built to last',
-    description:
-      'Experience unmatched durability that goes above and beyond with lasting investment.',
+    title: 'Bank-Level Security',
+    description: 'Your data is secured with cutting-edge encryption, ensuring peace of mind.',
+    icon: SecurityIcon,
+    color: '#f44336',
   },
   {
-    icon: <ThumbUpAltRoundedIcon />,
-    title: 'Great user experience',
-    description:
-      'Integrate our product into your routine with an intuitive and easy-to-use interface.',
+    title: '24/7 Customer Support',
+    description: 'Our expert team is available around the clock to assist you whenever needed.',
+    icon: SupportAgentIcon,
+    color: '#2196f3',
   },
   {
-    icon: <AutoFixHighRoundedIcon />,
-    title: 'Innovative functionality',
-    description:
-      'Stay ahead with features that set new standards, addressing your evolving needs better than the rest.',
+    title: 'Continuous Updates',
+    description: 'Stay ahead with regular feature updates, ensuring you always have the latest tools at your disposal.',
+    icon: UpdateIcon,
+    color: '#ff9800',
   },
   {
-    icon: <SupportAgentRoundedIcon />,
-    title: 'Reliable support',
-    description:
-      'Count on our responsive customer support, offering assistance that goes beyond the purchase.',
+    title: 'Seamless Integration',
+    description: 'Easily integrate Dott with your existing software and streamline all business operations.',
+    icon: IntegrationInstructionsIcon,
+    color: '#9c27b0',
   },
   {
-    icon: <QueryStatsRoundedIcon />,
-    title: 'Precision in every detail',
-    description:
-      'Enjoy a meticulously crafted product where small touches make a significant impact on your overall experience.',
+    title: 'Advanced Analytics',
+    description: 'Get detailed insights to make informed decisions and boost your business growth.',
+    icon: AnalyticsIcon,
+    color: '#00bcd4',
   },
 ];
 
 export default function Highlights() {
   return (
-    <Box
-      id="highlights"
-      sx={{
-        pt: { xs: 4, sm: 12 },
-        pb: { xs: 8, sm: 16 },
-        color: 'white',
-        bgcolor: '#06090a',
-      }}
-    >
-      <Container
-        sx={{
-          position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: { xs: 3, sm: 6 },
-        }}
-      >
-        <Box
-          sx={{
-            width: { sm: '100%', md: '60%' },
-            textAlign: { sm: 'left', md: 'center' },
-          }}
+    <Box sx={{ bgcolor: '#ffffff', py: 12 }}> {/* Changed bgcolor to white */}
+      <Container maxWidth="lg">
+        <Typography
+          variant="h2"
+          align="center"
+          fontFamily="Poppins, sans-serif"
+          fontWeight="bold"
+          mb={8}
         >
-          <Typography component="h2" variant="h4">
-            Highlights
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'grey.400' }}>
-            Explore why our product stands out: adaptability, durability,
-            user-friendly design, and innovation. Enjoy reliable customer support and
-            precision in every detail.
-          </Typography>
-        </Box>
-        <Grid container spacing={2.5}>
-          {items.map((item, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <Stack
-                direction="column"
-                color="inherit"
-                component={Card}
-                spacing={1}
-                useFlexGap
+          Why Choose Dott
+        </Typography>
+        <Grid container spacing={4}>
+          {highlights.map((highlight) => (
+            <Grid item xs={12} sm={6} md={4} key={highlight.title}>
+              <Paper
+                elevation={3}
                 sx={{
-                  p: 3,
+                  p: 4,
                   height: '100%',
-                  border: '1px solid',
-                  borderColor: 'grey.800',
-                  background: 'transparent',
-                  backgroundColor: 'grey.900',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  borderRadius: 4,
+                  transition: '0.3s',
+                  '&:hover': { transform: 'translateY(-10px)' },
                 }}
               >
-                <Box sx={{ opacity: '50%' }}>{item.icon}</Box>
-                <div>
-                  <Typography fontWeight="medium" gutterBottom>
-                    {item.title}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: 'grey.400' }}>
-                    {item.description}
-                  </Typography>
-                </div>
-              </Stack>
+                <Box
+                  sx={{
+                    bgcolor: highlight.color,
+                    borderRadius: '50%',
+                    p: 2,
+                    mb: 3,
+                  }}
+                >
+                  <highlight.icon sx={{ fontSize: 40, color: 'white' }} />
+                </Box>
+                <Typography
+                  variant="h5"
+                  component="h3"
+                  align="center"
+                  gutterBottom
+                  fontFamily="Poppins, sans-serif"
+                  fontWeight="bold"
+                >
+                  {highlight.title}
+                </Typography>
+                <Typography align="center" fontFamily="Inter, sans-serif">
+                  {highlight.description}
+                </Typography>
+              </Paper>
             </Grid>
           ))}
         </Grid>

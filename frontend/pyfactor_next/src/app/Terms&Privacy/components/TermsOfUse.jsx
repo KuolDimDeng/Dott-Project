@@ -58,7 +58,7 @@ const TermsOfUse = () => {
           align="center"
           sx={{ fontWeight: 'bold', mb: 3 }}
         >
-          Dott Terms of Use Agreement
+          Terms of Use
         </Typography>
         
         <Typography 

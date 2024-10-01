@@ -2,7 +2,7 @@ from django.shortcuts import render
 
 # Create your views here.
 from django.http import JsonResponse
-from .tax_data_manager import update_tax_data, get_federal_tax_data, get_state_tax_data, get_fred_data
+from .income_tax.tax_data_manager import update_tax_data, get_federal_tax_data, get_state_tax_data, get_fred_data
 
 def update_tax_info(request):
     update_tax_data()

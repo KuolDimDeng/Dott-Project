@@ -6,7 +6,6 @@ import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
-
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 export default function FAQ() {
@@ -38,7 +37,7 @@ export default function FAQ() {
           textAlign: { sm: 'left', md: 'center' },
         }}
       >
-        Frequently asked questions
+        Frequently Asked Questions
       </Typography>
       <Box sx={{ width: '100%' }}>
         <Accordion
@@ -51,7 +50,7 @@ export default function FAQ() {
             id="panel1d-header"
           >
             <Typography component="h3" variant="subtitle2">
-              How do I contact customer support if I have a question or issue?
+              How can Dott help manage my business finances?
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
@@ -60,10 +59,7 @@ export default function FAQ() {
               gutterBottom
               sx={{ maxWidth: { sm: '100%', md: '70%' } }}
             >
-              You can reach our customer support team by emailing
-              <Link> support@email.com </Link>
-              or calling our toll-free number. We&apos;re here to assist you
-              promptly.
+              Dott simplifies your accounting by allowing you to track income, expenses, and manage invoices from one dashboard. You can also generate detailed reports to get insights into your business finances.
             </Typography>
           </AccordionDetails>
         </Accordion>
@@ -77,7 +73,7 @@ export default function FAQ() {
             id="panel2d-header"
           >
             <Typography component="h3" variant="subtitle2">
-              Can I return the product if it doesn&apos;t meet my expectations?
+              Can Dott process payroll for my employees?
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
@@ -86,9 +82,7 @@ export default function FAQ() {
               gutterBottom
               sx={{ maxWidth: { sm: '100%', md: '70%' } }}
             >
-              Absolutely! We offer a hassle-free return policy. If you&apos;re not
-              completely satisfied, you can return the product within [number of
-              days] days for a full refund or exchange.
+              Yes! Dott offers both self-service and full-service payroll options, helping you manage employee payments, tax calculations, and ensure compliance with local regulations.
             </Typography>
           </AccordionDetails>
         </Accordion>
@@ -102,7 +96,7 @@ export default function FAQ() {
             id="panel3d-header"
           >
             <Typography component="h3" variant="subtitle2">
-              What makes your product stand out from others in the market?
+              How does mobile money integration work with Dott?
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
@@ -111,9 +105,7 @@ export default function FAQ() {
               gutterBottom
               sx={{ maxWidth: { sm: '100%', md: '70%' } }}
             >
-              Our product distinguishes itself through its adaptability, durability,
-              and innovative features. We prioritize user satisfaction and
-              continually strive to exceed expectations in every aspect.
+              Dott integrates with leading mobile money platforms like MTN, Airtel, and others, allowing your business to accept payments easily and securely, particularly in regions where mobile money is prevalent.
             </Typography>
           </AccordionDetails>
         </Accordion>
@@ -127,7 +119,7 @@ export default function FAQ() {
             id="panel4d-header"
           >
             <Typography component="h3" variant="subtitle2">
-              Is there a warranty on the product, and what does it cover?
+              What features are available in the free plan?
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
@@ -136,10 +128,30 @@ export default function FAQ() {
               gutterBottom
               sx={{ maxWidth: { sm: '100%', md: '70%' } }}
             >
-              Yes, our product comes with a [length of warranty] warranty. It covers
-              defects in materials and workmanship. If you encounter any issues
-              covered by the warranty, please contact our customer support for
-              assistance.
+              The Basic (free) plan includes features like managing invoices, tracking income and expenses, and accepting payments through mobile money. If you need more advanced features like payroll processing, custom integrations, and priority support, you can upgrade to the Professional plan.
+            </Typography>
+          </AccordionDetails>
+        </Accordion>
+        <Accordion
+          expanded={expanded === 'panel5'}
+          onChange={handleChange('panel5')}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="panel5d-content"
+            id="panel5d-header"
+          >
+            <Typography component="h3" variant="subtitle2">
+              Is my data secure with Dott?
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography
+              variant="body2"
+              gutterBottom
+              sx={{ maxWidth: { sm: '100%', md: '70%' } }}
+            >
+              Absolutely. Dott uses bank-level encryption and follows the latest security standards to protect your financial data. Your business information is safe with us, whether you’re using the free or professional plan.
             </Typography>
           </AccordionDetails>
         </Accordion>

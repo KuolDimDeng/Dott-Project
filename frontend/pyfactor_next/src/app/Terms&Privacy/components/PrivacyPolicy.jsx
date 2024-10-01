@@ -102,7 +102,7 @@ const PrivacyPolicy = () => {
           align="center"
           sx={{ fontWeight: 'bold', mb: 2 }}
         >
-          Dott Privacy Policy
+          Privacy Policy
         </Typography>
         
         <Typography 

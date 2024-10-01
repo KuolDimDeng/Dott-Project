@@ -5,7 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import AppAppBar from './components/AppAppBar';
+import AppAppBar from './components/AppBar';
 import Hero from './components/Hero';
 import LogoCollection from './components/LogoCollection';
 import Highlights from './components/Highlights';
@@ -46,20 +46,15 @@ export default function LandingPage() {
           onSignInClick={handleSignInClick}
           onSignUpClick={handleSignUpClick}
         />
-        <LogoCollection />
         <Features />
-        <Testimonials />
-        <Highlights />
         <Pricing />
         <FAQ />
         <Divider />
         <Footer />
       </Box>
-      <ToggleColorMode toggleColorMode={toggleColorMode} mode={mode} />
     </ThemeProvider>
   );
 }
-
 export function ToggleColorMode({ toggleColorMode, mode }) {
   return (
     <Box sx={{ position: 'fixed', bottom: 16, right: 16 }}>
