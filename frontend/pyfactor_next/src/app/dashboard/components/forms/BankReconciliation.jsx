@@ -27,6 +27,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import axiosInstance from '../components/axiosConfig';
+import Image from 'next/image';
 
 
 const BankReconciliation = () => {
@@ -149,17 +150,30 @@ const BankReconciliation = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-          <AccountBalanceIcon sx={{ fontSize: 40, mr: 2, color: 'primary.main' }} />
-          <Typography variant="h4" component="h1">
-            Bank Reconciliation
-          </Typography>
+      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <AccountBalanceIcon sx={{ fontSize: 40, mr: 2, color: 'primary.main' }} />
+              <Typography variant="h4" component="h1">
+                Bank Reconciliation
+              </Typography>
+            </Box>
+            <Typography variant="subtitle1" sx={{ ml: 7, color: 'text.secondary' }}>
+              Manage your bank reconciliation
+            </Typography>
+          </Box>
+          <Box>
+            <Image
+              src="/static/images/Recon.png"
+              alt="Reconciliation"
+              width={130}
+              height={130}
+              style={{ objectFit: 'contain' }}
+            />
+          </Box>
         </Box>
-        <Typography variant="subtitle1" gutterBottom sx={{ ml: 7, mb: 3, color: 'text.secondary' }}>
-          Manage bank reconciliation
-        </Typography>
-
+    
         {/* Header/Overview Section */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={3}>

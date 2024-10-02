@@ -9,10 +9,10 @@ import Image from 'next/image';
 
 export default function Hero() {
   const theme = useTheme();
-
+  
   const babyBlueMain = '#03a9f4';
   const babyBlueDark = '#81d4fa';
-
+  
   return (
     <Box
       id="hero"
@@ -20,7 +20,6 @@ export default function Hero() {
         width: '100%',
         backgroundRepeat: 'no-repeat',
         color: theme.palette.mode === 'light' ? '#333' : '#FFF',
-
       }}
     >
       <Container
@@ -47,17 +46,17 @@ export default function Hero() {
           >
             Manage your business like a boss.
           </Typography>
-
+          
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 8 }}>
             <Image
               src="/static/images/avatar/Pyfactor Images/Work-Life-Balance-1--Streamline-Brooklyn.png"
               alt="Business Management Illustration"
               width={300}
               height={180}
-              layout="intrinsic"
+              style={{ maxWidth: '100%', height: 'auto' }}
             />
           </Box>
-
+          
           <Typography
             variant="h5"
             align="center"
@@ -70,16 +69,16 @@ export default function Hero() {
               padding: 2,
             }}
           >
-            Accounting, Payroll, HR, Inventory, Reporting, Analytics, Banking and Mobile Money—all in one intuitive platform.
+            Accounting, Payroll, HR, Inventory, Reports, Analytics, Banking and Mobile Money—all in one intuitive platform.
           </Typography>
-
+          
           <Stack
             direction="row"
             spacing={2}
             justifyContent="center"
             alignItems="center"
           >
-         <Button
+            <Button
               variant="contained"
               size="large"
               sx={{
@@ -100,7 +99,7 @@ export default function Hero() {
               Get Started Free
             </Button>
           </Stack>
-
+          
           <Box sx={{ width: '100%', mt: 2, padding: 4 }}>
             <iframe
               width="100%"

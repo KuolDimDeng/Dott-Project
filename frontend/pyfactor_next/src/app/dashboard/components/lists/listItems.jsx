@@ -10,6 +10,7 @@ import {
   Button,
   Popover,
   Typography,
+  useTheme,
 } from '@mui/material';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
@@ -25,7 +26,7 @@ import AnalyticsIcon from '@mui/icons-material/Analytics';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-
+import Image from 'next/image';
 
 
 
@@ -85,6 +86,7 @@ const MainListItems = ({
     setHoveredItem(null);
   };
   const createOpen = Boolean(createAnchorEl);
+  const theme = useTheme();
 
 
   const menuItems = [
@@ -462,6 +464,8 @@ const MainListItems = ({
                 </React.Fragment>
               ))}
             </List>
+
+
           </Box>
         </Paper>
         <Popover

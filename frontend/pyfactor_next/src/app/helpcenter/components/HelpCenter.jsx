@@ -22,6 +22,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import EmailIcon from '@mui/icons-material/Email';
 import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
+import Image from 'next/image';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import HelpIcon from '@mui/icons-material/Help'; // Import the Help icon
 
 const faqs = [
   {
@@ -36,8 +39,39 @@ const faqs = [
     question: "How do I generate financial reports?",
     answer: "Navigate to the 'Reports' section in the sidebar. Choose the type of report you want to generate, set the date range, and click 'Generate Report'."
   },
-  // Add more FAQs as needed
+  {
+    question: "Is my data secure when using Dott?",
+    answer: "Absolutely. Dott ensures bank-level encryption and security to protect your sensitive data, whether you're using our web or mobile platforms."
+  },
+  {
+    question: "Can I use Dott on mobile?",
+    answer: "Yes! Dott offers a mobile app for both iOS and Android, making it easy to manage your business from anywhere."
+  },
+  {
+    question: "Does Dott offer payroll management?",
+    answer: "Yes, Dott provides payroll management that allows you to automate payroll processing, ensuring compliance with tax laws and regulations."
+  },
+  {
+    question: "What payment methods can my customers use?",
+    answer: "Your customers can pay using various methods, including mobile money, credit cards, and bank transfers, integrated with platforms like Stripe, Venmo, and PayPal."
+  },
+  {
+    question: "Does Dott support multi-currency transactions?",
+    answer: "Yes, Dott supports multi-currency transactions, making it easier for you to handle international business."
+  },
+  {
+    question: "Can I automate recurring payments?",
+    answer: "Absolutely! With Dott, you can set up recurring invoices and payments, helping you streamline your business operations."
+  },
 ];
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#0d47a1', // Navy blue color
+    },
+  },
+});
 
 const HelpCenter = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,7 +100,10 @@ const HelpCenter = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>Help Center</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <HelpIcon sx={{ fontSize: 45, color: theme.palette.primary.main, mr: 1 }} />
+        <Typography variant="h4" gutterBottom>Help Center</Typography>
+      </Box>     
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
           <Paper elevation={3} sx={{ p: 2, mb: 3 }}>
@@ -79,9 +116,21 @@ const HelpCenter = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <Button variant="contained" onClick={handleSearch} sx={{ ml: 1 }}>
-                <SearchIcon />
-              </Button>
+          <Button 
+              variant="contained" 
+              onClick={handleSearch} 
+              sx={{ 
+                ml: 1, 
+                color: 'white', // This makes the text (icon in this case) white
+
+                backgroundColor: '#0d47a1',
+                '&:hover': {
+                  backgroundColor: '#002171',
+                },
+              }}
+            >
+              <SearchIcon />
+            </Button>
             </Box>
           </Paper>
           
@@ -89,14 +138,31 @@ const HelpCenter = () => {
           {faqs.map((faq, index) => (
             <Accordion key={index}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography>{faq.question}</Typography>
+                <Typography sx={{ 
+                  fontWeight: 'bold', 
+                  color: theme.palette.primary.main 
+                }}>
+                  {faq.question}
+                </Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <Typography>{faq.answer}</Typography>
               </AccordionDetails>
             </Accordion>
           ))}
+           {/* FAQ Image */}
+           <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+            <Image
+              src="/static/images/FAQ.png"
+              alt="FAQ Illustration"
+              width={300}
+              height={200}
+              style={{ maxWidth: '100%', height: 'auto' }}
+            />
+          </Box>
+          
         </Grid>
+        
         
         <Grid item xs={12} md={4}>
           <Paper elevation={3} sx={{ p: 2, mb: 3 }}>
@@ -150,9 +216,21 @@ const HelpCenter = () => {
                 multiline
                 rows={4}
               />
-              <Button type="submit" variant="contained" startIcon={<EmailIcon />} sx={{ mt: 2 }}>
-                Send Message
-              </Button>
+          <Button 
+              type="submit" 
+              variant="contained" 
+              startIcon={<EmailIcon />} 
+              sx={{ 
+                color: 'white', // This makes the text (icon in this case) white
+                mt: 2, 
+                backgroundColor: '#0d47a1',
+                '&:hover': {
+                  backgroundColor: '#002171',
+                },
+              }}
+            >
+              Send Message
+            </Button>
             </form>
             <Typography variant="body2" sx={{ mt: 2, fontStyle: 'italic' }}>
               We aim to respond to all inquiries within 24 hours.
