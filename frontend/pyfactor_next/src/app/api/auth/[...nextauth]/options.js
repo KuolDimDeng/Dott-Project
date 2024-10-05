@@ -11,6 +11,11 @@ console.log("NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
 
 async function refreshAccessToken(token) {
     console.log('Refreshing access token:', JSON.stringify(token, null, 2));
+
+    console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
+    console.log("GOOGLE_CLIENT_SECRET:", process.env.GOOGLE_CLIENT_SECRET);
+    console.log("NEXTAUTH_SECRET:", process.env.NEXTAUTH_SECRET);
+    console.log("NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
     try {
       const url = "https://oauth2.googleapis.com/token";
       const params = new URLSearchParams({
@@ -20,15 +25,9 @@ async function refreshAccessToken(token) {
         refresh_token: token.refreshToken,
       });
   
-      console.log('Refresh token request params:', params.toString());
-  
       const response = await axios.post(url, params.toString(), {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
-  
-      console.log('Refresh token response:', JSON.stringify(response.data, null, 2));
   
       const refreshedTokens = response.data;
   
@@ -36,16 +35,14 @@ async function refreshAccessToken(token) {
         throw refreshedTokens;
       }
   
-      console.log('Refresh successful, new tokens:', JSON.stringify(refreshedTokens, null, 2));
-  
       return {
         ...token,
         accessToken: refreshedTokens.access_token,
-        accessTokenExpires: Date.now() + refreshedTokens.expires_in * 1000,
-        refreshToken: refreshedTokens.refresh_token ?? token.refreshToken,
+        accessTokenExpires: Date.now() + refreshedTokens.expires_in * 1000,  // Update expiry time
+        refreshToken: refreshedTokens.refresh_token ?? token.refreshToken,    // Fall back to old refresh token if it's not returned
       };
     } catch (error) {
-      console.error("RefreshAccessTokenError", error);
+      console.error("Error refreshing access token:", error);
       return {
         ...token,
         error: "RefreshAccessTokenError",
@@ -53,6 +50,7 @@ async function refreshAccessToken(token) {
     }
   }
   
+
 export const options = {
   providers: [
     GoogleProvider({
@@ -103,37 +101,41 @@ export const options = {
     },
 
     async jwt({ token, user, account }) {
-      if (account && user) {
-        return {
-          ...token,
-          accessToken: account.access_token,
-          refreshToken: account.refresh_token,
-          accessTokenExpires: account.expires_at * 1000,
-          user: {
-            id: user.id,
-            isOnboarded: user.isOnboarded,
-          },
-        };
+        // Initial sign-in: store the access and refresh tokens
+        if (account && user) {
+          return {
+            ...token,
+            accessToken: account.access_token,
+            refreshToken: account.refresh_token,
+            accessTokenExpires: account.expires_at * 1000, // Set the expiration time
+            user: {
+              id: user.id,
+              isOnboarded: user.isOnboarded,
+            },
+          };
+        }
+    
+        // Return previous token if the access token has not expired yet
+        if (Date.now() < token.accessTokenExpires) {
+          return token;
+        }
+    
+        // Access token has expired, try to update it
+        console.log("Access token expired, refreshing...");
+        return refreshAccessToken(token);
+      },
+    
+      // Add the access token and refresh token to the session object
+      async session({ session, token }) {
+        session.user.id = token.user.id;
+        session.user.isOnboarded = token.user.isOnboarded;
+        session.accessToken = token.accessToken;
+        session.error = token.error;
+        session.refreshToken = token.refreshToken;
+        return session;
       }
-
-      // Return previous token if the access token has not expired yet
-      if (Date.now() < token.accessTokenExpires) {
-        return token;
-      }
-
-      // Access token has expired, try to update it
-      return refreshAccessToken(token);
     },
-
-    async session({ session, token }) {
-      session.user.id = token.user.id;
-      session.user.isOnboarded = token.user.isOnboarded;
-      session.accessToken = token.accessToken;
-      session.error = token.error;
-      session.refreshToken = token.refreshToken;
-      return session;
-    },
-  },
+    
   events: {
     async signIn(message) { console.log('signIn', message) },
     async signOut(message) { console.log('signOut', message) },
