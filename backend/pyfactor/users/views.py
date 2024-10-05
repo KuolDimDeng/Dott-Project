@@ -142,8 +142,10 @@ class OnboardingStatusView(APIView):
 # Complete onboarding, create user database, and update their profile.
 class CompleteOnboardingView(APIView):
     permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
     def post(self, request):
+        logger.debug("Received request data: %s", request.data)
         # Extract and validate data.
         business_data = request.data.get('business')
         selected_plan = request.data.get('selectedPlan')

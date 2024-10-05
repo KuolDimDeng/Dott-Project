@@ -96,6 +96,16 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['is_onboarded'] = user.is_onboarded
         return token
 
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        refresh = self.get_token(self.user)
+        data['refresh'] = str(refresh)
+        data['access'] = str(refresh.access_token)
+        data['user_id'] = self.user.id
+        data['email'] = self.user.email
+        data['is_onboarded'] = self.user.is_onboarded
+        return data
+    
 class CustomAuthTokenSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     password = serializers.CharField(

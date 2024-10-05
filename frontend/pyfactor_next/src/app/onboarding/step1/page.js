@@ -194,7 +194,7 @@ const OnboardingStep1 = ({ nextStep }) => {
   const handleSubmit = (event) => {
     event.preventDefault();
     console.log('Form submitted:', formData);
-    nextStep();
+    nextStep(formData);
   };
 
   if (status === 'loading') return <div>Loading...</div>;

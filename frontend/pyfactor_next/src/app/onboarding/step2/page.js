@@ -3,13 +3,14 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession, getSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import {
-  Box, Typography, Grid, Button, Card, CardContent, CardActions, Container, Divider, Chip, styled
+  Box, Typography, Grid, Button, Card, CardContent, CardActions, Container, Divider, styled
 } from '@mui/material';
 import Image from 'next/image';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import axios from 'axios';
 
 const theme = createTheme({
   palette: {
@@ -45,48 +46,107 @@ const BillingToggle = styled(Box)(({ theme }) => ({
   },
 }));
 
-const OnboardingStep2 = ({ nextStep, prevStep }) => {
+  // Function to make the API request
+  const makeRequest = async (token, data) => {
+    const apiUrl = 'http://localhost:8000';
+
+    console.log("Making request with token:", token);
+    const response = await fetch(`${apiUrl}/api/complete-onboarding/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    console.log("Response status:", response.status);
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error("Error response body:", errorBody);
+      throw new Error(`Failed to complete onboarding. Status: ${response.status}, Body: ${errorBody}`);
+    }
+
+    return response;
+  };
+
+// Async helper function to handle subscription selection
+const handleSubscription = async (session, plan, formData, billingCycle, refreshToken, setErrorMessage, router) => {
+  console.log("Subscription selected:", plan);
+
+  try {
+      let currentToken = session.accessToken;
+
+      // 1-minute buffer to check if the token is about to expire
+      const tokenBufferTime = 60 * 1000; // 1-minute buffer
+      if (new Date(session.expires) - tokenBufferTime <= new Date()) {
+          console.log("Access token expired or about to expire, attempting to refresh...");
+          currentToken = await refreshToken(session);
+      }
+
+      const onboardingData = {
+          business: formData, // Make sure formData is accessible here
+          selectedPlan: plan.title,
+          billingCycle: billingCycle,
+      };
+      console.log("Onboarding data:", onboardingData);
+
+      const response = await makeRequest(currentToken, onboardingData);
+      const result = await response.json();
+      console.log("Onboarding completed successfully:", result);
+
+      // Redirect to the dashboard after successful onboarding
+      router.push('/dashboard');
+  } catch (error) {
+      console.error('Onboarding completion error:', error);
+      setErrorMessage('There was an error completing onboarding. Please try again.');
+  }
+};
+
+const OnboardingStep2 = ({ nextStep, prevStep, formData }) => {
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [errorMessage, setErrorMessage] = useState('');
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();  // session is handled by next-auth
 
   const handleBillingCycleChange = (cycle) => setBillingCycle(cycle);
+  const apiUrl = 'http://localhost:8000';
 
-
-  const handleSubscriptionSelect = async (plan) => {
+  // Refresh token function
+  const refreshToken = async (session) => {
+    console.log("Attempting to refresh token...");
     try {
-      const onboardingData = {
-        ...formData,  // Include data from step 1
-        selectedPlan: plan.title,
-        billingCycle: billingCycle,
-      };
-  
-      const response = await fetch('/api/complete-onboarding', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`,  // Add authorization
-        },
-        body: JSON.stringify(onboardingData),
-      });
-  
-      const result = await response.json();
-  
-      if (!response.ok) throw new Error('Failed to complete onboarding');
-  
-      // Refetch the session to update `isOnboarded` status
-      await getSession();
-  
-      // Redirect the user to the dashboard
-      router.push('/dashboard');
-    } catch (error) {
-      console.error('Onboarding completion error:', error);
-      setErrorMessage('There was an error completing onboarding. Please try again.');
-    }
-  };
-  
+        const response = await fetch(`${apiUrl}/api/token/refresh/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            refresh: session.refreshToken,
+          }),
+        });
 
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Token refresh successful:", data);
+          return data.access;
+        } else {
+          const errorData = await response.text();
+          console.error("Token refresh failed:", response.status, errorData);
+          throw new Error(`Failed to refresh token: ${response.status} ${errorData}`);
+        }
+      } catch (error) {
+        console.error("Error in refreshToken:", error);
+        throw error;
+      }
+  };
+
+
+
+  // Trigger the subscription selection asynchronously
+  const handleSubscriptionSelect = (plan) => {
+    handleSubscription(session, plan, formData, billingCycle, refreshToken, setErrorMessage, router);
+  };
 
   const tiers = [
     {
