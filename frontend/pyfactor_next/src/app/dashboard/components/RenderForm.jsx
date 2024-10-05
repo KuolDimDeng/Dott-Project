@@ -3,7 +3,7 @@ import React from 'react';
 import ProductForm from './forms/ProductForm';
 import ServiceForm from './forms/ServiceForm';
 import logger from '@/utils/logger';
-import CustomerForm from '@components/CustomerForm';
+import CustomerForm from './forms/CustomerForm';
 import BillForm from './forms/BillForm';
 import InvoiceForm from './forms/InvoiceForm';
 import VendorForm from './forms/VendorForm';

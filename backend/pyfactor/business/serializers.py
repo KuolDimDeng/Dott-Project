@@ -11,7 +11,7 @@ User = get_user_model()
 class BusinessRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Business
-        fields = ['name', 'business_type', 'street', 'city', 'state', 'postcode', 'country', 'phone_number']
+        fields = ['name', 'business_type', 'street', 'city', 'state', 'postcode', 'country', 'phone_number', 'legal_structure']
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:

@@ -1,63 +1,56 @@
+'use client';
+
 import * as React from 'react';
 import { Container, Grid, Paper, Typography, Box } from '@mui/material';
-import SpeedIcon from '@mui/icons-material/Speed';
-import SecurityIcon from '@mui/icons-material/Security';
-import SupportAgentIcon from '@mui/icons-material/SupportAgent';
-import UpdateIcon from '@mui/icons-material/Update';
-import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
+import Image from 'next/image';
+import styles from '@/app/components/ImageStyles.modules.css'; // Import your CSS module (or use inline styles)
 
 const highlights = [
   {
-    title: 'Lightning Fast',
-    description: 'Experience top speed and efficiency in managing your business processes with Dott.',
-    icon: SpeedIcon,
-    color: '#4caf50',
+    title: 'Freelancers',
+    description: 'Dott helps freelancers manage their money. Create and send professional invoices in minutes.',
+    imagePath: '/static/images/Freelancer.png',
   },
   {
-    title: 'Bank-Level Security',
-    description: 'Your data is secured with cutting-edge encryption, ensuring peace of mind.',
-    icon: SecurityIcon,
-    color: '#f44336',
+    title: 'Self-employed Entrepreneurs',
+    description: 'Self-employed entrepreneurs using Dott to manage their money. Pay your staff easily with our payroll features.',
+    imagePath: '/static/images/Self-employed.png',
   },
   {
-    title: '24/7 Customer Support',
-    description: 'Our expert team is available around the clock to assist you whenever needed.',
-    icon: SupportAgentIcon,
-    color: '#2196f3',
+    title: 'Contractors',
+    description: 'A contractor using Dott to manage their money. Track your business expenses with our free accounting tools.',
+    imagePath: '/static/images/Contractor.png',
   },
   {
-    title: 'Continuous Updates',
-    description: 'Stay ahead with regular feature updates, ensuring you always have the latest tools at your disposal.',
-    icon: UpdateIcon,
-    color: '#ff9800',
+    title: 'Consultants',
+    description: 'A consultant using Dott to manage their money. Set up recurring invoices and payments for retainer clients.',
+    imagePath: '/static/images/Consultant2.png',
   },
   {
-    title: 'Seamless Integration',
-    description: 'Easily integrate Dott with your existing software and streamline all business operations.',
-    icon: IntegrationInstructionsIcon,
-    color: '#9c27b0',
+    title: 'Micro Business Owners',
+    description: 'Micro business owners use Dott to manage their finances and accept mobile payments with ease. Track expenses and grow your business effortlessly.',
+    imagePath: '/static/images/MicroBusiness.png',  // New category and image for Micro Business
   },
+
   {
-    title: 'Advanced Analytics',
-    description: 'Get detailed insights to make informed decisions and boost your business growth.',
-    icon: AnalyticsIcon,
-    color: '#00bcd4',
+    title: 'Non-Profit Leaders',  // New Non-Profit Category
+    description: 'Small non-profits (NGO) use Dott to manage donations, track expenses, and issue receipts to donors, helping them focus on their mission.',
+    imagePath: '/static/images/NonProfit.png',  // Add corresponding image for Non-Profit
   },
 ];
 
 export default function Highlights() {
   return (
-    <Box sx={{ bgcolor: '#ffffff', py: 12 }}> {/* Changed bgcolor to white */}
+    <Box sx={{ bgcolor: '#ffffff', py: 12 }}>
       <Container maxWidth="lg">
         <Typography
-          variant="h2"
+          variant="h3"
           align="center"
           fontFamily="Poppins, sans-serif"
           fontWeight="bold"
           mb={8}
         >
-          Why Choose Dott
+          Built for the small business owners.
         </Typography>
         <Grid container spacing={4}>
           {highlights.map((highlight) => (
@@ -75,16 +68,14 @@ export default function Highlights() {
                   '&:hover': { transform: 'translateY(-10px)' },
                 }}
               >
-                <Box
-                  sx={{
-                    bgcolor: highlight.color,
-                    borderRadius: '50%',
-                    p: 2,
-                    mb: 3,
-                  }}
-                >
-                  <highlight.icon sx={{ fontSize: 40, color: 'white' }} />
-                </Box>
+                <Image
+                  src={highlight.imagePath}
+                  alt={highlight.title}
+                  width={200} // Adjust as necessary
+                  height={200} // Adjust as necessary
+                  className={styles.imageStyle} // Use your CSS class here
+                  style={{ borderRadius: '8px', marginBottom: '16px' }} // Optional styling for the images
+                />
                 <Typography
                   variant="h5"
                   component="h3"

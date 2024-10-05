@@ -1,17 +1,31 @@
-import * as React from 'react';
-import { useRouter } from 'next/navigation';
-import AppBar from '@mui/material/AppBar';
-import Box from '@mui/material/Box';
-import Toolbar from '@mui/material/Toolbar';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Menu from '@mui/material/Menu';
-import Container from '@mui/material/Container';
-import Button from '@mui/material/Button';
-import MenuItem from '@mui/material/MenuItem';
-import MenuIcon from '@mui/icons-material/Menu';
+'use client';
 
-const pages = ['About', 'Features', 'Pricing', 'FAQ', 'Contact'];
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useSession, signOut } from "next-auth/react";
+import { 
+  AppBar, 
+  Box, 
+  Toolbar, 
+  IconButton, 
+  Typography, 
+  Menu, 
+  Container, 
+  Button, 
+  MenuItem, 
+  CircularProgress
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import Image from 'next/image';
+
+const pages = [
+  { label: 'About', href: '/about' },
+  { label: 'Features', sectionId: 'features' },
+  { label: 'Pricing', sectionId: 'pricing' },
+  { label: 'FAQ', sectionId: 'faq' },
+  { label: 'Contact', sectionId: 'contact' }
+];
 
 const logoStyle = {
   width: '100px',
@@ -21,35 +35,41 @@ const logoStyle = {
 
 function AppAppBar() {
   const router = useRouter();
-  const [anchorElNav, setAnchorElNav] = React.useState(null);
+  const [anchorElNav, setAnchorElNav] = useState(null);
+  const { data: session, status } = useSession();
 
-  const toggleDrawer = (open) => (event) => {
-    if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
-      return;
-    }
-    setAnchorElNav(open ? event.currentTarget : null);
+  const handleOpenNavMenu = (event) => {
+    setAnchorElNav(event.currentTarget);
+  };
+
+  const handleCloseNavMenu = () => {
+    setAnchorElNav(null);
   };
 
   const scrollToSection = (sectionId) => {
-    const sectionElement = document.getElementById(sectionId);
-    const offset = 128;
-    if (sectionElement) {
-      const targetScroll = sectionElement.offsetTop - offset;
-      sectionElement.scrollIntoView({ behavior: 'smooth' });
-      window.scrollTo({
-        top: targetScroll,
-        behavior: 'smooth',
-      });
-      setAnchorElNav(null);
+    const currentPath = router.pathname;
+  
+    if (currentPath === '/' || currentPath === '/#' + sectionId) {
+      const sectionElement = document.getElementById(sectionId);
+      const offset = 128;
+      if (sectionElement) {
+        const targetScroll = sectionElement.offsetTop - offset;
+        sectionElement.scrollIntoView({ behavior: 'smooth' });
+        window.scrollTo({
+          top: targetScroll,
+          behavior: 'smooth',
+        });
+        handleCloseNavMenu();
+      }
+    } else {
+      router.push(`/?section=${sectionId}`);
+      handleCloseNavMenu();
     }
   };
 
-  const handleSignIn = () => {
-    router.push('/login');
-  };
-
-  const handleSignUp = () => {
-    router.push('/register');
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
+    router.push('/');
   };
 
   return (
@@ -65,52 +85,89 @@ function AppAppBar() {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <img
+            <Image
               src="/static/images/Pyfactor.png"
               alt="Pyfactor logo"
+              width={100}
+              height={33}
               style={logoStyle}
             />
           </Box>
 
           <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
             {pages.map((page) => (
-              <Button
-                key={page}
-                onClick={() => scrollToSection(page.toLowerCase())}
-                sx={{
-                  mx: 1,
-                  color: 'text.primary',
-                  fontFamily: 'Inter, sans-serif',
-                  '&:hover': {
-                    color: 'primary.main',
-                  },
-                }}
-              >
-                {page}
-              </Button>
+              page.href ? (
+                <Button
+                  key={page.label}
+                  component={Link}
+                  href={page.href}
+                  sx={{
+                    mx: 1,
+                    color: 'text.primary',
+                    fontFamily: 'Inter, sans-serif',
+                    '&:hover': {
+                      color: 'primary.main',
+                    },
+                  }}
+                >
+                  {page.label}
+                </Button>
+              ) : (
+                <Button
+                  key={page.label}
+                  onClick={() => scrollToSection(page.sectionId)}
+                  sx={{
+                    mx: 1,
+                    color: 'text.primary',
+                    fontFamily: 'Inter, sans-serif',
+                    '&:hover': {
+                      color: 'primary.main',
+                    },
+                  }}
+                >
+                  {page.label}
+                </Button>
+              )
             ))}
           </Box>
 
           <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
-            <Button
-              variant="text"
-              onClick={handleSignIn}
-              sx={{
-                color: 'text.primary',
-                fontFamily: 'Inter, sans-serif',
-              }}
-            >
-              Sign in
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleSignUp}
-              sx={{
-                fontFamily: 'Inter, sans-serif',
-              }}
-            >
-              Sign up
-            </Button>
+            {status === 'loading' ? (
+              <CircularProgress size={24} />
+            ) : status === 'authenticated' ? (
+              <>
+                <Button
+                  variant="contained"
+                  component={Link}
+                  href="/dashboard"
+                  sx={{
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Your Account
+                </Button>
+                <Button
+                  variant="text"
+                  onClick={handleLogout}
+                  sx={{
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Log Out
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="contained"
+                component={Link}
+                href="/login"
+                sx={{
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                Sign In / Sign Up
+              </Button>
+            )}
           </Box>
 
           <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
@@ -119,8 +176,8 @@ function AppAppBar() {
               aria-label="account of current user"
               aria-controls="menu-appbar"
               aria-haspopup="true"
-              onClick={toggleDrawer(true)}
-              color="inherit"
+              onClick={handleOpenNavMenu}
+              color="primary"
             >
               <MenuIcon />
             </IconButton>
@@ -137,41 +194,74 @@ function AppAppBar() {
                 horizontal: 'right',
               }}
               open={Boolean(anchorElNav)}
-              onClose={toggleDrawer(false)}
+              onClose={handleCloseNavMenu}
               sx={{
                 display: { xs: 'block', md: 'none' },
               }}
             >
               {pages.map((page) => (
-                <MenuItem key={page} onClick={() => scrollToSection(page.toLowerCase())}>
-                  <Typography textAlign="center" fontFamily="Inter, sans-serif">{page}</Typography>
+                <MenuItem
+                  key={page.label}
+                  onClick={() => {
+                    handleCloseNavMenu();
+                    if (page.href) {
+                      router.push(page.href);
+                    } else {
+                      scrollToSection(page.sectionId);
+                    }
+                  }}
+                >
+                  <Typography textAlign="center" fontFamily="Inter, sans-serif">
+                    {page.label}
+                  </Typography>
                 </MenuItem>
               ))}
-              <MenuItem>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  onClick={handleSignUp}
-                  sx={{
-                    fontFamily: 'Inter, sans-serif',
-                  }}
-                >
-                  Sign up
-                </Button>
-              </MenuItem>
-              <MenuItem>
-                <Button
-                  fullWidth
-                  variant="text"
-                  onClick={handleSignIn}
-                  sx={{
-                    color: 'text.primary',
-                    fontFamily: 'Inter, sans-serif',
-                  }}
-                >
-                  Sign in
-                </Button>
-              </MenuItem>
+              {status === 'loading' ? (
+                <CircularProgress size={24} />
+              ) : status === 'authenticated' ? (
+                <>
+                  <MenuItem>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      component={Link}
+                      href="/dashboard"
+                      sx={{
+                        fontFamily: 'Inter, sans-serif',
+                      }}
+                    >
+                      Your Account
+                    </Button>
+                  </MenuItem>
+                  <MenuItem>
+                    <Button
+                      fullWidth
+                      variant="text"
+                      onClick={handleLogout}
+                      sx={{
+                        color: 'text.primary',
+                        fontFamily: 'Inter, sans-serif',
+                      }}
+                    >
+                      Log Out
+                    </Button>
+                  </MenuItem>
+                </>
+              ) : (
+                <MenuItem>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    component={Link}
+                    href="/login"
+                    sx={{
+                      fontFamily: 'Inter, sans-serif',
+                    }}
+                  >
+                    Sign In / Sign Up
+                  </Button>
+                </MenuItem>
+              )}
             </Menu>
           </Box>
         </Toolbar>

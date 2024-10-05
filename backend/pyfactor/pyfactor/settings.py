@@ -16,6 +16,7 @@ import sys
 import os
 import logging
 import logging.config
+from django.conf import settings
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from celery.schedules import crontab
@@ -71,6 +72,15 @@ USER_DATABASE_OPTIONS = {
     'connect_timeout': 10,
 }
 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.office365.com'  # Outlook's SMTP server
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')  # Your email from .env
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Your email password from .env
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')  # Default from email address
+
+
 FRONTEND_URL = 'http://localhost:3000'  # Adjust this to your actual frontend URL
 # Celery Configuration
 CELERY_BROKER_URL = 'redis://localhost:6379'
@@ -100,6 +110,9 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend']
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Your Next.js app's URL
+]
 
 CORS_ALLOWED_METHODS = [
     'GET',
@@ -157,7 +170,7 @@ SIMPLE_JWT = {
     'UPDATE_LAST_LOGIN': False,
 
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
+    'SIGNING_KEY': settings.SECRET_KEY,
     'VERIFYING_KEY': None,
     'AUDIENCE': None,
     'ISSUER': None,
@@ -266,12 +279,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    'corsheaders',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'rest_framework',
     'rest_framework_simplejwt',
-    'corsheaders',
     'django_countries',
     'rest_framework.authtoken',
     'dj_rest_auth',
@@ -306,6 +319,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.locale.LocaleMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',

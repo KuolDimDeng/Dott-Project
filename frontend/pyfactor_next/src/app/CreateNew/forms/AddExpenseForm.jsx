@@ -14,7 +14,6 @@ import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
 import { logger } from '@/utils/logger';
-import { useUserMessage } from '@contexts/userMessageContext';
 
 const AddExpenseForm = ({ onClose }) => {
   const [date, setDate] = useState(null);

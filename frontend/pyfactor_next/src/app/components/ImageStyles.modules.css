@@ -1,0 +1,6 @@
+.imageStyle {
+    object-fit: cover; /* or 'contain', 'fill', etc., depending on your needs */
+    width: 100%; /* Or any width you require */
+    height: auto; /* To maintain aspect ratio */
+  }
+  

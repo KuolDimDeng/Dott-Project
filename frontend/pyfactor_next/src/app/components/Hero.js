@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import { alpha, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -37,21 +39,21 @@ export default function Hero() {
             variant="h1"
             align="center"
             sx={{
-              fontSize: 'clamp(2rem, 6vw, 3rem)',
+              fontSize: 'clamp(2rem, 8vw, 3rem)',
               color: theme.palette.mode === 'light' ? '#1976d2' : '#64b5f6',
               fontFamily: '"Poppins", sans-serif',
               fontWeight: 400,
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.01em',
             }}
           >
             Manage your business like a boss.
           </Typography>
           
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 8 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 10 }}>
             <Image
               src="/static/images/avatar/Pyfactor Images/Work-Life-Balance-1--Streamline-Brooklyn.png"
               alt="Business Management Illustration"
-              width={300}
+              width={250}
               height={180}
               style={{ maxWidth: '100%', height: 'auto' }}
             />
@@ -85,9 +87,9 @@ export default function Hero() {
                 fontSize: '1rem',
                 px: 4,
                 py: 1.5,
-                backgroundColor: babyBlueMain,
+                backgroundColor: 'primary.main',
                 '&:hover': {
-                  backgroundColor: babyBlueDark,
+                  backgroundColor: 'primary.dark',
                 },
                 boxShadow: `0 4px 14px ${alpha(babyBlueMain, 0.4)}`,
                 borderRadius: '50px',

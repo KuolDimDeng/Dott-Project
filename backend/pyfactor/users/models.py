@@ -41,6 +41,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
+    email_confirmed = models.BooleanField(default=False)
+    confirmation_token = models.UUIDField(default=uuid.uuid4, editable=False)
+    is_onboarded = models.BooleanField(default=False)
+
+
 
     USERNAME_FIELD = 'email'
     EMAIL_FIELD = 'email'

@@ -2,8 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/*/Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/globals.css*/
-/* Add the following styles */
+/* Custom CSS variables for color theming */
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
@@ -16,10 +15,6 @@
     --background-start-rgb: 0, 0, 0;
     --background-end-rgb: 0, 0, 0;
   }
-}
-
-.MuiListItemButton-root {
-  border-bottom: none !important;
 }
 
 body {
@@ -36,12 +31,15 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-
-  @layer base {
-    .MuiListItemButton-root {
-      @apply border-b-0;
-    }
-  }
 }
 
-/* Add any additional custom styles for MUI components */
+/* Tailwind overrides for MUI components */
+.MuiListItemButton-root {
+  border-bottom: none !important;
+}
+
+@layer base {
+  .MuiListItemButton-root {
+    @apply border-b-0;
+  }
+}
