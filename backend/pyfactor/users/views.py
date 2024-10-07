@@ -20,6 +20,8 @@ from django.contrib.auth import authenticate
 from django.views.decorators.csrf import csrf_exempt
 from business.models import Business, Subscription
 from business.serializers import BusinessRegistrationSerializer
+from rest_framework_simplejwt.exceptions import TokenError
+
 from django.utils.timezone import timezone
 
 import requests
@@ -81,8 +83,28 @@ class RegisterView(generics.CreateAPIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 # Obtain JWT tokens.
-class CustomTokenObtainPairView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
+class CustomTokenObtainPairView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = CustomTokenObtainPairSerializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        refresh = serializer.validated_data['refresh']
+        access = serializer.validated_data['access']
+
+        response = Response({'access': str(access)})
+        response.set_cookie(
+            'refresh_token',
+            str(refresh),
+            max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
+            httponly=True,
+            samesite='Strict',
+            secure=settings.REFRESH_TOKEN_SECURE
+        )
+
+        return response
 
 # Authenticate user with email and password.
 class CustomAuthToken(ObtainAuthToken):
@@ -283,3 +305,28 @@ class SocialLoginView(APIView):
             'email': user.email,
             'is_onboarded': user.is_onboarded
         })
+        
+        
+class TokenRefreshView(APIView):
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.COOKIES.get('refresh_token')
+        if not refresh_token:
+            return Response({'error': 'Refresh token not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            refresh = RefreshToken(refresh_token)
+            access = str(refresh.access_token)
+        except TokenError as e:
+            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+
+        response = Response({'access': access})
+        response.set_cookie(
+            'refresh_token',
+            str(refresh),
+            max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
+            httponly=True,
+            samesite='Strict',
+            secure=settings.REFRESH_TOKEN_SECURE
+        )
+
+        return response

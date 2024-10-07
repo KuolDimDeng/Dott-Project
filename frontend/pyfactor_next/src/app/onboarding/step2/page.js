@@ -1,3 +1,4 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/step2/page.js
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -54,8 +55,10 @@ const OnboardingStep2 = ({ completeOnboarding }) => {
   const handleSubscriptionSelect = async (tier) => {
     try {
       const subscriptionData = { selectedPlan: tier.title, billingCycle, ...formData };
+      console.log('Subscription data:', subscriptionData);  // Add this line for debugging
       await completeOnboarding(subscriptionData);
     } catch (error) {
+      console.error('Error selecting subscription:', error);
       setErrorMessage('Error completing onboarding.');
     }
   };

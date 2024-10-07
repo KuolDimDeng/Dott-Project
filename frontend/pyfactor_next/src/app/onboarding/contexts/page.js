@@ -1,3 +1,4 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/contexts/page.js
 'use client';
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
@@ -12,7 +13,13 @@ export const OnboardingProvider = ({ children }) => {
     setFormData(prevData => ({ ...prevData, ...newData }));
   }, []);
 
-  const goToNextStep = useCallback(() => setStep(prev => prev + 1), []);
+  const goToNextStep = useCallback(() => {
+    setStep(prevStep => {
+      console.log('Updating step from', prevStep, 'to', prevStep + 1);
+      return prevStep + 1;
+    });
+  }, []);
+
   const goToPrevStep = useCallback(() => setStep(prev => prev - 1), []);
 
   return (

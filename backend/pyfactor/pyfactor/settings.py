@@ -140,6 +140,9 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 3600  # 1 hour in seconds
 AUTH_USER_MODEL = 'users.User'
 
+REFRESH_TOKEN_LIFETIME = timedelta(days=7)
+REFRESH_TOKEN_SECURE = False  # Set to False for local development without HTTPS
+
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
@@ -150,6 +153,8 @@ ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 DATABASE_ROUTERS = ['pyfactor.userDatabaseRouter.UserDatabaseRouter']
 
 REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'users.utils.error_handling.custom_exception_handler',
+
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
@@ -163,8 +168,8 @@ REST_FRAMEWORK = {
 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=12),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
     'UPDATE_LAST_LOGIN': False,

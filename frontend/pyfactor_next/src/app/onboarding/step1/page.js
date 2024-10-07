@@ -195,9 +195,10 @@ const OnboardingStep1 = ({ nextStep }) => {
   const handleSubmit = (event) => {
     event.preventDefault();
     console.log('Form submitted:', formData);
+    console.log('Current step before:', step);
     goToNextStep();
+    console.log('Current step after:', step);
   };
-
 
   if (status === 'loading') return <div>Loading...</div>;
   if (status === 'unauthenticated') return null;
