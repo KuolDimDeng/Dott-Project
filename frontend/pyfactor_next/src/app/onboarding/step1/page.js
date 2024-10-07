@@ -165,12 +165,12 @@ const initialFormData = {
   lastName: '',
   businessName: '',
   industry: '',
-  country: defaultCountry,
+  country: defaultCountry.code,
   legalStructure: '',
   dateFounded: '',
 };
 
-const OnboardingStep1 = () => {
+const OnboardingStep1 = ({ nextStep }) => {
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated() {
@@ -181,19 +181,11 @@ const OnboardingStep1 = () => {
   const [isFormInitialized, setIsFormInitialized] = useState(false);
 
 
-
   useEffect(() => {
-    if (!isFormInitialized && Object.keys(formData).length === 0) {
+    if (Object.keys(formData).length === 0) {
       updateFormData(initialFormData);
-      setIsFormInitialized(true);
     }
-  }, [formData, updateFormData, isFormInitialized]);
-
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user?.isOnboarded) {
-      router.push('/dashboard');
-    }
-  }, [session, status, router]);
+  }, [formData, updateFormData]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -205,6 +197,7 @@ const OnboardingStep1 = () => {
     console.log('Form submitted:', formData);
     goToNextStep();
   };
+
 
   if (status === 'loading') return <div>Loading...</div>;
   if (status === 'unauthenticated') return null;
@@ -298,7 +291,7 @@ const OnboardingStep1 = () => {
                     <InputLabel>Where is your business located?</InputLabel>
                     <Select
                       name="country"
-                      value={formData.country || defaultCountry.code}
+                      value={formData.country || ''}
                       onChange={handleChange}
                       label="Where is your business located?"
                     >

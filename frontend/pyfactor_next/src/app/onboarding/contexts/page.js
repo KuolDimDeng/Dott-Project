@@ -1,4 +1,3 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/contexts/page.js
 'use client';
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
