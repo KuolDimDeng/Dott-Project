@@ -7,6 +7,9 @@ import { useRouter } from 'next/navigation';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { TextField, Select, MenuItem, FormControl, InputLabel, Typography, Button, Container, Grid, Paper, Box } from '@mui/material';
 import Image from 'next/image';
+import { useOnboarding } from '@/app/onboarding/contexts/page';
+
+
 
 
 
@@ -14,139 +17,139 @@ import Image from 'next/image';
 import { countries, defaultCountry } from '@/app/countryList/page';
 
 const businessTypes = [
-    "Accounting and Bookkeeping",
-    "Administration and Office Services",
-    "Adventure Tourism and Tour Guides",
-    "Advertising and Marketing",
-    "Agribusiness and Agricultural Consulting",
-    "Agricultural Machinery",
-    "Agriculture and Farming",
-    "Air Conditioning and HVAC Services",
-    "AI, Machine Learning, and Data Science Services",
-    "Animal and Pet Services",
-    "Apparel and Clothing",
-    "Architecture and Design",
-    "Arts and Crafts",
-    "Automotive, Leasing, and Repair",
-    "Babysitting and Childcare Services",
-    "Banking and Finance",
-    "Barbershops, Hair Salons, and Beauty Services",
-    "Beverage and Food Services",
-    "Biotechnology and Pharmaceuticals",
-    "Blockchain, Cryptocurrencies, and Exchanges",
-    "Broadcasting, Media, and Video Streaming",
-    "Business Consulting and Advisory Services",
-    "Catering and Food Trucks",
-    "Cleaning Services",
-    "Cloud Computing and IT Services",
-    "Construction and Contracting",
-    "Craft Beverages (Breweries, Distilleries)",
-    "Creative Services (Design, Graphic Design)",
-    "Cultural Heritage and Preservation",
-    "Cybersecurity and Risk Management",
-    "Data Analysis and Business Intelligence",
-    "Dairy and Livestock Farming",
-    "Digital Marketing and Online Services",
-    "DJ, Music, and Entertainment Services",
-    "Distribution, Freight Forwarding, and Logistics",
-    "Drone and Aerial Services",
-    "E-commerce and Retail",
-    "Education and Tutoring",
-    "Electronics and IT Equipment",
-    "Energy Auditing and Sustainability Consulting",
-    "Engineering and Technical Services",
-    "Event Planning, Rentals, and Technology",
-    "Export and Import Trade",
-    "Fashion and Apparel",
-    "Film, Television, and Media Production",
-    "Financial Planning and Investment Services",
-    "Fishing and Aquaculture",
-    "Fitness and Personal Training",
-    "Floristry and Gardening",
-    "Forestry and Natural Resource Management",
-    "Franchising and Licensing",
-    "Freelance Platforms and Gig Economy",
-    "Fundraising and Non-Profit Services",
-    "Furniture and Home Decor",
-    "Green Building, Renewable Energy, and Solar",
-    "Healthcare and Medical Services",
-    "Home Improvement and Renovation",
-    "Hospitality, Hotels, and Vacation Rentals",
-    "Human Resources and Recruitment",
-    "Hydroelectric and Wind Energy",
-    "Industrial Services and Manufacturing",
-    "Insurance and Risk Management",
-    "Interior Design and Architecture",
-    "International Trade and Export",
-    "IT Consulting and Services",
-    "Jewelry and Watchmaking",
-    "Journalism and Reporting",
-    "Landscaping and Lawn Care",
-    "Law and Legal Services",
-    "Leisure, Recreation, and Sports",
-    "Logistics and Supply Chain Management",
-    "Manufacturing and Production",
-    "Media and Entertainment",
-    "Medical Equipment and Devices",
-    "Microfinance and Small Business Lending",
-    "Mining and Resource Extraction",
-    "Mobile Services and Telecommunications",
-    "Music Production and DJ Services",
-    "Natural Resource Extraction and Mining",
-    "Non-Profit and Charitable Organizations",
-    "Oil, Gas, and Petroleum Refining",
-    "On-Demand and Gig Economy (Uber, Lyft)",
-    "Packaging and Distribution Services",
-    "Personal Services (Babysitting, Caregiving)",
-    "Petroleum, Gas, and Energy Services",
-    "Photography and Videography",
-    "Printing, Publishing, and Copy Services",
-    "Private Investigation and Security Services",
-    "Property Development and Management",
-    "Public Relations and Communications",
-    "Public Sector and Government Services",
-    "Public Transportation and Taxi Services",
-    "Real Estate and Property Management",
-    "Renewable Energy and Green Tech",
-    "Research and Development (R&D)",
-    "Restaurants, Cafes, and Food Services",
-    "Retail and Consumer Goods",
-    "Security and Alarm Services",
-    "Shipping, Maritime, and Port Services",
-    "Software Development and IT Services",
-    "Solar Energy and Installation",
-    "Sports Coaching and Training",
-    "Street Vendors and Micro-Enterprises",
-    "Sustainability Consulting and Green Energy",
-    "Telecommunications and Mobile Services",
-    "Textile Manufacturing and Apparel",
-    "Tourism, Travel Agencies, and Adventure Travel",
-    "Transportation, Trucking, and Freight",
-    "Utilities and Public Services",
-    "Vehicle Rental and Leasing",
-    "Veterinary and Pet Services",
-    "Virtual Assistant and Administrative Services",
-    "Waste Management and Recycling",
-    "Web Development and Design Services",
-    "Wellness and Spa Services",
-    "Wholesale and Distribution",
-    "Writing, Editing, and Content Creation",
-    "Youth Services and Education",
-    "Zoological Services, Botanical Gardens, and Consultancy"
-  ];
-  
+  "Accounting and Bookkeeping",
+  "Administration and Office Services",
+  "Adventure Tourism and Tour Guides",
+  "Advertising and Marketing",
+  "Agribusiness and Agricultural Consulting",
+  "Agricultural Machinery",
+  "Agriculture and Farming",
+  "Air Conditioning and HVAC Services",
+  "AI, Machine Learning, and Data Science Services",
+  "Animal and Pet Services",
+  "Apparel and Clothing",
+  "Architecture and Design",
+  "Arts and Crafts",
+  "Automotive, Leasing, and Repair",
+  "Babysitting and Childcare Services",
+  "Banking and Finance",
+  "Barbershops, Hair Salons, and Beauty Services",
+  "Beverage and Food Services",
+  "Biotechnology and Pharmaceuticals",
+  "Blockchain, Cryptocurrencies, and Exchanges",
+  "Broadcasting, Media, and Video Streaming",
+  "Business Consulting and Advisory Services",
+  "Catering and Food Trucks",
+  "Cleaning Services",
+  "Cloud Computing and IT Services",
+  "Construction and Contracting",
+  "Craft Beverages (Breweries, Distilleries)",
+  "Creative Services (Design, Graphic Design)",
+  "Cultural Heritage and Preservation",
+  "Cybersecurity and Risk Management",
+  "Data Analysis and Business Intelligence",
+  "Dairy and Livestock Farming",
+  "Digital Marketing and Online Services",
+  "DJ, Music, and Entertainment Services",
+  "Distribution, Freight Forwarding, and Logistics",
+  "Drone and Aerial Services",
+  "E-commerce and Retail",
+  "Education and Tutoring",
+  "Electronics and IT Equipment",
+  "Energy Auditing and Sustainability Consulting",
+  "Engineering and Technical Services",
+  "Event Planning, Rentals, and Technology",
+  "Export and Import Trade",
+  "Fashion and Apparel",
+  "Film, Television, and Media Production",
+  "Financial Planning and Investment Services",
+  "Fishing and Aquaculture",
+  "Fitness and Personal Training",
+  "Floristry and Gardening",
+  "Forestry and Natural Resource Management",
+  "Franchising and Licensing",
+  "Freelance Platforms and Gig Economy",
+  "Fundraising and Non-Profit Services",
+  "Furniture and Home Decor",
+  "Green Building, Renewable Energy, and Solar",
+  "Healthcare and Medical Services",
+  "Home Improvement and Renovation",
+  "Hospitality, Hotels, and Vacation Rentals",
+  "Human Resources and Recruitment",
+  "Hydroelectric and Wind Energy",
+  "Industrial Services and Manufacturing",
+  "Insurance and Risk Management",
+  "Interior Design and Architecture",
+  "International Trade and Export",
+  "IT Consulting and Services",
+  "Jewelry and Watchmaking",
+  "Journalism and Reporting",
+  "Landscaping and Lawn Care",
+  "Law and Legal Services",
+  "Leisure, Recreation, and Sports",
+  "Logistics and Supply Chain Management",
+  "Manufacturing and Production",
+  "Media and Entertainment",
+  "Medical Equipment and Devices",
+  "Microfinance and Small Business Lending",
+  "Mining and Resource Extraction",
+  "Mobile Services and Telecommunications",
+  "Music Production and DJ Services",
+  "Natural Resource Extraction and Mining",
+  "Non-Profit and Charitable Organizations",
+  "Oil, Gas, and Petroleum Refining",
+  "On-Demand and Gig Economy (Uber, Lyft)",
+  "Packaging and Distribution Services",
+  "Personal Services (Babysitting, Caregiving)",
+  "Petroleum, Gas, and Energy Services",
+  "Photography and Videography",
+  "Printing, Publishing, and Copy Services",
+  "Private Investigation and Security Services",
+  "Property Development and Management",
+  "Public Relations and Communications",
+  "Public Sector and Government Services",
+  "Public Transportation and Taxi Services",
+  "Real Estate and Property Management",
+  "Renewable Energy and Green Tech",
+  "Research and Development (R&D)",
+  "Restaurants, Cafes, and Food Services",
+  "Retail and Consumer Goods",
+  "Security and Alarm Services",
+  "Shipping, Maritime, and Port Services",
+  "Software Development and IT Services",
+  "Solar Energy and Installation",
+  "Sports Coaching and Training",
+  "Street Vendors and Micro-Enterprises",
+  "Sustainability Consulting and Green Energy",
+  "Telecommunications and Mobile Services",
+  "Textile Manufacturing and Apparel",
+  "Tourism, Travel Agencies, and Adventure Travel",
+  "Transportation, Trucking, and Freight",
+  "Utilities and Public Services",
+  "Vehicle Rental and Leasing",
+  "Veterinary and Pet Services",
+  "Virtual Assistant and Administrative Services",
+  "Waste Management and Recycling",
+  "Web Development and Design Services",
+  "Wellness and Spa Services",
+  "Wholesale and Distribution",
+  "Writing, Editing, and Content Creation",
+  "Youth Services and Education",
+  "Zoological Services, Botanical Gardens, and Consultancy"
+];
+
 
 const legalStructures = [
-  "Sole Proprietorship",
-  "General Partnership (GP)",
-  "Limited Partnership (LP)",
-  "Limited Liability Company (LLC)",
-  "Corporation (Inc., Corp.)",
-  "Non-Profit Organization (NPO)",
-  "Joint Venture (JV)",
-  "Holding Company",
-  "Branch Office",
-  "Representative Office",
+"Sole Proprietorship",
+"General Partnership (GP)",
+"Limited Partnership (LP)",
+"Limited Liability Company (LLC)",
+"Corporation (Inc., Corp.)",
+"Non-Profit Organization (NPO)",
+"Joint Venture (JV)",
+"Holding Company",
+"Branch Office",
+"Representative Office",
 ];
 
 const theme = createTheme({
@@ -157,48 +160,57 @@ const theme = createTheme({
   },
 });
 
-const OnboardingStep1 = ({ nextStep }) => {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+const initialFormData = {
+  firstName: '',
+  lastName: '',
+  businessName: '',
+  industry: '',
+  country: defaultCountry,
+  legalStructure: '',
+  dateFounded: '',
+};
 
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    businessName: '',
-    industry: '',
-    country: defaultCountry,
-    legalStructure: '',
-    dateFounded: '',
-  });
-
-  // Combine the logic for redirecting based on user and loading state
-  useEffect(() => {
-    console.log('OnboardingStep1 - session:', session, 'status:', status);
-    if (status === 'unauthenticated') {
-      console.log('User not authenticated, redirecting to login');
+const OnboardingStep1 = () => {
+  const { data: session, status } = useSession({
+    required: true,
+    onUnauthenticated() {
       router.push('/login');
-    } else if (status === 'authenticated' && session.user.isOnboarded) {
-      console.log('User is onboarded, redirecting to dashboard');
+    },
+  });  const router = useRouter();
+  const { formData, updateFormData, goToNextStep } = useOnboarding();
+  const [isFormInitialized, setIsFormInitialized] = useState(false);
+
+
+
+  useEffect(() => {
+    if (!isFormInitialized && Object.keys(formData).length === 0) {
+      updateFormData(initialFormData);
+      setIsFormInitialized(true);
+    }
+  }, [formData, updateFormData, isFormInitialized]);
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.isOnboarded) {
       router.push('/dashboard');
     }
   }, [session, status, router]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFormData(prevState => ({
-      ...prevState,
-      [name]: value,
-    }));
+    updateFormData({ [name]: value });
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
     console.log('Form submitted:', formData);
-    nextStep(formData);
+    goToNextStep();
   };
 
   if (status === 'loading') return <div>Loading...</div>;
   if (status === 'unauthenticated') return null;
+  if (!session) {
+    return null;
+  }
 
 
   return (
@@ -237,7 +249,7 @@ const OnboardingStep1 = ({ nextStep }) => {
                     fullWidth
                     label="First Name"
                     name="firstName"
-                    value={formData.firstName}
+                    value={formData.firstName || ''}
                     onChange={handleChange}
                     required
                     variant="outlined"
@@ -248,7 +260,7 @@ const OnboardingStep1 = ({ nextStep }) => {
                     fullWidth
                     label="Last Name"
                     name="lastName"
-                    value={formData.lastName}
+                    value={formData.lastName || ''}
                     onChange={handleChange}
                     required
                     variant="outlined"
@@ -259,7 +271,7 @@ const OnboardingStep1 = ({ nextStep }) => {
                     fullWidth
                     label="What's your business name?"
                     name="businessName"
-                    value={formData.businessName}
+                    value={formData.businessName || ''}
                     onChange={handleChange}
                     required
                     variant="outlined"
@@ -270,7 +282,8 @@ const OnboardingStep1 = ({ nextStep }) => {
                     <InputLabel>Select your industry</InputLabel>
                     <Select
                       name="industry"
-                      value={formData.industry}
+                      value={formData.industry || ''}
+
                       onChange={handleChange}
                       label="Select your industry"
                     >
@@ -285,7 +298,7 @@ const OnboardingStep1 = ({ nextStep }) => {
                     <InputLabel>Where is your business located?</InputLabel>
                     <Select
                       name="country"
-                      value={formData.country}
+                      value={formData.country || defaultCountry.code}
                       onChange={handleChange}
                       label="Where is your business located?"
                     >
@@ -302,7 +315,7 @@ const OnboardingStep1 = ({ nextStep }) => {
                     <InputLabel>What is the legal structure of your business?</InputLabel>
                     <Select
                       name="legalStructure"
-                      value={formData.legalStructure}
+                      value={formData.legalStructure || ''}
                       onChange={handleChange}
                       label="What is the legal structure of your business?"
                     >
@@ -318,7 +331,7 @@ const OnboardingStep1 = ({ nextStep }) => {
                     label="When was your business founded?"
                     name="dateFounded"
                     type="date"
-                    value={formData.dateFounded}
+                    value={formData.dateFounded || ''}
                     onChange={handleChange}
                     InputLabelProps={{
                       shrink: true,

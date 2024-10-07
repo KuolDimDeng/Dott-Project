@@ -12,14 +12,18 @@ import Footer from './components/Footer';
 import AppAppBar from './components/AppBar';
 
 export default function LandingPage() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push('/dashboard');
+      if (session.user.isOnboarded) {
+        router.push('/dashboard');
+      } else {
+        router.push('/onboarding');
+      }
     }
-  }, [status, router]);
+  }, [status, session, router]);
 
   if (status === 'loading') {
     return <div>Loading...</div>;

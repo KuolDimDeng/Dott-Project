@@ -8,6 +8,8 @@ import {
 import Image from 'next/image';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { useOnboarding } from '../contexts/page';
+
 
 const theme = createTheme({
   palette: {
@@ -39,30 +41,24 @@ const BillingToggle = styled(Box)(({ theme }) => ({
   },
 }));
 
-const OnboardingStep2 = ({ nextStep, prevStep, formData }) => {
+const OnboardingStep2 = ({ completeOnboarding }) => {
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [errorMessage, setErrorMessage] = useState('');
   const router = useRouter();
-  const { data: session } = useSession();  // session is handled by next-auth
+  const { data: session } = useSession();
+  const { formData, goToPrevStep } = useOnboarding();
+
 
   const handleBillingCycleChange = (cycle) => setBillingCycle(cycle);
 
   const handleSubscriptionSelect = async (tier) => {
     try {
-        const subscriptionData = { selectedPlan: tier.title, billingCycle, formData };
-        const token = session.accessToken;
-        const response = await fetch(`${apiBaseUrl}/api/complete-onboarding/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(subscriptionData),
-        });
-        if (!response.ok) throw new Error(response.statusText);
-
-        router.push('/dashboard');
+      const subscriptionData = { selectedPlan: tier.title, billingCycle, ...formData };
+      await completeOnboarding(subscriptionData);
     } catch (error) {
-        setErrorMessage('Error completing onboarding.');
+      setErrorMessage('Error completing onboarding.');
     }
-};
+  };
 
 
   const tiers = [

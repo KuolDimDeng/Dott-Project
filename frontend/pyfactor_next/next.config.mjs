@@ -15,26 +15,15 @@ const nextConfig = {
     if (isServer) {
       console.log('Next.js Config - Environment Variables:');
       console.log('NODE_ENV:', process.env.NODE_ENV);
-      console.log('AUTH0_SECRET:', process.env.AUTH0_SECRET ? 'Set' : 'Not set');
-      console.log('AUTH0_BASE_URL:', process.env.AUTH0_BASE_URL);
-      console.log('AUTH0_ISSUER_BASE_URL:', process.env.AUTH0_ISSUER_BASE_URL);
-      console.log('AUTH0_CLIENT_ID:', process.env.AUTH0_CLIENT_ID ? 'Set' : 'Not set');
-      console.log('AUTH0_CLIENT_SECRET:', process.env.AUTH0_CLIENT_SECRET ? 'Set' : 'Not set');
-      console.log('AUTH0_SCOPE:', process.env.AUTH0_SCOPE);
+      console.log('NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? 'Set' : 'Not set');
+      console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+      console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'Set' : 'Not set');
+      console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Not set');
     }
 
     return config;
   },
 
-  serverRuntimeConfig: {
-    auth0: {
-      secret: process.env.AUTH0_SECRET,
-      baseURL: process.env.AUTH0_BASE_URL,
-      issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
-      clientID: process.env.AUTH0_CLIENT_ID,
-      clientSecret: process.env.AUTH0_CLIENT_SECRET,
-    },
-  },
   async headers() {
     return [
       {
