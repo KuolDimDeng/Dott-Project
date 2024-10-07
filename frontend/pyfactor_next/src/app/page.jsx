@@ -8,23 +8,18 @@ import Features from './components/Features';
 import Highlights from './components/Highlights';
 import Pricing from './components/Pricing';
 import FAQ from './components/FAQ';
-import { AppBar } from '@mui/material';
 import Footer from './components/Footer';
 import AppAppBar from './components/AppBar';
 
 export default function LandingPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
     if (status === 'authenticated') {
-      if (session.user.isOnboarded) {
-        router.push('/dashboard');
-      } else {
-        router.push('/onboarding/step1');
-      }
+      router.push('/dashboard');
     }
-  }, [session, status, router]);
+  }, [status, router]);
 
   if (status === 'loading') {
     return <div>Loading...</div>;
@@ -33,13 +28,13 @@ export default function LandingPage() {
   if (status === 'unauthenticated') {
     return (
       <>
-        <AppAppBar/>
+        <AppAppBar />
         <Hero />
         <Features />
         <Highlights />
         <Pricing />
         <FAQ />
-        <Footer/>
+        <Footer />
       </>
     );
   }

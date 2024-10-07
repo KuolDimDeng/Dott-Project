@@ -49,49 +49,21 @@ const OnboardingStep2 = ({ nextStep, prevStep, formData }) => {
 
   const handleSubscriptionSelect = async (tier) => {
     try {
-      console.log('Subscription selected:', tier);
-      
-      // Example: collect the subscription data
-      const subscriptionData = {
-        selectedPlan: tier.title,
-        billingCycle: billingCycle,
-        formData: formData,  // Add any form data that needs to be sent
-      };
+        const subscriptionData = { selectedPlan: tier.title, billingCycle, formData };
+        const token = session.accessToken;
+        const response = await fetch(`${apiBaseUrl}/api/complete-onboarding/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(subscriptionData),
+        });
+        if (!response.ok) throw new Error(response.statusText);
 
-      // Log the session for debugging
-      console.log("Session data:", session);
-
-      if (!session) {
-        setErrorMessage("You must be authenticated to select a plan.");
-        return;
-      }
-
-      const token = session.accessToken;
-
-      // Example API call to submit the subscription
-      const response = await fetch('http://localhost:8000/api/complete-onboarding/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(subscriptionData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log("Onboarding success:", result);
-
-      // Redirect to the dashboard after successful onboarding
-      router.push('/dashboard');
+        router.push('/dashboard');
     } catch (error) {
-      console.error('Onboarding completion error:', error);
-      setErrorMessage('There was an error completing the onboarding process. Please try again.');
+        setErrorMessage('Error completing onboarding.');
     }
-  };
+};
+
 
   const tiers = [
     {

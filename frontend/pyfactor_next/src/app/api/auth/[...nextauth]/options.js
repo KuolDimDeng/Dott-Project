@@ -1,152 +1,126 @@
-
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/api/auth/[...nextauth]/options.js
+// frontend/pyfactor_next/src/app/api/auth/[...nextauth]/options.js
 import GoogleProvider from "next-auth/providers/google";
-import axios from 'axios';
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
-console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
-console.log("GOOGLE_CLIENT_SECRET:", process.env.GOOGLE_CLIENT_SECRET);
-console.log("NEXTAUTH_SECRET:", process.env.NEXTAUTH_SECRET);
-console.log("NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
+const REFRESH_TOKEN_ERROR = "RefreshAccessTokenError";
 
 async function refreshAccessToken(token) {
-    console.log('Refreshing access token:', JSON.stringify(token, null, 2));
-
-    console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
-    console.log("GOOGLE_CLIENT_SECRET:", process.env.GOOGLE_CLIENT_SECRET);
-    console.log("NEXTAUTH_SECRET:", process.env.NEXTAUTH_SECRET);
-    console.log("NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
-    try {
-      const url = "https://oauth2.googleapis.com/token";
-      const params = new URLSearchParams({
-        client_id: process.env.GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        grant_type: "refresh_token",
+  console.log("Refreshing access token", { tokenId: token.sub });
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/refresh-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         refresh_token: token.refreshToken,
-      });
-  
-      const response = await axios.post(url, params.toString(), {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      });
-  
-      const refreshedTokens = response.data;
-  
-      if (response.status !== 200) {
-        throw refreshedTokens;
-      }
-  
-      return {
-        ...token,
-        accessToken: refreshedTokens.access_token,
-        accessTokenExpires: Date.now() + refreshedTokens.expires_in * 1000,  // Update expiry time
-        refreshToken: refreshedTokens.refresh_token ?? token.refreshToken,    // Fall back to old refresh token if it's not returned
-      };
-    } catch (error) {
-      console.error("Error refreshing access token:", error);
-      return {
-        ...token,
-        error: "RefreshAccessTokenError",
-      };
-    }
-  }
-  
+      }),
+    });
 
-export const options = {
+    const refreshedTokens = await response.json();
+
+    if (!response.ok) {
+      console.error("Failed to refresh token", { status: response.status, data: refreshedTokens });
+      throw refreshedTokens;
+    }
+
+    console.log("Token refreshed successfully", { tokenId: token.sub });
+    return {
+      ...token,
+      accessToken: refreshedTokens.access_token,
+      accessTokenExpires: Date.now() + refreshedTokens.expires_in * 1000,
+      refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Fall back to old refresh token
+    };
+  } catch (error) {
+    console.error("Error refreshing access token", error);
+    return {
+      ...token,
+      error: REFRESH_TOKEN_ERROR,
+    };
+  }
+}
+
+export const authOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      authorization: {
-        params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code",
-          scope: "openid email profile"
-        }
-      }
     }),
   ],
-  debug: process.env.NODE_ENV === 'development',
-  logger: {
-    error: (code, metadata) => console.error(`Error: ${code}`, metadata),
-    warn: (code) => console.warn(`Warning: ${code}`),
-    debug: (code, metadata) => console.debug(`Debug: ${code}`, metadata),
-  },
   callbacks: {
-    async signIn({ user, account, profile }) {
-      console.log("Sign-in callback initiated");
-      if (account.provider === "google") {
+    async jwt({ token, account, user }) {
+      // Initial sign in
+      if (account && user) {
+        console.log("Initial sign in", { userId: user.id, provider: account.provider });
+        return {
+          accessToken: account.access_token,
+          accessTokenExpires: Date.now() + account.expires_in * 1000,
+          refreshToken: account.refresh_token,
+          user,
+        };
+      }
+
+      // Return previous token if the access token has not expired yet
+      if (Date.now() < token.accessTokenExpires) {
+        console.log("Existing token is still valid", { tokenId: token.sub });
+        return token;
+      }
+
+      // Access token has expired, try to update it
+      console.log("Access token has expired, refreshing...", { tokenId: token.sub });
+      return refreshAccessToken(token);
+    },
+    async session({ session, token }) {
+      console.log("Creating session", { userId: token.sub });
+      session.user = token.user;
+      session.accessToken = token.accessToken;
+      session.error = token.error;
+
+      // Fetch user data from your backend here and set isOnboarded
+      if (token.accessToken) {
         try {
-          const response = await axios.post(`${apiBaseUrl}/api/social-login/`, {
-            provider: account.provider,
-            access_token: account.access_token,
-            id_token: account.id_token,
-          });
-
-          if (response.status === 200) {
-            console.log("Social login successful");
-            user.id = response.data.user_id;
-            user.isOnboarded = response.data.is_onboarded;
-            return true;
-          } else {
-            console.error("Social login failed:", response.data.error);
-            return `/login?error=${encodeURIComponent(response.data.error)}`;
-          }
-        } catch (error) {
-          console.error("Error during social login:", error.message);
-          return `/login?error=${encodeURIComponent(error.message)}`;
-        }
-      }
-      return true;
-    },
-
-    async jwt({ token, user, account }) {
-        // Initial sign-in: store the access and refresh tokens
-        if (account && user) {
-          return {
-            ...token,
-            accessToken: account.access_token,
-            refreshToken: account.refresh_token,
-            accessTokenExpires: account.expires_at * 1000, // Set the expiration time
-            user: {
-              id: user.id,
-              isOnboarded: user.isOnboarded,
+          console.log("Fetching user data from backend", { userId: token.sub });
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user`, {
+            headers: {
+              Authorization: `Bearer ${token.accessToken}`,
             },
-          };
+          });
+          const userData = await response.json();
+          session.user.isOnboarded = userData.isOnboarded;
+          console.log("User data fetched successfully", { userId: token.sub, isOnboarded: userData.isOnboarded });
+        } catch (error) {
+          console.error("Error fetching user data:", error);
         }
-    
-        // Return previous token if the access token has not expired yet
-        if (Date.now() < token.accessTokenExpires) {
-          return token;
-        }
-    
-        // Access token has expired, try to update it
-        console.log("Access token expired, refreshing...");
-        return refreshAccessToken(token);
-      },
-    
-      // Add the access token and refresh token to the session object
-      async session({ session, token }) {
-        session.user.id = token.user.id;
-        session.user.isOnboarded = token.user.isOnboarded;
-        session.accessToken = token.accessToken;
-        session.error = token.error;
-        session.refreshToken = token.refreshToken;
-        return session;
       }
+
+      return session;
     },
-    
-  events: {
-    async signIn(message) { console.log('signIn', message) },
-    async signOut(message) { console.log('signOut', message) },
-    async createUser(message) { console.log('createUser', message) },
-    async linkAccount(message) { console.log('linkAccount', message) },
-    async session(message) { console.log('session', message) },
   },
   pages: {
-    signIn: '/login',
+    signIn: '/auth/signin',
+    error: '/auth/error',
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  cookies: {
+    sessionToken: {
+      name: `__Secure-next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true
+      }
+    },
+  },
+  logger: {
+    error(code, metadata) {
+      console.error(code, metadata);
+    },
+    warn(code) {
+      console.warn(code);
+    },
+    debug(code, metadata) {
+      console.debug(code, metadata);
+    }
+  },
 };
 
-export default options;
+console.log("NextAuth configuration loaded");

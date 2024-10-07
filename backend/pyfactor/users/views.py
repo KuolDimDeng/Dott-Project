@@ -18,6 +18,10 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from django.utils.decorators import method_decorator
 from django.contrib.auth import authenticate
 from django.views.decorators.csrf import csrf_exempt
+from business.models import Business, Subscription
+from business.serializers import BusinessRegistrationSerializer
+from django.utils.timezone import timezone
+
 import requests
 import traceback
 
@@ -139,46 +143,7 @@ class OnboardingStatusView(APIView):
             "is_onboarded": request.user.is_onboarded
         })
 
-# Complete onboarding, create user database, and update their profile.
-class CompleteOnboardingView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
 
-    def post(self, request):
-        logger.debug("Received request data: %s", request.data)
-        # Extract and validate data.
-        business_data = request.data.get('business')
-        selected_plan = request.data.get('selectedPlan')
-        billing_cycle = request.data.get('billingCycle')
-
-        if not business_data or not selected_plan or not billing_cycle:
-            return Response({"error": "Business data, selected plan, and billing cycle are required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            with transaction.atomic():
-                # Create a dynamic database for the business and set it up.
-                database_name = create_user_database(request.user, business_data)
-                setup_user_database(database_name, request.data, request.user)
-
-                # Mark the user as onboarded.
-                request.user.is_onboarded = True
-                request.user.plan = selected_plan
-                request.user.billing_cycle = billing_cycle
-                request.user.save()
-
-                return Response({"message": "Onboarding completed successfully"}, status=status.HTTP_200_OK)
-
-        except ValidationError as e:
-            logger.error(f"Validation error during onboarding: {str(e)}")
-            return Response({"error": f"Validation error: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        except DatabaseError as e:
-            logger.error(f"Database error during onboarding: {str(e)}")
-            return Response({"error": "Database error occurred during onboarding"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        except Exception as e:
-            logger.exception(f"Unexpected error during onboarding: {str(e)}")
-            return Response({"error": "An unexpected error occurred during onboarding"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # Activate user account via email confirmation.
 class ActivateAccountView(APIView):
@@ -215,7 +180,61 @@ class AuthTokenView(APIView):
             })
         return Response({'error': 'Invalid credentials or user is inactive'}, status=status.HTTP_400_BAD_REQUEST)
 
-# Social login for users.
+class CompleteOnboardingView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    def post(self, request):
+        logger.debug("Received request data: %s", request.data)
+        user = request.user
+        business_data = request.data.get('business')
+        selected_plan = request.data.get('selectedPlan')
+        billing_cycle = request.data.get('billingCycle')
+
+        if not business_data or not selected_plan or not billing_cycle:
+            return Response({"error": "Business data, selected plan, and billing cycle are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            with transaction.atomic():
+                # Validate and save business data
+                business_serializer = BusinessRegistrationSerializer(data=business_data)
+                if business_serializer.is_valid():
+                    business = business_serializer.save(owner=user)
+                else:
+                    return Response({"error": "Invalid business data", "details": business_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Create a subscription for the business
+                Subscription.objects.create(
+                    business=business,
+                    subscription_type=selected_plan,
+                    start_date=timezone.now().date(),
+                    is_active=True
+                )
+
+                # Update user profile
+                user_profile = UserProfile.objects.get(user=user)
+                user_profile_serializer = UserProfileSerializer(user_profile, data=request.data.get('user_profile', {}), partial=True)
+                if user_profile_serializer.is_valid():
+                    user_profile = user_profile_serializer.save()
+                else:
+                    return Response({"error": "Invalid user profile data", "details": user_profile_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Create a dynamic database for the business and set it up
+                database_name = create_user_database(user, business_data)
+                setup_user_database(database_name, request.data, user)
+
+                # Mark the user as onboarded
+                user.is_onboarded = True
+                user.plan = selected_plan
+                user.billing_cycle = billing_cycle
+                user.save()
+
+                return Response({"message": "Onboarding completed successfully"}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.exception(f"Unexpected error during onboarding: {str(e)}")
+            return Response({"error": "An unexpected error occurred during onboarding"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class SocialLoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -252,6 +271,9 @@ class SocialLoginView(APIView):
             user.last_name = user_info.get('family_name', '')
             user.is_active = True
             user.save()
+
+            # Create UserProfile for the new user
+            UserProfile.objects.create(user=user)
 
         refresh = RefreshToken.for_user(user)
         return Response({
