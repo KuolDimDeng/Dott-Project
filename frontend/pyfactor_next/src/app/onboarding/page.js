@@ -59,7 +59,7 @@ function OnboardingContent() {
 
   return (
     <>
-      {step === 1 && <OnboardingStep1 formData={formData} />}
+      {step === 1 && <OnboardingStep1 formData={formData} goToNextStep={goToNextStep} />}
       {step === 2 && <OnboardingStep2 formData={formData} completeOnboarding={completeOnboarding} />}
     </>
   );

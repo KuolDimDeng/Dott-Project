@@ -177,7 +177,7 @@ const OnboardingStep1 = ({ nextStep }) => {
       router.push('/login');
     },
   });  const router = useRouter();
-  const { formData, updateFormData, goToNextStep } = useOnboarding();
+  const { formData, updateFormData, goToNextStep, step } = useOnboarding();
   const [isFormInitialized, setIsFormInitialized] = useState(false);
 
 
