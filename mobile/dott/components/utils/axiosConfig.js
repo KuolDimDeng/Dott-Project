@@ -81,6 +81,7 @@ axiosInstance.interceptors.response.use(
           // Handle navigation to login screen
           // You might want to use your navigation system here
           // For example: navigation.navigate('Login');
+          navigator.navigate('auth/signin');
         }
       }
       

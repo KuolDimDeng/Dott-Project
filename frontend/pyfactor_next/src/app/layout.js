@@ -5,7 +5,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from '@/styles/theme';
 import AuthWrapper from './AuthWrapper/page';
-import { OnboardingProvider } from './onboarding/contexts/page';
+import { OnboardingProvider } from './onboarding/contexts/onboardingContext';
 
 export default function RootLayout({ children }) {
   return (

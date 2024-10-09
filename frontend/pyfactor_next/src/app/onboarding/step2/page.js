@@ -9,7 +9,7 @@ import {
 import Image from 'next/image';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { useOnboarding } from '../contexts/page';
+import { useOnboarding } from '../contexts/onboardingContext';
 
 
 const theme = createTheme({
@@ -42,12 +42,11 @@ const BillingToggle = styled(Box)(({ theme }) => ({
   },
 }));
 
-const OnboardingStep2 = ({ completeOnboarding }) => {
+const OnboardingStep2 = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [errorMessage, setErrorMessage] = useState('');
   const router = useRouter();
-  const { data: session } = useSession();
-  const { formData, goToPrevStep } = useOnboarding();
+  const { formData, goToPrevStep, completeOnboarding } = useOnboarding();
 
 
   const handleBillingCycleChange = (cycle) => setBillingCycle(cycle);
@@ -56,6 +55,8 @@ const OnboardingStep2 = ({ completeOnboarding }) => {
     try {
       const subscriptionData = { selectedPlan: tier.title, billingCycle, ...formData };
       console.log('Subscription data:', subscriptionData);  // Add this line for debugging
+      console.log('Going to next step...');
+      console.log('Going to complete onboarding...');
       await completeOnboarding(subscriptionData);
     } catch (error) {
       console.error('Error selecting subscription:', error);
@@ -84,73 +85,43 @@ const OnboardingStep2 = ({ completeOnboarding }) => {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ minHeight: '100vh', py: 6, backgroundColor: 'background.default' }}>
-        <Container maxWidth="lg">
-          <Box sx={{ textAlign: 'center', mb: 6 }}>
-            <Image src="/static/images/Pyfactor.png" alt="Pyfactor Logo" width={150} height={50} priority />
-            <Typography variant="h6" color="primary" sx={{ mb: 1 }}>
-              STEP 2 OF 2
-            </Typography>
-            <Typography variant="h4" sx={{ mb: 2 }}>
-              Choose the plan that best suits you
-            </Typography>
-
-            <BillingToggle>
-              <Box
-                className={`MuiBillingToggle-option ${billingCycle === 'monthly' ? 'active' : ''}`}
-                onClick={() => handleBillingCycleChange('monthly')}
-              >
-                Monthly
-              </Box>
-              <Box
-                className={`MuiBillingToggle-option ${billingCycle === 'annual' ? 'active' : ''}`}
-                onClick={() => handleBillingCycleChange('annual')}
-              >
-                Annual
-              </Box>
-            </BillingToggle>
-          </Box>
-
-          {errorMessage && <Typography color="error">{errorMessage}</Typography>}
-
-          <Grid container spacing={4}>
-            {tiers.map((tier) => (
-              <Grid item key={tier.title} xs={12} sm={6}>
-                <Card sx={{ height: '100%', p: 4, borderRadius: 4 }}>
-                  <CardContent>
-                    <Typography variant="h4">{tier.title}</Typography>
-                    <Typography variant="h3">
-                      ${tier.price[billingCycle]} / {billingCycle === 'monthly' ? 'month' : 'year'}
-                    </Typography>
-                    <Divider sx={{ my: 2 }} />
-                    {tier.description.map((line) => (
-                      <Box key={line} sx={{ display: 'flex', alignItems: 'center' }}>
-                        <CheckCircleRoundedIcon sx={{ color: 'primary.main' }} />
-                        <Typography>{line}</Typography>
-                      </Box>
-                    ))}
-                  </CardContent>
-                  <CardActions>
-                    <Button
-                      fullWidth
-                      variant={tier.buttonVariant}
-                      onClick={() => handleSubscriptionSelect(tier)}
-                    >
-                      {tier.buttonText}
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-            <Button variant="outlined" onClick={prevStep}>
-              Previous Step 1
-            </Button>
-          </Box>
-        </Container>
-      </Box>
+      <Container maxWidth="lg" sx={{ minHeight: '100vh', py: 6 }}>
+        <Box sx={{ textAlign: 'center', mb: 6 }}>
+          <Image src="/static/images/Pyfactor.png" alt="Pyfactor Logo" width={150} height={50} priority />
+          <Typography variant="h6" color="primary">STEP 2 OF 2</Typography>
+          <Typography variant="h4">Choose the plan that best suits you</Typography>
+          <BillingToggle>
+            <Box className={`MuiBillingToggle-option ${billingCycle === 'monthly' ? 'active' : ''}`} onClick={() => handleBillingCycleChange('monthly')}>Monthly</Box>
+            <Box className={`MuiBillingToggle-option ${billingCycle === 'annual' ? 'active' : ''}`} onClick={() => handleBillingCycleChange('annual')}>Annual</Box>
+          </BillingToggle>
+        </Box>
+        {errorMessage && <Typography color="error">{errorMessage}</Typography>}
+        <Grid container spacing={4}>
+          {tiers.map((tier) => (
+            <Grid item key={tier.title} xs={12} sm={6}>
+              <Card sx={{ height: '100%', p: 4, borderRadius: 4 }}>
+                <CardContent>
+                  <Typography variant="h4">{tier.title}</Typography>
+                  <Typography variant="h3">${tier.price[billingCycle]} / {billingCycle === 'monthly' ? 'month' : 'year'}</Typography>
+                  <Divider sx={{ my: 2 }} />
+                  {tier.description.map((line) => (
+                    <Box key={line} sx={{ display: 'flex', alignItems: 'center' }}>
+                      <CheckCircleRoundedIcon sx={{ color: 'primary.main' }} />
+                      <Typography>{line}</Typography>
+                    </Box>
+                  ))}
+                </CardContent>
+                <CardActions>
+                  <Button fullWidth variant={tier.buttonVariant} onClick={() => handleSubscriptionSelect(tier)}>{tier.buttonText}</Button>
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <Button variant="outlined" onClick={goToPrevStep}>Previous Step 1</Button>
+        </Box>
+      </Container>
     </ThemeProvider>
   );
 };

@@ -44,7 +44,6 @@ ENCRYPTION_KEY = Fernet.generate_key()
 print("PLAID_CLIENT_ID: ", PLAID_CLIENT_ID)
 print("PLAID_SECRET: ", PLAID_SECRET)
 
-SECRET_KEY = 'sdbf6s8!9#w9@j_!w=2-s&+=x&g(9tvq&*p@g=%_&%fy$65-z%'
 
 
 # Stripe settings
@@ -106,55 +105,55 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-8)j4zojil$u=s73e8yap9s-q6s
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend']
-# CORS settings
-CORS_ALLOW_ALL_ORIGINS = True
+
+# CORS and CSRF configuration
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Your Next.js app's URL
+    'http://localhost:3000',  # Your Next.js frontend URL
+    'http://127.0.0.1:8000',  # Your Django backend URL
 ]
 
-CORS_ALLOWED_METHODS = [
-    'GET',
-    'POST',
-    'PUT',
-    'PATCH',
-    'DELETE',
-    'OPTIONS',
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:8000',
 ]
 
-# CSRF settings
-CSRF_TRUSTED_ORIGINS = ['http://localhost:3000', 'http://frontend:3000']
-CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = True
 CSRF_USE_SESSIONS = True
 
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-    }
-}
 
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-SESSION_COOKIE_AGE = 3600  # 1 hour in seconds
-AUTH_USER_MODEL = 'users.User'
-
-REFRESH_TOKEN_LIFETIME = timedelta(days=7)
-REFRESH_TOKEN_SECURE = False  # Set to False for local development without HTTPS
-
-ACCOUNT_USERNAME_REQUIRED = False
+# Authentication settings for dj-rest-auth and allauth
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_UNIQUE_EMAIL = True
-ACCOUNT_EMAIL_VERIFICATION = 'none'
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_USERNAME_REQUIRED = False  # Disable username requirement
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None  # Explicitly set no username field
+ACCOUNT_EMAIL_VERIFICATION = 'optional'  # Set this as needed
 
-DATABASE_ROUTERS = ['pyfactor.userDatabaseRouter.UserDatabaseRouter']
 
+# Celery configuration
+CELERY_BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_TIMEZONE = 'UTC'
+CELERY_BEAT_SCHEDULE = {
+    'update-irs-tax-data-daily': {
+        'task': 'taxes.tasks.update_irs_tax_data',
+        'schedule': crontab(hour=0, minute=0),
+    },
+}
+
+# Session and authentication settings
+AUTH_USER_MODEL = 'users.User'
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 3600  # 1 hour in seconds
+
+# REST framework settings
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'users.utils.error_handling.custom_exception_handler',
-
+    'EXCEPTION_HANDLER': 'users.utils_error.error_handling.custom_exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
@@ -163,40 +162,19 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Celery Configuration
-# Celery settings
-
-
+# JWT settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': False,
-    'UPDATE_LAST_LOGIN': False,
-
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': settings.SECRET_KEY,
-    'VERIFYING_KEY': None,
-    'AUDIENCE': None,
-    'ISSUER': None,
-    'JWK_URL': None,
-    'LEEWAY': 0,
-
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
-    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
-
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-    'TOKEN_TYPE_CLAIM': 'token_type',
-    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
-
-    'JTI_CLAIM': 'jti',
-
-    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
-    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
-    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_COOKIE': 'refresh_token',
+    'AUTH_COOKIE_DOMAIN': None,
+    'AUTH_COOKIE_SECURE': False,
+    'AUTH_COOKIE_HTTP_ONLY': True,
+    'AUTH_COOKIE_PATH': '/',
+    'AUTH_COOKIE_SAMESITE': 'Lax',
+    'AUTH_HEADER_TYPES': ('Bearer',)
 }
 
 # Logging configuration
@@ -216,6 +194,32 @@ class DeduplicationFilter(logging.Filter):
         return True
 
 LOGGING_CONFIG = None
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',  # Set to DEBUG to capture detailed logs
+            'propagate': False,
+        },
+        'your_app_name': {  # replace with your app name
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
 
 LOGLEVEL = os.getenv('DJANGO_LOGLEVEL', 'info').upper()
 
@@ -290,6 +294,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'django_countries',
     'rest_framework.authtoken',
     'dj_rest_auth',
@@ -324,7 +329,6 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.locale.LocaleMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
@@ -362,7 +366,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("redis", 6379)],
+            "hosts": [("localhost", 6379)],
         },
     },
 }

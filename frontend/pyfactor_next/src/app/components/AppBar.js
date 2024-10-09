@@ -160,7 +160,7 @@ function AppAppBar() {
               <Button
                 variant="contained"
                 component={Link}
-                href="/login"
+                href="/auth/signin"
                 sx={{
                   fontFamily: 'Inter, sans-serif',
                 }}
@@ -253,7 +253,7 @@ function AppAppBar() {
                     fullWidth
                     variant="contained"
                     component={Link}
-                    href="/login"
+                    href="/auth/signin"
                     sx={{
                       fontFamily: 'Inter, sans-serif',
                     }}

@@ -8,7 +8,7 @@ from .views import (
     CompleteOnboardingView,  # Updated name correctly
     ActivateAccountView,
     SocialLoginView,
-)
+    CustomTokenRefreshView)
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -21,4 +21,9 @@ urlpatterns = [
     path('complete-onboarding/', CompleteOnboardingView.as_view(), name='complete_onboarding'),  # Added .as_view()
     path('activate/<uidb64>/<token>/', ActivateAccountView.as_view(), name='activate'),
     path('social-login/', SocialLoginView.as_view(), name='social_login'),
+    path('token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),
+    path('user/', ProfileView.as_view(), name='user'),  # Add this line for the /api/user endpoint
+
+
+
 ]

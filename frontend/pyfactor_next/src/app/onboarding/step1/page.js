@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { TextField, Select, MenuItem, FormControl, InputLabel, Typography, Button, Container, Grid, Paper, Box } from '@mui/material';
 import Image from 'next/image';
-import { useOnboarding } from '@/app/onboarding/contexts/page';
+import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
 
 
 
@@ -170,19 +170,23 @@ const initialFormData = {
   dateFounded: '',
 };
 
-const OnboardingStep1 = ({ nextStep }) => {
-  const { data: session, status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push('/login');
-    },
-  });  const router = useRouter();
-  const { formData, updateFormData, goToNextStep, step } = useOnboarding();
-  const [isFormInitialized, setIsFormInitialized] = useState(false);
-
+const OnboardingStep1 = () => {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const { formData, updateFormData, goToNextStep } = useOnboarding();
 
   useEffect(() => {
-    if (Object.keys(formData).length === 0) {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin'); // Updated redirect to new sign-in location
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    if (!formData || Object.keys(formData).length === 0) {
+      console.log('No form data found, initializing with default values');
+      console.log('initialFormData:', initialFormData);
+      console.log('Updating form data with initial values');
+      console.log('formData:', formData);
       updateFormData(initialFormData);
     }
   }, [formData, updateFormData]);
@@ -195,92 +199,37 @@ const OnboardingStep1 = ({ nextStep }) => {
   const handleSubmit = (event) => {
     event.preventDefault();
     console.log('Form submitted:', formData);
-    console.log('Current step before:', step);
     goToNextStep();
-    console.log('Current step after:', step);
   };
 
   if (status === 'loading') return <div>Loading...</div>;
   if (status === 'unauthenticated') return null;
-  if (!session) {
-    return null;
-  }
+
 
 
   return (
     <ThemeProvider theme={theme}>
       <Grid container component="main" sx={{ height: '100vh' }}>
-        {/* Left side - Onboarding Form */}
         <Grid item xs={12} sm={8} md={6} component={Paper} elevation={6} square>
-          <Box
-            sx={{
-              my: 8,
-              mx: 4,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
-          >
-            <Box sx={{ mb: 3 }}>
-              <Image
-                src="/static/images/Pyfactor.png"
-                alt="Pyfactor Logo"
-                width={150}
-                height={50}
-                priority
-              />
-            </Box>
-            <Typography variant="h6" color="primary" gutterBottom >
-              STEP 1 OF 2
-            </Typography>
-            <Typography component="h2" variant="h5" gutterBottom>
-              Welcome to Dott!
-            </Typography>
+          <Box sx={{ my: 8, mx: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Image src="/static/images/Pyfactor.png" alt="Pyfactor Logo" width={150} height={50} priority />
+            <Typography variant="h6" color="primary" gutterBottom>STEP 1 OF 2</Typography>
+            <Typography component="h2" variant="h5" gutterBottom>Welcome to Dott!</Typography>
             <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="First Name"
-                    name="firstName"
-                    value={formData.firstName || ''}
-                    onChange={handleChange}
-                    required
-                    variant="outlined"
-                  />
+                  <TextField fullWidth label="First Name" name="firstName" value={formData.firstName || ''} onChange={handleChange} required variant="outlined" />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Last Name"
-                    name="lastName"
-                    value={formData.lastName || ''}
-                    onChange={handleChange}
-                    required
-                    variant="outlined"
-                  />
+                  <TextField fullWidth label="Last Name" name="lastName" value={formData.lastName || ''} onChange={handleChange} required variant="outlined" />
                 </Grid>
                 <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="What's your business name?"
-                    name="businessName"
-                    value={formData.businessName || ''}
-                    onChange={handleChange}
-                    required
-                    variant="outlined"
-                  />
+                  <TextField fullWidth label="What's your business name?" name="businessName" value={formData.businessName || ''} onChange={handleChange} required variant="outlined" />
                 </Grid>
                 <Grid item xs={12}>
                   <FormControl fullWidth required variant="outlined">
                     <InputLabel>Select your industry</InputLabel>
-                    <Select
-                      name="industry"
-                      value={formData.industry || ''}
-
-                      onChange={handleChange}
-                      label="Select your industry"
-                    >
+                    <Select name="industry" value={formData.industry || ''} onChange={handleChange} label="Select your industry">
                       {businessTypes.map((type) => (
                         <MenuItem key={type} value={type}>{type}</MenuItem>
                       ))}
@@ -290,16 +239,9 @@ const OnboardingStep1 = ({ nextStep }) => {
                 <Grid item xs={12}>
                   <FormControl fullWidth required variant="outlined">
                     <InputLabel>Where is your business located?</InputLabel>
-                    <Select
-                      name="country"
-                      value={formData.country || ''}
-                      onChange={handleChange}
-                      label="Where is your business located?"
-                    >
+                    <Select name="country" value={formData.country || ''} onChange={handleChange} label="Where is your business located?">
                       {countries.map((country) => (
-                        <MenuItem key={country.code} value={country.code}>
-                          {country.name}
-                        </MenuItem>
+                        <MenuItem key={country.code} value={country.code}>{country.name}</MenuItem>
                       ))}
                     </Select>
                   </FormControl>
@@ -307,12 +249,7 @@ const OnboardingStep1 = ({ nextStep }) => {
                 <Grid item xs={12}>
                   <FormControl fullWidth required variant="outlined">
                     <InputLabel>What is the legal structure of your business?</InputLabel>
-                    <Select
-                      name="legalStructure"
-                      value={formData.legalStructure || ''}
-                      onChange={handleChange}
-                      label="What is the legal structure of your business?"
-                    >
+                    <Select name="legalStructure" value={formData.legalStructure || ''} onChange={handleChange} label="Legal Structure">
                       {legalStructures.map((structure) => (
                         <MenuItem key={structure} value={structure}>{structure}</MenuItem>
                       ))}
@@ -320,27 +257,10 @@ const OnboardingStep1 = ({ nextStep }) => {
                   </FormControl>
                 </Grid>
                 <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="When was your business founded?"
-                    name="dateFounded"
-                    type="date"
-                    value={formData.dateFounded || ''}
-                    onChange={handleChange}
-                    InputLabelProps={{
-                      shrink: true,
-                    }}
-                    inputProps={{
-                      max: new Date().toISOString().split('T')[0], // Sets max date to today
-                    }}
-                    required
-                    variant="outlined"
-                  />
+                  <TextField fullWidth label="When was your business founded?" name="dateFounded" type="date" value={formData.dateFounded || ''} onChange={handleChange} InputLabelProps={{ shrink: true }} inputProps={{ max: new Date().toISOString().split('T')[0] }} required variant="outlined" />
                 </Grid>
                 <Grid item xs={12}>
-                  <Button type="submit" variant="contained" color="primary" fullWidth size="large">
-                    Next
-                  </Button>
+                  <Button type="submit" variant="contained" color="primary" fullWidth>Next</Button>
                 </Grid>
               </Grid>
             </Box>

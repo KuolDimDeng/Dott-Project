@@ -16,15 +16,19 @@ export default function LandingPage() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log("Session status:", status);
+    console.log("Session data:", session);
+    console.log("Is user authenticated:", session?.isAuthenticated);
+    console.log("User onboarding status:", session?.user?.isOnboarded);
     if (status === 'authenticated') {
-      if (session.user.isOnboarded) {
+      if (session?.user?.isOnboarded) {
         router.push('/dashboard');
       } else {
         router.push('/onboarding');
       }
     }
   }, [status, session, router]);
-
+  
   if (status === 'loading') {
     return <div>Loading...</div>;
   }

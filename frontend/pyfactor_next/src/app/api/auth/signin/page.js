@@ -1,3 +1,4 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/api/auth/signin/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -38,6 +39,7 @@ export default function SignIn() {
   const [errorState, setErrorState] = useState(null);
   const router = useRouter();
   const { data: session, status } = useSession();
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     control,
@@ -52,6 +54,7 @@ export default function SignIn() {
   });
 
   useEffect(() => {
+    console.log('Session:', session);
     if (status === 'authenticated') {
       if (session.user.isOnboarded) {
         router.push('/dashboard');
@@ -60,10 +63,13 @@ export default function SignIn() {
       }
     }
   }, [session, status, router]);
-
+  console.log('-------------------------------------------');
   const handleClickShowPassword = () => setIsPasswordShown((show) => !show);
 
   const onSubmit = async (data) => {
+    console.log('Form submitted:', data);
+    console.log('-------------------------------------------');
+    setIsLoading(true);
     try {
       logger.info('Initiating login');
       const result = await signIn('credentials', {
@@ -74,30 +80,68 @@ export default function SignIn() {
 
       if (result.error) {
         setErrorState(result.error);
+        logger.error('Login failed', { error: result.error });
       } else {
-        // The session will be updated automatically by NextAuth.js
-        // The useEffect above will handle the redirection
+        logger.info('Login successful');
+        if (result.url) {
+          router.push(result.url);
+        } else {
+          router.push('/dashboard');
+        }
       }
     } catch (error) {
       logger.error('Error during login', { error: error.message });
       setErrorState('Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSocialLogin = async (provider) => {
-    
+    setIsLoading(true);
     try {
-      logger.info(`Attempting social login with ${provider}`);
-      await signIn(provider, { callbackUrl: '/' });
+      console.log(`Initiating ${provider} login`);
+      logger.info(`Initiating ${provider} login`);
+      
+      // Log the parameters being passed to signIn
+      console.log('signIn parameters:', { provider, options: { redirect: false } });
+      
+      const result = await signIn(provider, { redirect: false });
+      
+      console.log('signIn result:', result);  // Log the entire result object
+  
+      if (!result) {
+        throw new Error('Login failed: No result returned');
+      }
+  
+      if (result.error) {
+        console.error(`Error during ${provider} login:`, result.error);
+        logger.error(`${provider} login failed`, { error: result.error });
+        setErrorState(`${provider} login failed. ${result.error}`);
+      } else {
+        logger.info(`${provider} login successful, redirecting...`);
+        if (result.url) {
+          router.push(result.url);
+        } else {
+          router.push('/dashboard');
+        }
+      }
     } catch (error) {
-      console.error('Error during social login:', error);
-      logger.error(`Error during social login with ${provider}`, { error });
-      setErrorState('Login failed. Please try again.');
+        console.error(`Error during ${provider} login:`, error);
+        logger.error(`Unexpected error during ${provider} login`, { 
+          error: error.message, 
+          stack: error.stack,
+          provider: provider
+        });
+      setErrorState(`An unexpected error occurred during ${provider} login. Please try again.`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   if (status === 'loading') return <CircularProgress />;
   if (status === 'authenticated') return null;
+
 
   return (
     <ThemeProvider theme={theme}>
@@ -219,54 +263,58 @@ export default function SignIn() {
                 )}
               />
 
-              <Button 
-                type="submit" 
-                fullWidth 
-                variant="contained" 
-                sx={{ 
-                  mt: 3, 
-                  mb: 2, 
-                  borderRadius: '20px',
-                  textTransform: 'none'
-                }}
-              >
-                Sign In
-              </Button>
+            <Button 
+                      type="submit" 
+                      fullWidth 
+                      variant="contained" 
+                      disabled={isLoading}
+                      sx={{ 
+                        mt: 3, 
+                        mb: 2, 
+                        borderRadius: '20px',
+                        textTransform: 'none'
+                      }}
+                    >
+                      {isLoading ? <CircularProgress size={24} /> : 'Sign In'}
+                    </Button>
 
-              {errorState && (
-                <Typography color="error" align="center">
-                  {errorState}
-                </Typography>
-              )}
+                    {errorState && (
+                      <Typography color="error" align="center">
+                        {errorState}
+                      </Typography>
+                    )}
 
-              <Box sx={{ mt: 2 }}>
-                <GoogleLoginButton 
-                  onClick={() => handleSocialLogin('google')} 
-                  style={{ 
-                    marginBottom: '10px', 
-                    borderRadius: '20px',
-                    background: '#e3f2fd',
-                    color: '#000'
-                  }}
-                  text="Sign in with Google"
-                />
-                <FacebookLoginButton 
-                  onClick={() => handleSocialLogin('facebook')} 
-                  style={{ 
-                    marginBottom: '10px', 
-                    borderRadius: '20px'
-                  }}
-                  text="Sign in with Facebook"
-                />
-                <AppleLoginButton 
-                  onClick={() => handleSocialLogin('apple')}
-                  style={{ 
-                    borderRadius: '20px'
-                  }}
-                  text="Sign in with Apple"
-                />
-              </Box>
-            </Box>
+                    <Box sx={{ mt: 2 }}>
+                      <GoogleLoginButton 
+                        onClick={() => handleSocialLogin('google')} 
+                        disabled={isLoading}
+                        style={{ 
+                          marginBottom: '10px', 
+                          borderRadius: '20px',
+                          background: '#e3f2fd',
+                          color: '#000'
+                        }}
+                        text={isLoading ? 'Loading...' : 'Sign in with Google'}
+                      />
+                      <FacebookLoginButton 
+                        onClick={() => handleSocialLogin('facebook')} 
+                        disabled={isLoading}
+                        style={{ 
+                          marginBottom: '10px', 
+                          borderRadius: '20px'
+                        }}
+                        text={isLoading ? 'Loading...' : 'Sign in with Facebook'}
+                      />
+                      <AppleLoginButton 
+                        onClick={() => handleSocialLogin('apple')}
+                        disabled={isLoading}
+                        style={{ 
+                          borderRadius: '20px'
+                        }}
+                        text={isLoading ? 'Loading...' : 'Sign in with Apple'}
+                      />
+                    </Box>
+                  </Box>
           </Box>
         </Grid>
       </Grid>

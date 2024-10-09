@@ -1,4 +1,7 @@
 from django.db import connections, transaction, DatabaseError
+from rest_framework_simplejwt.views import TokenRefreshView
+from django.http import JsonResponse
+
 from django.core.exceptions import ValidationError
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
@@ -20,7 +23,7 @@ from django.contrib.auth import authenticate
 from django.views.decorators.csrf import csrf_exempt
 from business.models import Business, Subscription
 from business.serializers import BusinessRegistrationSerializer
-from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 from django.utils.timezone import timezone
 
@@ -49,63 +52,66 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = CustomRegisterSerializer
     
     def create(self, request, *args, **kwargs):
-        logger.debug("Received request data: %s", request.data)
+        logger.debug("RegisterView: Received request data: %s", request.data)
         serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid():
-            with transaction.atomic():
-                user = initial_user_registration(serializer.validated_data)
-                user.is_active = False
-                user.save()
+            try:
+                with transaction.atomic():
+                    user = initial_user_registration(serializer.validated_data)
+                    user.is_active = False
+                    user.save()
 
-                uid = urlsafe_base64_encode(force_bytes(user.pk))
-                token = account_activation_token.make_token(user)
-                current_site = get_current_site(request)
-                confirmation_url = reverse('activate', kwargs={'uidb64': uid, 'token': token})
-                confirmation_link = f'http://{current_site.domain}{confirmation_url}'
+                    # Send confirmation email
+                    uid = urlsafe_base64_encode(force_bytes(user.pk))
+                    token = account_activation_token.make_token(user)
+                    current_site = get_current_site(request)
+                    confirmation_url = reverse('activate', kwargs={'uidb64': uid, 'token': token})
+                    confirmation_link = f'http://{current_site.domain}{confirmation_url}'
 
-                mail_subject = 'Activate your account'
-                message = render_to_string('email_activation.html', {
-                    'user': user,
-                    'activate_url': confirmation_link
-                })
+                    mail_subject = 'Activate your account'
+                    message = render_to_string('email_activation.html', {
+                        'user': user,
+                        'activate_url': confirmation_link
+                    })
 
-                if not send_mail(mail_subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False):
-                    raise ValidationError("Failed to send activation email")
+                    send_mail(mail_subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
 
-            return Response({
-                "message": "User registered successfully. Please check your email to confirm your account.",
-            }, status=status.HTTP_201_CREATED)
+                logger.info("User registered successfully. Awaiting email confirmation.")
+                return Response({
+                    "message": "User registered successfully. Please check your email to confirm your account.",
+                }, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                logger.exception("Failed to register user: %s", str(e))
+                return Response({"error": "Failed to register user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
+            logger.warning("Registration failed: %s", serializer.errors)
             return Response({
                 "message": "Registration failed. Please check the form and try again.",
                 "errors": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
 
 # Obtain JWT tokens.
-class CustomTokenObtainPairView(APIView):
+class CustomTokenObtainPairView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
-        serializer = CustomTokenObtainPairSerializer(data=request.data)
-        try:
-            serializer.is_valid(raise_exception=True)
-        except ValidationError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-        refresh = serializer.validated_data['refresh']
-        access = serializer.validated_data['access']
-
-        response = Response({'access': str(access)})
-        response.set_cookie(
-            'refresh_token',
-            str(refresh),
-            max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
-            httponly=True,
-            samesite='Strict',
-            secure=settings.REFRESH_TOKEN_SECURE
-        )
-
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            refresh_token = response.data.get('refresh')
+            if refresh_token:
+                response.set_cookie(
+                    'refresh_token',
+                    refresh_token,
+                    max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
+                    httponly=True,
+                    secure=settings.SIMPLE_JWT.get('AUTH_COOKIE_SECURE', True),
+                    samesite=settings.SIMPLE_JWT.get('AUTH_COOKIE_SAMESITE', 'Lax'),
+                    domain=settings.SIMPLE_JWT.get('AUTH_COOKIE_DOMAIN'),
+                    path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/')
+                )
+            # Optionally add user data to the response here if needed
         return response
-
+    
+    
 # Authenticate user with email and password.
 class CustomAuthToken(ObtainAuthToken):
     serializer_class = CustomAuthTokenSerializer
@@ -129,9 +135,11 @@ class ProfileView(APIView):
     authentication_classes = [JWTAuthentication]
 
     def get(self, request, *args, **kwargs):
+        logger.debug("ProfileView: Received request data: %s", request.data)
         try:
             user_profile = UserProfile.objects.get(user=request.user)
             business_data = None
+            logger.info("Retrieving user profile for user %s", request.user)
             try:
                 business = user_profile.business
                 business_data = {
@@ -147,14 +155,20 @@ class ProfileView(APIView):
                     'phone_number': business.phone_number,
                 }
             except Business.DoesNotExist:
-                pass
+                logger.info("No business found for user %s", request.user)
 
             profile_data = UserProfileSerializer(user_profile).data
             profile_data['business'] = business_data
             profile_data['is_onboarded'] = request.user.is_onboarded
-            return Response(profile_data)
+            logger.info("Retrieved user profile for user %s", request.user)
+            return JsonResponse(profile_data)
+
         except UserProfile.DoesNotExist:
-            return Response({'error': 'Failed to retrieve user profile.'}, status=status.HTTP_404_NOT_FOUND)
+            logger.error("UserProfile not found for user: %s", request.user)
+            return JsonResponse({'error': 'Failed to retrieve user profile.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.exception("Unexpected error in ProfileView: %s", str(e))
+            return JsonResponse({"error": "An unexpected error occurred"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # Retrieve onboarding status.
 class OnboardingStatusView(APIView):
@@ -207,6 +221,7 @@ class CompleteOnboardingView(APIView):
     authentication_classes = [JWTAuthentication]
 
     def post(self, request):
+        logger.debug("Completing onboarding for user: %s", request.user)
         logger.debug("Received request data: %s", request.data)
         user = request.user
         business_data = request.data.get('business')
@@ -217,6 +232,8 @@ class CompleteOnboardingView(APIView):
             return Response({"error": "Business data, selected plan, and billing cycle are required"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            logger.info("Completing onboarding for user {user}")
+            logger.debug("Business data: %s", business_data)
             with transaction.atomic():
                 # Validate and save business data
                 business_serializer = BusinessRegistrationSerializer(data=business_data)
@@ -246,10 +263,12 @@ class CompleteOnboardingView(APIView):
                 setup_user_database(database_name, request.data, user)
 
                 # Mark the user as onboarded
+                logger.info(f"Setting up database for user: {user.email}")
                 user.is_onboarded = True
                 user.plan = selected_plan
                 user.billing_cycle = billing_cycle
                 user.save()
+                logger.info(f"Onboarding completed for user: {user.email}")
 
                 return Response({"message": "Onboarding completed successfully"}, status=status.HTTP_200_OK)
 
@@ -260,33 +279,68 @@ class CompleteOnboardingView(APIView):
 class SocialLoginView(APIView):
     permission_classes = [AllowAny]
 
+    @transaction.atomic
     def post(self, request):
+        logger.debug(f"Received social login request: {request.data}")
         serializer = SocialLoginSerializer(data=request.data)
         if serializer.is_valid():
+            logger.debug(f"Validating social login data: {serializer.validated_data}")
             provider = serializer.validated_data['provider']
             access_token = serializer.validated_data['access_token']
+            id_token = serializer.validated_data.get('id_token')
+            logger.debug(f"Retrieving user info for provider: {provider}")
 
+            logger.debug(f"Validating token for provider: {provider}")
             if provider == 'google':
-                user_info = self.validate_google_token(access_token)
+                user_info = self.validate_google_token(access_token, id_token)
                 if user_info:
-                    return self.get_or_create_user(user_info)
+                    logger.debug(f"User info retrieved: {user_info}")
+                    user = self.get_or_create_user(user_info)
+                    logger.debug(f"User created or retrieved: {user}")
+                    if user:
+                        refresh = RefreshToken.for_user(user)
+                        response_data = {
+                            'refresh': str(refresh),
+                            'access': str(refresh.access_token),
+                            'user_id': str(user.id),
+                            'email': user.email,
+                            'is_onboarded': user.is_onboarded
+                        }
+                        logger.info(f"Social login successful for user: {user.email}")
+                        return Response(response_data)
+                    else:
+                        logger.error("Failed to create or get user")
+                        return Response({'error': 'Failed to create or get user'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                else:
+                    logger.error("Failed to validate Google token")
+                    return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            logger.warning(f"Unsupported provider: {provider}")
             return Response({'error': 'Unsupported provider'}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({'error': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        logger.error(f"Invalid social login data: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def validate_google_token(self, access_token):
+    def validate_google_token(self, access_token, id_token):
+        logger.debug("Validating Google token")
         try:
             response = requests.get('https://www.googleapis.com/oauth2/v3/userinfo', 
                                     headers={'Authorization': f'Bearer {access_token}'})
             response.raise_for_status()
+            logger.debug(f"Google user info retrieved: {response.json()}")
             return response.json()
-        except requests.RequestException:
+        except requests.RequestException as e:
+            logger.error("Failed to validate Google token: %s", str(e))
             return None
 
+    @transaction.atomic
     def get_or_create_user(self, user_info):
         email = user_info.get('email')
+        logger.debug(f"Checking if user exists with email: {email}")
         if not email:
-            return Response({'error': 'Email not provided'}, status=status.HTTP_400_BAD_REQUEST)
-
+            logger.error("Email not provided in user_info")
+            return None
+        logger.debug(f"User not found, creating new user with email: {email}")
         user, created = User.objects.get_or_create(email=email)
         if created:
             user.first_name = user_info.get('given_name', '')
@@ -296,37 +350,33 @@ class SocialLoginView(APIView):
 
             # Create UserProfile for the new user
             UserProfile.objects.create(user=user)
+            logger.info(f"New user created: {email}")
 
-        refresh = RefreshToken.for_user(user)
-        return Response({
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-            'user_id': str(user.id),
-            'email': user.email,
-            'is_onboarded': user.is_onboarded
-        })
+        return user
         
         
-class TokenRefreshView(APIView):
+class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
-        refresh_token = request.COOKIES.get('refresh_token')
+        logger.debug("Handling custom token refresh request")
+        logger.debug(f"Received request data: {request.data}")
+        logger.debug("Checking if refresh token is provided")
+        refresh_token = request.data.get('refresh') or request.COOKIES.get('refresh_token')
         if not refresh_token:
-            return Response({'error': 'Refresh token not found'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            refresh = RefreshToken(refresh_token)
-            access = str(refresh.access_token)
-        except TokenError as e:
-            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-
-        response = Response({'access': access})
-        response.set_cookie(
-            'refresh_token',
-            str(refresh),
-            max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
-            httponly=True,
-            samesite='Strict',
-            secure=settings.REFRESH_TOKEN_SECURE
-        )
-
+            logger.warning("No refresh token provided.")
+            return Response({"detail": "No refresh token provided"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        request.data['refresh'] = refresh_token
+        response = super().post(request, *args, **kwargs)
+        logger.debug("Custom token refresh response: %s", response.data)
+        if response.status_code == 200 and 'refresh' in response.data:
+            response.set_cookie(
+                'refresh_token',
+                response.data['refresh'],
+                max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
+                httponly=True,
+                secure=settings.SIMPLE_JWT.get('AUTH_COOKIE_SECURE', True),
+                samesite=settings.SIMPLE_JWT.get('AUTH_COOKIE_SAMESITE', 'Lax'),
+                domain=settings.SIMPLE_JWT.get('AUTH_COOKIE_DOMAIN'),
+                path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/')
+            )
         return response

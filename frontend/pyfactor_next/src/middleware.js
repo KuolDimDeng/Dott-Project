@@ -1,22 +1,36 @@
-import { NextResponse } from 'next/server';
+import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
 
-export function middleware(request) {
-  console.log('Middleware executed for path:', request.nextUrl.pathname);
+export default withAuth(
+  function middleware(req) {
+    const { pathname } = req.nextUrl;
+    const token = req.nextauth.token;
+    console.log('Middleware:', { pathname, token });
+    console.log('Token:', token);
+    console.log('Pathname:', pathname);
+    console.log('Is authenticated:',!!token);
+    console.log('Is onboarded:',!!token?.isOnboarded);
+    console.log('-------------------------------------------');
+    console.log('-------------------------------------------');
 
-  // Skip middleware for Auth0 callback
-  if (request.nextUrl.pathname.startsWith('/api/auth')) {
+    if (!token && !pathname.startsWith('/auth/signin')) {
+      return NextResponse.redirect(new URL('/auth/signin', req.url));
+    }
+
+    if (token && !token.isOnboarded && !pathname.startsWith('/onboarding')) {
+      return NextResponse.redirect('/onboarding');
+    }
+    console.log('-------------------------------------------');
+
     return NextResponse.next();
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => !!token
+    },
   }
-
-  // Create a new response
-  const response = NextResponse.next();
-
-  // Set the cookie header
-  response.headers.set('Set-Cookie', 'SameSite=Lax; Secure; HttpOnly; Path=/');
-
-  return response;
-}
-
+);
+console.log('Middleware configured');
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/dashboard/:path*', '/onboarding/:path*', '/auth/:path*'],
 };
