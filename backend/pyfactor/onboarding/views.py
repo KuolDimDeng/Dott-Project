@@ -33,9 +33,12 @@ class GoogleTokenExchangeView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        logger.info("Google token exchange request")
-        logger.debug(f"Received request data: {request.data}")
+        logger.info("Received Google token exchange request")
         google_token = request.data.get('token')
+        if not google_token:
+            logger.error("Google token not provided")
+            return Response({'error': 'Token is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
         try:
             # Verify the Google token
             idinfo = id_token.verify_oauth2_token(
@@ -43,36 +46,50 @@ class GoogleTokenExchangeView(APIView):
                 requests.Request(), 
                 settings.GOOGLE_CLIENT_ID
             )
-            
-            # Get or create the user based on the Google info
+
+          # Prepare user data with conditional fields
+            user_data = {'email': idinfo['email']}
+            if 'given_name' in idinfo:
+                user_data['first_name'] = idinfo['given_name']
+            if 'family_name' in idinfo:
+                user_data['last_name'] = idinfo['family_name']
+
+            # Retrieve or create the user based on Google info
             user, created = User.objects.get_or_create(
                 email=idinfo['email'],
-                defaults={
-                    'first_name': idinfo.get('given_name', ''),
-                    'last_name': idinfo.get('family_name', ''),
-                }
+                defaults=user_data
             )
+            if created:
+                logger.info(f"New user created: {user.email}")
+            else:
+                logger.info(f"Existing user retrieved: {user.email}")
 
-            # Create or update OnboardingProgress
+            # Create or update OnboardingProgress with email consistency
             onboarding_progress, _ = OnboardingProgress.objects.update_or_create(
                 user=user,
-                email=user.email,
+                email=user.email,  # Ensure email matches user email
                 defaults={'onboarding_status': 'step1'}
             )
+            logger.info(f"Onboarding progress status: {onboarding_progress.onboarding_status}")
 
-            # Create tokens for your system
-            logger.info(f"User created or retrieved: {user.email}")
-            logger.info(f"Onboarding status: {onboarding_progress.onboarding_status}")
+            # Generate tokens for authentication
             refresh = RefreshToken.for_user(user)
+            access = refresh.access_token
+
             return Response({
                 'refresh': str(refresh),
-                'access': str(refresh.access_token),
+                'access': str(access),
                 'user_id': user.id,
                 'onboarding_status': onboarding_progress.onboarding_status,
-            })
+            }, status=status.HTTP_200_OK)
+        
         except ValueError as e:
             logger.error(f"Invalid Google token: {str(e)}")
-            return Response({'error': f'Invalid token: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            logger.error(f"Unexpected error during token exchange: {str(e)}")
+            return Response({'error': 'An unexpected error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class StartOnboardingView(APIView):
     permission_classes = [IsAuthenticated]
@@ -112,33 +129,41 @@ class CompleteOnboardingView(APIView):
     @transaction.atomic
     def post(self, request):
         logger.info("Complete onboarding request")
-        logger.debug(f"Received request data: {request.data}")
         onboarding = get_object_or_404(OnboardingProgress, email=request.user.email)
-        
-        # Update onboarding status to complete
-        onboarding.onboarding_status = 'complete'
-        onboarding.save()
-        
-        # Update user
+
+       # Update User model fields only if values are present
         user = request.user
-        user.first_name = onboarding.first_name
-        user.last_name = onboarding.last_name
+        if onboarding.first_name:
+            user.first_name = onboarding.first_name
+        if onboarding.last_name:
+            user.last_name = onboarding.last_name
+        user.is_onboarded = True  # Mark user as onboarded
         user.save()
 
-        # Create or update user profile
-        UserProfile.objects.update_or_create(user=user)
+        # Create or update UserProfile
+        UserProfile.objects.update_or_create(
+            user=user,
+            defaults={
+              
+                'country': onboarding.country,
+                'is_business_owner': True if onboarding.business_name else False,
+            }
+        )
 
-        # Create business
+        # Create a new Business record
         business = Business.objects.create(
             owner=user,
             name=onboarding.business_name,
             business_type=onboarding.business_type,
+  
             country=onboarding.country,
+          
+            email=user.email,
             legal_structure=onboarding.legal_structure,
-            date_founded=onboarding.date_founded
+            date_founded=onboarding.date_founded,
         )
 
-        # Create subscription
+        # Create Subscription record
         Subscription.objects.create(
             business=business,
             subscription_type=request.data.get('subscription_type', 'professional'),
@@ -147,20 +172,21 @@ class CompleteOnboardingView(APIView):
             is_active=True
         )
 
-        # Create dynamic database for user
+        # Set up the dynamic database for the user
+        logger.info(f"Creating database for {user.email}")
         database_name = create_user_database(user, business)
+        setup_user_database(database_name, user, business)
 
-        # Setup user database
-        setup_user_database(database_name, user)
-
-        # Delete the onboarding record
+        # Remove the onboarding record now that onboarding is complete
+        logger.info(f"Deleting onboarding record for {user.email}")
         onboarding.delete()
 
         return Response({"message": "Onboarding completed successfully"}, status=status.HTTP_200_OK)
+
     
     def get_authenticators(self):
-        authenticators = super().get_authenticators()
-        return [auth() for auth in authenticators]
+        return [JWTAuthentication()]
+
 
 class CleanupOnboardingView(APIView):
     permission_classes = [IsAuthenticated]
@@ -171,23 +197,49 @@ class CleanupOnboardingView(APIView):
         OnboardingProgress.objects.filter(created_at__lt=expiration_time).delete()
         return Response({"message": "Cleanup completed"}, status=status.HTTP_200_OK)
     
+# Retrieve onboarding status
 class OnboardingStatusView(APIView):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
 
     def get(self, request):
+        logger.info(f"Fetching onboarding status for user: {request.user.email}")
         try:
             onboarding_progress = OnboardingProgress.objects.get(user=request.user)
+            logger.info(f"Onboarding progress found: {onboarding_progress.onboarding_status}")
+
+            # Check if the user has a business
+            if Business.objects.filter(owner=request.user).exists():
+                onboarding_progress.onboarding_status = 'complete'
+                onboarding_progress.current_step = 0  # Indicate completion with an integer
+                onboarding_progress.save()
+                logger.info("User has a business, setting onboarding status to complete")
+
             return Response({
                 'onboarding_status': onboarding_progress.onboarding_status,
                 'current_step': onboarding_progress.current_step
             })
+
         except OnboardingProgress.DoesNotExist:
+            logger.info(f"No onboarding progress found for user: {request.user.email}")
+            
+            # Check if the user has a business
+            if Business.objects.filter(owner=request.user).exists():
+                logger.info("User has a business but no onboarding progress, creating complete status")
+                OnboardingProgress.objects.create(
+                    user=request.user,
+                    onboarding_status='complete',
+                    current_step=0  # Use an integer to mark completion
+                )
+                return Response({
+                    'onboarding_status': 'complete',
+                    'current_step': 0
+                })
+
             return Response({
                 'onboarding_status': 'step1',
                 'current_step': 1
             })
-        
+
 @shared_task
 def cleanup_expired_onboarding():
     expired_time = timezone.now() - timezone.timedelta(hours=5)

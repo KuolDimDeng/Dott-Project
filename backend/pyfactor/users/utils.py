@@ -117,6 +117,7 @@ def create_user_database(user, business):
     database_name = f"{business_name}_{timestamp}"
     logger.info(f"Creating user database: {database_name}")
 
+    # Ensure the database is created and configured correctly
     try:
         logger.info("Connecting to default database...")
         conn = psycopg2.connect(
@@ -127,10 +128,8 @@ def create_user_database(user, business):
             port=settings.DATABASES['default']['PORT']
         )
         conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-        logger.info("Connected to default database.")
 
         with conn.cursor() as cursor:
-            logger.info(f"Creating new database: {database_name}")
             cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database_name)))
             logger.info(f"User Database created: {database_name}")
 
@@ -141,25 +140,26 @@ def create_user_database(user, business):
         logger.error(f"Error creating database: {error}")
         raise
 
-    logger.info("Updating database configuration...")
-    if database_name not in settings.DATABASES:
-        settings.DATABASES[database_name] = {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': database_name,
-            'USER': settings.DATABASES['default']['USER'],
-            'PASSWORD': settings.DATABASES['default']['PASSWORD'],
-            'HOST': settings.DATABASES['default']['HOST'],
-            'PORT': settings.DATABASES['default']['PORT'],
-            'OPTIONS': {'connect_timeout': 10},
-            'ATOMIC_REQUESTS': False,
-            'CONN_HEALTH_CHECKS': True,
-            'CONN_MAX_AGE': 600,
-            'TIME_ZONE': 'UTC',
-            'AUTOCOMMIT': True,
-        }
-    logger.info("Database configuration updated.")
-    
+    # Update settings with the new database configuration
+    settings.DATABASES[database_name] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': database_name,
+        'USER': settings.DATABASES['default']['USER'],
+        'PASSWORD': settings.DATABASES['default']['PASSWORD'],
+        'HOST': settings.DATABASES['default']['HOST'],
+        'PORT': settings.DATABASES['default']['PORT'],
+        'OPTIONS': {'connect_timeout': 10},
+        'ATOMIC_REQUESTS': False,
+        'CONN_HEALTH_CHECKS': True,
+        'CONN_MAX_AGE': 600,
+        'TIME_ZONE': 'UTC',
+        'AUTOCOMMIT': True,
+    }
+
+    # Add database to active connections
     connections.databases[database_name] = settings.DATABASES[database_name]
+    logger.info(f"Database configuration updated and active for: {database_name}")
+
 
     logger.info(f"Initial database setup completed for: {database_name}")
     return database_name

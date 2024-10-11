@@ -57,7 +57,7 @@ const OnboardingStep2 = () => {
         billingCycle: billingCycle
       };
       await completeOnboarding(subscriptionData);
-      router.push('/dashboard');
+      router.push('/onboarding/complete');
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
     }
@@ -81,7 +81,6 @@ const OnboardingStep2 = () => {
     },
   ];
 
-  if (status === "loading" || loading) return <CircularProgress />;
   if (!session) return <Typography>Please sign in to access onboarding.</Typography>;
 
   return (

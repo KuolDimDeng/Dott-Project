@@ -130,23 +130,18 @@ class Command(BaseCommand):
             with psycopg2.connect(**conn_details) as conn:
                 conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
                 with conn.cursor() as cur:
-                    # Get the current user
-                    cur.execute("SELECT current_user;")
-                    current_user = cur.fetchone()[0]
-
-                    # Get all databases owned by the current user
-                    cur.execute(f"""
+                    # Get all databases owned by the current user, excluding default ones
+                    cur.execute("""
                         SELECT datname FROM pg_database 
                         WHERE datistemplate = false 
-                        AND datname != 'postgres'
-                        AND (SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname = pg_database.datname) = %s;
-                    """, (current_user,))
+                        AND datname NOT IN ('postgres', 'template0', 'template1', 'rdsadmin');
+                    """)
                     databases = cur.fetchall()
 
                     for db in databases:
                         db_name = db[0]
                         try:
-                            # Terminate existing connections
+                            # Terminate existing connections to the database
                             cur.execute(f"""
                                 SELECT pg_terminate_backend(pid)
                                 FROM pg_stat_activity
@@ -169,6 +164,7 @@ class Command(BaseCommand):
             logger.error(f"Error in drop_all_user_databases: {e}")
         
         return database_status
+
 
     def recreate_main_database(self, conn_details):
         try:

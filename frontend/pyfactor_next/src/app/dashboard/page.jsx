@@ -2,44 +2,60 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import DashboardContent from './DashboardContent';
+import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { checkOnboardingStatus } = useOnboarding();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     console.log('Dashboard: Session status:', status);
     console.log('Dashboard: Session data:', session);
 
-    if (status === 'loading') {
-      // While loading, do not do anything yet
-      return;
-    }
-
-    if (status === 'unauthenticated') {
-      console.log('Dashboard: User is unauthenticated, redirecting to signin');
-      router.push('/auth/signin');
-    } else if (status === 'authenticated') {
-      const onboardingStatus = session?.user?.onboardingStatus;
-      console.log('Dashboard: Onboarding status:', onboardingStatus);
-
-      // If onboarding is not complete, redirect to onboarding page
-      if (onboardingStatus !== 'complete') {
-        console.log('Dashboard: Onboarding not complete, redirecting to onboarding page');
-        router.push(`/onboarding/${onboardingStatus || 'step1'}`); // Redirect to the first step or current step of onboarding
+    const checkStatus = async () => {
+      if (status === 'loading') {
+        return;
       }
-    }
-  }, [session, status, router]);
 
-  // While loading, show a loading indicator
-  if (status === 'loading') return <div>Loading...</div>;
+      if (status === 'unauthenticated') {
+        console.log('Dashboard: User is unauthenticated, redirecting to signin');
+        router.push('/auth/signin');
+        return;
+      }
 
-  // Prevent rendering dashboard content if onboarding is not complete
-  if (!session || (session?.user?.onboardingStatus !== 'complete')) {
+      if (status === 'authenticated') {
+        try {
+          const onboardingResponse = await checkOnboardingStatus();
+          console.log('Dashboard: Onboarding status from backend:', onboardingResponse);
+
+          if (onboardingResponse.onboarding_status !== 'complete') {
+            console.log('Dashboard: Onboarding not complete, redirecting to onboarding page');
+            router.push(`/onboarding/${onboardingResponse.onboarding_status}`);
+          } else {
+            console.log('Dashboard: Onboarding complete, staying on dashboard');
+            setIsLoading(false);
+          }
+        } catch (error) {
+          console.error('Error checking onboarding status:', error);
+          // Handle error (e.g., show error message)
+        }
+      }
+    };
+
+    checkStatus();
+  }, [session, status, router, checkOnboardingStatus]);
+
+  if (status === 'loading' || isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!session || status !== 'authenticated') {
     console.log('Dashboard: User is not allowed to access this page.');
-    return null; // Return null to not render anything
+    return null;
   }
 
   console.log('Dashboard: Rendering dashboard content');

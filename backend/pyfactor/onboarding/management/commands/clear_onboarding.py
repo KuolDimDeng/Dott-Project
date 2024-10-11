@@ -67,10 +67,19 @@ class Command(BaseCommand):
         self.stdout.write("Cleared all user data")
 
     def delete_user_related_data(self, user):
+        # Clear OnboardingProgress
         OnboardingProgress.objects.filter(user_id=user.id).delete()
+        
+        # Clear UserProfile
         UserProfile.objects.filter(user=user).delete()
+
+        # Retrieve and clear related Business, Subscription, and Account data
         businesses = Business.objects.filter(owner=user)
         for business in businesses:
+            # Clear related Subscription data
             Subscription.objects.filter(business=business).delete()
+
+            # Clear Account data where Account has a `business` foreign key
             Account.objects.filter(business=business).delete()
-        businesses.delete()
+
+        businesses.delete()  # Delete businesses after associated data is cleared

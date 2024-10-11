@@ -4,6 +4,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
+from business.models import Business
 from banking.models import BankAccount, BankTransaction
 
 from purchases.models import Bill
@@ -44,6 +45,8 @@ class Account(models.Model):
         ('Cash', 'Cash'),
     ]
     account_number = models.CharField(max_length=20, null=True)
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="accounts", null=True)
+
     name = models.CharField(max_length=100)
     account_type = models.ForeignKey(AccountType, on_delete=models.CASCADE, related_name='accounts')
     objects = AccountManager()

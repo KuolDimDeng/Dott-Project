@@ -129,13 +129,15 @@ class ProfileView(APIView):
     authentication_classes = [JWTAuthentication]
 
     def get(self, request, *args, **kwargs):
-        logger.debug("ProfileView: Received request data: %s", request.data)
+        logger.debug("ProfileView: Received request to retrieve user profile.")
         try:
             user_profile = UserProfile.objects.get(user=request.user)
+            logger.info("User profile found for user %s", request.user)
+
             business_data = None
-            logger.info("Retrieving user profile for user %s", request.user)
             try:
-                business = user_profile.business
+                business = Business.objects.get(owner=request.user)
+                logger.info("Business information retrieved for user %s", request.user)
                 business_data = {
                     'id': str(business.id),
                     'name': business.name,
@@ -154,12 +156,16 @@ class ProfileView(APIView):
             profile_data = UserProfileSerializer(user_profile).data
             profile_data['business'] = business_data
             profile_data['is_onboarded'] = request.user.is_onboarded
-            logger.info("Retrieved user profile for user %s", request.user)
-            return JsonResponse(profile_data)
+            profile_data['country'] = str(user_profile.country)  # Convert Country field in profile to string
+
+            logger.info("Successfully retrieved profile data for user %s", request.user)
+
+            return JsonResponse(profile_data, status=status.HTTP_200_OK)
 
         except UserProfile.DoesNotExist:
-            logger.error("UserProfile not found for user: %s", request.user)
-            return JsonResponse({'error': 'Failed to retrieve user profile.'}, status=status.HTTP_404_NOT_FOUND)
+            logger.error("UserProfile not found for user %s", request.user)
+            return JsonResponse({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
         except Exception as e:
             logger.exception("Unexpected error in ProfileView: %s", str(e))
             return JsonResponse({"error": "An unexpected error occurred"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
