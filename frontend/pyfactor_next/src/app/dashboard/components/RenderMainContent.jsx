@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Paper, Grid, Button, Tabs, Tab } from '@mui/material';
 import CustomerList from './lists/CustomerList.js';
 import InvoiceTemplateBuilder from './forms/InvoiceTemplateBuilder.jsx';
-import TransactionForm from '../../CreateNew/forms/TransactionForm.jsx';
+import TransactionForm from '../../createNew/forms/TransactionForm.jsx';
 import TransactionList from './lists/TransactionList.jsx';
 import ReportDisplay from './forms/ReportDisplay.jsx';
 import BankingDashboard from './forms/BankingDashboard.jsx';

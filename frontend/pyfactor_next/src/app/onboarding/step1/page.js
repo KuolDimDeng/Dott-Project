@@ -1,156 +1,17 @@
 'use client';
 
-///Users/kuoldeng/projectx/frontend/pyfactor_next/pages/onboardingStep1.jsx
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { TextField, Select, MenuItem, FormControl, InputLabel, Typography, Button, Container, Grid, Paper, Box } from '@mui/material';
+import { TextField, Select, MenuItem, FormControl, InputLabel, Typography, Button, Container, Grid, Paper, Box, CircularProgress } from '@mui/material';
 import Image from 'next/image';
 import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
-
-
-
-
-
-// Import country list (you'll need to provide this)
 import { countries, defaultCountry } from '@/app/countryList/page';
-
-const businessTypes = [
-  "Accounting and Bookkeeping",
-  "Administration and Office Services",
-  "Adventure Tourism and Tour Guides",
-  "Advertising and Marketing",
-  "Agribusiness and Agricultural Consulting",
-  "Agricultural Machinery",
-  "Agriculture and Farming",
-  "Air Conditioning and HVAC Services",
-  "AI, Machine Learning, and Data Science Services",
-  "Animal and Pet Services",
-  "Apparel and Clothing",
-  "Architecture and Design",
-  "Arts and Crafts",
-  "Automotive, Leasing, and Repair",
-  "Babysitting and Childcare Services",
-  "Banking and Finance",
-  "Barbershops, Hair Salons, and Beauty Services",
-  "Beverage and Food Services",
-  "Biotechnology and Pharmaceuticals",
-  "Blockchain, Cryptocurrencies, and Exchanges",
-  "Broadcasting, Media, and Video Streaming",
-  "Business Consulting and Advisory Services",
-  "Catering and Food Trucks",
-  "Cleaning Services",
-  "Cloud Computing and IT Services",
-  "Construction and Contracting",
-  "Craft Beverages (Breweries, Distilleries)",
-  "Creative Services (Design, Graphic Design)",
-  "Cultural Heritage and Preservation",
-  "Cybersecurity and Risk Management",
-  "Data Analysis and Business Intelligence",
-  "Dairy and Livestock Farming",
-  "Digital Marketing and Online Services",
-  "DJ, Music, and Entertainment Services",
-  "Distribution, Freight Forwarding, and Logistics",
-  "Drone and Aerial Services",
-  "E-commerce and Retail",
-  "Education and Tutoring",
-  "Electronics and IT Equipment",
-  "Energy Auditing and Sustainability Consulting",
-  "Engineering and Technical Services",
-  "Event Planning, Rentals, and Technology",
-  "Export and Import Trade",
-  "Fashion and Apparel",
-  "Film, Television, and Media Production",
-  "Financial Planning and Investment Services",
-  "Fishing and Aquaculture",
-  "Fitness and Personal Training",
-  "Floristry and Gardening",
-  "Forestry and Natural Resource Management",
-  "Franchising and Licensing",
-  "Freelance Platforms and Gig Economy",
-  "Fundraising and Non-Profit Services",
-  "Furniture and Home Decor",
-  "Green Building, Renewable Energy, and Solar",
-  "Healthcare and Medical Services",
-  "Home Improvement and Renovation",
-  "Hospitality, Hotels, and Vacation Rentals",
-  "Human Resources and Recruitment",
-  "Hydroelectric and Wind Energy",
-  "Industrial Services and Manufacturing",
-  "Insurance and Risk Management",
-  "Interior Design and Architecture",
-  "International Trade and Export",
-  "IT Consulting and Services",
-  "Jewelry and Watchmaking",
-  "Journalism and Reporting",
-  "Landscaping and Lawn Care",
-  "Law and Legal Services",
-  "Leisure, Recreation, and Sports",
-  "Logistics and Supply Chain Management",
-  "Manufacturing and Production",
-  "Media and Entertainment",
-  "Medical Equipment and Devices",
-  "Microfinance and Small Business Lending",
-  "Mining and Resource Extraction",
-  "Mobile Services and Telecommunications",
-  "Music Production and DJ Services",
-  "Natural Resource Extraction and Mining",
-  "Non-Profit and Charitable Organizations",
-  "Oil, Gas, and Petroleum Refining",
-  "On-Demand and Gig Economy (Uber, Lyft)",
-  "Packaging and Distribution Services",
-  "Personal Services (Babysitting, Caregiving)",
-  "Petroleum, Gas, and Energy Services",
-  "Photography and Videography",
-  "Printing, Publishing, and Copy Services",
-  "Private Investigation and Security Services",
-  "Property Development and Management",
-  "Public Relations and Communications",
-  "Public Sector and Government Services",
-  "Public Transportation and Taxi Services",
-  "Real Estate and Property Management",
-  "Renewable Energy and Green Tech",
-  "Research and Development (R&D)",
-  "Restaurants, Cafes, and Food Services",
-  "Retail and Consumer Goods",
-  "Security and Alarm Services",
-  "Shipping, Maritime, and Port Services",
-  "Software Development and IT Services",
-  "Solar Energy and Installation",
-  "Sports Coaching and Training",
-  "Street Vendors and Micro-Enterprises",
-  "Sustainability Consulting and Green Energy",
-  "Telecommunications and Mobile Services",
-  "Textile Manufacturing and Apparel",
-  "Tourism, Travel Agencies, and Adventure Travel",
-  "Transportation, Trucking, and Freight",
-  "Utilities and Public Services",
-  "Vehicle Rental and Leasing",
-  "Veterinary and Pet Services",
-  "Virtual Assistant and Administrative Services",
-  "Waste Management and Recycling",
-  "Web Development and Design Services",
-  "Wellness and Spa Services",
-  "Wholesale and Distribution",
-  "Writing, Editing, and Content Creation",
-  "Youth Services and Education",
-  "Zoological Services, Botanical Gardens, and Consultancy"
-];
-
-
-const legalStructures = [
-"Sole Proprietorship",
-"General Partnership (GP)",
-"Limited Partnership (LP)",
-"Limited Liability Company (LLC)",
-"Corporation (Inc., Corp.)",
-"Non-Profit Organization (NPO)",
-"Joint Venture (JV)",
-"Holding Company",
-"Branch Office",
-"Representative Office",
-];
+import { businessTypes, legalStructures } from '@/app/utils/businessData';
+import { useForm, Controller } from 'react-hook-form';
+import * as yup from 'yup';
+import { yupResolver } from '@hookform/resolvers/yup';
 
 const theme = createTheme({
   palette: {
@@ -160,156 +21,247 @@ const theme = createTheme({
   },
 });
 
-const initialFormData = {
-  firstName: '',
-  lastName: '',
-  businessName: '',
-  industry: '',
-  country: defaultCountry.code,
-  legalStructure: '',
-  dateFounded: '',
-};
+const schema = yup.object().shape({
+  firstName: yup.string().required('First name is required'),
+  lastName: yup.string().required('Last name is required'),
+  businessName: yup.string().required('Business name is required'),
+  industry: yup.string().required('Industry is required'),
+  country: yup.string().required('Country is required'),
+  legalStructure: yup.string().required('Legal structure is required'),
+  dateFounded: yup.date().required('Date founded is required').max(new Date(), 'Date cannot be in the future'),
+});
 
 const OnboardingStep1 = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { formData, updateFormData, goToNextStep } = useOnboarding();
+  const { formData, updateFormData, goToNextStep, initiateOnboarding, loading, error } = useOnboarding();
+  const { control, handleSubmit, formState: { errors } } = useForm({
+    resolver: yupResolver(schema),
+    defaultValues: {
+      ...formData,
+      country: formData.country || '',
+      legalStructure: formData.legalStructure || '',
+      first_name: formData.firstName || '',
+      last_name: formData.lastName || '',
+      business_name: formData.businessName || '',
+     industry: formData.industry || '',
+      date_founded: formData.dateFounded || new Date(),
+    },
+  });
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin'); // Updated redirect to new sign-in location
+  const onSubmit = async (data) => {
+    try {
+      const onboardingData = {
+        first_name: data.firstName,
+        last_name: data.lastName,
+        business_name: data.businessName,
+        business_type: data.industry,
+        country: data.country,
+        legal_structure: data.legalStructure,
+        date_founded: data.dateFounded,
+      };
+      await initiateOnboarding(onboardingData);
+      updateFormData(data);
+      goToNextStep();
+    } catch (error) {
+      console.error('Error during onboarding:', error);
     }
-  }, [status, router]);
-
-  useEffect(() => {
-    if (!formData || Object.keys(formData).length === 0) {
-      console.log('No form data found, initializing with default values');
-      console.log('initialFormData:', initialFormData);
-      console.log('Updating form data with initial values');
-      console.log('formData:', formData);
-      updateFormData(initialFormData);
-    }
-  }, [formData, updateFormData]);
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    updateFormData({ [name]: value });
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    console.log('Form submitted:', formData);
-    goToNextStep();
-  };
-
-  if (status === 'loading') return <div>Loading...</div>;
-  if (status === 'unauthenticated') return null;
-
+  if (!session) return <Typography>Please sign in to access onboarding.</Typography>;
 
 
   return (
     <ThemeProvider theme={theme}>
-      <Grid container component="main" sx={{ height: '100vh' }}>
-        <Grid item xs={12} sm={8} md={6} component={Paper} elevation={6} square>
-          <Box sx={{ my: 8, mx: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Image src="/static/images/Pyfactor.png" alt="Pyfactor Logo" width={150} height={50} priority />
-            <Typography variant="h6" color="primary" gutterBottom>STEP 1 OF 2</Typography>
-            <Typography component="h2" variant="h5" gutterBottom>Welcome to Dott!</Typography>
-            <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 3 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField fullWidth label="First Name" name="firstName" value={formData.firstName || ''} onChange={handleChange} required variant="outlined" />
+      <Grid container component="main" sx={{ height: '100vh', overflow: 'hidden' }}>
+        <Grid item xs={12} sm={6} component={Paper} elevation={6} square sx={{ height: '100vh', overflow: 'auto' }}>
+          <Container component="main" maxWidth="sm">
+            <Box sx={{ my: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Image src="/static/images/Pyfactor.png" alt="Pyfactor Logo" width={150} height={50} priority />
+              <Typography variant="h6" color="primary" gutterBottom>STEP 1 OF 2</Typography>
+              <Typography component="h2" variant="h5" gutterBottom>Welcome to Dott!</Typography>
+              {error && <Typography color="error">{error}</Typography>}
+              <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 3, width: '100%' }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Controller
+                      name="firstName"
+                      control={control}
+                      render={({ field: { onChange, value, ...restField } }) => (
+                        <TextField
+                          {...restField}
+                          onChange={onChange}
+                          value={value || ''}
+                          fullWidth
+                          label="First Name"
+                          error={!!errors.firstName}
+                          helperText={errors.firstName?.message}
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Controller
+                      name="lastName"
+                      control={control}
+                      render={({ field: { onChange, value, ...restField } }) => (
+                        <TextField
+                          {...restField}
+                          onChange={onChange}
+                          value={value || ''}
+                          fullWidth
+                          label="Last Name"
+                          error={!!errors.lastName}
+                          helperText={errors.lastName?.message}
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Controller
+                      name="businessName"
+                      control={control}
+                      render={({ field: { onChange, value, ...restField } }) => (
+                        <TextField
+                          {...restField}
+                          onChange={onChange}
+                          value={value || ''}
+                          fullWidth
+                          label="What's your business name?"
+                          error={!!errors.businessName}
+                          helperText={errors.businessName?.message}
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Controller
+                      name="industry"
+                      control={control}
+                      render={({ field: { onChange, value, ...restField } }) => (
+                        <FormControl fullWidth error={!!errors.industry}>
+                          <InputLabel>Select your industry</InputLabel>
+                          <Select
+                            {...restField}
+                            onChange={onChange}
+                            value={value || ''}
+                            label="Select your industry"
+                          >
+                            <MenuItem value="" disabled>Select an industry</MenuItem>
+                            {businessTypes.map((type) => (
+                              <MenuItem key={type} value={type}>{type}</MenuItem>
+                            ))}
+                          </Select>
+                          {errors.industry && <Typography color="error">{errors.industry.message}</Typography>}
+                        </FormControl>
+                      )}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Controller
+                      name="country"
+                      control={control}
+                      render={({ field: { onChange, value, ...restField } }) => (
+                        <FormControl fullWidth error={!!errors.country}>
+                          <InputLabel>Where is your business located?</InputLabel>
+                          <Select
+                            {...restField}
+                            onChange={onChange}
+                            value={value || ''}
+                            label="Where is your business located?"
+                          >
+                            <MenuItem value="" disabled>Select a country</MenuItem>
+                            {countries.map((country) => (
+                              <MenuItem key={country.code} value={country.code}>{country.name}</MenuItem>
+                            ))}
+                          </Select>
+                          {errors.country && <Typography color="error">{errors.country.message}</Typography>}
+                        </FormControl>
+                      )}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Controller
+                      name="legalStructure"
+                      control={control}
+                      render={({ field: { onChange, value, ...restField } }) => (
+                        <FormControl fullWidth error={!!errors.legalStructure}>
+                          <InputLabel>What is the legal structure of your business?</InputLabel>
+                          <Select
+                            {...restField}
+                            onChange={onChange}
+                            value={value || ''}
+                            label="Legal Structure"
+                          >
+                            <MenuItem value="" disabled>Select a legal structure</MenuItem>
+                            {legalStructures.map((structure) => (
+                              <MenuItem key={structure} value={structure}>{structure}</MenuItem>
+                            ))}
+                          </Select>
+                          {errors.legalStructure && <Typography color="error">{errors.legalStructure.message}</Typography>}
+                        </FormControl>
+                      )}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Controller
+                      name="dateFounded"
+                      control={control}
+                      render={({ field: { onChange, value, ...restField } }) => (
+                        <TextField
+                          {...restField}
+                          onChange={onChange}
+                          value={value || ''}
+                          fullWidth
+                          label="When was your business founded?"
+                          type="date"
+                          InputLabelProps={{ shrink: true }}
+                          error={!!errors.dateFounded}
+                          helperText={errors.dateFounded?.message}
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Button type="submit" variant="contained" color="primary" fullWidth disabled={loading}>
+                      {loading ? <CircularProgress size={24} /> : 'Next'}
+                    </Button>
+                  </Grid>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField fullWidth label="Last Name" name="lastName" value={formData.lastName || ''} onChange={handleChange} required variant="outlined" />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField fullWidth label="What's your business name?" name="businessName" value={formData.businessName || ''} onChange={handleChange} required variant="outlined" />
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControl fullWidth required variant="outlined">
-                    <InputLabel>Select your industry</InputLabel>
-                    <Select name="industry" value={formData.industry || ''} onChange={handleChange} label="Select your industry">
-                      {businessTypes.map((type) => (
-                        <MenuItem key={type} value={type}>{type}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControl fullWidth required variant="outlined">
-                    <InputLabel>Where is your business located?</InputLabel>
-                    <Select name="country" value={formData.country || ''} onChange={handleChange} label="Where is your business located?">
-                      {countries.map((country) => (
-                        <MenuItem key={country.code} value={country.code}>{country.name}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControl fullWidth required variant="outlined">
-                    <InputLabel>What is the legal structure of your business?</InputLabel>
-                    <Select name="legalStructure" value={formData.legalStructure || ''} onChange={handleChange} label="Legal Structure">
-                      {legalStructures.map((structure) => (
-                        <MenuItem key={structure} value={structure}>{structure}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField fullWidth label="When was your business founded?" name="dateFounded" type="date" value={formData.dateFounded || ''} onChange={handleChange} InputLabelProps={{ shrink: true }} inputProps={{ max: new Date().toISOString().split('T')[0] }} required variant="outlined" />
-                </Grid>
-                <Grid item xs={12}>
-                  <Button type="submit" variant="contained" color="primary" fullWidth>Next</Button>
-                </Grid>
-              </Grid>
+              </Box>
             </Box>
-          </Box>
+          </Container>
         </Grid>
-
-        {/* Right side - Image and Text */}
         <Grid
           item
-          xs={false}
-          sm={4}
-          md={6}
+          xs={12}
+          sm={6}
           sx={{
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: '#e3f2fd', // Light blue background
-            p: 4, // Add padding to the container
+            backgroundColor: '#e3f2fd',
+            p: 4,
+            height: '100vh',
           }}
         >
-          <Box
-            sx={{
-              width: '100%',
-              mb: 4, // Margin bottom to separate text from image
-            }}
-          >
-            <Typography variant="h5" sx={{ fontWeight: "bold", color: 'black', mb: 2 }}>
-              Start Your Business Journey
+          <Box sx={{ width: '100%', mb: 4 }}>
+            <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'black', mb: 2 }}>
+              Boost Your Productivity
             </Typography>
-
-            <ul style={{ listStyleType: 'none', padding: 0, color: "black"}}>
-              <li>✅ <strong>Easy setup</strong> - Get started in minutes.</li>
-              <li>✅ <strong>Tailored solutions</strong> - Customized for your business needs.</li>
-              <li>✅ <strong>Expert support</strong> - We're here to help you succeed.</li>
+            <ul style={{ listStyleType: 'none', padding: 0, color: 'black' }}>
+              <li>✅ <strong>Streamline your workflow</strong> with our intuitive tools.</li>
+              <li>✅ <strong>Track your progress</strong> and achieve your goals faster.</li>
+              <li>✅ <strong>Collaborate seamlessly</strong> with your team members.</li>
             </ul>
           </Box>
-          <Box
-            sx={{
-              width: '80%',
-              height: '50%', // Reduced height to accommodate the text
-              position: 'relative',
-            }}
-          >
+          <Box sx={{ width: '80%', height: '50%', position: 'relative' }}>
             <Image
-              src="/static/images/Office-Working-1--Streamline-Brooklyn.png"
-              alt="Product Launch Illustration"
-              width={350}
-              height={350}
+              src="/static/images/Being-Productive-3--Streamline-Brooklyn.png"
+              alt="Productive workspace"
+              layout="fill"
+              objectFit="contain"
               priority
             />
           </Box>
@@ -317,6 +269,6 @@ const OnboardingStep1 = () => {
       </Grid>
     </ThemeProvider>
   );
-};
+}
 
-export default OnboardingStep1;
+  export default OnboardingStep1;

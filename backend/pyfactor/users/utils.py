@@ -111,9 +111,9 @@ def initial_user_registration(user_data):
         logger.error(f"Error in initial user registration: {str(e)}")
         raise
 
-def create_user_database(user, business_data):
+def create_user_database(user, business):
     timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
-    business_name = business_data['name'].lower().replace(' ', '_').replace('.', '')
+    business_name = business.name.lower().replace(' ', '_').replace('.', '')
     database_name = f"{business_name}_{timestamp}"
     logger.info(f"Creating user database: {database_name}")
 
@@ -164,7 +164,8 @@ def create_user_database(user, business_data):
     logger.info(f"Initial database setup completed for: {database_name}")
     return database_name
 
-def setup_user_database(database_name, user_data, user):
+
+def setup_user_database(database_name, user, business):
     try:
         logger.debug(f"Starting setup_user_database for: {database_name}")
         
@@ -172,7 +173,7 @@ def setup_user_database(database_name, user_data, user):
         logger.info(f"Running migrations for database: {database_name}")
         call_command('migrate', database=database_name)
         
-          # Apply chatbot migrations specifically
+        # Apply chatbot migrations specifically
         call_command('migrate', 'chatbot', database=database_name)
 
         with transaction.atomic(using=database_name):
@@ -191,7 +192,6 @@ def setup_user_database(database_name, user_data, user):
             logger.info(f"Creating and populating Chart of Accounts for database: {database_name}")
             create_and_populate_chart_of_accounts(database_name)
 
-            
             # Fetch the Cash account type
             logger.info(f"Fetching the Cash account type for database: {database_name}")
             try:
@@ -234,11 +234,9 @@ def setup_user_database(database_name, user_data, user):
         user_profile = UserProfile.objects.get(user=user)
         user_profile.database_name = database_name
         user_profile.save()
-        
 
         # Generate financial statements after the initial setup
         try:
-            # Generate financial statements
             logger.info(f"Generating financial statements for database: {database_name}")
             generate_financial_statements(database_name)
             logger.info(f"Financial statements generated successfully for database: {database_name}")
@@ -246,12 +244,6 @@ def setup_user_database(database_name, user_data, user):
             logger.error(f"Error generating financial statements for {database_name}: {str(e)}")
             logger.error(f"Traceback:\n{traceback.format_exc()}")
             raise
-                
-                # Generate financial statements
-        logger.info(f"Generating financial statements for database: {database_name}")
-        generate_financial_statements(database_name)
-
-
 
         logger.info(f"Database {database_name} setup completed successfully")
         return database_name

@@ -285,7 +285,7 @@ export default function SignInEmail() {
   
                 <Grid container justifyContent="flex-end">
                   <Grid item>
-                    <Link href="/login" passHref>
+                    <Link href="/auth/signin" passHref>
                       <Typography
                         variant="body2"
                         sx={{

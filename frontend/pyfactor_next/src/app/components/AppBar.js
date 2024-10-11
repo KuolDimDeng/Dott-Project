@@ -14,7 +14,6 @@ import {
   Container, 
   Button, 
   MenuItem, 
-  CircularProgress
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import Image from 'next/image';
@@ -72,6 +71,50 @@ function AppAppBar() {
     router.push('/');
   };
 
+  const handleNavigation = (path) => {
+    router.push(path);
+  };
+
+  const renderAuthButtons = () => {
+    if (status === 'authenticated') {
+      return (
+        <>
+          <Button
+            variant="contained"
+            onClick={() => handleNavigation(session.user.isOnboarded ? '/dashboard' : '/onboarding')}
+            sx={{
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            {session.user.isOnboarded ? 'Your Account' : 'Complete Onboarding'}
+          </Button>
+          <Button
+            variant="text"
+            onClick={handleLogout}
+            sx={{
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            Log Out
+          </Button>
+        </>
+      );
+    } else if (status === 'unauthenticated') {
+      return (
+        <Button
+          variant="contained"
+          onClick={() => handleNavigation('/auth/signin')}
+          sx={{
+            fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          Sign In / Sign Up
+        </Button>
+      );
+    }
+    return null; // Return null when status is 'loading'
+  };
+
   return (
     <AppBar position="fixed" sx={{ bgcolor: 'white', boxShadow: 1 }}>
       <Container maxWidth="lg">
@@ -99,8 +142,7 @@ function AppAppBar() {
               page.href ? (
                 <Button
                   key={page.label}
-                  component={Link}
-                  href={page.href}
+                  onClick={() => handleNavigation(page.href)}
                   sx={{
                     mx: 1,
                     color: 'text.primary',
@@ -132,42 +174,7 @@ function AppAppBar() {
           </Box>
 
           <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
-            {status === 'loading' ? (
-              <CircularProgress size={24} />
-            ) : status === 'authenticated' ? (
-              <>
-                <Button
-                  variant="contained"
-                  component={Link}
-                  href="/dashboard"
-                  sx={{
-                    fontFamily: 'Inter, sans-serif',
-                  }}
-                >
-                  Your Account
-                </Button>
-                <Button
-                  variant="text"
-                  onClick={handleLogout}
-                  sx={{
-                    fontFamily: 'Inter, sans-serif',
-                  }}
-                >
-                  Log Out
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="contained"
-                component={Link}
-                href="/auth/signin"
-                sx={{
-                  fontFamily: 'Inter, sans-serif',
-                }}
-              >
-                Sign In / Sign Up
-              </Button>
-            )}
+            {renderAuthButtons()}
           </Box>
 
           <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
@@ -205,7 +212,7 @@ function AppAppBar() {
                   onClick={() => {
                     handleCloseNavMenu();
                     if (page.href) {
-                      router.push(page.href);
+                      handleNavigation(page.href);
                     } else {
                       scrollToSection(page.sectionId);
                     }
@@ -216,52 +223,7 @@ function AppAppBar() {
                   </Typography>
                 </MenuItem>
               ))}
-              {status === 'loading' ? (
-                <CircularProgress size={24} />
-              ) : status === 'authenticated' ? (
-                <>
-                  <MenuItem>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      component={Link}
-                      href="/dashboard"
-                      sx={{
-                        fontFamily: 'Inter, sans-serif',
-                      }}
-                    >
-                      Your Account
-                    </Button>
-                  </MenuItem>
-                  <MenuItem>
-                    <Button
-                      fullWidth
-                      variant="text"
-                      onClick={handleLogout}
-                      sx={{
-                        color: 'text.primary',
-                        fontFamily: 'Inter, sans-serif',
-                      }}
-                    >
-                      Log Out
-                    </Button>
-                  </MenuItem>
-                </>
-              ) : (
-                <MenuItem>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    component={Link}
-                    href="/auth/signin"
-                    sx={{
-                      fontFamily: 'Inter, sans-serif',
-                    }}
-                  >
-                    Sign In / Sign Up
-                  </Button>
-                </MenuItem>
-              )}
+              {renderAuthButtons()}
             </Menu>
           </Box>
         </Toolbar>

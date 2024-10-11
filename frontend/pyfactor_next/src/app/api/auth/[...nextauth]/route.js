@@ -1,8 +1,6 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/api/auth/[...nextauth]/route.js
 import NextAuth from "next-auth";
-import { authOptions } from "./options";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
-console.log("NextAuth route handler loaded.");
 const handler = NextAuth(authOptions);
 
-export { handler as GET, handler as POST };
+export { handler as GET, handler as POST, handler as DELETE };

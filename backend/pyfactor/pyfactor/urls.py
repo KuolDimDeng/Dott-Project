@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/', include('alerts.urls')),
     path('api/financial-statements/', include('finance.urls')),
     path('api/taxes/', include('taxes.urls')),
+    path('api/onboarding/', include('onboarding.urls')),
 
 
 ]

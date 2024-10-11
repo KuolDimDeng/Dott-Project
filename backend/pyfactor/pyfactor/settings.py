@@ -30,6 +30,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env file
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+
 
 # Accessing Plaid credentials from environment variables
 PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID')
@@ -57,7 +59,7 @@ sys.path.append(os.path.join(PROJECT_ROOT, '.venv/lib/python3.12/site-packages')
 SHOPIFY_API_KEY = os.getenv('SHOPIFY_API_KEY')
 SHOPIFY_API_SECRET = os.getenv('SHOPIFY_API_SECRET')
 SHOPIFY_SHOP_URL = os.getenv('SHOPIFY_SHOP_URL')
-APP_URL = 'http://localhost:8000'  # or whatever your app's URL is
+APP_URL = 'http://127.0.0.1:8000'  # or whatever your app's URL is
 
 SHOPIFY_API_VERSION = '2023-07'  # or whatever the latest version is
 DEFAULT_USER_ID = 1  # or whatever default value you want to use
@@ -113,17 +115,15 @@ CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',  # Your Next.js frontend URL
-    'http://127.0.0.1:8000',  # Your Django backend URL
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
-    'http://127.0.0.1:8000',
 ]
 
 CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = True
-CSRF_USE_SESSIONS = True
+CSRF_USE_SESSIONS = False
 
 
 
@@ -164,17 +164,35 @@ REST_FRAMEWORK = {
 
 # JWT settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
-    'AUTH_COOKIE': 'refresh_token',
-    'AUTH_COOKIE_DOMAIN': None,
-    'AUTH_COOKIE_SECURE': False,
-    'AUTH_COOKIE_HTTP_ONLY': True,
-    'AUTH_COOKIE_PATH': '/',
-    'AUTH_COOKIE_SAMESITE': 'Lax',
-    'AUTH_HEADER_TYPES': ('Bearer',)
+    'UPDATE_LAST_LOGIN': False,
+
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'JWK_URL': None,
+    'LEEWAY': 0,
+
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+
+    'JTI_CLAIM': 'jti',
+
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
 # Logging configuration
@@ -320,6 +338,8 @@ INSTALLED_APPS = [
     'barcode',
     'debug_toolbar',
     'django_extensions',
+    'onboarding',
+
 
 ]
 

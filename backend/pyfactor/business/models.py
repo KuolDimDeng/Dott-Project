@@ -190,6 +190,8 @@ class Subscription(models.Model):
     start_date = models.DateField()
     is_active = models.BooleanField(default=True)
     end_date = models.DateField(null=True, blank=True)
+    billing_cycle = models.CharField(max_length=20, choices=[('monthly', 'Monthly'), ('annual', 'Annual')], default='Monthly')
+
 
     def __str__(self):
         return f"Subscription {self.pk if self.pk else 'unsaved'}"

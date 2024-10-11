@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Hero from './components/Hero';
 import Features from './components/Features';
@@ -10,42 +10,58 @@ import Pricing from './components/Pricing';
 import FAQ from './components/FAQ';
 import Footer from './components/Footer';
 import AppAppBar from './components/AppBar';
+import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
 
 export default function LandingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { checkOnboardingStatus } = useOnboarding();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log("Session status:", status);
-    console.log("Session data:", session);
-    console.log("Is user authenticated:", session?.isAuthenticated);
-    console.log("User onboarding status:", session?.user?.isOnboarded);
-    if (status === 'authenticated') {
-      if (session?.user?.isOnboarded) {
-        router.push('/dashboard');
-      } else {
-        router.push('/onboarding');
+    console.log("Landing Page - Session status:", status);
+    console.log("Landing Page - Session data:", session);
+
+    const handleAuthentication = async () => {
+      if (status === 'authenticated') {
+        console.log("User is authenticated, checking onboarding status");
+        try {
+          await checkOnboardingStatus();
+          if (session.user.onboardingStatus !== 'complete') {
+            console.log("User not fully onboarded, redirecting to onboarding");
+            router.push('/onboarding');
+          } else {
+            console.log("User fully onboarded, redirecting to dashboard");
+           router.push('/dashboard');
+          }
+        } catch (error) {
+          console.error("Error checking onboarding status:", error);
+          setIsLoading(false);
+        }
+      } else if (status === 'unauthenticated') {
+        console.log("User is not authenticated, showing landing page");
+        setIsLoading(false);
       }
+    };
+
+    if (status !== 'loading') {
+      handleAuthentication();
     }
-  }, [status, session, router]);
-  
-  if (status === 'loading') {
+  }, [status, session, router, checkOnboardingStatus]);
+
+  if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (status === 'unauthenticated') {
-    return (
-      <>
-        <AppAppBar />
-        <Hero />
-        <Features />
-        <Highlights />
-        <Pricing />
-        <FAQ />
-        <Footer />
-      </>
-    );
-  }
-
-  return null;
+  return (
+    <>
+      <AppAppBar />
+      <Hero />
+      <Features />
+      <Highlights />
+      <Pricing />
+      <FAQ />
+      <Footer />
+    </>
+  );
 }

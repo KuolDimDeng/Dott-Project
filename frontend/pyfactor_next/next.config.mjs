@@ -1,3 +1,4 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/next.config.mjs
 import path from 'path';
 import { fileURLToPath } from 'url';
 

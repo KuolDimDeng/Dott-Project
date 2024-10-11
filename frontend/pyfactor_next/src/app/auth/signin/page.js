@@ -1,9 +1,9 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/api/auth/signin/page.js
-'use client';
+////Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/auth/signin/page.js
+
+'use client'
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Button, TextField, Grid, Box, Paper, Typography, InputAdornment, IconButton, CircularProgress } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Image from 'next/image';
@@ -15,6 +15,7 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { GoogleLoginButton, FacebookLoginButton, AppleLoginButton } from 'react-social-login-buttons';
 import { signIn, useSession } from "next-auth/react";
+import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
 
 const theme = createTheme({
   palette: {
@@ -40,6 +41,7 @@ export default function SignIn() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
+  const { checkOnboardingStatus } = useOnboarding(); // Get checkOnboardingStatus from context
 
   const {
     control,
@@ -54,21 +56,20 @@ export default function SignIn() {
   });
 
   useEffect(() => {
-    console.log('Session:', session);
-    if (status === 'authenticated') {
-      if (session.user.isOnboarded) {
-        router.push('/dashboard');
-      } else {
-        router.push('/onboarding/step1');
+    const handleRedirect = async () => {
+      if (status === 'authenticated') {
+        console.log('Checking onboarding status');
+        await checkOnboardingStatus(); // Check onboarding status when authenticated
       }
-    }
-  }, [session, status, router]);
-  console.log('-------------------------------------------');
+    };
+    
+    handleRedirect();
+  }, [status, checkOnboardingStatus]); // Add checkOnboardingStatus as a dependency
+
   const handleClickShowPassword = () => setIsPasswordShown((show) => !show);
 
   const onSubmit = async (data) => {
     console.log('Form submitted:', data);
-    console.log('-------------------------------------------');
     setIsLoading(true);
     try {
       logger.info('Initiating login');
@@ -86,7 +87,7 @@ export default function SignIn() {
         if (result.url) {
           router.push(result.url);
         } else {
-          router.push('/dashboard');
+         router.push('/dashboard');
         }
       }
     } catch (error) {
@@ -99,40 +100,19 @@ export default function SignIn() {
 
   const handleSocialLogin = async (provider) => {
     setIsLoading(true);
+    console.log(`Initiating ${provider} login`);
     try {
-      console.log(`Initiating ${provider} login`);
-      logger.info(`Initiating ${provider} login`);
+      const result = await signIn(provider, { callbackUrl: '/dashboard' });
+      console.log(`Login successful with ${provider}`);
       
-      // Log the parameters being passed to signIn
-      console.log('signIn parameters:', { provider, options: { redirect: false } });
-      
-      const result = await signIn(provider, { redirect: false });
-      
-      console.log('signIn result:', result);  // Log the entire result object
-  
-      if (!result) {
-        throw new Error('Login failed: No result returned');
-      }
-  
-      if (result.error) {
+      if (result?.error) {
         console.error(`Error during ${provider} login:`, result.error);
-        logger.error(`${provider} login failed`, { error: result.error });
         setErrorState(`${provider} login failed. ${result.error}`);
-      } else {
-        logger.info(`${provider} login successful, redirecting...`);
-        if (result.url) {
-          router.push(result.url);
-        } else {
-          router.push('/dashboard');
-        }
+      } else if (result?.url) {
+        router.push(result.url);
       }
     } catch (error) {
-        console.error(`Error during ${provider} login:`, error);
-        logger.error(`Unexpected error during ${provider} login`, { 
-          error: error.message, 
-          stack: error.stack,
-          provider: provider
-        });
+      console.error(`Error during ${provider} login:`, error);
       setErrorState(`An unexpected error occurred during ${provider} login. Please try again.`);
     } finally {
       setIsLoading(false);
@@ -141,7 +121,6 @@ export default function SignIn() {
 
   if (status === 'loading') return <CircularProgress />;
   if (status === 'authenticated') return null;
-
 
   return (
     <ThemeProvider theme={theme}>

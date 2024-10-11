@@ -273,13 +273,13 @@ function DashboardContent() {
         logger.error('Error fetching user data:', response.statusText);
         addMessage('error', `Error fetching user data: ${response.statusText}`);
         localStorage.removeItem('token');
-        router.push('/login');
+        router.push('/auth/signin');
       }
     } catch (error) {
       logger.error('Error fetching user data:', error);
       addMessage('error', `Error fetching user data: ${error.message}`);
       localStorage.removeItem('token');
-      router.push('/login');
+      router.push('/auth/signin');
     }
   }, [addMessage, router]);
 

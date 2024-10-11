@@ -9,6 +9,7 @@
     "pdfjs-dist": "^4.4.168",
     "react-chartjs-2": "^5.2.0",
     "react-plaid-link": "^3.6.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "yup": "^1.4.0"
   }
 }

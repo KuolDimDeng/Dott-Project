@@ -13,11 +13,11 @@ export default function Index() {
         if (token) {
           router.replace('/MenuPage');
         } else {
-          router.replace('/login');
+          router.replace('/auth/signin');
         }
       } catch (error) {
         console.error('Error checking login status:', error);
-        router.replace('/login');
+        router.replace('/auth/signin');
       }
     };
 

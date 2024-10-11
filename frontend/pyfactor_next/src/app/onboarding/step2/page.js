@@ -1,11 +1,11 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/step2/page.js
+// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/step2/page.js
+
 'use client';
+
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
-import {
-  Box, Typography, Grid, Button, Card, CardContent, CardActions, Container, Divider, styled
-} from '@mui/material';
+import { Box, Typography, Grid, Button, Card, CardContent, CardActions, Container, Divider, styled, CircularProgress } from '@mui/material';
 import Image from 'next/image';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -20,7 +20,6 @@ const theme = createTheme({
   },
 });
 
-// Define BillingToggle using styled
 const BillingToggle = styled(Box)(({ theme }) => ({
   display: 'inline-flex',
   backgroundColor: theme.palette.background.default,
@@ -44,26 +43,25 @@ const BillingToggle = styled(Box)(({ theme }) => ({
 
 const OnboardingStep2 = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
-  const [errorMessage, setErrorMessage] = useState('');
   const router = useRouter();
-  const { formData, goToPrevStep, completeOnboarding } = useOnboarding();
-
+  const { data: session, status } = useSession();
+  const { formData, goToPrevStep, completeOnboarding, loading, error } = useOnboarding();
 
   const handleBillingCycleChange = (cycle) => setBillingCycle(cycle);
 
   const handleSubscriptionSelect = async (tier) => {
     try {
-      const subscriptionData = { selectedPlan: tier.title, billingCycle, ...formData };
-      console.log('Subscription data:', subscriptionData);  // Add this line for debugging
-      console.log('Going to next step...');
-      console.log('Going to complete onboarding...');
+      const subscriptionData = {
+        ...formData,
+        selectedPlan: tier.title,
+        billingCycle: billingCycle
+      };
       await completeOnboarding(subscriptionData);
+      router.push('/dashboard');
     } catch (error) {
-      console.error('Error selecting subscription:', error);
-      setErrorMessage('Error completing onboarding.');
+      console.error('Failed to complete onboarding:', error);
     }
   };
-
 
   const tiers = [
     {
@@ -83,6 +81,9 @@ const OnboardingStep2 = () => {
     },
   ];
 
+  if (status === "loading" || loading) return <CircularProgress />;
+  if (!session) return <Typography>Please sign in to access onboarding.</Typography>;
+
   return (
     <ThemeProvider theme={theme}>
       <Container maxWidth="lg" sx={{ minHeight: '100vh', py: 6 }}>
@@ -91,35 +92,57 @@ const OnboardingStep2 = () => {
           <Typography variant="h6" color="primary">STEP 2 OF 2</Typography>
           <Typography variant="h4">Choose the plan that best suits you</Typography>
           <BillingToggle>
-            <Box className={`MuiBillingToggle-option ${billingCycle === 'monthly' ? 'active' : ''}`} onClick={() => handleBillingCycleChange('monthly')}>Monthly</Box>
-            <Box className={`MuiBillingToggle-option ${billingCycle === 'annual' ? 'active' : ''}`} onClick={() => handleBillingCycleChange('annual')}>Annual</Box>
+            <Box
+              className={`MuiBillingToggle-option ${billingCycle === 'monthly' ? 'active' : ''}`}
+              onClick={() => handleBillingCycleChange('monthly')}
+            >
+              Monthly
+            </Box>
+            <Box
+              className={`MuiBillingToggle-option ${billingCycle === 'annual' ? 'active' : ''}`}
+              onClick={() => handleBillingCycleChange('annual')}
+            >
+              Annual
+            </Box>
           </BillingToggle>
         </Box>
-        {errorMessage && <Typography color="error">{errorMessage}</Typography>}
+        {error && <Typography color="error" align="center" sx={{ mb: 2 }}>{error}</Typography>}
+        
         <Grid container spacing={4}>
           {tiers.map((tier) => (
             <Grid item key={tier.title} xs={12} sm={6}>
               <Card sx={{ height: '100%', p: 4, borderRadius: 4 }}>
                 <CardContent>
                   <Typography variant="h4">{tier.title}</Typography>
-                  <Typography variant="h3">${tier.price[billingCycle]} / {billingCycle === 'monthly' ? 'month' : 'year'}</Typography>
+                  <Typography variant="h3">
+                    ${tier.price[billingCycle]} / {billingCycle === 'monthly' ? 'month' : 'year'}
+                  </Typography>
                   <Divider sx={{ my: 2 }} />
                   {tier.description.map((line) => (
                     <Box key={line} sx={{ display: 'flex', alignItems: 'center' }}>
-                      <CheckCircleRoundedIcon sx={{ color: 'primary.main' }} />
+                      <CheckCircleRoundedIcon sx={{ color: 'primary.main', mr: 1 }} />
                       <Typography>{line}</Typography>
                     </Box>
                   ))}
                 </CardContent>
                 <CardActions>
-                  <Button fullWidth variant={tier.buttonVariant} onClick={() => handleSubscriptionSelect(tier)}>{tier.buttonText}</Button>
+                  <Button
+                    fullWidth
+                    variant={tier.buttonVariant}
+                    onClick={() => handleSubscriptionSelect(tier)}
+                    disabled={loading}
+                  >
+                    {loading ? <CircularProgress size={24} /> : tier.buttonText}
+                  </Button>
                 </CardActions>
               </Card>
             </Grid>
           ))}
         </Grid>
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <Button variant="outlined" onClick={goToPrevStep}>Previous Step 1</Button>
+          <Button variant="outlined" onClick={goToPrevStep} disabled={loading}>
+            Previous Step
+          </Button>
         </Box>
       </Container>
     </ThemeProvider>

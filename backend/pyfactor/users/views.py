@@ -1,7 +1,6 @@
 from django.db import connections, transaction, DatabaseError
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.http import JsonResponse
-
 from django.core.exceptions import ValidationError
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
@@ -24,9 +23,7 @@ from django.views.decorators.csrf import csrf_exempt
 from business.models import Business, Subscription
 from business.serializers import BusinessRegistrationSerializer
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
-
 from django.utils.timezone import timezone
-
 import requests
 import traceback
 
@@ -41,7 +38,6 @@ from .serializers import (
 from .tokens import account_activation_token
 from .utils import initial_user_registration, create_user_database, setup_user_database
 from pyfactor.logging_config import get_logger
-from business.models import Business
 
 logger = get_logger()
 
@@ -108,9 +104,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                     domain=settings.SIMPLE_JWT.get('AUTH_COOKIE_DOMAIN'),
                     path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/')
                 )
-            # Optionally add user data to the response here if needed
         return response
-    
     
 # Authenticate user with email and password.
 class CustomAuthToken(ObtainAuthToken):
@@ -179,8 +173,6 @@ class OnboardingStatusView(APIView):
             "is_onboarded": request.user.is_onboarded
         })
 
-
-
 # Activate user account via email confirmation.
 class ActivateAccountView(APIView):
     permission_classes = [AllowAny]
@@ -215,66 +207,6 @@ class AuthTokenView(APIView):
                 'token': str(refresh.access_token)
             })
         return Response({'error': 'Invalid credentials or user is inactive'}, status=status.HTTP_400_BAD_REQUEST)
-
-class CompleteOnboardingView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
-
-    def post(self, request):
-        logger.debug("Completing onboarding for user: %s", request.user)
-        logger.debug("Received request data: %s", request.data)
-        user = request.user
-        business_data = request.data.get('business')
-        selected_plan = request.data.get('selectedPlan')
-        billing_cycle = request.data.get('billingCycle')
-
-        if not business_data or not selected_plan or not billing_cycle:
-            return Response({"error": "Business data, selected plan, and billing cycle are required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            logger.info("Completing onboarding for user {user}")
-            logger.debug("Business data: %s", business_data)
-            with transaction.atomic():
-                # Validate and save business data
-                business_serializer = BusinessRegistrationSerializer(data=business_data)
-                if business_serializer.is_valid():
-                    business = business_serializer.save(owner=user)
-                else:
-                    return Response({"error": "Invalid business data", "details": business_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-                # Create a subscription for the business
-                Subscription.objects.create(
-                    business=business,
-                    subscription_type=selected_plan,
-                    start_date=timezone.now().date(),
-                    is_active=True
-                )
-
-                # Update user profile
-                user_profile = UserProfile.objects.get(user=user)
-                user_profile_serializer = UserProfileSerializer(user_profile, data=request.data.get('user_profile', {}), partial=True)
-                if user_profile_serializer.is_valid():
-                    user_profile = user_profile_serializer.save()
-                else:
-                    return Response({"error": "Invalid user profile data", "details": user_profile_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-                # Create a dynamic database for the business and set it up
-                database_name = create_user_database(user, business_data)
-                setup_user_database(database_name, request.data, user)
-
-                # Mark the user as onboarded
-                logger.info(f"Setting up database for user: {user.email}")
-                user.is_onboarded = True
-                user.plan = selected_plan
-                user.billing_cycle = billing_cycle
-                user.save()
-                logger.info(f"Onboarding completed for user: {user.email}")
-
-                return Response({"message": "Onboarding completed successfully"}, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            logger.exception(f"Unexpected error during onboarding: {str(e)}")
-            return Response({"error": "An unexpected error occurred during onboarding"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class SocialLoginView(APIView):
     permission_classes = [AllowAny]
@@ -354,19 +286,22 @@ class SocialLoginView(APIView):
 
         return user
         
-        
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
         logger.debug("Handling custom token refresh request")
         logger.debug(f"Received request data: {request.data}")
-        logger.debug("Checking if refresh token is provided")
+
+        # Get the refresh token from the request or cookies
         refresh_token = request.data.get('refresh') or request.COOKIES.get('refresh_token')
         if not refresh_token:
             logger.warning("No refresh token provided.")
             return Response({"detail": "No refresh token provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Instead of modifying request.data, create a new dictionary for the super call
+        refresh_request_data = {'refresh': refresh_token}
         
-        request.data['refresh'] = refresh_token
         response = super().post(request, *args, **kwargs)
+        
         logger.debug("Custom token refresh response: %s", response.data)
         if response.status_code == 200 and 'refresh' in response.data:
             response.set_cookie(
