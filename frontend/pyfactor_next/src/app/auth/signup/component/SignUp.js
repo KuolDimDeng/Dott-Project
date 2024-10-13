@@ -24,12 +24,13 @@ const theme = createTheme({
 
 const schema = object({
   email: string([minLength(1, 'This field is required'), email('Email is invalid')]),
-  password: string([
+  password1: string([
     minLength(1, 'This field is required'),
     minLength(8, 'Password must be at least 8 characters long'),
   ]),
-  confirmPassword: string([minLength(1, 'This field is required')]),
+  password2: string([minLength(1, 'This field is required')]),
 });
+
 
 export default function SignUp() {
   const [isLoading, setIsLoading] = useState(false);
@@ -47,26 +48,30 @@ export default function SignUp() {
     resolver: valibotResolver(schema),
     defaultValues: {
       email: '',
-      password: '',
-      confirmPassword: '',
+      password1: '',
+      password2: '',
     },
   });
 
-  const password = watch('password');
+  const password1 = watch('password1');
 
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
       logger.debug('Submitting sign-up data:', data);
-      
+  
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          email: data.email,
+          password1: data.password1,  // Ensure this is 'password1'
+          password2: data.password2,  // Ensure this is 'password2'
+        }),
       });
-      
+  
       logger.debug('Sign-up API response status:', response.status);
   
       if (!response.ok) {
@@ -86,8 +91,10 @@ export default function SignUp() {
     } finally {
       setIsLoading(false);
     }
-  
   };
+  
+  
+  
 
   const renderForm = () => (
     <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 1, width: '100%' }}>
@@ -110,47 +117,47 @@ export default function SignUp() {
         )}
       />
 
-      <Controller
-        name="password"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            {...field}
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Password"
-            type="password"
-            id="password"
-            autoComplete="new-password"
-            error={!!errors.password}
-            helperText={errors?.password?.message}
-          />
-        )}
-      />
+              <Controller
+                name="password1" // Updated to password1
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    margin="normal"
+                    required
+                    fullWidth
+                    name="password1" // Updated to password1
+                    label="Password"
+                    type="password"
+                    id="password1" // Updated to password1
+                    autoComplete="new-password"
+                    error={!!errors.password1}
+                    helperText={errors?.password1?.message}
+                  />
+                )}
+              />
 
-      <Controller
-        name="confirmPassword"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            {...field}
-            margin="normal"
-            required
-            fullWidth
-            name="confirmPassword"
-            label="Confirm Password"
-            type="password"
-            id="confirmPassword"
-            error={!!errors.confirmPassword || (password && field.value && password !== field.value)}
-            helperText={
-              errors?.confirmPassword?.message || 
-              (password && field.value && password !== field.value ? 'Passwords do not match' : '')
-            }
-          />
-        )}
-      />
+              <Controller
+                name="password2" // Updated to password2
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    margin="normal"
+                    required
+                    fullWidth
+                    name="password2" // Updated to password2
+                    label="Confirm Password"
+                    type="password"
+                    id="password2" // Updated to password2
+                    error={!!errors.password2 || (password1 && field.value && password1 !== field.value)}
+                    helperText={
+                      errors?.password2?.message || 
+                      (password1 && field.value && password1 !== field.value ? 'Passwords do not match' : '')
+                    }
+                  />
+                )}
+              />
 
       <Button
         type="submit"

@@ -188,6 +188,8 @@ class SocialLoginView(APIView):
     
     
 class SignUpView(APIView):
+    permission_classes = [AllowAny]  # Add this line to allow access without authentication
+
     def post(self, request):
         logger.info(f"Received sign-up request: {request.data}")
         serializer = CustomRegisterSerializer(data=request.data)
@@ -217,8 +219,6 @@ class SignUpView(APIView):
                     
                 except Exception as e:
                     logger.error(f"Failed to send activation email: {str(e)}")
-                    # Optionally delete the user if email sending fails
-                    # user.delete()
                     return Response({"error": "Failed to send activation email"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 return Response({"message": "User registered successfully. Please check your email to activate your account."}, status=status.HTTP_201_CREATED)
