@@ -107,18 +107,22 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-8)j4zojil$u=s73e8yap9s-q6s
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+DEBUG_TOOLBAR_CONFIG = {
+    'SHOW_TOOLBAR_CALLBACK': lambda request: False,
+}
+
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend']
 
 # CORS and CSRF configuration
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = True #True for DEVELOPMENT
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',  # Your Next.js frontend URL
+    "http://localhost:3000",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3000',
+    "http://localhost:3000",
 ]
 
 CSRF_COOKIE_SECURE = False
@@ -147,7 +151,7 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 # Session and authentication settings
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = 'custom_auth.User'
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 3600  # 1 hour in seconds
 
@@ -220,19 +224,23 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
         },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
     },
     'root': {
-        'handlers': ['console'],
+        'handlers': ['console', 'file'],
         'level': 'INFO',
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],
+            'handlers': ['console', 'file'],
             'level': 'DEBUG',  # Set to DEBUG to capture detailed logs
             'propagate': False,
         },
-        'your_app_name': {  # replace with your app name
-            'handlers': ['console'],
+        'Dott': {  # replace with your actual app name
+            'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': False,
         },
@@ -339,6 +347,9 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'django_extensions',
     'onboarding',
+    'custom_auth',  # Add the new auth app
+
+    
 
 
 ]
@@ -444,17 +455,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-
-if DEBUG:
-    STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, 'static'),
-    ]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-# Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

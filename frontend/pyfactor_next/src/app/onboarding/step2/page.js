@@ -1,5 +1,3 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/step2/page.js
-
 'use client';
 
 import React, { useState } from 'react';
@@ -10,7 +8,6 @@ import Image from 'next/image';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useOnboarding } from '../contexts/onboardingContext';
-
 
 const theme = createTheme({
   palette: {
@@ -45,21 +42,22 @@ const OnboardingStep2 = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { formData, goToPrevStep, completeOnboarding, loading, error } = useOnboarding();
+  const { formData, updateFormData, goToNextStep, goToPrevStep, saveStep2Data, loading, error } = useOnboarding();
 
   const handleBillingCycleChange = (cycle) => setBillingCycle(cycle);
 
   const handleSubscriptionSelect = async (tier) => {
     try {
       const subscriptionData = {
-        ...formData,
         selectedPlan: tier.title,
         billingCycle: billingCycle
       };
-      await completeOnboarding(subscriptionData);
-      router.push('/onboarding/complete');
+      console.log('Data being saved for step 2:', subscriptionData);
+      await updateFormData(subscriptionData);
+      await saveStep2Data(subscriptionData);
+      goToNextStep();
     } catch (error) {
-      console.error('Failed to complete onboarding:', error);
+      console.error('Failed to save step 2 data:', error);
     }
   };
 
@@ -88,7 +86,7 @@ const OnboardingStep2 = () => {
       <Container maxWidth="lg" sx={{ minHeight: '100vh', py: 6 }}>
         <Box sx={{ textAlign: 'center', mb: 6 }}>
           <Image src="/static/images/Pyfactor.png" alt="Pyfactor Logo" width={150} height={50} priority />
-          <Typography variant="h6" color="primary">STEP 2 OF 2</Typography>
+          <Typography variant="h6" color="primary">STEP 2 OF 4</Typography>
           <Typography variant="h4">Choose the plan that best suits you</Typography>
           <BillingToggle>
             <Box

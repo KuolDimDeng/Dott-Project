@@ -1,5 +1,4 @@
-// pages/api/auth/update-session.js
-
+//Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/api/auth/update-session.js
 import { getSession } from "next-auth/react";
 
 export default async function handler(req, res) {
@@ -18,9 +17,6 @@ export default async function handler(req, res) {
   // Update the session
   session.user.accessToken = accessToken;
   session.user.refreshToken = refreshToken;
-
-  // Save the updated session
-  await req.session.save();
 
   res.status(200).json({ message: 'Session updated successfully' });
 }

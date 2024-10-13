@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, TextField, Grid, Box, Paper, Typography, InputAdornment, IconButton, CircularProgress } from '@mui/material';
+import { Button, TextField, Grid, Box, Paper, Typography, InputAdornment, IconButton, CircularProgress} from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Image from 'next/image';
 import { Controller, useForm } from 'react-hook-form';
@@ -16,6 +16,8 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { GoogleLoginButton, FacebookLoginButton, AppleLoginButton } from 'react-social-login-buttons';
 import { signIn, useSession } from "next-auth/react";
 import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
+import Link from 'next/link';
+
 
 const theme = createTheme({
   palette: {
@@ -257,12 +259,25 @@ export default function SignIn() {
                       {isLoading ? <CircularProgress size={24} /> : 'Sign In'}
                     </Button>
 
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', mt: 1, mb: 2 }}>
+                        <Link href="/auth/signup" passhref>
+                          <Typography variant="body2" component="span" sx={{ cursor: 'pointer', color: 'primary.main' }}>
+                            Sign up with Email
+                          </Typography>
+                        </Link>
+                        <Link href="/auth/forgot-password" passhref>
+                          <Typography variant="body2" component="span" sx={{ cursor: 'pointer', color: 'primary.main' }}>
+                            Forgot Password?
+                          </Typography>
+                        </Link>
+                      </Box>
+
                     {errorState && (
                       <Typography color="error" align="center">
                         {errorState}
                       </Typography>
                     )}
-
+                 
                     <Box sx={{ mt: 2 }}>
                       <GoogleLoginButton 
                         onClick={() => handleSocialLogin('google')} 

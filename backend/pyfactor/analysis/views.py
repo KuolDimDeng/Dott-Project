@@ -29,6 +29,7 @@ from django.db.models.functions import TruncDate
 from django.db.models.functions import Coalesce
 from dateutil.relativedelta import relativedelta
 from pyfactor.logging_config import get_logger
+from users.models import UserProfile
 
 logger = get_logger()
 
@@ -473,8 +474,43 @@ def get_historical_data(database_name, kpi_name):
 def get_kpi_data(request):
     try:
         user = request.user
-        database_name = user.profile.database_name
+        
+        # Check if user profile exists and has a database name
+        try:
+            user_profile = UserProfile.objects.get(user=user)
+            if not user_profile.database_name or not user.is_onboarded:
+                return JsonResponse({
+                    "message": "Onboarding not complete or database not set up yet",
+                    "onboardingComplete": False
+                }, status=status.HTTP_400_BAD_REQUEST)
 
+            database_name = user_profile.database_name
+                
+            # Additional check to ensure the database is actually set up
+            if database_name not in connections.databases:
+                logger.error(f"Database {database_name} not found in Django connections for user {user.email}")
+                return JsonResponse({
+                    "message": "Database not properly set up",
+                    "onboardingComplete": False
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error": "User profile not found",
+                "onboardingComplete": False
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        database_name = user_profile.database_name
+
+        # Check if the database connection exists
+        if database_name not in connections:
+            return JsonResponse({
+                "error": "Database connection not found",
+                "onboardingComplete": False
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Proceed with KPI calculations only if all checks pass
         revenue_growth_rate = calculate_revenue_growth_rate(database_name)
         gross_profit_margin = calculate_gross_profit_margin(database_name)
         net_profit_margin = calculate_net_profit_margin(database_name)
@@ -499,10 +535,14 @@ def get_kpi_data(request):
             'debtToEquityRatio': debt_to_equity_ratio,
             'cashFlow': cash_flow,
             'historicalData': historical_data,
+            'onboardingComplete': True
         }
 
         return JsonResponse(data)
 
     except Exception as e:
         logger.error(f"Error in get_kpi_data: {str(e)}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({
+            'error': str(e),
+            'onboardingComplete': False
+        }, status=500)

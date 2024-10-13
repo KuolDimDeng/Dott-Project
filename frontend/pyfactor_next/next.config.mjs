@@ -66,6 +66,11 @@ const nextConfig = {
       },
     ];
   },
+  images: {
+    domains: ['localhost'],
+    unoptimized: true,
+
+  },
 
   poweredByHeader: false,
 };

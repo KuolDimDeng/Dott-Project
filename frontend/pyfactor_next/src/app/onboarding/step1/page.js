@@ -34,7 +34,7 @@ const schema = yup.object().shape({
 const OnboardingStep1 = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { formData, updateFormData, goToNextStep, initiateOnboarding, loading, error } = useOnboarding();
+  const { formData, updateFormData, goToNextStep, saveStep1Data, loading, error } = useOnboarding();
   const { control, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
@@ -51,20 +51,31 @@ const OnboardingStep1 = () => {
 
   const onSubmit = async (data) => {
     try {
+      let formattedDate;
+      if (data.dateFounded instanceof Date) {
+        formattedDate = data.dateFounded.toISOString().split('T')[0];
+      } else if (typeof data.dateFounded === 'string') {
+        formattedDate = data.dateFounded.split('T')[0];
+      } else {
+        console.error('Invalid date format:', data.dateFounded);
+        formattedDate = null;
+      }
+  
       const onboardingData = {
-        first_name: data.firstName,
-        last_name: data.lastName,
-        business_name: data.businessName,
-        business_type: data.industry,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: session?.user?.email,
+        businessName: data.businessName,
+        industry: data.industry,
         country: data.country,
-        legal_structure: data.legalStructure,
-        date_founded: data.dateFounded,
+        legalStructure: data.legalStructure,
+        dateFounded: formattedDate,
       };
-      await initiateOnboarding(onboardingData);
-      updateFormData(data);
+      console.log('Data being saved for step 1:', onboardingData);
+      await saveStep1Data(onboardingData);
       goToNextStep();
     } catch (error) {
-      console.error('Error during onboarding:', error);
+      console.error('Error saving step 1 data:', error);
     }
   };
 

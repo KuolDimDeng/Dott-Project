@@ -15,7 +15,8 @@ class OnboardingProgress(models.Model):
     ONBOARDING_STATUS_CHOICES = [
         ('step1', 'Step 1'),
         ('step2', 'Step 2'),
-        ('payment', 'Payment'),
+        ('step3', 'Step 3'),
+        ('step4', 'Step 4'),
         ('complete', 'Complete'),
     ]
 

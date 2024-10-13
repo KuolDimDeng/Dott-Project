@@ -1,4 +1,5 @@
 import django
+import uuid
 from django.apps import apps
 from django.utils import timezone
 from django.core.management import call_command
@@ -111,13 +112,36 @@ def initial_user_registration(user_data):
         logger.error(f"Error in initial user registration: {str(e)}")
         raise
 
-def create_user_database(user, business):
+def generate_database_name(user, uuid_length=8, email_prefix_length=10):
+    # Generate a UUID and take only the specified number of characters
+    unique_id = str(uuid.uuid4()).replace('-', '_')[:uuid_length]
+
+    # Get a sanitized version of the user's email prefix, truncated to the specified length
+    email_prefix = user.email.split('@')[0].lower()[:email_prefix_length]
+
+    # Add a timestamp
     timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
-    business_name = business.name.lower().replace(' ', '_').replace('.', '')
-    database_name = f"{business_name}_{timestamp}"
+
+    # Create the initial database name
+    database_name = f"{unique_id}_{email_prefix}_{timestamp}"
+
+    # Ensure the name does not exceed 63 characters
+    max_length = 63
+    if len(database_name) > max_length:
+        # Calculate how many characters to remove
+        excess_length = len(database_name) - max_length
+        # Shorten the email prefix further
+        email_prefix = email_prefix[:email_prefix_length - excess_length]
+        database_name = f"{unique_id}_{email_prefix}_{timestamp}"
+
+    return database_name
+
+
+def create_user_database(user, business):
+    # Generate a unique and compliant database name
+    database_name = generate_database_name(user)
     logger.info(f"Creating user database: {database_name}")
 
-    # Ensure the database is created and configured correctly
     try:
         logger.info("Connecting to default database...")
         conn = psycopg2.connect(
@@ -157,10 +181,16 @@ def create_user_database(user, business):
     }
 
     # Add database to active connections
+    logger.info(f"Adding database to active connections: {database_name}")
     connections.databases[database_name] = settings.DATABASES[database_name]
+    connections.create_connection(database_name)
+
+    # Ensure the connection is established
+    logger.info(f"Ensuring database connection is established for: {database_name}...")
+    with connections[database_name].cursor() as cursor:
+        cursor.execute("SELECT 1")
+
     logger.info(f"Database configuration updated and active for: {database_name}")
-
-
     logger.info(f"Initial database setup completed for: {database_name}")
     return database_name
 
@@ -168,57 +198,32 @@ def create_user_database(user, business):
 def setup_user_database(database_name, user, business):
     try:
         logger.debug(f"Starting setup_user_database for: {database_name}")
-        
+
+        # Ensure the connection is available
+        if database_name not in connections:
+            connections.create_connection(database_name)
+
         # Run migrations for the user's database
         logger.info(f"Running migrations for database: {database_name}")
         call_command('migrate', database=database_name)
-        
+
         # Apply chatbot migrations specifically
         call_command('migrate', 'chatbot', database=database_name)
 
         with transaction.atomic(using=database_name):
-            # Create initial data
-            logger.info(f"Creating initial data for database: {database_name}")
-            
-            # Populate account types
-            logger.info(f"Populating account types for database: {database_name}")
+            # Populate and setup initial data
             populate_account_types(database_name)
-            
-            # Ensure necessary accounts exist
-            logger.info(f"Ensuring necessary accounts exist for database: {database_name}")
             ensure_accounts_exist(database_name)
-            
-            # Create and populate Chart of Accounts
-            logger.info(f"Creating and populating Chart of Accounts for database: {database_name}")
             create_and_populate_chart_of_accounts(database_name)
 
-            # Fetch the Cash account type
-            logger.info(f"Fetching the Cash account type for database: {database_name}")
-            try:
-                cash_account_type = AccountType.objects.using(database_name).get(name='Cash')
-                logger.info(f"Cash account type fetched successfully for database: {database_name}")
-            except AccountType.DoesNotExist:
-                logger.error(f"Cash account type not found in database: {database_name}")
-                raise
-
-            # Create Cash Account if it doesn't exist
-            logger.info(f"Creating or getting Cash Account for database: {database_name}")
-            cash_account, created = Account.objects.using(database_name).get_or_create(
-                name='Cash on Hand',
-                defaults={
-                    'account_number': '1',
-                    'account_type': cash_account_type
-                }
+            # Fetch or create necessary accounts and perform setup
+            cash_account_type = AccountType.objects.using(database_name).get(name='Cash')
+            cash_account, _ = Account.objects.using(database_name).get_or_create(
+                name='Cash on Hand', defaults={'account_number': '1', 'account_type': cash_account_type}
             )
-            if created:
-                logger.info(f"Cash Account created for database: {database_name}")
-            else:
-                logger.info(f"Cash Account already exists for database: {database_name}")
 
-            # Create Initial Transaction
-            logger.info(f"Creating initial transaction for database: {database_name}")
             FinanceTransaction.objects.using(database_name).create(
-                date=timezone.now().astimezone(pytz.timezone(settings.TIME_ZONE)).date(),
+                date=timezone.now().date(),
                 description='Initial Transaction',
                 account=cash_account,
                 type='Deposit',
@@ -226,33 +231,20 @@ def setup_user_database(database_name, user, business):
                 notes='Initial transaction',
                 receipt=None
             )
-            logger.info(f"Initial transaction created successfully for database: {database_name}")
 
-        logger.debug(f"Initial tables and data created successfully in user's database: {database_name}")
-
-        # Update UserProfile with the new database name
+        # Update UserProfile with the new database name and generate initial financial statements
         user_profile = UserProfile.objects.get(user=user)
         user_profile.database_name = database_name
         user_profile.save()
 
-        # Generate financial statements after the initial setup
-        try:
-            logger.info(f"Generating financial statements for database: {database_name}")
-            generate_financial_statements(database_name)
-            logger.info(f"Financial statements generated successfully for database: {database_name}")
-        except Exception as e:
-            logger.error(f"Error generating financial statements for {database_name}: {str(e)}")
-            logger.error(f"Traceback:\n{traceback.format_exc()}")
-            raise
+        generate_financial_statements(database_name)
 
         logger.info(f"Database {database_name} setup completed successfully")
         return database_name
 
     except Exception as e:
         logger.error(f"Error during user database setup for {database_name}: {str(e)}")
-        logger.error(f"Traceback:\n{traceback.format_exc()}")
         raise
-    
 
 
 def populate_account_types(database_name):

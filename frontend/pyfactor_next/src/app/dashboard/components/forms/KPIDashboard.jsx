@@ -46,17 +46,27 @@ const KPIDashboard = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
-    fetchKPIData();
+    fetchData();
   }, []);
 
-  const fetchKPIData = async () => {
+  const fetchData = async () => {
     try {
-      const response = await axiosInstance.get('/api/analysis/kpi-data');
-      setKpiData(response.data);
-      setLoading(false);
+      setLoading(true);
+      // Fetch user profile
+      const profileResponse = await axiosInstance.get('/api/profile/');
+      const userProfile = profileResponse.data;
+
+      if (userProfile.is_onboarded) {
+        // Fetch KPI data only if user is onboarded
+        const kpiResponse = await axiosInstance.get('/api/analysis/kpi-data');
+        setKpiData(kpiResponse.data);
+      } else {
+        setError('Onboarding not complete. KPI data not available.');
+      }
     } catch (error) {
-      console.error('Error fetching KPI data:', error);
-      setError('Failed to fetch KPI data. Please try again later.');
+      console.error('Error fetching data:', error);
+      setError('Failed to fetch data. Please try again later.');
+    } finally {
       setLoading(false);
     }
   };
@@ -64,6 +74,7 @@ const KPIDashboard = () => {
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
+
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {

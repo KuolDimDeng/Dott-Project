@@ -1,14 +1,19 @@
-# URLs
+# /Users/kuoldeng/projectx/backend/pyfactor/onboarding/urls.py
+
 from django.urls import path
 from .views import (
-    StartOnboardingView, 
-    UpdateOnboardingView, 
-    CompleteOnboardingView, 
-    CleanupOnboardingView, 
-    OnboardingStatusView, 
+    StartOnboardingView,
+    CompleteOnboardingView,
+    CleanupOnboardingView,
+    OnboardingStatusView,
     GoogleTokenExchangeView,
-    update_session,  # Add the new endpoint
-    SaveEmailView,  # Add the new endpoint
+    update_session,
+    SaveEmailView,
+    SaveStep1View,
+    SaveStep2View,
+    SaveStep3View,
+    SaveStep4View,
+    UpdateOnboardingView
 )
 
 urlpatterns = [
@@ -18,8 +23,10 @@ urlpatterns = [
     path('cleanup/', CleanupOnboardingView.as_view(), name='cleanup_onboarding'),
     path('status/', OnboardingStatusView.as_view(), name='onboarding_status'),
     path('token-exchange/', GoogleTokenExchangeView.as_view(), name='token_exchange'),
-    path('save-email/', SaveEmailView.as_view(), name='save_email'),  # Add the new endpoint
-    path('api/auth/update-session/', update_session, name='update_session'),
-
-
+    path('update-session/', update_session, name='update_session'),
+    path('save-email/', SaveEmailView.as_view(), name='save_email'),
+    path('save-step1/', SaveStep1View.as_view(), name='save_step1'),
+    path('save-step2/', SaveStep2View.as_view(), name='save_step2'),
+    path('save-step3/', SaveStep3View.as_view(), name='save_step3'),
+    path('save-step4/', SaveStep4View.as_view(), name='save_step4'),
 ]

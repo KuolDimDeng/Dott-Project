@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activate Your Pyfactor Account</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .logo {
+            display: block;
+            margin: 0 auto 20px;
+            max-width: 200px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <img src="https://your-domain.com/path-to-your-logo.png" alt="Pyfactor Logo" class="logo">
+    <h1>Welcome to Dott!</h1>
+    <p>Hello {{ user.email }},</p>
+    <p>Thank you for signing up with Dott. We're excited to have you on board!</p>
+    <p>To complete your registration and activate your account, please click the button below:</p>
+    <a href="{{ activate_url }}" class="button">Activate Your Account</a>
+    <p>If the button doesn't work, you can copy and paste the following link into your browser:</p>
+    <p>{{ activate_url }}</p>
+    <p><strong>Please note:</strong> This activation link will expire in 24 hours for security reasons.</p>
+    <p>If you didn't create an account with Pyfactor, please disregard this email.</p>
+    <div class="footer">
+        <p>Best regards,<br>The Pyfactor Team</p>
+        <p>If you have any questions, please don't hesitate to contact our support team at support@pyfactor.com</p>
+    </div>
+</body>
+</html>

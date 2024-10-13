@@ -1,3 +1,4 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/auth/error/page.js
 'use client';
 
 import { useEffect } from 'react';

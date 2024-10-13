@@ -3,6 +3,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from chatbot.views import staff_interface, respond_to_message
+from django.conf.urls.static import static  # Add this import
+
 
 from pyfactor import views
 
@@ -10,7 +12,7 @@ from pyfactor import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('users.urls')),
+    path('', include('users.urls')),
     path('api/finance/', include('finance.urls')),
     path('api/banking/', include('banking.urls')),
     path('api/inventory/', include('inventory.urls')),
@@ -31,13 +33,19 @@ urlpatterns = [
     path('api/financial-statements/', include('finance.urls')),
     path('api/taxes/', include('taxes.urls')),
     path('api/onboarding/', include('onboarding.urls')),
+    path('api/custom_auth/', include('custom_auth.urls')),
 
 
 ]
 
 if settings.DEBUG:
     import debug_toolbar
-    urlpatterns = [
+    urlpatterns += [
         path('__debug__/', include(debug_toolbar.urls)),
-    ] + urlpatterns
-    
+    ]
+
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

@@ -48,13 +48,13 @@ export default function Hero() {
           >
             Manage your business like a boss.
           </Typography>
-          
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 10 }}>
             <Image
-              src="/static/images/avatar/Pyfactor Images/Work-Life-Balance-1--Streamline-Brooklyn.png"
+              src="/static/images/Work-Life-Balance-1--Streamline-Brooklyn.png"
               alt="Business Management Illustration"
               width={250}
               height={180}
+              priority
               style={{ maxWidth: '100%', height: 'auto' }}
             />
           </Box>
@@ -67,11 +67,11 @@ export default function Hero() {
               fontWeight: 'normal',
               fontFamily: '"Inter", sans-serif',
               letterSpacing: '0.01em',
-              fontSize: '1rem',
+              fontSize: '1.3rem',
               padding: 2,
             }}
           >
-            Accounting, Payroll, HR, Inventory, Reports, Analytics, Banking and Mobile Money—all in one intuitive platform.
+            Simple Accounting, Payroll, HR, Inventory, Reports, Analytics and Mobile Money—all in one intuitive platform.
           </Typography>
           
           <Stack
