@@ -1,5 +1,3 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/step3/page.js
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -9,6 +7,10 @@ import Image from 'next/image';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useOnboarding } from '../contexts/onboardingContext';
 import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
+import { loadStripe } from '@stripe/stripe-js';
+
+// Initialize Stripe with your public key
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
 const theme = createTheme({
   palette: {
@@ -23,29 +25,34 @@ const OnboardingStep3 = () => {
   const router = useRouter();
   const { formData, updateFormData, saveStep3Data } = useOnboarding();
 
+
   useEffect(() => {
     if (formData.selectedPlan !== 'Professional') {
       router.push('/onboarding/step4');
     }
-  }, [formData.selectedPlan, router]);
+  }, [formData, router]);
 
   const handlePayment = async () => {
     setLoading(true);
     try {
-      // Here you would typically integrate with a payment provider
-      // For this example, we'll just simulate a payment process
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // After successful payment, save the data and move to the next step
-      await saveStep3Data({ paymentCompleted: true });
-      router.push('/onboarding/step4');
+      const response = await axiosInstance.post('/api/checkout/create-session/', {
+        billingCycle: formData.billingCycle,
+      });
+      
+      const { sessionId } = response.data;
+      const stripe = await stripePromise;
+      const { error } = await stripe.redirectToCheckout({ sessionId });
+      
+      if (error) {
+        console.error('Stripe Checkout error:', error.message);
+      }
     } catch (error) {
       console.error('Payment failed:', error);
-      // Handle payment failure (show error message, etc.)
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <ThemeProvider theme={theme}>
@@ -60,7 +67,7 @@ const OnboardingStep3 = () => {
             You've selected the Professional plan. Please complete your payment to continue.
           </Typography>
           <Typography variant="h5" sx={{ mb: 2 }}>
-            Total: ${formData.billingCycle === 'monthly' ? '15/month' : '150/year'}
+            Total: ${formData.billingCycle === 'monthly' ? '15 per month' : '150 per year'}
           </Typography>
         </Box>
         <Button

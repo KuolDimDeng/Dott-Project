@@ -141,6 +141,7 @@ function DashboardContent() {
   const [showInventoryManagement, setShowInventoryManagement] = useState(false);
   const [showMainDashboard, setShowMainDashboard] = useState(false);
   const [showBankTransactions, setShowBankTransactions] = useState(false);
+  const [showHome, setShowHome] = useState(false);
 
 
 
@@ -222,6 +223,7 @@ function DashboardContent() {
     setShowMainDashboard,
     setShowBankTransactions,
     setShowInventoryManagement,
+    setShowHome,
     
   ];
 
@@ -560,6 +562,13 @@ function DashboardContent() {
     setSelectedCustomerId(null);
     setSelectedInvoiceId(null);
   };
+
+
+  const handleHomeClick = () => {
+    resetAllStates();
+    setShowHome(true);
+
+  }
 
   const handleHRClick = (section) => {
     console.log('handleHRClick called with section:', section);
@@ -1055,6 +1064,7 @@ function DashboardContent() {
           handleAccountingClick={handleAccountingClick}
           handleInventoryClick={handleInventoryClick}
           handleKPIDashboardClick={handleKPIDashboardClick}
+          handleHomeClick={handleHomeClick}
         />
 
          <Container

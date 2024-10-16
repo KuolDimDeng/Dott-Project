@@ -8,6 +8,10 @@ from business.models import Subscription
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 from pyfactor.logging_config import get_logger
+from users.models import UserProfile  # Adjust the import path as necessary
+from django.db import transaction
+
+
 
 
 logger = get_logger()
@@ -22,11 +26,12 @@ class CustomRegisterSerializer(RegisterSerializer):
     last_name = serializers.CharField(required=False, allow_blank=True)
     business_name = serializers.CharField(required=False, allow_blank=True)
     business_type = serializers.CharField(required=False, allow_blank=True)
+    occupation = serializers.CharField(required=False, allow_blank=True)
     street = serializers.CharField(required=False, allow_blank=True)
-    postcode = serializers.CharField(required=False, allow_blank=True)
+    city = serializers.CharField(required=False, allow_blank=True)
     state = serializers.CharField(required=False, allow_blank=True)
-    country = serializers.CharField(required=False, allow_blank=True)
-    occupation = serializers.ChoiceField(choices=User.OCCUPATION_CHOICES, required=False, allow_blank=True)
+    postcode = serializers.CharField(required=False, allow_blank=True)
+    country = serializers.CharField(required=False)
     phone_number = serializers.CharField(required=False, allow_blank=True)
     subscription_type = serializers.ChoiceField(choices=Subscription.SUBSCRIPTION_TYPES, required=False, allow_blank=True)
 
@@ -35,64 +40,79 @@ class CustomRegisterSerializer(RegisterSerializer):
         fields = (
             'email', 'password1', 'password2', 'first_name', 'last_name', 
             'business_name', 'business_type', 'occupation', 'street', 
-            'postcode', 'state', 'country', 'subscription_type', 'phone_number'
+            'city', 'state', 'postcode', 'country', 'subscription_type', 'phone_number'
         )
 
     def validate_email(self, email):
         email = get_adapter().clean_email(email)
         if User.objects.filter(email=email).exists():
-            logger.error("Email already registered: %s", email)
-            raise serializers.ValidationError("A user is already registered with this email address.")
+            logger.warning(f"Attempted registration with existing email: {email}")
+            raise serializers.ValidationError("This email address is already registered.")
         return email
 
     def validate(self, data):
-        # Ensure passwords match
         if data.get("password1") != data.get("password2"):
-            logger.warning("Password mismatch")
             raise serializers.ValidationError("The two password fields didn't match.")
-        
-        # Ensure required fields are provided
-        if not data.get("email"):
-            raise serializers.ValidationError("Email is required.")
-        if not data.get("password1"):
-            raise serializers.ValidationError("Password is required.")
-        if not data.get("password2"):
-            raise serializers.ValidationError("Password confirmation is required.")
-        
         return data
 
-    def save(self, request):
-        logger.debug("Starting user registration for email: %s", self.validated_data['email'])
-        
-        # Creating the user with basic fields
-        user = User.objects.create_user(
-            email=self.validated_data['email'],
-            password=self.validated_data['password1'],
-            first_name=self.validated_data.get('first_name', ''),
-            last_name=self.validated_data.get('last_name', ''),
-        )
-        
-        # Optional fields can be saved to a user profile or related model
-        profile_data = {
-            'business_name': self.validated_data.get('business_name', ''),
-            'business_type': self.validated_data.get('business_type', ''),
-            'occupation': self.validated_data.get('occupation', ''),
-            'street': self.validated_data.get('street', ''),
-            'postcode': self.validated_data.get('postcode', ''),
-            'state': self.validated_data.get('state', ''),
-            'country': self.validated_data.get('country', ''),
-            'phone_number': self.validated_data.get('phone_number', ''),
+    def get_cleaned_data(self):
+        return {
+            'email': self.validated_data.get('email', ''),
+            'password1': self.validated_data.get('password1', ''),
+            'first_name': self.validated_data.get('first_name', ''),
+            'last_name': self.validated_data.get('last_name', ''),
         }
-        
-        # Assuming you have a UserProfile model to store additional fields
-        UserProfile.objects.create(user=user, **profile_data)
-        
+
+    @transaction.atomic
+    def save(self, request):
+        user = super().save(request)
+        try:
+            UserProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    'occupation': self.validated_data.get('occupation', ''),
+                    'street': self.validated_data.get('street', ''),
+                    'city': self.validated_data.get('city', ''),
+                    'state': self.validated_data.get('state', ''),
+                    'postcode': self.validated_data.get('postcode', ''),
+                    'country': self.validated_data.get('country', ''),
+                    'phone_number': self.validated_data.get('phone_number', ''),
+                }
+            )
+        except Exception as e:
+            # If UserProfile creation fails, delete the user and raise the error
+            user.delete()
+            raise serializers.ValidationError(f"Error creating user profile: {str(e)}")
+
         user.is_onboarded = False
         user.save()
 
-        logger.info("User registration successful for email: %s", user.email)
         return user
 
+    def custom_signup(self, request, user):
+        business_name = self.validated_data.get('business_name')
+        if business_name:
+            business = Business.objects.create(name=business_name, owner=user)
+        else:
+            business = None
+
+        UserProfile.objects.create(
+            user=user,
+            business=business,
+            occupation=self.validated_data.get('occupation', ''),
+            street=self.validated_data.get('street', ''),
+            city=self.validated_data.get('city', ''),
+            state=self.validated_data.get('state', ''),
+            postcode=self.validated_data.get('postcode', ''),
+            country=self.validated_data.get('country', ''),
+            phone_number=self.validated_data.get('phone_number', ''),
+            is_business_owner=bool(business_name)
+        )
+
+        user.is_onboarded = False
+        user.save()
+
+        logger.info("User profile created for email: %s", user.email)
     
     
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

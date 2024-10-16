@@ -13,8 +13,12 @@ from .views import (
     SaveStep2View,
     SaveStep3View,
     SaveStep4View,
-    UpdateOnboardingView
+    UpdateOnboardingView,
+    OnboardingSuccessView
 )
+
+app_name = 'onboarding'
+
 
 urlpatterns = [
     path('start/', StartOnboardingView.as_view(), name='start_onboarding'),
@@ -29,4 +33,6 @@ urlpatterns = [
     path('save-step2/', SaveStep2View.as_view(), name='save_step2'),
     path('save-step3/', SaveStep3View.as_view(), name='save_step3'),
     path('save-step4/', SaveStep4View.as_view(), name='save_step4'),
+    path('success/', OnboardingSuccessView.as_view(), name='onboarding_success'),  # Add this new route
+
 ]

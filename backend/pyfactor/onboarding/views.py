@@ -1,8 +1,17 @@
 # /Users/kuoldeng/projectx/backend/pyfactor/onboarding/views.py
 
 import re
+import asyncio
+import stripe
+import traceback
+import sys
+
+from channels.db import database_sync_to_async
+from channels.layers import get_channel_layer
+from asgiref.sync import sync_to_async, async_to_sync
+from django.core.cache import cache
 from django.conf import settings
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from requests import request
 from rest_framework import status
 from rest_framework.response import Response
@@ -15,7 +24,7 @@ from .models import OnboardingProgress
 from .serializers import OnboardingProgressSerializer
 from django.utils import timezone
 from datetime import datetime, timedelta
-from django.db import transaction, connections, OperationalError
+from django.db import transaction, connections, OperationalError, connection, transaction as db_transaction
 from users.models import User, UserProfile
 from business.models import Business, Subscription
 from finance.models import Account
@@ -29,6 +38,7 @@ from django.db import IntegrityError
 from celery import shared_task
 from rest_framework.exceptions import AuthenticationFailed
 
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 logger = get_logger()
 
@@ -47,8 +57,15 @@ class GoogleTokenExchangeView(APIView):
             idinfo = id_token.verify_oauth2_token(
                 google_token, 
                 requests.Request(), 
-                settings.GOOGLE_CLIENT_ID
+                settings.GOOGLE_CLIENT_ID,
+                clock_skew_in_seconds=5  # Add this line
+
             )
+
+
+            logger.info(f"Token 'iat': {idinfo.get('iat')}")
+            logger.info(f"Token 'exp': {idinfo.get('exp')}")
+
 
             # Prepare user data with conditional fields
             user_data = {'email': idinfo['email']}
@@ -104,8 +121,14 @@ class StartOnboardingView(APIView):
         email = request.user.email
         onboarding, created = OnboardingProgress.objects.get_or_create(
             email=email,
-            defaults={'onboarding_status': 'step1'}
+            defaults={'onboarding_status': 'step1', 'current_step': 1}  # Set initial step to 1
         )
+        
+        # If onboarding already exists and is in initial status, reset `current_step` to 1
+        if not created and onboarding.onboarding_status == 'step1':
+            onboarding.current_step = 1
+            onboarding.save()
+        
         serializer = OnboardingProgressSerializer(onboarding)
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
@@ -296,30 +319,38 @@ class SaveStep1View(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
+    @transaction.atomic
     def post(self, request):
-        logger.info("Saving step 1 data")
+        logger.info(f"Saving step 1 data for user: {request.user.email}")
         user = request.user
         data = request.data
         
         try:
-            # Convert the date string to a date object
+            logger.debug(f"Step 1 data received: {data}")
             date_founded = datetime.strptime(data.get('dateFounded'), '%Y-%m-%d').date() if data.get('dateFounded') else None
 
-            onboarding_progress, onboarding_created = OnboardingProgress.objects.update_or_create(
+            onboarding_progress, created = OnboardingProgress.objects.get_or_create(
                 user=user,
                 defaults={
-                    'first_name': data.get('firstName'),
-                    'last_name': data.get('lastName'),
-                    'email': data.get('email', user.email),
-                    'business_name': data.get('businessName'),
-                    'business_type': data.get('industry'),
-                    'country': data.get('country'),
-                    'legal_structure': data.get('legalStructure'),
-                    'date_founded': date_founded,
-                    'onboarding_status': 'step2',
-                    'current_step': 2
+                    'email': user.email,
+                    'onboarding_status': 'step1',
+                    'current_step': 1
                 }
             )
+            logger.info(f"OnboardingProgress {'created' if created else 'retrieved'} for user: {user.email}")
+
+            # Update the OnboardingProgress object
+            onboarding_progress.first_name = data.get('firstName')
+            onboarding_progress.last_name = data.get('lastName')
+            onboarding_progress.business_name = data.get('businessName')
+            onboarding_progress.business_type = data.get('industry')
+            onboarding_progress.country = data.get('country')
+            onboarding_progress.legal_structure = data.get('legalStructure')
+            onboarding_progress.date_founded = date_founded
+            onboarding_progress.onboarding_status = 'step2'
+            onboarding_progress.current_step = 2
+            onboarding_progress.save()
+            logger.info(f"OnboardingProgress updated for user: {user.email}")
 
             # Create or update the Business
             logger.debug("Creating or Updating Business")
@@ -350,8 +381,7 @@ class SaveStep1View(APIView):
                 user.save()
                 logger.info(f"User name updated: {user.get_full_name()}")
 
-            logger.info(f"Step 1 data saved for user: {user.email}")
-            logger.info(f"Business name saved: {business.name}")
+            logger.info(f"Step 1 data saved successfully for user: {user.email}")
 
             return Response({
                 "message": "Step 1 data saved successfully",
@@ -363,7 +393,7 @@ class SaveStep1View(APIView):
             logger.error(f"Error saving step 1 data: {str(e)}")
             return Response({"error": "Invalid date format. Please use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            logger.error(f"Error saving step 1 data: {str(e)}")
+            logger.error(f"Unexpected error saving step 1 data: {str(e)}", exc_info=True)
             return Response({"error": "Failed to save step 1 data"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class SaveStep2View(APIView):
@@ -371,12 +401,15 @@ class SaveStep2View(APIView):
     authentication_classes = [JWTAuthentication]
 
     def post(self, request):
-        logger.info("Saving step 2 data")
+        logger.info(f"Saving step 2 data for user: {request.user.email}")
         user = request.user
         data = request.data
         
         try:
+            logger.debug(f"Step 2 data received: {data}")
             onboarding_progress = OnboardingProgress.objects.get(user=user)
+            logger.info(f"OnboardingProgress retrieved for user: {user.email}")
+
             onboarding_progress.subscription_type = data.get('selectedPlan')
             onboarding_progress.billing_cycle = data.get('billingCycle')
             
@@ -388,15 +421,17 @@ class SaveStep2View(APIView):
                 onboarding_progress.current_step = 4
             
             onboarding_progress.save()
+            logger.info(f"OnboardingProgress updated for user: {user.email}")
             
-            logger.info(f"Step 2 data saved for user: {user.email}")
+            logger.info(f"Step 2 data saved successfully for user: {user.email}")
             return Response({"message": "Step 2 data saved successfully"}, status=status.HTTP_200_OK)
         except OnboardingProgress.DoesNotExist:
-            logger.error(f"Onboarding progress not found for user: {user.email}")
+            logger.error(f"OnboardingProgress not found for user: {user.email}")
             return Response({"error": "Onboarding progress not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error(f"Error saving step 2 data: {str(e)}")
+            logger.error(f"Unexpected error saving step 2 data: {str(e)}", exc_info=True)
             return Response({"error": "Failed to save step 2 data"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 class SaveStep3View(APIView):
@@ -424,77 +459,179 @@ class SaveStep3View(APIView):
             logger.error(f"Error saving step 3 data: {str(e)}")
             return Response({"error": "Failed to save step 3 data"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+   
 class SaveStep4View(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        logger.info("SaveStep4View GET method called")
+        session_id = request.query_params.get('session_id')
+
+        logger.info(f"Received session_id: {session_id}")
+
+        if not session_id:
+            logger.error("No session ID provided")
+            return Response({"error": "No session ID provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            logger.info("Attempting to retrieve Stripe session")
+            session = stripe.checkout.Session.retrieve(session_id)
+            logger.info(f"Stripe session retrieved: {session_id}")
+            logger.debug(f"Stripe session details: {session}")
+
+            client_reference_id = session.get('client_reference_id')
+            logger.info(f"client_reference_id from session: {client_reference_id}")
+
+            if not client_reference_id:
+                logger.error(f"No client_reference_id found in Stripe session: {session_id}")
+                return Response({"error": "Invalid session data"}, status=status.HTTP_400_BAD_REQUEST)
+
+            logger.info(f"Attempting to find user with id: {client_reference_id}")
+            user = User.objects.filter(id=client_reference_id).first()
+            if not user:
+                logger.error(f"User not found for client_reference_id: {client_reference_id}")
+                return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            logger.info(f"User found: {user.email}")
+
+            logger.info("Attempting to get or create OnboardingProgress")
+            onboarding_progress, created = OnboardingProgress.objects.get_or_create(
+                user=user,
+                defaults={'email': user.email, 'onboarding_status': 'step4', 'current_step': 4}
+            )
+            
+            onboarding_progress.payment_completed = True
+            onboarding_progress.save()
+            logger.info(f"OnboardingProgress updated for user: {user.email}")
+
+            logger.info("Attempting to get or create UserProfile")
+            user_profile, profile_created = UserProfile.objects.get_or_create(
+                user=user,
+                defaults={'is_business_owner': True}
+            )
+            logger.info(f"UserProfile {'created' if profile_created else 'retrieved'} for user: {user.email}")
+
+            logger.info("Attempting to get or create Business")
+            business, business_created = Business.objects.get_or_create(
+                owner=user,
+                defaults={'name': f"{user.first_name}'s Business"}
+            )
+            logger.info(f"Business {'created' if business_created else 'retrieved'} for user: {user.email}")
+
+            # Update UserProfile with the business
+            user_profile.business = business
+            user_profile.save()
+            logger.info(f"UserProfile updated with business for user: {user.email}")
+
+            logger.info("Attempting to create or update Subscription")
+            subscription, sub_created = Subscription.objects.update_or_create(
+                business=business,
+                defaults={
+                    'subscription_type': 'professional',
+                    'start_date': timezone.now().date(),
+                    'is_active': True,
+                    'billing_cycle': 'monthly' if session.mode == 'subscription' else 'annual'
+                }
+            )
+            logger.info(f"Subscription {'created' if sub_created else 'updated'} for user: {user.email}")
+
+            frontend_step4_url = f"{settings.FRONTEND_URL}/onboarding/step4?session_id={session_id}"
+            logger.info(f"Redirecting to: {frontend_step4_url}")
+            return redirect(frontend_step4_url)
+
+        except stripe.error.StripeError as e:
+            logger.error(f"Stripe error during payment completion: {str(e)}")
+            logger.error(f"Stripe error details: {e.json_body}")
+            logger.error(traceback.format_exc())
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Unexpected error in SaveStep4View: {str(e)}")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Error args: {e.args}")
+            logger.error("Full exception info:")
+            logger.error(traceback.format_exc())
+            logger.error(f"Python version: {sys.version}")
+            logger.error(f"Stripe library version: {stripe.VERSION}")
+            return Response({"error": "An unexpected error occurred", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @transaction.atomic
     def post(self, request):
-        logger.info("Saving step 4 data and completing onboarding")
+        logger.info(f"Initiating database creation for user: {request.user.email}")
         user = request.user
-        data = request.data
         
         try:
-            onboarding_progress = OnboardingProgress.objects.get(user=user)
+            with transaction.atomic():
+                onboarding_progress = OnboardingProgress.objects.get(user=user)
+                
+                # Update any final data if necessary
+                if 'businessName' in request.data:
+                    onboarding_progress.business_name = request.data['businessName']
+                    onboarding_progress.save()
+                
+                # Initiate the WebSocket connection for database creation
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    f"onboarding_{user.id}",
+                    {
+                        "type": "start_database_creation",
+                        "user_id": str(user.id)
+                    }
+                )
             
-            # Update the business name if it's provided in the request
-            if 'businessName' in data:
-                onboarding_progress.business_name = data['businessName']
-                onboarding_progress.save()
-            
-            # Complete the onboarding process
-            self.complete_onboarding(user, onboarding_progress)
-            
-            return Response({"message": "Onboarding completed successfully"}, status=status.HTTP_200_OK)
+            logger.info(f"Database creation initiated for user: {user.email}")
+            return Response({"message": "Database creation initiated"}, status=status.HTTP_202_ACCEPTED)
         except OnboardingProgress.DoesNotExist:
             logger.error(f"Onboarding progress not found for user: {user.email}")
             return Response({"error": "Onboarding progress not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error(f"Error completing onboarding: {str(e)}")
-            return Response({"error": "Failed to complete onboarding"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.exception(f"Error initiating database creation for user {user.email}: {str(e)}")
+            return Response({"error": "Failed to initiate database creation", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def complete_onboarding(self, user, onboarding):
-        logger.debug("Starting complete onboarding process")
+class OnboardingSuccessView(APIView):
+    permission_classes = [IsAuthenticated]
 
-        # Ensure business_name is not empty
-        business_name = onboarding.business_name
-        if not business_name:
-            logger.error("Business name is missing in onboarding data")
-            raise ValueError("Business name cannot be empty")
+    def post(self, request):
+        user = request.user
+        session_id = request.data.get('sessionId')
 
-        # Create or update the Business record
-        business, business_created = Business.objects.update_or_create(
-            owner=user,
-            defaults={
-                'name': business_name,
-                'business_type': onboarding.business_type,
-                'country': onboarding.country,
-                'email': user.email,
-            }
-        )
-        logger.info(f"Business record {'created' if business_created else 'updated'}: {business.name}")
+        if not session_id:
+            return Response({"error": "No session ID provided"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Create or update UserProfile and assign the business
-        user_profile, created = UserProfile.objects.update_or_create(
-            user=user,
-            defaults={
-                'business': business,
-                'country': onboarding.country,
-                'is_business_owner': True,
-            }
-        )
+        try:
+            # Verify the session with Stripe
+            session = stripe.checkout.Session.retrieve(session_id)
 
-        # Set up the dynamic database for the user
-        logger.info(f"Creating database for {user.email}")
-        database_name = create_user_database(user, business)
-        setup_user_database(database_name, user, business)
-        
-        # Mark onboarding as complete
-        user.is_onboarded = True
-        user.save()
-        logger.info(f"User {user.email} marked as onboarded")
+            # Verify that the session belongs to this user
+            if session.client_reference_id != str(user.id):
+                return Response({"error": "Invalid session"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Remove the onboarding record as onboarding is complete
-        logger.info(f"Deleting onboarding record for {user.email}")
-        onboarding.delete()
-        logger.info(f"Onboarding completed successfully for user: {user.email}")
+            # Update user's subscription status
+            onboarding_progress = OnboardingProgress.objects.get(user=user)
+            onboarding_progress.payment_completed = True
+            onboarding_progress.onboarding_status = 'complete'
+            onboarding_progress.current_step = 0
+            onboarding_progress.save()
+
+            # Create or update the subscription
+            subscription, created = Subscription.objects.update_or_create(
+                business=user.userprofile.business,
+                defaults={
+                    'subscription_type': 'professional',
+                    'start_date': timezone.now().date(),
+                    'is_active': True,
+                    'billing_cycle': 'monthly' if session.mode == 'subscription' else 'annual'
+                }
+            )
+
+            logger.info(f"Onboarding completed and subscription created for user: {user.email}")
+            return Response({"message": "Onboarding completed successfully"})
+        except stripe.error.StripeError as e:
+            logger.error(f"Stripe error during onboarding success: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except OnboardingProgress.DoesNotExist:
+            logger.error(f"Onboarding progress not found for user: {user.email}")
+            return Response({"error": "Onboarding progress not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Unexpected error in OnboardingSuccessView: {str(e)}")
+            return Response({"error": "An unexpected error occurred"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -290,15 +290,7 @@ export default function SignIn() {
                         }}
                         text={isLoading ? 'Loading...' : 'Sign in with Google'}
                       />
-                      <FacebookLoginButton 
-                        onClick={() => handleSocialLogin('facebook')} 
-                        disabled={isLoading}
-                        style={{ 
-                          marginBottom: '10px', 
-                          borderRadius: '20px'
-                        }}
-                        text={isLoading ? 'Loading...' : 'Sign in with Facebook'}
-                      />
+                  
                       <AppleLoginButton 
                         onClick={() => handleSocialLogin('apple')}
                         disabled={isLoading}

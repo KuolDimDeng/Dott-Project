@@ -25,6 +25,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Image from 'next/image';
 
@@ -34,7 +35,7 @@ const MENU_WIDTH = 228;
 
 const MainListItems = ({
   handleMainDashboardClick,
-
+  handleHomeClick,
   handleSalesClick,
   handlePaymentsClick,
   handlePurchasesClick,
@@ -90,6 +91,11 @@ const MainListItems = ({
 
 
   const menuItems = [
+    {
+      icon: <HomeOutlinedIcon />,
+      label: "Home",
+      onClick: handleHomeClick
+    },
    
     {
       icon: <DashboardCustomizeIcon />,

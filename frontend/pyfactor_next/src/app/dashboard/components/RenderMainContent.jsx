@@ -72,6 +72,7 @@ import MainDashboard from './forms/MainDashboard.jsx';
 import BankTransactions from './forms/BankTransactionPage';
 //import PayrollDashboard from './forms/PayrollDashboard';
 import InventoryManagement from '@/app/inventory/components/InventoryManagement.jsx'
+import Home from './forms/Home';
 
 const ContentWrapper = ({ children }) => (
   <Box
@@ -174,6 +175,7 @@ const RenderMainContent = ({
   showInventoryItems,
   showBankTransactions,
   showInventoryManagement,
+  showHome,
 }) => {
   console.log('RenderMainContent: Rendering with selectedSettingsOption:', selectedSettingsOption);
 
@@ -370,6 +372,9 @@ const RenderMainContent = ({
       content = <HRDashboard section={hrSection} />;
     } else if (showPayrollDashboard) {
       content = <PayrollDashboard section={payrollSection} />;
+    } else if (showHome) {
+      content = <Home/>
+    
     } else if (showAccountPage) {
       content = (
         <Grid container spacing={3}>

@@ -11,6 +11,9 @@ from .serializers import AddBusinessMemberSerializer, BusinessSerializer, Busine
 from users.models import UserProfile
 import requests
 from django.contrib.auth import get_user_model
+import stripe
+from django.urls import reverse
+from django.conf import settings
 
 from pyfactor.logging_config import get_logger  # Change this line
 from rest_framework.decorators import api_view, permission_classes
@@ -18,6 +21,7 @@ from .models import Business, Subscription
 
 User = get_user_model()
 
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 logger = get_logger()
@@ -156,3 +160,27 @@ class AddBusinessMemberView(APIView):
                 return Response({"detail": "An error occurred while adding the business member."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class CreateCheckoutSessionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            billing_cycle = request.data.get('billingCycle', 'monthly')
+            price_id = settings.STRIPE_PRICE_ID_MONTHLY if billing_cycle == 'monthly' else settings.STRIPE_PRICE_ID_ANNUAL
+
+            checkout_session = stripe.checkout.Session.create(
+                client_reference_id=request.user.id,
+                payment_method_types=['card'],
+                line_items=[{
+                    'price': price_id,
+                    'quantity': 1,
+                }],
+                mode='subscription',
+                success_url=request.build_absolute_uri(reverse('onboarding:onboarding_success')) + '?session_id={CHECKOUT_SESSION_ID}',
+                cancel_url=request.build_absolute_uri(reverse('onboarding:save_step3')),
+            )
+            return Response({'sessionId': checkout_session.id})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

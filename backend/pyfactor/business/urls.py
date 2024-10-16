@@ -1,6 +1,11 @@
 # /Users/kuoldeng/projectx/backend/pyfactor/business/urls.py
 
 from django.urls import path
+
+from .api.checkout.checkout_session import create_checkout_session
+
+
+
 from .views import (
     BusinessRegistrationView, 
     EcommerceIntegrationView, 
@@ -17,5 +22,7 @@ urlpatterns = [
     path('ecommerce-platform-selection/', ecommerce_platform_selection, name='ecommerce_platform_selection'),
     path('api/business/data/', get_business_data, name='business_data'),  # Changed this line
     path('add-member/', AddBusinessMemberView.as_view(), name='add-business-member'),
+    path('checkout/create-session/', create_checkout_session, name='create_checkout_session'),
+
 
 ]

@@ -1,39 +1,44 @@
+#/Users/kuoldeng/projectx/backend/pyfactor/pyfactor/asgi.py
 import os
-import django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
+
 from django.core.asgi import get_asgi_application
+import django
+
+
+# Get Django ASGI application
+django_asgi_app = get_asgi_application()
+
+
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.security.websocket import AllowedHostsOriginValidator
 from django.conf import settings
+from channels.auth import AuthMiddlewareStack
+from onboarding.middleware import TokenAuthMiddlewareStack
+from pyfactor.logging_config import get_logger
 
-# Set up Django settings
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
+import onboarding.routing
+
 
 # Ensure Django apps are loaded
 django.setup()
 
 # Now it's safe to import your app-specific modules
-from chatbot.middleware import TokenAuthMiddlewareStack
-import chatbot.routing
 from pyfactor.logging_config import get_logger
 
-# Get Django ASGI application
-django_asgi_app = get_asgi_application()
+
 
 # Set up logger
 logger = get_logger()
 
-# Configure the ASGI application
 application = ProtocolTypeRouter({
-    "http": django_asgi_app,
-    "websocket": AllowedHostsOriginValidator(
-        TokenAuthMiddlewareStack(
-            URLRouter(
-                chatbot.routing.websocket_urlpatterns
-            )
+    "http": get_asgi_application(),
+    "websocket": TokenAuthMiddlewareStack(
+        URLRouter(
+            onboarding.routing.websocket_urlpatterns
         )
     ),
 })
-
 logger.debug("ASGI application configured")
 
 # Error handling for development

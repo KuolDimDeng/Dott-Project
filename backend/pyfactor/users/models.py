@@ -12,7 +12,7 @@ import uuid
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile', unique=True)
     business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, null=True, related_name='employees')
     occupation = models.CharField(max_length=200, null=True)
     street = models.CharField(max_length=200, null=True)
@@ -21,11 +21,22 @@ class UserProfile(models.Model):
     postcode = models.CharField(max_length=200, null=True)
     country = CountryField(default='US')
     phone_number = models.CharField(max_length=200, null=True)
-    database_name = models.CharField(max_length=255, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True, null=True)
     is_business_owner = models.BooleanField(default=False)
     shopify_access_token = models.CharField(max_length=255, null=True, blank=True)
+    database_name = models.CharField(max_length=100, blank=True, null=True)
+    database_status = models.CharField(max_length=20, default='not_created', choices=[
+        ('not_created', 'Not Created'),
+        ('creating', 'Creating'),
+        ('active', 'Active'),
+        ('error', 'Error'),
+    ])
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user'], name='unique_user_profile')
+        ]
 
     def to_dict(self):
         return {
@@ -41,9 +52,17 @@ class UserProfile(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.database_name and self.user:
-            safe_id = re.sub(r'[^a-zA-Z0-9_]', '', str(self.user.id).replace('-', '_'))
-            safe_email = re.sub(r'[^a-zA-Z0-9_]', '', self.user.email.split('@')[0])
-            self.database_name = f"{safe_id}_{safe_email}"
+            base_name = f"{self.user.id}_{self.user.email.split('@')[0]}"
+            self.database_name = re.sub(r'[^a-zA-Z0-9_]', '', base_name).lower()
+            suffix = 0
+            original_name = self.database_name
+            while UserProfile.objects.filter(database_name=self.database_name).exists():
+                suffix += 1
+                self.database_name = f"{original_name}_{suffix}"
+        
+        if not self.database_status:
+            self.database_status = 'not_created'
+        
         super().save(*args, **kwargs)
 
     def __str__(self):

@@ -472,9 +472,9 @@ def get_historical_data(database_name, kpi_name):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_kpi_data(request):
+    user = request.user
+    
     try:
-        user = request.user
-        
         # Check if user profile exists and has a database name
         try:
             user_profile = UserProfile.objects.get(user=user)
@@ -493,7 +493,6 @@ def get_kpi_data(request):
                     "message": "Database not properly set up",
                     "onboardingComplete": False
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
 
         except UserProfile.DoesNotExist:
             return JsonResponse({
@@ -501,48 +500,52 @@ def get_kpi_data(request):
                 "onboardingComplete": False
             }, status=status.HTTP_404_NOT_FOUND)
 
-        database_name = user_profile.database_name
+        # Proceed with KPI calculations
+        try:
+            revenue_growth_rate = calculate_revenue_growth_rate(database_name)
+            gross_profit_margin = calculate_gross_profit_margin(database_name)
+            net_profit_margin = calculate_net_profit_margin(database_name)
+            current_ratio = calculate_current_ratio(database_name)
+            debt_to_equity_ratio = calculate_debt_to_equity_ratio(database_name)
+            cash_flow = calculate_cash_flow(database_name)
 
-        # Check if the database connection exists
-        if database_name not in connections:
-            return JsonResponse({
-                "error": "Database connection not found",
-                "onboardingComplete": False
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            historical_data = {
+                'revenue_growth_rate': get_historical_data(database_name, 'revenue_growth_rate'),
+                'gross_profit_margin': get_historical_data(database_name, 'gross_profit_margin'),
+                'net_profit_margin': get_historical_data(database_name, 'net_profit_margin'),
+                'current_ratio': get_historical_data(database_name, 'current_ratio'),
+                'debt_to_equity_ratio': get_historical_data(database_name, 'debt_to_equity_ratio'),
+                'cash_flow': get_historical_data(database_name, 'cash_flow'),
+            }
 
-        # Proceed with KPI calculations only if all checks pass
-        revenue_growth_rate = calculate_revenue_growth_rate(database_name)
-        gross_profit_margin = calculate_gross_profit_margin(database_name)
-        net_profit_margin = calculate_net_profit_margin(database_name)
-        current_ratio = calculate_current_ratio(database_name)
-        debt_to_equity_ratio = calculate_debt_to_equity_ratio(database_name)
-        cash_flow = calculate_cash_flow(database_name)
+            data = {
+                'revenueGrowthRate': revenue_growth_rate,
+                'grossProfitMargin': gross_profit_margin,
+                'netProfitMargin': net_profit_margin,
+                'currentRatio': current_ratio,
+                'debtToEquityRatio': debt_to_equity_ratio,
+                'cashFlow': cash_flow,
+                'historicalData': historical_data,
+                'onboardingComplete': True
+            }
 
-        historical_data = {
-            'revenue_growth_rate': get_historical_data(database_name, 'revenue_growth_rate'),
-            'gross_profit_margin': get_historical_data(database_name, 'gross_profit_margin'),
-            'net_profit_margin': get_historical_data(database_name, 'net_profit_margin'),
-            'current_ratio': get_historical_data(database_name, 'current_ratio'),
-            'debt_to_equity_ratio': get_historical_data(database_name, 'debt_to_equity_ratio'),
-            'cash_flow': get_historical_data(database_name, 'cash_flow'),
-        }
+            return JsonResponse(data)
 
-        data = {
-            'revenueGrowthRate': revenue_growth_rate,
-            'grossProfitMargin': gross_profit_margin,
-            'netProfitMargin': net_profit_margin,
-            'currentRatio': current_ratio,
-            'debtToEquityRatio': debt_to_equity_ratio,
-            'cashFlow': cash_flow,
-            'historicalData': historical_data,
-            'onboardingComplete': True
-        }
-
-        return JsonResponse(data)
+        except ProgrammingError as e:
+            if "relation" in str(e) and "does not exist" in str(e):
+                logger.warning(f"Table does not exist yet for user {user.email}: {str(e)}")
+                return JsonResponse({
+                    "message": "Your dashboard is still being set up. Please check back in a few minutes.",
+                    "onboardingComplete": False,
+                    "status": "pending"
+                }, status=status.HTTP_202_ACCEPTED)
+            else:
+                logger.error(f"Unexpected database error for user {user.email}: {str(e)}")
+                raise
 
     except Exception as e:
-        logger.error(f"Error in get_kpi_data: {str(e)}", exc_info=True)
+        logger.error(f"Error in get_kpi_data for user {user.email}: {str(e)}", exc_info=True)
         return JsonResponse({
-            'error': str(e),
+            'error': "An unexpected error occurred while fetching KPI data.",
             'onboardingComplete': False
-        }, status=500)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -18,11 +18,11 @@ export async function POST(req) {
     const body = await req.json();
     logger.debug('Received signup data', { email: body.email });
 
-    const { email, password, confirmPassword } = body;
+    const { email, password1, password2 } = body;
 
     // Validate input
-    if (!email || !password || !confirmPassword) {
-      logger.warn('Invalid signup data', { email, hasPassword: !!password, hasConfirmPassword: !!confirmPassword });
+    if (!email || !password1 || !password2) {
+      logger.warn('Invalid signup data', { email, hasPassword1: !!password1, hasPassword2: !!password2 });
       return NextResponse.json({ message: 'Email, password, and password confirmation are required' }, { status: 400 });
     }
 
@@ -31,12 +31,12 @@ export async function POST(req) {
       return NextResponse.json({ message: 'Invalid email format' }, { status: 400 });
     }
 
-    if (!isStrongPassword(password)) {
+    if (!isStrongPassword(password1)) {
       logger.warn('Weak password');
       return NextResponse.json({ message: 'Password should be at least 6 characters long' }, { status: 400 });
     }
 
-    if (password !== confirmPassword) {
+    if (password1 !== password2) {
       logger.warn('Password mismatch during signup');
       return NextResponse.json({ message: 'Passwords do not match' }, { status: 400 });
     }
@@ -48,7 +48,7 @@ export async function POST(req) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password1, password2 }),
       credentials: 'include', // Include cookies in the request
     });
 

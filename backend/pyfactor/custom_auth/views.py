@@ -13,13 +13,14 @@ from rest_framework.response import Response
 from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
-
+from users.models import UserProfile  # Adjust the import path as necessary
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.authtoken.views import ObtainAuthToken
 from django.utils.decorators import method_decorator
 from django.contrib.auth import authenticate
 from django.views.decorators.csrf import csrf_exempt
-
+from django.core.exceptions import ImproperlyConfigured
+from django.core.mail import EmailMessage
 from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
 from django.urls import reverse_lazy
 from django.contrib.auth.tokens import default_token_generator
@@ -188,49 +189,92 @@ class SocialLoginView(APIView):
     
     
 class SignUpView(APIView):
-    permission_classes = [AllowAny]  # Add this line to allow access without authentication
+    permission_classes = [AllowAny]
+
+    def send_activation_email(self, user):
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+        activation_link = f"{settings.FRONTEND_URL}/activate/{uid}/{token}"
+        
+        subject = 'Activate your Pyfactor account'
+        message = f'Please click on this link to activate your account: {activation_link}'
+        from_email = settings.DEFAULT_FROM_EMAIL
+        recipient_list = [user.email]
+        
+        try:
+            email = EmailMessage(subject, message, from_email, recipient_list)
+            email.send(fail_silently=False)
+            logger.info(f"Activation email sent successfully to: {user.email}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send activation email: {str(e)}")
+            return False
 
     def post(self, request):
         logger.info(f"Received sign-up request: {request.data}")
+        
         serializer = CustomRegisterSerializer(data=request.data)
         
         if serializer.is_valid():
             logger.info("Sign-up data is valid")
             try:
-                # Save user
-                user = serializer.save()
-                logger.info(f"User created: {user.email}")
-                
-                # Send confirmation email
-                try:
-                    uid = urlsafe_base64_encode(force_bytes(user.pk))
-                    token = default_token_generator.make_token(user)
-                    activation_link = f"{settings.FRONTEND_URL}/activate/{uid}/{token}"
+                with transaction.atomic():
+                    user = serializer.save(request)
+                    logger.info(f"User created: {user.email}")
                     
-                    subject = 'Activate your Pyfactor account'
-                    message = render_to_string('activation/email_activation.html', {
-                        'user': user,
-                        'activate_url': activation_link,
-                    })
-                    
-                    logger.info(f"Sending activation email to: {user.email}")
-                    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
-                    logger.info("Activation email sent successfully")
-                    
-                except Exception as e:
-                    logger.error(f"Failed to send activation email: {str(e)}")
-                    return Response({"error": "Failed to send activation email"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    # Send confirmation email
+                    email_sent = self.send_activation_email(user)
 
-                return Response({"message": "User registered successfully. Please check your email to activate your account."}, status=status.HTTP_201_CREATED)
+                if email_sent:
+                    return Response({
+                        "message": "User registered successfully. Please check your email to activate your account.",
+                        "user_id": str(user.id),
+                        "email": user.email
+                    }, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({
+                        "message": "User registered successfully, but we couldn't send the activation email. Please contact support.",
+                        "user_id": str(user.id),
+                        "email": user.email
+                    }, status=status.HTTP_201_CREATED)
 
             except Exception as e:
                 logger.error(f"Error during user creation: {str(e)}")
-                return Response({"error": "Error creating user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({
+                    "error": "An error occurred during registration. Please try again later."
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         else:
-            logger.error(f"Invalid sign-up data: {serializer.errors}")
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            logger.warning(f"Invalid sign-up data: {serializer.errors}")
+            # Rest of your existing code for handling invalid data...
+            if 'email' in serializer.errors and any('already registered' in str(error) for error in serializer.errors['email']):
+                try:
+                    user = User.objects.get(email=request.data.get('email'))
+                    if not user.is_active:
+                        self.send_activation_email(user)
+                        return Response({
+                            "message": "This email is already registered but not activated. We've sent a new activation email."
+                        }, status=status.HTTP_200_OK)
+                    elif not user.is_onboarded:
+                        logger.info(f"Attempted registration with email that hasn't completed onboarding: {user.email}")
+                        return Response({
+                            "message": "This email is registered but hasn't completed onboarding. Please complete the onboarding process.",
+                            "onboarding_url": f"{settings.FRONTEND_URL}/onboarding"
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        logger.info(f"Attempted registration with already activated email: {user.email}")
+                        return Response({
+                            "message": "This email is already registered and activated. Please try logging in or use the 'Forgot Password' feature if you can't remember your password.",
+                            "login_url": f"{settings.FRONTEND_URL}/auth/sigin",
+                            "forgot_password_url": f"{settings.FRONTEND_URL}/forgot-password"
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                except User.DoesNotExist:
+                    logger.error(f"User not found for email: {request.data.get('email')}")
+                    return Response({
+                        "error": "An unexpected error occurred. Please try again later."
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ForgotPasswordView(APIView):

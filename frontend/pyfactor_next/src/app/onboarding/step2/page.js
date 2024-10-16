@@ -55,7 +55,12 @@ const OnboardingStep2 = () => {
       console.log('Data being saved for step 2:', subscriptionData);
       await updateFormData(subscriptionData);
       await saveStep2Data(subscriptionData);
-      goToNextStep();
+      
+      if (tier.title === 'Professional') {
+        router.push('/onboarding/step3'); // Redirect to payment page
+      } else {
+        goToNextStep(); // Go directly to step 4 for Basic plan
+      }
     } catch (error) {
       console.error('Failed to save step 2 data:', error);
     }

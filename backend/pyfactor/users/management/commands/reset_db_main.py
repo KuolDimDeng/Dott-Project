@@ -78,33 +78,45 @@ class Command(BaseCommand):
             else:
                 logger.info("No migration files found to delete.")
 
-               # Step 2: Drop all user databases
+            # Step 2: Drop all user databases
             conn_details = self.get_admin_db_connection_details()
             self.drop_all_user_databases(conn_details)
-
 
             # Step 3: Drop non-template databases
             database_status = self.drop_non_template_databases(conn_details)
 
-            # Step 4: Custom flush
+            # Step 4: Drop all views
+            self.drop_all_views()
+
+            # Step 5: Custom flush (drop all tables)
             table_status = self.custom_flush()
 
-            # Step 5: Drop all sequences
+            # Step 6: Drop all sequences
             self.drop_all_sequences()
 
-            # Step 6: Recreate and apply migrations
+            # Step 7: Reset all sequences
+            self.reset_all_sequences()
+
+            # Step 8: Recreate the public schema
+            with connection.cursor() as cursor:
+                self.drop_public_schema(cursor)
+
+            # Step 9: Recreate and apply migrations
             self.recreate_and_apply_migrations()
 
-            # Step 7: Check for lingering data
+            # Step 10: Reset sequences again after migrations
+            self.reset_all_sequences()
+
+            # Step 11: Check for lingering data
             self.check_and_clear_lingering_data()
 
-            # Step 8: Recreate account types
+            # Step 12: Recreate account types
             self.recreate_account_types()
 
-            # Step 9: Check for any remaining model changes
+            # Step 13: Check for any remaining model changes
             self.check_and_apply_remaining_changes()
 
-            # Step 10: Create NextAuth.js tables
+            # Step 14: Create NextAuth.js tables
             self.create_nextauth_tables(conn_details)
 
             self.print_summary(table_status, database_status)
@@ -196,7 +208,7 @@ class Command(BaseCommand):
 
     def drop_public_schema(self, cursor):
         try:
-            cursor.execute("DROP SCHEMA IF EXISTS public CASCADE;")
+            cursor.execute("DROP SCHEMA public CASCADE;")
             cursor.execute("CREATE SCHEMA public;")
             cursor.execute("GRANT ALL ON SCHEMA public TO postgres;")
             cursor.execute("GRANT ALL ON SCHEMA public TO public;")
@@ -262,7 +274,45 @@ class Command(BaseCommand):
         
         logger.info("Database flush attempt completed.")
         return table_status
-    
+
+    def reset_all_sequences(self):
+        logger.info("Resetting all sequences...")
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT 'SELECT SETVAL(' ||
+                    quote_literal(quote_ident(PGT.schemaname) || '.' || quote_ident(S.relname)) ||
+                    ', COALESCE(MAX(' ||quote_ident(C.attname)|| '), 1) ) FROM ' ||
+                    quote_ident(PGT.schemaname)|| '.'||quote_ident(T.relname)|| ';'
+                FROM pg_class AS S,
+                    pg_depend AS D,
+                    pg_class AS T,
+                    pg_attribute AS C,
+                    pg_tables AS PGT
+                WHERE S.relkind = 'S'
+                    AND S.oid = D.objid
+                    AND D.refobjid = T.oid
+                    AND D.refobjid = C.attrelid
+                    AND D.refobjsubid = C.attnum
+                    AND T.relname = PGT.tablename
+                ORDER BY S.relname;
+            """)
+            statements = cursor.fetchall()
+            for stmt in statements:
+                cursor.execute(stmt[0])
+        logger.info("All sequences reset.")
+
+    def drop_all_views(self):
+        logger.info("Dropping all views...")
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT table_name FROM information_schema.views WHERE table_schema = 'public';")
+            views = cursor.fetchall()
+            for view in views:
+                try:
+                    cursor.execute(f'DROP VIEW IF EXISTS "{view[0]}" CASCADE;')
+                    logger.info(f"Dropped view: {view[0]}")
+                except Exception as e:
+                    logger.error(f"Error dropping view {view[0]}: {e}")
+        
     def drop_all_sequences(self):
         logger.info("Dropping all sequences...")
         with connection.cursor() as cursor:

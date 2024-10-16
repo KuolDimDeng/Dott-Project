@@ -24,6 +24,7 @@ const Drawer = ({
   handlePurchasesClick,
   handleAccountingClick,
   handleInventoryClick,
+  handleHomeClick,
 }) => {
 
   const scrollThumbColor = '#64b5f6'; // Light blue color for the scrollbar thumb
@@ -85,6 +86,7 @@ const Drawer = ({
           handlePurchasesClick={handlePurchasesClick}
           handleAccountingClick={handleAccountingClick}
           handleInventoryClick={handleInventoryClick}
+          handleHomeClick={handleHomeClick}
         />
       </Box>
     </MuiDrawer>

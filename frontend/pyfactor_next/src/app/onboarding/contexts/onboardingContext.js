@@ -92,7 +92,6 @@ export const OnboardingProvider = ({ children }) => {
     }
   };
 
-
   const saveStep3Data = async (data) => {
     setLoading(true);
     setError(null);
@@ -113,7 +112,6 @@ export const OnboardingProvider = ({ children }) => {
     }
   };
 
-
   const saveStep4Data = async (data) => {
     setLoading(true);
     setError(null);
@@ -127,6 +125,7 @@ export const OnboardingProvider = ({ children }) => {
       
       return response.data;
     } catch (error) {
+      console.error('Error saving step 4 data:', error.response?.data || error.message);
       setError('Failed to save step 4 data. Please try again.');
       throw error;
     } finally {
@@ -260,7 +259,6 @@ export const OnboardingProvider = ({ children }) => {
     handleOnboardingRedirect(prevStatus);
   }, [onboardingStatus, formData.selectedPlan, handleOnboardingRedirect]);
 
-
   const updateFormData = useCallback((data) => {
     setFormData(prevData => ({...prevData, ...data}));
     localStorage.setItem('onboardingData', JSON.stringify({...formData, ...data}));
@@ -283,7 +281,6 @@ export const OnboardingProvider = ({ children }) => {
     saveStep3Data,
     saveStep4Data,
     setOnboardingStatus,
-    
   };
 
   return (

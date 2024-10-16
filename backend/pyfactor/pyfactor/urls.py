@@ -32,8 +32,11 @@ urlpatterns = [
     path('api/', include('alerts.urls')),
     path('api/financial-statements/', include('finance.urls')),
     path('api/taxes/', include('taxes.urls')),
-    path('api/onboarding/', include('onboarding.urls')),
-    path('api/', include('custom_auth.urls')),
+    path('api/onboarding/', include(('onboarding.urls', 'onboarding'))),
+    path('api/custom_auth/', include('custom_auth.urls')),
+
+
+    
 
 
 ]

@@ -1,5 +1,3 @@
-
-////Users/kuoldeng/projectx/frontend/pyfactor_next/src/components/SignUp.js
 'use client'
 
 import { useState } from 'react';
@@ -31,6 +29,21 @@ const schema = object({
   password2: string([minLength(1, 'This field is required')]),
 });
 
+// Function to get CSRF token from cookies
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
 
 export default function SignUp() {
   const [isLoading, setIsLoading] = useState(false);
@@ -60,26 +73,26 @@ export default function SignUp() {
     try {
       logger.debug('Submitting sign-up data:', data);
   
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch('/api/auth/signup/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email: data.email,
-          password1: data.password1,  // Ensure this is 'password1'
-          password2: data.password2,  // Ensure this is 'password2'
+          password1: data.password1,
+          password2: data.password2,
         }),
       });
   
       logger.debug('Sign-up API response status:', response.status);
   
+      const result = await response.json();
+  
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Sign up failed');
+        throw new Error(result.error || 'An error occurred during signup');
       }
   
-      const result = await response.json();
       logger.debug('Sign-up API response:', result);
   
       setUserEmail(data.email);
@@ -92,9 +105,6 @@ export default function SignUp() {
       setIsLoading(false);
     }
   };
-  
-  
-  
 
   const renderForm = () => (
     <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 1, width: '100%' }}>
@@ -117,47 +127,47 @@ export default function SignUp() {
         )}
       />
 
-              <Controller
-                name="password1" // Updated to password1
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    margin="normal"
-                    required
-                    fullWidth
-                    name="password1" // Updated to password1
-                    label="Password"
-                    type="password"
-                    id="password1" // Updated to password1
-                    autoComplete="new-password"
-                    error={!!errors.password1}
-                    helperText={errors?.password1?.message}
-                  />
-                )}
-              />
+      <Controller
+        name="password1"
+        control={control}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            margin="normal"
+            required
+            fullWidth
+            name="password1"
+            label="Password"
+            type="password"
+            id="password1"
+            autoComplete="new-password"
+            error={!!errors.password1}
+            helperText={errors?.password1?.message}
+          />
+        )}
+      />
 
-              <Controller
-                name="password2" // Updated to password2
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    margin="normal"
-                    required
-                    fullWidth
-                    name="password2" // Updated to password2
-                    label="Confirm Password"
-                    type="password"
-                    id="password2" // Updated to password2
-                    error={!!errors.password2 || (password1 && field.value && password1 !== field.value)}
-                    helperText={
-                      errors?.password2?.message || 
-                      (password1 && field.value && password1 !== field.value ? 'Passwords do not match' : '')
-                    }
-                  />
-                )}
-              />
+      <Controller
+        name="password2"
+        control={control}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            margin="normal"
+            required
+            fullWidth
+            name="password2"
+            label="Confirm Password"
+            type="password"
+            id="password2"
+            error={!!errors.password2 || (password1 && field.value && password1 !== field.value)}
+            helperText={
+              errors?.password2?.message || 
+              (password1 && field.value && password1 !== field.value ? 'Passwords do not match' : '')
+            }
+          />
+        )}
+      />
 
       <Button
         type="submit"
@@ -176,13 +186,11 @@ export default function SignUp() {
       )}
 
       <Box sx={{ mt: 2, textAlign: 'center' }}>
-      <Link href="/auth/signin">
+        <Link href="/auth/signin">
           <Typography variant="body2" component="span" sx={{ cursor: 'pointer', color: 'primary.main' }}>
             Already have an account? Sign In
           </Typography>
         </Link>
-
-
       </Box>
     </Box>
   );

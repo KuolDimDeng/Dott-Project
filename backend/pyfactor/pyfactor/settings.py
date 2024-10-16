@@ -51,6 +51,10 @@ print("PLAID_SECRET: ", PLAID_SECRET)
 # Stripe settings
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+STRIPE_PRICE_ID_MONTHLY = os.getenv('STRIPE_PRICE_ID_MONTHLY')
+STRIPE_PRICE_ID_ANNUAL = os.getenv('STRIPE_PRICE_ID_ANNUAL')
+
+
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join(PROJECT_ROOT, '.venv/lib/python3.12/site-packages'))
@@ -72,29 +76,30 @@ TIME_ZONE = 'UTC'
 USER_DATABASE_OPTIONS = {
     'connect_timeout': 10,
 }
-
+# Email settings for Gmail
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.office365.com'  # Outlook's SMTP server
+EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')  # Your email from .env
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Your email password from .env
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')  # Default from email address
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+
+
 
 
 FRONTEND_URL = 'http://localhost:3000'  # Adjust this to your actual frontend URL
 # Celery Configuration
 CELERY_BROKER_URL = 'redis://localhost:6379'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379'
-CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
-
 CELERY_BEAT_SCHEDULE = {
     'update-irs-tax-data-daily': {
         'task': 'taxes.tasks.update_irs_tax_data',
-        'schedule': crontab(hour=0, minute=0),  # Run daily at midnight
+        'schedule': crontab(hour=0, minute=0),  # Runs daily at midnight
     },
 }
 
@@ -111,8 +116,7 @@ DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': lambda request: False,
 }
 
-
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # CORS and CSRF configuration
 CORS_ALLOW_ALL_ORIGINS = True #True for DEVELOPMENT
@@ -137,6 +141,10 @@ ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False  # Disable username requirement
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None  # Explicitly set no username field
 ACCOUNT_EMAIL_VERIFICATION = 'optional'  # Set this as needed
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend'
+]
 
 
 # Celery configuration
@@ -180,7 +188,7 @@ SIMPLE_JWT = {
     'AUDIENCE': None,
     'ISSUER': None,
     'JWK_URL': None,
-    'LEEWAY': 0,
+    'LEEWAY': 10,
 
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
@@ -327,7 +335,7 @@ INSTALLED_APPS = [
     'django_cryptography',
     'phonenumber_field',
     'channels',  # Add this line
-    'users',
+    'users.apps.UsersConfig',  # replace 'users' with your actual app name
     'business',
     'sales',
     'finance',
@@ -348,6 +356,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'onboarding',
     'custom_auth',  # Add the new auth app
+
 
     
 
@@ -413,7 +422,8 @@ DATABASES = {
         'HOST': os.getenv('DB_HOST', 'db'),
         'PORT': os.getenv('DB_PORT', '5432'),
         'ATOMIC_REQUESTS': True,
-        'CONN_MAX_AGE': 600,
+        'CONN_MAX_AGE': 60,
+        'TIME_ZONE': 'UTC',  # Add this line explicitly
         'OPTIONS': {
             'connect_timeout': 10,
         },

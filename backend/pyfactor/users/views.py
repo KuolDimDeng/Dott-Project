@@ -64,14 +64,8 @@ class ProfileView(APIView):
                 profile_data['is_onboarded'] = request.user.is_onboarded
                 profile_data['country'] = str(user_profile.country) if user_profile.country else None
 
-                # Check if the database exists and update profile data
-                profile_data['database_status'] = 'not_created'
-                if user_profile.database_name:
-                    if user_profile.database_name in connections.databases:
-                        profile_data['database_status'] = 'active'
-                    else:
-                        profile_data['database_status'] = 'not_connected'
-                        logger.warning(f"Database {user_profile.database_name} not found in connections for user {request.user.email}")
+                # Use the database_status from the UserProfile model
+                profile_data['database_status'] = user_profile.database_status
 
                 logger.info("Successfully retrieved profile data for user %s", request.user)
                 logger.debug(f"Profile data: {profile_data}")
