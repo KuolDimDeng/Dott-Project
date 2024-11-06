@@ -2,100 +2,192 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
-import { CircularProgress, Box } from '@mui/material';
-import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
+import { CircularProgress, Box, Alert, Button, Typography } from '@mui/material';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import axiosInstance from '@/lib/axiosConfig';
+import { logger } from '@/utils/logger';
+import { useCallback, useEffect } from 'react';
+
+const publicRoutes = ['/', '/about', '/contact', '/auth/signin', '/auth/signup'];
+const authRoutes = ['/auth/signin', '/auth/signup', '/auth/forgot-password'];
+const onboardingRoutes = ['/onboarding/step1', '/onboarding/step2', '/onboarding/step3', '/onboarding/step4'];
 
 export default function AuthWrapper({ children }) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
-  const [isChecking, setIsChecking] = useState(true);
-  const { checkOnboardingStatus } = useOnboarding();
-  const [onboardingStatus, setOnboardingStatus] = useState(null);
+  const queryClient = useQueryClient();
 
-  const checkAndRedirect = useCallback(async () => {
-    console.log('AuthWrapper: Check and Redirect', { status, pathname });
-    console.log('Session:', session);
+  const handleRouting = useCallback((onboardingStatus) => {
+    if (!onboardingStatus) return;
 
-    if (status === 'loading') {
-      console.log('AuthWrapper: Session is loading');
-      return;
+    // Don't redirect if we're already on the correct page
+    if (pathname === `/onboarding/${onboardingStatus}`) return;
+
+    if (onboardingStatus !== 'complete') {
+      if (!onboardingRoutes.includes(pathname)) {
+        logger.info('Redirecting to onboarding', { status: onboardingStatus });
+        router.push(`/onboarding/${onboardingStatus}`);
+      }
+    } else if (pathname === '/' || pathname.startsWith('/onboarding')) {
+      logger.info('Redirecting to dashboard');
+      router.push('/dashboard');
     }
+  }, [pathname, router]);
 
-    setIsChecking(true);
-
-    const publicRoutes = ['/', '/about', '/contact', '/auth/signin', '/auth/signup'];
-
-    try {
-      if (status === 'authenticated') {
-        console.log('AuthWrapper: User is authenticated');
-
-        // Always check onboarding status to ensure it's up to date
-        try {
-          const onboardingResponse = await checkOnboardingStatus();
-          console.log('Onboarding Response:', onboardingResponse);
-          const newOnboardingStatus = onboardingResponse?.onboarding_status || 'step1';
-          setOnboardingStatus(newOnboardingStatus);
-
-          console.log('New Onboarding Status:', newOnboardingStatus);
-
-          if (newOnboardingStatus !== 'complete') {
-            if (!pathname.startsWith('/onboarding')) {
-              console.log('Redirecting to onboarding');
-              router.push(`/onboarding/${newOnboardingStatus}`);
-            }
-          } else if (pathname === '/' || pathname.startsWith('/onboarding')) {
-            console.log('Redirecting to dashboard');
-            router.push('/dashboard');
-          } else {
-            console.log('User is on an appropriate page');
+  // Query for onboarding status
+  const { 
+    data: onboardingData, 
+    isLoading: onboardingLoading,
+    error: onboardingError,
+    refetch: refetchOnboarding
+  } = useQuery({
+    queryKey: ['onboardingStatus'],
+    queryFn: async () => {
+      if (status !== 'authenticated' || !session?.user?.accessToken) {
+        return null;
+      }
+      
+      try {
+        const response = await axiosInstance.get('/api/onboarding/status/', {
+          headers: {
+            Authorization: `Bearer ${session.user.accessToken}`
           }
+        });
+        logger.info('Onboarding status response:', response.data);
+        return response.data;
+      } catch (error) {
+        logger.error('Error fetching onboarding status:', error);
+        throw error;
+      }
+    },
+    enabled: status === 'authenticated' && !!session?.user?.accessToken,
+    staleTime: 30000,
+    retry: (failureCount, error) => {
+      if (error?.response?.status === 401) return false;
+      return failureCount < 2;
+    },
+    onSuccess: (data) => {
+      if (data?.onboarding_status) {
+        handleRouting(data.onboarding_status);
+      }
+    },
+  });
+
+  // Route protection query
+  const { isLoading: routeCheckLoading } = useQuery({
+    queryKey: ['routeProtection', pathname, status],
+    queryFn: async () => {
+      // Allow public routes always
+      if (publicRoutes.includes(pathname)) {
+        return true;
+      }
+
+      // Redirect unauthenticated users to signin
+      if (status === 'unauthenticated' && !authRoutes.includes(pathname)) {
+        logger.info('Redirecting unauthenticated user to signin');
+        router.push('/auth/signin');
+        return null;
+      }
+
+      // Allow authenticated users to proceed
+      return true;
+    },
+    enabled: status !== 'loading',
+    staleTime: Infinity,
+  });
+
+  // Prefetch dashboard data
+  useQuery({
+    queryKey: ['prefetchDashboard'],
+    queryFn: async () => {
+      if (onboardingData?.onboarding_status === 'complete' && session?.user?.accessToken) {
+        try {
+          await queryClient.prefetchQuery({
+            queryKey: ['dashboardData'],
+            queryFn: () => axiosInstance.get('/api/dashboard/data', {
+              headers: {
+                Authorization: `Bearer ${session.user.accessToken}`
+              }
+            }),
+          });
         } catch (error) {
-          console.error('Error fetching onboarding status:', error);
-          // In case of error, don't change the route
-        }
-      } else if (status === 'unauthenticated') {
-        console.log('AuthWrapper: User is unauthenticated');
-        if (!publicRoutes.includes(pathname)) {
-          console.log('Redirecting to signin');
-          router.push('/auth/signin');
+          logger.error('Error prefetching dashboard data:', error);
         }
       }
-    } catch (error) {
-      console.error('AuthWrapper: Error during redirection', error);
-    } finally {
-      setIsChecking(false);
-    }
-  }, [status, pathname, session, router, checkOnboardingStatus]);
+      return null;
+    },
+    enabled: !!onboardingData?.onboarding_status && status === 'authenticated',
+    staleTime: Infinity,
+  });
 
+  // Handle session changes
   useEffect(() => {
-    let isMounted = true;
-    const timer = setTimeout(() => {
-      if (isMounted) {
-        checkAndRedirect();
-      }
-    }, 1000); // Add a 1-second delay to reduce frequency of checks
+    if (status === 'unauthenticated' && !publicRoutes.includes(pathname)) {
+      router.push('/auth/signin');
+    }
+  }, [status, pathname, router]);
 
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-    };
-  }, [checkAndRedirect]);
-
-  if (status === 'loading' || isChecking) {
+  // Loading state
+  if (status === 'loading' || onboardingLoading || routeCheckLoading) {
     return (
       <Box 
         display="flex" 
         justifyContent="center" 
         alignItems="center" 
         minHeight="100vh"
+        flexDirection="column"
+        gap={2}
       >
         <CircularProgress />
+        <Typography variant="body1" color="textSecondary">
+          {status === 'loading' && 'Checking authentication...'}
+          {onboardingLoading && 'Checking onboarding status...'}
+          {routeCheckLoading && 'Verifying route access...'}
+        </Typography>
       </Box>
     );
   }
 
+  // Error state
+  if (onboardingError) {
+    return (
+      <Box 
+        display="flex" 
+        justifyContent="center" 
+        alignItems="center" 
+        minHeight="100vh"
+        flexDirection="column"
+        gap={2}
+        p={3}
+      >
+        <Alert 
+          severity="error" 
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={() => refetchOnboarding()}
+            >
+              Retry
+            </Button>
+          }
+          sx={{ width: '100%', maxWidth: 500 }}
+        >
+          {onboardingError.message || 'Failed to check onboarding status'}
+        </Alert>
+        <Typography 
+          variant="body2" 
+          color="text.secondary"
+          align="center"
+        >
+          Please try again or contact support if the problem persists.
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Everything is good, render children
   return <>{children}</>;
 }

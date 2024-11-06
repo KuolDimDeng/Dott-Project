@@ -3,11 +3,16 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
-import { Box, Typography, Grid, Button, Card, CardContent, CardActions, Container, Divider, styled, CircularProgress } from '@mui/material';
+import { 
+  Box, Typography, Grid, Button, Card, CardContent, CardActions, 
+  Container, Divider, styled, CircularProgress, Alert 
+} from '@mui/material';
 import Image from 'next/image';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useOnboarding } from '../contexts/onboardingContext';
+import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
 
 const theme = createTheme({
   palette: {
@@ -38,11 +43,54 @@ const BillingToggle = styled(Box)(({ theme }) => ({
   },
 }));
 
-const OnboardingStep2 = () => {
+const tiers = [
+  {
+    title: 'Basic',
+    price: { monthly: '0', annual: '0' },
+    description: ['1 user included', 'Track income and expenses', '2 GB of storage'],
+    buttonText: 'Get started for free',
+    buttonVariant: 'outlined',
+  },
+  {
+    title: 'Professional',
+    subheader: 'Recommended',
+    price: { monthly: '15', annual: '150' },
+    description: ['Unlimited users', 'Payroll processing', '20 GB of storage'],
+    buttonText: 'Start Professional',
+    buttonVariant: 'contained',
+  },
+];
+
+const OnboardingStep2 = ({ onComplete }) => {
   const [billingCycle, setBillingCycle] = useState('monthly');
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { formData, updateFormData, goToNextStep, goToPrevStep, saveStep2Data, loading, error } = useOnboarding();
+  const queryClient = useQueryClient();
+  const { updateFormData } = useOnboarding();
+
+  const step2Mutation = useMutation({
+    mutationFn: async (data) => {
+      const response = await axiosInstance.post('/api/onboarding/save-step2/', data);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      updateFormData(variables);
+      queryClient.invalidateQueries(['onboardingStatus']);
+      
+      if (variables.selectedPlan === 'Professional') {
+        router.push('/onboarding/step3');
+      } else {
+        router.push('/onboarding/step4');
+      }
+      
+      if (onComplete) {
+        onComplete();
+      }
+    },
+    onError: (error) => {
+      console.error('Error saving step 2 data:', error);
+    }
+  });
 
   const handleBillingCycleChange = (cycle) => setBillingCycle(cycle);
 
@@ -53,38 +101,23 @@ const OnboardingStep2 = () => {
         billingCycle: billingCycle
       };
       console.log('Data being saved for step 2:', subscriptionData);
-      await updateFormData(subscriptionData);
-      await saveStep2Data(subscriptionData);
-      
-      if (tier.title === 'Professional') {
-        router.push('/onboarding/step3'); // Redirect to payment page
-      } else {
-        goToNextStep(); // Go directly to step 4 for Basic plan
-      }
+      await step2Mutation.mutateAsync(subscriptionData);
     } catch (error) {
       console.error('Failed to save step 2 data:', error);
     }
   };
 
-  const tiers = [
-    {
-      title: 'Basic',
-      price: { monthly: '0', annual: '0' },
-      description: ['1 user included', 'Track income and expenses', '2 GB of storage'],
-      buttonText: 'Get started for free',
-      buttonVariant: 'outlined',
-    },
-    {
-      title: 'Professional',
-      subheader: 'Recommended',
-      price: { monthly: '15', annual: '150' },
-      description: ['Unlimited users', 'Payroll processing', '20 GB of storage'],
-      buttonText: 'Start Professional',
-      buttonVariant: 'contained',
-    },
-  ];
+  const handlePrevStep = () => {
+    router.push('/onboarding/step1');
+  };
 
-  if (!session) return <Typography>Please sign in to access onboarding.</Typography>;
+  if (!session) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <Typography>Please sign in to access onboarding.</Typography>
+      </Box>
+    );
+  }
 
   return (
     <ThemeProvider theme={theme}>
@@ -108,7 +141,12 @@ const OnboardingStep2 = () => {
             </Box>
           </BillingToggle>
         </Box>
-        {error && <Typography color="error" align="center" sx={{ mb: 2 }}>{error}</Typography>}
+
+        {step2Mutation.isError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {step2Mutation.error?.message || 'An error occurred while saving your plan selection'}
+          </Alert>
+        )}
         
         <Grid container spacing={4}>
           {tiers.map((tier) => (
@@ -132,17 +170,22 @@ const OnboardingStep2 = () => {
                     fullWidth
                     variant={tier.buttonVariant}
                     onClick={() => handleSubscriptionSelect(tier)}
-                    disabled={loading}
+                    disabled={step2Mutation.isPending}
                   >
-                    {loading ? <CircularProgress size={24} /> : tier.buttonText}
+                    {step2Mutation.isPending ? <CircularProgress size={24} /> : tier.buttonText}
                   </Button>
                 </CardActions>
               </Card>
             </Grid>
           ))}
         </Grid>
+        
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <Button variant="outlined" onClick={goToPrevStep} disabled={loading}>
+          <Button 
+            variant="outlined" 
+            onClick={handlePrevStep}
+            disabled={step2Mutation.isPending}
+          >
             Previous Step
           </Button>
         </Box>

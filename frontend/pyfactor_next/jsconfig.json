@@ -1,15 +1,53 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "paths": {
-      "@/*": ["./*"],
-      "@src/*": ["src/*"],
-      "@components/*": ["src/app/components/*"],
-      "@contexts/*": ["src/contexts/*"],
-      "@utils/*": ["utils/*"],
-      "@hooks/*": ["src/hooks/*"],
-      "@app/*": ["src/app/*"],
-      "@dashboard/*": ["src/app/dashboard/*"]
+      "@/*": ["./src/*"],
+      "@app/*": ["./src/app/*"],
+      "@components/*": ["./src/app/components/*"],
+      "@layouts/*": ["./src/app/layouts/*"],
+      "@styles/*": ["./src/styles/*"],
+      "@lib/*": ["./src/lib/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@contexts/*": ["./src/contexts/*"],
+      "@providers/*": ["./src/providers/*"],
+      "@dashboard/*": ["./src/app/dashboard/*"],
+      "@auth/*": ["./src/app/auth/*"],
+      "@onboarding/*": ["./src/app/onboarding/*"],
+      "@api/*": ["./src/app/api/*"],
+      "@types/*": ["./src/types/*"],
+      "@config/*": ["./src/config/*"],
+      "@services/*": ["./src/services/*"],
+      "@constants/*": ["./src/constants/*"]
     }
-  }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
 }

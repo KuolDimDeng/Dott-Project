@@ -4,14 +4,19 @@ import React from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { TextField, Select, MenuItem, FormControl, InputLabel, Typography, Button, Container, Grid, Paper, Box, CircularProgress } from '@mui/material';
+import { 
+  TextField, Select, MenuItem, FormControl, InputLabel, Typography, 
+  Button, Container, Grid, Paper, Box, CircularProgress, Alert 
+} from '@mui/material';
 import Image from 'next/image';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
-import { countries, defaultCountry } from '@/app/countryList/page';
+import { countries } from '@/app/countryList/page';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
 import { useForm, Controller } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
+import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
 
 const theme = createTheme({
   palette: {
@@ -31,22 +36,42 @@ const schema = yup.object().shape({
   dateFounded: yup.date().required('Date founded is required').max(new Date(), 'Date cannot be in the future'),
 });
 
-const OnboardingStep1 = () => {
+const OnboardingStep1 = ({ onComplete }) => {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { formData, updateFormData, goToNextStep, saveStep1Data, loading, error } = useOnboarding();
+  const queryClient = useQueryClient();
+  const { formData, updateFormData } = useOnboarding();
+
   const { control, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       ...formData,
       country: formData.country || '',
       legalStructure: formData.legalStructure || '',
-      first_name: formData.firstName || '',
-      last_name: formData.lastName || '',
-      business_name: formData.businessName || '',
-     industry: formData.industry || '',
-      date_founded: formData.dateFounded || new Date(),
+      firstName: formData.firstName || '',
+      lastName: formData.lastName || '',
+      businessName: formData.businessName || '',
+      industry: formData.industry || '',
+      dateFounded: formData.dateFounded || new Date().toISOString().split('T')[0],
     },
+  });
+
+  const step1Mutation = useMutation({
+    mutationFn: async (data) => {
+      const response = await axiosInstance.post('/api/onboarding/save-step1/', data);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      updateFormData(variables);
+      queryClient.invalidateQueries(['onboardingStatus']);
+      router.push('/onboarding/step2');
+      if (onComplete) {
+        onComplete();
+      }
+    },
+    onError: (error) => {
+      console.error('Error saving step 1 data:', error);
+    }
   });
 
   const onSubmit = async (data) => {
@@ -71,16 +96,20 @@ const OnboardingStep1 = () => {
         legalStructure: data.legalStructure,
         dateFounded: formattedDate,
       };
-      console.log('Data being saved for step 1:', onboardingData);
-      await saveStep1Data(onboardingData);
-      goToNextStep();
+      
+      await step1Mutation.mutateAsync(onboardingData);
     } catch (error) {
-      console.error('Error saving step 1 data:', error);
+      console.error('Error in form submission:', error);
     }
   };
 
-  if (!session) return <Typography>Please sign in to access onboarding.</Typography>;
-
+  if (!session) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <Typography>Please sign in to access onboarding.</Typography>
+      </Box>
+    );
+  }
 
   return (
     <ThemeProvider theme={theme}>
@@ -91,7 +120,13 @@ const OnboardingStep1 = () => {
               <Image src="/static/images/Pyfactor.png" alt="Pyfactor Logo" width={150} height={50} priority />
               <Typography variant="h6" color="primary" gutterBottom>STEP 1 OF 2</Typography>
               <Typography component="h2" variant="h5" gutterBottom>Welcome to Dott!</Typography>
-              {error && <Typography color="error">{error}</Typography>}
+              
+              {step1Mutation.isError && (
+                <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
+                  {step1Mutation.error?.message || 'An error occurred while saving your data'}
+                </Alert>
+              )}
+
               <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 3, width: '100%' }}>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
@@ -107,6 +142,7 @@ const OnboardingStep1 = () => {
                           label="First Name"
                           error={!!errors.firstName}
                           helperText={errors.firstName?.message}
+                          disabled={step1Mutation.isPending}
                         />
                       )}
                     />
@@ -124,6 +160,7 @@ const OnboardingStep1 = () => {
                           label="Last Name"
                           error={!!errors.lastName}
                           helperText={errors.lastName?.message}
+                          disabled={step1Mutation.isPending}
                         />
                       )}
                     />
@@ -141,6 +178,7 @@ const OnboardingStep1 = () => {
                           label="What's your business name?"
                           error={!!errors.businessName}
                           helperText={errors.businessName?.message}
+                          disabled={step1Mutation.isPending}
                         />
                       )}
                     />
@@ -157,6 +195,7 @@ const OnboardingStep1 = () => {
                             onChange={onChange}
                             value={value || ''}
                             label="Select your industry"
+                            disabled={step1Mutation.isPending}
                           >
                             <MenuItem value="" disabled>Select an industry</MenuItem>
                             {businessTypes.map((type) => (
@@ -180,6 +219,7 @@ const OnboardingStep1 = () => {
                             onChange={onChange}
                             value={value || ''}
                             label="Where is your business located?"
+                            disabled={step1Mutation.isPending}
                           >
                             <MenuItem value="" disabled>Select a country</MenuItem>
                             {countries.map((country) => (
@@ -203,6 +243,7 @@ const OnboardingStep1 = () => {
                             onChange={onChange}
                             value={value || ''}
                             label="Legal Structure"
+                            disabled={step1Mutation.isPending}
                           >
                             <MenuItem value="" disabled>Select a legal structure</MenuItem>
                             {legalStructures.map((structure) => (
@@ -229,13 +270,20 @@ const OnboardingStep1 = () => {
                           InputLabelProps={{ shrink: true }}
                           error={!!errors.dateFounded}
                           helperText={errors.dateFounded?.message}
+                          disabled={step1Mutation.isPending}
                         />
                       )}
                     />
                   </Grid>
                   <Grid item xs={12}>
-                    <Button type="submit" variant="contained" color="primary" fullWidth disabled={loading}>
-                      {loading ? <CircularProgress size={24} /> : 'Next'}
+                    <Button 
+                      type="submit" 
+                      variant="contained" 
+                      color="primary" 
+                      fullWidth 
+                      disabled={step1Mutation.isPending}
+                    >
+                      {step1Mutation.isPending ? <CircularProgress size={24} /> : 'Next'}
                     </Button>
                   </Grid>
                 </Grid>
@@ -280,6 +328,6 @@ const OnboardingStep1 = () => {
       </Grid>
     </ThemeProvider>
   );
-}
+};
 
-  export default OnboardingStep1;
+export default OnboardingStep1;

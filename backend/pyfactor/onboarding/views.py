@@ -205,31 +205,37 @@ class CleanupOnboardingView(APIView):
 
 class OnboardingStatusView(APIView):
     permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]  # Add this line
 
     def get(self, request):
         logger.info(f"Fetching onboarding status for user: {request.user.email}")
         try:
-            onboarding_progress = OnboardingProgress.objects.get(user=request.user)
+            # First try to get existing progress
+            onboarding_progress = OnboardingProgress.objects.filter(user=request.user).first()
+            
+            if not onboarding_progress:
+                # Create new progress if none exists
+                onboarding_progress = OnboardingProgress.objects.create(
+                    user=request.user,
+                    email=request.user.email,
+                    onboarding_status='step1',
+                    current_step=1
+                )
+                logger.info(f"Created new onboarding progress for user: {request.user.email}")
             
             return Response({
                 "onboarding_status": onboarding_progress.onboarding_status,
-                "current_step": onboarding_progress.current_step
-            })
-
-        except OnboardingProgress.DoesNotExist:
-            logger.error(f"OnboardingProgress not found for user: {request.user.email}")
-            return Response({
-                "onboarding_status": "step1",
-                "current_step": 1
+                "current_step": onboarding_progress.current_step,
+                "email": onboarding_progress.email
             }, status=status.HTTP_200_OK)
+
         except Exception as e:
-            logger.exception(f"Unexpected error in OnboardingStatusView for user {request.user.email}: {str(e)}")
+            logger.exception(f"Error in OnboardingStatusView for user {request.user.email}: {str(e)}")
             return Response({
                 "error": "An unexpected error occurred",
-                "onboarding_status": "error",
+                "onboarding_status": "step1",
                 "current_step": 1
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @shared_task
 def cleanup_expired_onboarding():

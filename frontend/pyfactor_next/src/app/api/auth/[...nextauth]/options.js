@@ -1,13 +1,48 @@
-import GoogleProvider from "next-auth/providers/google";
-import axios from 'axios';
+// /pages/api/auth/[...nextauth].js
 
+import NextAuth from 'next-auth';
+import GoogleProvider from "next-auth/providers/google";
+import { logger } from '@/utils/logger';
+import axiosInstance from '@/lib/axiosConfig';
+
+/**
+ * Exchange Google token for our backend token
+ */
 async function exchangeGoogleToken(googleToken) {
   try {
-    const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/token-exchange/`, { token: googleToken });
+    logger.info('Exchanging Google token');
+    const response = await axiosInstance.post('/api/onboarding/token-exchange/', {
+      token: googleToken
+    });
+    logger.info('Token exchange successful');
     return response.data;
   } catch (error) {
-    console.error('Token exchange failed:', error.message);
-    throw error;
+    logger.error('Token exchange failed:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.error || 'Failed to exchange token');
+  }
+}
+
+/**
+ * Refresh access token
+ */
+async function refreshAccessToken(token) {
+  try {
+    const response = await axiosInstance.post('/api/token/refresh/', {
+      refresh: token.refreshToken
+    });
+
+    return {
+      ...token,
+      accessToken: response.data.access,
+      refreshToken: response.data.refresh ?? token.refreshToken,
+      accessTokenExpires: Date.now() + 60 * 60 * 1000, // 1 hour
+    };
+  } catch (error) {
+    logger.error('Error refreshing access token:', error);
+    return {
+      ...token,
+      error: 'RefreshAccessTokenError',
+    };
   }
 }
 
@@ -21,55 +56,196 @@ export const authOptions = {
           prompt: "consent",
           access_type: "offline",
           response_type: "code",
+          scope: "openid email profile",
         },
       },
     }),
   ],
+  
   callbacks: {
-    async signIn({ user, account }) {
-      if (account?.provider === "google") {
-        try {
-          const { access, refresh, user_id, onboarding_status } = await exchangeGoogleToken(account.id_token);
-          user.access_token = access;
-          user.refresh_token = refresh;
-          user.id = user_id;
-          user.onboardingStatus = onboarding_status;
+    async signIn({ user, account, profile }) {
+      try {
+        logger.info('Sign in callback initiated', { 
+          provider: account?.provider,
+          email: profile?.email 
+        });
+        
+        if (account?.provider === "google" && account?.id_token) {
+          const tokenData = await exchangeGoogleToken(account.id_token);
+          
+          // Enrich user object with additional data
+          user.access_token = tokenData.access;
+          user.refresh_token = tokenData.refresh;
+          user.id = tokenData.user_id;
+          user.onboardingStatus = tokenData.onboarding_status;
+          user.email = profile.email;
+          user.name = profile.name;
+          user.image = profile.picture;
+          user.accessTokenExpires = Date.now() + 60 * 60 * 1000; // 1 hour
+
+          logger.info('Google sign-in successful', { 
+            userId: tokenData.user_id,
+            email: profile.email 
+          });
+          
           return true;
-        } catch (error) {
-          console.error("Google sign-in error:", error.message);
-          return false;
         }
+
+        return !!user;
+      } catch (error) {
+        logger.error('Sign in error:', error);
+        return false;
       }
-      return true;
     },
-    async jwt({ token, user }) {
-      if (user) {
-        token.accessToken = user.access_token;
-        token.refreshToken = user.refresh_token;
-        token.userId = user.id;
-        token.onboardingStatus = user.onboardingStatus;
+
+    async jwt({ token, user, account }) {
+      try {
+        // Initial sign in
+        if (account && user) {
+          logger.info('JWT callback - initial sign in', { 
+            email: user.email 
+          });
+          
+          return {
+            ...token,
+            accessToken: user.access_token,
+            refreshToken: user.refresh_token,
+            userId: user.id,
+            onboardingStatus: user.onboardingStatus,
+            email: user.email,
+            accessTokenExpires: user.accessTokenExpires,
+          };
+        }
+
+        // Return previous token if the access token has not expired
+        if (Date.now() < token.accessTokenExpires) {
+          return token;
+        }
+
+        // Access token has expired, refresh it
+        logger.info('Refreshing access token');
+        return await refreshAccessToken(token);
+
+      } catch (error) {
+        logger.error('JWT callback error:', error);
+        return {
+          ...token,
+          error: 'RefreshAccessTokenError',
+        };
       }
-      return token;
     },
+
     async session({ session, token }) {
-      session.user = session.user || {};
-      session.user.id = token.userId;
-      session.user.onboardingStatus = token.onboardingStatus;
-      session.user.accessToken = token.accessToken;
-      session.user.refreshToken = token.refreshToken;
-      return session;
+      try {
+        logger.info('Session callback', { email: token.email });
+        
+        session.user = {
+          ...session.user,
+          id: token.userId,
+          onboardingStatus: token.onboardingStatus,
+          accessToken: token.accessToken,
+          refreshToken: token.refreshToken,
+          email: token.email,
+          error: token.error,
+        };
+
+        session.error = token.error;
+        return session;
+      } catch (error) {
+        logger.error('Session callback error:', error);
+        return {
+          ...session,
+          error: 'SessionError',
+        };
+      }
+    },
+
+    async redirect({ url, baseUrl }) {
+      try {
+        // Allows relative callback URLs
+        if (url.startsWith('/')) {
+          return `${baseUrl}${url}`;
+        }
+        // Allows callback URLs on the same origin
+        else if (new URL(url).origin === baseUrl) {
+          return url;
+        }
+        return baseUrl;
+      } catch (error) {
+        logger.error('Redirect error:', error);
+        return baseUrl;
+      }
     },
   },
+
+  events: {
+    async signIn(message) {
+      logger.info('User signed in', { 
+        email: message.user?.email,
+        provider: message.account?.provider 
+      });
+    },
+    async signOut(message) {
+      logger.info('User signed out', { 
+        email: message.token?.email 
+      });
+    },
+    async createUser(message) {
+      logger.info('New user created', { 
+        email: message.user?.email 
+      });
+    },
+    async linkAccount(message) {
+      logger.info('Account linked', { 
+        email: message.user?.email,
+        provider: message.account?.provider 
+      });
+    },
+    async session(message) {
+      if (message.session?.error) {
+        logger.error('Session error:', message.session.error);
+      }
+    },
+    async error(error) {
+      logger.error('Auth error:', error);
+    }
+  },
+
   pages: {
     signIn: '/auth/signin',
     error: '/auth/error',
+    signOut: '/auth/signout',
+    verifyRequest: '/auth/verify-request',
   },
+
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
   },
+
+  jwt: {
+    secret: process.env.NEXTAUTH_SECRET,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    encryption: true,
+  },
+
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
+  
+  logger: {
+    error(code, metadata) {
+      logger.error(code, metadata);
+    },
+    warn(code) {
+      logger.warn(code);
+    },
+    debug(code, metadata) {
+      logger.debug(code, metadata);
+    }
+  }
 };
 
-console.log("NextAuth configuration loaded.");
+logger.info("NextAuth configuration loaded.");
+
+export default NextAuth(authOptions);

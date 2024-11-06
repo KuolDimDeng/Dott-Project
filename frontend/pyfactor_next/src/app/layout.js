@@ -1,45 +1,30 @@
-'use client';
-
-import { SessionProvider } from 'next-auth/react';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { ErrorBoundary } from 'react-error-boundary';
-import theme from '@/styles/theme';
+// src/app/layout.js
+import Providers from '@/src/providers';
 import AuthWrapper from './AuthWrapper/page';
-import { OnboardingProvider } from './onboarding/contexts/onboardingContext';
-import { useEffect } from 'react';
 
-function ErrorFallback({ error, resetErrorBoundary }) {
-  console.error("ErrorFallback: Application error", error);
-  return (
-    <div role="alert">
-      <p>Something went wrong:</p>
-      <pre>{error.message}</pre>
-      <button onClick={resetErrorBoundary}>Try again</button>
-    </div>
-  );
-}
+export const metadata = {
+  title: 'Dott: Small Business Platform',
+  description: 'Dott is a small business solutions app that helps small businesses manage their business operations effectively.',
+  icons: {
+    icon: '/static/images/favicon.png',
+  },
+};
 
 export default function RootLayout({ children }) {
-  console.log("RootLayout: Rendering");
-
-
-
   return (
     <html lang="en">
+      <head>
+        <link 
+          rel="icon" 
+          type="image/png" 
+          href="/static/images/favicon.png"
+        />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
       <body>
-        <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => {
-          console.log("ErrorBoundary: Resetting error state");
-        }}>
-          <SessionProvider>
-            <OnboardingProvider>
-              <ThemeProvider theme={theme}>
-                <CssBaseline />
-                <AuthWrapper>{children}</AuthWrapper>
-              </ThemeProvider>
-            </OnboardingProvider>
-          </SessionProvider>
-        </ErrorBoundary>
+        <Providers>
+          <AuthWrapper>{children}</AuthWrapper>
+        </Providers>
       </body>
     </html>
   );
