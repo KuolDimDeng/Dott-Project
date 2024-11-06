@@ -1,4 +1,4 @@
-// /src/app/onboarding/page.jsx
+// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/page.js
 'use client';
 
 import { useEffect } from 'react';
@@ -11,7 +11,8 @@ import OnboardingStep1 from './step1/page';
 import OnboardingStep2 from './step2/page';
 import OnboardingStep3 from './step3/page';
 import OnboardingStep4 from './step4/page';
-import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';
+
 
 export default function Onboarding() {
   const router = useRouter();

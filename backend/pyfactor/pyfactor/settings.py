@@ -89,25 +89,12 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
 
 FRONTEND_URL = 'http://localhost:3000'  # Adjust this to your actual frontend URL
-# Celery Configuration
-CELERY_BROKER_URL = 'redis://localhost:6379'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
-CELERY_BEAT_SCHEDULE = {
-    'update-irs-tax-data-daily': {
-        'task': 'taxes.tasks.update_irs_tax_data',
-        'schedule': crontab(hour=0, minute=0),  # Runs daily at midnight
-    },
-}
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-8)j4zojil$u=s73e8yap9s-q6swefl((h)3krq))g@4qm$1crw')
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -146,6 +133,11 @@ CORS_ALLOWED_HEADERS = [
     'x-requested-with',
 ]
 
+CORS_EXPOSE_HEADERS = [
+    'access-token',
+    'refresh-token',
+]
+
 
 # Update CSRF settings
 CSRF_COOKIE_SECURE = True if not DEBUG else False
@@ -170,27 +162,41 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Celery configuration
-CELERY_BROKER_URL = 'redis://localhost:6379'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379'
-CELERY_TIMEZONE = 'UTC'
-CELERY_BEAT_SCHEDULE = {
-    'update-irs-tax-data-daily': {
-        'task': 'taxes.tasks.update_irs_tax_data',
-        'schedule': crontab(hour=0, minute=0),
-    },
-}
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 
 # Session and authentication settings
 AUTH_USER_MODEL = 'custom_auth.User'
+# Session Settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-SESSION_COOKIE_AGE = 3600  # 1 hour in seconds
+SESSION_COOKIE_AGE = 1209600  # 2 weeks
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_NAME = 'sessionid'
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# Security Settings
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
 
 # REST framework settings
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'users.utils_error.error_handling.custom_exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.SessionAuthentication',  # Add this for development
+        'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -200,34 +206,48 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser',
     ],
+    # Add rate limiting
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '1000/day'
+    },
 }
 # JWT settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,  # Change to True
+    'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
-    'UPDATE_LAST_LOGIN': True,  # Change to True
-
+    'UPDATE_LAST_LOGIN': True,
+    
+    # Add these additional settings
+    'AUTH_COOKIE': 'access_token',  # Cookie name for access token
+    'AUTH_COOKIE_REFRESH': 'refresh_token',  # Cookie name for refresh token
+    'AUTH_COOKIE_DOMAIN': None,  # Specify domain if needed
+    'AUTH_COOKIE_SECURE': True,  # Should be True in production
+    'AUTH_COOKIE_HTTP_ONLY': True,  # Prevent JavaScript access
+    'AUTH_COOKIE_PATH': '/',  # Cookie path
+    'AUTH_COOKIE_SAMESITE': 'Lax',  # Cookie SameSite policy
+    
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
     'VERIFYING_KEY': None,
-    'AUDIENCE': None,
-    'ISSUER': None,
-
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
-
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    
     'TOKEN_TYPE_CLAIM': 'token_type',
-
     'JTI_CLAIM': 'jti',
-
-    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
-    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=60),
-    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+    
+    # Add token blacklist settings
+    'BLACKLIST_TOKEN_CHECKS': [
+        'rest_framework_simplejwt.token_blacklist.check_blacklist',
+    ],
 }
 
 # Logging configuration

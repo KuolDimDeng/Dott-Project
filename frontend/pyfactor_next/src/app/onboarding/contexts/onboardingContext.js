@@ -1,3 +1,4 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/contexts/onboardingContext.js
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
@@ -7,7 +8,6 @@ import axiosInstance from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useSession, signOut } from 'next-auth/react';
 
-const OnboardingContext = createContext();
 
 const ONBOARDING_STEPS = {
   INITIAL: 'step1',
@@ -16,6 +16,9 @@ const ONBOARDING_STEPS = {
   SETUP: 'step4',
   COMPLETE: 'complete'
 };
+
+export const OnboardingContext = createContext(null);
+
 
 export const OnboardingProvider = ({ children }) => {
   const router = useRouter();

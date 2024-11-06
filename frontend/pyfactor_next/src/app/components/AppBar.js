@@ -129,7 +129,7 @@ function AppAppBar() {
         >
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Image
-              src="/images/Pyfactor.png"
+              src="/static/images/Pyfactor.png"
               alt="Pyfactor logo"
               width={100}
               height={33}

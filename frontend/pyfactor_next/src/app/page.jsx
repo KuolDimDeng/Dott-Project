@@ -11,8 +11,9 @@ import FAQ from './components/FAQ';
 import Footer from './components/Footer';
 import AppAppBar from './components/AppBar';
 import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
+import { AppErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 
-export default function LandingPage() {
+function LandingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { checkOnboardingStatus } = useOnboarding();
@@ -32,7 +33,7 @@ export default function LandingPage() {
             router.push('/onboarding');
           } else {
             console.log("User fully onboarded, redirecting to dashboard");
-           router.push('/dashboard');
+            router.push('/dashboard');
           }
         } catch (error) {
           console.error("Error checking onboarding status:", error);
@@ -63,5 +64,13 @@ export default function LandingPage() {
       <FAQ />
       <Footer />
     </>
+  );
+}
+
+export default function PageWithErrorBoundary() {
+  return (
+    <AppErrorBoundary>
+      <LandingPage />
+    </AppErrorBoundary>
   );
 }

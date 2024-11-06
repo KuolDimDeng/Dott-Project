@@ -14,8 +14,8 @@ import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
 import { countries } from '@/app/countryList/page';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
 import { useForm, Controller } from 'react-hook-form';
-import * as yup from 'yup';
-import { yupResolver } from '@hookform/resolvers/yup';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
 
 const theme = createTheme({
@@ -26,14 +26,14 @@ const theme = createTheme({
   },
 });
 
-const schema = yup.object().shape({
-  firstName: yup.string().required('First name is required'),
-  lastName: yup.string().required('Last name is required'),
-  businessName: yup.string().required('Business name is required'),
-  industry: yup.string().required('Industry is required'),
-  country: yup.string().required('Country is required'),
-  legalStructure: yup.string().required('Legal structure is required'),
-  dateFounded: yup.date().required('Date founded is required').max(new Date(), 'Date cannot be in the future'),
+const validationSchema = z.object({
+  businessName: z.string().min(1, 'Business name is required'),
+  industry: z.string().min(1, 'Industry is required'),
+  country: z.string().min(1, 'Country is required'),
+  legalStructure: z.string().min(1, 'Legal structure is required'),
+  dateFounded: z.string().min(1, 'Date founded is required'),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
 });
 
 const OnboardingStep1 = ({ onComplete }) => {
@@ -41,9 +41,13 @@ const OnboardingStep1 = ({ onComplete }) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { formData, updateFormData } = useOnboarding();
-
-  const { control, handleSubmit, formState: { errors } } = useForm({
-    resolver: yupResolver(schema),
+  
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(validationSchema),
     defaultValues: {
       ...formData,
       country: formData.country || '',

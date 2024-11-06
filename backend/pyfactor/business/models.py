@@ -132,7 +132,7 @@ class Business(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='owned_businesses', null=True)
     business_num = models.CharField(max_length=6, unique=True, editable=False)
-    name = models.CharField(max_length=200)
+    business_name = models.CharField(max_length=200)
     business_type = models.CharField(max_length=50, choices=BUSINESS_TYPES)
     street = models.CharField(max_length=200, blank=True)
     city = models.CharField(max_length=200, blank=True)
@@ -175,8 +175,10 @@ class Business(models.Model):
             self.owner_id = self._owner_id
         super().save(*args, **kwargs)
 
+
     def __str__(self):
-        return self.name if self.name else f"Business {self.pk if self.pk else 'unsaved'}"
+        return self.business_name if self.business_name else f"Business {self.pk if self.pk else 'unsaved'}"
+
 
 class Subscription(models.Model):
 
@@ -204,7 +206,7 @@ class Billing(models.Model):
     is_paid = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.business.name} - {self.amount} - {self.date}"
+        return f"{self.business.business_name} - {self.amount} - {self.date}"
     
 class BusinessMember(models.Model):
     ROLE_CHOICES = [
@@ -229,4 +231,4 @@ class BusinessMember(models.Model):
         unique_together = ('business', 'user')
 
     def __str__(self):
-        return f"{self.user.email} - {self.business.name} - {self.get_role_display()}"
+        return f"{self.user.email} - {self.business.business_name} - {self.get_role_display()}"

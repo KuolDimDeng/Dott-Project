@@ -1,7 +1,9 @@
 #/Users/kuoldeng/projectx/backend/pyfactor/custom_auth/urls.py
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView, TokenBlacklistView
+
+
 
 from .views import (
     RegisterView,
@@ -28,6 +30,8 @@ urlpatterns = [
     path('reset/<uidb64>/<token>/', CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),  # Password reset confirm
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),  # Reset complete view
     path('update-session/', UpdateSessionView.as_view(), name='update_session'),
+    path('token/blacklist/', TokenBlacklistView.as_view(), name='token_blacklist'),
+
 
 
 ]

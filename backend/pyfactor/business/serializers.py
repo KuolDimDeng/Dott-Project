@@ -11,7 +11,7 @@ User = get_user_model()
 class BusinessRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Business
-        fields = ['name', 'business_type', 'street', 'city', 'state', 'postcode', 'country', 'phone_number', 'legal_structure']
+        fields = ['business_name', 'business_type', 'street', 'city', 'state', 'postcode', 'country', 'phone_number', 'legal_structure']
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,7 +24,7 @@ class BusinessSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Business
-        fields = ['name', 'business_type', 'subscriptions', 'active_subscription']
+        fields = ['business_name', 'business_type', 'subscriptions', 'active_subscription']
 
     def get_active_subscription(self, obj):
         active_sub = obj.subscriptions.filter(is_active=True).first()

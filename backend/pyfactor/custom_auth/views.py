@@ -45,6 +45,25 @@ from pyfactor.logging_config import get_logger
 
 logger = get_logger()
 
+class TokenService:
+    @staticmethod
+    def set_token_cookie(response, token_type, token_value):
+        """Set token cookie with appropriate settings"""
+        cookie_name = f'{token_type}_token'
+        max_age = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds() if token_type == 'refresh' else \
+                 settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
+        
+        response.set_cookie(
+            cookie_name,
+            token_value,
+            max_age=max_age,
+            httponly=True,
+            secure=settings.SIMPLE_JWT.get('AUTH_COOKIE_SECURE', True),
+            samesite=settings.SIMPLE_JWT.get('AUTH_COOKIE_SAMESITE', 'Lax'),
+            domain=settings.SIMPLE_JWT.get('AUTH_COOKIE_DOMAIN'),
+            path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/')
+        )
+
 
 # Create your views here.
 # Register a new user with an email confirmation.
@@ -334,17 +353,36 @@ class CustomAuthToken(ObtainAuthToken):
     serializer_class = CustomAuthTokenSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
+        try:
+            serializer = self.serializer_class(data=request.data, context={'request': request})
+            serializer.is_valid(raise_exception=True)
+            user = serializer.validated_data['user']
 
-        refresh = RefreshToken.for_user(user)
-        return Response({
-            'token': str(refresh.access_token),
-            'user_id': user.id,
-            'email': user.email,
-            'is_onboarded': user.is_onboarded
-        })
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+
+            response_data = {
+                'access': access_token,
+                'refresh': str(refresh),
+                'user_id': str(user.id),
+                'email': user.email,
+                'is_onboarded': user.is_onboarded
+            }
+
+            response = Response(response_data)
+            
+            # Set tokens in cookies
+            TokenService.set_token_cookie(response, 'access', access_token)
+            TokenService.set_token_cookie(response, 'refresh', str(refresh))
+
+            return response
+
+        except Exception as e:
+            logger.error(f"Authentication error: {str(e)}")
+            return Response(
+                {"error": "Authentication failed"}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
 
 # Authenticate user with email and password.
 class AuthTokenView(APIView):
@@ -366,33 +404,67 @@ class AuthTokenView(APIView):
         
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
-        logger.debug("Handling custom token refresh request")
-        logger.debug(f"Received request data: {request.data}")
-
-        # Get the refresh token from the request or cookies
-        refresh_token = request.data.get('refresh') or request.COOKIES.get('refresh_token')
-        if not refresh_token:
-            logger.warning("No refresh token provided.")
-            return Response({"detail": "No refresh token provided"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Instead of modifying request.data, create a new dictionary for the super call
-        refresh_request_data = {'refresh': refresh_token}
+        logger.debug("Processing token refresh request")
         
-        response = super().post(request, *args, **kwargs)
-        
-        logger.debug("Custom token refresh response: %s", response.data)
-        if response.status_code == 200 and 'refresh' in response.data:
-            response.set_cookie(
-                'refresh_token',
-                response.data['refresh'],
-                max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
-                httponly=True,
-                secure=settings.SIMPLE_JWT.get('AUTH_COOKIE_SECURE', True),
-                samesite=settings.SIMPLE_JWT.get('AUTH_COOKIE_SAMESITE', 'Lax'),
-                domain=settings.SIMPLE_JWT.get('AUTH_COOKIE_DOMAIN'),
-                path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/')
+        try:
+            # Get refresh token from cookie or request body
+            refresh_token = request.COOKIES.get('refresh_token') or request.data.get('refresh')
+            
+            if not refresh_token:
+                logger.warning("No refresh token provided")
+                return Response(
+                    {"error": "No valid refresh token found"}, 
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
+            try:
+                # Validate refresh token
+                refresh = RefreshToken(refresh_token)
+                
+                # Check if token is blacklisted
+                if getattr(refresh, 'blacklisted', False):
+                    logger.warning("Attempted to use blacklisted token")
+                    return Response(
+                        {"error": "Token has been blacklisted"}, 
+                        status=status.HTTP_401_UNAUTHORIZED
+                    )
+
+                # Generate new tokens
+                access_token = str(refresh.access_token)
+                new_refresh_token = str(RefreshToken.for_user(refresh.get('user_id')))
+
+                response_data = {
+                    'access': access_token,
+                    'refresh': new_refresh_token
+                }
+
+                response = Response(response_data, status=status.HTTP_200_OK)
+
+                # Set cookies
+                TokenService.set_token_cookie(response, 'access', access_token)
+                TokenService.set_token_cookie(response, 'refresh', new_refresh_token)
+
+                # Blacklist old refresh token
+                try:
+                    refresh.blacklist()
+                except AttributeError:
+                    logger.warning("Token blacklisting not configured")
+
+                return response
+
+            except TokenError as e:
+                logger.warning(f"Token validation failed: {str(e)}")
+                return Response(
+                    {"error": "Token is invalid or expired"}, 
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
+        except Exception as e:
+            logger.error(f"Unexpected error in token refresh: {str(e)}")
+            return Response(
+                {"error": "An unexpected error occurred"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        return response
     
 @method_decorator(csrf_exempt, name='dispatch')  # Use only if CSRF is not needed
 class UpdateSessionView(APIView):

@@ -1,3 +1,4 @@
+// next.config.mjs
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -6,13 +7,43 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const nextConfig = {
   reactStrictMode: true,
 
-  webpack: (config, { isServer }) => {
+  // Enable SWC minification
+  swcMinify: true,
+
+  // Configure compiler options
+  compiler: {
+    // Remove console.log in production
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+
+  // Configure webpack
+  webpack: (config, { isServer, dev }) => {
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': path.resolve(__dirname, 'src'),
     };
 
-    if (isServer) {
+    // Configure babel-loader
+    config.module.rules.push({
+      test: /\.(js|jsx|ts|tsx)$/,
+      exclude: /node_modules/,
+      use: {
+        loader: 'babel-loader',
+        options: {
+          presets: ['next/babel'],
+          plugins: [
+            '@babel/plugin-transform-private-methods',
+            '@babel/plugin-transform-class-properties',
+            '@babel/plugin-transform-private-property-in-object'
+          ],
+          cacheDirectory: true,
+        },
+      },
+    });
+
+    if (isServer && dev) {
       console.log('[CONFIG] Next.js server environment variables:');
       console.log('NODE_ENV:', process.env.NODE_ENV);
       console.log('NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? 'Set' : 'Not set');
@@ -24,6 +55,7 @@ const nextConfig = {
     return config;
   },
 
+  // Rest of your config...
   images: {
     domains: ['localhost', '127.0.0.1', 'lh3.googleusercontent.com'],
     remotePatterns: [
@@ -44,7 +76,6 @@ const nextConfig = {
 
   headers: async () => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-
     return [
       {
         source: '/static/:path*',

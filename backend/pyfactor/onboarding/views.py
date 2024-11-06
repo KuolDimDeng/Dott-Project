@@ -58,14 +58,11 @@ class GoogleTokenExchangeView(APIView):
                 google_token, 
                 requests.Request(), 
                 settings.GOOGLE_CLIENT_ID,
-                clock_skew_in_seconds=5  # Add this line
-
+                clock_skew_in_seconds=5
             )
-
 
             logger.info(f"Token 'iat': {idinfo.get('iat')}")
             logger.info(f"Token 'exp': {idinfo.get('exp')}")
-
 
             # Prepare user data with conditional fields
             user_data = {'email': idinfo['email']}
@@ -74,40 +71,51 @@ class GoogleTokenExchangeView(APIView):
             if 'family_name' in idinfo:
                 user_data['last_name'] = idinfo['family_name']
 
-            # Retrieve or create the user based on Google info
-            user, created = User.objects.get_or_create(
-                email=idinfo['email'],
-                defaults=user_data
-            )
+            with transaction.atomic():
+                # Retrieve or create the user based on Google info
+                user, created = User.objects.get_or_create(
+                    email=idinfo['email'],
+                    defaults=user_data
+                )
 
-            if created:
-                # Create UserProfile for new users
-                UserProfile.objects.create(user=user)
-                logger.info(f"New user and UserProfile created: {user.email}")
-            else:
-                logger.info(f"Existing user retrieved: {user.email}")
+                # Only create UserProfile if it doesn't exist
+                if created:
+                    UserProfile.objects.get_or_create(
+                        user=user,
+                        defaults={'is_business_owner': True}
+                    )
+                    logger.info(f"New user and UserProfile created: {user.email}")
+                else:
+                    logger.info(f"Existing user retrieved: {user.email}")
 
-            # Create or update OnboardingProgress with email consistency
-            onboarding_progress, _ = OnboardingProgress.objects.update_or_create(
-                user=user,
-                email=user.email,  # Ensure email matches user email
-                defaults={'onboarding_status': 'step1'}
-            )
-            logger.info(f"Onboarding progress status: {onboarding_progress.onboarding_status}")
+                # Create or update OnboardingProgress with email consistency
+                onboarding_progress, _ = OnboardingProgress.objects.update_or_create(
+                    user=user,
+                    defaults={
+                        'email': user.email,
+                        'onboarding_status': 'step1',
+                        'current_step': 1
+                    }
+                )
+                logger.info(f"Onboarding progress status: {onboarding_progress.onboarding_status}")
 
-            # Generate tokens for authentication
-            refresh = RefreshToken.for_user(user)
-            access = refresh.access_token
+                # Generate tokens for authentication
+                refresh = RefreshToken.for_user(user)
+                access = refresh.access_token
 
-            return Response({
-                'refresh': str(refresh),
-                'access': str(access),
-                'user_id': user.id,
-                'onboarding_status': onboarding_progress.onboarding_status,
-            }, status=status.HTTP_200_OK)
+                return Response({
+                    'refresh': str(refresh),
+                    'access': str(access),
+                    'user_id': user.id,
+                    'onboarding_status': onboarding_progress.onboarding_status,
+                }, status=status.HTTP_200_OK)
         
         except AuthenticationFailed as e:
             return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        except IntegrityError as e:
+            logger.error(f"Database integrity error during user creation/update: {str(e)}")
+            return Response({'error': 'Account already exists'}, status=status.HTTP_409_CONFLICT)
         
         except Exception as e:
             logger.error(f"Unexpected error during token exchange: {str(e)}")
@@ -358,24 +366,47 @@ class SaveStep1View(APIView):
             onboarding_progress.save()
             logger.info(f"OnboardingProgress updated for user: {user.email}")
 
-            # Create or update the Business
-            logger.debug("Creating or Updating Business")
-            business, business_created = Business.objects.update_or_create(
+            # Generate a unique database name
+            database_name = f"business_{user.id}_{data.get('businessName', '').lower().replace(' ', '_')}"
+            
+            # Create or update the Business with corrected field names
+            business, business_created = Business.objects.get_or_create(
                 owner=user,
                 defaults={
-                    'name': data.get('businessName'),
+                    'business_name': data.get('businessName'),  # Using business_name instead of name
                     'business_type': data.get('industry'),
                     'country': data.get('country'),
+                    'legal_structure': data.get('legalStructure'),
+                    'date_founded': date_founded,
+                    'database_name': database_name
                 }
             )
-            logger.info(f"Business {'created' if business_created else 'updated'}: {business.name}")
+            
+            if not business_created:
+                # Update existing business if it was found
+                business.business_name = data.get('businessName')
+                business.business_type = data.get('industry')
+                business.country = data.get('country')
+                business.legal_structure = data.get('legalStructure')
+                business.date_founded = date_founded
+                business.save()
+                
+            logger.info(f"Business {'created' if business_created else 'updated'}: {business.business_name}")
 
             # Update the UserProfile with the business
             logger.debug("Updating User Profile with the business")
-            user_profile, profile_created = UserProfile.objects.get_or_create(user=user)
-            user_profile.business = business
-            user_profile.country = data.get('country')
-            user_profile.save()
+            user_profile, profile_created = UserProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    'business': business,
+                    'country': data.get('country')
+                }
+            )
+            
+            if not profile_created:
+                user_profile.business = business
+                user_profile.country = data.get('country')
+                user_profile.save()
             
             logger.info(f"UserProfile {'created' if profile_created else 'updated'} for user: {user.email}")
             logger.info(f"Business associated with UserProfile: {user_profile.business}")
@@ -468,98 +499,8 @@ class SaveStep3View(APIView):
 
    
 class SaveStep4View(APIView):
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        logger.info("SaveStep4View GET method called")
-        session_id = request.query_params.get('session_id')
-
-        logger.info(f"Received session_id: {session_id}")
-
-        if not session_id:
-            logger.error("No session ID provided")
-            return Response({"error": "No session ID provided"}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            logger.info("Attempting to retrieve Stripe session")
-            session = stripe.checkout.Session.retrieve(session_id)
-            logger.info(f"Stripe session retrieved: {session_id}")
-            logger.debug(f"Stripe session details: {session}")
-
-            client_reference_id = session.get('client_reference_id')
-            logger.info(f"client_reference_id from session: {client_reference_id}")
-
-            if not client_reference_id:
-                logger.error(f"No client_reference_id found in Stripe session: {session_id}")
-                return Response({"error": "Invalid session data"}, status=status.HTTP_400_BAD_REQUEST)
-
-            logger.info(f"Attempting to find user with id: {client_reference_id}")
-            user = User.objects.filter(id=client_reference_id).first()
-            if not user:
-                logger.error(f"User not found for client_reference_id: {client_reference_id}")
-                return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-
-            logger.info(f"User found: {user.email}")
-
-            logger.info("Attempting to get or create OnboardingProgress")
-            onboarding_progress, created = OnboardingProgress.objects.get_or_create(
-                user=user,
-                defaults={'email': user.email, 'onboarding_status': 'step4', 'current_step': 4}
-            )
-            
-            onboarding_progress.payment_completed = True
-            onboarding_progress.save()
-            logger.info(f"OnboardingProgress updated for user: {user.email}")
-
-            logger.info("Attempting to get or create UserProfile")
-            user_profile, profile_created = UserProfile.objects.get_or_create(
-                user=user,
-                defaults={'is_business_owner': True}
-            )
-            logger.info(f"UserProfile {'created' if profile_created else 'retrieved'} for user: {user.email}")
-
-            logger.info("Attempting to get or create Business")
-            business, business_created = Business.objects.get_or_create(
-                owner=user,
-                defaults={'name': f"{user.first_name}'s Business"}
-            )
-            logger.info(f"Business {'created' if business_created else 'retrieved'} for user: {user.email}")
-
-            # Update UserProfile with the business
-            user_profile.business = business
-            user_profile.save()
-            logger.info(f"UserProfile updated with business for user: {user.email}")
-
-            logger.info("Attempting to create or update Subscription")
-            subscription, sub_created = Subscription.objects.update_or_create(
-                business=business,
-                defaults={
-                    'subscription_type': 'professional',
-                    'start_date': timezone.now().date(),
-                    'is_active': True,
-                    'billing_cycle': 'monthly' if session.mode == 'subscription' else 'annual'
-                }
-            )
-            logger.info(f"Subscription {'created' if sub_created else 'updated'} for user: {user.email}")
-
-            frontend_step4_url = f"{settings.FRONTEND_URL}/onboarding/step4?session_id={session_id}"
-            logger.info(f"Redirecting to: {frontend_step4_url}")
-            return redirect(frontend_step4_url)
-
-        except stripe.error.StripeError as e:
-            logger.error(f"Stripe error during payment completion: {str(e)}")
-            logger.error(f"Stripe error details: {e.json_body}")
-            logger.error(traceback.format_exc())
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            logger.error(f"Unexpected error in SaveStep4View: {str(e)}")
-            logger.error(f"Error type: {type(e).__name__}")
-            logger.error(f"Error args: {e.args}")
-            logger.error("Full exception info:")
-            logger.error(traceback.format_exc())
-            logger.error(f"Python version: {sys.version}")
-            logger.error(f"Stripe library version: {stripe.VERSION}")
-            return Response({"error": "An unexpected error occurred", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
     @transaction.atomic
     def post(self, request):
@@ -569,30 +510,31 @@ class SaveStep4View(APIView):
         try:
             with transaction.atomic():
                 onboarding_progress = OnboardingProgress.objects.get(user=user)
+                business = Business.objects.get(owner=user)
                 
                 # Update any final data if necessary
                 if 'businessName' in request.data:
                     onboarding_progress.business_name = request.data['businessName']
                     onboarding_progress.save()
                 
-                # Initiate the WebSocket connection for database creation
-                channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    f"onboarding_{user.id}",
-                    {
-                        "type": "start_database_creation",
-                        "user_id": str(user.id)
-                    }
+                # Start Celery task
+                setup_user_database_task.delay(
+                    str(user.id),
+                    str(business.id)
                 )
             
-            logger.info(f"Database creation initiated for user: {user.email}")
-            return Response({"message": "Database creation initiated"}, status=status.HTTP_202_ACCEPTED)
+            logger.info(f"Database creation task queued for user: {user.email}")
+            return Response({
+                "message": "Database creation initiated",
+                "status": "processing"
+            }, status=status.HTTP_202_ACCEPTED)
+
         except OnboardingProgress.DoesNotExist:
             logger.error(f"Onboarding progress not found for user: {user.email}")
             return Response({"error": "Onboarding progress not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.exception(f"Error initiating database creation for user {user.email}: {str(e)}")
-            return Response({"error": "Failed to initiate database creation", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": "Failed to initiate database creation"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class OnboardingSuccessView(APIView):
     permission_classes = [IsAuthenticated]
