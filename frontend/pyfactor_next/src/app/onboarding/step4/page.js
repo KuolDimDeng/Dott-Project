@@ -134,155 +134,255 @@ const OnboardingStep4 = ({ onComplete }) => {
   const MAX_RETRIES = 3;
 
   const router = useRouter();
-  const { data: session } = useSession();
   const queryClient = useQueryClient();
 
-  // Query to verify session and start task
-  const { data: sessionVerification } = useQuery({
-    queryKey: ['sessionVerification'],
-    queryFn: async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const sessionId = urlParams.get('session_id');
-      if (sessionId) {
-        const response = await axiosInstance.get(`/api/onboarding/save-step4/?session_id=${sessionId}`);
-        if (response.data.taskId) {
-          setTaskId(response.data.taskId);
-        }
+  const { data: session } = useSession({
+    required: true,
+    onSuccess: (session) => {
+      if (!session?.accessToken) {
+        console.error('No access token found in session');
+      }
+    }
+  });
+
+    // Add the completion mutation
+    const completeMutation = useMutation({
+      mutationFn: async () => {
+        const response = await axiosInstance.post('/api/onboarding/save-step4/', {
+          status: 'complete'
+        });
         return response.data;
-      }
-      return null;
-    },
-    enabled: typeof window !== 'undefined',
-    retry: 1,
-  });
-
-  // Task status polling
-  const { data: taskStatus } = useQuery({
-    queryKey: ['taskStatus', taskId],
-    queryFn: async () => {
-      if (!taskId) return null;
-      const response = await axiosInstance.get(`/api/tasks/${taskId}/status/`);
-      return response.data;
-    },
-    enabled: !!taskId,
-    refetchInterval: 5000,
-    onSuccess: (data) => {
-      if (data?.status === 'SUCCESS') {
-        completeMutation.mutate();
-      } else if (data?.status === 'PROGRESS') {
-        setProgress(data.progress);
-        setCurrentStep(data.currentStep);
-      }
-    },
-  });
-
-  const completeMutation = useMutation({
-    mutationFn: async () => {
-      const response = await axiosInstance.post('/api/onboarding/save-step4/', {
-        status: 'complete'
-      });
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['onboardingStatus']);
-      setIsComplete(true);
-      setProgress(100);
-      if (onComplete) {
-        onComplete();
-      }
-      setTimeout(() => router.push('/dashboard'), 2000);
-    },
-    onError: (error) => {
-      console.error('Error completing onboarding:', error);
-    }
-  });
-
-  const handleWebSocketMessage = useCallback((data) => {
-    switch (data.type) {
-      case 'onboarding_progress':
-        setProgress(data.progress);
-        setCurrentStep(data.step);
-        break;
-      case 'onboarding_complete':
-        completeMutation.mutate();
-        break;
-      case 'task_started':
-        setTaskId(data.taskId);
-        break;
-      case 'error':
-        if (retryCount < MAX_RETRIES) {
-          setRetryCount(prev => prev + 1);
-          reconnect();
-        } else {
-          throw new Error(data.message);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries(['onboardingStatus']);
+        setIsComplete(true);
+        setProgress(100);
+        if (onComplete) {
+          onComplete();
         }
-        break;
+        setTimeout(() => router.push('/dashboard'), 2000);
+      },
+      onError: (error) => {
+        console.error('Error completing onboarding:', error);
+      }
+    });
+  
+    // Add the WebSocket message handler
+    const handleWebSocketMessage = useCallback((data) => {
+      console.log('Processing WebSocket message:', data);
+      switch (data.type) {
+        case 'onboarding_progress':
+          console.log('Updating progress:', data.progress);
+          console.log('Updating step:', data.step);
+          setProgress(data.progress);
+          setCurrentStep(data.step);
+          break;
+        case 'onboarding_complete':
+          console.log('Onboarding complete, initiating completion mutation');
+          completeMutation.mutate();
+          break;
+        case 'task_started':
+          console.log('Task started with ID:', data.taskId);
+          setTaskId(data.taskId);
+          break;
+        case 'error':
+          console.error('Received error message:', data.message);
+          if (retryCount < MAX_RETRIES) {
+            console.log(`Attempting retry. Count: ${retryCount + 1}/${MAX_RETRIES}`);
+            setRetryCount(prev => prev + 1);
+            reconnect();
+          } else {
+            console.error('Max retries reached, throwing error');
+            throw new Error(data.message);
+          }
+          break;
+        default:
+          console.warn('Unknown message type received:', data.type);
+      }
+    }, [completeMutation, retryCount, reconnect]);
+
+// Add new mutation for task creation
+const createTaskMutation = useMutation({
+  mutationFn: async () => {
+    console.log('Creating new database setup task');
+    const response = await axiosInstance.post('/api/onboarding/save-step4/start/', {
+      userId: session?.user?.id
+    });
+    console.log('Task creation response:', response.data);
+    return response.data;
+  },
+  onSuccess: (data) => {
+    if (data.taskId) {
+      console.log('Setting new task ID:', data.taskId);
+      setTaskId(data.taskId);
     }
-  }, [completeMutation, retryCount]);
+  },
+  onError: (error) => {
+    console.error('Error creating database setup task:', error);
+  }
+});
 
-  const connectWebSocket = useCallback(() => {
-    if (!session?.user?.id) return null;
+// Task status polling
+const { data: taskStatus, error: taskError } = useQuery({
+  queryKey: ['taskStatus', taskId],
+  queryFn: async () => {
+    if (!taskId) {
+      console.log('No task ID available for status check');
+      return null;
+    }
+    console.log('Polling task status for ID:', taskId);
+    try {
+      const response = await axiosInstance.get(`/api/onboarding/task/${taskId}/status/`);
+      console.log('Task status response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Task status polling error:', error);
+      throw error;
+    }
+  },
+  enabled: !!taskId,
+  refetchInterval: 3000,
+  retry: 3,
+  onSuccess: (data) => {
+    console.log('Task status update received:', data);
+    if (data?.status === 'SUCCESS') {
+      console.log('Task completed successfully');
+      completeMutation.mutate();
+    } else if (data?.status === 'PROGRESS') {
+      console.log('Task in progress:', {
+        progress: data.progress,
+        currentStep: data.currentStep
+      });
+      setProgress(data.progress);
+      setCurrentStep(data.currentStep);
+    }
+  }
+});
 
-    const token = session.user.accessToken;
-    if (!token) throw new Error('Authentication error. Please try logging in again.');
+const connectWebSocket = useCallback(() => {
+  if (!session?.user?.id) {
+    console.log('Session data:', session);
+    console.error('WebSocket connection failed: No user ID in session');
+    return null;
+  }
 
+  // Get the token from the session
+  const token = session?.user?.accessToken || session?.accessToken;
+  console.log('Session user:', session?.user);
+  console.log('Access token:', token);
+
+  if (!token) {
+    console.error('WebSocket connection failed: No access token in session');
+    console.log('Full session data:', session);
+    return null;
+  }
+
+  try {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsBaseUrl = axiosInstance.defaults.baseURL.replace(/^https?:/, wsProtocol);
-    const socket = new WebSocket(`${wsBaseUrl}/ws/onboarding/${session.user.id}/?token=${token}`);
+    const wsBaseUrl = '127.0.0.1:8000';
+    const wsUrl = `${wsProtocol}//${wsBaseUrl}/ws/onboarding/${session.user.id}/?token=${encodeURIComponent(token)}`;
+    
+    console.log('Attempting WebSocket connection to:', wsUrl);
+
+    const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
+      console.log('WebSocket connection established successfully');
       setIsConnected(true);
       setRetryCount(0);
-      socket.send(JSON.stringify({ type: 'start_onboarding' }));
+      
+      if (!taskId) {
+        console.log('Initiating database setup task');
+        createTaskMutation.mutate();
+      }
     };
 
     socket.onmessage = (event) => {
       try {
+        console.log('Received WebSocket message:', event.data);
         const data = JSON.parse(event.data);
+        console.log('Parsed WebSocket message:', data);
         handleWebSocketMessage(data);
       } catch (error) {
         console.error('Error processing WebSocket message:', error);
+        console.error('Raw message data:', event.data);
       }
     };
 
-    socket.onerror = () => {
+    socket.onerror = (error) => {
+      console.error('WebSocket error occurred:', error);
       setIsConnected(false);
       if (retryCount < MAX_RETRIES) {
+        const nextRetry = retryCount + 1;
+        console.log(`Attempting reconnection. Retry count: ${nextRetry}/${MAX_RETRIES}`);
+        setRetryCount(nextRetry);
         setTimeout(() => reconnect(), 1000 * Math.pow(2, retryCount));
+      } else {
+        console.error('Max retry attempts reached');
       }
     };
 
     socket.onclose = (event) => {
+      console.log('WebSocket connection closed:', {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean
+      });
       setIsConnected(false);
       if (!event.wasClean && retryCount < MAX_RETRIES) {
+        const nextRetry = retryCount + 1;
+        console.log(`Attempting reconnection after unclean close. Retry count: ${nextRetry}/${MAX_RETRIES}`);
+        setRetryCount(nextRetry);
         setTimeout(() => reconnect(), 1000 * Math.pow(2, retryCount));
       }
     };
 
     return socket;
-  }, [session, handleWebSocketMessage, retryCount]);
+  } catch (error) {
+    console.error('Error creating WebSocket connection:', error);
+    throw error;
+  }
+}, [session, taskId, retryCount, createTaskMutation]);
 
-  const { error: wsError, refetch: reconnect } = useQuery({
-    queryKey: ['websocket'],
-    queryFn: connectWebSocket,
-    enabled: !!session && !!sessionVerification,
-    retry: 3,
-  });
 
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
-    }, 3000);
-    return () => clearInterval(intervalId);
-  }, []);
 
-  useEffect(() => {
-    return () => {
-      if (taskId) {
-        axiosInstance.post(`/api/tasks/${taskId}/cancel/`).catch(console.error);
-      }
-    };
-  }, [taskId]);
+// Initialize WebSocket connection
+const { error: wsError, refetch: reconnect } = useQuery({
+  queryKey: ['websocket'],
+  queryFn: connectWebSocket,
+  enabled: !!session?.user?.id,
+  retry: 3,
+});
+
+// Add error tracking effect
+useEffect(() => {
+  if (wsError) {
+    console.error('WebSocket connection error:', wsError);
+  }
+  if (taskError) {
+    console.error('Task status polling error:', taskError);
+  }
+}, [wsError, taskError]);
+
+// Cleanup effect
+useEffect(() => {
+  return () => {
+    if (taskId) {
+      console.log('Cleaning up task:', taskId);
+      axiosInstance.post(`/api/onboarding/task/${taskId}/cancel/`)
+        .catch(error => console.error('Error canceling task:', error));
+    }
+  };
+}, [taskId]);
+
+// Image rotation effect
+useEffect(() => {
+  const intervalId = setInterval(() => {
+    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
+  }, 3000);
+  return () => clearInterval(intervalId);
+}, []);
+
 
   return (
     <ThemeProvider theme={theme}>

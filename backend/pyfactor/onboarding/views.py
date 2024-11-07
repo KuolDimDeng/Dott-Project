@@ -5,7 +5,7 @@ import asyncio
 import stripe
 import traceback
 import sys
-
+from celery.result import AsyncResult
 from channels.db import database_sync_to_async
 from channels.layers import get_channel_layer
 from asgiref.sync import sync_to_async, async_to_sync
@@ -37,10 +37,63 @@ from google.auth.transport import requests
 from django.db import IntegrityError
 from celery import shared_task
 from rest_framework.exceptions import AuthenticationFailed
+from .tasks import setup_user_database_task  # Add this at the top with other imports
+
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 logger = get_logger()
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_task_status(request, task_id):
+    logger.info(f"Checking task status for task: {task_id}")
+    try:
+        task_result = AsyncResult(task_id)
+        logger.info(f"Task state: {task_result.state}")
+        
+        if task_result.state == 'SUCCESS':
+            return Response({
+                'status': 'SUCCESS',
+                'result': task_result.result
+            }, status=status.HTTP_200_OK)
+        elif task_result.state == 'FAILURE':
+            error_info = {
+                'error': str(task_result.result),
+                'traceback': task_result.traceback
+            }
+            logger.error(f"Task failed: {error_info}")
+            return Response({
+                'status': 'FAILURE',
+                'error': error_info
+            }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            meta = task_result.info or {}
+            return Response({
+                'status': task_result.state,
+                'progress': meta.get('progress', 0),
+                'currentStep': meta.get('step', 'Processing')
+            }, status=status.HTTP_200_OK)
+            
+    except Exception as e:
+        logger.error(f"Error checking task status: {str(e)}", exc_info=True)
+        return Response({
+            'status': 'ERROR',
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def cancel_task(request, task_id):
+    logger.info(f"Cancelling task: {task_id}")
+    try:
+        task_result = AsyncResult(task_id)
+        task_result.revoke(terminate=True)
+        return Response({'status': 'cancelled'}, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error(f"Error cancelling task: {str(e)}")
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class GoogleTokenExchangeView(APIView):
     permission_classes = [AllowAny]
@@ -512,29 +565,43 @@ class SaveStep4View(APIView):
                 onboarding_progress = OnboardingProgress.objects.get(user=user)
                 business = Business.objects.get(owner=user)
                 
-                # Update any final data if necessary
-                if 'businessName' in request.data:
-                    onboarding_progress.business_name = request.data['businessName']
-                    onboarding_progress.save()
-                
-                # Start Celery task
-                setup_user_database_task.delay(
-                    str(user.id),
-                    str(business.id)
-                )
-            
-            logger.info(f"Database creation task queued for user: {user.email}")
-            return Response({
-                "message": "Database creation initiated",
-                "status": "processing"
-            }, status=status.HTTP_202_ACCEPTED)
+                # Check if this is a start request
+                if request.path.endswith('/start/'):
+                    logger.info(f"Starting database setup task for user: {user.email}")
+                    # Start Celery task
+                    task = setup_user_database_task.delay(
+                        str(user.id),
+                        str(business.id)
+                    )
+                    logger.info(f"Created database setup task with ID: {task.id}")
+                    return Response({
+                        "message": "Database setup initiated",
+                        "taskId": task.id,
+                        "status": "processing"
+                    }, status=status.HTTP_202_ACCEPTED)
+                else:
+                    # Handle regular save request
+                    if 'businessName' in request.data:
+                        onboarding_progress.business_name = request.data['businessName']
+                        onboarding_progress.save()
+
+                    if request.data.get('status') == 'complete':
+                        onboarding_progress.onboarding_status = 'complete'
+                        onboarding_progress.current_step = 0
+                        onboarding_progress.save()
+                        logger.info(f"Onboarding completed for user: {user.email}")
+                    
+                    return Response({
+                        "message": "Step 4 data saved successfully",
+                        "status": onboarding_progress.onboarding_status
+                    }, status=status.HTTP_200_OK)
 
         except OnboardingProgress.DoesNotExist:
             logger.error(f"Onboarding progress not found for user: {user.email}")
             return Response({"error": "Onboarding progress not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.exception(f"Error initiating database creation for user {user.email}: {str(e)}")
-            return Response({"error": "Failed to initiate database creation"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.exception(f"Error in SaveStep4View for user {user.email}: {str(e)}")
+            return Response({"error": "Failed to process step 4"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class OnboardingSuccessView(APIView):
     permission_classes = [IsAuthenticated]

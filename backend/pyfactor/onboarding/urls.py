@@ -1,6 +1,8 @@
 # /Users/kuoldeng/projectx/backend/pyfactor/onboarding/urls.py
 
 from django.urls import path
+from . import views
+
 from .views import (
     StartOnboardingView,
     CompleteOnboardingView,
@@ -32,7 +34,9 @@ urlpatterns = [
     path('save-step1/', SaveStep1View.as_view(), name='save_step1'),
     path('save-step2/', SaveStep2View.as_view(), name='save_step2'),
     path('save-step3/', SaveStep3View.as_view(), name='save_step3'),
+    path('save-step4/start/', SaveStep4View.as_view(), name='start_step4'),
     path('save-step4/', SaveStep4View.as_view(), name='save_step4'),
     path('success/', OnboardingSuccessView.as_view(), name='onboarding_success'),  # Add this new route
-
+    path('task/<str:task_id>/status/', views.get_task_status, name='task_status'),
+    path('task/<str:task_id>/cancel/', views.cancel_task, name='cancel_task'),
 ]

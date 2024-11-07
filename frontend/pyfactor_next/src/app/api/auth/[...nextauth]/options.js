@@ -73,15 +73,16 @@ export const authOptions = {
         if (account?.provider === "google" && account?.id_token) {
           const tokenData = await exchangeGoogleToken(account.id_token);
           
-          // Enrich user object with additional data
+          // Store both JWT and raw access token
           user.access_token = tokenData.access;
+          user.raw_access_token = tokenData.access; // Store raw token for WebSocket
           user.refresh_token = tokenData.refresh;
           user.id = tokenData.user_id;
           user.onboardingStatus = tokenData.onboarding_status;
           user.email = profile.email;
           user.name = profile.name;
           user.image = profile.picture;
-          user.accessTokenExpires = Date.now() + 60 * 60 * 1000; // 1 hour
+          user.accessTokenExpires = Date.now() + 60 * 60 * 1000;
 
           logger.info('Google sign-in successful', { 
             userId: tokenData.user_id,
@@ -100,7 +101,6 @@ export const authOptions = {
 
     async jwt({ token, user, account }) {
       try {
-        // Initial sign in
         if (account && user) {
           logger.info('JWT callback - initial sign in', { 
             email: user.email 
@@ -109,6 +109,7 @@ export const authOptions = {
           return {
             ...token,
             accessToken: user.access_token,
+            rawAccessToken: user.raw_access_token, // Store raw token
             refreshToken: user.refresh_token,
             userId: user.id,
             onboardingStatus: user.onboardingStatus,
@@ -117,14 +118,17 @@ export const authOptions = {
           };
         }
 
-        // Return previous token if the access token has not expired
         if (Date.now() < token.accessTokenExpires) {
           return token;
         }
 
-        // Access token has expired, refresh it
-        logger.info('Refreshing access token');
-        return await refreshAccessToken(token);
+        // Refresh token
+        const refreshedToken = await refreshAccessToken(token);
+        logger.info('Access token refreshed');
+        return {
+          ...refreshedToken,
+          rawAccessToken: refreshedToken.accessToken // Store raw refreshed token
+        };
 
       } catch (error) {
         logger.error('JWT callback error:', error);
@@ -143,7 +147,7 @@ export const authOptions = {
           ...session.user,
           id: token.userId,
           onboardingStatus: token.onboardingStatus,
-          accessToken: token.accessToken,
+          accessToken: token.rawAccessToken, // Use raw token for WebSocket
           refreshToken: token.refreshToken,
           email: token.email,
           error: token.error,
