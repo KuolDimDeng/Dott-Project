@@ -18,7 +18,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
+import { useApi } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
@@ -46,7 +46,7 @@ const JournalEntryForm = ({ onClose }) => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await axiosInstance.get('/api/profile/');
+      const response = await useApi.get('/api/profile/');
       setUserDatabase(response.data.database_name);
       logger.log('User profile:', response.data);
       logger.log('User database:', response.data.database_name);
@@ -61,7 +61,7 @@ const JournalEntryForm = ({ onClose }) => {
   const fetchAccounts = async () => {
     try {
       console.log('Fetching accounts...');
-      const response = await axiosInstance.get('/api/accounts/');
+      const response = await useApi.get('/api/accounts/');
       console.log('API Response:', response);
       console.log('Accounts data:', response.data);
       if (Array.isArray(response.data) && response.data.length > 0) {

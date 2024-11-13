@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Typography, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { Pie, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title } from 'chart.js';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title);
 

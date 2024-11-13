@@ -1,4 +1,4 @@
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 export const saveEstimate = async (estimateId) => {
   try {

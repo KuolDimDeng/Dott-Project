@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress } from '@mui/material';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import { logger } from '@/utils/logger';
 
 const CustomerList = ({ onCreateCustomer, onInvoiceSelect, onCustomerSelect, onBack }) => {

@@ -9,7 +9,7 @@ import { Bar } from 'react-chartjs-2';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 function TabPanel(props) {

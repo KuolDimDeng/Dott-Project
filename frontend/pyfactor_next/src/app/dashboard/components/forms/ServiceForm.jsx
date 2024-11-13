@@ -20,7 +20,7 @@ import {
   useMediaQuery,
   Link
 } from '@mui/material';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';

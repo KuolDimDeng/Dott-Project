@@ -22,7 +22,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { usePlaidLink } from 'react-plaid-link';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 const ConnectBank = () => {
   const [region, setRegion] = useState('');

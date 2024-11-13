@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axiosInstance from '../components/utils/axiosConfig';
+import { useApi } from '../components/utils/axiosConfig';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 2000; // 2 seconds
@@ -39,14 +39,14 @@ function Login() {
       while (retries < MAX_RETRIES) {
         try {
           console.log('Attempting login', { email, retryCount: retries });
-          const response = await axiosInstance.post('/users/token/', { email, password });
+          const response = await useApi.post('/users/token/', { email, password });
 
           if (response && response.data && response.data.access) {
             await AsyncStorage.setItem('token', response.data.access);
             await AsyncStorage.setItem('refreshToken', response.data.refresh);
             
             console.log('Login successful, fetching user profile');
-            const profileResponse = await axiosInstance.get('/users/profile/');
+            const profileResponse = await useApi.get('/users/profile/');
             const fullName = `${profileResponse.data.first_name} ${profileResponse.data.last_name}`;
             await AsyncStorage.setItem('userFullName', fullName);
 

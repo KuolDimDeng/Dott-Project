@@ -23,7 +23,7 @@ import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
+import { useApi } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const SalesForm = ({ onClose }) => {
@@ -48,7 +48,7 @@ const SalesForm = ({ onClose }) => {
 
   const fetchCustomers = async () => {
     try {
-      const response = await axiosInstance.get('/api/customers/');
+      const response = await useApi.get('/api/customers/');
       setCustomers(response.data);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -58,7 +58,7 @@ const SalesForm = ({ onClose }) => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axiosInstance.get('/api/products/');
+      const response = await useApi.get('/api/products/');
       setProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -129,7 +129,7 @@ const SalesForm = ({ onClose }) => {
 
   const handleBarcodeSubmit = async () => {
     try {
-      const response = await axiosInstance.get(`/api/products/barcode/${barcodeInput}/`);
+      const response = await useApi.get(`/api/products/barcode/${barcodeInput}/`);
       const scannedProduct = response.data;
       
       // Add the scanned product to the items list
@@ -156,7 +156,7 @@ const SalesForm = ({ onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axiosInstance.post('/api/sales/create/', sale);
+      const response = await useApi.post('/api/sales/create/', sale);
       console.log('Sale created:', response.data);
       addMessage('success', 'Sale created successfully');
       onClose();

@@ -30,7 +30,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import DownloadIcon from '@mui/icons-material/Download';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import SearchIcon from '@mui/icons-material/Search';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import NextLink from 'next/link';
 
 const StyledCard = styled(Card)(({ theme }) => ({

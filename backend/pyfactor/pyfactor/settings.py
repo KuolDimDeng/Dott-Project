@@ -174,6 +174,8 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60
+CELERY_TASK_ALWAYS_EAGER = True  # Set to True for debugging
+CELERY_TASK_EAGER_PROPAGATES = True
 
 # Session and authentication settings
 AUTH_USER_MODEL = 'custom_auth.User'
@@ -223,7 +225,7 @@ REST_FRAMEWORK = {
 }
 # JWT settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -254,6 +256,17 @@ SIMPLE_JWT = {
         'rest_framework_simplejwt.token_blacklist.check_blacklist',
     ],
 }
+
+JWT_AUTH = {
+    'JWT_SECRET_KEY': settings.SECRET_KEY,
+    'JWT_ALGORITHM': 'HS256',
+    'JWT_VERIFY': True,
+    'JWT_VERIFY_EXPIRATION': True,
+    'JWT_EXPIRATION_DELTA': timedelta(days=1),
+    'JWT_ALLOW_REFRESH': True,
+    'JWT_REFRESH_EXPIRATION_DELTA': timedelta(days=7),
+}
+
 
 # Logging configuration
 class DeduplicationFilter(logging.Filter):
@@ -458,6 +471,9 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+WEBSOCKET_TIMEOUT = 60  # Seconds
+WEBSOCKET_HEARTBEAT = 30  # Seconds
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 

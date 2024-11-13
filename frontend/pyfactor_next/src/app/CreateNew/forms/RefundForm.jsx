@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TextField, Button, Grid, Typography } from '@mui/material';
-import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
+import { useApi } from '@/lib/axiosConfig';
 
 const RefundForm = () => {
   const [refund, setRefund] = useState({
@@ -16,7 +16,7 @@ const RefundForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axiosInstance.post('/api/refunds/create/', refund);
+      const response = await useApi.post('/api/refunds/create/', refund);
       console.log('Refund created:', response.data);
       // Handle success (e.g., show a success message, clear the form)
     } catch (error) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Typography, Button, Box, TextField, CircularProgress, Tabs, Tab, Paper } from '@mui/material';
-import axiosInstance from '../../../dashboard/components/components/axiosConfig';
+import { useApi } from '../../../dashboard/components/components/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const PLATFORMS = [
@@ -58,7 +58,7 @@ const IntegrationSettings = React.memo(({ initialStatus, initialPlatform, initia
   const handleConnectWooCommerce = async () => {
     setConnecting(true);
     try {
-      const response = await axiosInstance.post('/api/integrations/connect-woocommerce/', wooCommerceData);
+      const response = await useApi.post('/api/integrations/connect-woocommerce/', wooCommerceData);
       addMessage(response.data.message, 'info');
     } catch (error) {
       addMessage(error.response?.data?.message || 'An error occurred while connecting to WooCommerce', 'error');
@@ -70,7 +70,7 @@ const IntegrationSettings = React.memo(({ initialStatus, initialPlatform, initia
   const initiateShopifyOAuth = async () => {
     setConnecting(true);
     try {
-      const response = await axiosInstance.post('/api/integrations/initiate-shopify-oauth/', { shop: shopifyData.shop });
+      const response = await useApi.post('/api/integrations/initiate-shopify-oauth/', { shop: shopifyData.shop });
       if (response.data.authUrl) {
         window.location.href = response.data.authUrl;
       } else {

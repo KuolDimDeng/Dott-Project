@@ -1,10 +1,13 @@
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/auth/signin/page.js
+// src/app/auth/signin/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Button, TextField, Grid, Box, Paper, Typography, 
-  InputAdornment, IconButton, CircularProgress, Alert, Container 
+  InputAdornment, IconButton, CircularProgress, Alert 
 } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Image from 'next/image';
@@ -17,9 +20,11 @@ import { GoogleLoginButton, AppleLoginButton } from 'react-social-login-buttons'
 import { signIn, useSession } from "next-auth/react";
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import axiosInstance from '@/lib/axiosConfig';
+import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
+import { axiosInstance } from '@/lib/axiosConfig';
+import { toast } from 'react-toastify';
 
-// Simplified theme
+// Theme configuration (same as before)
 const theme = createTheme({
   palette: {
     primary: { main: '#1976d2' },
@@ -40,8 +45,7 @@ const theme = createTheme({
   },
 });
 
-
-// Form validation schema with Zod
+// Form validation schema
 const signInSchema = z.object({
   email: z.string()
     .min(1, 'Email is required')
@@ -51,15 +55,27 @@ const signInSchema = z.object({
     .min(5, 'Password must be at least 5 characters long'),
 });
 
-export default function SignIn() {
+export default function SignInPage() {
+  // State management
   const [isPasswordShown, setIsPasswordShown] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
   
+  // Hooks
   const router = useRouter();
   const { data: session, status } = useSession();
   const queryClient = useQueryClient();
+  const { handleOnboardingRedirect } = useOnboarding();
 
+   // Initialize component
+   useEffect(() => {
+    setIsInitialized(true);
+  }, []);
+
+
+  // Form management
   const {
     control,
     handleSubmit,
@@ -73,21 +89,68 @@ export default function SignIn() {
     },
   });
 
-  // Handle authenticated state
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user) {
-      setIsLoading(true);
-      axiosInstance.get('/api/onboarding/status/', {
-        headers: { Authorization: `Bearer ${session.user.accessToken}` }
-      })
-        .then(response => {
-          const status = response.data?.onboarding_status;
-          router.push(status === 'complete' ? '/dashboard' : `/onboarding/${status || 'step1'}`);
-        })
-        .catch(() => router.push('/onboarding/step1'))
-        .finally(() => setIsLoading(false));
+  // Navigation handler
+  const handleNavigation = async (path, options = {}) => {
+    const { replace = true, onSuccess } = options;
+    try {
+      await router[replace ? 'replace' : 'push'](path, undefined, { shallow: true });
+      onSuccess?.();
+    } catch (error) {
+      logger.error(`Navigation error to ${path}:`, error);
+      toast.error('Navigation failed');
     }
-  }, [status, session, router]);
+  };
+
+  // Session management
+  // Session management
+  useEffect(() => {
+    let mounted = true;
+
+    const checkSession = async () => {
+      // Only proceed if component is initialized and session status is determined
+      if (!isInitialized || status === 'loading') return;
+
+      // If user is already authenticated, handle redirect
+      if (status === 'authenticated' && session?.user) {
+        try {
+          setIsLoading(true);
+          const response = await axiosInstance.get('/api/onboarding/status/', {
+            headers: {
+              Authorization: `Bearer ${session.user.accessToken}`
+            }
+          });
+
+          if (!mounted) return;
+
+          const { onboarding_status: onboardingStatus } = response.data;
+          
+          if (onboardingStatus === 'complete') {
+            router.replace('/dashboard');
+          } else {
+            handleOnboardingRedirect(onboardingStatus || 'step1');
+          }
+        } catch (error) {
+          if (!mounted) return;
+          
+          logger.error('Error checking session:', error);
+          if (error.response?.status === 401) {
+            queryClient.clear();
+          }
+        }
+      }
+      
+      if (mounted) {
+        setIsLoading(false);
+      }
+    };
+
+    checkSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isInitialized, status, session, router, queryClient, handleOnboardingRedirect]);
+
 
   // Login mutation
   const credentialsLoginMutation = useMutation({
@@ -107,31 +170,61 @@ export default function SignIn() {
     },
     onError: (error) => {
       setError(error.message || 'Login failed. Please try again.');
+      logger.error('Login error:', error);
+      toast.error(error.message || 'Login failed. Please try again.');
     }
   });
 
   // Social login handler
-  const handleSocialLogin = (provider) => {
-    setError(null);
-    setIsLoading(true);
-    signIn(provider, {
-      callbackUrl: '/onboarding/step1',
-      redirect: true
-    }).catch(() => {
+  const handleSocialLogin = async (provider) => {
+    try {
+      setError(null);
+      setIsLoading(true);
+      
+      const result = await signIn(provider, {
+        redirect: false,
+        callbackUrl: '/onboarding/step1' 
+      });
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
+      if (result?.ok) {
+        await queryClient.invalidateQueries(['session']);
+      }
+    } catch (error) {
+      logger.error(`${provider} login failed:`, error);
       setError(`${provider} login failed. Please try again.`);
+      toast.error(`${provider} login failed. Please try again.`);
+    } finally {
       setIsLoading(false);
-    });
+    }
   };
 
-  // Loading state
-  if (status === 'loading' || isLoading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <CircularProgress />
-      </Box>
-    );
-  }
+ // Loading states
+ const showLoading = !isInitialized || status === 'loading' || isLoading;
+ const loadingMessage = !isInitialized ? 'Initializing...' :
+                       status === 'loading' ? 'Checking authentication...' :
+                       'Loading your information...';
 
+ if (showLoading) {
+   return (
+     <Box 
+       display="flex" 
+       flexDirection="column" 
+       justifyContent="center" 
+       alignItems="center" 
+       minHeight="100vh" 
+       gap={2}
+     >
+       <CircularProgress />
+       <Typography variant="body2" color="textSecondary">
+         {loadingMessage}
+       </Typography>
+     </Box>
+   );
+ }
   return (
     <ThemeProvider theme={theme}>
       <Grid container component="main" sx={{ height: '100vh' }}>
@@ -322,4 +415,3 @@ export default function SignIn() {
     </ThemeProvider>
   );
 }
-

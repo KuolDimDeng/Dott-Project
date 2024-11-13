@@ -7,7 +7,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import axiosInstance from '../../dashboard/components/components/axiosConfig';
+import { useApi } from '../../dashboard/components/components/axiosConfig';
 
 const InventoryItemList = () => {
   const [items, setItems] = useState([]);
@@ -23,7 +23,7 @@ const InventoryItemList = () => {
 
   const fetchItems = async () => {
     try {
-      const response = await axiosInstance.get('/api/inventory/items/');
+      const response = await useApi.get('/api/inventory/items/');
       setItems(response.data);
     } catch (error) {
       console.error('Error fetching inventory items:', error);
@@ -55,9 +55,9 @@ const InventoryItemList = () => {
   const handleSubmit = async () => {
     try {
       if (isEditing) {
-        await axiosInstance.put(`/api/inventory/items/${currentItem.id}/`, currentItem);
+        await useApi.put(`/api/inventory/items/${currentItem.id}/`, currentItem);
       } else {
-        await axiosInstance.post('/api/inventory/items/', currentItem);
+        await useApi.post('/api/inventory/items/', currentItem);
       }
       fetchItems();
       handleCloseDialog();
@@ -69,7 +69,7 @@ const InventoryItemList = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this item?')) {
       try {
-        await axiosInstance.delete(`/api/inventory/items/${id}/`);
+        await useApi.delete(`/api/inventory/items/${id}/`);
         fetchItems();
       } catch (error) {
         console.error('Error deleting inventory item:', error);

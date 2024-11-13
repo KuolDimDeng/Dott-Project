@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
-import axiosInstance from '../../dashboard/components/components/axiosConfig';
+import { useApi } from '../../dashboard/components/components/axiosConfig';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
 
@@ -12,7 +12,7 @@ const ChartComponent = ({ account, dateRange, startDate, endDate, chartType, lin
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axiosInstance.get('/api/chart/transaction-data/', {
+        const response = await useApi.get('/api/chart/transaction-data/', {
           params: { account, date_range: dateRange, start_date: startDate, end_date: endDate }
         });
         setChartData(response.data);

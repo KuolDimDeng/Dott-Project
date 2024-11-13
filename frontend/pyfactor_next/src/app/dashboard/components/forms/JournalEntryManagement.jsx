@@ -4,7 +4,7 @@ import {
   Button, TextField, MenuItem, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, useTheme
 } from '@mui/material';
 import { Add, Edit, Delete, Check, Close } from '@mui/icons-material';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 const JournalEntryManagement = () => {
   const [journalEntries, setJournalEntries] = useState([]);

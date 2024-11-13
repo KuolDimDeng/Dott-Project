@@ -1,4 +1,3 @@
-// next.config.mjs
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -6,56 +5,34 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
+  swcMinify: false, // Disable SWC to use Babel
 
-  // Enable SWC minification
-  swcMinify: true,
-
-  // Configure compiler options
-  compiler: {
-    // Remove console.log in production
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn'],
-    } : false,
-  },
-
-  // Configure webpack
-  webpack: (config, { isServer, dev }) => {
+  // Simplified webpack configuration
+  webpack: (config) => {
+    // Keep alias configuration but simplify
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': path.resolve(__dirname, 'src'),
+      '@app': path.resolve(__dirname, 'src/app'),
+      '@components': path.resolve(__dirname, 'src/app/components'),
+      '@layouts': path.resolve(__dirname, 'src/app/layouts'),
+      '@styles': path.resolve(__dirname, 'src/styles'),
+      '@lib': path.resolve(__dirname, 'src/lib'),
+      '@utils': path.resolve(__dirname, 'src/utils'),
+      '@hooks': path.resolve(__dirname, 'src/hooks'),
+      '@contexts': path.resolve(__dirname, 'src/contexts'),
+      '@providers': path.resolve(__dirname, 'src/providers'),
+      '@dashboard': path.resolve(__dirname, 'src/app/dashboard'),
+      '@auth': path.resolve(__dirname, 'src/app/auth'),
+      '@onboarding': path.resolve(__dirname, 'src/app/onboarding'),
+      '@api': path.resolve(__dirname, 'src/app/api'),
     };
-
-    // Configure babel-loader
-    config.module.rules.push({
-      test: /\.(js|jsx|ts|tsx)$/,
-      exclude: /node_modules/,
-      use: {
-        loader: 'babel-loader',
-        options: {
-          presets: ['next/babel'],
-          plugins: [
-            '@babel/plugin-transform-private-methods',
-            '@babel/plugin-transform-class-properties',
-            '@babel/plugin-transform-private-property-in-object'
-          ],
-          cacheDirectory: true,
-        },
-      },
-    });
-
-    if (isServer && dev) {
-      console.log('[CONFIG] Next.js server environment variables:');
-      console.log('NODE_ENV:', process.env.NODE_ENV);
-      console.log('NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? 'Set' : 'Not set');
-      console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
-      console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'Set' : 'Not set');
-      console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Not set');
-    }
 
     return config;
   },
 
-  // Rest of your config...
+  // Basic image configuration
   images: {
     domains: ['localhost', '127.0.0.1', 'lh3.googleusercontent.com'],
     remotePatterns: [
@@ -71,35 +48,36 @@ const nextConfig = {
         port: '3000',
         pathname: '/static/**',
       }
-    ],
+    ]
   },
 
-  headers: async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+  // Basic security headers
+  async headers() {
     return [
       {
-        source: '/static/:path*',
+        source: '/:path*',
         headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          }
-        ],
-      },
-      {
-        source: '/api/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: apiUrl },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,DELETE,PATCH,POST,PUT,OPTIONS' },
-          {
-            key: 'Access-Control-Allow-Headers',
-            value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
-          },
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' }
         ],
       }
     ];
-  }
+  },
+
+  // Basic experimental features
+  experimental: {
+    scrollRestoration: true
+  },
+
+  // Environment configuration
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  },
+
+  // Output configuration
+  output: 'standalone',
 };
 
 export default nextConfig;

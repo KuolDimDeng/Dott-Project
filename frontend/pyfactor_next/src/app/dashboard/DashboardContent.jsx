@@ -17,7 +17,7 @@ import InvoiceDetails from './components/forms/InvoiceDetails';
 import CustomerDetails from './components/forms/CustomerDetails';
 import ProductList from './components/lists/ProductList';
 import ServiceList from './components/lists/ServiceList';
-import axiosInstance from './components/components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';
 import ChartContainer from '../chart/component/ChartContainer';
 import { FamilyRestroomRounded } from '@mui/icons-material';
 import IntegrationSettings from '../Settings/integrations/components/IntegrationSettings';

@@ -1,71 +1,146 @@
 // src/hooks/useOnboardingQueries.js
+'use client';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
+import { useSession } from 'next-auth/react';
+import { axiosInstance } from '@/lib/axiosConfig';
+import { APP_CONFIG } from '@/config';
+import { logger } from '@/utils/logger';
+import { toast } from 'react-toastify';
 
-export const useOnboardingStatus = () => {
-  return useQuery({
-    queryKey: ['onboardingStatus'],
-    queryFn: async () => {
-      const response = await axiosInstance.get('/api/onboarding/status/');
-      return response.data;
-    },
-  });
-};
-
-export const useStep1Mutation = () => {
+export function useOnboardingQueries() {
+  const { data: session, status: authStatus } = useSession();
   const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (data) => {
-      const response = await axiosInstance.post('/api/onboarding/save-step1/', data);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['onboardingStatus']);
-    },
-  });
-};
 
-export const useStep2Mutation = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (data) => {
-      const response = await axiosInstance.post('/api/onboarding/save-step2/', data);
+  // Get status query function with auth check
+  const getStatus = async () => {
+    if (!session?.user?.accessToken) {
+      throw new Error('Authentication required');
+    }
+    try {
+      const response = await axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status);
       return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['onboardingStatus']);
-    },
-  });
-};
-
-export const useStep3Mutation = () => {
-    const queryClient = useQueryClient();
-    
-    return useMutation({
-      mutationFn: async (data) => {
-        const response = await axiosInstance.post('/api/onboarding/save-step3/', data);
-        return response.data;
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries(['onboardingStatus']);
-      },
-    });
+    } catch (error) {
+      logger.error('Failed to fetch onboarding status:', error);
+      throw error;
+    }
   };
 
-  export const useStep4Mutation = () => {
-    const queryClient = useQueryClient();
-    
-    return useMutation({
+  // Define mutations with auth checks and error handling
+  const mutations = {
+    getStatus,
+    step1: useMutation({
       mutationFn: async (data) => {
-        const response = await axiosInstance.post('/api/onboarding/save-step4/', data);
+        if (!session?.user?.accessToken) {
+          throw new Error('Authentication required');
+        }
+        const response = await axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.step1, data);
         return response.data;
       },
-      onSuccess: () => {
-        queryClient.invalidateQueries(['onboardingStatus']);
+      onSuccess: (data) => {
+        queryClient.invalidateQueries([APP_CONFIG.onboarding.queryKeys.status]);
+        toast.success('Step 1 completed successfully');
       },
-    });
+      onError: (error) => {
+        logger.error('Failed to save step 1:', error);
+        toast.error(error.message || 'Failed to save step 1');
+      }
+    }),
+
+    step2: useMutation({
+      mutationFn: async (data) => {
+        if (!session?.user?.accessToken) {
+          throw new Error('Authentication required');
+        }
+        const response = await axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.step2, data);
+        return response.data;
+      },
+      onSuccess: (data) => {
+        queryClient.invalidateQueries([APP_CONFIG.onboarding.queryKeys.status]);
+        toast.success('Step 2 completed successfully');
+      },
+      onError: (error) => {
+        logger.error('Failed to save step 2:', error);
+        toast.error(error.message || 'Failed to save step 2');
+      }
+    }),
+
+    step3: useMutation({
+      mutationFn: async (data) => {
+        if (!session?.user?.accessToken) {
+          throw new Error('Authentication required');
+        }
+        const response = await axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.step3, data);
+        return response.data;
+      },
+      onSuccess: (data) => {
+        queryClient.invalidateQueries([APP_CONFIG.onboarding.queryKeys.status]);
+        toast.success('Step 3 completed successfully');
+      },
+      onError: (error) => {
+        logger.error('Failed to save step 3:', error);
+        toast.error(error.message || 'Failed to save step 3');
+      }
+    }),
+
+    step4: useMutation({
+      mutationFn: async (data) => {
+        if (!session?.user?.accessToken) {
+          throw new Error('Authentication required');
+        }
+        const response = await axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.step4, data);
+        return response.data;
+      },
+      onSuccess: (data) => {
+        queryClient.invalidateQueries([APP_CONFIG.onboarding.queryKeys.status]);
+        toast.success('Step 4 completed successfully');
+      },
+      onError: (error) => {
+        logger.error('Failed to save step 4:', error);
+        toast.error(error.message || 'Failed to save step 4');
+      }
+    }),
+
+    complete: useMutation({
+      mutationFn: async (data) => {
+        if (!session?.user?.accessToken) {
+          throw new Error('Authentication required');
+        }
+        const response = await axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.complete, data);
+        return response.data;
+      },
+      onSuccess: (data) => {
+        queryClient.invalidateQueries([APP_CONFIG.onboarding.queryKeys.status]);
+        toast.success('Onboarding completed successfully');
+      },
+      onError: (error) => {
+        logger.error('Failed to complete onboarding:', error);
+        toast.error(error.message || 'Failed to complete onboarding');
+      }
+    })
   };
 
-// Add similar mutations for step3 and step4
+  // Status query with auth check
+  const { data, isLoading, error } = useQuery({
+    queryKey: [APP_CONFIG.onboarding.queryKeys.status],
+    queryFn: getStatus,
+    enabled: authStatus === 'authenticated' && !!session?.user?.accessToken,
+    staleTime: 30000,
+    retry: (failureCount, error) => {
+      // Don't retry on auth errors
+      if (error?.response?.status === 401) return false;
+      return failureCount < 3;
+    },
+    onError: (error) => {
+      logger.error('Failed to fetch onboarding status:', error);
+    }
+  });
+
+  return {
+    status: data?.status,
+    mutations,
+    isLoading,
+    error,
+    isAuthenticated: authStatus === 'authenticated' && !!session?.user?.accessToken
+  };
+}

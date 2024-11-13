@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { CircularProgress, Typography, Button, Box } from '@mui/material';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import { logger } from '@/utils/logger';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { ErrorBoundary } from 'next/dist/client/components/error-boundary';

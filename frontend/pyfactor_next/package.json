@@ -11,12 +11,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "clean": "rm -rf .next node_modules/.cache",
+    "clean": "rimraf .next && rimraf node_modules/.cache",
     "test": "jest",
     "test:watch": "jest --watch",
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "dev:clean": "pnpm clean && pnpm dev",
+    "build:clean": "pnpm clean && pnpm build",
+    "postinstall": "pnpm run clean"
   },
   "dependencies": {
     "@emotion/react": "^11.11.3",
@@ -44,14 +47,23 @@
     "react-query": "^3.39.3",
     "react-select": "^5.8.0",
     "react-social-login-buttons": "^4.1.0",
+    "react-toastify": "^10.0.6",
     "sharp": "^0.33.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/plugin-proposal-class-properties": "^7.18.6",
+    "@babel/plugin-proposal-private-methods": "^7.18.6",
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@babel/plugin-transform-class-properties": "^7.25.9",
     "@babel/plugin-transform-private-methods": "^7.25.9",
     "@babel/plugin-transform-private-property-in-object": "^7.25.9",
+    "@babel/plugin-transform-runtime": "^7.25.9",
+    "@babel/runtime": "^7.26.0",
     "@next/bundle-analyzer": "^15.0.2",
+    "@swc/core": "^1.9.2",
+    "@swc/helpers": "^0.5.15",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.1",
     "@testing-library/user-event": "^14.5.2",
@@ -62,6 +74,8 @@
     "@typescript-eslint/parser": "^6.21.0",
     "autoprefixer": "^10.4.20",
     "babel-loader": "^9.2.1",
+    "circular-dependency-plugin": "^5.2.2",
+    "critters": "^0.0.25",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.2.14",
     "eslint-config-prettier": "^9.1.0",
@@ -72,6 +86,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "postcss": "^8.4.47",
     "prettier": "^3.2.5",
+    "rimraf": "^6.0.1",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.3.3"
   }

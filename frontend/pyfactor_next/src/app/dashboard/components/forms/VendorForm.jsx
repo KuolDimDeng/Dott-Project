@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import {
   Box,
   Typography,

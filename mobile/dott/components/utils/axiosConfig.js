@@ -7,7 +7,7 @@ const isIOS = Platform.OS === 'ios';
 const baseURL = isIOS ? 'http://localhost:8000' : 'http://10.0.0.75:8000';
 const noAuthRequired = ['/api/register/', '/api/token/', '/api/token/refresh/'];
 
-const axiosInstance = axios.create({
+const useApi = axios.create({
   baseURL,
   headers: {
     'Content-Type': 'application/json',
@@ -25,7 +25,7 @@ const getToken = async () => {
 };
 
 // Request interceptor
-axiosInstance.interceptors.request.use(
+useApi.interceptors.request.use(
   async (config) => {
     const token = await getToken();
     const isAuthRequired = !noAuthRequired.some(url => config.url.includes(url));
@@ -44,7 +44,7 @@ axiosInstance.interceptors.request.use(
 );
 
 // Response interceptor
-axiosInstance.interceptors.response.use(
+useApi.interceptors.response.use(
   (response) => {
     console.log('Response received', { status: response.status, url: response.config.url });
     return response;
@@ -75,7 +75,7 @@ axiosInstance.interceptors.response.use(
           
           console.log('Token refreshed successfully');
           originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-          return axiosInstance(originalRequest);
+          return useApi(originalRequest);
         } catch (refreshError) {
           console.error('Token refresh failed:', refreshError);
           // Handle navigation to login screen
@@ -99,4 +99,4 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-export default axiosInstance;
+export default useApi;

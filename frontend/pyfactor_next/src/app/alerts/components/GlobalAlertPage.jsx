@@ -1,7 +1,7 @@
 // src/app/alerts/components/GlobalAlertPage.jsx
 import React, { useState } from 'react';
 import { Box, TextField, Button, Select, MenuItem, FormControl, InputLabel, Typography } from '@mui/material';
-import axiosInstance from '../../dashboard/components/components/axiosConfig';
+import { useApi } from '../../dashboard/components/components/axiosConfig';
 
 const GlobalAlertPage = () => {
   const [subject, setSubject] = useState('');
@@ -11,7 +11,7 @@ const GlobalAlertPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axiosInstance.post('/api/alerts/send_global_alert/', {
+      const response = await useApi.post('/api/alerts/send_global_alert/', {
         subject,
         message,
         priority,

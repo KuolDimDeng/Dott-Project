@@ -17,7 +17,11 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.core.exceptions import ObjectDoesNotExist
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import (
+    api_view, 
+    permission_classes, 
+    authentication_classes
+)
 from rest_framework.permissions import IsAuthenticated
 from users.utils import create_user_database, setup_user_database
 from .models import OnboardingProgress
@@ -30,6 +34,8 @@ from business.models import Business, Subscription
 from finance.models import Account
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.authentication import SessionAuthentication
+
 from rest_framework_simplejwt.tokens import RefreshToken
 from pyfactor.logging_config import get_logger
 from google.oauth2 import id_token
@@ -44,8 +50,52 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 logger = get_logger()
 
+class BaseOnboardingView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication, SessionAuthentication]
+    
+    def get_authenticators(self):
+        return [auth() for auth in self.authentication_classes]
+    
+
+@transaction.atomic
+def start_database_setup(request):
+    try:
+        user = request.user
+        business = user.userprofile.business
+        
+        # Check if a task is already running
+        progress = OnboardingProgress.objects.get(user=user)
+        if progress.database_setup_task_id:
+            task_result = AsyncResult(progress.database_setup_task_id)
+            if task_result.status in ['PENDING', 'STARTED']:
+                return JsonResponse({
+                    'status': 'in_progress',
+                    'task_id': progress.database_setup_task_id
+                })
+        
+        # Start new task
+        task = setup_user_database_task.delay(user.id, business.id)
+        
+        # Save task ID
+        progress.database_setup_task_id = task.id
+        progress.save()
+        
+        return JsonResponse({
+            'status': 'started',
+            'task_id': task.id
+        })
+        
+    except Exception as e:
+        logger.error(f"Error starting database setup: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
 
 @api_view(['GET'])
+@authentication_classes([JWTAuthentication, SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def get_task_status(request, task_id):
     logger.info(f"Checking task status for task: {task_id}")
@@ -264,9 +314,8 @@ class CleanupOnboardingView(APIView):
         return Response({"message": "Cleanup completed"}, status=status.HTTP_200_OK)
     
 
-class OnboardingStatusView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]  # Add this line
+class OnboardingStatusView(BaseOnboardingView):
+
 
     def get(self, request):
         logger.info(f"Fetching onboarding status for user: {request.user.email}")
@@ -381,10 +430,9 @@ def update_session(request):
             {'error': 'Failed to update session tokens'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-    
-class SaveStep1View(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+
+
+class SaveStep1View(BaseOnboardingView):
 
     @transaction.atomic
     def post(self, request):
@@ -486,9 +534,7 @@ class SaveStep1View(APIView):
             logger.error(f"Unexpected error saving step 1 data: {str(e)}", exc_info=True)
             return Response({"error": "Failed to save step 1 data"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class SaveStep2View(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+class SaveStep2View(BaseOnboardingView):
 
     def post(self, request):
         logger.info(f"Saving step 2 data for user: {request.user.email}")
@@ -524,9 +570,7 @@ class SaveStep2View(APIView):
 
 
 
-class SaveStep3View(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+class SaveStep3View(BaseOnboardingView):
 
     def post(self, request):
         logger.info("Saving step 3 data")
@@ -551,9 +595,7 @@ class SaveStep3View(APIView):
 
 
    
-class SaveStep4View(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+class SaveStep4View(BaseOnboardingView):
 
     @transaction.atomic
     def post(self, request):
@@ -603,9 +645,8 @@ class SaveStep4View(APIView):
             logger.exception(f"Error in SaveStep4View for user {user.email}: {str(e)}")
             return Response({"error": "Failed to process step 4"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class OnboardingSuccessView(APIView):
-    permission_classes = [IsAuthenticated]
-
+class OnboardingSuccessView(BaseOnboardingView):
+  
     def post(self, request):
         user = request.user
         session_id = request.data.get('sessionId')

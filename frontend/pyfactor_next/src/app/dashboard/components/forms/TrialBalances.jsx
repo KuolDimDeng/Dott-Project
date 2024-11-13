@@ -13,7 +13,7 @@ import {
   Alert,
   useTheme,
 } from '@mui/material';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const TrialBalance = () => {

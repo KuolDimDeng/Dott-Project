@@ -23,7 +23,7 @@ import {
 } from 'recharts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 const StyledTab = styled(Tab)(({ theme }) => ({
   '&.Mui-selected': {

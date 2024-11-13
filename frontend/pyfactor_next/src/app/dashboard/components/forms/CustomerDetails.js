@@ -6,7 +6,7 @@ import {
   TableContainer, TableHead, TableRow, Avatar, IconButton,
   CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
 } from '@mui/material';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import { logger } from '@/utils/logger';
 import PersonIcon from '@mui/icons-material/Person';
 import EditIcon from '@mui/icons-material/Edit';

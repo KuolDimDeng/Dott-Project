@@ -1,10 +1,14 @@
 // src/app/metadata.js
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+};
 
 export const metadata = {
   title: 'Dott: Small Business Platform',
   description: 'Dott is a small business solutions app that helps small businesses manage their business operations effectively.',
   themeColor: '#1976d2',
-
   icons: {
     icon: [
       {
@@ -13,7 +17,7 @@ export const metadata = {
         type: 'image/png',
       },
     ],
-        shortcut: '/static/images/favicon.png',
+    shortcut: '/static/images/favicon.png',
     apple: '/static/images/favicon.png',
     other: {
       rel: 'apple-touch-icon',
@@ -35,11 +39,6 @@ export const metadata = {
     locale: 'en_US',
     type: 'website',
     siteName: 'Pyfactor',
-  },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
   },
   robots: {
     index: true,

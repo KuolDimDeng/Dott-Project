@@ -13,7 +13,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import PreviewIcon from '@mui/icons-material/Preview';
 import SaveIcon from '@mui/icons-material/Save';
 import Alert from '@mui/material/Alert';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 import EstimatePreviewModal from './EstimatePreview';

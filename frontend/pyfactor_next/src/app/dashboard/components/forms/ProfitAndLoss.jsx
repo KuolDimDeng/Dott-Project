@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, useTheme } from '@mui/material';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 export default function ProfitAndLoss() {  // or BalanceSheet or CashFlow
   const [data, setData] = useState(null);

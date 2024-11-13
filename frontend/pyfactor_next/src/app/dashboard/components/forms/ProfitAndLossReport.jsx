@@ -14,7 +14,7 @@ import {
   useTheme
 } from '@mui/material';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 const formatAmount = (amount) => {
   return typeof amount === 'number' ? amount.toFixed(2) : 'N/A';

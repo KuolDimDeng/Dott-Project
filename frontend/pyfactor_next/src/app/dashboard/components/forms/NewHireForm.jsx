@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TextField, Button, Box, Typography } from '@mui/material';
 import { useParams } from 'react-router-dom';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 const NewHireForm = () => {
   const { formId } = useParams();

@@ -10,7 +10,7 @@ import {
 import { 
   Add, FilterList, Search, Edit, Delete, CheckCircle
 } from '@mui/icons-material';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 const MonthEndManagement = () => {
   const [closings, setClosings] = useState([]);

@@ -21,7 +21,7 @@ import {
 import { styled } from '@mui/material/styles';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import SearchIcon from '@mui/icons-material/Search';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   maxHeight: 440,

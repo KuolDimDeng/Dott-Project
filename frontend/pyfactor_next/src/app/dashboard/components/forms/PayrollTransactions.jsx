@@ -26,7 +26,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const PayrollTransactions = () => {

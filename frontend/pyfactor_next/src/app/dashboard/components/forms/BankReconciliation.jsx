@@ -26,7 +26,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import Image from 'next/image';
 
 

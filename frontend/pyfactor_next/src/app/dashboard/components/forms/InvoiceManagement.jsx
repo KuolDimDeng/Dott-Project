@@ -33,7 +33,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 

@@ -21,7 +21,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SearchIcon from '@mui/icons-material/Search';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import EmailIcon from '@mui/icons-material/Email';
-import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
+import { useApi } from '@/lib/axiosConfig';
 import Image from 'next/image';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import HelpIcon from '@mui/icons-material/Help'; // Import the Help icon
@@ -88,7 +88,7 @@ const HelpCenter = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axiosInstance.post('/api/help/contact', { name, email, message });
+      await useApi.post('/api/help/contact', { name, email, message });
       setSnackbarOpen(true);
       setName('');
       setEmail('');

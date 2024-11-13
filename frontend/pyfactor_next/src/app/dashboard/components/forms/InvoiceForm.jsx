@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Button, Grid, TextField, MenuItem, FormControl, InputLabel, Select } from '@mui/material';
 import InvoicePreview from './InvoicePreview';
 import InvoiceTemplateBuilder from './InvoiceTemplateBuilder';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 

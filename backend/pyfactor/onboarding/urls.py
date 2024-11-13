@@ -23,7 +23,7 @@ app_name = 'onboarding'
 
 
 urlpatterns = [
-    path('start/', StartOnboardingView.as_view(), name='start_onboarding'),
+    path('api/onboarding/step4/start/', views.start_database_setup, name='start_database_setup'),
     path('update/<str:step>/', UpdateOnboardingView.as_view(), name='update_onboarding'),
     path('complete/', CompleteOnboardingView.as_view(), name='complete_onboarding'),
     path('cleanup/', CleanupOnboardingView.as_view(), name='cleanup_onboarding'),

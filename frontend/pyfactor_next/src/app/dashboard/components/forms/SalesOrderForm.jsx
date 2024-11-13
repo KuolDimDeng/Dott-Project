@@ -4,7 +4,7 @@ import {
   FormControl, CircularProgress, Snackbar
 } from '@mui/material';
 import Alert from '@mui/material/Alert';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const SalesOrderForm = ({ onSave, initialData }) => {

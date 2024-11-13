@@ -9,7 +9,7 @@ import {
   Add, FilterList, Search, Edit, Delete, ImportExport, Settings, Visibility
 } from '@mui/icons-material';
 import Link from 'next/link';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 const ChartOfAccountsManagement = () => {
   const [accounts, setAccounts] = useState([]);

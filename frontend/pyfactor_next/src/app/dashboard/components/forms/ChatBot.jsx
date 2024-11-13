@@ -3,7 +3,7 @@ import { Box, Fab, Paper, Typography, TextField, IconButton } from '@mui/materia
 import ChatIcon from '@mui/icons-material/Chat';
 import SendIcon from '@mui/icons-material/Send';
 import CloseIcon from '@mui/icons-material/Close';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 import debounce from 'lodash/debounce';
 
 const Chatbot = ({ userName, backgroundColor }) => {

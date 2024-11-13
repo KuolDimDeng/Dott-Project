@@ -16,7 +16,7 @@ import {
   Grid,
   useTheme,
 } from '@mui/material';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 const VendorManagement = () => {
   const [tabValue, setTabValue] = useState(0);

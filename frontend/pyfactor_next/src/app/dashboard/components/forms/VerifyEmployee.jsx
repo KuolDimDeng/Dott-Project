@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TextField, Button, Box, Typography, Switch, FormControlLabel } from '@mui/material';
 import { useParams } from 'react-router-dom';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 const VerifyEmployee = () => {
   const { employeeId } = useParams();

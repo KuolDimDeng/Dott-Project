@@ -23,7 +23,7 @@ import SalesForm from './SalesForm';
 import RefundForm from './RefundForm';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
-import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
+import { useApi } from '@/lib/axiosConfig';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -54,7 +54,7 @@ const TransactionForm = () => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await axiosInstance.get('/api/profile/');
+      const response = await useApi.get('/api/profile/');
       setUserDatabase(response.data.database_name);
       logger.log('User profile:', response.data);
     } catch (error) {
@@ -65,7 +65,7 @@ const TransactionForm = () => {
 
   const fetchAccounts = async (database_name) => {
     try {
-      const response = await axiosInstance.get('/api/accounts/', {
+      const response = await useApi.get('/api/accounts/', {
         params: { database: database_name },
       });
       setAccounts(response.data);
@@ -78,7 +78,7 @@ const TransactionForm = () => {
   const fetchTransactions = async (database_name) => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get('/api/transactions/', {
+      const response = await useApi.get('/api/transactions/', {
         params: { database: database_name },
       });
       setTransactions(response.data);

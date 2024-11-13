@@ -19,7 +19,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import axiosInstance from '../../dashboard/components/components/axiosConfig';
+import { useApi } from '../../dashboard/components/components/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 import UnpaidInvoicesList from '../../dashboard/components/lists/UnpaidInvoicesList';  // Adjust the import path as needed
@@ -74,7 +74,7 @@ const AddIncomeForm = ({ onClose }) => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await axiosInstance.get('/api/profile/');
+      const response = await useApi.get('/api/profile/');
       setUserDatabase(response.data.database_name);
       logger.log('User profile:', response.data);
       logger.log('User database:', response.data.database_name);
@@ -88,7 +88,7 @@ const AddIncomeForm = ({ onClose }) => {
 
   const fetchUnpaidInvoices = async () => {
     try {
-      const response = await axiosInstance.get('/api/unpaid-invoices/');
+      const response = await useApi.get('/api/unpaid-invoices/');
       if (Array.isArray(response.data)) {
         setUnpaidInvoices(response.data);
       } else {
@@ -153,7 +153,7 @@ const AddIncomeForm = ({ onClose }) => {
     }
   
     try {
-      const response = await axiosInstance.post('http://localhost:8000/api/incomes/', formData, {
+      const response = await useApi.post('http://localhost:8000/api/incomes/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

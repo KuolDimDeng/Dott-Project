@@ -2,7 +2,7 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, TextField, Button, Grid, Avatar, Switch, FormControlLabel, Tabs, Tab } from '@mui/material';
-import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
+import { useApi } from '@/lib/axiosConfig';
 
 const UserProfileSettings = ({ userData, onUpdate }) => {
     const [activeTab, setActiveTab] = useState(0);
@@ -38,7 +38,7 @@ const UserProfileSettings = ({ userData, onUpdate }) => {
     const handleSubmit = async (event) => {
       event.preventDefault();
       try {
-        const response = await axiosInstance.put('/api/profile/update/', formData);
+        const response = await useApi.put('/api/profile/update/', formData);
         if (response.status === 200) {
           onUpdate(response.data);
         }

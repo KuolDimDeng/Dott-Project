@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar, TextInput, FlatList, ScrollView, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
-import axiosInstance from '../components/utils/axiosConfig';
+import { useApi } from '../components/utils/axiosConfig';
 import BarcodeScanner from './BarcodeScanner';
 import { BLEPrinter } from 'react-native-thermal-receipt-printer';
 
@@ -41,7 +41,7 @@ export default function CreateSales() {
 
   const fetchCustomers = async () => {
     try {
-      const response = await axiosInstance.get('/api/customers/');
+      const response = await useApi.get('/api/customers/');
       setCustomers(response.data);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -51,7 +51,7 @@ export default function CreateSales() {
 
   const handleBarCodeScanned = async (barcode) => {
     try {
-      const response = await axiosInstance.get(`/api/products/barcode/${barcode}`);
+      const response = await useApi.get(`/api/products/barcode/${barcode}`);
       setScannedProduct(response.data);
       setScanMode(false);
     } catch (error) {
@@ -71,7 +71,7 @@ export default function CreateSales() {
 
       if (!customerId) {
         // Create a new customer
-        const newCustomerResponse = await axiosInstance.post('/api/customers/', { name: newCustomerName });
+        const newCustomerResponse = await useApi.post('/api/customers/', { name: newCustomerName });
         customerId = newCustomerResponse.data.id;
       }
 
@@ -85,7 +85,7 @@ export default function CreateSales() {
         change_due: paymentMethod === 'cash' ? changeDue : null,
       };
 
-      const response = await axiosInstance.post('/api/sales/create/', saleData);
+      const response = await useApi.post('/api/sales/create/', saleData);
       Alert.alert('Success', 'Sale created successfully');
       
       // Print receipt

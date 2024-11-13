@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, useTheme, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from '@mui/material';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 export default function BalanceSheet() {
   const [data, setData] = useState(null);

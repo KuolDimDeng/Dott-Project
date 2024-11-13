@@ -1,24 +1,42 @@
-// /pages/api/auth/[...nextauth].js
-
+// src/app/api/auth/[...nextauth]/route.js
 import NextAuth from 'next-auth';
 import GoogleProvider from "next-auth/providers/google";
 import { logger } from '@/utils/logger';
-import axiosInstance from '@/lib/axiosConfig';
+import { APP_CONFIG } from '@/config';
 
 /**
  * Exchange Google token for our backend token
  */
-async function exchangeGoogleToken(googleToken) {
+async function exchangeGoogleToken(idToken, accessToken) {
   try {
     logger.info('Exchanging Google token');
-    const response = await axiosInstance.post('/api/onboarding/token-exchange/', {
-      token: googleToken
+    
+    const response = await fetch(`${APP_CONFIG.api.baseURL}${APP_CONFIG.api.endpoints.auth.google}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        token: idToken,
+        access_token: accessToken
+      }),
     });
+
+    if (!response.ok) {
+      throw new Error(`Token exchange failed: ${response.statusText}`);
+    }
+
+    const tokenData = await response.json();
+    
+    if (!tokenData?.access || !tokenData?.refresh) {
+      throw new Error('Invalid token response from server');
+    }
+    
     logger.info('Token exchange successful');
-    return response.data;
+    return tokenData;
   } catch (error) {
-    logger.error('Token exchange failed:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.error || 'Failed to exchange token');
+    logger.error('Token exchange failed:', error);
+    throw new Error('Failed to exchange token');
   }
 }
 
@@ -27,15 +45,35 @@ async function exchangeGoogleToken(googleToken) {
  */
 async function refreshAccessToken(token) {
   try {
-    const response = await axiosInstance.post('/api/token/refresh/', {
-      refresh: token.refreshToken
+    if (!token?.refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    const response = await fetch(`${APP_CONFIG.api.baseURL}${APP_CONFIG.api.endpoints.auth.refresh}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        refresh: token.refreshToken
+      }),
     });
+
+    if (!response.ok) {
+      throw new Error('Failed to refresh token');
+    }
+
+    const refreshedTokens = await response.json();
+    
+    if (!refreshedTokens?.access) {
+      throw new Error('Invalid refresh token response');
+    }
 
     return {
       ...token,
-      accessToken: response.data.access,
-      refreshToken: response.data.refresh ?? token.refreshToken,
-      accessTokenExpires: Date.now() + 60 * 60 * 1000, // 1 hour
+      accessToken: refreshedTokens.access,
+      refreshToken: refreshedTokens.refresh ?? token.refreshToken,
+      accessTokenExpires: Date.now() + APP_CONFIG.auth.tokenGracePeriod,
     };
   } catch (error) {
     logger.error('Error refreshing access token:', error);
@@ -71,18 +109,24 @@ export const authOptions = {
         });
         
         if (account?.provider === "google" && account?.id_token) {
-          const tokenData = await exchangeGoogleToken(account.id_token);
+          const tokenData = await exchangeGoogleToken(
+            account.id_token,
+            account.access_token
+          );
           
-          // Store both JWT and raw access token
-          user.access_token = tokenData.access;
-          user.raw_access_token = tokenData.access; // Store raw token for WebSocket
-          user.refresh_token = tokenData.refresh;
+          if (!tokenData?.access || !tokenData?.user_id) {
+            throw new Error('Invalid token data received');
+          }
+          
+          // Update user object with token data
+          user.accessToken = tokenData.access;
+          user.refreshToken = tokenData.refresh;
           user.id = tokenData.user_id;
           user.onboardingStatus = tokenData.onboarding_status;
           user.email = profile.email;
           user.name = profile.name;
           user.image = profile.picture;
-          user.accessTokenExpires = Date.now() + 60 * 60 * 1000;
+          user.accessTokenExpires = Date.now() + APP_CONFIG.auth.tokenGracePeriod;
 
           logger.info('Google sign-in successful', { 
             userId: tokenData.user_id,
@@ -101,16 +145,14 @@ export const authOptions = {
 
     async jwt({ token, user, account }) {
       try {
+        // Initial sign in
         if (account && user) {
-          logger.info('JWT callback - initial sign in', { 
-            email: user.email 
-          });
+          logger.info('JWT callback - initial sign in', { email: user.email });
           
           return {
             ...token,
-            accessToken: user.access_token,
-            rawAccessToken: user.raw_access_token, // Store raw token
-            refreshToken: user.refresh_token,
+            accessToken: user.accessToken,
+            refreshToken: user.refreshToken,
             userId: user.id,
             onboardingStatus: user.onboardingStatus,
             email: user.email,
@@ -118,62 +160,49 @@ export const authOptions = {
           };
         }
 
-        if (Date.now() < token.accessTokenExpires) {
+        // Return existing token if still valid
+        if (Date.now() < (token.accessTokenExpires || 0)) {
           return token;
         }
 
-        // Refresh token
-        const refreshedToken = await refreshAccessToken(token);
-        logger.info('Access token refreshed');
-        return {
-          ...refreshedToken,
-          rawAccessToken: refreshedToken.accessToken // Store raw refreshed token
-        };
-
+        // Refresh expired token
+        logger.info('Token expired, refreshing...');
+        return await refreshAccessToken(token);
       } catch (error) {
         logger.error('JWT callback error:', error);
-        return {
-          ...token,
-          error: 'RefreshAccessTokenError',
-        };
+        return { ...token, error: 'TokenError' };
       }
     },
 
     async session({ session, token }) {
       try {
-        logger.info('Session callback', { email: token.email });
-        
         session.user = {
           ...session.user,
           id: token.userId,
           onboardingStatus: token.onboardingStatus,
-          accessToken: token.rawAccessToken, // Use raw token for WebSocket
-          refreshToken: token.refreshToken,
-          email: token.email,
+          accessToken: token.accessToken,
           error: token.error,
+          email: token.email,
         };
 
-        session.error = token.error;
         return session;
       } catch (error) {
         logger.error('Session callback error:', error);
-        return {
-          ...session,
-          error: 'SessionError',
-        };
+        return { ...session, error: 'SessionError' };
       }
     },
 
     async redirect({ url, baseUrl }) {
       try {
-        // Allows relative callback URLs
+        // Handle relative URLs
         if (url.startsWith('/')) {
           return `${baseUrl}${url}`;
         }
-        // Allows callback URLs on the same origin
-        else if (new URL(url).origin === baseUrl) {
+        // Allow redirects to same origin
+        if (url.startsWith(baseUrl)) {
           return url;
         }
+        // Default to base URL
         return baseUrl;
       } catch (error) {
         logger.error('Redirect error:', error);
@@ -183,73 +212,43 @@ export const authOptions = {
   },
 
   events: {
-    async signIn(message) {
-      logger.info('User signed in', { 
-        email: message.user?.email,
-        provider: message.account?.provider 
-      });
+    async signIn(message) { 
+      logger.info('User signed in', message); 
     },
-    async signOut(message) {
-      logger.info('User signed out', { 
-        email: message.token?.email 
-      });
+    async signOut(message) { 
+      logger.info('User signed out', message); 
     },
-    async createUser(message) {
-      logger.info('New user created', { 
-        email: message.user?.email 
-      });
+    async createUser(message) { 
+      logger.info('User created', message); 
     },
-    async linkAccount(message) {
-      logger.info('Account linked', { 
-        email: message.user?.email,
-        provider: message.account?.provider 
-      });
+    async linkAccount(message) { 
+      logger.info('Account linked', message); 
     },
-    async session(message) {
+    async session(message) { 
       if (message.session?.error) {
         logger.error('Session error:', message.session.error);
       }
     },
-    async error(error) {
-      logger.error('Auth error:', error);
-    }
   },
 
   pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error',
-    signOut: '/auth/signout',
-    verifyRequest: '/auth/verify-request',
+    signIn: APP_CONFIG.routes.auth.signIn,
+    signOut: APP_CONFIG.routes.auth.signOut,
+    error: APP_CONFIG.routes.auth.error,
+    verifyRequest: APP_CONFIG.routes.auth.verifyRequest,
   },
 
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-    updateAge: 24 * 60 * 60, // 24 hours
-  },
-
-  jwt: {
-    secret: process.env.NEXTAUTH_SECRET,
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-    encryption: true,
+    maxAge: APP_CONFIG.auth.sessionMaxAge,
+    updateAge: APP_CONFIG.auth.refreshInterval,
   },
 
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
-  
-  logger: {
-    error(code, metadata) {
-      logger.error(code, metadata);
-    },
-    warn(code) {
-      logger.warn(code);
-    },
-    debug(code, metadata) {
-      logger.debug(code, metadata);
-    }
-  }
 };
 
 logger.info("NextAuth configuration loaded.");
 
-export default NextAuth(authOptions);
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };

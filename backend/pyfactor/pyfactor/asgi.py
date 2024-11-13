@@ -8,13 +8,16 @@ import django
 django.setup()
 
 from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.security.websocket import AllowedHostsOriginValidator, OriginValidator
+from channels.security.websocket import AllowedHostsOriginValidator
 from django.conf import settings
 from channels.auth import AuthMiddlewareStack
-from onboarding.middleware import TokenAuthMiddlewareStack
+from onboarding.middleware import WebSocketAuthMiddlewareStack  # Updated import
 from pyfactor.logging_config import get_logger
 from channels.middleware import BaseMiddleware
+from channels.exceptions import DenyConnection
 import onboarding.routing
+import traceback
+from typing import Callable, Any
 
 # Set up logger
 logger = get_logger()
@@ -23,79 +26,154 @@ logger = get_logger()
 django_asgi_app = get_asgi_application()
 
 class CORSMiddleware(BaseMiddleware):
-    async def __call__(self, scope, receive, send):
+    """Handle CORS for WebSocket connections"""
+    
+    async def __call__(self, scope: dict, receive: Callable, send: Callable) -> Any:
         if scope["type"] == "websocket":
-            # Handle WebSocket CORS
-            origin = None
-            for key, value in scope.get("headers", []):
-                if key == b"origin":
-                    origin = value.decode("utf-8")
-                    break
+            headers = dict(scope.get("headers", []))
+            origin = headers.get(b"origin", b"").decode("utf-8")
 
-            if origin:
-                logger.debug(f"WebSocket connection attempt from origin: {origin}")
-                if origin in settings.ALLOWED_ORIGINS:
-                    logger.info(f"Allowed WebSocket connection from origin: {origin}")
-                    return await super().__call__(scope, receive, send)
-                else:
-                    logger.warning(f"Rejected WebSocket connection from unauthorized origin: {origin}")
-                    return None
+            if not origin:
+                logger.warning("No origin header in WebSocket request")
+                await self.deny_connection(send, "No origin header")
+                return
+
+            logger.debug(f"WebSocket connection attempt from origin: {origin}")
             
-        return await super().__call__(scope, receive, send)
+            allowed_origins = getattr(settings, 'ALLOWED_ORIGINS', [
+                'http://localhost:3000',
+                'http://127.0.0.1:3000'
+            ])
+            
+            if origin not in allowed_origins:
+                logger.warning(f"Rejected WebSocket connection from unauthorized origin: {origin}")
+                await self.deny_connection(send, "Origin not allowed")
+                return
+            
+            logger.info(f"Allowed WebSocket connection from origin: {origin}")
 
-class ErrorLoggingMiddleware(BaseMiddleware):
-    async def __call__(self, scope, receive, send):
         try:
             return await super().__call__(scope, receive, send)
-        except Exception as ex:
-            logger.error(f"Error in ASGI application: {str(ex)}")
-            import traceback
-            logger.error(traceback.format_exc())
+        except Exception as e:
+            logger.error(f"Error in CORS middleware: {str(e)}\n{traceback.format_exc()}")
+            if scope["type"] == "websocket":
+                await self.deny_connection(send, "Internal server error")
             raise
 
-application = ProtocolTypeRouter({
-    "http": django_asgi_app,
-    "websocket": CORSMiddleware(
-        AllowedHostsOriginValidator(
-            TokenAuthMiddlewareStack(
-                URLRouter(
-                    onboarding.routing.websocket_urlpatterns
-                )
-            )
-        )
-    ),
-})
+    async def deny_connection(self, send: Callable, reason: str) -> None:
+        """Helper method to deny WebSocket connections"""
+        await send({
+            "type": "websocket.close",
+            "code": 4000,
+            "reason": reason,
+        })
+        raise DenyConnection(reason)
 
-logger.debug("ASGI application configured")
-
-# Error handling for development
-if settings.DEBUG:
-    application = ErrorLoggingMiddleware(application)
-    logger.info("Debug middleware applied to ASGI application")
-
-    # Add verbose logging for WebSocket connections
-    async def log_websocket_message(message):
-        logger.debug(f"WebSocket message: {message}")
-        return message
-
-    class WebSocketLoggingMiddleware(BaseMiddleware):
-        async def __call__(self, scope, receive, send):
-            if scope["type"] == "websocket":
-                async def logged_receive():
-                    message = await receive()
-                    return await log_websocket_message(message)
-                
-                async def logged_send(message):
-                    await log_websocket_message(message)
-                    await send(message)
-                
-                return await super().__call__(scope, logged_receive, logged_send)
+class ErrorLoggingMiddleware(BaseMiddleware):
+    """Log errors in the ASGI application"""
+    
+    async def __call__(self, scope: dict, receive: Callable, send: Callable) -> Any:
+        try:
             return await super().__call__(scope, receive, send)
+        except DenyConnection:
+            # Expected behavior, don't log as error
+            raise
+        except Exception as e:
+            logger.error(
+                f"Error in ASGI application: {str(e)}\n"
+                f"Scope: {scope}\n"
+                f"Traceback: {traceback.format_exc()}"
+            )
+            if scope["type"] == "websocket":
+                await send({
+                    "type": "websocket.close",
+                    "code": 4500,
+                    "reason": "Internal server error",
+                })
+            raise
 
-    application = WebSocketLoggingMiddleware(application)
-    logger.info("WebSocket logging middleware applied")
+class WebSocketLoggingMiddleware(BaseMiddleware):
+    """Log WebSocket messages for debugging"""
+    
+    async def __call__(self, scope: dict, receive: Callable, send: Callable) -> Any:
+        if scope["type"] == "websocket":
+            async def logged_receive():
+                message = await receive()
+                logger.debug(f"WebSocket received: {message}")
+                return message
+            
+            async def logged_send(message):
+                logger.debug(f"WebSocket sending: {message}")
+                await send(message)
+                
+            try:
+                return await super().__call__(scope, logged_receive, logged_send)
+            except Exception as e:
+                logger.error(f"Error in WebSocket communication: {str(e)}\n{traceback.format_exc()}")
+                await send({
+                    "type": "websocket.close",
+                    "code": 4500,
+                    "reason": "Internal server error",
+                })
+                raise
+        return await super().__call__(scope, receive, send)
 
-logger.info("ASGI application ready")
+class ChannelsMiddlewareStack:
+    """Combine all middleware for channels"""
+    
+    def __init__(self, inner):
+        middleware_classes = [
+            CORSMiddleware,
+            AllowedHostsOriginValidator,
+            WebSocketAuthMiddlewareStack,  # Updated middleware
+        ]
+        
+        if settings.DEBUG:
+            middleware_classes.extend([
+                ErrorLoggingMiddleware,
+                WebSocketLoggingMiddleware,
+            ])
+        
+        self.app = inner
+        for middleware_class in reversed(middleware_classes):
+            self.app = middleware_class(self.app)
+
+    async def __call__(self, scope, receive, send):
+        try:
+            return await self.app(scope, receive, send)
+        except Exception as e:
+            logger.error(f"Error in channels middleware stack: {str(e)}\n{traceback.format_exc()}")
+            if scope["type"] == "websocket":
+                await send({
+                    "type": "websocket.close",
+                    "code": 4500,
+                    "reason": "Internal server error",
+                })
+            raise
+
+def get_asgi_application_with_middleware():
+    """Create and configure the ASGI application with all middleware"""
+    try:
+        app = ProtocolTypeRouter({
+            "http": django_asgi_app,
+            "websocket": ChannelsMiddlewareStack(
+                URLRouter(onboarding.routing.websocket_urlpatterns)
+            ),
+        })
+
+        logger.info("ASGI application configured successfully")
+        return app
+        
+    except Exception as e:
+        logger.critical(
+            f"Failed to configure ASGI application: {str(e)}\n"
+            f"Traceback: {traceback.format_exc()}"
+        )
+        raise
+
+# Create the application
+application = get_asgi_application_with_middleware()
+logger.info("ASGI application configured and ready")
 
 # Daphne-specific configuration
 daphne_app = application

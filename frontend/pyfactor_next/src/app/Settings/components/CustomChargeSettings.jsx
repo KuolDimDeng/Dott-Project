@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, TextField, Button, Grid, List, ListItem, ListItemText, IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import axiosInstance from '@/app/dashboard/components/components/axiosConfig';
+import { useApi } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const CustomChargeSettings = () => {
@@ -17,7 +17,7 @@ const CustomChargeSettings = () => {
 
   const fetchCustomPlans = async () => {
     try {
-      const response = await axiosInstance.get('/api/custom-charge-plans/');
+      const response = await useApi.get('/api/custom-charge-plans/');
       setCustomPlans(response.data);
     } catch (error) {
       addMessage('error', 'Error fetching custom charge plans');
@@ -31,7 +31,7 @@ const CustomChargeSettings = () => {
 
   const handleCreatePlan = async () => {
     try {
-      await axiosInstance.post('/api/custom-charge-plans/', newPlan);
+      await useApi.post('/api/custom-charge-plans/', newPlan);
       addMessage('success', 'Custom charge plan created successfully');
       fetchCustomPlans();
       setNewPlan({ name: '', quantity: 0, unit: '', period: '', price: 0 });
@@ -42,7 +42,7 @@ const CustomChargeSettings = () => {
 
   const handleDeletePlan = async (planId) => {
     try {
-      await axiosInstance.delete(`/api/custom-charge-plans/${planId}/`);
+      await useApi.delete(`/api/custom-charge-plans/${planId}/`);
       addMessage('success', 'Custom charge plan deleted successfully');
       fetchCustomPlans();
     } catch (error) {

@@ -2,7 +2,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import axiosInstance from '../dashboard/components/components/axiosConfig';
+import { useApi } from '../dashboard/components/components/axiosConfig';
 
 const AdminRoute = (WrappedComponent) => {
   return (props) => {
@@ -12,7 +12,7 @@ const AdminRoute = (WrappedComponent) => {
     useEffect(() => {
       const checkAdminStatus = async () => {
         try {
-          const response = await axiosInstance.get('/api/user/is-admin/');
+          const response = await useApi.get('/api/user/is-admin/');
           setIsAdmin(response.data.is_admin);
           if (!response.data.is_admin) {
             router.push('/dashboard');

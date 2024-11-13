@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Box, TextField, Button, Typography } from '@mui/material';
-import axiosInstance from '../components/axiosConfig';
+import axiosInstance from '@/lib/axiosConfig';;
 
 const DownloadTransactions = () => {
   const [startDate, setStartDate] = useState('');

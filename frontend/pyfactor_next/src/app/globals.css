@@ -174,3 +174,23 @@ body {
     display: none !important;
   }
 }
+
+.custom-toast-class {
+  border-radius: 8px;
+}
+
+.custom-toast-class.Toastify__toast--success {
+  border-left: 4px solid #4caf50;
+}
+
+.custom-toast-class.Toastify__toast--error {
+  border-left: 4px solid #f44336;
+}
+
+.custom-toast-class.Toastify__toast--info {
+  border-left: 4px solid #2196f3;
+}
+
+.custom-toast-class.Toastify__toast--warning {
+  border-left: 4px solid #ff9800;
+}
