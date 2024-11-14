@@ -198,6 +198,8 @@ function Step4Content() {
   const [isComplete, setIsComplete] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [wsConnected, setWsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+
 
   // Refs for cleanup
   const ws = useRef(null);
@@ -213,41 +215,37 @@ function Step4Content() {
   const { saveStep4Data } = useOnboarding();
 
   // Setup WebSocket handlers
-  const handleWebSocketOpen = useCallback(() => {
-    logger.info('WebSocket connected');
-    clearTimeout(connectionTimeoutRef.current);
-    setWsConnected(true);
-    startSlideshow();
-  }, []);
+
 
   const handleWebSocketMessage = useCallback((event) => {
     try {
       const data = JSON.parse(event.data);
       
-      switch (data.type) {
-        case 'progress':
-          setProgress(data.progress);
-          setCurrentStep(data.step);
-          break;
-        case 'complete':
-          handleSetupComplete(data);
-          break;
-        case 'error':
-          handleError(new Error(data.message));
-          break;
-        default:
-          logger.warn('Unknown message type:', data.type);
+      if (data.type === 'connection_established') {
+        logger.info('WebSocket connection established');
+        return;
       }
+      
+      if (data.type === 'progress') {
+        setProgress(data.progress);
+        setCurrentStep(data.step);
+        if (data.status === 'complete') {
+          handleSetupComplete(data);
+        }
+        return;
+      }
+  
+      logger.warn('Unknown message type:', data.type);
     } catch (error) {
       logger.error('Error processing WebSocket message:', error);
     }
-  }, []);
+  }, [handleSetupComplete]);
 
   const handleWebSocketError = useCallback((error) => {
     logger.error('WebSocket error:', error);
     setWsConnected(false);
     startPolling();
-  }, []);
+  }, [startPolling]);
 
   const handleWebSocketClose = useCallback((event) => {
     logger.info(`WebSocket closed with code ${event.code}`);
@@ -258,61 +256,110 @@ function Step4Content() {
         setupWebSocket();
       }, WS_CONFIG.RETRY_DELAY);
     }
-  }, [isComplete]);
+  }, [isComplete, setupWebSocket]);
 
   // WebSocket setup
+// Update WebSocket setup with better error handling
+// Finally update setupWebSocket with consolidated handlers
   const setupWebSocket = useCallback(() => {
-    if (!session?.user?.id || wsConnected) return;
+    if (isConnecting || wsConnected) return;
+    
+    setIsConnecting(true);
 
     try {
-      if (ws.current?.readyState === WebSocket.OPEN) {
+      if (ws.current) {
         ws.current.close();
+        ws.current = null;
       }
 
       const wsUrl = getWebSocketUrl(session.user.id, session.user.accessToken);
-      ws.current = new WebSocket(wsUrl);
+      logger.info('Connecting to WebSocket:', wsUrl);
       
+      ws.current = new WebSocket(wsUrl);
+
+      // Single connection timeout
       connectionTimeoutRef.current = setTimeout(() => {
         if (ws.current?.readyState !== WebSocket.OPEN) {
           logger.warn('WebSocket connection timeout');
           ws.current?.close();
+          setIsConnecting(false);
+          setWsConnected(false);
           startPolling();
         }
       }, WS_CONFIG.TIMEOUT);
 
-      ws.current.onopen = handleWebSocketOpen;
+      // Single onopen handler
+      ws.current.onopen = () => {
+        logger.info('WebSocket connected');
+        clearTimeout(connectionTimeoutRef.current);
+        setIsConnecting(false);
+        setWsConnected(true);
+        startSlideshow();
+      };
+
       ws.current.onmessage = handleWebSocketMessage;
       ws.current.onerror = handleWebSocketError;
       ws.current.onclose = handleWebSocketClose;
 
     } catch (error) {
       logger.error('Error setting up WebSocket:', error);
+      setIsConnecting(false);
+      setWsConnected(false);
       startPolling();
     }
-  }, [session?.user?.id, session?.user?.accessToken, wsConnected, handleWebSocketOpen, handleWebSocketMessage, handleWebSocketError, handleWebSocketClose]);
-
+  }, [
+    session?.user?.id,
+    session?.user?.accessToken,
+    wsConnected,
+    isConnecting,
+    handleWebSocketMessage,
+    handleWebSocketError,
+    handleWebSocketClose,
+    startPolling,
+    startSlideshow
+  ]);
   // Polling fallback
-  const startPolling = useCallback(() => {
-    if (pollIntervalRef.current) return;
+// Update polling function to handle progress updates
+const startPolling = useCallback(() => {
+  if (pollIntervalRef.current) return;
 
-    pollIntervalRef.current = setInterval(async () => {
-      try {
-        const response = await axiosInstance.get('/api/onboarding/status/');
-        const data = response.data;
+  const poll = async () => {
+    try {
+      const response = await axiosInstance.get('/api/onboarding/status/');
+      const data = response.data;
 
-        if (data.status === 'complete') {
-          handleSetupComplete(data);
-        } else if (data.status === 'failed') {
-          handleError(new Error(data.error || 'Setup failed'));
-        } else {
-          setProgress(data.progress || 0);
-          setCurrentStep(data.step || 'Processing');
-        }
-      } catch (error) {
-        logger.error('Error polling status:', error);
+      if (data.status === 'complete') {
+        clearInterval(pollIntervalRef.current);
+        handleSetupComplete(data);
+      } else if (data.status === 'failed') {
+        clearInterval(pollIntervalRef.current);
+        handleError(new Error(data.error || 'Setup failed'));
+      } else {
+        setProgress(data.progress || 0);
+        setCurrentStep(data.currentStep || 'Processing');
       }
-    }, WS_CONFIG.POLL_INTERVAL);
-  }, []);
+    } catch (error) {
+      logger.error('Error polling status:', error);
+      if (error?.response?.status === 401) {
+        clearInterval(pollIntervalRef.current);
+        router.push('/auth/signin');
+      }
+    }
+  };
+
+  // Initial poll
+  poll();
+  
+  // Set up interval
+  pollIntervalRef.current = setInterval(poll, WS_CONFIG.POLL_INTERVAL);
+
+  return () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  };
+}, [handleSetupComplete, handleError, router]);
 
   // Slideshow management
   const startSlideshow = useCallback(() => {
@@ -324,6 +371,7 @@ function Step4Content() {
   }, []);
 
   // Setup completion handler
+// First, define handleSetupComplete without dependencies on other functions
   const handleSetupComplete = useCallback(async (data) => {
     try {
       setProgress(100);
@@ -371,6 +419,8 @@ function Step4Content() {
   }, []);
 
   // Setup mutation
+// Update setup mutation with better error handling
+// Update setupMutation in Step4.js
   const setupMutation = useMutation({
     mutationFn: async () => {
       const response = await axiosInstance.post('/api/onboarding/step4/start/');
@@ -380,9 +430,13 @@ function Step4Content() {
       logger.info('Setup initiated:', data);
       setProgress(0);
       setCurrentStep('Initializing');
-      toast.info('Setup process started');
+      setupWebSocket();
     },
-    onError: handleError
+    onError: (error) => {
+      logger.error('Setup initiation failed:', error);
+      handleError(error);
+      startPolling();
+    }
   });
 
   // Continuing inside Step4Content...

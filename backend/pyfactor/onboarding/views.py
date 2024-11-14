@@ -50,6 +50,8 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 logger = get_logger()
 
+
+
 class BaseOnboardingView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication, SessionAuthentication]
@@ -596,10 +598,9 @@ class SaveStep3View(BaseOnboardingView):
 
    
 class SaveStep4View(BaseOnboardingView):
-
     @transaction.atomic
     def post(self, request):
-        logger.info(f"Initiating database creation for user: {request.user.email}")
+        logger.info(f"Handling step 4 request for user: {request.user.email}")
         user = request.user
         
         try:
@@ -607,26 +608,41 @@ class SaveStep4View(BaseOnboardingView):
                 onboarding_progress = OnboardingProgress.objects.get(user=user)
                 business = Business.objects.get(owner=user)
                 
-                # Check if this is a start request
-                if request.path.endswith('/start/'):
+                # Determine action based on URL pattern
+                if 'start' in request.resolver_match.url_name:
                     logger.info(f"Starting database setup task for user: {user.email}")
+                    
                     # Start Celery task
                     task = setup_user_database_task.delay(
                         str(user.id),
                         str(business.id)
                     )
+                    
+                    # Update progress status
+                    onboarding_progress.status = 'processing'
+                    onboarding_progress.database_setup_task_id = task.id
+                    onboarding_progress.save()
+                    
+                    # Send initial WebSocket progress
+                    channel_layer = get_channel_layer()
+                    async_to_sync(channel_layer.group_send)(
+                        f'onboarding_{user.id}',
+                        {
+                            'type': 'send_progress',
+                            'progress': 0,
+                            'step': 'Initializing'
+                        }
+                    )
+                    
                     logger.info(f"Created database setup task with ID: {task.id}")
                     return Response({
                         "message": "Database setup initiated",
                         "taskId": task.id,
                         "status": "processing"
                     }, status=status.HTTP_202_ACCEPTED)
+                    
                 else:
                     # Handle regular save request
-                    if 'businessName' in request.data:
-                        onboarding_progress.business_name = request.data['businessName']
-                        onboarding_progress.save()
-
                     if request.data.get('status') == 'complete':
                         onboarding_progress.onboarding_status = 'complete'
                         onboarding_progress.current_step = 0
@@ -634,7 +650,7 @@ class SaveStep4View(BaseOnboardingView):
                         logger.info(f"Onboarding completed for user: {user.email}")
                     
                     return Response({
-                        "message": "Step 4 data saved successfully",
+                        "message": "Step 4 status updated successfully",
                         "status": onboarding_progress.onboarding_status
                     }, status=status.HTTP_200_OK)
 

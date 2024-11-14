@@ -11,6 +11,8 @@ from django.contrib.auth import get_user_model
 from users.utils import create_user_database, setup_user_database
 from .tasks import setup_user_database_task
 from pyfactor.logging_config import get_logger
+from django.utils import timezone
+
 
 logger = get_logger()
 User = get_user_model()
@@ -72,6 +74,21 @@ class OnboardingConsumer(AsyncWebsocketConsumer):
             logger.info(f"WebSocket disconnected for user {self.user_id} with code {close_code}")
         except Exception as e:
             logger.error(f"Error in WebSocket disconnect: {str(e)}", exc_info=True)
+
+       # Add this method to handle send_progress messages
+  # Then update the send_progress method:
+    async def send_progress(self, event):
+        """
+        Handle progress update messages
+        """
+        await self.send(text_data=json.dumps({
+            'type': 'progress',
+            'progress': event.get('progress', 0),
+            'step': event.get('step', ''),
+            'status': event.get('status', 'in_progress'),
+            'timestamp': timezone.now().isoformat()
+        }))
+
 
     async def receive(self, text_data):
         """Handle incoming WebSocket messages"""

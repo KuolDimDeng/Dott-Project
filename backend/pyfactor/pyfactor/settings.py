@@ -286,32 +286,42 @@ class DeduplicationFilter(logging.Filter):
 
 LOGGING_CONFIG = None
 
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
         },
+        'simple': {
+            'format': '{levelname} {asctime} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
         'file': {
+            'level': 'DEBUG',
             'class': 'logging.FileHandler',
             'filename': 'debug.log',
+            'formatter': 'verbose',
         },
-    },
-    'root': {
-        'handlers': ['console', 'file'],
-        'level': 'INFO',
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
     },
     'loggers': {
-        'django': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',  # Set to DEBUG to capture detailed logs
-            'propagate': False,
-        },
-        'Dott': {  # replace with your actual app name
+        '': {  # Root logger
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
-            'propagate': False,
+        },
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
         },
     },
 }

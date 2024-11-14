@@ -1,7 +1,7 @@
 ////Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/components/Step2.js
 'use client';
 
-import React, { useState, memo } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
 import { 
@@ -66,7 +66,7 @@ const Step2Component = ({ onComplete }) => {
   const [billingCycle, setBillingCycle] = useState('monthly');
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { saveStep2Data, loading, error } = useOnboarding();
+  const { saveStep2Data, loading, error, formData } = useOnboarding();
 
   const handleBillingCycleChange = (cycle) => setBillingCycle(cycle);
 
@@ -80,6 +80,13 @@ const Step2Component = ({ onComplete }) => {
       
       await saveStep2Data(subscriptionData);
       
+      // Route based on plan type
+      if (tier.title === 'Basic') {
+        router.push('/onboarding/step4');
+      } else {
+        router.push('/onboarding/step3');
+      }
+      
       if (onComplete) {
         onComplete();
       }
@@ -89,9 +96,19 @@ const Step2Component = ({ onComplete }) => {
     }
   };
 
+    // Update useEffect to properly check for formData
+  useEffect(() => {
+        if (formData?.selectedPlan === 'Basic') {
+          router.push('/onboarding/step4');
+        }
+    }, [formData?.selectedPlan, router]);
+    
+
   const handlePrevStep = () => {
-    router.push('/onboarding/step1');
-  };
+      router.push('/onboarding/step1');
+    };
+
+
 
   if (!session) {
     return (

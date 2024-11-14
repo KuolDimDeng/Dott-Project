@@ -16,8 +16,16 @@ const OnboardingContext = createContext(null);
 const STEP_VALIDATION = {
   step1: (data) => !!data?.businessName && !!data?.industry,
   step2: (data) => !!data?.selectedPlan,
-  step3: (data) => data?.selectedPlan !== 'Professional' || !!data?.paymentMethod,
-  step4: (data) => true
+  step3: (data) => {
+    // Only allow step3 for Professional plan
+    if (data?.selectedPlan === 'Basic') return false;
+    return data?.selectedPlan === 'Professional' && !data?.paymentMethod;
+  },
+  step4: (data) => {
+    // Allow step4 for Basic plan or completed Professional plan
+    return data?.selectedPlan === 'Basic' || 
+           (data?.selectedPlan === 'Professional' && !!data?.paymentMethod);
+  }
 };
 
 // Add step mapping for better navigation
@@ -88,12 +96,17 @@ export function OnboardingProvider({ children }) {
       if (!status) {
         status = APP_CONFIG.onboarding.steps.INITIAL;
       }
-
+  
       if (!validateStep(status)) {
         logger.warn(`Invalid step access: ${status}, redirecting to initial step`);
         status = APP_CONFIG.onboarding.steps.INITIAL;
       }
-
+  
+      // Add plan-based routing logic
+      if (status === 'step3' && formData?.selectedPlan === 'Basic') {
+        status = 'step4';
+      }
+  
       const route = STEP_ROUTES[status] || STEP_ROUTES.step1;
       
       logger.info(`Redirecting to: ${route}`);
@@ -102,7 +115,7 @@ export function OnboardingProvider({ children }) {
       logger.error('Navigation error:', error);
       toast.error('Failed to navigate to next step');
     }
-  }, [router, validateStep]);
+  }, [router, validateStep, formData]);
 
   // Data persistence
   const persistProgress = useCallback((data) => {
