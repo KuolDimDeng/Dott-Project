@@ -6,11 +6,13 @@ import { useSession } from 'next-auth/react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { APP_CONFIG } from '@/config';
 import { logger } from '@/utils/logger';
-import { toast } from 'react-toastify';
+import { useToast } from '@/components/Toast/ToastProvider';
 
 export function useOnboardingQueries() {
   const { data: session, status: authStatus } = useSession();
   const queryClient = useQueryClient();
+  const toast = useToast();
+
 
   // Get status query function with auth check
   const getStatus = async () => {
@@ -138,7 +140,17 @@ export function useOnboardingQueries() {
 
   return {
     status: data?.status,
-    mutations,
+    mutations: {
+      step1: useMutation({
+        onError: (error) => {
+          logger.error('Step 1 error:', error);
+          toast.error(error.message || 'Failed to save step 1');
+        },
+        onSuccess: () => {
+          toast.success('Step 1 saved successfully');
+        }
+      }),
+    },
     isLoading,
     error,
     isAuthenticated: authStatus === 'authenticated' && !!session?.user?.accessToken

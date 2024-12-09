@@ -5,7 +5,7 @@ from jwt import decode as jwt_decode
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from urllib.parse import parse_qs
-from channels.db import database_sync_to_async
+from asgiref.sync import sync_to_async  # Changed this line
 from channels.middleware import BaseMiddleware
 from django.contrib.auth.models import AnonymousUser
 from pyfactor.logging_config import get_logger
@@ -13,7 +13,7 @@ from pyfactor.logging_config import get_logger
 logger = get_logger()
 User = get_user_model()
 
-@database_sync_to_async
+@sync_to_async
 def get_user(user_id):
     try:
         return User.objects.get(id=user_id)

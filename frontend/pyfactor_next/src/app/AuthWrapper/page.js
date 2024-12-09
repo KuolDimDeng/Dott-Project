@@ -7,7 +7,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { CircularProgress, Box, Typography, Alert, Button } from '@mui/material';
 import { useApi } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import { toast } from 'react-toastify';
+import { useToast } from '@/components/Toast/ToastProvider';
 import { APP_CONFIG } from '@/config';
 
 // Constants - Move to config if they might change
@@ -22,10 +22,10 @@ const ROUTE_CONFIG = {
   ],
   onboarding: [
     '/onboarding',
-    '/onboarding/step1',
-    '/onboarding/step2',
-    '/onboarding/step3',
-    '/onboarding/step4'
+    '/onboarding/save-step1',  // Update to match API routes
+    '/onboarding/save-step2',  // Update to match API routes
+    '/onboarding/save-step3',  // Update to match API routes
+    '/onboarding/step4/setup'  // Update to match API routes
   ]
 };
 
@@ -83,36 +83,60 @@ const ErrorState = memo(function ErrorState({ error, onRetry }) {
 
 function AuthWrapper({ children }) {
   const { data: session, status } = useSession();
+  const toast = useToast();
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState(null);
 
-  // Onboarding status query
+  // Add token validation
+  const isTokenValid = useCallback(() => {
+    if (!session?.user?.accessToken) return false;
+    return session.user.accessTokenExpires && Date.now() < session.user.accessTokenExpires;
+  }, [session]);
+
+  // Onboarding status query - Update the enabled condition
   const { 
     data: onboardingData, 
     isLoading: onboardingLoading,
     error: onboardingError,
     refetch: refetchOnboarding
   } = useApi.useOnboardingStatus({
-    enabled: !!session?.user?.accessToken && status === 'authenticated' && mounted,
+    enabled: isTokenValid() && mounted,
     onError: (error) => {
       logger.error('Error fetching onboarding status:', error);
       handleError(error);
     }
   });
 
-  // Error handling
+  // Error handling - Update to handle token errors
   const handleError = useCallback((error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 || error.message === 'RefreshAccessTokenError') {
       setError('Session expired. Please sign in again.');
       toast.error('Session expired. Please sign in again.');
-      router.push('/auth/signin');
+      router.push('/auth/signin?error=SessionExpired');
     } else {
       setError(error.message || 'Failed to load user information');
       toast.error(error.message || 'Failed to load user information');
     }
   }, [router]);
+
+   // Session management - Add token validation
+  useEffect(() => {
+    if (!mounted) return;
+
+    if (status === 'authenticated' && !isTokenValid()) {
+      logger.info('Token invalid, redirecting to signin');
+      router.push('/auth/signin');
+      return;
+    }
+
+    if (status === 'unauthenticated' && !isPublicRoute(pathname)) {
+      logger.info('Redirecting unauthenticated user to signin');
+      router.push('/auth/signin');
+    }
+  }, [status, pathname, mounted, router, isPublicRoute, isTokenValid]);
+
 
   // Route checking
   const isPublicRoute = useCallback((path) => 

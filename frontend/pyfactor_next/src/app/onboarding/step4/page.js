@@ -1,54 +1,48 @@
 // src/app/onboarding/step4/page.js
 'use client';
 
-import dynamic from 'next/dynamic';
-import { Box, CircularProgress, Alert, Button } from '@mui/material';
-import { AppErrorBoundary } from '@/components/ErrorBoundary';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { OnboardingErrorBoundary } from '@/components/ErrorBoundary/OnboardingErrorBoundary';
+import { LoadingStateWithProgress } from '@/components/LoadingState';
+import { ErrorStep } from '@/components/ErrorStep';
+import { logger } from '@/utils/logger';
+import Step4 from '../components/Step4';
+import { STEP_METADATA } from '../components/registry';
+import { STEP_VALIDATION } from '../constants/onboardingConstants';
 
-// Loading component
-const LoadingStep = () => (
-  <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-    <CircularProgress />
-  </Box>
-);
+function Step4Content() {
+  const router = useRouter();
+  const { status } = useSession();
+  const { formData, validateStep } = useOnboarding();
 
-// Error component
-const ErrorComponent = ({ error, resetError }) => (
-  <Box 
-    display="flex" 
-    flexDirection="column" 
-    alignItems="center" 
-    justifyContent="center" 
-    minHeight="100vh"
-    p={3}
-  >
-    <Alert 
-      severity="error" 
-      action={
-        <Button color="inherit" size="small" onClick={resetError}>
-          Retry
-        </Button>
-      }
-    >
-      {error?.message || 'An error occurred'}
-    </Alert>
-  </Box>
-);
+  // Debug logging
+  logger.info('Step4 page render:', {
+    status,
+    hasFormData: !!formData
+  });
 
-// Dynamic import with loading state
-const Step4 = dynamic(
-  () => import('../components/steps/Step4'),
-  {
-    loading: LoadingStep,
-    ssr: false
+  // Authentication check
+  if (status === 'unauthenticated') {
+    router.replace('/auth/signin');
+    return null;
   }
-);
 
-// Page component with error boundary
-export default function Step4Page() {
+  // Loading check
+  if (status === 'loading') {
+    return <LoadingStateWithProgress message="Loading..." />;
+  }
+
+  // Validation check
+  if (!STEP_VALIDATION.step4(formData)) {
+    router.replace('/onboarding/step3');
+    return null;
+  }
+
   return (
-    <AppErrorBoundary FallbackComponent={ErrorComponent}>
-      <Step4 />
-    </AppErrorBoundary>
+    <Step4 
+      metadata={STEP_METADATA.STEP4}
+      onBack={() => router.push('/onboarding/step3')}
+    />
   );
 }

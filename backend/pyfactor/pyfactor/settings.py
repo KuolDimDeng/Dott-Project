@@ -163,19 +163,46 @@ ACCOUNT_EMAIL_VERIFICATION = 'optional'  # Set this as needed
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',  # Add this for social auth
+    'onboarding.auth.WebSocketTokenBackend',
+
 ]
 
 # Celery Configuration
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60
-CELERY_TASK_ALWAYS_EAGER = True  # Set to True for debugging
-CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_TASK_PUBLISH_RETRY = True
+CELERY_TASK_PUBLISH_RETRY_POLICY = {
+    'max_retries': 3,
+    'interval_start': 0,
+    'interval_step': 0.2,
+    'interval_max': 0.5
+}
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 50
+
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'socket_timeout': 10,
+    'socket_connect_timeout': 10,
+}
+
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
+REDIS_DB = 0
+
+CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
+CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
+CELERY_SEND_TASK_SENT_EVENT = True
+CELERY_TASK_SEND_SENT_EVENT = True
+CELERY_TASK_REMOTE_TRACEBACKS = True
+
+CELERY_TASK_RESULT_EXPIRES = 60 * 60 * 24  # 24 hours
+
 
 # Session and authentication settings
 AUTH_USER_MODEL = 'custom_auth.User'
@@ -193,6 +220,9 @@ X_FRAME_OPTIONS = 'DENY'
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
+
+DJANGO_ALLOW_ASYNC_UNSAFE = True  # Only for development
+
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
@@ -219,9 +249,10 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle'
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day',
-        'user': '1000/day'
+        'anon': '100/minute',  # Changed from 100/day
+        'user': '1000/minute'  # Changed from 1000/day
     },
+
 }
 # JWT settings
 SIMPLE_JWT = {
@@ -322,6 +353,16 @@ LOGGING = {
             'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True,
+        },
+        'celery': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'celery.task': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
         },
     },
 }
@@ -446,7 +487,18 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'onboarding.middleware.HTTPAuthMiddleware',  # Add HTTP middleware
+
 ]
+
+# Add this setting for WebSocket routing
+WEBSOCKET_MIDDLEWARE = [
+    'onboarding.middleware.WebSocketAuthMiddleware',
+]
+
+CHANNEL_ROUTING = "pyfactor.routing.application"
+
+
 
 ROOT_URLCONF = 'pyfactor.urls'
 
@@ -478,6 +530,8 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [("127.0.0.1", 6379)],
+            "capacity": 1500,
+            "expiry": 10,
         },
     },
 }
@@ -487,6 +541,7 @@ WEBSOCKET_HEARTBEAT = 30  # Seconds
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -495,17 +550,44 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD', 'postgres'),
         'HOST': os.getenv('DB_HOST', 'db'),
         'PORT': os.getenv('DB_PORT', '5432'),
-        'ATOMIC_REQUESTS': True,
-        'CONN_MAX_AGE': 60,
-        'TIME_ZONE': 'UTC',  # Add this line explicitly
+        'ATOMIC_REQUESTS': False,
+        'TIME_ZONE': 'UTC',
+        'CONN_MAX_AGE': 0,
+        'AUTOCOMMIT': True,  # Add this line
+        'CONN_HEALTH_CHECKS': True,  # Add this line
         'OPTIONS': {
             'connect_timeout': 10,
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5,
+            'client_encoding': 'UTF8',
+            'application_name': 'pyfactor',
+
         },
-    },
+    }
 }
 
 
+    # Add connection pooling settings
+DATABASE_CONNECTION_POOL = {
+    'MAX_CONNS': 20,
+    'MIN_CONNS': 5,
+    'CONN_LIFETIME': 300,
+}
 
+# WebSocket specific settings
+# WebSocket configuration
+WEBSOCKET_CONFIG = {
+    'TIMEOUT': 60,
+    'HEARTBEAT': 30,
+    'MAX_CONNECTIONS': 1000,
+    'AUTH': {
+        'TIMEOUT': 10,
+        'CACHE_TIMEOUT': 300,
+        'MAX_CONNECTIONS_PER_USER': 5,
+    }
+}  # Add closing brace here
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -528,7 +610,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'en'
+LANGUAGES = [('en', 'English')]
 
 USE_I18N = True
 

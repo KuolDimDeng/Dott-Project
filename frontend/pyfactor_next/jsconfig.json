@@ -5,6 +5,8 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
+    "strict": true,
+    "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -14,11 +16,16 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "paths": {
       "@/*": ["./src/*"],
       "@app/*": ["./src/app/*"],
-      "@components/*": ["./src/app/components/*"],
-      "@layouts/*": ["./src/app/layouts/*"],
+      "@components/*": ["./src/components/*"], // Changed from @app/components
+      "@layouts/*": ["./src/layouts/*"], // Moved out of app
       "@styles/*": ["./src/styles/*"],
       "@lib/*": ["./src/lib/*"],
       "@utils/*": ["./src/utils/*"],
@@ -41,19 +48,19 @@
       "@schemas/*": ["./src/schemas/*"],
       "@middleware/*": ["./src/middleware/*"],
       "@hoc/*": ["./src/hoc/*"],
-      "@icons/*": ["./src/components/icons/*"],
-      "@shared/*": ["./src/components/shared/*"]
+      "@icons/*": ["./src/icons/*"], // Moved out of components
+      "@shared/*": ["./src/shared/*"] // Moved out of components
     }
   },
   "include": [
-    "next-env.d.js",
-    "src/**/*.js",
-    "src/**/*.jsx",
-    "src/**/*.mjs",
-    "src/**/*.json",
-    "./*.js",
-    "./*.mjs",
-    "./*.json"
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx",
+    "**/*.mjs",
+    "**/*.json",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
@@ -62,8 +69,12 @@
     "build",
     "dist",
     "coverage",
+    "**/*.test.ts",
+    "**/*.test.tsx",
     "**/*.test.js",
     "**/*.test.jsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
     "**/*.spec.js",
     "**/*.spec.jsx",
     "**/__tests__/**"

@@ -7,153 +7,151 @@ import logging
 from users.models import UserProfile
 from django.core.management import call_command
 from django.apps import apps
-
+from asgiref.sync import sync_to_async
+from .db.utils import get_connection, return_connection, initialize_database_pool
+from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
 class UserDatabaseRouter:
+    def __init__(self):
+        from .db.utils import DatabasePool
+        self.pool = DatabasePool.get_instance()
 
     def sanitize_database_name(self, database_name):
-        """
-        Sanitizes the database name by removing any characters
-        that aren't alphanumeric or underscores.
-        """
-        safe_database_name = re.sub(r'[^a-zA-Z0-9_]', '', database_name)
-        if safe_database_name != database_name:
-            logger.warning(f"Unsafe characters removed from database name: {database_name}")
-        return safe_database_name
+        """Sanitize database name"""
+        return re.sub(r'[^a-zA-Z0-9_]', '', database_name)
 
+    @contextmanager
+    def get_db_connection(self):
+        """Context manager for database connections"""
+        conn = None
+        try:
+            conn = get_connection()
+            yield conn
+        finally:
+            if conn:
+                return_connection(conn)
+
+    @sync_to_async
     def create_dynamic_database(self, database_name):
-        """
-        Creates a dynamic database if it doesn't already exist
-        and runs migrations for the new database.
-        """
-        logger.debug(f"Attempting to create dynamic database: {database_name}")
-        
+        """Creates a dynamic database with pool configuration"""
         safe_database_name = self.sanitize_database_name(database_name)
-        logger.debug(f"Safe database name: {safe_database_name}")
-    
+        
         if safe_database_name not in settings.DATABASES:
-            logger.info(f"Creating dynamic database configuration: {safe_database_name}")
-            
-            # Database configuration for the new database
-            database_config = {
-                'ENGINE': 'django.db.backends.postgresql',
+            database_config = settings.DATABASES['default'].copy()
+            database_config.update({
                 'NAME': safe_database_name,
-                'USER': settings.DATABASES['default']['USER'],
-                'PASSWORD': settings.DATABASES['default']['PASSWORD'],
-                'HOST': settings.DATABASES['default']['HOST'],
-                'PORT': settings.DATABASES['default']['PORT'],
-                'OPTIONS': settings.DATABASES['default'].get('OPTIONS', {}),
-                'ATOMIC_REQUESTS': settings.DATABASES['default'].get('ATOMIC_REQUESTS', True),
-                'CONN_HEALTH_CHECKS': settings.DATABASES['default'].get('CONN_HEALTH_CHECKS', True),
-                'CONN_MAX_AGE': settings.DATABASES['default'].get('CONN_MAX_AGE', 600),
+                'ENGINE': 'django.db.backends.postgresql',
+                'ATOMIC_REQUESTS': False,
                 'TIME_ZONE': settings.TIME_ZONE,
-                'AUTOCOMMIT': settings.DATABASES['default'].get('AUTOCOMMIT', True),
-            }
+                'CONN_HEALTH_CHECKS': True,
+                'AUTOCOMMIT': True,
+                'CONN_MAX_AGE': 0,
+                'OPTIONS': {
+                    'connect_timeout': 10,
+                    'keepalives': 1,
+                    'keepalives_idle': 30,
+                    'keepalives_interval': 10,
+                    'keepalives_count': 5,
+                    'client_encoding': 'UTF8',
+                }
+            })
 
-            logger.debug(f"Adding database configuration for {safe_database_name}")
             settings.DATABASES[safe_database_name] = database_config
             connections.databases[safe_database_name] = database_config
 
-            # Check if the database exists and create it if necessary
-            self.ensure_database_exists(safe_database_name)
-
-            # Check database readiness
-            self.check_database_readiness(safe_database_name)
-
-            # Run migrations for the new database
-            logger.info(f"Running migrations for database: {safe_database_name}")
-            call_command('migrate', database=safe_database_name)
-
-            logger.info(f"Database {safe_database_name} is fully set up and ready")
-        else:
-            logger.warning(f"Database '{safe_database_name}' already exists in DATABASES")
-
-    def ensure_database_exists(self, database_name):
-        """
-        Ensures that the specified database exists, and creates it if necessary.
-        """
-        try:
-            logger.debug(f"Connecting to the default database to check/create {database_name}")
-            conn = psycopg2.connect(
-                dbname=settings.DATABASES['default']['NAME'],
-                user=settings.DATABASES['default']['USER'],
-                password=settings.DATABASES['default']['PASSWORD'],
-                host=settings.DATABASES['default']['HOST'],
-                port=settings.DATABASES['default']['PORT']
-            )
-            conn.autocommit = True
-            cursor = conn.cursor()
-
-            # Check if the database exists
-            cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (database_name,))
-            exists = cursor.fetchone()
-            if not exists:
-                logger.debug(f"Database {database_name} does not exist. Creating it now.")
-                cursor.execute(f'CREATE DATABASE "{database_name}"')
-                logger.info(f"Database {database_name} created successfully")
-            else:
-                logger.info(f"Database {database_name} already exists")
-        except psycopg2.Error as e:
-            logger.error(f"Error checking/creating database {database_name}: {str(e)}")
-            raise
-        finally:
-            cursor.close()
-            conn.close()
-
-    def check_database_readiness(self, database_name, max_retries=10, retry_delay=0.5):
-        """
-        Checks if the database is ready by attempting a simple query.
-        Retries a specified number of times before failing.
-        """
-        logger.debug(f"Checking readiness of database: {database_name}")
-        for attempt in range(max_retries):
             try:
-                with connections[database_name].cursor() as cursor:
-                    cursor.execute("SELECT 1")
-                logger.info(f"Database {database_name} is ready (attempt {attempt + 1})")
-                return
-            except OperationalError:
-                logger.warning(f"Database {database_name} not ready, retrying... (attempt {attempt + 1})")
-                time.sleep(retry_delay)
-        
-        logger.error(f"Database {database_name} not ready after {max_retries} attempts")
-        raise OperationalError(f"Database {database_name} not ready after {max_retries} attempts")
+                with self.get_db_connection() as conn:
+                    self.ensure_database_exists(safe_database_name)
+                    self.check_database_readiness(safe_database_name)
+                    
+                    logger.info(f"Running migrations for database: {safe_database_name}")
+                    call_command('migrate', database=safe_database_name)
+                    
+                    return safe_database_name
 
+            except Exception as e:
+                logger.error(f"Error creating database {safe_database_name}: {str(e)}")
+                if safe_database_name in settings.DATABASES:
+                    del settings.DATABASES[safe_database_name]
+                if safe_database_name in connections.databases:
+                    del connections.databases[safe_database_name]
+                raise
+
+    @sync_to_async
+    def ensure_database_exists(self, database_name):
+        """Create database using connection pool"""
+        with self.get_db_connection() as conn:
+            conn.autocommit = True
+            
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s",
+                    (database_name,)
+                )
+                exists = cursor.fetchone()
+                
+                if not exists:
+                    cursor.execute("""
+                        SELECT pg_terminate_backend(pid)
+                        FROM pg_stat_activity
+                        WHERE datname = %s AND pid != pg_backend_pid()
+                    """, [database_name])
+                    
+                    logger.debug(f"Creating database {database_name}")
+                    cursor.execute(f'CREATE DATABASE "{database_name}"')
+                    logger.info(f"Database {database_name} created successfully")
+                else:
+                    logger.info(f"Database {database_name} already exists")
+
+    @sync_to_async
+    def check_database_readiness(self, database_name, max_retries=10, retry_delay=0.5):
+        """Check database readiness"""
+        logger.debug(f"Checking readiness of database: {database_name}")
+        
+        for attempt in range(max_retries):
+            with self.get_db_connection() as conn:
+                try:
+                    with conn.cursor() as cursor:
+                        cursor.execute("SELECT 1")
+                    logger.info(f"Database {database_name} is ready (attempt {attempt + 1})")
+                    return True
+                except Exception as e:
+                    logger.warning(
+                        f"Database {database_name} not ready (attempt {attempt + 1}): {str(e)}"
+                    )
+                    time.sleep(retry_delay)
+        
+        raise OperationalError(
+            f"Database {database_name} not ready after {max_retries} attempts"
+        )
+
+    @sync_to_async
     def db_for_read(self, model, **hints):
-        """
-        Determines which database to use for read operations based on the instance.
-        """
-        logger.debug(f"db_for_read called for model: {model.__name__}")
+        """Database routing for read operations"""
         if 'instance' in hints:
             instance = hints['instance']
-            logger.debug(f"instance type: {type(instance).__name__}, id: {instance.pk}")
             if instance.__class__.__name__ == 'UserProfile':
-                UserProfile = apps.get_model('users', 'UserProfile')
                 try:
+                    UserProfile = apps.get_model('users', 'UserProfile')
                     user_profile = UserProfile.objects.using('default').get(pk=instance.pk)
-                    logger.debug(f"user_profile database_name: {user_profile.database_name}")
                     return user_profile.database_name
                 except UserProfile.DoesNotExist:
                     logger.warning("UserProfile does not exist")
         return None
 
+    @sync_to_async
     def db_for_write(self, model, **hints):
-        """
-        Determines which database to use for write operations based on the instance.
-        """
-        logger.debug("db_for_write called")
+        """Database routing for write operations"""
         if model._meta.app_label in ['django_celery_beat', 'django_celery_results']:
             return 'celery'
         if 'instance' in hints:
             instance = hints['instance']
-            logger.debug(f"instance: {instance}")
             if instance.__class__.__name__ == 'UserProfile':
-                UserProfile = apps.get_model('users', 'UserProfile')
                 try:
+                    UserProfile = apps.get_model('users', 'UserProfile')
                     user_profile = UserProfile.objects.using('default').get(pk=instance.pk)
-                    logger.debug(f"user_profile: {user_profile}")
                     return user_profile.database_name
                 except UserProfile.DoesNotExist:
                     logger.warning("UserProfile does not exist")
@@ -161,27 +159,18 @@ class UserDatabaseRouter:
             return 'default'
         return None
 
+    @sync_to_async
     def allow_relation(self, obj1, obj2, **hints):
-        """
-        Determines if a relation between two objects is allowed.
-        """
-        logger.debug(f"allow_relation called with obj1: {obj1.__class__.__name__} (ID: {obj1.pk}), obj2: {obj2.__class__.__name__} (ID: {obj2.pk})")
+        """Check if relations are allowed"""
         if obj1._state.db == obj2._state.db:
-            logger.debug(f"Relation allowed: same database ({obj1._state.db})")
             return True
         if isinstance(obj1, UserProfile) or isinstance(obj2, UserProfile):
-            logger.debug(f"Relation allowed: UserProfile objects")
             return True
-        logger.debug(f"Relation not allowed: different databases (obj1: {obj1._state.db}, obj2: {obj2._state.db})")
         return False
 
+    @sync_to_async
     def allow_migrate(self, db, app_label, model_name=None, **hints):
-        """
-        Determines if a migration operation is allowed on a specific database.
-        """
-        logger.debug(f"allow_migrate called with db: {db}, app_label: {app_label}, model_name: {model_name}")
+        """Check if migrations are allowed"""
         if app_label in ['django_celery_beat', 'django_celery_results']:
             return db == 'celery'
-        if model_name == 'user_chatbot_message':
-            return True
         return True

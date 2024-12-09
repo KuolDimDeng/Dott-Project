@@ -1,5 +1,4 @@
-// src/app/api/auth/[...nextauth]/route.js
-import NextAuth from 'next-auth';
+// src/app/api/auth/[...nextauth]/options.js
 import GoogleProvider from "next-auth/providers/google";
 import { logger } from '@/utils/logger';
 import { APP_CONFIG } from '@/config';
@@ -46,40 +45,50 @@ async function exchangeGoogleToken(idToken, accessToken) {
 async function refreshAccessToken(token) {
   try {
     if (!token?.refreshToken) {
+      logger.error('No refresh token available in token object:', token);
       throw new Error('No refresh token available');
     }
 
-    const response = await fetch(`${APP_CONFIG.api.baseURL}${APP_CONFIG.api.endpoints.auth.refresh}`, {
+    logger.info('Attempting to refresh token', {
+      hasRefreshToken: !!token.refreshToken,
+      tokenExpiry: token.accessTokenExpires
+    });
+
+    const response = await fetch(`${APP_CONFIG.api.baseURL}/api/onboarding/token/refresh/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         refresh: token.refreshToken
       }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      throw new Error('Failed to refresh token');
+      logger.error('Token refresh failed:', {
+        status: response.status,
+        error: data
+      });
+      throw new Error(data.detail || 'Failed to refresh token');
     }
 
-    const refreshedTokens = await response.json();
-    
-    if (!refreshedTokens?.access) {
-      throw new Error('Invalid refresh token response');
-    }
+    logger.info('Token refresh successful');
 
     return {
       ...token,
-      accessToken: refreshedTokens.access,
-      refreshToken: refreshedTokens.refresh ?? token.refreshToken,
+      accessToken: data.access,
+      refreshToken: data.refresh || token.refreshToken,
       accessTokenExpires: Date.now() + APP_CONFIG.auth.tokenGracePeriod,
+      error: null
     };
   } catch (error) {
-    logger.error('Error refreshing access token:', error);
+    logger.error('Token refresh failed:', error);
     return {
       ...token,
-      error: 'RefreshAccessTokenError',
+      error: 'RefreshAccessTokenError'
     };
   }
 }
@@ -89,6 +98,7 @@ export const authOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+   
       authorization: {
         params: {
           prompt: "consent",
@@ -99,26 +109,31 @@ export const authOptions = {
       },
     }),
   ],
-  
+
+  // Add global timeout settings
+  timeout: {
+    signIn: 10000,  // Sign in timeout
+    callback: 10000, // Callback timeout
+    oauth: {
+      request: 10000,  // OAuth request timeout
+      discovery: 10000 // Discovery timeout
+    }
+  },
+
   callbacks: {
     async signIn({ user, account, profile }) {
       try {
-        logger.info('Sign in callback initiated', { 
-          provider: account?.provider,
-          email: profile?.email 
-        });
-        
         if (account?.provider === "google" && account?.id_token) {
           const tokenData = await exchangeGoogleToken(
             account.id_token,
             account.access_token
           );
           
-          if (!tokenData?.access || !tokenData?.user_id) {
+          if (!tokenData?.access || !tokenData?.refresh) {
+            logger.error('Invalid token data received:', tokenData);
             throw new Error('Invalid token data received');
           }
           
-          // Update user object with token data
           user.accessToken = tokenData.access;
           user.refreshToken = tokenData.refresh;
           user.id = tokenData.user_id;
@@ -128,26 +143,33 @@ export const authOptions = {
           user.image = profile.picture;
           user.accessTokenExpires = Date.now() + APP_CONFIG.auth.tokenGracePeriod;
 
-          logger.info('Google sign-in successful', { 
-            userId: tokenData.user_id,
-            email: profile.email 
+          logger.info('Token data saved to user object:', {
+            hasAccessToken: !!user.accessToken,
+            hasRefreshToken: !!user.refreshToken,
+            expiresIn: APP_CONFIG.auth.tokenGracePeriod
           });
           
           return true;
         }
-
-        return !!user;
+        return false;
       } catch (error) {
-        logger.error('Sign in error:', error);
+        logger.error('Sign in error:', {
+          error: error.message,
+          stack: error.stack,
+          account: !!account,
+          user: !!user
+        });
         return false;
       }
     },
 
     async jwt({ token, user, account }) {
       try {
-        // Initial sign in
         if (account && user) {
-          logger.info('JWT callback - initial sign in', { email: user.email });
+          logger.info('Initial token creation', {
+            hasAccessToken: !!user.accessToken,
+            hasRefreshToken: !!user.refreshToken
+          });
           
           return {
             ...token,
@@ -156,53 +178,72 @@ export const authOptions = {
             userId: user.id,
             onboardingStatus: user.onboardingStatus,
             email: user.email,
-            accessTokenExpires: user.accessTokenExpires,
+            accessTokenExpires: user.accessTokenExpires
           };
         }
 
-        // Return existing token if still valid
-        if (Date.now() < (token.accessTokenExpires || 0)) {
+        if (token.accessTokenExpires && Date.now() < token.accessTokenExpires) {
+          logger.debug('Using existing valid token');
           return token;
         }
 
-        // Refresh expired token
-        logger.info('Token expired, refreshing...');
-        return await refreshAccessToken(token);
+        logger.info('Token needs refresh', {
+          expired: !token.accessTokenExpires || Date.now() >= token.accessTokenExpires
+        });
+
+        const refreshedToken = await refreshAccessToken(token);
+        
+        if (refreshedToken.error) {
+          logger.error('Token refresh failed, redirecting to signin');
+          return { ...refreshedToken, redirect: '/auth/signin' };
+        }
+
+        return refreshedToken;
       } catch (error) {
         logger.error('JWT callback error:', error);
-        return { ...token, error: 'TokenError' };
+        return { 
+          ...token,
+          error: 'TokenError',
+          redirect: '/auth/signin'
+        };
       }
     },
 
     async session({ session, token }) {
       try {
+        if (token.error) {
+          logger.error('Token error in session callback:', token.error);
+          throw new Error(token.error);
+        }
+
         session.user = {
           ...session.user,
           id: token.userId,
-          onboardingStatus: token.onboardingStatus,
           accessToken: token.accessToken,
-          error: token.error,
-          email: token.email,
+          refreshToken: token.refreshToken,
+          onboardingStatus: token.onboardingStatus,
+          email: token.email
         };
 
+        logger.debug('Session updated with token data');
         return session;
       } catch (error) {
         logger.error('Session callback error:', error);
-        return { ...session, error: 'SessionError' };
+        return { 
+          expires: session.expires,
+          error: error.message 
+        };
       }
     },
 
     async redirect({ url, baseUrl }) {
       try {
-        // Handle relative URLs
         if (url.startsWith('/')) {
           return `${baseUrl}${url}`;
         }
-        // Allow redirects to same origin
         if (url.startsWith(baseUrl)) {
           return url;
         }
-        // Default to base URL
         return baseUrl;
       } catch (error) {
         logger.error('Redirect error:', error);
@@ -241,14 +282,9 @@ export const authOptions = {
   session: {
     strategy: "jwt",
     maxAge: APP_CONFIG.auth.sessionMaxAge,
-    updateAge: APP_CONFIG.auth.refreshInterval,
+    updateAge: 60 * 60,
   },
 
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
 };
-
-logger.info("NextAuth configuration loaded.");
-
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };

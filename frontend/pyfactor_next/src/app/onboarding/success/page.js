@@ -1,202 +1,93 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/success/page.js
+
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
-import { Box, Typography, CircularProgress, Alert, Button } from '@mui/material';
-import { useSession } from "next-auth/react";
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
+import { OnboardingErrorBoundary } from '@/components/ErrorBoundary/OnboardingErrorBoundary';
+import { LoadingStateWithProgress } from '@/components/LoadingState';
+import { ErrorStep } from '@/components/ErrorStep';
+import { useOnboarding } from '../hooks/useOnboarding';
 import { axiosInstance } from '@/lib/axiosConfig';
+import { useToast } from '@/components/Toast/ToastProvider';
 import { logger } from '@/utils/logger';
-import { toast } from 'react-toastify';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-// Loading component
-function LoadingState({ message }) {
-  return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="100vh"
-      gap={2}
-    >
-      <CircularProgress />
-      <Typography variant="h6">
-        {message}
-      </Typography>
-    </Box>
-  );
-}
-
-// Error component
-function ErrorState({ error, onRetry }) {
-  return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="100vh"
-      gap={2}
-      p={3}
-    >
-      <Alert
-        severity="error"
-        sx={{ width: '100%', maxWidth: 500 }}
-        action={
-          <Button 
-            color="inherit" 
-            size="small" 
-            onClick={onRetry}
-          >
-            Try Again
-          </Button>
-        }
-      >
-        {error?.message || 'An error occurred'}
-      </Alert>
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        align="center"
-      >
-        If the problem persists, please contact support.
-      </Typography>
-    </Box>
-  );
-}
-
-// Payment verification hook
-function usePaymentVerification(sessionId) {
-  const router = useRouter();
-  const { status } = useSession();
-
-  return useQuery({
-    queryKey: ['stripeSession', sessionId],
-    queryFn: async () => {
-      if (!sessionId) throw new Error('No session ID provided');
-      const response = await axiosInstance.get(`/api/checkout/session/${sessionId}`);
-      return response.data;
-    },
-    enabled: !!sessionId && status === 'authenticated',
-    onSuccess: () => {
-      toast.success('Payment verified successfully');
-      router.push('/onboarding/step4');
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to verify payment');
-      logger.error('Stripe session verification failed:', error);
-    },
-    retry: 2,
-    retryDelay: 1000
-  });
-}
-
-// Main component content
 function OnboardingSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, status } = useSession();
-  const { completeOnboarding } = useOnboarding();
+  const { status } = useSession();
+  const {
+    saveStep,
+    loading: storeLoading,
+    error: storeError,
+    initialized,
+    initialize
+  } = useOnboarding();
+
   const sessionId = searchParams.get('session_id');
+  const [verifying, setVerifying] = useState(false);
 
-  // Use custom hook for payment verification
-  const { 
-    data: paymentData, 
-    isLoading: isVerifying, 
-    error: verificationError 
-  } = usePaymentVerification(sessionId);
-
-  // Mutation for completing onboarding
-  const completeMutation = useMutation({
-    mutationFn: async () => {
-      if (!sessionId) throw new Error('No session ID provided');
-      await completeOnboarding({ sessionId });
-    },
-    onSuccess: () => {
-      toast.success('Setup completed successfully!');
-      router.push('/dashboard');
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to complete setup');
-      logger.error('Onboarding completion failed:', error);
-    },
-    retry: 1
-  });
-
-  // Effect to handle invalid access
+  // Handle payment verification
   useEffect(() => {
-    if (!sessionId) {
-      logger.warn('No session ID provided');
-      toast.error('Invalid payment session');
-      router.push('/onboarding/step3');
-      return;
-    }
+    if (!sessionId || !initialized) return;
 
-    logger.info('Session ID:', sessionId);
-  }, [sessionId, router]);
+    const verifyPayment = async () => {
+      try {
+        setVerifying(true);
+        const response = await axiosInstance.get(`/api/checkout/session/${sessionId}`);
 
-  // Effect to handle session status
+        await saveStep('step3', {
+          paymentVerified: true,
+          sessionId: sessionId
+        });
+
+        toast.success('Payment verified successfully');
+        router.push('/onboarding/step4');
+      } catch (error) {
+        logger.error('Payment verification failed:', error);
+        toast.error('Failed to verify payment');
+        router.push('/onboarding/step3');
+      } finally {
+        setVerifying(false);
+      }
+    };
+
+    verifyPayment();
+  }, [sessionId, initialized, saveStep, router]);
+
+  // Auth check
   useEffect(() => {
     if (status === 'unauthenticated') {
-      logger.warn('User not authenticated');
-      toast.error('Please sign in to continue');
-      router.push('/auth/signin');
+      router.replace('/auth/signin');
     }
   }, [status, router]);
 
-  // Effect to handle successful payment verification
-  useEffect(() => {
-    if (paymentData && !completeMutation.isSuccess) {
-      logger.info('Payment verified, completing onboarding');
-      completeMutation.mutate();
-    }
-  }, [paymentData, completeMutation]);
+  if (!initialized || storeLoading || verifying) {
+    return <LoadingStateWithProgress message="Verifying payment..." />;
+  }
 
-  // Loading states
-  if (isVerifying || completeMutation.isPending) {
+  if (storeError) {
     return (
-      <LoadingState 
-        message={
-          completeMutation.isPending 
-            ? 'Completing your setup...' 
-            : 'Verifying payment...'
-        }
+      <ErrorStep 
+        error={storeError}
+        stepNumber={3}
+        onRetry={() => router.push('/onboarding/step3')}
       />
     );
   }
 
-  // Error states
-  if (verificationError || completeMutation.error) {
-    const error = verificationError || completeMutation.error;
-    return (
-      <ErrorState 
-        error={error}
-        onRetry={() => {
-          logger.info('Retrying payment verification');
-          router.push('/onboarding/step3');
-        }}
-      />
-    );
-  }
-
-  // Return null when processing
   return null;
 }
 
-// Main export with error boundary
 export default function OnboardingSuccess() {
-  const router = useRouter();
-  
   return (
-    <ErrorBoundary
+    <OnboardingErrorBoundary
       fallback={({ error, resetError }) => (
-        <ErrorState 
+        <ErrorStep 
           error={error}
+          stepNumber={3}
           onRetry={() => {
-            logger.info('Resetting error state');
             resetError();
             router.push('/onboarding/step3');
           }}
@@ -204,6 +95,6 @@ export default function OnboardingSuccess() {
       )}
     >
       <OnboardingSuccessContent />
-    </ErrorBoundary>
+    </OnboardingErrorBoundary>
   );
 }

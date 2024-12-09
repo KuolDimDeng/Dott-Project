@@ -1,6 +1,6 @@
 #/Users/kuoldeng/projectx/backend/pyfactor/custom_auth/views.py
 import uuid
-from django.db import connections, transaction, DatabaseError
+from django.db import connections, transaction, DatabaseError, IntegrityError
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
@@ -25,6 +25,7 @@ from django.core.mail import EmailMessage
 from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
 from django.urls import reverse_lazy
 from django.contrib.auth.tokens import default_token_generator
+from django.core.cache import cache
 
 
 
@@ -45,6 +46,42 @@ from pyfactor.logging_config import get_logger
 
 
 logger = get_logger()
+
+def handle_authentication_error(self, error, context=None):
+    logger.error(f"Authentication error: {str(error)}", extra={
+        'context': context,
+        'error_type': type(error).__name__
+    })
+    return Response(
+        {"error": "Authentication failed"},
+        status=status.HTTP_401_UNAUTHORIZED
+    )
+
+def validate_token(self, token, token_type):
+    try:
+        # Add token validation logic
+        decoded_token = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=["HS256"]
+        )
+        
+        # Check token fingerprint
+        if not self.verify_token_fingerprint(decoded_token):
+            raise TokenError("Invalid token fingerprint")
+            
+        return decoded_token
+    except jwt.ExpiredSignatureError:
+        raise TokenError("Token has expired")
+
+def check_rate_limit(self, key, limit, period):
+    cache_key = f"rate_limit_{key}"
+    current = cache.get(cache_key, 0)
+    
+    if current >= limit:
+        raise RateLimitExceeded(f"Rate limit exceeded. Try again in {period} seconds")
+        
+    cache.set(cache_key, current + 1, period)
 
 class TokenService:
     @staticmethod
@@ -212,11 +249,19 @@ class SignUpView(APIView):
     permission_classes = [AllowAny]
 
     def send_activation_email(self, user):
+        cache_key = f"activation_email_{user.email}"
+        if cache.get(cache_key):
+            logger.warning(f"Activation email request too frequent for {user.email}")
+            return False
+            
+        # Set a cooldown period of 5 minutes
+        cache.set(cache_key, True, 300)
+
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
         activation_link = f"{settings.FRONTEND_URL}/activate/{uid}/{token}"
-        
-        subject = 'Activate your Pyfactor account'
+            
+        subject = 'Activate your Dott account'
         message = f'Please click on this link to activate your account: {activation_link}'
         from_email = settings.DEFAULT_FROM_EMAIL
         recipient_list = [user.email]
@@ -230,6 +275,23 @@ class SignUpView(APIView):
             logger.error(f"Failed to send activation email: {str(e)}")
             return False
 
+    def make_activation_token(self, user):
+        from django.core.signing import TimestampSigner
+        signer = TimestampSigner()
+        return signer.sign_object({
+            'user_id': str(user.pk),
+            'email': user.email
+        })
+
+    def create_response(self, success, message, data=None, status_code=200):
+        response = {
+            'success': success,
+            'message': message
+        }
+        if data:
+            response['data'] = data
+        return Response(response, status=status_code)
+
     def post(self, request):
         logger.info(f"Received sign-up request: {request.data}")
         
@@ -239,9 +301,32 @@ class SignUpView(APIView):
             logger.info("Sign-up data is valid")
             try:
                 with transaction.atomic():
-                    user = serializer.save(request)
-                    logger.info(f"User created: {user.email}")
-                    
+                    try:
+                        # Create user first
+                        user = User.objects.create(
+                            email=serializer.validated_data['email'],
+                            is_active=False
+                        )
+                        user.set_password(serializer.validated_data['password1'])
+                        user.save()
+
+                        # Create profile with explicit ID
+                        profile = UserProfile.objects.create(
+                            user=user,
+                            user_id=user.id  # Explicitly set user_id to match user.id
+                        )
+                        logger.info(f"User and profile created: {user.email}")
+                        
+                    except IntegrityError as e:
+                        logger.error(f"Database integrity error: {str(e)}")
+                        if 'unique constraint' in str(e).lower():
+                            return Response({
+                                'error': 'An account with this email already exists'
+                            }, status=status.HTTP_400_BAD_REQUEST)
+                        return Response({
+                            'error': 'An error occurred during registration'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
                     # Send confirmation email
                     email_sent = self.send_activation_email(user)
 
@@ -265,9 +350,11 @@ class SignUpView(APIView):
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         else:
+            # Handle validation errors
             logger.warning(f"Invalid sign-up data: {serializer.errors}")
-            # Rest of your existing code for handling invalid data...
-            if 'email' in serializer.errors and any('already registered' in str(error) for error in serializer.errors['email']):
+            
+            # Check for existing email
+            if 'email' in serializer.errors:
                 try:
                     user = User.objects.get(email=request.data.get('email'))
                     if not user.is_active:
@@ -275,24 +362,12 @@ class SignUpView(APIView):
                         return Response({
                             "message": "This email is already registered but not activated. We've sent a new activation email."
                         }, status=status.HTTP_200_OK)
-                    elif not user.is_onboarded:
-                        logger.info(f"Attempted registration with email that hasn't completed onboarding: {user.email}")
-                        return Response({
-                            "message": "This email is registered but hasn't completed onboarding. Please complete the onboarding process.",
-                            "onboarding_url": f"{settings.FRONTEND_URL}/onboarding"
-                        }, status=status.HTTP_400_BAD_REQUEST)
-                    else:
-                        logger.info(f"Attempted registration with already activated email: {user.email}")
-                        return Response({
-                            "message": "This email is already registered and activated. Please try logging in or use the 'Forgot Password' feature if you can't remember your password.",
-                            "login_url": f"{settings.FRONTEND_URL}/auth/sigin",
-                            "forgot_password_url": f"{settings.FRONTEND_URL}/forgot-password"
-                        }, status=status.HTTP_400_BAD_REQUEST)
-                except User.DoesNotExist:
-                    logger.error(f"User not found for email: {request.data.get('email')}")
                     return Response({
-                        "error": "An unexpected error occurred. Please try again later."
-                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                        "message": "This email is already registered. Please try logging in.",
+                        "login_url": f"{settings.FRONTEND_URL}/auth/signin"
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                except User.DoesNotExist:
+                    pass
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -487,3 +562,59 @@ class UpdateSessionView(APIView):
         
         except Exception as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ResendActivationEmailView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email')
+        try:
+            user = User.objects.get(email=email)
+            if user.is_active:
+                return Response({
+                    'message': 'Account is already activated'
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+            # Generate new activation token
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            activation_link = f"{settings.FRONTEND_URL}/activate/{uid}/{token}"
+            
+            # Send activation email
+            send_activation_email(user.email, activation_link)
+            
+            return Response({
+                'message': 'Activation email has been resent'
+            })
+            
+        except User.DoesNotExist:
+            return Response({
+                'message': 'No account found with this email'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+# Email Verification View
+class VerifyEmailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, key):
+        try:
+            signer = TimestampSigner()
+            data = signer.unsign_object(key, max_age=86400)  # 24 hour expiry
+            
+            user = User.objects.get(pk=data['user_id'])
+            user.email_verified = True
+            user.save()
+
+            return Response({
+                'message': 'Email verified successfully'
+            })
+        except Exception as e:
+            return Response({
+                'message': 'Invalid or expired verification link'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+class health_check(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"status": "healthy"}, status=status.HTTP_200_OK)

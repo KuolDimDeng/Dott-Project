@@ -16,8 +16,16 @@ class OnboardingProgress(models.Model):
         ('complete', 'Complete'),
     ]
 
+    DATABASE_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('creating', 'Creating'),
+        ('active', 'Active'),
+        ('error', 'Error'),
+        ('deleted', 'Deleted')
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, db_index=True)
     email = models.EmailField(unique=True)
     
     # Personal Information
@@ -31,16 +39,16 @@ class OnboardingProgress(models.Model):
     legal_structure = models.CharField(
         max_length=50,
         choices=[
-            ('SOLE_PROPRIETORSHIP', 'Sole Proprietorship'),
-            ('GENERAL_PARTNERSHIP', 'General Partnership (GP)'),
-            ('LIMITED_PARTNERSHIP', 'Limited Partnership (LP)'),
+            ('Sole Proprietorship', 'Sole Proprietorship'),
+            ('General Partnership', 'General Partnership (GP)'),
+            ('Limited Partnership', 'Limited Partnership (LP)'),
             ('LLC', 'Limited Liability Company (LLC)'),
-            ('CORPORATION', 'Corporation (Inc., Corp.)'),
-            ('NON_PROFIT', 'Non-Profit Organization (NPO)'),
-            ('JOINT_VENTURE', 'Joint Venture (JV)'),
-            ('HOLDING_COMPANY', 'Holding Company'),
-            ('BRANCH_OFFICE', 'Branch Office'),
-            ('REPRESENTATIVE_OFFICE', 'Representative Office'),
+            ('Corporation', 'Corporation (Inc., Corp.)'),
+            ('Non-Profit', 'Non-Profit Organization (NPO)'),
+            ('Joint Venture', 'Joint Venture (JV)'),
+            ('Holding Company', 'Holding Company'),
+            ('Branch Office', 'Branch Office'),
+            ('Representative Office', 'Representative Office'),
         ],
         blank=True
     )
@@ -54,6 +62,14 @@ class OnboardingProgress(models.Model):
         blank=True
     )
     payment_completed = models.BooleanField(default=False)
+    payment_method = models.CharField(max_length=50, blank=True, null=True)
+    payment_verified = models.BooleanField(default=False)
+    payment_reference = models.CharField(max_length=255, blank=True, null=True)
+    last_payment_attempt = models.DateTimeField(null=True)
+    last_setup_attempt = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    task_status = models.CharField(max_length=50, null=True, blank=True)
+
     
     # Progress Tracking
     current_step = models.IntegerField(default=1)
@@ -61,6 +77,41 @@ class OnboardingProgress(models.Model):
         max_length=20, 
         choices=ONBOARDING_STATUS_CHOICES, 
         default='step1'
+    )
+
+    # Database Setup Tracking
+    database_setup_task_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="Celery task ID for database setup"
+    )
+    database_status = models.CharField(
+        max_length=20,
+        choices=DATABASE_STATUS_CHOICES,
+        default='pending'
+    )
+    database_name = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+    setup_progress = models.IntegerField(default=0)  # Add this field
+
+    setup_started_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+    setup_completed_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+    setup_error = models.TextField(
+        null=True,
+        blank=True
+    )
+    setup_retries = models.IntegerField(
+        default=0
     )
     
     # Timestamps
@@ -77,6 +128,16 @@ class OnboardingProgress(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['user'], name='unique_user_onboarding_progress')
         ]
+        indexes = [
+            models.Index(fields=['database_setup_task_id']),
+            models.Index(fields=['database_status']),
+            models.Index(fields=['onboarding_status'])
+        ]
+        select_on_save = True
+        db_table = 'onboarding_progress'
+
+
+
 
     def __str__(self):
         return f"Onboarding progress for {self.email}"
@@ -89,3 +150,36 @@ class OnboardingProgress(models.Model):
 
     def is_refresh_token_expired(self):
         return self.refresh_token_expiration and timezone.now() > self.refresh_token_expiration
+
+    def start_database_setup(self, task_id):
+        """Mark database setup as started"""
+        self.database_setup_task_id = task_id
+        self.database_status = 'creating'
+        self.setup_started_at = timezone.now()
+        self.setup_retries += 1
+        self.save(update_fields=[
+            'database_setup_task_id',
+            'database_status',
+            'setup_started_at',
+            'setup_retries'
+        ])
+
+    def complete_database_setup(self, database_name):
+        """Mark database setup as completed"""
+        self.database_status = 'active'
+        self.database_name = database_name
+        self.setup_completed_at = timezone.now()
+        self.save(update_fields=[
+            'database_status',
+            'database_name',
+            'setup_completed_at'
+        ])
+
+    def fail_database_setup(self, error):
+        """Mark database setup as failed"""
+        self.database_status = 'error'
+        self.setup_error = str(error)
+        self.save(update_fields=[
+            'database_status',
+            'setup_error'
+        ])

@@ -17,6 +17,7 @@ from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from finance.models import AccountType, Account, FinanceTransaction, Income
+from business.serializer_helpers import BusinessProfileSerializer
 from pyfactor.logging_config import get_logger
 import sys
 import traceback
@@ -30,10 +31,29 @@ class UserProfileSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(source='user.first_name')
     last_name = serializers.CharField(source='user.last_name')
     business_name = serializers.SerializerMethodField()
+    business_type = serializers.SerializerMethodField()
+    business_data = BusinessProfileSerializer(source='business', read_only=True)
 
     class Meta:
         model = UserProfile
-        fields = ['email', 'occupation', 'business_name', 'street', 'postcode', 'state', 'country', 'phone_number', 'database_name', 'first_name', 'last_name']
+        fields = [
+            'id',
+            'email',
+            'first_name',
+            'last_name', 
+            'occupation',
+            'street',
+            'city',
+            'state',
+            'postcode',
+            'country',
+            'phone_number',
+            'database_name',
+            'database_status',
+            'business_name',
+            'business_type',
+            'business_data'
+        ]
 
     def get_full_name(self, obj):
         logger.debug('UserProfileSerializer - get_full_name')
@@ -46,5 +66,15 @@ class UserProfileSerializer(serializers.ModelSerializer):
             return ""  # or return a default value of your choice
 
     def get_business_name(self, obj):
-        return obj.business.name if obj.business else None
+        try:
+            return obj.business.business_name if obj.business else None
+        except AttributeError:
+            logger.warning(f"Failed to get business_name for profile {obj.id}")
+            return None
 
+    def get_business_type(self, obj):
+        try:
+            return obj.business.business_type if obj.business else None
+        except AttributeError:
+            logger.warning(f"Failed to get business_type for profile {obj.id}")
+            return None

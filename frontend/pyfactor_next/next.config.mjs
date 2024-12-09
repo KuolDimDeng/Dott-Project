@@ -3,39 +3,50 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  poweredByHeader: false,
-  swcMinify: false, // Disable SWC to use Babel
+  poweredByHeader: false, // You had this twice
+  swcMinify: false, // Keep this if you need to use Babel
 
-  // Simplified webpack configuration
-  webpack: (config) => {
-    // Keep alias configuration but simplify
+  // Webpack configuration
+  webpack: (config, { isServer }) => {
+    // Aliases configuration
+    const baseDir = path.resolve(__dirname);
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': path.resolve(__dirname, 'src'),
-      '@app': path.resolve(__dirname, 'src/app'),
-      '@components': path.resolve(__dirname, 'src/app/components'),
-      '@layouts': path.resolve(__dirname, 'src/app/layouts'),
-      '@styles': path.resolve(__dirname, 'src/styles'),
-      '@lib': path.resolve(__dirname, 'src/lib'),
-      '@utils': path.resolve(__dirname, 'src/utils'),
-      '@hooks': path.resolve(__dirname, 'src/hooks'),
-      '@contexts': path.resolve(__dirname, 'src/contexts'),
-      '@providers': path.resolve(__dirname, 'src/providers'),
-      '@dashboard': path.resolve(__dirname, 'src/app/dashboard'),
-      '@auth': path.resolve(__dirname, 'src/app/auth'),
-      '@onboarding': path.resolve(__dirname, 'src/app/onboarding'),
-      '@api': path.resolve(__dirname, 'src/app/api'),
+      '@': path.join(baseDir, 'src'),
+      '@app': path.join(baseDir, 'src/app'),
+      '@components': path.join(baseDir, 'src/components'),
+      '@layouts': path.join(baseDir, 'src/layouts'),
+      '@styles': path.join(baseDir, 'src/styles'),
+      '@lib': path.join(baseDir, 'src/lib'),
+      '@utils': path.join(baseDir, 'src/utils'),
+      '@hooks': path.join(baseDir, 'src/hooks'),
+      '@contexts': path.join(baseDir, 'src/contexts'),
+      '@providers': path.join(baseDir, 'src/providers'),
+      '@dashboard': path.join(baseDir, 'src/app/dashboard'),
+      '@auth': path.join(baseDir, 'src/app/auth'),
+      '@onboarding': path.join(baseDir, 'src/app/onboarding'),
+      '@api': path.join(baseDir, 'src/app/api'),
     };
+
+    // Source maps for development only
+    if (process.env.NODE_ENV === 'development' && !isServer) {
+      config.devtool = 'eval-source-map';
+    }
 
     return config;
   },
 
-  // Basic image configuration
+  // Image configuration
   images: {
-    domains: ['localhost', '127.0.0.1', 'lh3.googleusercontent.com'],
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.googleusercontent.com',
+        pathname: '/**',
+      },
       {
         protocol: 'http',
         hostname: 'localhost',
@@ -51,7 +62,7 @@ const nextConfig = {
     ]
   },
 
-  // Basic security headers
+  // Security headers
   async headers() {
     return [
       {
@@ -59,15 +70,19 @@ const nextConfig = {
         headers: [
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' }
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+          { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' }
         ],
       }
     ];
   },
 
-  // Basic experimental features
+  // Experimental features - removed deprecated options
   experimental: {
-    scrollRestoration: true
+    scrollRestoration: true,
+    typedRoutes: true
   },
 
   // Environment configuration
@@ -76,8 +91,14 @@ const nextConfig = {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   },
 
-  // Output configuration
+  // Build configuration
   output: 'standalone',
+  
+  // Performance optimizations
+  compress: true,
+  
+  // Disable source maps in production
+  productionBrowserSourceMaps: false,
 };
 
 export default nextConfig;

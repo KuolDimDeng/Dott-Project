@@ -1,26 +1,94 @@
+// src/app/api/auth/refresh/route.js
+import { NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+import { axiosInstance } from '@/lib/axiosConfig';
+import { logger } from '@/utils/logger';
+
 export async function POST(req) {
   try {
-    console.log("Refresh token request received.");
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    console.log("Token received for refresh:", token);
+    logger.info("Refresh token request received");
+    
+    // Get the current session token
+    const token = await getToken({ 
+      req, 
+      secret: process.env.NEXTAUTH_SECRET 
+    });
 
-    if (!token) {
-      console.log("No token found for refresh");
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    logger.debug("Token received for refresh:", {
+      hasToken: !!token,
+      hasRefreshToken: !!token?.refreshToken
+    });
+
+    if (!token?.refreshToken) {
+      logger.error("No refresh token found");
+      return NextResponse.json(
+        { error: 'No refresh token available' }, 
+        { status: 401 }
+      );
     }
 
-    const refreshedToken = await refreshAccessToken(token);
-    console.log("Refreshed token response:", refreshedToken);
+    // Make request to your backend API
+    const response = await axiosInstance.post(
+      '/api/token/refresh/',
+      { refresh: token.refreshToken },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
 
-    if (refreshedToken.error) {
-      console.error("Token refresh error:", refreshedToken.error);
-      // Sign the user out if refresh fails
-      return NextResponse.json({ error: refreshedToken.error }, { status: 401 });
+    if (!response.data?.access) {
+      throw new Error('Invalid refresh response');
     }
+
+    const refreshedToken = {
+      ...token,
+      accessToken: response.data.access,
+      refreshToken: response.data.refresh || token.refreshToken,
+      accessTokenExpires: Date.now() + (response.data.expires_in || 3600) * 1000,
+      error: null
+    };
+
+    logger.info("Token refreshed successfully");
 
     return NextResponse.json(refreshedToken);
+
   } catch (error) {
-    console.error('Error refreshing token:', error);
-    return NextResponse.json({ error: 'Failed to refresh token' }, { status: 500 });
+    logger.error('Token refresh failed:', error);
+
+    // Handle different error types
+    if (error.response?.status === 401) {
+      return NextResponse.json(
+        { error: 'Invalid refresh token' }, 
+        { status: 401 }
+      );
+    }
+
+    if (error.response?.status === 404) {
+      return NextResponse.json(
+        { error: 'Refresh endpoint not found' }, 
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      { 
+        error: 'Failed to refresh token',
+        details: error.message 
+      }, 
+      { status: 500 }
+    );
   }
+}
+
+// Add OPTIONS handler for CORS if needed
+export async function OPTIONS(req) {
+  return NextResponse.json({}, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    }
+  });
 }

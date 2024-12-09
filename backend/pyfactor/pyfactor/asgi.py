@@ -1,3 +1,5 @@
+# /Users/kuoldeng/projectx/backend/pyfactor/pyfactor/asgi.py
+
 import os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 
@@ -11,11 +13,11 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.security.websocket import AllowedHostsOriginValidator
 from django.conf import settings
 from channels.auth import AuthMiddlewareStack
-from onboarding.middleware import WebSocketAuthMiddlewareStack  # Updated import
+from onboarding.middleware import WebSocketAuthMiddleware  # Updated import
 from pyfactor.logging_config import get_logger
 from channels.middleware import BaseMiddleware
 from channels.exceptions import DenyConnection
-import onboarding.routing
+from onboarding.routing import websocket_urlpatterns  # Import directly from onboarding.routing
 import traceback
 from typing import Callable, Any
 
@@ -52,13 +54,7 @@ class CORSMiddleware(BaseMiddleware):
             
             logger.info(f"Allowed WebSocket connection from origin: {origin}")
 
-        try:
-            return await super().__call__(scope, receive, send)
-        except Exception as e:
-            logger.error(f"Error in CORS middleware: {str(e)}\n{traceback.format_exc()}")
-            if scope["type"] == "websocket":
-                await self.deny_connection(send, "Internal server error")
-            raise
+        return await super().__call__(scope, receive, send)
 
     async def deny_connection(self, send: Callable, reason: str) -> None:
         """Helper method to deny WebSocket connections"""
@@ -106,58 +102,20 @@ class WebSocketLoggingMiddleware(BaseMiddleware):
                 logger.debug(f"WebSocket sending: {message}")
                 await send(message)
                 
-            try:
-                return await super().__call__(scope, logged_receive, logged_send)
-            except Exception as e:
-                logger.error(f"Error in WebSocket communication: {str(e)}\n{traceback.format_exc()}")
-                await send({
-                    "type": "websocket.close",
-                    "code": 4500,
-                    "reason": "Internal server error",
-                })
-                raise
+            return await super().__call__(scope, logged_receive, logged_send)
         return await super().__call__(scope, receive, send)
-
-class ChannelsMiddlewareStack:
-    """Combine all middleware for channels"""
-    
-    def __init__(self, inner):
-        middleware_classes = [
-            CORSMiddleware,
-            AllowedHostsOriginValidator,
-            WebSocketAuthMiddlewareStack,  # Updated middleware
-        ]
-        
-        if settings.DEBUG:
-            middleware_classes.extend([
-                ErrorLoggingMiddleware,
-                WebSocketLoggingMiddleware,
-            ])
-        
-        self.app = inner
-        for middleware_class in reversed(middleware_classes):
-            self.app = middleware_class(self.app)
-
-    async def __call__(self, scope, receive, send):
-        try:
-            return await self.app(scope, receive, send)
-        except Exception as e:
-            logger.error(f"Error in channels middleware stack: {str(e)}\n{traceback.format_exc()}")
-            if scope["type"] == "websocket":
-                await send({
-                    "type": "websocket.close",
-                    "code": 4500,
-                    "reason": "Internal server error",
-                })
-            raise
 
 def get_asgi_application_with_middleware():
     """Create and configure the ASGI application with all middleware"""
     try:
         app = ProtocolTypeRouter({
             "http": django_asgi_app,
-            "websocket": ChannelsMiddlewareStack(
-                URLRouter(onboarding.routing.websocket_urlpatterns)
+            "websocket": CORSMiddleware(
+                AllowedHostsOriginValidator(
+                    WebSocketAuthMiddleware(
+                        URLRouter(websocket_urlpatterns)  # Use imported websocket_urlpatterns
+                    )
+                )
             ),
         })
 

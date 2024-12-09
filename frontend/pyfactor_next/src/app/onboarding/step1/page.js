@@ -1,24 +1,22 @@
 // src/app/onboarding/step1/page.js
 'use client';
 
-import dynamic from 'next/dynamic';
-import { Box, CircularProgress } from '@mui/material';
+import { Suspense } from 'react';
+import Step1WithErrorBoundary from '../components/Step1';
+import { LoadingStateWithProgress } from '@/components/LoadingState';
 
-const LoadingStep = () => (
-  <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-    <CircularProgress />
-  </Box>
-);
-
-// Use the correct import path
-const Step1 = dynamic(
-  () => import('../components/steps/Step1'),
-  {
-    loading: LoadingStep,
-    ssr: false
-  }
-);
+// Add metadata for the step
+const metadata = {
+  title: 'Business Information',
+  description: 'Tell us about your business',
+  nextStep: 'step2',
+  isRequired: true
+};
 
 export default function Step1Page() {
-  return <Step1 />;
+  return (
+    <Suspense fallback={<LoadingStateWithProgress message="Loading Step 1..." />}>
+      <Step1WithErrorBoundary metadata={metadata} />
+    </Suspense>
+  );
 }

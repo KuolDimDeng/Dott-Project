@@ -45,7 +45,7 @@ class UserProfile(models.Model):
             'last_name': self.user.last_name,
             'full_name': self.user.get_full_name(),
             'occupation': self.occupation,
-            'business_name': self.business.name if self.business_id is not None else None,
+            'business_name': self.business.business_name if self.business_id is not None else None,
             'database_name': self.database_name,
             # Add other fields as needed
         }

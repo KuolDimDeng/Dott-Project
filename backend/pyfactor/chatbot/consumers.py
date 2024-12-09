@@ -1,7 +1,7 @@
 import json
 import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
-from channels.db import database_sync_to_async
+from asgiref.sync import sync_to_async  # Changed this line
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth import get_user_model
 from pyfactor.logging_config import get_logger
@@ -83,7 +83,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def chat_message(self, event):
         await self.send(text_data=json.dumps(event))
 
-    @database_sync_to_async
+    @sync_to_async
     def save_message(self, user_id, message):
         try:
             if not self.database_name:
@@ -105,7 +105,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             logger.error(f"Error saving message: {str(e)}")
             return None
 
-    @database_sync_to_async
+    @sync_to_async
     def get_user_database(self, user):
         try:
             user_profile = UserProfile.objects.using('default').get(user=user)
@@ -114,7 +114,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             logger.error(f"UserProfile does not exist for user: {user}")
             return None
 
-    @database_sync_to_async
+    @sync_to_async
     def ensure_database_exists(self, database_name):
         from pyfactor.userDatabaseRouter import UserDatabaseRouter
         router = UserDatabaseRouter()
