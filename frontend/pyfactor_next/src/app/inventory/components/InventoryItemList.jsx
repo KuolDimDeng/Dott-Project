@@ -1,21 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-  Button, TextField, Dialog, DialogActions, DialogContent, DialogTitle,
-  IconButton, Typography, Box, useTheme
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Button,
+  TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Typography,
+  Box,
+  useTheme,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { useApi } from '../../dashboard/components/components/axiosConfig';
+import { useApi } from '@/lib/axiosConfig';
 
 const InventoryItemList = () => {
   const [items, setItems] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
-  const [currentItem, setCurrentItem] = useState({ name: '', sku: '', description: '', quantity: 0, reorder_level: 0, unit_price: 0 });
+  const [currentItem, setCurrentItem] = useState({
+    name: '',
+    sku: '',
+    description: '',
+    quantity: 0,
+    reorder_level: 0,
+    unit_price: 0,
+  });
   const [isEditing, setIsEditing] = useState(false);
   const theme = useTheme();
-
 
   useEffect(() => {
     fetchItems();
@@ -35,7 +55,14 @@ const InventoryItemList = () => {
       setCurrentItem(item);
       setIsEditing(true);
     } else {
-      setCurrentItem({ name: '', sku: '', description: '', quantity: 0, reorder_level: 0, unit_price: 0 });
+      setCurrentItem({
+        name: '',
+        sku: '',
+        description: '',
+        quantity: 0,
+        reorder_level: 0,
+        unit_price: 0,
+      });
       setIsEditing(false);
     }
     setOpenDialog(true);
@@ -43,13 +70,20 @@ const InventoryItemList = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setCurrentItem({ name: '', sku: '', description: '', quantity: 0, reorder_level: 0, unit_price: 0 });
+    setCurrentItem({
+      name: '',
+      sku: '',
+      description: '',
+      quantity: 0,
+      reorder_level: 0,
+      unit_price: 0,
+    });
     setIsEditing(false);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setCurrentItem(prev => ({ ...prev, [name]: value }));
+    setCurrentItem((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async () => {
@@ -81,7 +115,12 @@ const InventoryItemList = () => {
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4">Inventory Items</Typography>
-        <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AddIcon />}
+          onClick={() => handleOpenDialog()}
+        >
           Add New Item
         </Button>
       </Box>
@@ -107,13 +146,18 @@ const InventoryItemList = () => {
                 <TableCell>{item.quantity}</TableCell>
                 <TableCell>{item.reorder_level}</TableCell>
                 <TableCell>
-                  ${typeof item.unit_price === 'number' 
-                    ? item.unit_price.toFixed(2) 
+                  $
+                  {typeof item.unit_price === 'number'
+                    ? item.unit_price.toFixed(2)
                     : parseFloat(item.unit_price).toFixed(2) || '0.00'}
                 </TableCell>
                 <TableCell>
-                  <IconButton onClick={() => handleOpenDialog(item)}><EditIcon /></IconButton>
-                  <IconButton onClick={() => handleDelete(item.id)}><DeleteIcon /></IconButton>
+                  <IconButton onClick={() => handleOpenDialog(item)}>
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton onClick={() => handleDelete(item.id)}>
+                    <DeleteIcon />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}

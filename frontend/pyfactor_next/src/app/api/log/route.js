@@ -5,10 +5,11 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   const body = await req.json();
-  const logEntry = JSON.stringify({
-    timestamp: new Date().toISOString(),
-    ...body
-  }) + '\n';
+  const logEntry =
+    JSON.stringify({
+      timestamp: new Date().toISOString(),
+      ...body,
+    }) + '\n';
 
   const filePath = path.join(process.cwd(), 'error_logs.txt');
 

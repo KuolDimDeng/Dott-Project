@@ -6,18 +6,21 @@ export function useDebounceToast() {
   const toast = useToast();
   const timeouts = useRef({});
 
-  const showToast = useCallback((type, message, options = {}) => {
-    const key = `${type}-${message}`;
-    
-    if (timeouts.current[key]) {
-      clearTimeout(timeouts.current[key]);
-    }
+  const showToast = useCallback(
+    (type, message, options = {}) => {
+      const key = `${type}-${message}`;
 
-    timeouts.current[key] = setTimeout(() => {
-      toast[type](message, options);
-      delete timeouts.current[key];
-    }, options.delay || 500);
-  }, [toast]);
+      if (timeouts.current[key]) {
+        clearTimeout(timeouts.current[key]);
+      }
+
+      timeouts.current[key] = setTimeout(() => {
+        toast[type](message, options);
+        delete timeouts.current[key];
+      }, options.delay || 500);
+    },
+    [toast]
+  );
 
   useEffect(() => {
     return () => {

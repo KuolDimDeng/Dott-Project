@@ -12,5 +12,5 @@ export const ONBOARDING_STEPS = {
   PLAN: 'step2',
   PAYMENT: 'step3',
   SETUP: 'step4',
-  COMPLETE: 'complete'
+  COMPLETE: 'complete',
 };

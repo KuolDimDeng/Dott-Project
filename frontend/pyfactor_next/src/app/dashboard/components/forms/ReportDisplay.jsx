@@ -14,9 +14,12 @@ const ReportDisplay = ({ reportType }) => {
     const fetchReportData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:8000/api/reports/generate/${reportType}/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(
+          `http://localhost:8000/api/reports/generate/${reportType}/`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         setReportData(response.data);
       } catch (error) {
         console.error('Error fetching report data:', error);
@@ -32,12 +35,16 @@ const ReportDisplay = ({ reportType }) => {
     const ws = XLSX.utils.json_to_sheet([reportData]);
     XLSX.utils.book_append_sheet(wb, ws, reportType);
     const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const data = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     saveAs(data, `${reportType}_report.xlsx`);
   };
 
   const exportToCSV = () => {
-    const csvContent = Object.entries(reportData).map(([key, value]) => `${key},${value}`).join('\n');
+    const csvContent = Object.entries(reportData)
+      .map(([key, value]) => `${key},${value}`)
+      .join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     saveAs(blob, `${reportType}_report.csv`);
   };
@@ -75,9 +82,15 @@ const ReportDisplay = ({ reportType }) => {
       case 'cash_flow':
         return (
           <>
-            <Typography variant="h6">Operating Activities: ${reportData.operating_activities}</Typography>
-            <Typography variant="h6">Investing Activities: ${reportData.investing_activities}</Typography>
-            <Typography variant="h6">Financing Activities: ${reportData.financing_activities}</Typography>
+            <Typography variant="h6">
+              Operating Activities: ${reportData.operating_activities}
+            </Typography>
+            <Typography variant="h6">
+              Investing Activities: ${reportData.investing_activities}
+            </Typography>
+            <Typography variant="h6">
+              Financing Activities: ${reportData.financing_activities}
+            </Typography>
             <Typography variant="h6">Net Cash Flow: ${reportData.net_cash_flow}</Typography>
           </>
         );
@@ -97,9 +110,15 @@ const ReportDisplay = ({ reportType }) => {
   return (
     <Paper sx={{ p: 2 }}>
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-        <Button variant="contained" onClick={exportToExcel}>Export to Excel</Button>
-        <Button variant="contained" onClick={exportToCSV}>Export to CSV</Button>
-        <Button variant="contained" onClick={exportToPDF}>Export to PDF</Button>
+        <Button variant="contained" onClick={exportToExcel}>
+          Export to Excel
+        </Button>
+        <Button variant="contained" onClick={exportToCSV}>
+          Export to CSV
+        </Button>
+        <Button variant="contained" onClick={exportToPDF}>
+          Export to PDF
+        </Button>
       </Stack>
       <Typography variant="h5" gutterBottom>
         {reportType.replace('_', ' ').toUpperCase()}

@@ -3,9 +3,9 @@
 
 import axios from 'axios';
 import { QueryClient, useQuery, useMutation } from '@tanstack/react-query';
-import { getSession, signOut, getCsrfToken } from "next-auth/react";
+import { getSession, signOut, getCsrfToken } from 'next-auth/react';
 import { logger } from '@/utils/logger';
-import APP_CONFIG from '@/config';  // Change to default import
+import APP_CONFIG from '@/config'; // Change to default import
 import { useState, useEffect, useCallback } from 'react';
 
 // QueryClient Configuration
@@ -38,9 +38,9 @@ export const axiosInstance = axios.create({
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
+    Accept: 'application/json',
   },
-  timeoutErrorMessage: 'Request timed out - please try again'
+  timeoutErrorMessage: 'Request timed out - please try again',
 });
 
 // Token refresh state management
@@ -48,7 +48,7 @@ let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
+  failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
     } else {
@@ -68,7 +68,7 @@ export const createWebSocket = async (path, options = {}) => {
 
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${wsProtocol}//${window.location.host}${path}?token=${encodeURIComponent(session.user.accessToken)}`;
-    
+
     const ws = new WebSocket(wsUrl);
 
     ws.onerror = (error) => {
@@ -104,10 +104,10 @@ export const authApi = {
         { refresh: refreshToken },
         {
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           // Skip refresh token interceptor for this request
-          skipAuthRefresh: true
+          skipAuthRefresh: true,
         }
       );
       logger.info('Token refresh successful');
@@ -120,13 +120,10 @@ export const authApi = {
 
   exchangeGoogleToken: async (idToken, accessToken) => {
     try {
-      const response = await axiosInstance.post(
-        '/api/auth/google/',
-        {
-          token: idToken,
-          access_token: accessToken
-        }
-      );
+      const response = await axiosInstance.post('/api/auth/google/', {
+        token: idToken,
+        access_token: accessToken,
+      });
       return response.data;
     } catch (error) {
       logger.error('Google token exchange failed:', error);
@@ -141,10 +138,8 @@ export const authApi = {
       logger.error('Session refresh failed:', error);
       throw error;
     }
-  }
+  },
 };
-
-
 
 const useWebSocket = (userId, options = {}) => {
   const [ws, setWs] = useState(null);
@@ -153,25 +148,22 @@ const useWebSocket = (userId, options = {}) => {
 
   const connect = useCallback(async () => {
     try {
-      const socket = await createWebSocket(
-        `/ws/onboarding/${userId}/`,
-        {
-          onOpen: () => {
-            setIsConnected(true);
-            setError(null);
-            options.onOpen?.();
-          },
-          onError: (err) => {
-            setError(err);
-            setIsConnected(false);
-            options.onError?.(err);
-          },
-          onClose: () => {
-            setIsConnected(false);
-            options.onClose?.();
-          }
-        }
-      );
+      const socket = await createWebSocket(`/ws/onboarding/${userId}/`, {
+        onOpen: () => {
+          setIsConnected(true);
+          setError(null);
+          options.onOpen?.();
+        },
+        onError: (err) => {
+          setError(err);
+          setIsConnected(false);
+          options.onError?.(err);
+        },
+        onClose: () => {
+          setIsConnected(false);
+          options.onClose?.();
+        },
+      });
       setWs(socket);
     } catch (err) {
       setError(err);
@@ -181,7 +173,7 @@ const useWebSocket = (userId, options = {}) => {
 
   useEffect(() => {
     let mounted = true;
-    
+
     if (mounted) {
       connect();
     }
@@ -204,13 +196,13 @@ const useSaveStep1 = (options = {}) =>
       try {
         logger.debug('Making request to:', APP_CONFIG.api.endpoints.onboarding.step1);
         logger.debug('With data:', data);
-        
+
         const response = await axiosInstance.post(
           // Use the config URL
           APP_CONFIG.api.endpoints.onboarding.step1,
           data
         );
-        
+
         logger.info('Step 1 saved successfully');
         return response.data;
       } catch (error) {
@@ -224,30 +216,27 @@ const useSaveStep1 = (options = {}) =>
     ...options,
   });
 
-  const useSaveStep2 = (options = {}) =>
-    useMutation({
-      mutationFn: async (data) => {
-        try {
-          logger.debug('Making request to:', APP_CONFIG.api.endpoints.onboarding.step2);
-          logger.debug('With data:', data);
-          
-          const response = await axiosInstance.post(
-            APP_CONFIG.api.endpoints.onboarding.step2,
-            data
-          );
-          
-          logger.info('Step 2 saved successfully');
-          return response.data;
-        } catch (error) {
-          logger.error('Error saving Step 2:', error);
-          throw error;
-        }
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries(['onboardingStatus']);
-      },
-      ...options,
-    });
+const useSaveStep2 = (options = {}) =>
+  useMutation({
+    mutationFn: async (data) => {
+      try {
+        logger.debug('Making request to:', APP_CONFIG.api.endpoints.onboarding.step2);
+        logger.debug('With data:', data);
+
+        const response = await axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.step2, data);
+
+        logger.info('Step 2 saved successfully');
+        return response.data;
+      } catch (error) {
+        logger.error('Error saving Step 2:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['onboardingStatus']);
+    },
+    ...options,
+  });
 
 const useSaveStep3 = (options = {}) =>
   useMutation({
@@ -273,38 +262,35 @@ const useSaveStep4 = (options = {}) =>
     ...options,
   });
 
-  const useOnboardingStatus = (options = {}) => {
-    const { data: session } = useSession();
-    
-    return useQuery({
-      queryKey: ['onboardingStatus'],
-      queryFn: async () => {
-        if (!session?.user?.accessToken) {
-          throw new Error('Not authenticated');
-        }
-        const response = await axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status);
-        return response.data;
-      },
-      enabled: !!session?.user?.accessToken,
-      staleTime: 30000,
-      ...options,
-    });
-  };
+const useOnboardingStatus = (options = {}) => {
+  const { data: session } = useSession();
 
-  const useCompleteOnboarding = (options = {}) =>
-    useMutation({
-      mutationFn: async (data) => {
-        const response = await axiosInstance.post(
-          APP_CONFIG.api.endpoints.onboarding.complete,
-          data
-        );
-        return response.data;
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries(['onboardingStatus']);
-      },
-      ...options,
-    });
+  return useQuery({
+    queryKey: ['onboardingStatus'],
+    queryFn: async () => {
+      if (!session?.user?.accessToken) {
+        throw new Error('Not authenticated');
+      }
+      const response = await axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status);
+      return response.data;
+    },
+    enabled: !!session?.user?.accessToken,
+    staleTime: 30000,
+    ...options,
+  });
+};
+
+const useCompleteOnboarding = (options = {}) =>
+  useMutation({
+    mutationFn: async (data) => {
+      const response = await axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.complete, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['onboardingStatus']);
+    },
+    ...options,
+  });
 
 // Generic save step function
 const useSaveStep = (step, options = {}) =>
@@ -346,7 +332,7 @@ export const useApi = {
   useSaveStep3,
   useSaveStep4,
   useSaveStep,
-  useCompleteOnboarding
+  useCompleteOnboarding,
 };
 
 const isTokenExpired = (session) => {
@@ -362,7 +348,7 @@ axiosInstance.interceptors.request.use(
       url: config.url,
       method: config.method,
       data: config.data,
-      headers: config.headers
+      headers: config.headers,
     });
 
     if (config.skipAuthRefresh) {
@@ -371,11 +357,11 @@ axiosInstance.interceptors.request.use(
 
     try {
       const session = await getSession();
-      
+
       if (session?.user?.accessToken) {
         config.headers.Authorization = `Bearer ${session.user.accessToken}`;
       }
-      
+
       const csrfToken = await getCsrfToken();
       if (csrfToken) {
         config.headers['X-CSRFToken'] = csrfToken;
@@ -400,7 +386,7 @@ axiosInstance.interceptors.response.use(
       url: response.config.url,
       status: response.status,
       data: response.data,
-      method: response.config.method
+      method: response.config.method,
     });
     return response;
   },
@@ -411,10 +397,9 @@ axiosInstance.interceptors.response.use(
       data: error.response?.data,
       message: error.message,
       method: error.config?.method,
-      requestData: error.config?.data
+      requestData: error.config?.data,
     });
     const originalRequest = error.config;
-    
 
     // Don't retry refresh token requests
     if (originalRequest.skipAuthRefresh) {
@@ -425,10 +410,12 @@ axiosInstance.interceptors.response.use(
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers['Authorization'] = `Bearer ${token}`;
-          return axiosInstance(originalRequest);
-        }).catch(err => Promise.reject(err));
+        })
+          .then((token) => {
+            originalRequest.headers['Authorization'] = `Bearer ${token}`;
+            return axiosInstance(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
       }
 
       originalRequest._retry = true;
@@ -440,26 +427,23 @@ axiosInstance.interceptors.response.use(
           throw new Error('No refresh token available');
         }
 
-        const { access: newAccessToken } = await authApi.refreshToken(
-          session.user.refreshToken
-        );
+        const { access: newAccessToken } = await authApi.refreshToken(session.user.refreshToken);
 
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
         originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
 
         processQueue(null, newAccessToken);
         return axiosInstance(originalRequest);
-        
       } catch (refreshError) {
         processQueue(refreshError);
         logger.error('Token refresh failed:', refreshError);
-        
+
         // Clear session and redirect
         await signOut({
           redirect: true,
-          callbackUrl: '/auth/signin?error=RefreshTokenFailed'
+          callbackUrl: '/auth/signin?error=RefreshTokenFailed',
         });
-        
+
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -470,7 +454,6 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-
 // Add session management helper
 export const refreshSession = async () => {
   try {
@@ -480,7 +463,7 @@ export const refreshSession = async () => {
     }
 
     const response = await authApi.refreshToken(session.user.refreshToken);
-    
+
     // Update session with new tokens
     await fetch('/api/auth/session', {
       method: 'POST',
@@ -490,8 +473,8 @@ export const refreshSession = async () => {
       body: JSON.stringify({
         accessToken: response.access,
         refreshToken: response.refresh || session.user.refreshToken,
-        accessTokenExpires: Date.now() + APP_CONFIG.auth.tokenGracePeriod
-      })
+        accessTokenExpires: Date.now() + APP_CONFIG.auth.tokenGracePeriod,
+      }),
     });
 
     return response;
@@ -513,10 +496,9 @@ export const api = {
     },
     getStatus: async () => {
       return axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status);
-    }
-  }
+    },
+  },
 };
-
 
 // Global error handler
 if (typeof window !== 'undefined') {
@@ -534,7 +516,7 @@ export {
   useSaveStep3,
   useSaveStep4,
   useSaveStep,
-  useCompleteOnboarding
+  useCompleteOnboarding,
 };
 
 // Default export
@@ -543,5 +525,5 @@ export default {
   queryClient,
   useApi,
   authApi,
-  createWebSocket
+  createWebSocket,
 };

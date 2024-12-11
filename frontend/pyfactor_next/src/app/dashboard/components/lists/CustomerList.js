@@ -1,6 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress } from '@mui/material';
-import axiosInstance from '@/lib/axiosConfig';;
+import {
+  Button,
+  Box,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  CircularProgress,
+} from '@mui/material';
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 
 const CustomerList = ({ onCreateCustomer, onInvoiceSelect, onCustomerSelect, onBack }) => {
@@ -55,7 +67,9 @@ const CustomerList = ({ onCreateCustomer, onInvoiceSelect, onCustomerSelect, onB
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -99,12 +113,14 @@ const CustomerList = ({ onCreateCustomer, onInvoiceSelect, onCustomerSelect, onB
           </TableHead>
           <TableBody>
             {customers.map((customer) => (
-              <TableRow 
-                key={customer.id} 
+              <TableRow
+                key={customer.id}
                 onClick={() => handleViewCustomer(customer)}
                 sx={{ cursor: 'pointer', '&:hover': { backgroundColor: 'rgba(0, 0, 128, 0.1)' } }}
               >
-                <TableCell>{customer.customerName || `${customer.first_name} ${customer.last_name}`}</TableCell>
+                <TableCell>
+                  {customer.customerName || `${customer.first_name} ${customer.last_name}`}
+                </TableCell>
                 <TableCell>{customer.email}</TableCell>
                 <TableCell>{customer.phone}</TableCell>
                 <TableCell>{customer.account_number}</TableCell>

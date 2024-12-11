@@ -25,12 +25,7 @@ function Step3Content() {
     return <LoadingStateWithProgress message="Loading..." />;
   }
 
-  return (
-    <Step3 
-      metadata={STEP_METADATA.STEP3}
-      onBack={() => router.push('/onboarding/step2')}
-    />
-  );
+  return <Step3 metadata={STEP_METADATA.STEP3} onBack={() => router.push('/onboarding/step2')} />;
 }
 
 // Wrap with error boundary
@@ -38,11 +33,7 @@ export default function Step3Page() {
   return (
     <OnboardingErrorBoundary
       fallback={({ error, resetError }) => (
-        <ErrorStep 
-          error={error}
-          stepNumber={3}
-          onRetry={resetError}
-        />
+        <ErrorStep error={error} stepNumber={3} onRetry={resetError} />
       )}
     >
       <Step3Content />

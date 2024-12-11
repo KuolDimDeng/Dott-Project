@@ -2,7 +2,6 @@ import React from 'react';
 import { Box, Typography, List, ListItem, ListItemText } from '@mui/material';
 import { logger, UserMessage } from '@/utils/logger';
 
-
 const CreateOptions = ({ onOptionSelect }) => {
   const createOptions = [
     'Transaction',
@@ -27,11 +26,7 @@ const CreateOptions = ({ onOptionSelect }) => {
       </Typography>
       <List>
         {createOptions.map((option, index) => (
-          <ListItem
-            key={index}
-            button
-            onClick={() => handleOptionClick(option)}
-          >
+          <ListItem key={index} button onClick={() => handleOptionClick(option)}>
             <ListItemText primary={option} />
           </ListItem>
         ))}

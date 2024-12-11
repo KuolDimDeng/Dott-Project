@@ -19,37 +19,44 @@ const items = [
   {
     icon: <ReceiptLongIcon fontSize="large" />,
     title: 'Invoice Management',
-    description: 'Easily create, customize, and send professional invoices. Automate reminders for unpaid invoices, track payments, and stay organized effortlessly.',
+    description:
+      'Easily create, customize, and send professional invoices. Automate reminders for unpaid invoices, track payments, and stay organized effortlessly.',
   },
   {
     icon: <PaymentsIcon fontSize="large" />,
     title: 'Payments',
-    description: 'Accept payments with ease, whether it\'s through traditional payment methods like cards or mobile money platforms. Our seamless payment integration speeds up transactions, helping you get paid faster.',
+    description:
+      "Accept payments with ease, whether it's through traditional payment methods like cards or mobile money platforms. Our seamless payment integration speeds up transactions, helping you get paid faster.",
   },
   {
     icon: <PhoneAndroidIcon fontSize="large" />,
     title: 'Mobile Money Integration',
-    description: 'Take advantage of our mobile money support for instant, secure payments from platforms like MTN, Airtel, and others. Perfect for businesses operating in regions with a high reliance on mobile money services.',
+    description:
+      'Take advantage of our mobile money support for instant, secure payments from platforms like MTN, Airtel, and others. Perfect for businesses operating in regions with a high reliance on mobile money services.',
   },
   {
     icon: <AccountBalanceWalletIcon fontSize="large" />,
     title: 'Accounting',
-    description: 'Manage your finances in real time with Dott\'s comprehensive accounting features. Track income, expenses, and profitability all in one easy-to-use dashboard, helping you make informed business decisions.',
+    description:
+      "Manage your finances in real time with Dott's comprehensive accounting features. Track income, expenses, and profitability all in one easy-to-use dashboard, helping you make informed business decisions.",
   },
   {
     icon: <MonetizationOnIcon fontSize="large" />,
     title: 'Payroll',
-    description: 'Simplify payroll with automated calculations, tax compliance, and easy employee management. Whether you choose full-service or self-service payroll, Dott ensures your team gets paid on time, every time.',
+    description:
+      'Simplify payroll with automated calculations, tax compliance, and easy employee management. Whether you choose full-service or self-service payroll, Dott ensures your team gets paid on time, every time.',
   },
   {
     icon: <PeopleIcon fontSize="large" />,
     title: 'HR Management',
-    description: 'Streamline your HR processes, from employee onboarding to performance management. Dott helps you manage your workforce more efficiently with integrated HR tools.',
+    description:
+      'Streamline your HR processes, from employee onboarding to performance management. Dott helps you manage your workforce more efficiently with integrated HR tools.',
   },
   {
     icon: <InventoryIcon fontSize="large" />,
     title: 'Inventory',
-    description: 'Keep track of your stock in real time, whether you\'re managing physical products or digital services. Dott\'s inventory system is built to help you reduce waste and optimize your supply chain.',
+    description:
+      "Keep track of your stock in real time, whether you're managing physical products or digital services. Dott's inventory system is built to help you reduce waste and optimize your supply chain.",
   },
 ];
 

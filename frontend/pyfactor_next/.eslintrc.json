@@ -1,3 +1,41 @@
 {
-  "extends": "next/core-web-vitals"
+  "extends": [
+    "next/core-web-vitals",
+    "prettier"
+  ],
+  "plugins": [
+    "prettier"
+  ],
+  "rules": {
+    // Relaxing rules that commonly cause development friction
+    "no-unused-vars": "warn",      // Warns about unused variables instead of failing
+    "react/no-unescaped-entities": "off",  // Allows apostrophes in text
+    "react/display-name": "off",   // Removes requirement for display names
+    "@next/next/no-img-element": "off",  // Allows regular img tags
+    
+    // Handling React-specific behaviors
+    "react/prop-types": "off",     // Since you're likely using TypeScript
+    "react-hooks/exhaustive-deps": "warn",  // Warns about dependency arrays
+    
+    // Adding prettier as a rule
+    "prettier/prettier": ["error", {
+      "singleQuote": true,
+      "semi": true,
+      "tabWidth": 2,
+      "trailingComma": "es5",
+      "printWidth": 100
+    }]
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "ignorePatterns": [
+    "node_modules/",
+    ".next/",
+    "build/",
+    "public/",
+    "**/*.config.js"
+  ]
 }

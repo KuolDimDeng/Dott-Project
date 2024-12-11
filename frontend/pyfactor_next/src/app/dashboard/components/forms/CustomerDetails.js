@@ -1,12 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { 
-  Box, Typography, Paper, Grid, Tabs, Tab, 
-  Button, TextField, Table, TableBody, TableCell, Link,
-  TableContainer, TableHead, TableRow, Avatar, IconButton,
-  CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
+import {
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  Tabs,
+  Tab,
+  Button,
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  Link,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Avatar,
+  IconButton,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from '@mui/material';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import PersonIcon from '@mui/icons-material/Person';
 import EditIcon from '@mui/icons-material/Edit';
@@ -44,8 +63,8 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
 
   const fetchCustomer = useCallback(async () => {
     if (!customerId || !userDatabase) {
-      logger.error("Customer ID or User Database is not provided", { customerId, userDatabase });
-      setError("Customer ID or User Database is not provided");
+      logger.error('Customer ID or User Database is not provided', { customerId, userDatabase });
+      setError('Customer ID or User Database is not provided');
       setIsLoading(false);
       return;
     }
@@ -73,7 +92,6 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
       fetchCustomer();
     }
   }, [customerId, userDatabase, fetchCustomer]);
-
 
   const fetchInvoices = useCallback(async () => {
     if (!customer) return;
@@ -117,20 +135,23 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
   const handleEdit = () => {
     logger.info('Edit customer:', customer.id);
     setIsEditing(true);
-    setEditedCustomer({...customer});
+    setEditedCustomer({ ...customer });
   };
 
   const handleCancelEdit = () => {
     logger.info('Cancel edit customer:', customer.id);
     setIsEditing(false);
     setEditedCustomer(null);
-  }
+  };
 
   const handleSaveEdit = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axiosInstance.patch(`/api/customers/${customer.id}/update/`, editedCustomer);
+      const response = await axiosInstance.patch(
+        `/api/customers/${customer.id}/update/`,
+        editedCustomer
+      );
       setCustomer(response.data);
       setIsEditing(false);
       setEditedCustomer(null);
@@ -142,8 +163,6 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
       setIsLoading(false);
     }
   };
-
-
 
   const handleDelete = () => {
     // Implement delete functionality
@@ -187,12 +206,14 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
       const { name, value } = event.target;
       setEditedCustomer({ ...editedCustomer, [name]: value });
     };
-  
+
     return (
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>Basic Information</Typography>
+            <Typography variant="h6" gutterBottom>
+              Basic Information
+            </Typography>
             <TextField
               fullWidth
               label="Customer Name"
@@ -245,21 +266,21 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
               margin="normal"
               InputProps={{ readOnly: true }}
             />
-            <TextField 
-              fullWidth 
-              label="Website" 
+            <TextField
+              fullWidth
+              label="Website"
               name="website"
-              value={isEditing ? editedCustomer.website || '' : customer.website || ''} 
+              value={isEditing ? editedCustomer.website || '' : customer.website || ''}
               onChange={handleInputChange}
-              margin="normal" 
-              InputProps={{ 
+              margin="normal"
+              InputProps={{
                 readOnly: !isEditing,
                 endAdornment: customer.website && !isEditing && (
                   <Link href={customer.website} target="_blank" rel="noopener noreferrer">
                     Visit
                   </Link>
-                )
-              }} 
+                ),
+              }}
             />
             <TextField
               fullWidth
@@ -274,7 +295,9 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
         </Grid>
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>Billing Address</Typography>
+            <Typography variant="h6" gutterBottom>
+              Billing Address
+            </Typography>
             <TextField
               fullWidth
               label="Street"
@@ -315,7 +338,9 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
               fullWidth
               label="Country"
               name="billingCountry"
-              value={isEditing ? editedCustomer.billingCountry || '' : customer.billingCountry || ''}
+              value={
+                isEditing ? editedCustomer.billingCountry || '' : customer.billingCountry || ''
+              }
               onChange={handleInputChange}
               margin="normal"
               InputProps={{ readOnly: !isEditing }}
@@ -324,7 +349,9 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
         </Grid>
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>Shipping Information</Typography>
+            <Typography variant="h6" gutterBottom>
+              Shipping Information
+            </Typography>
             <TextField
               fullWidth
               label="Ship To Name"
@@ -338,7 +365,9 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
               fullWidth
               label="Shipping Country"
               name="shippingCountry"
-              value={isEditing ? editedCustomer.shippingCountry || '' : customer.shippingCountry || ''}
+              value={
+                isEditing ? editedCustomer.shippingCountry || '' : customer.shippingCountry || ''
+              }
               onChange={handleInputChange}
               margin="normal"
               InputProps={{ readOnly: !isEditing }}
@@ -361,46 +390,52 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
               margin="normal"
               InputProps={{ readOnly: !isEditing }}
             />
-            <TextField 
-              fullWidth 
-              label="Delivery Instructions" 
+            <TextField
+              fullWidth
+              label="Delivery Instructions"
               name="deliveryInstructions"
-              value={isEditing ? editedCustomer.deliveryInstructions || '' : customer.deliveryInstructions || ''} 
+              value={
+                isEditing
+                  ? editedCustomer.deliveryInstructions || ''
+                  : customer.deliveryInstructions || ''
+              }
               onChange={handleInputChange}
-              margin="normal" 
-              multiline 
+              margin="normal"
+              multiline
               rows={3}
-              InputProps={{ readOnly: !isEditing }} 
+              InputProps={{ readOnly: !isEditing }}
             />
           </Paper>
         </Grid>
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>Additional Information</Typography>
-            <TextField 
-              fullWidth 
-              label="Notes" 
+            <Typography variant="h6" gutterBottom>
+              Additional Information
+            </Typography>
+            <TextField
+              fullWidth
+              label="Notes"
               name="notes"
-              value={isEditing ? editedCustomer.notes || '' : customer.notes || ''} 
+              value={isEditing ? editedCustomer.notes || '' : customer.notes || ''}
               onChange={handleInputChange}
-              margin="normal" 
-              multiline 
+              margin="normal"
+              multiline
               rows={4}
-              InputProps={{ readOnly: !isEditing }} 
+              InputProps={{ readOnly: !isEditing }}
             />
-            <TextField 
-              fullWidth 
-              label="Created At" 
-              value={new Date(customer.created_at).toLocaleString()} 
-              margin="normal" 
-              InputProps={{ readOnly: true }} 
+            <TextField
+              fullWidth
+              label="Created At"
+              value={new Date(customer.created_at).toLocaleString()}
+              margin="normal"
+              InputProps={{ readOnly: true }}
             />
-            <TextField 
-              fullWidth 
-              label="Updated At" 
-              value={new Date(customer.updated_at).toLocaleString()} 
-              margin="normal" 
-              InputProps={{ readOnly: true }} 
+            <TextField
+              fullWidth
+              label="Updated At"
+              value={new Date(customer.updated_at).toLocaleString()}
+              margin="normal"
+              InputProps={{ readOnly: true }}
             />
           </Paper>
         </Grid>
@@ -422,12 +457,12 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
         </TableHead>
         <TableBody>
           {invoices.map((invoice) => (
-            <TableRow 
+            <TableRow
               key={invoice.id}
               onClick={() => handleInvoiceSelect(invoice.id)}
-              sx={{ 
+              sx={{
                 cursor: 'pointer',
-                '&:hover': { 
+                '&:hover': {
                   backgroundColor: 'rgba(0, 0, 128, 0.04)',
                 },
                 '&:hover .MuiTableCell-root': {
@@ -515,9 +550,9 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
         >
           Back to Customer Details
         </Button>
-        <InvoiceDetails 
-          invoiceId={selectedInvoice} 
-          onBackToCustomerDetails={handleBackToCustomerDetails} 
+        <InvoiceDetails
+          invoiceId={selectedInvoice}
+          onBackToCustomerDetails={handleBackToCustomerDetails}
         />
       </Box>
     );
@@ -551,14 +586,18 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
                 <Avatar sx={{ width: 60, height: 60, mr: 2 }}>
                   <PersonIcon fontSize="large" />
                 </Avatar>
-                <Typography variant="h6" gutterBottom>Basic Information</Typography>
+                <Typography variant="h6" gutterBottom>
+                  Basic Information
+                </Typography>
                 {!isEditing && (
                   <IconButton sx={{ ml: 'auto' }} onClick={handleEdit}>
                     <EditIcon />
                   </IconButton>
                 )}
               </Box>
-              <Typography>Name: {customer.customerName || `${customer.first_name} ${customer.last_name}`}</Typography>
+              <Typography>
+                Name: {customer.customerName || `${customer.first_name} ${customer.last_name}`}
+              </Typography>
               <Typography>Email: {customer.email}</Typography>
               <Typography>Phone: {customer.phone}</Typography>
             </Paper>
@@ -629,8 +668,7 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
                       },
                     }}
                   >
-
-                  Delete
+                    Delete
                   </Button>
                 </>
               )}
@@ -666,7 +704,7 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
+        <DialogTitle id="alert-dialog-title">{'Confirm Delete'}</DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
             Are you sure you want to delete this customer?

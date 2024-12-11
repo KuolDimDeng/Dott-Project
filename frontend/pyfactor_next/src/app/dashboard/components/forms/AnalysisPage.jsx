@@ -18,7 +18,7 @@ const AnalysisPage = () => {
   const fetchChartData = async () => {
     try {
       const response = await axios.get('/api/analysis/financial-data/get_chart_data/', {
-        params: { x_axis: xAxis, y_axis: yAxis, time_granularity: timeGranularity }
+        params: { x_axis: xAxis, y_axis: yAxis, time_granularity: timeGranularity },
       });
       setChartData(response.data);
     } catch (error) {
@@ -49,21 +49,13 @@ const AnalysisPage = () => {
     <Box sx={{ flexGrow: 1, p: 3 }}>
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
-          <Select
-            value={xAxis}
-            onChange={(e) => setXAxis(e.target.value)}
-            fullWidth
-          >
+          <Select value={xAxis} onChange={(e) => setXAxis(e.target.value)} fullWidth>
             <MenuItem value="date">Date</MenuItem>
             {/* Add more x-axis options */}
           </Select>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Select
-            value={yAxis}
-            onChange={(e) => setYAxis(e.target.value)}
-            fullWidth
-          >
+          <Select value={yAxis} onChange={(e) => setYAxis(e.target.value)} fullWidth>
             <MenuItem value="sales">Sales</MenuItem>
             <MenuItem value="expenses">Expenses</MenuItem>
             <MenuItem value="profit">Profit</MenuItem>
@@ -80,11 +72,7 @@ const AnalysisPage = () => {
           </Select>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Select
-            value={chartType}
-            onChange={(e) => setChartType(e.target.value)}
-            fullWidth
-          >
+          <Select value={chartType} onChange={(e) => setChartType(e.target.value)} fullWidth>
             <MenuItem value="line">Line Chart</MenuItem>
             {/* Add more chart type options */}
           </Select>

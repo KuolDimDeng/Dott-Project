@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Tabs, Tab, Box, Typography, Button,
-  Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Paper, TextField,
-  Select, MenuItem, FormControl, InputLabel
+  Tabs,
+  Tab,
+  Box,
+  Typography,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import { Bar } from 'react-chartjs-2';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 function TabPanel(props) {
@@ -49,7 +62,7 @@ const IntercompanyManagement = () => {
     document_reference: '',
     reconciliation_status: '',
     transfer_pricing: '',
-    notes: ''
+    notes: '',
   });
 
   useEffect(() => {
@@ -87,7 +100,10 @@ const IntercompanyManagement = () => {
     e.preventDefault();
     try {
       if (selectedTransaction) {
-        await axiosInstance.put(`/api/finance/intercompany-transactions/${selectedTransaction.transaction_id}/`, formData);
+        await axiosInstance.put(
+          `/api/finance/intercompany-transactions/${selectedTransaction.transaction_id}/`,
+          formData
+        );
       } else {
         await axiosInstance.post('/api/finance/intercompany-transactions/', formData);
       }
@@ -104,7 +120,7 @@ const IntercompanyManagement = () => {
         document_reference: '',
         reconciliation_status: '',
         transfer_pricing: '',
-        notes: ''
+        notes: '',
       });
       setSelectedTransaction(null);
       setValue(1); // Switch to the List tab
@@ -137,16 +153,16 @@ const IntercompanyManagement = () => {
         {
           label: 'Transaction Volume',
           data: [
-            transactions.filter(t => t.transaction_type === 'sale').length,
-            transactions.filter(t => t.transaction_type === 'purchase').length,
-            transactions.filter(t => t.transaction_type === 'loan').length,
-            transactions.filter(t => t.transaction_type === 'asset_transfer').length,
-            transactions.filter(t => t.transaction_type === 'service').length,
-            transactions.filter(t => t.transaction_type === 'cost_allocation').length,
+            transactions.filter((t) => t.transaction_type === 'sale').length,
+            transactions.filter((t) => t.transaction_type === 'purchase').length,
+            transactions.filter((t) => t.transaction_type === 'loan').length,
+            transactions.filter((t) => t.transaction_type === 'asset_transfer').length,
+            transactions.filter((t) => t.transaction_type === 'service').length,
+            transactions.filter((t) => t.transaction_type === 'cost_allocation').length,
           ],
           backgroundColor: 'rgba(75,192,192,0.6)',
-        }
-      ]
+        },
+      ],
     };
 
     const options = {
@@ -155,10 +171,10 @@ const IntercompanyManagement = () => {
           beginAtZero: true,
           title: {
             display: true,
-            text: 'Number of Transactions'
-          }
-        }
-      }
+            text: 'Number of Transactions',
+          },
+        },
+      },
     };
 
     return <Bar data={data} options={options} />;
@@ -292,7 +308,7 @@ const IntercompanyManagement = () => {
             multiline
             rows={4}
           />
-        <Button type="submit" variant="contained" color="primary">
+          <Button type="submit" variant="contained" color="primary">
             {selectedTransaction ? 'Update Transaction' : 'Create Transaction'}
           </Button>
         </form>
@@ -333,11 +349,15 @@ const IntercompanyManagement = () => {
         </TableContainer>
       </TabPanel>
       <TabPanel value={value} index={2}>
-        <Typography variant="h6" gutterBottom>Transaction Volume by Type</Typography>
+        <Typography variant="h6" gutterBottom>
+          Transaction Volume by Type
+        </Typography>
         {renderTransactionVolumeChart()}
       </TabPanel>
       <TabPanel value={value} index={3}>
-        <Typography variant="h6" gutterBottom>Intercompany Account Balances</Typography>
+        <Typography variant="h6" gutterBottom>
+          Intercompany Account Balances
+        </Typography>
         <TableContainer component={Paper}>
           <Table>
             <TableHead>

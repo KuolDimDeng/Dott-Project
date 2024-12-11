@@ -106,9 +106,8 @@ export default function Testimonials() {
           Testimonials
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          See what our customers love about our products. Discover how we excel in
-          efficiency, durability, and satisfaction. Join us for quality, innovation,
-          and reliable support.
+          See what our customers love about our products. Discover how we excel in efficiency,
+          durability, and satisfaction. Join us for quality, innovation, and reliable support.
         </Typography>
       </Box>
       <Grid container spacing={2}>
@@ -141,11 +140,7 @@ export default function Testimonials() {
                   title={testimonial.name}
                   subheader={testimonial.occupation}
                 />
-                <img
-                  src={logos[index]}
-                  alt={`Logo ${index + 1}`}
-                  style={logoStyle}
-                />
+                <img src={logos[index]} alt={`Logo ${index + 1}`} style={logoStyle} />
               </Box>
             </Card>
           </Grid>

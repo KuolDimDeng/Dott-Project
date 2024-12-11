@@ -1,21 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Button, TextField, Typography, Grid, Paper, Select, MenuItem, InputLabel,
-  FormControl, CircularProgress, Snackbar
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Grid,
+  Paper,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  CircularProgress,
+  Snackbar,
 } from '@mui/material';
 import Alert from '@mui/material/Alert';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const SalesOrderForm = ({ onSave, initialData }) => {
-  const [salesOrder, setSalesOrder] = useState(initialData || {
-    customerId: '',
-    items: [],
-    discount: 0,
-    currency: 'USD',
-    date: new Date(),
-    totalAmount: 0,
-  });
+  const [salesOrder, setSalesOrder] = useState(
+    initialData || {
+      customerId: '',
+      items: [],
+      discount: 0,
+      currency: 'USD',
+      date: new Date(),
+      totalAmount: 0,
+    }
+  );
 
   const [customers, setCustomers] = useState([]);
   const [customersError, setCustomersError] = useState(null);
@@ -87,7 +99,7 @@ const SalesOrderForm = ({ onSave, initialData }) => {
       console.error('Error fetching products:', error);
     }
   };
-  
+
   const fetchServices = async (database_name) => {
     try {
       console.log('Fetching services from database:', database_name);
@@ -108,14 +120,14 @@ const SalesOrderForm = ({ onSave, initialData }) => {
 
   const handleCustomerChange = (event) => {
     const selectedId = event.target.value;
-    setSalesOrder(prevState => ({
+    setSalesOrder((prevState) => ({
       ...prevState,
-      customerId: selectedId
+      customerId: selectedId,
     }));
   };
 
   const calculateTotalAmount = (items, discount) => {
-    const total = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const total = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     return total - discount;
   };
 
@@ -143,7 +155,7 @@ const SalesOrderForm = ({ onSave, initialData }) => {
   const handleItemAdd = () => {
     setSalesOrder({
       ...salesOrder,
-      items: [...salesOrder.items, { product: '', quantity: 1, unitPrice: 0 }]
+      items: [...salesOrder.items, { product: '', quantity: 1, unitPrice: 0 }],
     });
   };
 
@@ -166,10 +178,10 @@ const SalesOrderForm = ({ onSave, initialData }) => {
       if (!salesOrder.customerId || salesOrder.items.length === 0) {
         throw new Error('Please fill out all required fields and add at least one item');
       }
-  
+
       const salesOrderData = {
         customer: salesOrder.customerId,
-        items: salesOrder.items.map(item => ({
+        items: salesOrder.items.map((item) => ({
           product: item.product,
           quantity: item.quantity,
           unit_price: item.unitPrice,
@@ -179,9 +191,9 @@ const SalesOrderForm = ({ onSave, initialData }) => {
         date: salesOrder.date.toISOString().split('T')[0], // Format date as YYYY-MM-DD
         totalAmount: salesOrder.totalAmount,
       };
-  
+
       const response = await axiosInstance.post('/api/salesorders/create/', salesOrderData);
-  
+
       setSuccessMessage('Sales order created successfully');
       setSalesOrder(response.data);
       if (onSave) {
@@ -274,11 +286,7 @@ const SalesOrderForm = ({ onSave, initialData }) => {
                 value={item.description || ''}
                 onChange={(e) => handleItemChange(index, 'description', e.target.value)}
               />
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={() => handleItemRemove(index)}
-              >
+              <Button variant="contained" color="secondary" onClick={() => handleItemRemove(index)}>
                 Remove
               </Button>
             </Box>
@@ -324,11 +332,7 @@ const SalesOrderForm = ({ onSave, initialData }) => {
           </FormControl>
         </Grid>
         <Grid item xs={12}>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={loading}
-          >
+          <Button variant="contained" onClick={handleSave} disabled={loading}>
             {loading ? <CircularProgress size={24} /> : 'Create Sales Order'}
           </Button>
         </Grid>
@@ -338,7 +342,11 @@ const SalesOrderForm = ({ onSave, initialData }) => {
           {error}
         </Alert>
       </Snackbar>
-      <Snackbar open={!!successMessage} autoHideDuration={6000} onClose={() => setSuccessMessage('')}>
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={6000}
+        onClose={() => setSuccessMessage('')}
+      >
         <Alert onClose={() => setSuccessMessage('')} severity="success" sx={{ width: '100%' }}>
           {successMessage}
         </Alert>

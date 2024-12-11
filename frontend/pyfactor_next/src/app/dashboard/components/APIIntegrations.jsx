@@ -14,9 +14,9 @@ const APIIntegrations = ({ onECommerceClick, onCRMClick }) => {
             <Typography variant="h6" gutterBottom>
               E-Commerce Platform API
             </Typography>
-            <Link 
-              href="#" 
-              onClick={onECommerceClick} 
+            <Link
+              href="#"
+              onClick={onECommerceClick}
               sx={{ cursor: 'pointer', display: 'block', mt: 1 }}
             >
               Click here
@@ -29,11 +29,7 @@ const APIIntegrations = ({ onECommerceClick, onCRMClick }) => {
             <Typography variant="h6" gutterBottom>
               CRM API
             </Typography>
-            <Link 
-              href="#" 
-              onClick={onCRMClick} 
-              sx={{ cursor: 'pointer', display: 'block', mt: 1 }}
-            >
+            <Link href="#" onClick={onCRMClick} sx={{ cursor: 'pointer', display: 'block', mt: 1 }}>
               Click here
             </Link>
           </Grid>

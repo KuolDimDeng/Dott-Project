@@ -23,7 +23,6 @@ export default function FinancialStatementsManagement() {
   const [value, setValue] = useState(0);
   const theme = useTheme();
 
-
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };

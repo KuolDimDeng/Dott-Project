@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper, 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
   Typography,
   Collapse,
   IconButton,
   Box,
-  useTheme
+  useTheme,
 } from '@mui/material';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const formatAmount = (amount) => {
   if (typeof amount !== 'number') return 'N/A';
@@ -28,7 +28,9 @@ const ExpandableRow = ({ name, data }) => {
     return null;
   }
 
-  const total = data.total || (Array.isArray(data) ? data.reduce((sum, item) => sum + (item.amount || 0), 0) : 0);
+  const total =
+    data.total ||
+    (Array.isArray(data) ? data.reduce((sum, item) => sum + (item.amount || 0), 0) : 0);
   const items = data.items || (Array.isArray(data) ? data : []);
 
   return (
@@ -72,7 +74,6 @@ export default function CashFlowReport() {
   const [error, setError] = useState(null);
   const theme = useTheme();
 
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -103,49 +104,63 @@ export default function CashFlowReport() {
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+      <TableContainer component={Paper}>
+        <Typography variant="h4" gutterBottom>
+          Cash Flow Statement
+        </Typography>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Item</TableCell>
+              <TableCell align="right">Amount</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            <TableRow>
+              <TableCell colSpan={2}>
+                <strong>Operating Activities</strong>
+              </TableCell>
+            </TableRow>
+            <ExpandableRow name="Operating Activities" data={operating} />
 
-    <TableContainer component={Paper}>
-      <Typography variant="h4" gutterBottom>Cash Flow Statement</Typography>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Item</TableCell>
-            <TableCell align="right">Amount</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          <TableRow>
-            <TableCell colSpan={2}><strong>Operating Activities</strong></TableCell>
-          </TableRow>
-          <ExpandableRow name="Operating Activities" data={operating} />
+            <TableRow>
+              <TableCell colSpan={2}>
+                <strong>Investing Activities</strong>
+              </TableCell>
+            </TableRow>
+            <ExpandableRow name="Investing Activities" data={investing} />
 
-          <TableRow>
-            <TableCell colSpan={2}><strong>Investing Activities</strong></TableCell>
-          </TableRow>
-          <ExpandableRow name="Investing Activities" data={investing} />
+            <TableRow>
+              <TableCell colSpan={2}>
+                <strong>Financing Activities</strong>
+              </TableCell>
+            </TableRow>
+            <ExpandableRow name="Financing Activities" data={financing} />
 
-          <TableRow>
-            <TableCell colSpan={2}><strong>Financing Activities</strong></TableCell>
-          </TableRow>
-          <ExpandableRow name="Financing Activities" data={financing} />
-
-          <TableRow>
-            <TableCell><strong>Net Increase/Decrease in Cash</strong></TableCell>
-            <TableCell align="right"><strong>${formatAmount(
-              (operating.total || 0) + (investing.total || 0) + (financing.total || 0)
-            )}</strong></TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-      {process.env.NODE_ENV === 'development' && (
-        <>
-          <Typography variant="body2" style={{marginTop: '20px'}}>
-            Raw data for debugging:
-          </Typography>
-          <pre>{JSON.stringify(data, null, 2)}</pre>
-        </>
-      )}
-    </TableContainer>
+            <TableRow>
+              <TableCell>
+                <strong>Net Increase/Decrease in Cash</strong>
+              </TableCell>
+              <TableCell align="right">
+                <strong>
+                  $
+                  {formatAmount(
+                    (operating.total || 0) + (investing.total || 0) + (financing.total || 0)
+                  )}
+                </strong>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+        {process.env.NODE_ENV === 'development' && (
+          <>
+            <Typography variant="body2" style={{ marginTop: '20px' }}>
+              Raw data for debugging:
+            </Typography>
+            <pre>{JSON.stringify(data, null, 2)}</pre>
+          </>
+        )}
+      </TableContainer>
     </Box>
   );
 }

@@ -11,7 +11,7 @@ const BarcodeGenerator = ({ productId }) => {
         format: 'CODE128',
         width: 2,
         height: 50,
-        displayValue: true
+        displayValue: true,
       });
     }
   }, [productId]);

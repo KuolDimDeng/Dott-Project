@@ -14,11 +14,11 @@ const PreboardingForm = () => {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleDateChange = (date) => {
-    setFormData(prev => ({ ...prev, start_date: date }));
+    setFormData((prev) => ({ ...prev, start_date: date }));
   };
 
   const handleSubmit = async (e) => {
@@ -34,13 +34,56 @@ const PreboardingForm = () => {
 
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>Create Preboarding Form</Typography>
+      <Typography variant="h5" gutterBottom>
+        Create Preboarding Form
+      </Typography>
       <form onSubmit={handleSubmit}>
-        <TextField label="Email" name="email" value={formData.email} onChange={handleInputChange} fullWidth margin="normal" required />
-        <TextField label="First Name" name="first_name" value={formData.first_name} onChange={handleInputChange} fullWidth margin="normal" required />
-        <TextField label="Last Name" name="last_name" value={formData.last_name} onChange={handleInputChange} fullWidth margin="normal" required />
-        <TextField label="Position" name="position" value={formData.position} onChange={handleInputChange} fullWidth margin="normal" required />
-        <TextField label="Salary" name="salary" type="number" value={formData.salary} onChange={handleInputChange} fullWidth margin="normal" required />
+        <TextField
+          label="Email"
+          name="email"
+          value={formData.email}
+          onChange={handleInputChange}
+          fullWidth
+          margin="normal"
+          required
+        />
+        <TextField
+          label="First Name"
+          name="first_name"
+          value={formData.first_name}
+          onChange={handleInputChange}
+          fullWidth
+          margin="normal"
+          required
+        />
+        <TextField
+          label="Last Name"
+          name="last_name"
+          value={formData.last_name}
+          onChange={handleInputChange}
+          fullWidth
+          margin="normal"
+          required
+        />
+        <TextField
+          label="Position"
+          name="position"
+          value={formData.position}
+          onChange={handleInputChange}
+          fullWidth
+          margin="normal"
+          required
+        />
+        <TextField
+          label="Salary"
+          name="salary"
+          type="number"
+          value={formData.salary}
+          onChange={handleInputChange}
+          fullWidth
+          margin="normal"
+          required
+        />
         <DatePicker
           label="Start Date"
           value={formData.start_date}

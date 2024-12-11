@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Grid,
-  Paper,
-  Button,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
+import { Box, Typography, Grid, Paper, Button, useTheme, useMediaQuery } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -36,28 +28,38 @@ const DashboardPage = () => {
       title: 'Create an Invoice',
       icon: <DescriptionIcon fontSize="large" color="primary" />,
       description: 'Learn how to create and manage invoices for your clients.',
-      action: () => {/* Navigate to invoice creation page */},
+      action: () => {
+        /* Navigate to invoice creation page */
+      },
     },
     {
       title: 'Manage Customers',
       icon: <PeopleIcon fontSize="large" color="secondary" />,
       description: 'Add and manage your customer information efficiently.',
-      action: () => {/* Navigate to customer management page */},
+      action: () => {
+        /* Navigate to customer management page */
+      },
     },
     {
       title: 'Track Inventory',
       icon: <InventoryIcon fontSize="large" color="error" />,
       description: 'Keep track of your product inventory and stock levels.',
-      action: () => {/* Navigate to inventory management page */},
+      action: () => {
+        /* Navigate to inventory management page */
+      },
     },
   ];
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>
+      <Typography
+        variant="h4"
+        gutterBottom
+        sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}
+      >
         Welcome to Your Dashboard
       </Typography>
-      
+
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {quickStartGuides.map((guide, index) => (
           <Grid item xs={12} md={4} key={index}>
@@ -71,12 +73,7 @@ const DashboardPage = () => {
                   {guide.description}
                 </Typography>
               </Box>
-              <Button 
-                variant="contained" 
-                color="primary" 
-                onClick={guide.action}
-                sx={{ mt: 2 }}
-              >
+              <Button variant="contained" color="primary" onClick={guide.action} sx={{ mt: 2 }}>
                 Get Started
               </Button>
             </StyledPaper>
@@ -84,10 +81,14 @@ const DashboardPage = () => {
         ))}
       </Grid>
 
-      <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', color: theme.palette.text.primary, mt: 4 }}>
+      <Typography
+        variant="h5"
+        gutterBottom
+        sx={{ fontWeight: 'bold', color: theme.palette.text.primary, mt: 4 }}
+      >
         Key Performance Indicators
       </Typography>
-      
+
       <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
@@ -110,11 +111,13 @@ const DashboardPage = () => {
         </Grid>
       </Paper>
 
-      <Button 
-        variant="contained" 
-        color="secondary" 
+      <Button
+        variant="contained"
+        color="secondary"
         size="large"
-        onClick={() => {/* Navigate to full KPI dashboard */}}
+        onClick={() => {
+          /* Navigate to full KPI dashboard */
+        }}
         sx={{ mt: 2 }}
       >
         View Full KPI Dashboard

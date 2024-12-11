@@ -42,10 +42,7 @@ export default function FAQ() {
         Frequently Asked Questions
       </Typography>
       <Box sx={{ width: '100%' }}>
-        <Accordion
-          expanded={expanded === 'panel1'}
-          onChange={handleChange('panel1')}
-        >
+        <Accordion expanded={expanded === 'panel1'} onChange={handleChange('panel1')}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel1d-content"
@@ -56,19 +53,14 @@ export default function FAQ() {
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography
-              variant="body2"
-              gutterBottom
-              sx={{ maxWidth: { sm: '100%', md: '70%' } }}
-            >
-              Dott simplifies your accounting by allowing you to track income, expenses, and manage invoices from one dashboard. You can also generate detailed reports to get insights into your business finances.
+            <Typography variant="body2" gutterBottom sx={{ maxWidth: { sm: '100%', md: '70%' } }}>
+              Dott simplifies your accounting by allowing you to track income, expenses, and manage
+              invoices from one dashboard. You can also generate detailed reports to get insights
+              into your business finances.
             </Typography>
           </AccordionDetails>
         </Accordion>
-        <Accordion
-          expanded={expanded === 'panel2'}
-          onChange={handleChange('panel2')}
-        >
+        <Accordion expanded={expanded === 'panel2'} onChange={handleChange('panel2')}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel2d-content"
@@ -79,19 +71,14 @@ export default function FAQ() {
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography
-              variant="body2"
-              gutterBottom
-              sx={{ maxWidth: { sm: '100%', md: '70%' } }}
-            >
-              Yes! Dott offers both self-service and full-service payroll options, helping you manage employee payments, tax calculations, and ensure compliance with local regulations.
+            <Typography variant="body2" gutterBottom sx={{ maxWidth: { sm: '100%', md: '70%' } }}>
+              Yes! Dott offers both self-service and full-service payroll options, helping you
+              manage employee payments, tax calculations, and ensure compliance with local
+              regulations.
             </Typography>
           </AccordionDetails>
         </Accordion>
-        <Accordion
-          expanded={expanded === 'panel3'}
-          onChange={handleChange('panel3')}
-        >
+        <Accordion expanded={expanded === 'panel3'} onChange={handleChange('panel3')}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel3d-content"
@@ -102,19 +89,14 @@ export default function FAQ() {
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography
-              variant="body2"
-              gutterBottom
-              sx={{ maxWidth: { sm: '100%', md: '70%' } }}
-            >
-              Dott integrates with leading mobile money platforms like MTN, Airtel, and others, allowing your business to accept payments easily and securely, particularly in regions where mobile money is prevalent.
+            <Typography variant="body2" gutterBottom sx={{ maxWidth: { sm: '100%', md: '70%' } }}>
+              Dott integrates with leading mobile money platforms like MTN, Airtel, and others,
+              allowing your business to accept payments easily and securely, particularly in regions
+              where mobile money is prevalent.
             </Typography>
           </AccordionDetails>
         </Accordion>
-        <Accordion
-          expanded={expanded === 'panel4'}
-          onChange={handleChange('panel4')}
-        >
+        <Accordion expanded={expanded === 'panel4'} onChange={handleChange('panel4')}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel4d-content"
@@ -125,19 +107,15 @@ export default function FAQ() {
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography
-              variant="body2"
-              gutterBottom
-              sx={{ maxWidth: { sm: '100%', md: '70%' } }}
-            >
-              The Basic (free) plan includes features like managing invoices, tracking income and expenses, and accepting payments through mobile money. If you need more advanced features like payroll processing, custom integrations, and priority support, you can upgrade to the Professional plan.
+            <Typography variant="body2" gutterBottom sx={{ maxWidth: { sm: '100%', md: '70%' } }}>
+              The Basic (free) plan includes features like managing invoices, tracking income and
+              expenses, and accepting payments through mobile money. If you need more advanced
+              features like payroll processing, custom integrations, and priority support, you can
+              upgrade to the Professional plan.
             </Typography>
           </AccordionDetails>
         </Accordion>
-        <Accordion
-          expanded={expanded === 'panel5'}
-          onChange={handleChange('panel5')}
-        >
+        <Accordion expanded={expanded === 'panel5'} onChange={handleChange('panel5')}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             aria-controls="panel5d-content"
@@ -148,12 +126,10 @@ export default function FAQ() {
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography
-              variant="body2"
-              gutterBottom
-              sx={{ maxWidth: { sm: '100%', md: '70%' } }}
-            >
-              Absolutely. Dott uses bank-level encryption and follows the latest security standards to protect your financial data. Your business information is safe with us, whether you’re using the free or professional plan.
+            <Typography variant="body2" gutterBottom sx={{ maxWidth: { sm: '100%', md: '70%' } }}>
+              Absolutely. Dott uses bank-level encryption and follows the latest security standards
+              to protect your financial data. Your business information is safe with us, whether
+              you’re using the free or professional plan.
             </Typography>
           </AccordionDetails>
         </Accordion>

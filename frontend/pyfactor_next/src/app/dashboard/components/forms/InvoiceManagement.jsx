@@ -1,31 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Tabs, 
-  Tab, 
-  Button, 
-  TextField, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper, 
-  Dialog, 
-  DialogActions, 
-  DialogContent, 
-  DialogContentText, 
-  DialogTitle, 
-  Menu, 
-  MenuItem, 
-  FormControl, 
-  InputLabel, 
+import {
+  Box,
+  Typography,
+  Tabs,
+  Tab,
+  Button,
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Menu,
+  MenuItem,
+  FormControl,
+  InputLabel,
   Select,
   Grid,
   IconButton,
-  useTheme
+  useTheme,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -33,7 +33,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
@@ -58,7 +58,6 @@ const InvoiceManagement = () => {
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
   const theme = useTheme();
-
 
   useEffect(() => {
     fetchInvoices();
@@ -113,84 +112,84 @@ const InvoiceManagement = () => {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setNewInvoice(prev => ({
+    setNewInvoice((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleDateChange = (date) => {
-    setNewInvoice(prev => ({
+    setNewInvoice((prev) => ({
       ...prev,
-      date: date
+      date: date,
     }));
   };
 
   const handleItemAdd = () => {
-    setNewInvoice(prev => ({
+    setNewInvoice((prev) => ({
       ...prev,
-      items: [...prev.items, { product: '', quantity: 1, unitPrice: 0 }]
+      items: [...prev.items, { product: '', quantity: 1, unitPrice: 0 }],
     }));
   };
 
   const handleItemChange = (index, field, value) => {
     const newItems = [...newInvoice.items];
     newItems[index][field] = value;
-  
+
     if (field === 'product') {
-      const selectedItem = [...products, ...services].find(item => item.id === value);
+      const selectedItem = [...products, ...services].find((item) => item.id === value);
       if (selectedItem) {
         newItems[index].unitPrice = parseFloat(selectedItem.price) || 0;
       }
     }
-  
+
     if (field === 'quantity' || field === 'unitPrice') {
       newItems[index][field] = parseFloat(value) || 0;
     }
-  
-    const totalAmount = newItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-  
-    setNewInvoice(prev => ({
+
+    const totalAmount = newItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+
+    setNewInvoice((prev) => ({
       ...prev,
       items: newItems,
-      totalAmount: totalAmount - prev.discount
+      totalAmount: totalAmount - prev.discount,
     }));
   };
 
   const handleItemRemove = (index) => {
     const newItems = newInvoice.items.filter((_, i) => i !== index);
-    const totalAmount = newItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    setNewInvoice(prev => ({
+    const totalAmount = newItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    setNewInvoice((prev) => ({
       ...prev,
       items: newItems,
-      totalAmount: totalAmount - prev.discount
+      totalAmount: totalAmount - prev.discount,
     }));
   };
 
   const handleCreateInvoice = async (e) => {
     e.preventDefault();
-  
+
     if (!newInvoice.customer) {
       addMessage('error', 'Please select a customer');
       return;
     }
-  
+
     try {
       const invoiceData = {
         customer: newInvoice.customer,
         date: newInvoice.date.toISOString().split('T')[0], // Send only the date part
-        items: newInvoice.items.map(item => ({
+        items: newInvoice.items.map((item) => ({
           product: item.product,
           quantity: item.quantity,
-          unit_price: item.unitPrice // Changed from 'unitPrice' to 'unit_price'
+          unit_price: item.unitPrice, // Changed from 'unitPrice' to 'unit_price'
         })),
         discount: newInvoice.discount,
         currency: newInvoice.currency,
-        totalAmount: newInvoice.totalAmount
+        totalAmount: newInvoice.totalAmount,
       };
-  
+
       console.log('Sending invoice data:', invoiceData); // For debugging
-  
+
       const response = await axiosInstance.post('/api/invoices/create/', invoiceData);
       addMessage('success', 'Invoice created successfully');
       setNewInvoice({
@@ -228,7 +227,10 @@ const InvoiceManagement = () => {
 
   const handleSaveEdit = async () => {
     try {
-      const response = await axiosInstance.put(`/api/invoices/${selectedInvoice.id}/`, editedInvoice);
+      const response = await axiosInstance.put(
+        `/api/invoices/${selectedInvoice.id}/`,
+        editedInvoice
+      );
       setSelectedInvoice(response.data);
       setIsEditing(false);
       fetchInvoices();
@@ -274,7 +276,6 @@ const InvoiceManagement = () => {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-
         <Typography variant="h4" gutterBottom>
           Invoice Management
         </Typography>
@@ -286,7 +287,9 @@ const InvoiceManagement = () => {
 
         {activeTab === 0 && (
           <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Create Invoice</Typography>
+            <Typography variant="h6" gutterBottom>
+              Create Invoice
+            </Typography>
             <form onSubmit={handleCreateInvoice}>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
@@ -314,7 +317,9 @@ const InvoiceManagement = () => {
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>Items</Typography>
+                  <Typography variant="h6" gutterBottom>
+                    Items
+                  </Typography>
                   {newInvoice.items.map((item, index) => (
                     <Box key={index} sx={{ display: 'flex', mb: 2 }}>
                       <FormControl sx={{ mr: 2, flexGrow: 1 }}>
@@ -402,24 +407,72 @@ const InvoiceManagement = () => {
 
         {activeTab === 1 && (
           <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Invoice Details</Typography>
+            <Typography variant="h6" gutterBottom>
+              Invoice Details
+            </Typography>
             {selectedInvoice ? (
               <Box>
-                <TextField label="Invoice Number" value={selectedInvoice.invoice_num} fullWidth margin="normal" disabled />
-                <TextField label="Customer" value={selectedInvoice.customer} fullWidth margin="normal" disabled={!isEditing} />
-                <TextField label="Date" type="date" value={selectedInvoice.date} fullWidth margin="normal" disabled={!isEditing} InputLabelProps={{ shrink: true }} />
-                <TextField label="Total Amount" value={selectedInvoice.totalAmount} fullWidth margin="normal" disabled />
-                <TextField label="Discount" value={selectedInvoice.discount} fullWidth margin="normal" disabled={!isEditing} />
-                <TextField label="Currency" value={selectedInvoice.currency} fullWidth margin="normal" disabled={!isEditing} />
+                <TextField
+                  label="Invoice Number"
+                  value={selectedInvoice.invoice_num}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                />
+                <TextField
+                  label="Customer"
+                  value={selectedInvoice.customer}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                />
+                <TextField
+                  label="Date"
+                  type="date"
+                  value={selectedInvoice.date}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                  InputLabelProps={{ shrink: true }}
+                />
+                <TextField
+                  label="Total Amount"
+                  value={selectedInvoice.totalAmount}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                />
+                <TextField
+                  label="Discount"
+                  value={selectedInvoice.discount}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                />
+                <TextField
+                  label="Currency"
+                  value={selectedInvoice.currency}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                />
                 {isEditing ? (
                   <Box mt={2}>
-                    <Button variant="contained" color="primary" onClick={handleSaveEdit}>Save</Button>
-                    <Button variant="contained" color="secondary" onClick={handleCancelEdit}>Cancel</Button>
+                    <Button variant="contained" color="primary" onClick={handleSaveEdit}>
+                      Save
+                    </Button>
+                    <Button variant="contained" color="secondary" onClick={handleCancelEdit}>
+                      Cancel
+                    </Button>
                   </Box>
                 ) : (
                   <Box mt={2}>
-                    <Button variant="contained" color="primary" onClick={handleEdit}>Edit</Button>
-                    <Button variant="contained" color="secondary" onClick={handleDelete}>Delete</Button>
+                    <Button variant="contained" color="primary" onClick={handleEdit}>
+                      Edit
+                    </Button>
+                    <Button variant="contained" color="secondary" onClick={handleDelete}>
+                      Delete
+                    </Button>
                   </Box>
                 )}
               </Box>
@@ -466,7 +519,9 @@ const InvoiceManagement = () => {
                       <TableCell>{invoice.invoice_num}</TableCell>
                       <TableCell>{invoice.customer}</TableCell>
                       <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
-                      <TableCell>{invoice.totalAmount} {invoice.currency}</TableCell>
+                      <TableCell>
+                        {invoice.totalAmount} {invoice.currency}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -481,7 +536,7 @@ const InvoiceManagement = () => {
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
         >
-          <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
+          <DialogTitle id="alert-dialog-title">{'Confirm Delete'}</DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
               Are you sure you want to delete this invoice?

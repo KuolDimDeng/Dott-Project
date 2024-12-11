@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import {
   Box,
   Typography,
@@ -11,7 +11,8 @@ import {
   MenuItem,
   Grid,
   Paper,
-  useTheme, useMediaQuery,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
@@ -30,7 +31,7 @@ const VendorForm = () => {
   const [error, setError] = useState(null);
   const { addMessage } = useUserMessageContext();
   const theme = useTheme();
-;''
+  ('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -55,16 +56,56 @@ const VendorForm = () => {
   };
 
   const states = [
-    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California',
-    'Colorado', 'Connecticut', 'Delaware', 'Florida', 'Georgia',
-    'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
-    'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland',
-    'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri',
-    'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey',
-    'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
-    'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina',
-    'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont',
-    'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming',
+    'Alabama',
+    'Alaska',
+    'Arizona',
+    'Arkansas',
+    'California',
+    'Colorado',
+    'Connecticut',
+    'Delaware',
+    'Florida',
+    'Georgia',
+    'Hawaii',
+    'Idaho',
+    'Illinois',
+    'Indiana',
+    'Iowa',
+    'Kansas',
+    'Kentucky',
+    'Louisiana',
+    'Maine',
+    'Maryland',
+    'Massachusetts',
+    'Michigan',
+    'Minnesota',
+    'Mississippi',
+    'Missouri',
+    'Montana',
+    'Nebraska',
+    'Nevada',
+    'New Hampshire',
+    'New Jersey',
+    'New Mexico',
+    'New York',
+    'North Carolina',
+    'North Dakota',
+    'Ohio',
+    'Oklahoma',
+    'Oregon',
+    'Pennsylvania',
+    'Rhode Island',
+    'South Carolina',
+    'South Dakota',
+    'Tennessee',
+    'Texas',
+    'Utah',
+    'Vermont',
+    'Virginia',
+    'Washington',
+    'West Virginia',
+    'Wisconsin',
+    'Wyoming',
   ];
 
   return (
@@ -117,12 +158,7 @@ const VendorForm = () => {
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
               <InputLabel>State</InputLabel>
-              <Select
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                required
-              >
+              <Select name="state" value={formData.state} onChange={handleChange} required>
                 {states.map((state) => (
                   <MenuItem key={state} value={state}>
                     {state}
@@ -151,8 +187,8 @@ const VendorForm = () => {
           </Button>
         </Box>
       </form>
-</Box> 
- );
+    </Box>
+  );
 };
 
 export default VendorForm;

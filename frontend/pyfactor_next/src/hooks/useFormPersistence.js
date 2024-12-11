@@ -4,17 +4,20 @@ import { logger } from '@/utils/logger';
 import { persistenceService } from '@/services/persistenceService';
 
 export const useFormPersistence = (formKey) => {
-  const handleFieldChange = useCallback((name, value, methods) => {
-    try {
-      const formData = methods.getValues();
-      persistenceService.saveData(`${formKey}_fields`, {
-        ...formData,
-        [name]: value
-      });
-    } catch (error) {
-      logger.error(`Failed to persist field ${name}:`, error);
-    }
-  }, [formKey]);
+  const handleFieldChange = useCallback(
+    (name, value, methods) => {
+      try {
+        const formData = methods.getValues();
+        persistenceService.saveData(`${formKey}_fields`, {
+          ...formData,
+          [name]: value,
+        });
+      } catch (error) {
+        logger.error(`Failed to persist field ${name}:`, error);
+      }
+    },
+    [formKey]
+  );
 
   const loadSavedData = useCallback(() => {
     try {
@@ -27,6 +30,6 @@ export const useFormPersistence = (formKey) => {
 
   return {
     handleFieldChange,
-    loadSavedData
+    loadSavedData,
   };
 };

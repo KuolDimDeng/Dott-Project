@@ -1,12 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Tabs, useTheme, Tab, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Menu, MenuItem, FormControl, InputLabel, Select, IconButton, Grid, InputAdornment } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Tabs,
+  useTheme,
+  Tab,
+  Button,
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Menu,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  IconButton,
+  Grid,
+  InputAdornment,
+} from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
@@ -25,7 +53,7 @@ const EstimateManagement = () => {
     discount: 0,
     currency: 'USD',
     footer: '',
-    totalAmount: 0,  // Initialize with 0
+    totalAmount: 0, // Initialize with 0
   });
   const { addMessage } = useUserMessageContext();
   const [isEditing, setIsEditing] = useState(false);
@@ -39,7 +67,6 @@ const EstimateManagement = () => {
   const [customersLoading, setCustomersLoading] = useState(true);
   const [customersError, setCustomersError] = useState(null);
   const theme = useTheme();
-
 
   useEffect(() => {
     fetchCustomers();
@@ -61,23 +88,26 @@ const EstimateManagement = () => {
   const handleCustomerChange = (event) => {
     const selectedId = event.target.value;
     const customerData = customers.find((customer) => customer.id === selectedId);
-    
-    setNewEstimate(prevEstimate => ({
+
+    setNewEstimate((prevEstimate) => ({
       ...prevEstimate,
       customerRef: selectedId,
-      customer: customerData ? {
-        id: selectedId,
-        name: customerData.name || `${customerData.first_name} ${customerData.last_name}`
-      } : null,
-      customer_name: customerData ? (customerData.customerName || `${customerData.first_name} ${customerData.last_name}`) : ''
-
+      customer: customerData
+        ? {
+            id: selectedId,
+            name: customerData.name || `${customerData.first_name} ${customerData.last_name}`,
+          }
+        : null,
+      customer_name: customerData
+        ? customerData.customerName || `${customerData.first_name} ${customerData.last_name}`
+        : '',
     }));
   };
 
   useEffect(() => {
     fetchUserProfile();
   }, []);
-  
+
   useEffect(() => {
     if (userDatabase) {
       console.log('Fetching data for database:', userDatabase);
@@ -108,39 +138,35 @@ const EstimateManagement = () => {
   };
 
   const transformEstimates = (estimates) => {
-    return estimates.map(estimate => ({
+    return estimates.map((estimate) => ({
       ...estimate,
       customer: `${estimate.customer_name} (Account: ${estimate.customer_ref || ''})`,
-      totalAmount: parseFloat(estimate.totalAmount || 0).toFixed(2),  // Format the totalAmount
-      items: estimate.items || []
+      totalAmount: parseFloat(estimate.totalAmount || 0).toFixed(2), // Format the totalAmount
+      items: estimate.items || [],
     }));
   };
-  
-
 
   const fetchEstimates = async (database_name) => {
     try {
       console.log('Fetching estimates from database:', database_name);
-  
+
       const response = await axiosInstance.get('/api/estimates/', {
         params: { database: database_name },
       });
-  
+
       console.log('Raw API response for estimates:', response.data);
-  
+
       // Use the transformEstimates function
       const transformedEstimates = transformEstimates(response.data);
-  
+
       console.log('Transformed estimates:', transformedEstimates);
       setEstimates(transformedEstimates);
-  
     } catch (error) {
       console.error('Error fetching estimates', error);
       addMessage('error', 'Error fetching estimates');
     }
   };
-  
-  
+
   const fetchProducts = async () => {
     try {
       const response = await axiosInstance.get('/api/products/');
@@ -167,83 +193,82 @@ const EstimateManagement = () => {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setNewEstimate(prev => ({
+    setNewEstimate((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleDateChange = (date, name) => {
-    setNewEstimate(prev => ({
+    setNewEstimate((prev) => ({
       ...prev,
-      [name]: date
+      [name]: date,
     }));
   };
 
   const handleItemAdd = () => {
-    setNewEstimate(prev => ({
+    setNewEstimate((prev) => ({
       ...prev,
-      items: [...prev.items, { product: '', quantity: 1, unitPrice: 0 }]
+      items: [...prev.items, { product: '', quantity: 1, unitPrice: 0 }],
     }));
   };
 
   const calculateTotalAmount = (items, discount) => {
     if (!items) return 0;
-    
+
     const total = items.reduce((sum, item) => {
       const quantity = Number(item.quantity) || 0;
       const unitPrice = Number(item.unitPrice) || 0;
-      return sum + (quantity * unitPrice);
+      return sum + quantity * unitPrice;
     }, 0);
-    
+
     const discountValue = Number(discount) || 0;
     const totalAmount = total - discountValue;
-  
+
     console.log('Calculated total amount:', totalAmount);
     return totalAmount;
   };
-  
-  
+
   const handleItemChange = (index, field, value) => {
     const newItems = [...newEstimate.items];
     newItems[index][field] = value;
-  
+
     if (field === 'product') {
-        const selectedItem = [...products, ...services].find(item => item.id === value);
-        if (selectedItem) {
-            newItems[index].unitPrice = parseFloat(selectedItem.price) || 0;
-        }
+      const selectedItem = [...products, ...services].find((item) => item.id === value);
+      if (selectedItem) {
+        newItems[index].unitPrice = parseFloat(selectedItem.price) || 0;
+      }
     }
-  
+
     if (field === 'quantity' || field === 'unitPrice') {
-        newItems[index][field] = parseFloat(value) || 0;
+      newItems[index][field] = parseFloat(value) || 0;
     }
-  
+
     const updatedEstimate = {
-        ...newEstimate,
-        items: newItems,
-        totalAmount: calculateTotalAmount(newItems, newEstimate.discount)
+      ...newEstimate,
+      items: newItems,
+      totalAmount: calculateTotalAmount(newItems, newEstimate.discount),
     };
-  
+
     console.log('Updated estimate with recalculated totalAmount:', updatedEstimate);
     setNewEstimate(updatedEstimate);
   };
 
-const handleDiscountChange = (event) => {
+  const handleDiscountChange = (event) => {
     const discount = parseFloat(event.target.value) || 0;
-    setNewEstimate(prev => ({
-        ...prev,
-        discount: discount,
-        totalAmount: calculateTotalAmount(prev.items, discount)
+    setNewEstimate((prev) => ({
+      ...prev,
+      discount: discount,
+      totalAmount: calculateTotalAmount(prev.items, discount),
     }));
-};
+  };
 
   const handleItemRemove = (index) => {
     const updatedItems = newEstimate.items.filter((_, i) => i !== index);
     const updatedEstimate = {
       ...newEstimate,
       items: updatedItems,
-      totalAmount: calculateTotalAmount(updatedItems, newEstimate.discount)
+      totalAmount: calculateTotalAmount(updatedItems, newEstimate.discount),
     };
     setNewEstimate(updatedEstimate);
   };
@@ -258,13 +283,13 @@ const handleDiscountChange = (event) => {
       const formatDate = (date) => {
         return date instanceof Date ? date.toISOString().split('T')[0] : date;
       };
-  
-      const transformedItems = newEstimate.items.map(item => ({
+
+      const transformedItems = newEstimate.items.map((item) => ({
         product: item.product,
         quantity: parseInt(item.quantity),
-        unit_price: parseFloat(item.unitPrice)
+        unit_price: parseFloat(item.unitPrice),
       }));
-  
+
       const estimateData = {
         ...newEstimate,
         customer: newEstimate.customerRef,
@@ -272,16 +297,16 @@ const handleDiscountChange = (event) => {
         valid_until: formatDate(newEstimate.valid_until),
         items: transformedItems,
         discount: parseFloat(newEstimate.discount),
-        totalAmount: newEstimate.totalAmount  // Make sure this is included
-    };
-  
+        totalAmount: newEstimate.totalAmount, // Make sure this is included
+      };
+
       console.log('Estimate data being sent to create:', estimateData);
-      
+
       const response = await axiosInstance.post('/api/estimates/create/', estimateData);
       console.log('Create estimate response:', response.data);
-      
+
       addMessage('success', 'Estimate created successfully');
-  
+
       setNewEstimate({
         title: 'Estimate',
         summary: '',
@@ -294,7 +319,7 @@ const handleDiscountChange = (event) => {
         footer: '',
         totalAmount: 0,
       });
-  
+
       fetchEstimates();
     } catch (error) {
       console.error('Error creating estimate', error);
@@ -306,14 +331,12 @@ const handleDiscountChange = (event) => {
       }
     }
   };
-  
 
   const handleEstimateSelect = (estimate) => {
     console.log('Selected estimate:', estimate);
     setSelectedEstimate(estimate);
     setActiveTab(1);
   };
-  
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -327,7 +350,10 @@ const handleDiscountChange = (event) => {
 
   const handleSaveEdit = async () => {
     try {
-      const response = await axiosInstance.put(`/api/estimates/${selectedEstimate.id}/`, editedEstimate);
+      const response = await axiosInstance.put(
+        `/api/estimates/${selectedEstimate.id}/`,
+        editedEstimate
+      );
       setSelectedEstimate(response.data);
       setIsEditing(false);
       fetchEstimates();
@@ -381,7 +407,7 @@ const handleDiscountChange = (event) => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
         <Typography variant="h4" gutterBottom>
           Estimate Management
         </Typography>
@@ -390,14 +416,33 @@ const handleDiscountChange = (event) => {
           <Tab label="Details" />
           <Tab label="List" />
         </Tabs>
-  
+
         {activeTab === 0 && (
           <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Create Estimate</Typography>
+            <Typography variant="h6" gutterBottom>
+              Create Estimate
+            </Typography>
             <form onSubmit={handleCreateEstimate}>
-              <TextField label="Title" name="title" value={newEstimate.title} onChange={handleInputChange} fullWidth margin="normal" required />
-              <TextField label="Summary" name="summary" value={newEstimate.summary} onChange={handleInputChange} fullWidth margin="normal" multiline rows={3} />
-              
+              <TextField
+                label="Title"
+                name="title"
+                value={newEstimate.title}
+                onChange={handleInputChange}
+                fullWidth
+                margin="normal"
+                required
+              />
+              <TextField
+                label="Summary"
+                name="summary"
+                value={newEstimate.summary}
+                onChange={handleInputChange}
+                fullWidth
+                margin="normal"
+                multiline
+                rows={3}
+              />
+
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
                   <InputLabel>Customer</InputLabel>
@@ -423,7 +468,7 @@ const handleDiscountChange = (event) => {
                   </Typography>
                 )}
               </Grid>
-              
+
               <DatePicker
                 label="Date"
                 value={newEstimate.date}
@@ -436,8 +481,10 @@ const handleDiscountChange = (event) => {
                 onChange={(date) => handleDateChange(date, 'valid_until')}
                 renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
               />
-              
-              <Typography variant="h6" gutterBottom>Items</Typography>
+
+              <Typography variant="h6" gutterBottom>
+                Items
+              </Typography>
               {newEstimate.items.map((item, index) => (
                 <Box key={index} sx={{ display: 'flex', mb: 2 }}>
                   <FormControl sx={{ mr: 2, flexGrow: 1 }}>
@@ -480,86 +527,179 @@ const handleDiscountChange = (event) => {
               <Button startIcon={<AddIcon />} onClick={handleItemAdd}>
                 Add Item
               </Button>
-              
-              <TextField 
-                label="Discount" 
-                name="discount" 
-                type="number" 
-                value={newEstimate.discount} 
-                onChange={handleDiscountChange} 
-                fullWidth 
-                margin="normal" 
+
+              <TextField
+                label="Discount"
+                name="discount"
+                type="number"
+                value={newEstimate.discount}
+                onChange={handleDiscountChange}
+                fullWidth
+                margin="normal"
               />
-              
-              <TextField 
-                    label="Total Amount" 
-                    value={newEstimate.totalAmount.toFixed(2)} 
-                    fullWidth 
-                    margin="normal" 
-                    disabled 
-                />
-              
+
+              <TextField
+                label="Total Amount"
+                value={newEstimate.totalAmount.toFixed(2)}
+                fullWidth
+                margin="normal"
+                disabled
+              />
+
               <FormControl fullWidth margin="normal">
                 <InputLabel>Currency</InputLabel>
-                <Select
-                  name="currency"
-                  value={newEstimate.currency}
-                  onChange={handleInputChange}
-                >
+                <Select name="currency" value={newEstimate.currency} onChange={handleInputChange}>
                   <MenuItem value="USD">USD</MenuItem>
                   <MenuItem value="EUR">EUR</MenuItem>
                   <MenuItem value="GBP">GBP</MenuItem>
                 </Select>
               </FormControl>
-              
-              <TextField label="Footer" name="footer" value={newEstimate.footer} onChange={handleInputChange} fullWidth margin="normal" multiline rows={3} />
-              
-              <Button type="submit" variant="contained" color="primary">Create Estimate</Button>
+
+              <TextField
+                label="Footer"
+                name="footer"
+                value={newEstimate.footer}
+                onChange={handleInputChange}
+                fullWidth
+                margin="normal"
+                multiline
+                rows={3}
+              />
+
+              <Button type="submit" variant="contained" color="primary">
+                Create Estimate
+              </Button>
             </form>
           </Box>
         )}
-  
+
         {activeTab === 1 && (
           <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Estimate Details</Typography>
+            <Typography variant="h6" gutterBottom>
+              Estimate Details
+            </Typography>
             {selectedEstimate ? (
               <Box>
-                <TextField label="Title" name="title" value={isEditing ? editedEstimate.title : selectedEstimate.title} onChange={handleInputChange} fullWidth margin="normal" disabled={!isEditing} />
-                <TextField label="Summary" name="summary" value={isEditing ? editedEstimate.summary : selectedEstimate.summary} onChange={handleInputChange} fullWidth margin="normal" multiline rows={3} disabled={!isEditing} />
-                <TextField label="Customer" name="customer_name" value={isEditing ? editedEstimate.customer_name : selectedEstimate.customer_name} onChange={handleInputChange} fullWidth margin="normal" disabled={!isEditing} />
-                <TextField label="Date" name="date" type="date" value={isEditing ? editedEstimate.date : selectedEstimate.date} onChange={handleInputChange} fullWidth margin="normal" disabled={!isEditing} InputLabelProps={{ shrink: true }} />
-                <TextField label="Valid Until" name="valid_until" type="date" value={isEditing ? editedEstimate.valid_until : selectedEstimate.valid_until} onChange={handleInputChange} fullWidth margin="normal" disabled={!isEditing} InputLabelProps={{ shrink: true }} />
+                <TextField
+                  label="Title"
+                  name="title"
+                  value={isEditing ? editedEstimate.title : selectedEstimate.title}
+                  onChange={handleInputChange}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                />
+                <TextField
+                  label="Summary"
+                  name="summary"
+                  value={isEditing ? editedEstimate.summary : selectedEstimate.summary}
+                  onChange={handleInputChange}
+                  fullWidth
+                  margin="normal"
+                  multiline
+                  rows={3}
+                  disabled={!isEditing}
+                />
+                <TextField
+                  label="Customer"
+                  name="customer_name"
+                  value={isEditing ? editedEstimate.customer_name : selectedEstimate.customer_name}
+                  onChange={handleInputChange}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                />
+                <TextField
+                  label="Date"
+                  name="date"
+                  type="date"
+                  value={isEditing ? editedEstimate.date : selectedEstimate.date}
+                  onChange={handleInputChange}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                  InputLabelProps={{ shrink: true }}
+                />
+                <TextField
+                  label="Valid Until"
+                  name="valid_until"
+                  type="date"
+                  value={isEditing ? editedEstimate.valid_until : selectedEstimate.valid_until}
+                  onChange={handleInputChange}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                  InputLabelProps={{ shrink: true }}
+                />
                 {console.log('Rendering estimate details:', selectedEstimate)}
 
-                <TextField 
-                        label="Total Amount" 
-                        name="totalAmount" 
-                        value={isEditing 
-                            ? (editedEstimate.totalAmount || '0.00')
-                            : (selectedEstimate.totalAmount 
-                                ? Number(selectedEstimate.totalAmount).toFixed(2) 
-                                : '0.00')
-                        }
-                        onChange={handleInputChange} 
-                        fullWidth 
-                        margin="normal" 
-                        disabled={!isEditing} 
-                        InputProps={{
-                            startAdornment: <InputAdornment position="start">{selectedEstimate.currency}</InputAdornment>,
-                        }}
-                        />           
-                <TextField label="Discount" name="discount" type="number" value={isEditing ? editedEstimate.discount : selectedEstimate.discount} onChange={handleInputChange} fullWidth margin="normal" disabled={!isEditing} />
-                <TextField label="Currency" name="currency" value={isEditing ? editedEstimate.currency : selectedEstimate.currency} onChange={handleInputChange} fullWidth margin="normal" disabled={!isEditing} />
-                <TextField label="Footer" name="footer" value={isEditing ? editedEstimate.footer : selectedEstimate.footer} onChange={handleInputChange} fullWidth margin="normal" multiline rows={3} disabled={!isEditing} />
+                <TextField
+                  label="Total Amount"
+                  name="totalAmount"
+                  value={
+                    isEditing
+                      ? editedEstimate.totalAmount || '0.00'
+                      : selectedEstimate.totalAmount
+                        ? Number(selectedEstimate.totalAmount).toFixed(2)
+                        : '0.00'
+                  }
+                  onChange={handleInputChange}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">{selectedEstimate.currency}</InputAdornment>
+                    ),
+                  }}
+                />
+                <TextField
+                  label="Discount"
+                  name="discount"
+                  type="number"
+                  value={isEditing ? editedEstimate.discount : selectedEstimate.discount}
+                  onChange={handleInputChange}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                />
+                <TextField
+                  label="Currency"
+                  name="currency"
+                  value={isEditing ? editedEstimate.currency : selectedEstimate.currency}
+                  onChange={handleInputChange}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                />
+                <TextField
+                  label="Footer"
+                  name="footer"
+                  value={isEditing ? editedEstimate.footer : selectedEstimate.footer}
+                  onChange={handleInputChange}
+                  fullWidth
+                  margin="normal"
+                  multiline
+                  rows={3}
+                  disabled={!isEditing}
+                />
                 {isEditing ? (
                   <Box mt={2}>
-                    <Button variant="contained" color="primary" onClick={handleSaveEdit}>Save</Button>
-                    <Button variant="contained" color="secondary" onClick={handleCancelEdit}>Cancel</Button>
+                    <Button variant="contained" color="primary" onClick={handleSaveEdit}>
+                      Save
+                    </Button>
+                    <Button variant="contained" color="secondary" onClick={handleCancelEdit}>
+                      Cancel
+                    </Button>
                   </Box>
                 ) : (
                   <Box mt={2}>
-                    <Button variant="contained" color="primary" onClick={handleEdit}>Edit</Button>
-                    <Button variant="contained" color="secondary" onClick={handleDelete}>Delete</Button>
+                    <Button variant="contained" color="primary" onClick={handleEdit}>
+                      Edit
+                    </Button>
+                    <Button variant="contained" color="secondary" onClick={handleDelete}>
+                      Delete
+                    </Button>
                   </Box>
                 )}
               </Box>
@@ -568,7 +708,7 @@ const handleDiscountChange = (event) => {
             )}
           </Box>
         )}
-  
+
         {activeTab === 2 && (
           <Box mt={3}>
             {console.log('Rendering estimate list:', estimates)}
@@ -611,7 +751,10 @@ const handleDiscountChange = (event) => {
                       <TableCell>{new Date(estimate.date).toLocaleDateString()}</TableCell>
                       <TableCell>
                         {console.log('Estimate in list row:', estimate)}
-                        {estimate.totalAmount ? Number(estimate.totalAmount).toFixed(2) : '0.00'} {estimate.currency}
+                        {estimate.totalAmount
+                          ? Number(estimate.totalAmount).toFixed(2)
+                          : '0.00'}{' '}
+                        {estimate.currency}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -620,14 +763,14 @@ const handleDiscountChange = (event) => {
             </TableContainer>
           </Box>
         )}
-  
+
         <Dialog
           open={deleteDialogOpen}
           onClose={() => setDeleteDialogOpen(false)}
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
         >
-          <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
+          <DialogTitle id="alert-dialog-title">{'Confirm Delete'}</DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
               Are you sure you want to delete this estimate?
@@ -649,6 +792,6 @@ const handleDiscountChange = (event) => {
       </Box>
     </LocalizationProvider>
   );
-}
+};
 
 export default EstimateManagement;

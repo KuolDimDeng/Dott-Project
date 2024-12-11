@@ -1,5 +1,5 @@
 // src/app/api/auth/[...nextauth]/options.js
-import GoogleProvider from "next-auth/providers/google";
+import GoogleProvider from 'next-auth/providers/google';
 import { logger } from '@/utils/logger';
 import { APP_CONFIG } from '@/config';
 
@@ -9,28 +9,31 @@ import { APP_CONFIG } from '@/config';
 async function exchangeGoogleToken(idToken, accessToken) {
   try {
     logger.info('Exchanging Google token');
-    
-    const response = await fetch(`${APP_CONFIG.api.baseURL}${APP_CONFIG.api.endpoints.auth.google}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        token: idToken,
-        access_token: accessToken
-      }),
-    });
+
+    const response = await fetch(
+      `${APP_CONFIG.api.baseURL}${APP_CONFIG.api.endpoints.auth.google}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: idToken,
+          access_token: accessToken,
+        }),
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`Token exchange failed: ${response.statusText}`);
     }
 
     const tokenData = await response.json();
-    
+
     if (!tokenData?.access || !tokenData?.refresh) {
       throw new Error('Invalid token response from server');
     }
-    
+
     logger.info('Token exchange successful');
     return tokenData;
   } catch (error) {
@@ -51,17 +54,17 @@ async function refreshAccessToken(token) {
 
     logger.info('Attempting to refresh token', {
       hasRefreshToken: !!token.refreshToken,
-      tokenExpiry: token.accessTokenExpires
+      tokenExpiry: token.accessTokenExpires,
     });
 
     const response = await fetch(`${APP_CONFIG.api.baseURL}/api/onboarding/token/refresh/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        Accept: 'application/json',
       },
       body: JSON.stringify({
-        refresh: token.refreshToken
+        refresh: token.refreshToken,
       }),
     });
 
@@ -70,7 +73,7 @@ async function refreshAccessToken(token) {
     if (!response.ok) {
       logger.error('Token refresh failed:', {
         status: response.status,
-        error: data
+        error: data,
       });
       throw new Error(data.detail || 'Failed to refresh token');
     }
@@ -82,13 +85,13 @@ async function refreshAccessToken(token) {
       accessToken: data.access,
       refreshToken: data.refresh || token.refreshToken,
       accessTokenExpires: Date.now() + APP_CONFIG.auth.tokenGracePeriod,
-      error: null
+      error: null,
     };
   } catch (error) {
     logger.error('Token refresh failed:', error);
     return {
       ...token,
-      error: 'RefreshAccessTokenError'
+      error: 'RefreshAccessTokenError',
     };
   }
 }
@@ -98,13 +101,13 @@ export const authOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-   
+
       authorization: {
         params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code",
-          scope: "openid email profile",
+          prompt: 'consent',
+          access_type: 'offline',
+          response_type: 'code',
+          scope: 'openid email profile',
         },
       },
     }),
@@ -112,28 +115,33 @@ export const authOptions = {
 
   // Add global timeout settings
   timeout: {
-    signIn: 10000,  // Sign in timeout
+    signIn: 10000, // Sign in timeout
     callback: 10000, // Callback timeout
     oauth: {
-      request: 10000,  // OAuth request timeout
-      discovery: 10000 // Discovery timeout
-    }
+      request: 10000, // OAuth request timeout
+      discovery: 10000, // Discovery timeout
+    },
   },
 
   callbacks: {
     async signIn({ user, account, profile }) {
       try {
-        if (account?.provider === "google" && account?.id_token) {
-          const tokenData = await exchangeGoogleToken(
-            account.id_token,
-            account.access_token
-          );
-          
+        if (account?.provider === 'google' && account?.id_token) {
+          const tokenData = await exchangeGoogleToken(account.id_token, account.access_token);
+
           if (!tokenData?.access || !tokenData?.refresh) {
             logger.error('Invalid token data received:', tokenData);
             throw new Error('Invalid token data received');
           }
-          
+
+          // Add more detailed logging about onboarding status
+          logger.info('User authentication successful:', {
+            email: profile.email,
+            onboardingStatus: tokenData.onboarding_status,
+            isNewUser: !tokenData.onboarding_status,
+            isComplete: tokenData.onboarding_status === 'complete',
+          });
+
           user.accessToken = tokenData.access;
           user.refreshToken = tokenData.refresh;
           user.id = tokenData.user_id;
@@ -142,13 +150,14 @@ export const authOptions = {
           user.name = profile.name;
           user.image = profile.picture;
           user.accessTokenExpires = Date.now() + APP_CONFIG.auth.tokenGracePeriod;
+          user.isComplete = tokenData.onboarding_status === 'complete';
 
           logger.info('Token data saved to user object:', {
             hasAccessToken: !!user.accessToken,
             hasRefreshToken: !!user.refreshToken,
-            expiresIn: APP_CONFIG.auth.tokenGracePeriod
+            expiresIn: APP_CONFIG.auth.tokenGracePeriod,
           });
-          
+
           return true;
         }
         return false;
@@ -157,7 +166,7 @@ export const authOptions = {
           error: error.message,
           stack: error.stack,
           account: !!account,
-          user: !!user
+          user: !!user,
         });
         return false;
       }
@@ -168,9 +177,10 @@ export const authOptions = {
         if (account && user) {
           logger.info('Initial token creation', {
             hasAccessToken: !!user.accessToken,
-            hasRefreshToken: !!user.refreshToken
+            hasRefreshToken: !!user.refreshToken,
+            onboardingStatus: user.onboardingStatus,
           });
-          
+
           return {
             ...token,
             accessToken: user.accessToken,
@@ -178,7 +188,8 @@ export const authOptions = {
             userId: user.id,
             onboardingStatus: user.onboardingStatus,
             email: user.email,
-            accessTokenExpires: user.accessTokenExpires
+            accessTokenExpires: user.accessTokenExpires,
+            isComplete: user.onboardingStatus === 'complete', // Add this flag
           };
         }
 
@@ -188,11 +199,11 @@ export const authOptions = {
         }
 
         logger.info('Token needs refresh', {
-          expired: !token.accessTokenExpires || Date.now() >= token.accessTokenExpires
+          expired: !token.accessTokenExpires || Date.now() >= token.accessTokenExpires,
         });
 
         const refreshedToken = await refreshAccessToken(token);
-        
+
         if (refreshedToken.error) {
           logger.error('Token refresh failed, redirecting to signin');
           return { ...refreshedToken, redirect: '/auth/signin' };
@@ -201,10 +212,10 @@ export const authOptions = {
         return refreshedToken;
       } catch (error) {
         logger.error('JWT callback error:', error);
-        return { 
+        return {
           ...token,
           error: 'TokenError',
-          redirect: '/auth/signin'
+          redirect: '/auth/signin',
         };
       }
     },
@@ -216,56 +227,107 @@ export const authOptions = {
           throw new Error(token.error);
         }
 
+        // Add isComplete flag based on onboarding status
+        const isComplete = token.onboardingStatus === 'complete';
+
         session.user = {
           ...session.user,
           id: token.userId,
           accessToken: token.accessToken,
           refreshToken: token.refreshToken,
           onboardingStatus: token.onboardingStatus,
-          email: token.email
+          email: token.email,
+          isComplete: isComplete, // Add this flag
         };
 
-        logger.debug('Session updated with token data');
+        logger.debug('Session updated:', {
+          onboardingStatus: token.onboardingStatus,
+          isComplete: isComplete,
+        });
+
         return session;
       } catch (error) {
         logger.error('Session callback error:', error);
-        return { 
+        return {
           expires: session.expires,
-          error: error.message 
+          error: error.message,
         };
-      }
-    },
-
-    async redirect({ url, baseUrl }) {
-      try {
-        if (url.startsWith('/')) {
-          return `${baseUrl}${url}`;
-        }
-        if (url.startsWith(baseUrl)) {
-          return url;
-        }
-        return baseUrl;
-      } catch (error) {
-        logger.error('Redirect error:', error);
-        return baseUrl;
       }
     },
   },
 
+  async redirect({ url, baseUrl }) {
+    let retryCount = 0;
+    const maxRetries = 2;
+
+    while (retryCount < maxRetries) {
+      try {
+        if (url.startsWith(`${baseUrl}/api/auth/callback`)) {
+          const session = await getSession();
+
+          if (!session?.user?.accessToken) {
+            logger.warn('No access token available for redirect check');
+            return `${baseUrl}/auth/signin`;
+          }
+
+          const response = await fetch(`${APP_CONFIG.api.baseURL}/api/onboarding/status/`, {
+            headers: {
+              Authorization: `Bearer ${session.user.accessToken}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch onboarding status: ${response.statusText}`);
+          }
+
+          const { status: onboardingStatus, currentStep } = await response.json();
+
+          logger.info('Redirect check:', {
+            onboardingStatus,
+            currentStep,
+            isComplete: onboardingStatus === 'complete',
+            attempt: retryCount + 1,
+          });
+
+          return onboardingStatus === 'complete'
+            ? `${baseUrl}/dashboard`
+            : `${baseUrl}/onboarding/${currentStep || 'step1'}`;
+        }
+
+        return url.startsWith('/') ? `${baseUrl}${url}` : url;
+      } catch (error) {
+        logger.error('Redirect error:', {
+          error,
+          attempt: retryCount + 1,
+          maxRetries,
+        });
+
+        retryCount++;
+
+        if (retryCount === maxRetries) {
+          return `${baseUrl}/auth/signin?error=RedirectFailed`;
+        }
+
+        // Wait before retrying
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+      }
+    }
+  },
+
   events: {
-    async signIn(message) { 
-      logger.info('User signed in', message); 
+    async signIn(message) {
+      logger.info('User signed in', message);
     },
-    async signOut(message) { 
-      logger.info('User signed out', message); 
+    async signOut(message) {
+      logger.info('User signed out', message);
     },
-    async createUser(message) { 
-      logger.info('User created', message); 
+    async createUser(message) {
+      logger.info('User created', message);
     },
-    async linkAccount(message) { 
-      logger.info('Account linked', message); 
+    async linkAccount(message) {
+      logger.info('Account linked', message);
     },
-    async session(message) { 
+    async session(message) {
       if (message.session?.error) {
         logger.error('Session error:', message.session.error);
       }
@@ -280,7 +342,7 @@ export const authOptions = {
   },
 
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
     maxAge: APP_CONFIG.auth.sessionMaxAge,
     updateAge: 60 * 60,
   },

@@ -6,8 +6,8 @@ export const fetchWooCommerceOrders = async (siteUrl, consumerKey, consumerSecre
     const response = await axios.get(`${siteUrl}/wp-json/wc/v3/orders`, {
       auth: {
         username: consumerKey,
-        password: consumerSecret
-      }
+        password: consumerSecret,
+      },
     });
     return response.data;
   } catch (error) {
@@ -21,8 +21,8 @@ export const fetchWooCommerceCustomers = async (siteUrl, consumerKey, consumerSe
     const response = await axios.get(`${siteUrl}/wp-json/wc/v3/customers`, {
       auth: {
         username: consumerKey,
-        password: consumerSecret
-      }
+        password: consumerSecret,
+      },
     });
     return response.data;
   } catch (error) {

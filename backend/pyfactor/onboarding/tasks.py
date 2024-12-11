@@ -1,5 +1,8 @@
 
 #/Users/kuoldeng/projectx/backend/pyfactor/onboarding/tasks.py
+from django.utils import timezone
+import uuid
+import re
 from celery import shared_task
 from channels.layers import get_channel_layer
 from asgiref.sync import sync_to_async, async_to_sync
@@ -20,6 +23,12 @@ from pyfactor.logging_config import get_logger
 from business.models import Business
 from django.conf import settings
 from users.models import UserProfile
+from pyfactor.db.utils import (
+    get_connection, 
+    return_connection, 
+    database_exists_and_accessible, 
+    initialize_database_pool
+)
 from users.utils import (
     create_user_database,
     setup_user_database,
@@ -150,36 +159,17 @@ def sync_get_model_property(instance, property_name):
             autoretry_for=(OperationalError, DatabaseError),
             retry_backoff=True)
 def setup_user_database_task(self, user_id, business_id):
-    logger.info(f"Starting database setup task for user {user_id}")
-    logger.debug(f"Task ID: {self.request.id}")
-    logger.debug(f"Task retries: {self.request.retries}")
-    logger.debug(f"Business ID: {business_id}")
-
-    lock_id = f"database_setup_{user_id}"
+    """Creates and sets up a user's dynamic database during onboarding Step 4"""
+    logger.info(f"Starting database setup for user {user_id}")
+    database_name = None
+    
+    # Initialize channel layer for progress updates
     channel_layer = get_channel_layer()
     group_name = f'onboarding_{user_id}'
-    database_name = None
-
-   
-
-    # Send websocket message synchronously
-    def send_progress_message(message_type, data):
-        try:
-            message_data = {
-                'type': message_type,
-                **{k: str(v) if isinstance(v, (datetime, date)) else v for k, v in data.items()}
-            }
-            async_to_sync(channel_layer.group_send)(
-                group_name,
-                message_data
-            )
-            logger.debug(f"WebSocket message sent: {message_type}")
-        except Exception as e:
-            logger.error(f"WebSocket message failed: {str(e)}")
 
     def update_progress(progress, step):
+        """Updates both Celery task state and sends WebSocket progress"""
         try:
-            # Update Celery task state
             self.update_state(
                 state='PROGRESS',
                 meta={
@@ -190,7 +180,152 @@ def setup_user_database_task(self, user_id, business_id):
                 }
             )
             
-            # Send WebSocket update
+            # Send websocket update
+            message_data = {
+                'type': 'onboarding_progress',
+                'progress': progress,
+                'step': step,
+                'status': 'in_progress',
+                'timestamp': str(datetime.now())
+            }
+            async_to_sync(channel_layer.group_send)(group_name, message_data)
+            
+        except Exception as e:
+            logger.error(f"Progress update failed: {str(e)}")
+
+    try:
+        # Get user and business objects
+        user = User.objects.select_related('profile').get(id=user_id)
+        business = Business.objects.get(id=business_id)
+        profile = user.profile
+
+        # Check existing database first
+        update_progress(10, 'Checking Existing Database')
+        conn = get_connection()
+        try:
+            with conn.cursor() as cursor:
+                if profile.database_name:
+                    exists, message = database_exists_and_accessible(
+                        cursor, 
+                        profile.database_name
+                    )
+                    if exists:
+                        return {
+                            'status': 'SUCCESS',
+                            'database_name': str(profile.database_name),
+                            'message': 'Database verified successfully'
+                        }
+                    # Clear invalid reference
+                    profile.database_name = None
+                    profile.database_status = 'pending'
+                    profile.save(update_fields=['database_name', 'database_status'])
+        finally:
+            return_connection(conn)
+
+        # Generate unique database name
+        update_progress(20, 'Generating Database Name')
+        timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        email_prefix = user.email.split('@')[0][:10].lower()
+        database_name = f"{unique_id}_{email_prefix}_{timestamp}"
+        database_name = re.sub(r'[^a-zA-Z0-9_]', '', database_name)
+
+        # Create the database
+        update_progress(30, 'Creating Database')
+        conn = get_connection()
+        conn.autocommit = True
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(f'CREATE DATABASE "{database_name}"')
+                
+                # Verify creation
+                cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", [database_name])
+                if not cursor.fetchone():
+                    raise Exception(f"Database {database_name} creation failed verification")
+        finally:
+            return_connection(conn)
+
+        # Configure Django connection
+        update_progress(50, 'Configuring Database')
+        database_config = {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': database_name,
+            'USER': settings.DATABASES['default']['USER'],
+            'PASSWORD': settings.DATABASES['default']['PASSWORD'],
+            'HOST': settings.DATABASES['default']['HOST'],
+            'PORT': settings.DATABASES['default']['PORT'],
+            'ATOMIC_REQUESTS': True,
+            'CONN_MAX_AGE': 0,
+            'OPTIONS': {
+                'connect_timeout': 10,
+                'client_encoding': 'UTF8'
+            }
+        }
+        settings.DATABASES[database_name] = database_config
+        connections.databases[database_name] = database_config
+
+        # Run migrations
+        update_progress(70, 'Running Migrations')
+        call_command('migrate', database=database_name)
+
+        # Initialize data
+        update_progress(90, 'Initializing Data')
+        populate_initial_data(database_name)
+
+        # Update profile
+        update_progress(95, 'Finalizing Setup')
+        profile.database_name = database_name
+        profile.database_status = 'active'
+        profile.save(update_fields=['database_name', 'database_status'])
+
+        update_progress(100, 'Complete')
+        return {
+            'status': 'SUCCESS',
+            'database_name': database_name,
+            'message': 'Database created and configured successfully'
+        }
+
+    except Exception as e:
+        logger.error(f"Database setup failed: {str(e)}", exc_info=True)
+        try:
+            if database_name:
+                cleanup_database(database_name)
+            if 'profile' in locals():
+                profile.database_status = 'error'
+                profile.save(update_fields=['database_status'])
+        except Exception as cleanup_error:
+            logger.error(f"Cleanup failed: {str(cleanup_error)}")
+        raise
+
+    finally:
+        cleanup_connections(database_name)
+
+    # Send websocket message synchronously
+    def send_progress_message(message_type, data):
+        """Sends WebSocket progress updates to the client"""
+        try:
+            message_data = {
+                'type': message_type,
+                **{k: str(v) if isinstance(v, (datetime, date)) else v for k, v in data.items()}
+            }
+            async_to_sync(channel_layer.group_send)(group_name, message_data)
+            logger.debug(f"WebSocket message sent: {message_type}")
+        except Exception as e:
+            logger.error(f"WebSocket message failed: {str(e)}")
+
+    def update_progress(progress, step):
+        """Updates both Celery task state and sends WebSocket progress"""
+        try:
+            self.update_state(
+                state='PROGRESS',
+                meta={
+                    'progress': progress,
+                    'step': step,
+                    'current_operation': step,
+                    'timestamp': str(datetime.now())
+                }
+            )
+            
             send_progress_message('onboarding_progress', {
                 'progress': progress,
                 'step': step,
@@ -203,7 +338,7 @@ def setup_user_database_task(self, user_id, business_id):
     
 
     def validate_task_result(result):
-        """Ensure task result contains valid database name"""
+        """Validates and standardizes task result format"""
         logger.debug(f"Validating task result: {result}")
         if isinstance(result, dict) and 'database_name' in result:
             if result['database_name'] is not None:
@@ -212,63 +347,103 @@ def setup_user_database_task(self, user_id, business_id):
         return result
 
     def run_setup():
+        """Core database setup logic with proper verification"""
         nonlocal database_name
         try:
-            logger.debug(f"Starting setup for user {user_id}")
-            with transaction.atomic():
-                user = User.objects.select_related('profile').get(id=user_id)
-                profile = user.profile
-                business = Business.objects.get(id=business_id)
+            # Get user and profile info
+            user = User.objects.select_related('profile').get(id=user_id)
+            profile = user.profile
+            business = Business.objects.get(id=business_id)
 
-                if profile.database_name and profile.database_status == 'active':
-                    logger.info(f"Database already exists for user {user_id}")
-                    try:
-                        # Get database name directly
-                        db_name = profile.database_name  # No need for async conversion if it's a regular field
-                        logger.debug(f"Using existing database name: {db_name}")
+            # Verify any existing database
+            conn = get_connection()
+            try:
+                with conn.cursor() as cursor:
+                    if profile.database_name:
+                        exists, message = database_exists_and_accessible(
+                            cursor, 
+                            profile.database_name
+                        )
                         
-                        return {
-                            'status': 'SUCCESS',
-                            'database_name': str(db_name),
-                            'message': 'Database already exists'
-                        }
-                    except Exception as e:
-                        logger.error(f"Error handling existing database: {str(e)}", exc_info=True)
-                        raise
+                        if exists:
+                            logger.info(f"Verified existing database: {profile.database_name}")
+                            return {
+                                'status': 'SUCCESS',
+                                'database_name': str(profile.database_name),
+                                'message': 'Database verified successfully'
+                            }
+                        else:
+                            logger.warning(
+                                f"Invalid database reference found: {profile.database_name}"
+                                f" Reason: {message}"
+                            )
+                            # Clear invalid reference
+                            profile.database_name = None
+                            profile.database_status = 'pending'
+                            profile.save(update_fields=['database_name', 'database_status'])
+            finally:
+                return_connection(conn)
 
-                profile.database_status = 'creating'
-                profile.save(update_fields=['database_status'])
+            # Start new database creation
+            update_progress(25, 'Creating New Database')
+            
+            # Generate unique database name
+            timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
+            unique_id = str(uuid.uuid4())[:8]
+            email_prefix = user.email.split('@')[0][:10].lower()
+            database_name = f"{unique_id}_{email_prefix}_{timestamp}"
+            database_name = re.sub(r'[^a-zA-Z0-9_]', '', database_name)
 
-                update_progress(25, 'Verifying Data')
-                try:
-                    logger.debug("Starting database creation")
-                    db_name = create_user_database(user_id, business_id)
-                    database_name = safe_convert_coroutine(db_name, "create_user_database result")
-                    logger.debug(f"Created database name: {database_name}")
-                except Exception as e:
-                    logger.error(f"Error creating database: {str(e)}", exc_info=True)
-                    raise
+            # Create the database
+            conn = get_connection()
+            try:
+                with conn.cursor() as cursor:
+                    # Double check it doesn't exist
+                    cursor.execute(
+                        "SELECT 1 FROM pg_database WHERE datname = %s", 
+                        (database_name,)
+                    )
+                    if cursor.fetchone():
+                        raise ValueError(f"Database {database_name} already exists")
 
-                update_progress(50, 'Creating Database')
-                check_database_readiness(database_name)
-                
-                update_progress(75, 'Setting Up Schema')
-                setup_user_database(database_name, user, business)
-                populate_initial_data(database_name)
-                
-                logger.debug(f"Setting profile.database_name to: {database_name}")
-                profile.database_name = safe_convert_coroutine(database_name, "profile.database_name")
-                profile.database_status = 'active'
-                profile.save(update_fields=['database_name', 'database_status'])
-                logger.debug(f"Profile saved with database_name: {profile.database_name}")
+                    # Create new database
+                    cursor.execute('COMMIT')  # End current transaction
+                    cursor.execute(f'CREATE DATABASE "{database_name}"')
+                    logger.info(f"Created database: {database_name}")
+            finally:
+                return_connection(conn)
 
-                update_progress(100, 'Complete')
-                
-                return {
-                    'status': 'SUCCESS',
-                    'database_name': database_name,
-                    'message': 'Setup completed successfully'
-                }
+            # Verify the new database
+            update_progress(50, 'Verifying Database')
+            conn = get_connection()
+            try:
+                with conn.cursor() as cursor:
+                    exists, message = database_exists_and_accessible(
+                        cursor, 
+                        database_name
+                    )
+                    if not exists:
+                        raise ValueError(f"Database verification failed: {message}")
+            finally:
+                return_connection(conn)
+
+            # Set up schema and initial data
+            update_progress(75, 'Setting Up Schema')
+            setup_user_database(database_name, user, business)
+            populate_initial_data(database_name)
+
+            # Update profile
+            profile.database_name = database_name
+            profile.database_status = 'active'
+            profile.save(update_fields=['database_name', 'database_status'])
+
+            update_progress(100, 'Complete')
+            
+            return {
+                'status': 'SUCCESS',
+                'database_name': database_name,
+                'message': 'Database created and set up successfully'
+            }
 
         except Exception as e:
             logger.error(f"Setup failed: {str(e)}", exc_info=True)
@@ -280,106 +455,18 @@ def setup_user_database_task(self, user_id, business_id):
                 cleanup_database(database_name)
             raise
 
+    # Main task execution
     try:
         with task_lock(lock_id) as acquired:
             if not acquired:
-                try:
-                    user = User.objects.select_related('profile').get(id=user_id)
-                    logger.debug(f"Retrieved user: {user.email}")
-                    
-                    if user.profile.database_setup_task_id:
-                        existing_task = AsyncResult(user.profile.database_setup_task_id)
-                        if existing_task.state in ['PENDING', 'STARTED', 'PROGRESS']:
-                            logger.info(f"Task already in progress: {existing_task.id}")
-                            return {
-                                'status': 'IN_PROGRESS',
-                                'task_id': existing_task.id,
-                                'message': 'Setup already in progress'
-                            }
-                except Exception as e:
-                    logger.error(f"Error checking existing task: {str(e)}")
-
                 retry_delay = 60 * (2 ** self.request.retries)
                 raise self.retry(countdown=retry_delay)
 
             result = run_setup()
-            return validate_task_result(result)
+            return result
 
     except Exception as e:
         logger.error(f"Task failed: {str(e)}", exc_info=True)
         raise
     finally:
         cleanup_connections(database_name)
-
-
-    
-    
-        
-
-def get_task_info(task_id):
-        """Helper function to get detailed task information"""
-        if not task_id:
-            return {
-                'state': 'ERROR',
-                'status': 'error',
-                'error': 'No task ID provided'
-            }
-        try:
-            task = AsyncResult(task_id)
-            if not task:
-                logger.error(f"No task found with ID: {task_id}")
-                return {
-                    'state': 'ERROR',
-                    'status': 'error',
-                    'error': 'Task not found'
-                }
-
-            if task.state == 'PENDING':
-                response = {
-                    'state': task.state,
-                    'status': 'pending',
-                    'progress': 0,
-                    'step': 'Waiting to start'
-                }
-            elif task.state == 'SUCCESS':
-                response = {
-                    'state': task.state,
-                    'status': 'completed',
-                    'progress': 100,
-                    'result': task.result
-                }
-            elif task.state == 'FAILURE':
-                error_info = task.info or {}
-                response = {
-                    'state': task.state,
-                    'status': 'failed',
-                    'error': str(task.result),
-                    'error_details': {
-                        'type': error_info.get('exc_type'),
-                        'message': error_info.get('exc_message'),
-                        'traceback': error_info.get('traceback')
-                    }
-                }
-            else:
-                meta = task.info or {}
-                response = {
-                    'state': task.state,
-                    'status': 'in_progress',
-                    'progress': meta.get('progress', 0),
-                    'step': meta.get('step', ''),
-                    'current_operation': meta.get('current_operation', ''),
-                    'timestamp': meta.get('timestamp')
-                }
-            
-            logger.debug(f"Task info retrieved successfully for task {task_id}: {response['state']}")
-            return response
-            
-        except Exception as e:
-            logger.error(f"Error getting task info for task {task_id}: {str(e)}", exc_info=True)
-            return {
-                'state': 'ERROR',
-                'status': 'error',
-                'error': str(e),
-                'traceback': traceback.format_exc()
-            }
-

@@ -29,7 +29,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const PurchaseReturnsManagement = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -65,16 +65,16 @@ const PurchaseReturnsManagement = () => {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setNewPurchaseReturn(prev => ({
+    setNewPurchaseReturn((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleDateChange = (date) => {
-    setNewPurchaseReturn(prev => ({
+    setNewPurchaseReturn((prev) => ({
       ...prev,
-      date: date
+      date: date,
     }));
   };
 
@@ -97,8 +97,8 @@ const PurchaseReturnsManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-    <Typography variant="h4" gutterBottom>
+      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+        <Typography variant="h4" gutterBottom>
           Purchase Returns Management
         </Typography>
         <Tabs value={activeTab} onChange={handleTabChange}>
@@ -109,7 +109,9 @@ const PurchaseReturnsManagement = () => {
 
         {activeTab === 0 && (
           <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Create Purchase Return</Typography>
+            <Typography variant="h6" gutterBottom>
+              Create Purchase Return
+            </Typography>
             <form onSubmit={handleCreatePurchaseReturn}>
               <TextField
                 label="Purchase Order"
@@ -146,33 +148,73 @@ const PurchaseReturnsManagement = () => {
               />
               <FormControl fullWidth margin="normal">
                 <InputLabel>Status</InputLabel>
-                <Select
-                  name="status"
-                  value={newPurchaseReturn.status}
-                  onChange={handleInputChange}
-                >
+                <Select name="status" value={newPurchaseReturn.status} onChange={handleInputChange}>
                   <MenuItem value="pending">Pending</MenuItem>
                   <MenuItem value="approved">Approved</MenuItem>
                   <MenuItem value="completed">Completed</MenuItem>
                   <MenuItem value="rejected">Rejected</MenuItem>
                 </Select>
               </FormControl>
-              <Button type="submit" variant="contained" color="primary">Create Purchase Return</Button>
+              <Button type="submit" variant="contained" color="primary">
+                Create Purchase Return
+              </Button>
             </form>
           </Box>
         )}
 
         {activeTab === 1 && (
           <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Purchase Return Details</Typography>
+            <Typography variant="h6" gutterBottom>
+              Purchase Return Details
+            </Typography>
             {selectedPurchaseReturn ? (
               <Box>
-                <TextField label="Return Number" value={selectedPurchaseReturn.return_number} fullWidth margin="normal" disabled />
-                <TextField label="Purchase Order" value={selectedPurchaseReturn.purchase_order} fullWidth margin="normal" disabled />
-                <TextField label="Date" type="date" value={selectedPurchaseReturn.date} fullWidth margin="normal" disabled InputLabelProps={{ shrink: true }} />
-                <TextField label="Reason" value={selectedPurchaseReturn.reason} fullWidth margin="normal" disabled multiline rows={4} />
-                <TextField label="Total Amount" value={selectedPurchaseReturn.total_amount} fullWidth margin="normal" disabled />
-                <TextField label="Status" value={selectedPurchaseReturn.status} fullWidth margin="normal" disabled />
+                <TextField
+                  label="Return Number"
+                  value={selectedPurchaseReturn.return_number}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                />
+                <TextField
+                  label="Purchase Order"
+                  value={selectedPurchaseReturn.purchase_order}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                />
+                <TextField
+                  label="Date"
+                  type="date"
+                  value={selectedPurchaseReturn.date}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                  InputLabelProps={{ shrink: true }}
+                />
+                <TextField
+                  label="Reason"
+                  value={selectedPurchaseReturn.reason}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                  multiline
+                  rows={4}
+                />
+                <TextField
+                  label="Total Amount"
+                  value={selectedPurchaseReturn.total_amount}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                />
+                <TextField
+                  label="Status"
+                  value={selectedPurchaseReturn.status}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                />
               </Box>
             ) : (
               <Typography>Select a purchase return from the list to view details</Typography>
@@ -182,7 +224,9 @@ const PurchaseReturnsManagement = () => {
 
         {activeTab === 2 && (
           <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Purchase Returns List</Typography>
+            <Typography variant="h6" gutterBottom>
+              Purchase Returns List
+            </Typography>
             <TableContainer component={Paper}>
               <Table>
                 <TableHead>
@@ -196,7 +240,10 @@ const PurchaseReturnsManagement = () => {
                 </TableHead>
                 <TableBody>
                   {purchaseReturns.map((purchaseReturn) => (
-                    <TableRow key={purchaseReturn.id} onClick={() => handlePurchaseReturnSelect(purchaseReturn)}>
+                    <TableRow
+                      key={purchaseReturn.id}
+                      onClick={() => handlePurchaseReturnSelect(purchaseReturn)}
+                    >
                       <TableCell>{purchaseReturn.return_number}</TableCell>
                       <TableCell>{purchaseReturn.purchase_order}</TableCell>
                       <TableCell>{new Date(purchaseReturn.date).toLocaleDateString()}</TableCell>

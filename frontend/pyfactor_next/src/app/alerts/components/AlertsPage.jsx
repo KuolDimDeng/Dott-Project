@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import React from 'react';
 import { List, ListItem, ListItemText, Typography, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';

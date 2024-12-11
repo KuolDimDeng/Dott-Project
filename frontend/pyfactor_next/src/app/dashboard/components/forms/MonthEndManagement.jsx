@@ -1,16 +1,37 @@
 // src/components/MonthEndManagement.jsx
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
-  TableHead, TableRow, Button, TextField, Select, MenuItem, FormControl, 
-  InputLabel, IconButton, Toolbar, InputAdornment, Drawer, List, ListItem, 
-  ListItemText, Checkbox, Dialog, DialogTitle, DialogContent, DialogActions
+import {
+  Box,
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  IconButton,
+  Toolbar,
+  InputAdornment,
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
+  Checkbox,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
-import { 
-  Add, FilterList, Search, Edit, Delete, CheckCircle
-} from '@mui/icons-material';
-import axiosInstance from '@/lib/axiosConfig';;
+import { Add, FilterList, Search, Edit, Delete, CheckCircle } from '@mui/icons-material';
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const MonthEndManagement = () => {
   const [closings, setClosings] = useState([]);
@@ -20,7 +41,7 @@ const MonthEndManagement = () => {
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
     status: 'in_progress',
-    notes: ''
+    notes: '',
   });
 
   useEffect(() => {
@@ -51,7 +72,7 @@ const MonthEndManagement = () => {
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
         status: 'in_progress',
-        notes: ''
+        notes: '',
       });
     } catch (error) {
       console.error('Error creating month-end closing:', error);
@@ -61,7 +82,9 @@ const MonthEndManagement = () => {
   const handleTaskUpdate = async (taskId, isCompleted) => {
     try {
       await axiosInstance.put(`/api/month-end-tasks/${taskId}/`, { is_completed: isCompleted });
-      const updatedClosing = await axiosInstance.get(`/api/month-end-closings/${selectedClosing.id}/`);
+      const updatedClosing = await axiosInstance.get(
+        `/api/month-end-closings/${selectedClosing.id}/`
+      );
       setSelectedClosing(updatedClosing.data);
       fetchClosings();
     } catch (error) {
@@ -75,7 +98,12 @@ const MonthEndManagement = () => {
         <Typography variant="h4" component="div" sx={{ flexGrow: 1 }}>
           Month-End Closing Management
         </Typography>
-        <Button startIcon={<Add />} variant="contained" color="primary" onClick={() => setDialogOpen(true)}>
+        <Button
+          startIcon={<Add />}
+          variant="contained"
+          color="primary"
+          onClick={() => setDialogOpen(true)}
+        >
           Start New Closing
         </Button>
       </Toolbar>
@@ -99,10 +127,16 @@ const MonthEndManagement = () => {
                 <TableCell>{closing.year}</TableCell>
                 <TableCell>{closing.status}</TableCell>
                 <TableCell>{new Date(closing.started_at).toLocaleString()}</TableCell>
-                <TableCell>{closing.completed_at ? new Date(closing.completed_at).toLocaleString() : '-'}</TableCell>
                 <TableCell>
-                  <IconButton size="small" onClick={() => setSelectedClosing(closing)}><Edit /></IconButton>
-                  <IconButton size="small"><Delete /></IconButton>
+                  {closing.completed_at ? new Date(closing.completed_at).toLocaleString() : '-'}
+                </TableCell>
+                <TableCell>
+                  <IconButton size="small" onClick={() => setSelectedClosing(closing)}>
+                    <Edit />
+                  </IconButton>
+                  <IconButton size="small">
+                    <Delete />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -115,13 +149,11 @@ const MonthEndManagement = () => {
         <DialogContent>
           <FormControl fullWidth margin="normal">
             <InputLabel>Month</InputLabel>
-            <Select
-              name="month"
-              value={newClosing.month}
-              onChange={handleInputChange}
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(month => (
-                <MenuItem key={month} value={month}>{new Date(0, month - 1).toLocaleString('default', { month: 'long' })}</MenuItem>
+            <Select name="month" value={newClosing.month} onChange={handleInputChange}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => (
+                <MenuItem key={month} value={month}>
+                  {new Date(0, month - 1).toLocaleString('default', { month: 'long' })}
+                </MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -147,25 +179,38 @@ const MonthEndManagement = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained" color="primary">Start Closing</Button>
+          <Button onClick={handleSubmit} variant="contained" color="primary">
+            Start Closing
+          </Button>
         </DialogActions>
       </Dialog>
 
       {selectedClosing && (
-        <Dialog open={Boolean(selectedClosing)} onClose={() => setSelectedClosing(null)} maxWidth="md" fullWidth>
+        <Dialog
+          open={Boolean(selectedClosing)}
+          onClose={() => setSelectedClosing(null)}
+          maxWidth="md"
+          fullWidth
+        >
           <DialogTitle>{`Month-End Closing - ${new Date(0, selectedClosing.month - 1).toLocaleString('default', { month: 'long' })} ${selectedClosing.year}`}</DialogTitle>
           <DialogContent>
-            <Typography variant="h6" gutterBottom>Tasks</Typography>
+            <Typography variant="h6" gutterBottom>
+              Tasks
+            </Typography>
             <List>
-              {selectedClosing.tasks.map(task => (
+              {selectedClosing.tasks.map((task) => (
                 <ListItem key={task.id}>
                   <Checkbox
                     checked={task.is_completed}
                     onChange={(e) => handleTaskUpdate(task.id, e.target.checked)}
                   />
-                  <ListItemText 
+                  <ListItemText
                     primary={task.name}
-                    secondary={task.is_completed ? `Completed at: ${new Date(task.completed_at).toLocaleString()}` : 'Not completed'}
+                    secondary={
+                      task.is_completed
+                        ? `Completed at: ${new Date(task.completed_at).toLocaleString()}`
+                        : 'Not completed'
+                    }
                   />
                 </ListItem>
               ))}

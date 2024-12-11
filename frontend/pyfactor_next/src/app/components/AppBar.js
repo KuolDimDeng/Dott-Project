@@ -1,19 +1,20 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/components/AppBar.js
 'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useSession, signOut } from "next-auth/react";
-import { 
-  AppBar, 
-  Box, 
-  Toolbar, 
-  IconButton, 
-  Typography, 
-  Menu, 
-  Container, 
-  Button, 
-  MenuItem, 
+import { useSession, signOut } from 'next-auth/react';
+import {
+  AppBar,
+  Box,
+  Toolbar,
+  IconButton,
+  Typography,
+  Menu,
+  Container,
+  Button,
+  MenuItem,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import Image from 'next/image';
@@ -23,7 +24,7 @@ const pages = [
   { label: 'Features', sectionId: 'features' },
   { label: 'Pricing', sectionId: 'pricing' },
   { label: 'FAQ', sectionId: 'faq' },
-  { label: 'Contact', sectionId: 'contact' }
+  { label: 'Contact', sectionId: 'contact' },
 ];
 
 const logoStyle = {
@@ -47,7 +48,7 @@ function AppAppBar() {
 
   const scrollToSection = (sectionId) => {
     const currentPath = router.pathname;
-  
+
     if (currentPath === '/' || currentPath === '/#' + sectionId) {
       const sectionElement = document.getElementById(sectionId);
       const offset = 128;
@@ -81,12 +82,18 @@ function AppAppBar() {
         <>
           <Button
             variant="contained"
-            onClick={() => handleNavigation(session.user.isOnboarded ? '/dashboard' : '/onboarding')}
-            sx={{
-              fontFamily: 'Inter, sans-serif',
-            }}
+            onClick={() =>
+              handleNavigation(
+                // Check both onboarding status and isComplete flag
+                session.user.onboardingStatus === 'complete' || session.user.isComplete
+                  ? '/dashboard'
+                  : '/onboarding/step1'
+              )
+            }
           >
-            {session.user.isOnboarded ? 'Your Account' : 'Complete Onboarding'}
+            {session.user.onboardingStatus === 'complete' || session.user.isComplete
+              ? 'Your Account'
+              : 'Complete Onboarding'}
           </Button>
           <Button
             variant="text"
@@ -138,7 +145,7 @@ function AppAppBar() {
           </Box>
 
           <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-            {pages.map((page) => (
+            {pages.map((page) =>
               page.href ? (
                 <Button
                   key={page.label}
@@ -170,12 +177,10 @@ function AppAppBar() {
                   {page.label}
                 </Button>
               )
-            ))}
+            )}
           </Box>
 
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
-            {renderAuthButtons()}
-          </Box>
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>{renderAuthButtons()}</Box>
 
           <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
             <IconButton

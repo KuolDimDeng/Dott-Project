@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  List, 
-  ListItem, 
-  ListItemText, 
-  CircularProgress,
-  Button
-} from '@mui/material';
-import axiosInstance from '../components/axiosConfig';
+import { Box, List, ListItem, ListItemText, CircularProgress, Button } from '@mui/material';
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
@@ -22,12 +15,12 @@ const UnpaidInvoicesList = ({ onSelect }) => {
     setLoading(true);
     try {
       const response = await axiosInstance.get('http://localhost:8000/api/unpaid-invoices/', {
-        params: { page: pageNum, page_size: 10 }
+        params: { page: pageNum, page_size: 10 },
       });
       if (pageNum === 1) {
         setInvoices(response.data.results);
       } else {
-        setInvoices(prev => [...prev, ...response.data.results]);
+        setInvoices((prev) => [...prev, ...response.data.results]);
       }
       setHasMore(response.data.next);
     } catch (error) {
@@ -43,7 +36,7 @@ const UnpaidInvoicesList = ({ onSelect }) => {
 
   const loadMore = () => {
     if (!loading && hasMore) {
-      setPage(prev => prev + 1);
+      setPage((prev) => prev + 1);
       fetchInvoices(page + 1);
     }
   };
@@ -52,11 +45,7 @@ const UnpaidInvoicesList = ({ onSelect }) => {
     <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
       <List>
         {invoices.map((invoice) => (
-          <ListItem
-            key={invoice.id}
-            button
-            onClick={() => onSelect(invoice)}
-          >
+          <ListItem key={invoice.id} button onClick={() => onSelect(invoice)}>
             <ListItemText
               primary={`Invoice #${invoice.id}`}
               secondary={`Amount: $${invoice.amount} - Date: ${invoice.date}`}

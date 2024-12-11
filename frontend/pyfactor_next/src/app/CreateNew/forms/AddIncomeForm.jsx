@@ -1,13 +1,13 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/AddIncomeForm.jsx
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Button, 
-  TextField, 
-  Select, 
-  MenuItem, 
-  InputLabel, 
+import {
+  Box,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  InputLabel,
   FormControl,
   InputAdornment,
   Modal,
@@ -19,11 +19,10 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { useApi } from '../../dashboard/components/components/axiosConfig';
+import { useApi } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
-import UnpaidInvoicesList from '../../dashboard/components/lists/UnpaidInvoicesList';  // Adjust the import path as needed
-
+import UnpaidInvoicesList from '../../dashboard/components/lists/UnpaidInvoicesList'; // Adjust the import path as needed
 
 const AddIncomeForm = ({ onClose }) => {
   const [date, setDate] = useState(null);
@@ -39,7 +38,6 @@ const AddIncomeForm = ({ onClose }) => {
   const [unpaidInvoices, setUnpaidInvoices] = useState([]);
   const [error, setError] = useState(null);
 
-
   const { addMessage } = useUserMessageContext();
 
   const accountOptions = [
@@ -52,12 +50,7 @@ const AddIncomeForm = ({ onClose }) => {
     'Other Assets',
   ];
 
-  const accountTypeOptions = [
-    'Sales',
-    'Accounts Receivable',
-    'Owner Investment',
-    'Other Income',
-  ];
+  const accountTypeOptions = ['Sales', 'Accounts Receivable', 'Owner Investment', 'Other Income'];
 
   useEffect(() => {
     fetchUserProfile();
@@ -134,9 +127,8 @@ const AddIncomeForm = ({ onClose }) => {
       return;
     }
 
-  
     const formattedDate = date.toISOString().split('T')[0];
-  
+
     const formData = new FormData();
     formData.append('date', formattedDate);
     formData.append('account', account);
@@ -151,14 +143,14 @@ const AddIncomeForm = ({ onClose }) => {
     if (selectedInvoice) {
       formData.append('invoice_id', selectedInvoice.id);
     }
-  
+
     try {
       const response = await useApi.post('http://localhost:8000/api/incomes/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-  
+
       if (response.status === 201) {
         const data = response.data;
         logger.log('Income record created:', data);
@@ -171,7 +163,10 @@ const AddIncomeForm = ({ onClose }) => {
         logger.error('Error response data:', error.response.data);
         logger.error('Error response status:', error.response.status);
         logger.error('Error response headers:', error.response.headers);
-        addMessage('error', `Error creating income record: ${error.response.data.message || 'Unknown error'}`);
+        addMessage(
+          'error',
+          `Error creating income record: ${error.response.data.message || 'Unknown error'}`
+        );
       } else if (error.request) {
         logger.error('Error request:', error.request);
         addMessage('error', 'Error creating income record: No response received from server');
@@ -182,7 +177,6 @@ const AddIncomeForm = ({ onClose }) => {
       setError('Failed to create income record');
     }
   };
-
 
   if (error) {
     return <Typography color="error">{error}</Typography>;
@@ -195,9 +189,7 @@ const AddIncomeForm = ({ onClose }) => {
           label="Date"
           value={date}
           onChange={(newDate) => setDate(newDate)}
-          renderInput={(params) => (
-            <TextField {...params} fullWidth margin="normal" />
-          )}
+          renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
         />
       </LocalizationProvider>
 
@@ -205,7 +197,9 @@ const AddIncomeForm = ({ onClose }) => {
         <InputLabel>Account</InputLabel>
         <Select value={account} onChange={handleAccountChange}>
           {accountOptions.map((option) => (
-            <MenuItem key={option} value={option}>{option}</MenuItem>
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
           ))}
         </Select>
       </FormControl>
@@ -222,7 +216,9 @@ const AddIncomeForm = ({ onClose }) => {
         <InputLabel>Account Type</InputLabel>
         <Select value={accountType} onChange={handleAccountTypeChange}>
           {accountTypeOptions.map((option) => (
-            <MenuItem key={option} value={option}>{option}</MenuItem>
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
           ))}
         </Select>
       </FormControl>
@@ -283,18 +279,20 @@ const AddIncomeForm = ({ onClose }) => {
         onClose={() => setShowUnpaidInvoices(false)}
         aria-labelledby="unpaid-invoices-modal"
       >
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 400,
-          bgcolor: 'background.paper',
-          boxShadow: 24,
-          p: 4,
-          maxHeight: '80vh',
-          overflow: 'auto',
-        }}>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 400,
+            bgcolor: 'background.paper',
+            boxShadow: 24,
+            p: 4,
+            maxHeight: '80vh',
+            overflow: 'auto',
+          }}
+        >
           <Typography id="unpaid-invoices-modal" variant="h6" component="h2">
             Select Unpaid Invoice
           </Typography>

@@ -7,7 +7,7 @@ const DeviceConfiguration = () => {
   const connectToDevice = async () => {
     try {
       const device = await navigator.bluetooth.requestDevice({
-        filters: [{ services: ['battery_service'] }]
+        filters: [{ services: ['battery_service'] }],
       });
       setDevice(device);
       console.log('Connected to device:', device);
@@ -19,9 +19,7 @@ const DeviceConfiguration = () => {
   return (
     <div>
       <h2>Bluetooth Device Configuration</h2>
-      <button onClick={connectToDevice}>
-        Connect to Bluetooth Device
-      </button>
+      <button onClick={connectToDevice}>Connect to Bluetooth Device</button>
       {device && <p>Connected to: {device.name}</p>}
     </div>
   );

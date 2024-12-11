@@ -1,15 +1,46 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
-  TableHead, TableRow, Button, TextField, Select, MenuItem, FormControl, 
-  InputLabel, IconButton, Toolbar, InputAdornment, Drawer, List, ListItem, 
-  ListItemText, Checkbox, Dialog, DialogTitle, DialogContent, DialogActions, useTheme
+import {
+  Box,
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  IconButton,
+  Toolbar,
+  InputAdornment,
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
+  Checkbox,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  useTheme,
 } from '@mui/material';
-import { 
-  Add, FilterList, Search, Edit, Delete, ImportExport, Settings, Visibility
+import {
+  Add,
+  FilterList,
+  Search,
+  Edit,
+  Delete,
+  ImportExport,
+  Settings,
+  Visibility,
 } from '@mui/icons-material';
 import Link from 'next/link';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const ChartOfAccountsManagement = () => {
   const [accounts, setAccounts] = useState([]);
@@ -20,19 +51,18 @@ const ChartOfAccountsManagement = () => {
     category: '',
     balance: 0,
     is_active: true,
-    parent: null
+    parent: null,
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [filters, setFilters] = useState({
     accountTypes: [],
     status: 'all',
-    dateRange: { start: null, end: null }
+    dateRange: { start: null, end: null },
   });
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const theme = useTheme();
-
 
   useEffect(() => {
     fetchAccounts();
@@ -65,7 +95,7 @@ const ChartOfAccountsManagement = () => {
         category: '',
         balance: 0,
         is_active: true,
-        parent: null
+        parent: null,
       });
     } catch (error) {
       console.error('Error creating account:', error);
@@ -94,10 +124,13 @@ const ChartOfAccountsManagement = () => {
     setSelectedAccount(null);
   };
 
-  const filteredAccounts = accounts ? accounts.filter(account => 
-    (account.name && account.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (account.account_number && account.account_number.includes(searchTerm))
-  ) : [];
+  const filteredAccounts = accounts
+    ? accounts.filter(
+        (account) =>
+          (account.name && account.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (account.account_number && account.account_number.includes(searchTerm))
+      )
+    : [];
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
@@ -202,8 +235,12 @@ const ChartOfAccountsManagement = () => {
                   <TableCell>{account.balance}</TableCell>
                   <TableCell>{account.is_active ? 'Active' : 'Inactive'}</TableCell>
                   <TableCell>
-                    <IconButton size="small"><Edit /></IconButton>
-                    <IconButton size="small"><Delete /></IconButton>
+                    <IconButton size="small">
+                      <Edit />
+                    </IconButton>
+                    <IconButton size="small">
+                      <Delete />
+                    </IconButton>
                     <Link href={`/general-ledger?account_id=${account.id}`} passHref>
                       <IconButton size="small">
                         <Visibility />
@@ -226,7 +263,7 @@ const ChartOfAccountsManagement = () => {
       <Box sx={{ mt: 2, p: 2, bgcolor: 'background.paper' }}>
         <Typography variant="h6">Account Summary</Typography>
         <Typography>Total Accounts: {accounts.length}</Typography>
-        <Typography>Active Accounts: {accounts.filter(a => a.is_active).length}</Typography>
+        <Typography>Active Accounts: {accounts.filter((a) => a.is_active).length}</Typography>
       </Box>
 
       <Dialog open={openDialog} onClose={handleCloseDialog}>
@@ -234,7 +271,8 @@ const ChartOfAccountsManagement = () => {
         <DialogContent>
           {selectedAccount && (
             <Typography>
-              Viewing transactions for account: {selectedAccount.name} ({selectedAccount.account_number})
+              Viewing transactions for account: {selectedAccount.name} (
+              {selectedAccount.account_number})
             </Typography>
             // You can add a table or list of transactions here
           )}

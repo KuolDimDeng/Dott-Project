@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Button,
+} from '@mui/material';
 import { logger, UserMessage } from '@/utils/logger';
-
 
 const TransactionList = () => {
   const [transactions, setTransactions] = useState([]);
@@ -13,8 +23,7 @@ const TransactionList = () => {
         const response = await fetch('http://localhost:8000/api/transactions/', {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-
+            'Content-Type': 'application/json',
           },
         });
 
@@ -57,7 +66,6 @@ const TransactionList = () => {
               <TableCell>Amount</TableCell>
               <TableCell>Notes</TableCell>
               <TableCell>Action</TableCell>
-
             </TableRow>
           </TableHead>
           <TableBody>

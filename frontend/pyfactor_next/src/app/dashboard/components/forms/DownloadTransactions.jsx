@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Box, TextField, Button, Typography } from '@mui/material';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const DownloadTransactions = () => {
   const [startDate, setStartDate] = useState('');
@@ -49,13 +49,7 @@ const DownloadTransactions = () => {
         margin="normal"
         InputLabelProps={{ shrink: true }}
       />
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleDownload}
-        fullWidth
-        sx={{ mt: 2 }}
-      >
+      <Button variant="contained" color="primary" onClick={handleDownload} fullWidth sx={{ mt: 2 }}>
         Download Transactions
       </Button>
     </Box>

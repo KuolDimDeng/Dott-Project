@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 import {
-  Box, Typography, Paper, CircularProgress, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow
+  Box,
+  Typography,
+  Paper,
+  CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 
 const IncomeByCustomer = () => {
@@ -75,9 +83,7 @@ const IncomeByCustomer = () => {
                     const value = row[column.id];
                     return (
                       <TableCell key={column.id} align={column.align}>
-                        {column.format && typeof value === 'number'
-                          ? column.format(value)
-                          : value}
+                        {column.format && typeof value === 'number' ? column.format(value) : value}
                       </TableCell>
                     );
                   })}

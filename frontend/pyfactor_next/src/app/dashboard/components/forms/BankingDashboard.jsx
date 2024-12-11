@@ -1,15 +1,15 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/BankingDashboard.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Box, 
-  Button, 
-  Typography, 
-  Grid, 
+import {
+  Box,
+  Button,
+  Typography,
+  Grid,
   TextField,
-  List, 
-  ListItem, 
-  ListItemText, 
+  List,
+  ListItem,
+  ListItemText,
   CircularProgress,
   Card,
   CardContent,
@@ -30,7 +30,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import DownloadIcon from '@mui/icons-material/Download';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import SearchIcon from '@mui/icons-material/Search';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import NextLink from 'next/link';
 
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -50,7 +50,6 @@ const BankingDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [connectedBank, setConnectedBank] = useState(null);
   const theme = useTheme();
-
 
   const fetchBankingAccounts = useCallback(async () => {
     try {
@@ -83,7 +82,7 @@ const BankingDashboard = () => {
     }
     try {
       const response = await axiosInstance.get('/api/banking/recent-transactions/', {
-        params: { limit: 10 }
+        params: { limit: 10 },
       });
       if (response.data.transactions && Array.isArray(response.data.transactions)) {
         setTransactions(response.data.transactions);
@@ -127,7 +126,7 @@ const BankingDashboard = () => {
     }
   };
 
-  const filteredTransactions = transactions.filter(transaction => 
+  const filteredTransactions = transactions.filter((transaction) =>
     transaction.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -149,13 +148,14 @@ const BankingDashboard = () => {
         Manage your accounts, download transactions, and view recent activity
       </Typography>
       <Typography variant="h6" gutterBottom sx={{ mb: 3, color: 'primary.main' }}>
-        Connected Bank: {connectedBank || 'None'} 
+        Connected Bank: {connectedBank || 'None'}
         {!connectedBank && (
           <Typography component="span" variant="body1" sx={{ ml: 2 }}>
-            Please link a banking institution 
+            Please link a banking institution
             <NextLink href="/connect-bank" passHref>
               <Link sx={{ ml: 1 }}>here</Link>
-            </NextLink>.
+            </NextLink>
+            .
           </Typography>
         )}
       </Typography>
@@ -178,15 +178,13 @@ const BankingDashboard = () => {
                   ))}
                 </List>
               ) : (
-                <Typography>No accounts found. Please connect a bank account to get started.</Typography>
+                <Typography>
+                  No accounts found. Please connect a bank account to get started.
+                </Typography>
               )}
             </CardContent>
             <CardActions>
-              <Button
-                variant="outlined"
-                startIcon={<RefreshIcon />}
-                onClick={fetchBankingAccounts}
-              >
+              <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchBankingAccounts}>
                 Refresh Accounts
               </Button>
             </CardActions>
@@ -259,9 +257,15 @@ const BankingDashboard = () => {
                   <Table sx={{ minWidth: 650 }} aria-label="transactions table">
                     <TableHead>
                       <TableRow>
-                        <TableCell><strong>Description</strong></TableCell>
-                        <TableCell align="right"><strong>Date</strong></TableCell>
-                        <TableCell align="right"><strong>Amount</strong></TableCell>
+                        <TableCell>
+                          <strong>Description</strong>
+                        </TableCell>
+                        <TableCell align="right">
+                          <strong>Date</strong>
+                        </TableCell>
+                        <TableCell align="right">
+                          <strong>Amount</strong>
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -274,13 +278,17 @@ const BankingDashboard = () => {
                             <TableCell component="th" scope="row">
                               {transaction.description}
                             </TableCell>
-                            <TableCell align="right">{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                            <TableCell align="right">
+                              {new Date(transaction.date).toLocaleDateString()}
+                            </TableCell>
                             <TableCell align="right">${transaction.amount.toFixed(2)}</TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={3} align="center">No transactions found.</TableCell>
+                          <TableCell colSpan={3} align="center">
+                            No transactions found.
+                          </TableCell>
                         </TableRow>
                       )}
                     </TableBody>

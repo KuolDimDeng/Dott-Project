@@ -22,10 +22,9 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
-
 
 const TimesheetManagement = () => {
   const [timesheets, setTimesheets] = useState([]);
@@ -34,8 +33,6 @@ const TimesheetManagement = () => {
   const [summary, setSummary] = useState([]);
   const { addMessage } = useUserMessageContext();
   const theme = useTheme();
-
-
 
   useEffect(() => {
     fetchTimesheets();
@@ -74,7 +71,10 @@ const TimesheetManagement = () => {
     event.preventDefault();
     try {
       if (selectedTimesheet?.id) {
-        await axiosInstance.put(`/api/payroll/timesheets/${selectedTimesheet.id}/`, selectedTimesheet);
+        await axiosInstance.put(
+          `/api/payroll/timesheets/${selectedTimesheet.id}/`,
+          selectedTimesheet
+        );
       } else {
         await axiosInstance.post('/api/payroll/timesheets/', selectedTimesheet);
       }
@@ -88,17 +88,22 @@ const TimesheetManagement = () => {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setSelectedTimesheet(prev => ({ ...prev, [name]: value }));
+    setSelectedTimesheet((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-    <Typography variant="h4" gutterBottom>
+      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+        <Typography variant="h4" gutterBottom>
           Timesheet Management
         </Typography>
-        
-        <Button variant="contained" color="primary" onClick={() => handleOpenDialog()} sx={{ mb: 2 }}>
+
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => handleOpenDialog()}
+          sx={{ mb: 2 }}
+        >
           Add New Timesheet
         </Button>
 
@@ -167,7 +172,7 @@ const TimesheetManagement = () => {
             <DatePicker
               label="Date"
               value={selectedTimesheet?.date ? new Date(selectedTimesheet.date) : null}
-              onChange={(newDate) => setSelectedTimesheet(prev => ({ ...prev, date: newDate }))}
+              onChange={(newDate) => setSelectedTimesheet((prev) => ({ ...prev, date: newDate }))}
               renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
             />
             <TextField

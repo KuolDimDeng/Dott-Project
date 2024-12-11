@@ -20,13 +20,13 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  useTheme
+  useTheme,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const PayrollTransactions = () => {
@@ -40,7 +40,6 @@ const PayrollTransactions = () => {
   const { addMessage } = useUserMessageContext();
   const theme = useTheme();
 
-
   useEffect(() => {
     fetchPayrollRuns();
     fetchArchivedYears();
@@ -53,7 +52,7 @@ const PayrollTransactions = () => {
           year: selectedYear,
           start_date: startDate ? startDate.toISOString() : null,
           end_date: endDate ? endDate.toISOString() : null,
-        }
+        },
       });
       setPayrollRuns(response.data);
     } catch (error) {
@@ -93,8 +92,8 @@ const PayrollTransactions = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-    <Typography variant="h4" gutterBottom>
+      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+        <Typography variant="h4" gutterBottom>
           Payroll Transactions
         </Typography>
         <Typography variant="subtitle1" gutterBottom>
@@ -102,11 +101,7 @@ const PayrollTransactions = () => {
         </Typography>
 
         <Box mb={3}>
-          <Select
-            value={selectedYear}
-            onChange={handleYearChange}
-            sx={{ mr: 2 }}
-          >
+          <Select value={selectedYear} onChange={handleYearChange} sx={{ mr: 2 }}>
             <MenuItem value={new Date().getFullYear()}>Current Year</MenuItem>
             {archivedYears.map((year) => (
               <MenuItem key={year} value={year}>
@@ -126,11 +121,7 @@ const PayrollTransactions = () => {
             onChange={setEndDate}
             renderInput={(params) => <TextField {...params} sx={{ mr: 2 }} />}
           />
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleApplyFilter}
-          >
+          <Button variant="contained" color="primary" onClick={handleApplyFilter}>
             Apply Filter
           </Button>
         </Box>
@@ -166,13 +157,21 @@ const PayrollTransactions = () => {
             {selectedRun && (
               <Box>
                 <Typography variant="h6">General Information</Typography>
-                <Typography>Run Date: {new Date(selectedRun.run_date).toLocaleDateString()}</Typography>
-                <Typography>Start Date: {new Date(selectedRun.start_date).toLocaleDateString()}</Typography>
-                <Typography>End Date: {new Date(selectedRun.end_date).toLocaleDateString()}</Typography>
+                <Typography>
+                  Run Date: {new Date(selectedRun.run_date).toLocaleDateString()}
+                </Typography>
+                <Typography>
+                  Start Date: {new Date(selectedRun.start_date).toLocaleDateString()}
+                </Typography>
+                <Typography>
+                  End Date: {new Date(selectedRun.end_date).toLocaleDateString()}
+                </Typography>
                 <Typography>Status: {selectedRun.status}</Typography>
                 <Typography>Total Amount: ${selectedRun.total_amount.toFixed(2)}</Typography>
 
-                <Typography variant="h6" mt={2}>Employee Details</Typography>
+                <Typography variant="h6" mt={2}>
+                  Employee Details
+                </Typography>
                 <Accordion>
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Typography>Employee List</Typography>
@@ -199,7 +198,9 @@ const PayrollTransactions = () => {
                   </AccordionDetails>
                 </Accordion>
 
-                <Typography variant="h6" mt={2}>Notes</Typography>
+                <Typography variant="h6" mt={2}>
+                  Notes
+                </Typography>
                 <Typography>{selectedRun.notes || 'No notes available.'}</Typography>
               </Box>
             )}

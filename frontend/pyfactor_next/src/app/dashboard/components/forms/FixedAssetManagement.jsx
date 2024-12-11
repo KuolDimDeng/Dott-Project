@@ -22,7 +22,7 @@ import {
   Box,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
@@ -52,7 +52,7 @@ const FixedAssetManagement = () => {
   const fetchAssets = async () => {
     try {
       const response = await axiosInstance.get('/api/finance/fixed-assets/');
-      console.log('Accounts API Respond:', response.data)
+      console.log('Accounts API Respond:', response.data);
       setAssets(response.data);
     } catch (error) {
       console.error('Error fetching fixed assets:', error);
@@ -62,7 +62,7 @@ const FixedAssetManagement = () => {
   const handleOpen = (asset = null) => {
     if (asset) {
       setSelectedAsset(asset);
-      setFormData(asset);    
+      setFormData(asset);
     } else {
       setSelectedAsset(null);
       setFormData({
@@ -108,7 +108,12 @@ const FixedAssetManagement = () => {
       <Typography variant="h4" gutterBottom>
         Fixed Asset Management
       </Typography>
-      <Button variant="contained" color="primary" onClick={() => handleOpen()} style={{ marginBottom: '1rem' }}>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => handleOpen()}
+        style={{ marginBottom: '1rem' }}
+      >
         Add New Asset
       </Button>
       <TableContainer component={Paper}>

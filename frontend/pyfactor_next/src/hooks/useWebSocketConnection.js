@@ -6,7 +6,7 @@ const WS_CONFIG = {
   MAX_RETRIES: 3,
   BASE_DELAY: 1000,
   MAX_DELAY: 10000,
-  PING_INTERVAL: 30000
+  PING_INTERVAL: 30000,
 };
 
 export const useWebSocketConnection = (url, options = {}) => {
@@ -94,6 +94,6 @@ export const useWebSocketConnection = (url, options = {}) => {
     ws,
     isConnected,
     error,
-    reconnect: connect
+    reconnect: connect,
   };
 };

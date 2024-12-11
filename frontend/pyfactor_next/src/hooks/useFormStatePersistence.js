@@ -13,7 +13,7 @@ export const useFormStatePersistence = (formId, options = {}) => {
     validateBeforeSave = true,
     onLoadDraft,
     onSaveDraft,
-    form: formMethods // Accept form methods from react-hook-form
+    form: formMethods, // Accept form methods from react-hook-form
   } = options;
 
   const form = useRef(formMethods);
@@ -26,53 +26,56 @@ export const useFormStatePersistence = (formId, options = {}) => {
     form.current = formMethods;
   }, [formMethods]);
 
-  const saveDraft = useCallback(async (data) => {
-    if (saveInProgress.current) {
-      logger.debug('Save already in progress, skipping');
-      return null;
-    }
+  const saveDraft = useCallback(
+    async (data) => {
+      if (saveInProgress.current) {
+        logger.debug('Save already in progress, skipping');
+        return null;
+      }
 
-    if (!data || Object.keys(data).length === 0) {
-      logger.warn('Attempted to save empty form data');
-      return null;
-    }
+      if (!data || Object.keys(data).length === 0) {
+        logger.warn('Attempted to save empty form data');
+        return null;
+      }
 
-    saveInProgress.current = true;
+      saveInProgress.current = true;
 
-    try {
-      const drafts = await persistenceService.loadData(`${formId}_drafts`) || [];
-      
-      const newDraft = {
-        version: DRAFT_VERSION,
-        timestamp: Date.now(),
-        data,
-        formId,
-        metadata: {
-          lastModified: new Date().toISOString(),
+      try {
+        const drafts = (await persistenceService.loadData(`${formId}_drafts`)) || [];
+
+        const newDraft = {
+          version: DRAFT_VERSION,
+          timestamp: Date.now(),
+          data,
           formId,
-          version: DRAFT_VERSION
-        }
-      };
+          metadata: {
+            lastModified: new Date().toISOString(),
+            formId,
+            version: DRAFT_VERSION,
+          },
+        };
 
-      // Filter out old versions of this form's drafts
-      const updatedDrafts = [newDraft, ...drafts]
-        .filter(draft => draft.formId === formId && draft.version === DRAFT_VERSION)
-        .slice(0, maxDrafts);
+        // Filter out old versions of this form's drafts
+        const updatedDrafts = [newDraft, ...drafts]
+          .filter((draft) => draft.formId === formId && draft.version === DRAFT_VERSION)
+          .slice(0, maxDrafts);
 
-      await persistenceService.saveData(`${formId}_drafts`, updatedDrafts);
-      lastSaved.current = newDraft.timestamp;
-      
-      onSaveDraft?.(newDraft);
-      logger.info(`Draft saved for form ${formId}`, { timestamp: newDraft.timestamp });
-      
-      return newDraft;
-    } catch (error) {
-      logger.error(`Failed to save draft for form ${formId}:`, error);
-      throw error;
-    } finally {
-      saveInProgress.current = false;
-    }
-  }, [formId, maxDrafts, onSaveDraft]);
+        await persistenceService.saveData(`${formId}_drafts`, updatedDrafts);
+        lastSaved.current = newDraft.timestamp;
+
+        onSaveDraft?.(newDraft);
+        logger.info(`Draft saved for form ${formId}`, { timestamp: newDraft.timestamp });
+
+        return newDraft;
+      } catch (error) {
+        logger.error(`Failed to save draft for form ${formId}:`, error);
+        throw error;
+      } finally {
+        saveInProgress.current = false;
+      }
+    },
+    [formId, maxDrafts, onSaveDraft]
+  );
 
   const loadLatestDraft = useCallback(async () => {
     try {
@@ -81,7 +84,7 @@ export const useFormStatePersistence = (formId, options = {}) => {
 
       // Find latest valid draft
       const latestDraft = drafts
-        .filter(draft => draft.formId === formId && draft.version === DRAFT_VERSION)
+        .filter((draft) => draft.formId === formId && draft.version === DRAFT_VERSION)
         .sort((a, b) => b.timestamp - a.timestamp)[0];
 
       if (!latestDraft) return null;
@@ -89,7 +92,7 @@ export const useFormStatePersistence = (formId, options = {}) => {
       onLoadDraft?.(latestDraft);
       lastSaved.current = latestDraft.timestamp;
       logger.info(`Loaded latest draft for form ${formId}`, { timestamp: latestDraft.timestamp });
-      
+
       return latestDraft.data;
     } catch (error) {
       logger.error(`Failed to load draft for form ${formId}:`, error);
@@ -100,7 +103,7 @@ export const useFormStatePersistence = (formId, options = {}) => {
   // Setup autosave with debounce
   useEffect(() => {
     let timeoutId;
-    
+
     const intervalId = addInterval(async () => {
       if (!form.current || saveInProgress.current) return;
 
@@ -165,6 +168,6 @@ export const useFormStatePersistence = (formId, options = {}) => {
     lastSaved: lastSaved.current,
     saveDraft,
     loadLatestDraft,
-    isSaving: saveInProgress.current
+    isSaving: saveInProgress.current,
   };
 };

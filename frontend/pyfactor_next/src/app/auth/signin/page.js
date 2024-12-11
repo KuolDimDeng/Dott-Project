@@ -1,13 +1,20 @@
-
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/auth/signin/page.js
 // src/app/auth/signin/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Button, TextField, Grid, Box, Paper, Typography, 
-  InputAdornment, IconButton, CircularProgress, Alert 
+import {
+  Button,
+  TextField,
+  Grid,
+  Box,
+  Paper,
+  Typography,
+  InputAdornment,
+  IconButton,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Image from 'next/image';
@@ -17,7 +24,7 @@ import * as z from 'zod';
 import { logger } from '@/utils/logger';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { GoogleLoginButton, AppleLoginButton } from 'react-social-login-buttons';
-import { signIn, useSession } from "next-auth/react";
+import { signIn, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
@@ -47,10 +54,9 @@ const theme = createTheme({
 
 // Form validation schema
 const signInSchema = z.object({
-  email: z.string()
-    .min(1, 'Email is required')
-    .email('Please enter a valid email address'),
-  password: z.string()
+  email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
+  password: z
+    .string()
     .min(1, 'Password is required')
     .min(5, 'Password must be at least 5 characters long'),
 });
@@ -62,18 +68,16 @@ export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  
   // Hooks
   const router = useRouter();
   const { data: session, status } = useSession();
   const queryClient = useQueryClient();
   const { handleOnboardingRedirect } = useOnboarding();
 
-   // Initialize component
-   useEffect(() => {
+  // Initialize component
+  useEffect(() => {
     setIsInitialized(true);
   }, []);
-
 
   // Form management
   const {
@@ -116,14 +120,14 @@ export default function SignInPage() {
           setIsLoading(true);
           const response = await axiosInstance.get('/api/onboarding/status/', {
             headers: {
-              Authorization: `Bearer ${session.user.accessToken}`
-            }
+              Authorization: `Bearer ${session.user.accessToken}`,
+            },
           });
 
           if (!mounted) return;
 
           const { onboarding_status: onboardingStatus } = response.data;
-          
+
           if (onboardingStatus === 'complete') {
             router.replace('/dashboard');
           } else {
@@ -131,14 +135,14 @@ export default function SignInPage() {
           }
         } catch (error) {
           if (!mounted) return;
-          
+
           logger.error('Error checking session:', error);
           if (error.response?.status === 401) {
             queryClient.clear();
           }
         }
       }
-      
+
       if (mounted) {
         setIsLoading(false);
       }
@@ -151,15 +155,14 @@ export default function SignInPage() {
     };
   }, [isInitialized, status, session, router, queryClient, handleOnboardingRedirect]);
 
-
   // Login mutation
   const credentialsLoginMutation = useMutation({
     mutationFn: async (credentials) => {
       const result = await signIn('credentials', {
         redirect: false,
-        ...credentials
+        ...credentials,
       });
-      
+
       if (result?.error) throw new Error(result.error);
       return result;
     },
@@ -172,7 +175,7 @@ export default function SignInPage() {
       setError(error.message || 'Login failed. Please try again.');
       logger.error('Login error:', error);
       toast.error(error.message || 'Login failed. Please try again.');
-    }
+    },
   });
 
   // Social login handler
@@ -180,10 +183,10 @@ export default function SignInPage() {
     try {
       setError(null);
       setIsLoading(true);
-      
+
       const result = await signIn(provider, {
         redirect: false,
-        callbackUrl: '/onboarding/step1' 
+        callbackUrl: '/onboarding/step1',
       });
 
       if (result?.error) {
@@ -202,29 +205,31 @@ export default function SignInPage() {
     }
   };
 
- // Loading states
- const showLoading = !isInitialized || status === 'loading' || isLoading;
- const loadingMessage = !isInitialized ? 'Initializing...' :
-                       status === 'loading' ? 'Checking authentication...' :
-                       'Loading your information...';
+  // Loading states
+  const showLoading = !isInitialized || status === 'loading' || isLoading;
+  const loadingMessage = !isInitialized
+    ? 'Initializing...'
+    : status === 'loading'
+      ? 'Checking authentication...'
+      : 'Loading your information...';
 
- if (showLoading) {
-   return (
-     <Box 
-       display="flex" 
-       flexDirection="column" 
-       justifyContent="center" 
-       alignItems="center" 
-       minHeight="100vh" 
-       gap={2}
-     >
-       <CircularProgress />
-       <Typography variant="body2" color="textSecondary">
-         {loadingMessage}
-       </Typography>
-     </Box>
-   );
- }
+  if (showLoading) {
+    return (
+      <Box
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+        gap={2}
+      >
+        <CircularProgress />
+        <Typography variant="body2" color="textSecondary">
+          {loadingMessage}
+        </Typography>
+      </Box>
+    );
+  }
   return (
     <ThemeProvider theme={theme}>
       <Grid container component="main" sx={{ height: '100vh' }}>
@@ -264,19 +269,19 @@ export default function SignInPage() {
         </Grid>
 
         {/* Sign In Form */}
-        <Grid 
-          item 
-          xs={12} 
-          sm={8} 
-          md={6} 
-          component={Paper} 
-          square 
-          sx={{ 
+        <Grid
+          item
+          xs={12}
+          sm={8}
+          md={6}
+          component={Paper}
+          square
+          sx={{
             px: 4,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            overflow: 'auto'
+            overflow: 'auto',
           }}
         >
           <Box sx={{ my: 8, width: '100%', maxWidth: 'sm' }}>
@@ -293,11 +298,7 @@ export default function SignInPage() {
 
             {/* Error Alert */}
             {error && (
-              <Alert 
-                severity="error" 
-                sx={{ mb: 3 }}
-                onClose={() => setError(null)}
-              >
+              <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
                 {error}
               </Alert>
             )}
@@ -358,23 +359,21 @@ export default function SignInPage() {
                 disabled={credentialsLoginMutation.isPending}
                 sx={{ mt: 3, mb: 2, height: 48 }}
               >
-                {credentialsLoginMutation.isPending ? (
-                  <CircularProgress size={24} />
-                ) : (
-                  'Sign In'
-                )}
+                {credentialsLoginMutation.isPending ? <CircularProgress size={24} /> : 'Sign In'}
               </Button>
             </form>
 
             {/* Links */}
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between',
-              mb: 3 
-            }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                mb: 3,
+              }}
+            >
               <Link href="/auth/signup">
-                <Typography 
-                  variant="body2" 
+                <Typography
+                  variant="body2"
                   color="primary"
                   sx={{ '&:hover': { textDecoration: 'underline' } }}
                 >
@@ -382,8 +381,8 @@ export default function SignInPage() {
                 </Typography>
               </Link>
               <Link href="/auth/forgot-password">
-                <Typography 
-                  variant="body2" 
+                <Typography
+                  variant="body2"
                   color="primary"
                   sx={{ '&:hover': { textDecoration: 'underline' } }}
                 >
@@ -397,10 +396,10 @@ export default function SignInPage() {
               <GoogleLoginButton
                 onClick={() => handleSocialLogin('google')}
                 disabled={isLoading}
-                style={{ 
+                style={{
                   marginBottom: '10px',
                   borderRadius: '20px',
-                  background: '#fff'
+                  background: '#fff',
                 }}
               />
               <AppleLoginButton

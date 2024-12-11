@@ -13,11 +13,7 @@ function TabPanel(props) {
       aria-labelledby={`inventory-tab-${index}`}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          {children}
-        </Box>
-      )}
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </div>
   );
 }
@@ -38,7 +34,9 @@ function InventoryManagement() {
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom>Inventory Management</Typography>
+      <Typography variant="h4" gutterBottom>
+        Inventory Management
+      </Typography>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={value} onChange={handleChange} aria-label="inventory management tabs">
           <Tab label="Inventory Items" />

@@ -22,7 +22,7 @@ function OnboardingSuccessContent() {
     loading: storeLoading,
     error: storeError,
     initialized,
-    initialize
+    initialize,
   } = useOnboarding();
 
   const sessionId = searchParams.get('session_id');
@@ -39,7 +39,7 @@ function OnboardingSuccessContent() {
 
         await saveStep('step3', {
           paymentVerified: true,
-          sessionId: sessionId
+          sessionId: sessionId,
         });
 
         toast.success('Payment verified successfully');
@@ -69,7 +69,7 @@ function OnboardingSuccessContent() {
 
   if (storeError) {
     return (
-      <ErrorStep 
+      <ErrorStep
         error={storeError}
         stepNumber={3}
         onRetry={() => router.push('/onboarding/step3')}
@@ -84,7 +84,7 @@ export default function OnboardingSuccess() {
   return (
     <OnboardingErrorBoundary
       fallback={({ error, resetError }) => (
-        <ErrorStep 
+        <ErrorStep
           error={error}
           stepNumber={3}
           onRetry={() => {

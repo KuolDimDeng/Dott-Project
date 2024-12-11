@@ -9,181 +9,109 @@ import { persistenceService } from '@/services/persistenceService';
 import { logger } from '@/utils/logger';
 
 // Form validation schema
-const validationSchema = z.object({
-    businessName: z.string()
+const validationSchema = z
+  .object({
+    businessName: z
+      .string()
       .min(1, 'Business name is required')
       .max(100, 'Business name cannot exceed 100 characters')
       .trim(),
-    industry: z.string()
-      .min(1, 'Industry is required')
-      .trim(),
-    country: z.string()
-      .min(2, 'Country is required')
-      .trim(),
-    legalStructure: z.string()
-      .min(1, 'Legal structure is required')
-      .trim(),
-    dateFounded: z.string()
+    industry: z.string().min(1, 'Industry is required').trim(),
+    country: z.string().min(2, 'Country is required').trim(),
+    legalStructure: z.string().min(1, 'Legal structure is required').trim(),
+    dateFounded: z
+      .string()
       .min(1, 'Date founded is required')
-      .refine(date => {
-        const parsedDate = Date.parse(date);
-        const now = Date.now();
-        return !isNaN(parsedDate) && parsedDate <= now && parsedDate > new Date('1800-01-01').getTime();
-      }, { message: 'Please enter a valid date between 1800 and today' }),
-    firstName: z.string()
+      .refine(
+        (date) => {
+          const parsedDate = Date.parse(date);
+          const now = Date.now();
+          return (
+            !isNaN(parsedDate) && parsedDate <= now && parsedDate > new Date('1800-01-01').getTime()
+          );
+        },
+        { message: 'Please enter a valid date between 1800 and today' }
+      ),
+    firstName: z
+      .string()
       .min(1, 'First name is required')
       .max(50, 'First name cannot exceed 50 characters')
       .trim()
-      .regex(/^[a-zA-Z\s-']+$/, 'First name can only contain letters, spaces, hyphens and apostrophes'),
-    lastName: z.string()
+      .regex(
+        /^[a-zA-Z\s-']+$/,
+        'First name can only contain letters, spaces, hyphens and apostrophes'
+      ),
+    lastName: z
+      .string()
       .min(1, 'Last name is required')
       .max(50, 'Last name cannot exceed 50 characters')
       .trim()
-      .regex(/^[a-zA-Z\s-']+$/, 'Last name can only contain letters, spaces, hyphens and apostrophes')
-}).required();
+      .regex(
+        /^[a-zA-Z\s-']+$/,
+        'Last name can only contain letters, spaces, hyphens and apostrophes'
+      ),
+  })
+  .required();
 
 // Default form values
 export const defaultValues = {
-    businessName: '',
-    industry: '',
-    country: '',
-    legalStructure: '',
-    dateFounded: new Date().toISOString().split('T')[0],
-    firstName: '',
-    lastName: ''
-  };
+  businessName: '',
+  industry: '',
+  country: '',
+  legalStructure: '',
+  dateFounded: new Date().toISOString().split('T')[0],
+  firstName: '',
+  lastName: '',
+};
 
-  export const useStep1Form = (savedFormData) => {
-    const formRef = useRef(null);
-    const lastSavedRef = useRef(null);
-    const autoSaveTimeoutRef = useRef(null);
-    const isSubmittingRef = useRef(false);
-    const [isInitialized, setIsInitialized] = useState(false);
+export const useStep1Form = (savedFormData) => {
+  const formRef = useRef(null);
+  const lastSavedRef = useRef(null);
+  const autoSaveTimeoutRef = useRef(null);
+  const isSubmittingRef = useRef(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-    const initialization = {
-        isInitializing: !isInitialized,
-        isInitialized,
-        error: null,
-        reset: useCallback(async () => {
-            try {
-                await resetForm();
-                setIsInitialized(true);
-            } catch (error) {
-                logger.error('Initialization reset failed:', error);
-                throw error;
-            }
-        }, [resetForm])
-    };
-    // Initialize form with react-hook-form
-    const methods = useForm({
-      resolver: zodResolver(validationSchema),
-      defaultValues: {
-        ...defaultValues,
-        ...savedFormData
-      },
-      mode: 'onChange',
-      criteriaMode: 'all',
-      shouldUnregister: false
-    });
+  // Initialize form with react-hook-form
+  const methods = useForm({
+    resolver: zodResolver(validationSchema),
+    defaultValues: {
+      ...defaultValues,
+      ...savedFormData,
+    },
+    mode: 'onChange',
+    criteriaMode: 'all',
+    shouldUnregister: false,
+  });
 
-    // Add initialization effect
-    useEffect(() => {
-        const initializeForm = async () => {
-            try {
-                const draft = await loadLatestDraft();
-                if (draft) {
-                    methods.reset(draft);
-                }
-                setIsInitialized(true);
-            } catch (error) {
-                logger.error('Form initialization failed:', error);
-                setIsInitialized(true); // Still set initialized to prevent hanging
-            }
-        };
+  // Form persistence hooks
+  const { handleFieldChange, loadSavedData } = useFormPersistence('step1-form');
 
-        initializeForm();
-    }, [loadLatestDraft, methods]);
-
-
-  
-    // Form persistence hooks
-    const {
-      handleFieldChange,
-      loadSavedData
-    } = useFormPersistence('step1-form');
-  
-
-    const {
-        saveDraft: saveFormDraft,
-        loadLatestDraft: loadFormDraft
-      } = useFormStatePersistence('step1-form', {
-        autoSaveInterval: 30000,
-        validateBeforeSave: true,
-        form: methods,
-        onLoadDraft: (draft) => {
-          if (draft?.data) {
-            logger.info('Loaded form draft:', { 
-              timestamp: draft.timestamp,
-              fields: Object.keys(draft.data)
-            });
-            lastSavedRef.current = draft.timestamp;
-          }
-        },
-        onSaveDraft: (draft) => {
-          if (draft?.data) {
-            logger.info('Saved form draft:', { 
-              timestamp: draft.timestamp,
-              fields: Object.keys(draft.data)
-            });
-            lastSavedRef.current = draft.timestamp;
-          }
+  const { saveDraft: saveFormDraft, loadLatestDraft: loadFormDraft } = useFormStatePersistence(
+    'step1-form',
+    {
+      autoSaveInterval: 30000,
+      validateBeforeSave: true,
+      form: methods,
+      onLoadDraft: (draft) => {
+        if (draft?.data) {
+          logger.info('Loaded form draft:', {
+            timestamp: draft.timestamp,
+            fields: Object.keys(draft.data),
+          });
+          lastSavedRef.current = draft.timestamp;
         }
-      });
-
-  // Handle field changes with debounce
-  const handleChange = useCallback((name, value) => {
-    try {
-      if (!name || value === undefined) {
-        logger.warn('Invalid field change:', { name, value });
-        return;
-      }
-
-      methods.setValue(name, value, { 
-        shouldValidate: true,
-        shouldDirty: true,
-        shouldTouch: true
-      });
-      
-      // Debounced field change handler
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        handleFieldChange(name, value, methods);
-      }, 500);
-
-    } catch (error) {
-      logger.error(`Failed to handle change for field ${name}:`, error);
+      },
+      onSaveDraft: (draft) => {
+        if (draft?.data) {
+          logger.info('Saved form draft:', {
+            timestamp: draft.timestamp,
+            fields: Object.keys(draft.data),
+          });
+          lastSavedRef.current = draft.timestamp;
+        }
+      },
     }
-  }, [methods, handleFieldChange]);
-
-  // Save form draft
-  const saveDraft = useCallback(async (data) => {
-    try {
-      if (!data || Object.keys(data).length === 0) {
-        logger.warn('Attempted to save empty form data');
-        return null;
-      }
-
-      const draft = await saveFormDraft(data);
-      lastSavedRef.current = draft?.timestamp;
-      return draft;
-    } catch (error) {
-      logger.error('Failed to save draft:', error);
-      throw error;
-    }
-  }, [saveFormDraft]);
+  );
 
   // Load latest draft
   const loadLatestDraft = useCallback(async () => {
@@ -191,8 +119,8 @@ export const defaultValues = {
       const draft = await loadFormDraft();
       if (draft?.data) {
         Object.entries(draft.data).forEach(([key, value]) => {
-          methods.setValue(key, value, { 
-            shouldValidate: true 
+          methods.setValue(key, value, {
+            shouldValidate: true,
           });
         });
         lastSavedRef.current = draft.timestamp;
@@ -204,16 +132,99 @@ export const defaultValues = {
     }
   }, [loadFormDraft, methods]);
 
-  // Reset form
+  // Add initialization effect
+  useEffect(() => {
+    const initializeForm = async () => {
+      try {
+        const draft = await loadLatestDraft();
+        if (draft) {
+          methods.reset(draft);
+        }
+        setIsInitialized(true);
+      } catch (error) {
+        logger.error('Form initialization failed:', error);
+        setIsInitialized(true); // Still set initialized to prevent hanging
+      }
+    };
+
+    initializeForm();
+  }, [loadLatestDraft, methods]);
+
+  // Define resetForm before using it in initialization
   const resetForm = useCallback(async () => {
     try {
-      methods.reset(defaultFormValues);
+      methods.reset(defaultValues);
       await persistenceService.clearData('step1-form_drafts');
       lastSavedRef.current = null;
     } catch (error) {
       logger.error('Failed to reset form:', error);
     }
   }, [methods]);
+
+  const initialization = {
+    isInitializing: !isInitialized,
+    isInitialized,
+    error: null,
+    reset: useCallback(async () => {
+      try {
+        await resetForm();
+        setIsInitialized(true);
+      } catch (error) {
+        logger.error('Initialization reset failed:', error);
+        throw error;
+      }
+    }, [resetForm]),
+  };
+
+  // Handle field changes with debounce
+  const handleChange = useCallback(
+    (name, value) => {
+      try {
+        if (!name || value === undefined) {
+          logger.warn('Invalid field change:', { name, value });
+          return;
+        }
+
+        methods.setValue(name, value, {
+          shouldValidate: true,
+          shouldDirty: true,
+          shouldTouch: true,
+        });
+
+        // Debounced field change handler
+        if (autoSaveTimeoutRef.current) {
+          clearTimeout(autoSaveTimeoutRef.current);
+        }
+
+        autoSaveTimeoutRef.current = setTimeout(() => {
+          handleFieldChange(name, value, methods);
+        }, 500);
+      } catch (error) {
+        logger.error(`Failed to handle change for field ${name}:`, error);
+      }
+    },
+    [methods, handleFieldChange]
+  );
+
+  // Save form draft
+  const saveDraft = useCallback(
+    async (data) => {
+      try {
+        if (!data || Object.keys(data).length === 0) {
+          logger.warn('Attempted to save empty form data');
+          return null;
+        }
+
+        const draft = await saveFormDraft(data);
+        lastSavedRef.current = draft?.timestamp;
+        return draft;
+      } catch (error) {
+        logger.error('Failed to save draft:', error);
+        throw error;
+      }
+    },
+    [saveFormDraft]
+  );
 
   // Validate form
   const validateForm = useCallback(async () => {
@@ -234,8 +245,8 @@ export const defaultValues = {
   useEffect(() => {
     try {
       const subscription = methods.watch((formData) => {
-        if (Object.keys(formData).some(key => formData[key])) {
-          saveDraft(formData).catch(error => {
+        if (Object.keys(formData).some((key) => formData[key])) {
+          saveDraft(formData).catch((error) => {
             logger.error('Auto-save failed:', error);
           });
         }
@@ -254,7 +265,7 @@ export const defaultValues = {
     return () => {
       try {
         if (methods.formState.isDirty) {
-          saveDraft(methods.getValues()).catch(error => {
+          saveDraft(methods.getValues()).catch((error) => {
             logger.error('Form cleanup failed:', error);
           });
         }
@@ -287,43 +298,46 @@ export const defaultValues = {
   }, [methods.formState.errors]);
 
   // Add a submit handler
-  const handleSubmit = useCallback(async (data) => {
-    try {
+  const handleSubmit = useCallback(
+    async (data) => {
+      try {
         if (!isInitialized) {
-            throw new Error('Form not initialized');
+          throw new Error('Form not initialized');
         }
 
         isSubmittingRef.current = true;
-        
+
         // Validate form
         const isValid = await validateForm();
         if (!isValid) {
-            const errors = getErrorsSummary();
-            throw new Error(Object.values(errors)[0] || 'Please fill in all required fields');
+          const errors = getErrorsSummary();
+          throw new Error(Object.values(errors)[0] || 'Please fill in all required fields');
         }
 
         const formData = methods.getValues();
-        
+
         // Format data before submission
         const submissionData = {
-            businessName: formData.businessName,
-            industry: formData.industry,
-            country: formData.country,
-            legalStructure: formData.legalStructure,
-            dateFounded: formData.dateFounded,
-            firstName: formData.firstName,
-            lastName: formData.lastName
+          businessName: formData.businessName,
+          industry: formData.industry,
+          country: formData.country,
+          legalStructure: formData.legalStructure,
+          dateFounded: formData.dateFounded,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
         };
 
         return submissionData;
-    } catch (error) {
+      } catch (error) {
         logger.error('Form submission failed:', error);
         throw error;
-    } finally {
+      } finally {
         isSubmittingRef.current = false;
-    }
-}, [methods, validateForm, getErrorsSummary, isInitialized]);
-  
+      }
+    },
+    [methods, validateForm, getErrorsSummary, isInitialized]
+  );
+
   // Add handleSubmit to the return object
   return {
     methods,
@@ -343,6 +357,6 @@ export const defaultValues = {
     getErrorsSummary,
     isSubmitting: isSubmittingRef.current,
     initialization, // Add this
-    defaultValues // Add this
+    defaultValues, // Add this
+  };
 };
-}

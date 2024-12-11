@@ -1,4 +1,4 @@
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 export const saveEstimate = async (estimateId) => {
   try {
@@ -13,12 +13,12 @@ export const saveEstimate = async (estimateId) => {
 export const printEstimate = async (estimateId) => {
   try {
     const response = await axiosInstance.get(`/api/estimates/${estimateId}/print/`, {
-      responseType: 'blob'  // important for receiving PDF data
+      responseType: 'blob', // important for receiving PDF data
     });
     const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
     const pdfUrl = URL.createObjectURL(pdfBlob);
     window.open(pdfUrl, '_blank');
-    
+
     // Optional: Revoke the URL after a timeout to prevent memory leaks
     setTimeout(() => {
       URL.revokeObjectURL(pdfUrl);

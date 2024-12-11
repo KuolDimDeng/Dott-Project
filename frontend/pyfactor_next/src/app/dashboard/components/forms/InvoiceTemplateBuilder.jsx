@@ -66,13 +66,17 @@ const InvoiceTemplateBuilder = ({
                   type="number"
                   placeholder="Quantity"
                   value={item.quantity}
-                  onChange={(e) => handleInvoiceItemChange(index, 'quantity', parseFloat(e.target.value))}
+                  onChange={(e) =>
+                    handleInvoiceItemChange(index, 'quantity', parseFloat(e.target.value))
+                  }
                 />
                 <Input
                   type="number"
                   placeholder="Unit Price"
                   value={item.unitPrice}
-                  onChange={(e) => handleInvoiceItemChange(index, 'unitPrice', parseFloat(e.target.value))}
+                  onChange={(e) =>
+                    handleInvoiceItemChange(index, 'unitPrice', parseFloat(e.target.value))
+                  }
                 />
                 <Typography variant="body1">Amount: {item.amount}</Typography>
               </Box>

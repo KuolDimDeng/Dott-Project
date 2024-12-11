@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import React, { useState, useEffect } from 'react';
 import {
   Typography,
@@ -9,14 +9,35 @@ import {
   MenuItem,
   Paper,
   Tabs,
-  Tab
+  Tab,
 } from '@mui/material';
 import { Bar, Line, Pie } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title } from 'chart.js';
-import axiosInstance from '@/lib/axiosConfig';;
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+} from 'chart.js';
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title);
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title
+);
 
 const timeRanges = [
   { value: '1', label: '1 Month' },
@@ -42,7 +63,7 @@ export default function ExpenseAnalysis() {
   const fetchData = async () => {
     try {
       const response = await axiosInstance.get(`/api/analysis/expense-data`, {
-        params: { time_range: timeRange }
+        params: { time_range: timeRange },
       });
       setData(response.data);
     } catch (error) {
@@ -62,11 +83,11 @@ export default function ExpenseAnalysis() {
   if (!data) return <Typography>Loading...</Typography>;
 
   const expensesOverTimeData = {
-    labels: data.expensesOverTime.map(item => item.date),
+    labels: data.expensesOverTime.map((item) => item.date),
     datasets: [
       {
         label: 'Expenses',
-        data: data.expensesOverTime.map(item => item.amount),
+        data: data.expensesOverTime.map((item) => item.amount),
         fill: false,
         borderColor: 'rgb(255, 99, 132)',
         tension: 0.1,
@@ -75,10 +96,10 @@ export default function ExpenseAnalysis() {
   };
 
   const expensesByCategoryData = {
-    labels: data.expensesByCategory.map(item => item.category),
+    labels: data.expensesByCategory.map((item) => item.category),
     datasets: [
       {
-        data: data.expensesByCategory.map(item => item.amount),
+        data: data.expensesByCategory.map((item) => item.amount),
         backgroundColor: [
           'rgba(255, 99, 132, 0.6)',
           'rgba(54, 162, 235, 0.6)',
@@ -91,23 +112,29 @@ export default function ExpenseAnalysis() {
   };
 
   const expensesByVendorData = {
-    labels: data.expensesByVendor.map(item => item.vendor),
-    datasets: [{
-      label: 'Expenses',
-      data: data.expensesByVendor.map(item => item.amount),
-      backgroundColor: 'rgba(75, 192, 192, 0.6)',
-    }]
+    labels: data.expensesByVendor.map((item) => item.vendor),
+    datasets: [
+      {
+        label: 'Expenses',
+        data: data.expensesByVendor.map((item) => item.amount),
+        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+      },
+    ],
   };
 
   return (
     <Paper elevation={3} sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>Expense Analysis</Typography>
-      
+      <Typography variant="h5" gutterBottom>
+        Expense Analysis
+      </Typography>
+
       <FormControl fullWidth margin="normal">
         <InputLabel>Time Range</InputLabel>
         <Select value={timeRange} onChange={handleTimeRangeChange}>
           {timeRanges.map((range) => (
-            <MenuItem key={range.value} value={range.value}>{range.label}</MenuItem>
+            <MenuItem key={range.value} value={range.value}>
+              {range.label}
+            </MenuItem>
           ))}
         </Select>
       </FormControl>
@@ -123,28 +150,36 @@ export default function ExpenseAnalysis() {
 
       {activeTab === 0 && (
         <Box>
-          <Typography variant="h6" gutterBottom>Expenses Over Time</Typography>
+          <Typography variant="h6" gutterBottom>
+            Expenses Over Time
+          </Typography>
           <Line data={expensesOverTimeData} />
         </Box>
       )}
 
       {activeTab === 1 && (
         <Box>
-          <Typography variant="h6" gutterBottom>Expenses by Category</Typography>
+          <Typography variant="h6" gutterBottom>
+            Expenses by Category
+          </Typography>
           <Pie data={expensesByCategoryData} />
         </Box>
       )}
 
       {activeTab === 2 && (
         <Box>
-          <Typography variant="h6" gutterBottom>Expenses by Vendor</Typography>
+          <Typography variant="h6" gutterBottom>
+            Expenses by Vendor
+          </Typography>
           <Bar data={expensesByVendorData} />
         </Box>
       )}
 
       {activeTab === 3 && (
         <Box>
-          <Typography variant="h6" gutterBottom>Summary</Typography>
+          <Typography variant="h6" gutterBottom>
+            Summary
+          </Typography>
           <Typography>Total Expenses: ${formatAmount(data.totalExpenses)}</Typography>
           <Typography>Average Expense: ${formatAmount(data.averageExpense)}</Typography>
           <Typography>Number of Expenses: {data.numberOfExpenses}</Typography>

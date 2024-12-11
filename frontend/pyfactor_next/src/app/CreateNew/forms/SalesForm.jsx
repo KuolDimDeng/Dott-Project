@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  TextField, 
-  Button, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
+import {
+  Box,
+  TextField,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   Typography,
   IconButton,
   Grid,
@@ -14,7 +14,7 @@ import {
   Paper,
   Tooltip,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -90,9 +90,9 @@ const SalesForm = ({ onClose }) => {
   const handleItemChange = (index, field, value) => {
     const updatedItems = [...sale.items];
     updatedItems[index][field] = value;
-    
+
     if (field === 'product') {
-      const selectedProduct = products.find(p => p.id === value);
+      const selectedProduct = products.find((p) => p.id === value);
       if (selectedProduct) {
         updatedItems[index].unit_price = selectedProduct.price;
       }
@@ -116,8 +116,8 @@ const SalesForm = ({ onClose }) => {
   };
 
   const calculateTotal = (items) => {
-    const total = items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
-    setSale(prevSale => ({ ...prevSale, total_amount: total }));
+    const total = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
+    setSale((prevSale) => ({ ...prevSale, total_amount: total }));
   };
 
   const handleBarcodeInputChange = (e) => {
@@ -131,19 +131,19 @@ const SalesForm = ({ onClose }) => {
     try {
       const response = await useApi.get(`/api/products/barcode/${barcodeInput}/`);
       const scannedProduct = response.data;
-      
+
       // Add the scanned product to the items list
       const newItem = {
         product: scannedProduct.id,
         quantity: 1,
-        unit_price: scannedProduct.price
+        unit_price: scannedProduct.price,
       };
-      
-      setSale(prevSale => ({
+
+      setSale((prevSale) => ({
         ...prevSale,
-        items: [...prevSale.items, newItem]
+        items: [...prevSale.items, newItem],
       }));
-      
+
       calculateTotal([...sale.items, newItem]);
       setBarcodeInput('');
       addMessage('success', `Added ${scannedProduct.name} to the sale`);
@@ -193,10 +193,10 @@ const SalesForm = ({ onClose }) => {
                 return option.customerName || '';
               }}
               renderInput={(params) => <TextField {...params} label="Customer" required />}
-              value={customers.find(c => c.id === sale.customer) || null}
+              value={customers.find((c) => c.id === sale.customer) || null}
               onChange={handleCustomerChange}
               onInputChange={(event, newInputValue) => {
-                if (!customers.some(c => c.customerName === newInputValue)) {
+                if (!customers.some((c) => c.customerName === newInputValue)) {
                   setSale({ ...sale, customer: newInputValue });
                 }
               }}
@@ -271,7 +271,9 @@ const SalesForm = ({ onClose }) => {
                   type="number"
                   label="Unit Price"
                   value={item.unit_price}
-                  onChange={(e) => handleItemChange(index, 'unit_price', parseFloat(e.target.value))}
+                  onChange={(e) =>
+                    handleItemChange(index, 'unit_price', parseFloat(e.target.value))
+                  }
                   sx={{ mr: 1, width: '120px' }}
                   required
                 />

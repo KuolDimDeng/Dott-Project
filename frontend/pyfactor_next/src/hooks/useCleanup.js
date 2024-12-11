@@ -42,7 +42,7 @@ export const useCleanup = () => {
       eventListeners.current.forEach(({ element, event, handler }) => {
         element.removeEventListener(event, handler);
       });
-      cleanupFns.current.forEach(fn => {
+      cleanupFns.current.forEach((fn) => {
         try {
           fn();
         } catch (error) {
@@ -56,6 +56,6 @@ export const useCleanup = () => {
     addTimeout,
     addInterval,
     addEventListener,
-    addCleanupFn
+    addCleanupFn,
   };
 };

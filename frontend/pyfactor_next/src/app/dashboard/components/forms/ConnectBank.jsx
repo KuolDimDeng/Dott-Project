@@ -22,7 +22,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { usePlaidLink } from 'react-plaid-link';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const ConnectBank = () => {
   const [region, setRegion] = useState('');
@@ -79,7 +79,7 @@ const ConnectBank = () => {
       }
 
       const response = await axiosInstance.post('/api/banking/create_link_token/', payload);
-      
+
       if (response.data.link_token) {
         setLinkToken(response.data.link_token);
       } else if (response.data.auth_url) {
@@ -100,17 +100,17 @@ const ConnectBank = () => {
   const { open, ready } = usePlaidLink({
     token: linkToken,
     onSuccess: (public_token, metadata) => {
-      console.log("Bank connection successful");
+      console.log('Bank connection successful');
       exchangePublicToken(public_token);
     },
     onExit: (err, metadata) => {
-      console.log("Plaid Link exited", err, metadata);
+      console.log('Plaid Link exited', err, metadata);
       if (err) {
         setSnackbar({ open: true, message: 'Failed to connect bank', severity: 'error' });
       }
     },
     onEvent: (eventName, metadata) => {
-      console.log("Plaid Link event", eventName, metadata);
+      console.log('Plaid Link event', eventName, metadata);
     },
   });
 
@@ -125,20 +125,20 @@ const ConnectBank = () => {
       const response = await axiosInstance.post('/api/banking/exchange_token/', { public_token });
       if (response.data.success) {
         setConnectedBankInfo(response.data.bank_info);
-        setSnackbar({ 
-          open: true, 
-          message: 'Bank connected successfully', 
-          severity: 'success' 
+        setSnackbar({
+          open: true,
+          message: 'Bank connected successfully',
+          severity: 'success',
         });
       } else {
         throw new Error('Failed to exchange token');
       }
     } catch (error) {
       console.error('Error exchanging token:', error);
-      setSnackbar({ 
-        open: true, 
-        message: 'Failed to connect bank. Please try again.', 
-        severity: 'error' 
+      setSnackbar({
+        open: true,
+        message: 'Failed to connect bank. Please try again.',
+        severity: 'error',
       });
     }
   };
@@ -152,92 +152,98 @@ const ConnectBank = () => {
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-        <Typography variant="h4" gutterBottom>
-          Connect Your Bank
-        </Typography>
-        
-        {!connectedBankInfo ? (
-          <>
-            <Typography variant="body1" paragraph>
-              Please choose the region where your bank is located. This helps us provide you with the most appropriate connection method for your bank.
-            </Typography>
+      <Typography variant="h4" gutterBottom>
+        Connect Your Bank
+      </Typography>
+
+      {!connectedBankInfo ? (
+        <>
+          <Typography variant="body1" paragraph>
+            Please choose the region where your bank is located. This helps us provide you with the
+            most appropriate connection method for your bank.
+          </Typography>
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Select Your Region</InputLabel>
+            <Select value={region} onChange={handleRegionChange}>
+              <MenuItem value="America">America</MenuItem>
+              <MenuItem value="Europe">Europe</MenuItem>
+              <MenuItem value="Africa">Africa</MenuItem>
+              <MenuItem value="Asia">Asia</MenuItem>
+            </Select>
+          </FormControl>
+
+          {region === 'Africa' && (
+            <FormControl component="fieldset" sx={{ mb: 2 }}>
+              <FormLabel component="legend">Choose a connection method</FormLabel>
+              <RadioGroup value={africanOption} onChange={handleAfricanOptionChange}>
+                <FormControlLabel value="Mobile Money" control={<Radio />} label="Mobile Money" />
+                <FormControlLabel value="Banks" control={<Radio />} label="Traditional Banks" />
+              </RadioGroup>
+            </FormControl>
+          )}
+
+          {region === 'Africa' && africanOption === 'Banks' && (
             <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Select Your Region</InputLabel>
-              <Select value={region} onChange={handleRegionChange}>
-                <MenuItem value="America">America</MenuItem>
-                <MenuItem value="Europe">Europe</MenuItem>
-                <MenuItem value="Africa">Africa</MenuItem>
-                <MenuItem value="Asia">Asia</MenuItem>
+              <InputLabel>Select Bank Provider</InputLabel>
+              <Select value={africanBankProvider} onChange={handleAfricanBankProviderChange}>
+                <MenuItem value="Mono">Mono</MenuItem>
+                <MenuItem value="Stitch">Stitch</MenuItem>
               </Select>
             </FormControl>
+          )}
 
-            {region === 'Africa' && (
-              <FormControl component="fieldset" sx={{ mb: 2 }}>
-                <FormLabel component="legend">Choose a connection method</FormLabel>
-                <RadioGroup value={africanOption} onChange={handleAfricanOptionChange}>
-                  <FormControlLabel value="Mobile Money" control={<Radio />} label="Mobile Money" />
-                  <FormControlLabel value="Banks" control={<Radio />} label="Traditional Banks" />
-                </RadioGroup>
-              </FormControl>
-            )}
-
-            {region === 'Africa' && africanOption === 'Banks' && (
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Select Bank Provider</InputLabel>
-                <Select value={africanBankProvider} onChange={handleAfricanBankProviderChange}>
-                  <MenuItem value="Mono">Mono</MenuItem>
-                  <MenuItem value="Stitch">Stitch</MenuItem>
-                </Select>
-              </FormControl>
-            )}
-
-            <Button
-              variant="contained"
-              fullWidth
-              onClick={handleConnect}
-              disabled={!region || (region === 'Africa' && (!africanOption || (africanOption === 'Banks' && !africanBankProvider))) || loading}
-            >
-              {loading ? <CircularProgress size={24} /> : 'Connect'}
-            </Button>
-          </>
-        ) : (
-          <Box>
-            <Typography variant="h5" gutterBottom color="primary">
-              Successfully Connected!
-            </Typography>
-            <Typography variant="body1" paragraph>
-              You are now connected to {connectedBankInfo.institution_name}.
-            </Typography>
-            <List>
-              {connectedBankInfo.accounts.map((account, index) => (
-                <ListItem key={index}>
-                  <ListItemText 
-                    primary={`Account: ${account.name}`} 
-                    secondary={`Type: ${account.type}, Balance: $${account.balances.current.toFixed(2)}`} 
-                  />
-                </ListItem>
-              ))}
-            </List>
-            <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-              You can now view your transactions and account details in the Banking Dashboard.
-            </Typography>
-            <Button
-              variant="contained"
-              fullWidth
-              sx={{ mt: 2 }}
-              component={Link}
-              href="/dashboard/banking"
-            >
-              Go to Banking Dashboard
-            </Button>
-          </Box>
-        )}
-        
-        {error && (
-          <Typography color="error" sx={{ mt: 2 }}>
-            {error}
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleConnect}
+            disabled={
+              !region ||
+              (region === 'Africa' &&
+                (!africanOption || (africanOption === 'Banks' && !africanBankProvider))) ||
+              loading
+            }
+          >
+            {loading ? <CircularProgress size={24} /> : 'Connect'}
+          </Button>
+        </>
+      ) : (
+        <Box>
+          <Typography variant="h5" gutterBottom color="primary">
+            Successfully Connected!
           </Typography>
-        )}
+          <Typography variant="body1" paragraph>
+            You are now connected to {connectedBankInfo.institution_name}.
+          </Typography>
+          <List>
+            {connectedBankInfo.accounts.map((account, index) => (
+              <ListItem key={index}>
+                <ListItemText
+                  primary={`Account: ${account.name}`}
+                  secondary={`Type: ${account.type}, Balance: $${account.balances.current.toFixed(2)}`}
+                />
+              </ListItem>
+            ))}
+          </List>
+          <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+            You can now view your transactions and account details in the Banking Dashboard.
+          </Typography>
+          <Button
+            variant="contained"
+            fullWidth
+            sx={{ mt: 2 }}
+            component={Link}
+            href="/dashboard/banking"
+          >
+            Go to Banking Dashboard
+          </Button>
+        </Box>
+      )}
+
+      {error && (
+        <Typography color="error" sx={{ mt: 2 }}>
+          {error}
+        </Typography>
+      )}
       <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}

@@ -28,9 +28,9 @@ export default function AuthErrorPage() {
 
   useEffect(() => {
     // Log error
-    logger.error('Authentication error occurred', { 
+    logger.error('Authentication error occurred', {
       error,
-      description: errorDescription 
+      description: errorDescription,
     });
 
     // Show error toast
@@ -53,7 +53,7 @@ export default function AuthErrorPage() {
       title: 'Authentication Error',
       message: ERROR_MESSAGES[error] || ERROR_MESSAGES.Default,
       description: errorDescription || 'Please try signing in again.',
-      severity: error === 'Verification' ? 'info' : 'error'
+      severity: error === 'Verification' ? 'info' : 'error',
     };
   };
 
@@ -72,7 +72,7 @@ export default function AuthErrorPage() {
         gap: 3,
       }}
     >
-      <Image 
+      <Image
         src="/static/images/Page-Not-Found-3--Streamline-Brooklyn.png"
         alt="Error Illustration"
         width={400}
@@ -80,7 +80,7 @@ export default function AuthErrorPage() {
         priority
         style={{
           maxWidth: '100%',
-          height: 'auto'
+          height: 'auto',
         }}
       />
 
@@ -89,11 +89,7 @@ export default function AuthErrorPage() {
           {errorDetails.title}
         </Typography>
 
-        <Alert 
-          severity={errorDetails.severity}
-          sx={{ mb: 3 }}
-          variant="outlined"
-        >
+        <Alert severity={errorDetails.severity} sx={{ mb: 3 }} variant="outlined">
           <Typography variant="body1" paragraph>
             {errorDetails.message}
           </Typography>
@@ -104,11 +100,7 @@ export default function AuthErrorPage() {
           )}
         </Alert>
 
-        <Typography 
-          variant="body2" 
-          color="textSecondary" 
-          paragraph
-        >
+        <Typography variant="body2" color="textSecondary" paragraph>
           You will be redirected to the sign-in page in 5 seconds.
         </Typography>
 
@@ -122,13 +114,7 @@ export default function AuthErrorPage() {
           >
             Return to Sign In
           </Button>
-          <Button
-            variant="outlined"
-            color="primary"
-            component={Link}
-            href="/"
-            size="large"
-          >
+          <Button variant="outlined" color="primary" component={Link} href="/" size="large">
             Go to Homepage
           </Button>
         </Box>
@@ -150,22 +136,13 @@ export function ErrorBoundary({ error }) {
         padding: 3,
       }}
     >
-      <Alert 
-        severity="error" 
-        sx={{ maxWidth: 500, mb: 3 }}
-      >
+      <Alert severity="error" sx={{ maxWidth: 500, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
           Something went wrong
         </Typography>
-        <Typography variant="body2">
-          {error.message}
-        </Typography>
+        <Typography variant="body2">{error.message}</Typography>
       </Alert>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => window.location.reload()}
-      >
+      <Button variant="contained" color="primary" onClick={() => window.location.reload()}>
         Try Again
       </Button>
     </Box>

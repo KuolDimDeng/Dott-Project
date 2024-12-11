@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import React, { useEffect, useState } from 'react';
 import { Badge, IconButton, Snackbar } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
@@ -18,7 +18,7 @@ const AlertsComponent = ({ onAlertClick }) => {
     try {
       const response = await useApi.get('/api/alerts/user_alerts/');
       setAlerts(response.data);
-      setUnreadCount(response.data.filter(alert => !alert.is_read).length);
+      setUnreadCount(response.data.filter((alert) => !alert.is_read).length);
     } catch (error) {
       console.error('Error fetching alerts:', error);
     }

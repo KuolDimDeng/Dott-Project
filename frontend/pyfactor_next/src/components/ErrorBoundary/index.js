@@ -1,11 +1,7 @@
 // src/components/ErrorBoundary/index.js
 'use client';
 
-export { 
-  ErrorBoundary,
-  AppErrorBoundary,
-  withErrorBoundary 
-} from './ErrorBoundary';
+export { ErrorBoundary, AppErrorBoundary, withErrorBoundary } from './ErrorBoundary';
 
 export { default as ErrorFallback } from './ErrorFallback';
 

@@ -4,7 +4,14 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import { CssBaseline, Box, Container, AppBar as MuiAppBar, Toolbar, Typography } from '@mui/material';
+import {
+  CssBaseline,
+  Box,
+  Container,
+  AppBar as MuiAppBar,
+  Toolbar,
+  Typography,
+} from '@mui/material';
 import ConsoleMessages from './components/components/ConsoleMessages';
 import Drawer from './components/Drawer';
 import AppBar from './components/AppBar';
@@ -17,7 +24,7 @@ import InvoiceDetails from './components/forms/InvoiceDetails';
 import CustomerDetails from './components/forms/CustomerDetails';
 import ProductList from './components/lists/ProductList';
 import ServiceList from './components/lists/ServiceList';
-import axiosInstance from '@/lib/axiosConfig';
+import { axiosInstance } from '@/lib/axiosConfig';
 import ChartContainer from '../chart/component/ChartContainer';
 import { FamilyRestroomRounded } from '@mui/icons-material';
 import IntegrationSettings from '../Settings/integrations/components/IntegrationSettings';
@@ -28,18 +35,12 @@ import AlertsPage from '../alerts/components/AlertsPage';
 import SendGlobalAlert from '../alerts/components/SendGlobalAlert';
 import AlertsComponent from '../alerts/components/AlertsComponents';
 
-
-
-
-
-
 const theme = createTheme({
   palette: {
     primary: { main: '#b3e5fc' }, // Navy blue color
-    secondary: { main: '#81d4fa' } // Light blue color
+    secondary: { main: '#81d4fa' }, // Light blue color
   },
 });
-
 
 function DashboardContent() {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -137,13 +138,11 @@ function DashboardContent() {
   const [showBankRecon, setShowBankRecon] = useState(false);
   const [showPayrollReport, setShowPayrollReport] = useState(false);
   const [showBankReport, setShowBankReport] = useState(false);
-  const [showInventoryItems,setShowInventoryItems] = useState(false);
+  const [showInventoryItems, setShowInventoryItems] = useState(false);
   const [showInventoryManagement, setShowInventoryManagement] = useState(false);
   const [showMainDashboard, setShowMainDashboard] = useState(false);
   const [showBankTransactions, setShowBankTransactions] = useState(false);
   const [showHome, setShowHome] = useState(false);
-
-
 
   const router = useRouter();
 
@@ -224,13 +223,12 @@ function DashboardContent() {
     setShowBankTransactions,
     setShowInventoryManagement,
     setShowHome,
-    
   ];
 
   const drawerWidth = 225; // or whatever width you want for your drawer
 
   const resetAllStatesExcept = (exceptionSetter) => {
-    AllResetState.forEach(setter => {
+    AllResetState.forEach((setter) => {
       if (typeof setter === 'function' && setter !== exceptionSetter) {
         setter(false);
       } else if (typeof setter !== 'function') {
@@ -240,7 +238,7 @@ function DashboardContent() {
   };
 
   const resetAllStates = () => {
-    AllResetState.forEach(setter => {
+    AllResetState.forEach((setter) => {
       if (typeof setter === 'function') {
         setter(false);
       } else {
@@ -256,7 +254,7 @@ function DashboardContent() {
           Authorization: `Bearer ${token}`,
         },
       });
-  
+
       if (response.status === 200) {
         const data = response.data;
         console.log('Dashboard User data:', data);
@@ -265,12 +263,11 @@ function DashboardContent() {
         data.full_name = data.full_name || `${data.first_name} ${data.last_name}`;
         const activeSubscription = data.active_subscription;
         const subscriptionType = activeSubscription ? activeSubscription.subscription_type : 'free';
-  
+
         setUserData({
           ...data,
-          subscription_type: subscriptionType       
-          });
-
+          subscription_type: subscriptionType,
+        });
       } else {
         logger.error('Error fetching user data:', response.statusText);
         addMessage('error', `Error fetching user data: ${response.statusText}`);
@@ -297,10 +294,10 @@ function DashboardContent() {
 
   const handleBankingClick = (section) => {
     console.log('handleBankingClick called with section:', section);
-    
+
     resetAllStates();
-  
-    switch(section) {
+
+    switch (section) {
       case 'dashboard':
         setShowBankingDashboard(true);
         break;
@@ -343,8 +340,8 @@ function DashboardContent() {
   const handlePrivacyClick = () => {
     console.log('Privacy clicked');
     // Implement Privacy Policy functionality here
-   resetAllStates();
-   setShowPrivacyPolicy(true);
+    resetAllStates();
+    setShowPrivacyPolicy(true);
   };
 
   const handleUserProfileUpdate = (updatedUserData) => {
@@ -361,12 +358,10 @@ function DashboardContent() {
     resetAllStates();
     setShowAPIIntegrations(true);
   };
-  
 
   const handleECommercePlatformAPIClick = () => {
     setShowECommercePlatformAPI(true);
     setShowAPIIntegrations(false);
-    
   };
 
   const handleCRMAPIClick = () => {
@@ -388,8 +383,6 @@ function DashboardContent() {
     setSelectedSettingsOption(option); // Update the selected settings option
     handleSettingsClose(); // Close the settings menu after selecting an option
   };
-  
-
 
   const handleIntegrationsClick = () => {
     console.log('handleIntegrationsClick called');
@@ -410,13 +403,12 @@ function DashboardContent() {
     setShowSalesAnalysis(false);
     setShowIntegrationSettings(false);
   };
-  
 
   const handleSalesClick = (section) => {
     console.log('handleSalesClick called with section:', section);
     resetAllStatesExcept(setShowCustomerList);
-  
-    switch(section) {
+
+    switch (section) {
       case 'customers':
         setShowCustomerList(true);
         setView('customerList');
@@ -465,7 +457,7 @@ function DashboardContent() {
   const handleInventoryClick = (section) => {
     console.log('handleInventoryClick called with section:', section);
     resetAllStates();
-    switch(section) {
+    switch (section) {
       case 'inventorydashboard':
         setShowInventoryManagement(true);
         break;
@@ -481,14 +473,12 @@ function DashboardContent() {
     }
   };
 
-
   const handleMainDashboardClick = () => {
     console.log('handleDashboardClick called.');
     resetAllStates();
     setShowMainDashboard(true);
     console.log('view set to: dashboard');
     setShowKPIDashboard(false); // Ensure KPI Dashboard is not visible
-
   };
 
   const handleKPIDashboardClick = () => {
@@ -496,30 +486,27 @@ function DashboardContent() {
     resetAllStates();
     console.log('view set to: dashboard');
     setShowKPIDashboard(true); // Ensure KPI Dashboard is not visible
+  };
 
-  };
-  
   const handleCustomerSelect = (customerId) => {
-    console.log("handleCustomerSelect called with customerId:", customerId);
+    console.log('handleCustomerSelect called with customerId:', customerId);
     setSelectedCustomerId(customerId);
-    console.log("selectedCustomerId set to:", customerId);
+    console.log('selectedCustomerId set to:', customerId);
     setView('customerDetails');
-    console.log("view set to: customerDetails");
+    console.log('view set to: customerDetails');
   };
-  
+
   const handleInvoiceSelect = (invoiceId) => {
     setSelectedInvoiceId(invoiceId);
   };
 
-
-
   const handleAnalysisClick = (analysisType) => {
     console.log('handleAnalysisClick called with analysisType:', analysisType);
-  
+
     resetAllStates();
     setShowAnalysisPage(true);
-  
-    switch(analysisType) {
+
+    switch (analysisType) {
       case 'sales-analysis':
         setShowSalesAnalysis(true);
         break;
@@ -563,22 +550,20 @@ function DashboardContent() {
     setSelectedInvoiceId(null);
   };
 
-
   const handleHomeClick = () => {
     resetAllStates();
     setShowHome(true);
-
-  }
+  };
 
   const handleHRClick = (section) => {
     console.log('handleHRClick called with section:', section);
-    
+
     // Reset all HR-related states
     setShowHRDashboard(false);
     setShowPayrollDashboard(false);
     setShowBankingDashboard(false);
     setShowEmployeeManagement(false);
-    
+
     // Reset other general states
     setShowBankingDashboard(false);
     setShowKPIDashboard(false);
@@ -592,8 +577,8 @@ function DashboardContent() {
     setShowAccountPage(false);
     setShowSalesAnalysis(false);
     setShowIntegrationSettings(false);
-  
-    switch(section) {
+
+    switch (section) {
       case 'employees':
         setShowEmployeeManagement(true);
         break;
@@ -641,10 +626,10 @@ function DashboardContent() {
 
   const handlePayrollClick = (section) => {
     console.log('handlePayrollClick called with section:', section);
-  
+
     resetAllStates();
-  
-    switch(section) {
+
+    switch (section) {
       case 'employees':
         setShowEmployeeManagement(true);
         setPayrollSection('employees');
@@ -685,10 +670,10 @@ function DashboardContent() {
 
   const handlePurchasesClick = (section) => {
     console.log('handlePurchasesClick called with section:', section);
-    
+
     resetAllStates();
-  
-    switch(section) {
+
+    switch (section) {
       case 'vendors':
         setShowVendorManagement(true);
         break;
@@ -711,8 +696,7 @@ function DashboardContent() {
         console.log('Unknown purchases section:', section);
         break;
     }
-  
-  
+
     // Reset other view states
     setShowBankingDashboard(false);
     setShowKPIDashboard(false);
@@ -733,15 +717,14 @@ function DashboardContent() {
     setDrawerOpen(!drawerOpen);
   };
 
-
   const handleReportClick = (reportType) => {
     console.log('handleReportClick called with reportType:', reportType);
-  
+
     resetAllStates();
     setShowReports(true);
     setSelectedReport(reportType);
-  
-    switch(reportType) {
+
+    switch (reportType) {
       case 'income_statement':
         setShowProfitAndLossReport(true);
         break;
@@ -823,10 +806,10 @@ function DashboardContent() {
 
   const handleAccountingClick = (section) => {
     console.log('handleAccountingClick called with section:', section);
-    
+
     resetAllStates();
-  
-    switch(section) {
+
+    switch (section) {
       case 'chart-of-accounts':
         setShowChartOfAccounts(true);
         break;
@@ -871,7 +854,7 @@ function DashboardContent() {
 
   const handleDeleteAccount = () => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to close your account permanently?"
+      'Are you sure you want to close your account permanently?'
     );
     if (confirmDelete) {
       deleteUserAccount();
@@ -886,7 +869,6 @@ function DashboardContent() {
     // ... (reset other view states)
     fetchProducts();
   };
-
 
   const handleServicesClick = () => {
     setView('serviceList');
@@ -912,14 +894,14 @@ function DashboardContent() {
   const handleMarkAsRead = async (alertId) => {
     try {
       await axiosInstance.post(`/api/alerts/${alertId}/mark_as_read/`);
-      setAlerts(alerts.map(alert => 
-        alert.id === alertId ? { ...alert, is_read: true } : alert
-      ));
+      setAlerts(
+        alerts.map((alert) => (alert.id === alertId ? { ...alert, is_read: true } : alert))
+      );
     } catch (error) {
       console.error('Error marking alert as read:', error);
     }
   };
-  
+
   const handleSendGlobalAlertClick = () => {
     resetAllStates();
     setShowSendGlobalAlert(true);
@@ -978,8 +960,6 @@ function DashboardContent() {
     }
   };
 
-  
-
   useEffect(() => {
     fetchUserData();
   }, [fetchUserData]);
@@ -1008,223 +988,213 @@ function DashboardContent() {
 
   return (
     <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <AppBar 
-          mainBackground="#fafafa"
-          textAppColor="#263238"
-          drawerOpen={drawerOpen}
-          handleDrawerToggle={handleDrawerToggle}
-          userData={userData}
-          anchorEl={anchorEl}
-          openMenu={openMenu}
-          handleClick={handleClick}
-          handleClose={handleClose}
-          handleAccountingClick={handleAccountingClick}
-          handleSettingsClick={handleSettingsClick}
-          settingsAnchorEl={settingsAnchorEl}
-          settingsMenuOpen={settingsMenuOpen}
-          handleSettingsClose={handleSettingsClose}
-          handleIntegrationsClick={handleIntegrationsClick}
-          isShopifyConnected={isShopifyConnected}
-          handleUserProfileClick={handleUserProfileClick}
-          handleAlertClick={handleAlertClick}
-          handleDeviceSettingsClick={handleDeviceSettingsClick}
-          selectedSettingsOption={selectedSettingsOption}
-          handleSettingsOptionSelect={handleSettingsOptionSelect}
-          handleLogout={handleLogout}
-          handleHelpClick={handleHelpClick}
-          handlePrivacyClick={handlePrivacyClick}
-          handleTermsClick={handleTermsClick}
+      <CssBaseline />
+      <AppBar
+        mainBackground="#fafafa"
+        textAppColor="#263238"
+        drawerOpen={drawerOpen}
+        handleDrawerToggle={handleDrawerToggle}
+        userData={userData}
+        anchorEl={anchorEl}
+        openMenu={openMenu}
+        handleClick={handleClick}
+        handleClose={handleClose}
+        handleAccountingClick={handleAccountingClick}
+        handleSettingsClick={handleSettingsClick}
+        settingsAnchorEl={settingsAnchorEl}
+        settingsMenuOpen={settingsMenuOpen}
+        handleSettingsClose={handleSettingsClose}
+        handleIntegrationsClick={handleIntegrationsClick}
+        isShopifyConnected={isShopifyConnected}
+        handleUserProfileClick={handleUserProfileClick}
+        handleAlertClick={handleAlertClick}
+        handleDeviceSettingsClick={handleDeviceSettingsClick}
+        selectedSettingsOption={selectedSettingsOption}
+        handleSettingsOptionSelect={handleSettingsOptionSelect}
+        handleLogout={handleLogout}
+        handleHelpClick={handleHelpClick}
+        handlePrivacyClick={handlePrivacyClick}
+        handleTermsClick={handleTermsClick}
+      >
+        <AlertsComponent onAlertClick={handleAlertClick} />
+      </AppBar>
+      <Drawer
+        drawerOpen={drawerOpen}
+        handleDrawerToggle={handleDrawerToggle}
+        handleShowInvoiceBuilder={handleShowInvoiceBuilder}
+        handleCloseInvoiceBuilder={handleCloseInvoiceBuilder}
+        handleShowCreateOptions={handleShowCreateOptions}
+        handleShowTransactionForm={handleShowTransactionForm}
+        handleReportClick={handleReportClick}
+        handleBankingClick={handleBankingClick}
+        handleHRClick={handleHRClick}
+        handlePayrollClick={handlePayrollClick}
+        handleAnalysisClick={handleAnalysisClick}
+        showCustomerList={showCustomerList}
+        setShowCustomerList={setShowCustomerList}
+        handleCreateCustomer={handleCreateCustomer}
+        handleSalesClick={handleSalesClick}
+        handleProductsClick={handleProductsClick}
+        handleServicesClick={handleServicesClick}
+        handleMainDashboardClick={handleMainDashboardClick}
+        handlePurchasesClick={handlePurchasesClick}
+        handleAccountingClick={handleAccountingClick}
+        handleInventoryClick={handleInventoryClick}
+        handleKPIDashboardClick={handleKPIDashboardClick}
+        handleHomeClick={handleHomeClick}
+      />
 
+      <Container
+        sx={{
+          marginLeft: drawerOpen ? `${drawerWidth}px` : '0px', // Adjust margin based on drawer state
+          width: drawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%', // Adjust width based on drawer state
+          transition: 'margin-left 0.3s ease, width 0.3s ease', // Smooth transition for drawer
+          padding: 2,
+          paddingTop: '66px', // Adjust padding-top based on the AppBar height
+          height: '100vh',
+          overflow: 'auto',
+        }}
+      >
+        {showAlerts && <AlertsPage alerts={alerts} onMarkAsRead={handleMarkAsRead} />}
+        {showSendGlobalAlert && <SendGlobalAlert />}
+        {showAPIIntegrations && (
+          <APIIntegrations
+            onECommerceClick={handleECommercePlatformAPIClick}
+            onCRMClick={handleCRMAPIClick}
+          />
+        )}
 
-    
-        >
-          <AlertsComponent onAlertClick={handleAlertClick} />
-        </AppBar>
-        <Drawer 
-          drawerOpen={drawerOpen}
-          handleDrawerToggle={handleDrawerToggle}
-          handleShowInvoiceBuilder={handleShowInvoiceBuilder}
-          handleCloseInvoiceBuilder={handleCloseInvoiceBuilder}
-          handleShowCreateOptions={handleShowCreateOptions}
-          handleShowTransactionForm={handleShowTransactionForm}
-          handleReportClick={handleReportClick}
-          handleBankingClick={handleBankingClick}
-          handleHRClick={handleHRClick}
-          handlePayrollClick={handlePayrollClick}
-          handleAnalysisClick={handleAnalysisClick}
-          showCustomerList={showCustomerList}
-          setShowCustomerList={setShowCustomerList}
-          handleCreateCustomer={handleCreateCustomer}
-          handleSalesClick={handleSalesClick}
-          handleProductsClick={handleProductsClick}
-          handleServicesClick={handleServicesClick}
-          handleMainDashboardClick={handleMainDashboardClick}
-          handlePurchasesClick={handlePurchasesClick}
-          handleAccountingClick={handleAccountingClick}
-          handleInventoryClick={handleInventoryClick}
-          handleKPIDashboardClick={handleKPIDashboardClick}
-          handleHomeClick={handleHomeClick}
-        />
+        {showECommercePlatformAPI && (
+          <IntegrationSettings
+            initialStatus={status}
+            initialPlatform={platform}
+            initialBusinessData={userData?.business}
+            title="E-Commerce Platform API"
+          />
+        )}
 
-         <Container
-         sx={{
-           marginLeft: drawerOpen ? `${drawerWidth}px` : '0px', // Adjust margin based on drawer state
-           width: drawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%', // Adjust width based on drawer state
-           transition: 'margin-left 0.3s ease, width 0.3s ease', // Smooth transition for drawer
-           padding: 2,
-           paddingTop: '66px', // Adjust padding-top based on the AppBar height
-           height: '100vh',
-           overflow: 'auto',
-         }}
-       >
-              {showAlerts && (
-                <AlertsPage alerts={alerts} onMarkAsRead={handleMarkAsRead} />
-              )}
-              {showSendGlobalAlert && (
-                <SendGlobalAlert />
-              )}
-              {showAPIIntegrations && (
-                <APIIntegrations
-                  onECommerceClick={handleECommercePlatformAPIClick}
-                  onCRMClick={handleCRMAPIClick}
-                />
-              )}
-            
-              {showECommercePlatformAPI && (
-                <IntegrationSettings
-                  initialStatus={status}
-                  initialPlatform={platform}
-                  initialBusinessData={userData?.business}
-                  title="E-Commerce Platform API"
-                />
-              )}
-        
-              {showIntegrationSettings && (
-                <IntegrationSettings
-                  initialStatus={status}
-                  initialPlatform={platform}
-                  initialBusinessData={userData?.business}
-                />
-              )}
-              {showSalesAnalysis && <ChartContainer />}
-              {view === 'invoiceDetails' && (
-                <InvoiceDetails 
-                  invoiceId={selectedInvoiceId} 
-                  onBackToCustomerDetails={handleBackToCustomerDetails} 
-                />
-              )}
-              {selectedCustomerId && (
-                <CustomerDetails 
-                  customerId={selectedCustomerId}
-                  onBackToList={handleBackToList}
-                  onInvoiceSelect={handleInvoiceSelect}
-                />
-              )}
-              {view === 'customerDetails' && selectedCustomerId && (
-                <CustomerDetails 
-                  customerId={selectedCustomerId}
-                  onBackToList={handleBackToList}
-                  onInvoiceSelect={handleInvoiceSelect}
-                />
-              )}
-              {view === 'productList' && (
-                <ProductList products={products} />
-              )}
-              {view === 'serviceList' && (
-                <ServiceList services={services} />
-              )}
-              {view !== 'invoiceDetails' && view !== 'customerDetails' && 
-              view !== 'productList' && view !== 'serviceList' &&  
-              renderMainContent({
-                showTransactionForm,
-                showInvoiceBuilder,
-                showCreateOptions,
-                selectedOption,
-                userData,
-                handleCloseInvoiceBuilder,
-                showAccountPage,
-                handleDeleteAccount,
-                selectedReport,
-                showReports,
-                showBankingDashboard,
-                showHRDashboard,
-                hrSection,
-                showPayrollDashboard,
-                payrollSection,
-                showAnalysisPage,
-                showCustomerList,
-                handleCreateCustomer,
-                selectedInvoiceId,
-                handleInvoiceSelect,
-                handleBackFromInvoice,
-                showCustomerDetails,
-                selectedCustomer,
-                handleBackToCustomerDetails,
-                setView,
-                view,
-                handleCustomerSelect,
-                showProductManagement,
-                showServiceManagement,
-                showEstimateManagement,
-                showSalesOrderManagement,
-                showInvoiceManagement,
-                showVendorManagement,
-                showBillManagement,
-                showPurchaseOrderManagement,
-                showExpensesManagement,
-                showPurchaseReturnManagement,
-                showProcurementManagement,
-                showEmployeeManagement,
-                showPayrollManagement,
-                showTimesheetManagement,
-                showChartOfAccounts,
-                showJournalEntryManagement,
-                showGeneralLedgerManagement,
-                showAccountReconManagement,
-                showMonthEndManagement,
-                showFinancialStatements,
-                showFixedAssetManagement,
-                showBudgetManagement,
-                showCostAccountingManagement,
-                showIntercompanyManagement,
-                showAuditTrailManagement,
-                showProfitAndLossReport,
-                showBalanceSheetReport,
-                showCashFlowReport,
-                showIncomeByCustomer,
-                showAgedReceivables,
-                showAgedPayables,
-                showAccountBalances,
-                showTrialBalances,
-                showProfitAndLossAnalysis,
-                showBalanceSheetAnalysis,
-                showCashFlowAnalysis,
-                showBudgetVsActualAnalysis,
-                showSalesAnalysis,
-                showExpenseAnalysis,
-                showKPIDashboard,
-                showIntegrationSettings,
-                showUserProfileSettings,
-                handleUserProfileUpdate,
-                showDeviceSettings,
-                selectedSettingsOption,
-                showHelpCenter,
-                showPrivacyPolicy,
-                showTermsAndConditions,
-                showDownloadTransactions,
-                showConnectBank,
-                showPayrollTransactions,
-                showBankRecon,
-                showPayrollReport,
-                showBankReport,
-                showInventoryItems,
-                showMainDashboard,
-                showBankTransactions,
-                showInventoryManagement,
-             
-              })}
-          </Container>
+        {showIntegrationSettings && (
+          <IntegrationSettings
+            initialStatus={status}
+            initialPlatform={platform}
+            initialBusinessData={userData?.business}
+          />
+        )}
+        {showSalesAnalysis && <ChartContainer />}
+        {view === 'invoiceDetails' && (
+          <InvoiceDetails
+            invoiceId={selectedInvoiceId}
+            onBackToCustomerDetails={handleBackToCustomerDetails}
+          />
+        )}
+        {selectedCustomerId && (
+          <CustomerDetails
+            customerId={selectedCustomerId}
+            onBackToList={handleBackToList}
+            onInvoiceSelect={handleInvoiceSelect}
+          />
+        )}
+        {view === 'customerDetails' && selectedCustomerId && (
+          <CustomerDetails
+            customerId={selectedCustomerId}
+            onBackToList={handleBackToList}
+            onInvoiceSelect={handleInvoiceSelect}
+          />
+        )}
+        {view === 'productList' && <ProductList products={products} />}
+        {view === 'serviceList' && <ServiceList services={services} />}
+        {view !== 'invoiceDetails' &&
+          view !== 'customerDetails' &&
+          view !== 'productList' &&
+          view !== 'serviceList' &&
+          renderMainContent({
+            showTransactionForm,
+            showInvoiceBuilder,
+            showCreateOptions,
+            selectedOption,
+            userData,
+            handleCloseInvoiceBuilder,
+            showAccountPage,
+            handleDeleteAccount,
+            selectedReport,
+            showReports,
+            showBankingDashboard,
+            showHRDashboard,
+            hrSection,
+            showPayrollDashboard,
+            payrollSection,
+            showAnalysisPage,
+            showCustomerList,
+            handleCreateCustomer,
+            selectedInvoiceId,
+            handleInvoiceSelect,
+            handleBackFromInvoice,
+            showCustomerDetails,
+            selectedCustomer,
+            handleBackToCustomerDetails,
+            setView,
+            view,
+            handleCustomerSelect,
+            showProductManagement,
+            showServiceManagement,
+            showEstimateManagement,
+            showSalesOrderManagement,
+            showInvoiceManagement,
+            showVendorManagement,
+            showBillManagement,
+            showPurchaseOrderManagement,
+            showExpensesManagement,
+            showPurchaseReturnManagement,
+            showProcurementManagement,
+            showEmployeeManagement,
+            showPayrollManagement,
+            showTimesheetManagement,
+            showChartOfAccounts,
+            showJournalEntryManagement,
+            showGeneralLedgerManagement,
+            showAccountReconManagement,
+            showMonthEndManagement,
+            showFinancialStatements,
+            showFixedAssetManagement,
+            showBudgetManagement,
+            showCostAccountingManagement,
+            showIntercompanyManagement,
+            showAuditTrailManagement,
+            showProfitAndLossReport,
+            showBalanceSheetReport,
+            showCashFlowReport,
+            showIncomeByCustomer,
+            showAgedReceivables,
+            showAgedPayables,
+            showAccountBalances,
+            showTrialBalances,
+            showProfitAndLossAnalysis,
+            showBalanceSheetAnalysis,
+            showCashFlowAnalysis,
+            showBudgetVsActualAnalysis,
+            showSalesAnalysis,
+            showExpenseAnalysis,
+            showKPIDashboard,
+            showIntegrationSettings,
+            showUserProfileSettings,
+            handleUserProfileUpdate,
+            showDeviceSettings,
+            selectedSettingsOption,
+            showHelpCenter,
+            showPrivacyPolicy,
+            showTermsAndConditions,
+            showDownloadTransactions,
+            showConnectBank,
+            showPayrollTransactions,
+            showBankRecon,
+            showPayrollReport,
+            showBankReport,
+            showInventoryItems,
+            showMainDashboard,
+            showBankTransactions,
+            showInventoryManagement,
+          })}
+      </Container>
     </ThemeProvider>
   );
 }

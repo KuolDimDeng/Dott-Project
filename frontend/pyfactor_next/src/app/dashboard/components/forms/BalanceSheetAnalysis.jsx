@@ -1,10 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Box, FormControl, InputLabel, Select, MenuItem, useTheme } from '@mui/material';
+import {
+  Typography,
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  useTheme,
+} from '@mui/material';
 import { Pie, Line } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title } from 'chart.js';
-import axiosInstance from '@/lib/axiosConfig';;
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+} from 'chart.js';
+import { axiosInstance } from '@/lib/axiosConfig';
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title);
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title
+);
 
 const timeRanges = [
   { value: '1', label: '1 Month' },
@@ -23,7 +50,6 @@ export default function BalanceSheetAnalysis() {
   const [data, setData] = useState(null);
   const theme = useTheme();
 
-
   useEffect(() => {
     fetchData();
   }, [timeRange]);
@@ -31,7 +57,7 @@ export default function BalanceSheetAnalysis() {
   const fetchData = async () => {
     try {
       const response = await axiosInstance.get(`/api/analysis/balance-sheet-data`, {
-        params: { time_granularity: timeRange }
+        params: { time_granularity: timeRange },
       });
       setData(response.data);
     } catch (error) {
@@ -62,25 +88,25 @@ export default function BalanceSheetAnalysis() {
   };
 
   const lineChartData = {
-    labels: data.map(item => item.date),
+    labels: data.map((item) => item.date),
     datasets: [
       {
         label: 'Assets',
-        data: data.map(item => item.assets.total),
+        data: data.map((item) => item.assets.total),
         fill: false,
         borderColor: 'rgb(75, 192, 192)',
         tension: 0.1,
       },
       {
         label: 'Liabilities',
-        data: data.map(item => item.liabilities.total),
+        data: data.map((item) => item.liabilities.total),
         fill: false,
         borderColor: 'rgb(255, 99, 132)',
         tension: 0.1,
       },
       {
         label: 'Equity',
-        data: data.map(item => item.equity.total),
+        data: data.map((item) => item.equity.total),
         fill: false,
         borderColor: 'rgb(255, 205, 86)',
         tension: 0.1,
@@ -90,29 +116,39 @@ export default function BalanceSheetAnalysis() {
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom>Balance Sheet Analysis</Typography>
-      
+      <Typography variant="h4" gutterBottom>
+        Balance Sheet Analysis
+      </Typography>
+
       <FormControl fullWidth margin="normal">
         <InputLabel>Time Range</InputLabel>
         <Select value={timeRange} onChange={handleTimeRangeChange}>
           {timeRanges.map((range) => (
-            <MenuItem key={range.value} value={range.value}>{range.label}</MenuItem>
+            <MenuItem key={range.value} value={range.value}>
+              {range.label}
+            </MenuItem>
           ))}
         </Select>
       </FormControl>
 
       <Box display="flex" justifyContent="space-between" mt={4}>
         <Box width="45%">
-          <Typography variant="h6" gutterBottom>Balance Sheet Breakdown</Typography>
+          <Typography variant="h6" gutterBottom>
+            Balance Sheet Breakdown
+          </Typography>
           <Pie data={pieChartData} />
         </Box>
         <Box width="45%">
-          <Typography variant="h6" gutterBottom>Balance Sheet Trends Over Time</Typography>
+          <Typography variant="h6" gutterBottom>
+            Balance Sheet Trends Over Time
+          </Typography>
           <Line data={lineChartData} />
         </Box>
       </Box>
 
-      <Typography variant="h6" mt={4}>Summary</Typography>
+      <Typography variant="h6" mt={4}>
+        Summary
+      </Typography>
       <Typography>Total Assets: ${formatAmount(totalAssets)}</Typography>
       <Typography>Total Liabilities: ${formatAmount(totalLiabilities)}</Typography>
       <Typography>Total Equity: ${formatAmount(totalEquity)}</Typography>

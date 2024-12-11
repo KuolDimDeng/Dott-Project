@@ -26,16 +26,9 @@ const EstimatePdfViewer = ({ pdfBlob }) => {
 
   return (
     <div style={{ width: '100%', height: 'calc(100% - 50px)', overflow: 'auto' }}>
-      <Document
-        file={pdfBlob}
-        onLoadSuccess={onDocumentLoadSuccess}
-      >
+      <Document file={pdfBlob} onLoadSuccess={onDocumentLoadSuccess}>
         {Array.from(new Array(numPages), (el, index) => (
-          <Page
-            key={`page_${index + 1}`}
-            pageNumber={index + 1}
-            width={600}
-          />
+          <Page key={`page_${index + 1}`} pageNumber={index + 1} width={600} />
         ))}
       </Document>
     </div>

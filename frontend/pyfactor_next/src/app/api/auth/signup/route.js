@@ -22,8 +22,15 @@ export async function POST(req) {
 
     // Validate input
     if (!email || !password1 || !password2) {
-      logger.warn('Invalid signup data', { email, hasPassword1: !!password1, hasPassword2: !!password2 });
-      return NextResponse.json({ message: 'Email, password, and password confirmation are required' }, { status: 400 });
+      logger.warn('Invalid signup data', {
+        email,
+        hasPassword1: !!password1,
+        hasPassword2: !!password2,
+      });
+      return NextResponse.json(
+        { message: 'Email, password, and password confirmation are required' },
+        { status: 400 }
+      );
     }
 
     if (!isValidEmail(email)) {
@@ -33,7 +40,10 @@ export async function POST(req) {
 
     if (!isStrongPassword(password1)) {
       logger.warn('Weak password');
-      return NextResponse.json({ message: 'Password should be at least 6 characters long' }, { status: 400 });
+      return NextResponse.json(
+        { message: 'Password should be at least 6 characters long' },
+        { status: 400 }
+      );
     }
 
     if (password1 !== password2) {
@@ -42,7 +52,9 @@ export async function POST(req) {
     }
 
     // Make a request to your Django backend API
-    logger.debug('Sending request to backend', { url: `${process.env.NEXT_PUBLIC_API_URL}/api/signup/` });
+    logger.debug('Sending request to backend', {
+      url: `${process.env.NEXT_PUBLIC_API_URL}/api/signup/`,
+    });
     const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/signup/`, {
       method: 'POST',
       headers: {
@@ -52,9 +64,9 @@ export async function POST(req) {
       credentials: 'include', // Include cookies in the request
     });
 
-    logger.debug('Received response from backend', { 
+    logger.debug('Received response from backend', {
       status: backendResponse.status,
-      statusText: backendResponse.statusText
+      statusText: backendResponse.statusText,
     });
 
     if (!backendResponse.ok) {

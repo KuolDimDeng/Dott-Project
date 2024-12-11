@@ -21,7 +21,6 @@ const BusinessSettings = ({ selectedTab }) => {
   };
   const theme = useTheme();
 
-
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       {renderContent()}
@@ -31,7 +30,9 @@ const BusinessSettings = ({ selectedTab }) => {
 
 const UserManagement = () => (
   <Box>
-    <Typography variant="h6" gutterBottom>User Management</Typography>
+    <Typography variant="h6" gutterBottom>
+      User Management
+    </Typography>
     <Grid container spacing={2}>
       <Grid item xs={12}>
         <TextField fullWidth label="Add User Email" />
@@ -45,21 +46,27 @@ const UserManagement = () => (
 
 const InvoicesAndEstimates = () => (
   <Box>
-    <Typography variant="h6" gutterBottom>Invoices and Estimates</Typography>
+    <Typography variant="h6" gutterBottom>
+      Invoices and Estimates
+    </Typography>
     {/* Add form fields for invoice and estimate settings */}
   </Box>
 );
 
 const Payments = () => (
   <Box>
-    <Typography variant="h6" gutterBottom>Payments</Typography>
+    <Typography variant="h6" gutterBottom>
+      Payments
+    </Typography>
     {/* Add form fields for payment settings */}
   </Box>
 );
 
 const EmailTemplates = () => (
   <Box>
-    <Typography variant="h6" gutterBottom>Email Templates</Typography>
+    <Typography variant="h6" gutterBottom>
+      Email Templates
+    </Typography>
     {/* Add form fields for email template customization */}
   </Box>
 );

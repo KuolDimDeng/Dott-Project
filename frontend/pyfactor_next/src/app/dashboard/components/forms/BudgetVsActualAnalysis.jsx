@@ -1,10 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Box, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import {
+  Typography,
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+} from '@mui/material';
 import { Bar, Line } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title } from 'chart.js';
-import axiosInstance from '@/lib/axiosConfig';;
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+} from 'chart.js';
+import { axiosInstance } from '@/lib/axiosConfig';
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title);
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title
+);
 
 const timeRanges = [
   { value: '1', label: '1 Month' },
@@ -19,7 +54,7 @@ const formatAmount = (amount) => {
 
 const calculateVariance = (budgeted, actual) => {
   if (typeof budgeted !== 'number' || typeof actual !== 'number') return 'N/A';
-  return ((actual - budgeted) / budgeted * 100).toFixed(2) + '%';
+  return (((actual - budgeted) / budgeted) * 100).toFixed(2) + '%';
 };
 
 export default function BudgetVsActualAnalysis() {
@@ -33,7 +68,7 @@ export default function BudgetVsActualAnalysis() {
   const fetchData = async () => {
     try {
       const response = await axiosInstance.get(`/api/analysis/budget-vs-actual`, {
-        params: { time_range: timeRange }
+        params: { time_range: timeRange },
       });
       setData(response.data);
     } catch (error) {
@@ -48,27 +83,29 @@ export default function BudgetVsActualAnalysis() {
   if (!data) return <Typography>Loading...</Typography>;
 
   const barChartData = {
-    labels: data.map(item => item.account_name),
+    labels: data.map((item) => item.account_name),
     datasets: [
       {
         label: 'Budgeted',
-        data: data.map(item => item.budgeted_amount),
+        data: data.map((item) => item.budgeted_amount),
         backgroundColor: 'rgba(75, 192, 192, 0.6)',
       },
       {
         label: 'Actual',
-        data: data.map(item => item.actual_amount),
+        data: data.map((item) => item.actual_amount),
         backgroundColor: 'rgba(255, 99, 132, 0.6)',
       },
     ],
   };
 
   const lineChartData = {
-    labels: data.map(item => item.account_name),
+    labels: data.map((item) => item.account_name),
     datasets: [
       {
         label: 'Variance %',
-        data: data.map(item => ((item.actual_amount - item.budgeted_amount) / item.budgeted_amount * 100)),
+        data: data.map(
+          (item) => ((item.actual_amount - item.budgeted_amount) / item.budgeted_amount) * 100
+        ),
         fill: false,
         borderColor: 'rgb(75, 192, 192)',
         tension: 0.1,
@@ -78,13 +115,17 @@ export default function BudgetVsActualAnalysis() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>Budget vs Actual Analysis</Typography>
-      
+      <Typography variant="h4" gutterBottom>
+        Budget vs Actual Analysis
+      </Typography>
+
       <FormControl fullWidth margin="normal">
         <InputLabel>Time Range</InputLabel>
         <Select value={timeRange} onChange={handleTimeRangeChange}>
           {timeRanges.map((range) => (
-            <MenuItem key={range.value} value={range.value}>{range.label}</MenuItem>
+            <MenuItem key={range.value} value={range.value}>
+              {range.label}
+            </MenuItem>
           ))}
         </Select>
       </FormControl>
@@ -106,8 +147,12 @@ export default function BudgetVsActualAnalysis() {
                 <TableCell>{item.account_name}</TableCell>
                 <TableCell align="right">${formatAmount(item.budgeted_amount)}</TableCell>
                 <TableCell align="right">${formatAmount(item.actual_amount)}</TableCell>
-                <TableCell align="right">${formatAmount(item.actual_amount - item.budgeted_amount)}</TableCell>
-                <TableCell align="right">{calculateVariance(item.budgeted_amount, item.actual_amount)}</TableCell>
+                <TableCell align="right">
+                  ${formatAmount(item.actual_amount - item.budgeted_amount)}
+                </TableCell>
+                <TableCell align="right">
+                  {calculateVariance(item.budgeted_amount, item.actual_amount)}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -116,11 +161,15 @@ export default function BudgetVsActualAnalysis() {
 
       <Box display="flex" justifyContent="space-between" mt={4}>
         <Box width="45%">
-          <Typography variant="h6" gutterBottom>Budget vs Actual Comparison</Typography>
+          <Typography variant="h6" gutterBottom>
+            Budget vs Actual Comparison
+          </Typography>
           <Bar data={barChartData} />
         </Box>
         <Box width="45%">
-          <Typography variant="h6" gutterBottom>Variance Trend</Typography>
+          <Typography variant="h6" gutterBottom>
+            Variance Trend
+          </Typography>
           <Line data={lineChartData} />
         </Box>
       </Box>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Tabs, 
-  Tab, 
-  Typography, 
+import {
+  Box,
+  Tabs,
+  Tab,
+  Typography,
   Paper,
   Table,
   TableBody,
@@ -16,7 +16,7 @@ import {
   Grid,
   useTheme,
 } from '@mui/material';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const VendorManagement = () => {
   const [tabValue, setTabValue] = useState(0);
@@ -53,7 +53,7 @@ const VendorManagement = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevData => ({
+    setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
@@ -85,7 +85,9 @@ const VendorManagement = () => {
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h5" gutterBottom>Vendor Management</Typography>
+      <Typography variant="h5" gutterBottom>
+        Vendor Management
+      </Typography>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={tabValue} onChange={handleTabChange}>
           <Tab label="Create Vendor" />

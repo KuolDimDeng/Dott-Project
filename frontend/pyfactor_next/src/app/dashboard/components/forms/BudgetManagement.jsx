@@ -1,20 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Tabs, Tab, Box, Typography, Button, 
-  Table, TableBody, TableCell, TableContainer, 
-  TableHead, TableRow, Paper, TextField, 
-  Select, MenuItem, FormControl, InputLabel
+import {
+  Tabs,
+  Tab,
+  Box,
+  Typography,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
-
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
-åç
+  åç;
   return (
     <div
       role="tabpanel"
@@ -43,7 +55,7 @@ const BudgetManagement = () => {
     end_date: '',
     department: '',
     notes: '',
-    items: []
+    items: [],
   });
 
   useEffect(() => {
@@ -76,7 +88,7 @@ const BudgetManagement = () => {
   const handleAddItem = () => {
     setFormData({
       ...formData,
-      items: [...formData.items, { account_code: '', account_name: '', budgeted_amount: 0 }]
+      items: [...formData.items, { account_code: '', account_name: '', budgeted_amount: 0 }],
     });
   };
 
@@ -96,7 +108,7 @@ const BudgetManagement = () => {
         end_date: '',
         department: '',
         notes: '',
-        items: []
+        items: [],
       });
       setSelectedBudget(null);
       setValue(1); // Switch to the List tab
@@ -144,11 +156,7 @@ const BudgetManagement = () => {
           />
           <FormControl fullWidth margin="normal">
             <InputLabel>Period</InputLabel>
-            <Select
-              name="period"
-              value={formData.period}
-              onChange={handleInputChange}
-            >
+            <Select name="period" value={formData.period} onChange={handleInputChange}>
               <MenuItem value="monthly">Monthly</MenuItem>
               <MenuItem value="quarterly">Quarterly</MenuItem>
               <MenuItem value="annually">Annually</MenuItem>

@@ -679,27 +679,42 @@ class CompleteOnboardingView(BaseOnboardingView):
     @sync_to_async
     def get_progress(self, user):
         return OnboardingProgress.objects.get(user=user)
+    
+    @sync_to_async
+    def complete_onboarding(self, onboarding):
+        with transaction.atomic():
+            onboarding.onboarding_status = 'complete'
+            onboarding.current_step = 0
+            onboarding.save()
+            return onboarding
 
     async def post(self, request):
         logger.info("Received request to complete onboarding process")
-        
         user = request.user
-        try:
-            onboarding = OnboardingProgress.objects.get(user=user)
-         #   self.complete_onboarding(user, onboarding)
-            return Response({"message": "Onboarding completed successfully"}, status=status.HTTP_200_OK)
         
+        try:
+            onboarding = await self.get_progress(user)
+            
+            # Complete onboarding
+            await self.complete_onboarding(onboarding)
+            
+            return Response({
+                "message": "Onboarding completed successfully",
+                "redirect": "/dashboard"
+            }, status=status.HTTP_200_OK)
+            
         except OnboardingProgress.DoesNotExist:
             logger.error(f"Onboarding progress not found for user: {user.email}")
-            return Response({"error": "Onboarding progress not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Onboarding progress not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
         except Exception as e:
-            logger.error(f"Unexpected error completing onboarding for user {user.email}: {str(e)}")
-            return Response({"error": "Failed to complete onboarding"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-    def get_authenticators(self):
-        return [JWTAuthentication()]
-
+            logger.error(f"Error completing onboarding: {str(e)}")
+            return Response(
+                {"error": "Failed to complete onboarding"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class CleanupOnboardingView(BaseOnboardingView):
     """View for cleaning up expired onboarding records and managing onboarding status"""
@@ -1802,6 +1817,7 @@ class CheckOnboardingStatusView(APIView):
     def get(self, request):
         """Handle GET request to check onboarding status"""
         logger.debug("Checking onboarding status")
+        logger.debug(f"Retrieved user: {request.user.email}")
         
         try:
             # First check if user has completed setup
@@ -1814,33 +1830,25 @@ class CheckOnboardingStatusView(APIView):
                 })
 
             # Get existing progress
-            progress = OnboardingProgress.objects.select_related('user').filter(
-                email=request.user.email
-            ).first()
+            progress = OnboardingProgress.objects.get(user=request.user)
             
-            if progress:
-                if progress.onboarding_status == 'complete':
-                    logger.info(f"User {request.user.email} has completed onboarding")
-                    return Response({
-                        'status': 'complete',
-                        'redirect': '/dashboard'
-                    })
-                
-                logger.debug(f"Retrieved progress status: {progress.onboarding_status}")    
+            if progress.onboarding_status == 'complete':
+                logger.info(f"User {request.user.email} has completed onboarding")
                 return Response({
-                    'status': progress.onboarding_status,
-                    'currentStep': progress.current_step
+                    'status': 'complete',
+                    'currentStep': 0,
+                    'redirect': '/dashboard'
                 })
             
-            logger.info(f"No onboarding progress found for user {request.user.email}")
+            logger.debug(f"Retrieved progress status: {progress.onboarding_status}")
+            
+            return Response({
+                'status': progress.onboarding_status,
+                'currentStep': progress.current_step
+            })
+            
+        except OnboardingProgress.DoesNotExist:
             return Response({
                 'status': 'new',
                 'currentStep': 1
             })
-            
-        except Exception as e:
-            logger.error(f"Error checking onboarding status: {str(e)}")
-            return Response({
-                'status': 'error',
-                'message': str(e)
-            }, status=500)

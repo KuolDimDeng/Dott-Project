@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Box, CircularProgress } from '@mui/material';
-import { saveEstimate, printEstimate, emailEstimate, getEstimatePdf } from '../actions/estimateActions';
+import {
+  saveEstimate,
+  printEstimate,
+  emailEstimate,
+  getEstimatePdf,
+} from '../actions/estimateActions';
 import EstimatePdfViewer from '../components/EstimatePdfViewer';
 
 const EstimatePreviewModal = ({ isOpen, onClose, estimateId }) => {
@@ -12,12 +17,12 @@ const EstimatePreviewModal = ({ isOpen, onClose, estimateId }) => {
     if (estimateId) {
       setLoading(true);
       getEstimatePdf(estimateId)
-        .then(blob => {
+        .then((blob) => {
           const url = URL.createObjectURL(blob);
           setPdfBlob(url);
           setLoading(false);
         })
-        .catch(err => {
+        .catch((err) => {
           console.error('Error fetching PDF:', err);
           setError('Failed to load PDF: ' + err.message);
           setLoading(false);
@@ -39,19 +44,21 @@ const EstimatePreviewModal = ({ isOpen, onClose, estimateId }) => {
 
   return (
     <Modal open={isOpen} onClose={onClose}>
-      <Box sx={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        bgcolor: 'background.paper',
-        boxShadow: 24,
-        p: 4,
-        width: '80%',
-        height: '80%',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          bgcolor: 'background.paper',
+          boxShadow: 24,
+          p: 4,
+          width: '80%',
+          height: '80%',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         {loading ? (
           <CircularProgress />
         ) : error ? (

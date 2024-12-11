@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -24,7 +24,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const ExpensesManagement = () => {
@@ -41,7 +41,6 @@ const ExpensesManagement = () => {
   });
   const { addMessage } = useUserMessageContext();
   const theme = useTheme();
-
 
   useEffect(() => {
     fetchExpenses();
@@ -64,14 +63,14 @@ const ExpensesManagement = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevData => ({
+    setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
   };
 
   const handleDateChange = (date) => {
-    setFormData(prevData => ({
+    setFormData((prevData) => ({
       ...prevData,
       date: date,
     }));
@@ -97,8 +96,10 @@ const ExpensesManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-    <Typography variant="h5" gutterBottom>Expense Management</Typography>
+      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+        <Typography variant="h5" gutterBottom>
+          Expense Management
+        </Typography>
         <Tabs value={activeTab} onChange={handleTabChange}>
           <Tab label="Create Expense" />
           <Tab label="Expense Detail" />
@@ -170,7 +171,9 @@ const ExpensesManagement = () => {
                 </FormControl>
               </Grid>
             </Grid>
-            <Button type="submit" variant="contained" sx={{ mt: 3 }}>Create Expense</Button>
+            <Button type="submit" variant="contained" sx={{ mt: 3 }}>
+              Create Expense
+            </Button>
           </Box>
         )}
 

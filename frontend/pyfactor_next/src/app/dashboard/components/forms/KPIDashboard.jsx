@@ -23,7 +23,7 @@ import {
 } from 'recharts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const StyledTab = styled(Tab)(({ theme }) => ({
   '&.Mui-selected': {
@@ -74,7 +74,6 @@ const KPIDashboard = () => {
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
-
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -150,7 +149,11 @@ const KPIDashboard = () => {
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>
+      <Typography
+        variant="h4"
+        gutterBottom
+        sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}
+      >
         KPI Dashboard
       </Typography>
       <Paper elevation={3} sx={{ mb: 3 }}>
@@ -158,7 +161,7 @@ const KPIDashboard = () => {
           value={activeTab}
           onChange={handleTabChange}
           aria-label="KPI tabs"
-          variant={isMobile ? "scrollable" : "fullWidth"}
+          variant={isMobile ? 'scrollable' : 'fullWidth'}
           scrollButtons="auto"
           sx={{
             borderBottom: 1,
@@ -169,14 +172,14 @@ const KPIDashboard = () => {
           }}
         >
           {kpis.map((kpi, index) => (
-            <StyledTab 
-              key={index} 
-              label={kpi.title} 
-              sx={{ 
+            <StyledTab
+              key={index}
+              label={kpi.title}
+              sx={{
                 textTransform: 'none',
                 borderRadius: '4px 4px 0 0',
                 marginRight: '2px',
-              }} 
+              }}
             />
           ))}
         </Tabs>
@@ -185,9 +188,22 @@ const KPIDashboard = () => {
         <TabPanel key={index} value={activeTab} index={index}>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
-              <Paper elevation={3} sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <Paper
+                elevation={3}
+                sx={{
+                  p: 3,
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                }}
+              >
                 <Box>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: kpi.color }}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ fontWeight: 'bold', color: kpi.color }}
+                  >
                     {kpi.title}
                   </Typography>
                   <Typography variant="h3" sx={{ fontWeight: 'bold', my: 2 }}>
@@ -209,7 +225,9 @@ const KPIDashboard = () => {
             <Grid item xs={12} md={6}>
               <Paper elevation={3} sx={{ p: 3, height: '300px' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={kpiData?.historicalData?.[kpi.title.toLowerCase().replace(/ /g, '_')]}>
+                  <LineChart
+                    data={kpiData?.historicalData?.[kpi.title.toLowerCase().replace(/ /g, '_')]}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
                     <YAxis />

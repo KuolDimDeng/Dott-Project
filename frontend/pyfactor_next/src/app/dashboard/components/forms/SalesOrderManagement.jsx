@@ -1,12 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { Box, useTheme, Typography, Tabs, Tab, Button, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Menu, MenuItem, FormControl, InputLabel, Select, IconButton, Grid, FormHelperText } from '@mui/material';
+import {
+  Box,
+  useTheme,
+  Typography,
+  Tabs,
+  Tab,
+  Button,
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Menu,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  IconButton,
+  Grid,
+  FormHelperText,
+} from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
@@ -31,7 +59,6 @@ const SalesOrderManagement = () => {
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
   const theme = useTheme();
-
 
   useEffect(() => {
     fetchSalesOrders();
@@ -86,97 +113,97 @@ const SalesOrderManagement = () => {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setNewSalesOrder(prev => ({
+    setNewSalesOrder((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleDateChange = (date) => {
-    setNewSalesOrder(prev => ({
+    setNewSalesOrder((prev) => ({
       ...prev,
-      date: date
+      date: date,
     }));
   };
 
   const handleItemAdd = () => {
-    setNewSalesOrder(prev => ({
+    setNewSalesOrder((prev) => ({
       ...prev,
-      items: [...prev.items, { product: '', quantity: 1, unitPrice: 0 }]
+      items: [...prev.items, { product: '', quantity: 1, unitPrice: 0 }],
     }));
   };
 
   const calculateTotalAmount = (items, discount) => {
-    const total = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const total = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     return total - discount;
   };
 
   const handleItemChange = (index, field, value) => {
     const newItems = [...newSalesOrder.items];
     newItems[index][field] = value;
-  
+
     if (field === 'product') {
-      const selectedItem = [...products, ...services].find(item => item.id === value);
+      const selectedItem = [...products, ...services].find((item) => item.id === value);
       if (selectedItem) {
         newItems[index].unitPrice = parseFloat(selectedItem.price) || 0;
       }
     }
-  
+
     if (field === 'quantity' || field === 'unitPrice') {
       newItems[index][field] = parseFloat(value) || 0;
     }
-  
+
     const updatedSalesOrder = {
       ...newSalesOrder,
       items: newItems,
-      totalAmount: calculateTotalAmount(newItems, newSalesOrder.discount)
+      totalAmount: calculateTotalAmount(newItems, newSalesOrder.discount),
     };
-  
+
     setNewSalesOrder(updatedSalesOrder);
   };
 
   const handleDiscountChange = (event) => {
     const discount = parseFloat(event.target.value) || 0;
-    setNewSalesOrder(prev => ({
+    setNewSalesOrder((prev) => ({
       ...prev,
       discount: discount,
-      totalAmount: calculateTotalAmount(prev.items, discount)
+      totalAmount: calculateTotalAmount(prev.items, discount),
     }));
   };
 
   const handleItemRemove = (index) => {
     const newItems = newSalesOrder.items.filter((_, i) => i !== index);
-    setNewSalesOrder(prev => ({
+    setNewSalesOrder((prev) => ({
       ...prev,
       items: newItems,
-      totalAmount: calculateTotalAmount(newItems, prev.discount)
+      totalAmount: calculateTotalAmount(newItems, prev.discount),
     }));
   };
 
   const handleCreateInvoice = async (e) => {
     e.preventDefault();
-  
+
     if (!newInvoice.customer) {
       addMessage('error', 'Please select a customer');
       return;
     }
-  
+
     try {
       const invoiceData = {
         customer: newInvoice.customer,
         date: newInvoice.date.toISOString().split('T')[0], // Send only the date part
-        items: newInvoice.items.map(item => ({
+        items: newInvoice.items.map((item) => ({
           product: item.product,
           quantity: item.quantity,
-          unit_price: item.unitPrice // Make sure this field is named 'unit_price'
+          unit_price: item.unitPrice, // Make sure this field is named 'unit_price'
         })),
         discount: newInvoice.discount,
         currency: newInvoice.currency,
-        amount: newInvoice.totalAmount
+        amount: newInvoice.totalAmount,
       };
-  
+
       console.log('Sending invoice data:', invoiceData); // For debugging
-  
+
       const response = await axiosInstance.post('/api/invoices/create/', invoiceData);
       addMessage('success', 'Invoice created successfully');
       setNewInvoice({
@@ -206,7 +233,6 @@ const SalesOrderManagement = () => {
     setQuantity('');
   };
 
-
   const handleSalesOrderSelect = (salesOrder) => {
     setSelectedSalesOrder(salesOrder);
     setActiveTab(1);
@@ -224,7 +250,10 @@ const SalesOrderManagement = () => {
 
   const handleSaveEdit = async () => {
     try {
-      const response = await axiosInstance.put(`/api/salesorders/${selectedSalesOrder.id}/`, editedSalesOrder);
+      const response = await axiosInstance.put(
+        `/api/salesorders/${selectedSalesOrder.id}/`,
+        editedSalesOrder
+      );
       setSelectedSalesOrder(response.data);
       setIsEditing(false);
       fetchSalesOrders();
@@ -269,8 +298,8 @@ const SalesOrderManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-    <Typography variant="h4" gutterBottom>
+      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+        <Typography variant="h4" gutterBottom>
           Sales Order Management
         </Typography>
         <Tabs value={activeTab} onChange={handleTabChange}>
@@ -281,35 +310,39 @@ const SalesOrderManagement = () => {
 
         {activeTab === 0 && (
           <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Create Sales Order</Typography>
+            <Typography variant="h6" gutterBottom>
+              Create Sales Order
+            </Typography>
             <form onSubmit={handleCreateSalesOrder}>
-            <FormControl fullWidth margin="normal" required>
-                  <InputLabel>Customer</InputLabel>
-                  <Select
-                    name="customer"
-                    value={newSalesOrder.customer}
-                    onChange={handleInputChange}
-                    error={!newSalesOrder.customer}
-                  >
-                    {customers.map((customer) => (
-                      <MenuItem key={customer.id} value={customer.id}>
-                        {customer.customerName}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {!newSalesOrder.customer && (
-                    <FormHelperText error>Please select a customer</FormHelperText>
-                  )}
-                </FormControl>
-              
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel>Customer</InputLabel>
+                <Select
+                  name="customer"
+                  value={newSalesOrder.customer}
+                  onChange={handleInputChange}
+                  error={!newSalesOrder.customer}
+                >
+                  {customers.map((customer) => (
+                    <MenuItem key={customer.id} value={customer.id}>
+                      {customer.customerName}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {!newSalesOrder.customer && (
+                  <FormHelperText error>Please select a customer</FormHelperText>
+                )}
+              </FormControl>
+
               <DatePicker
                 label="Date"
                 value={newSalesOrder.date}
                 onChange={handleDateChange}
                 renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
               />
-              
-              <Typography variant="h6" gutterBottom>Items</Typography>
+
+              <Typography variant="h6" gutterBottom>
+                Items
+              </Typography>
               {newSalesOrder.items.map((item, index) => (
                 <Box key={index} sx={{ display: 'flex', mb: 2 }}>
                   <FormControl sx={{ mr: 2, flexGrow: 1 }}>
@@ -352,63 +385,109 @@ const SalesOrderManagement = () => {
               <Button startIcon={<AddIcon />} onClick={handleItemAdd}>
                 Add Item
               </Button>
-              
-              <TextField 
-                label="Discount" 
-                name="discount" 
-                type="number" 
-                value={newSalesOrder.discount} 
-                onChange={handleDiscountChange} 
-                fullWidth 
-                margin="normal" 
+
+              <TextField
+                label="Discount"
+                name="discount"
+                type="number"
+                value={newSalesOrder.discount}
+                onChange={handleDiscountChange}
+                fullWidth
+                margin="normal"
               />
-              
-              <TextField 
-                label="Total Amount" 
-                value={newSalesOrder.totalAmount.toFixed(2)} 
-                fullWidth 
-                margin="normal" 
-                disabled 
+
+              <TextField
+                label="Total Amount"
+                value={newSalesOrder.totalAmount.toFixed(2)}
+                fullWidth
+                margin="normal"
+                disabled
               />
-              
+
               <FormControl fullWidth margin="normal">
                 <InputLabel>Currency</InputLabel>
-                <Select
-                  name="currency"
-                  value={newSalesOrder.currency}
-                  onChange={handleInputChange}
-                >
+                <Select name="currency" value={newSalesOrder.currency} onChange={handleInputChange}>
                   <MenuItem value="USD">USD</MenuItem>
                   <MenuItem value="EUR">EUR</MenuItem>
                   <MenuItem value="GBP">GBP</MenuItem>
                 </Select>
               </FormControl>
-              
-              <Button type="submit" variant="contained" color="primary">Create Sales Order</Button>
+
+              <Button type="submit" variant="contained" color="primary">
+                Create Sales Order
+              </Button>
             </form>
           </Box>
         )}
 
         {activeTab === 1 && (
           <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Sales Order Details</Typography>
+            <Typography variant="h6" gutterBottom>
+              Sales Order Details
+            </Typography>
             {selectedSalesOrder ? (
               <Box>
-                <TextField label="Order Number" value={selectedSalesOrder.order_number} fullWidth margin="normal" disabled />
-                <TextField label="Customer" value={selectedSalesOrder.customer} fullWidth margin="normal" disabled={!isEditing} />
-                <TextField label="Date" type="date" value={selectedSalesOrder.date} fullWidth margin="normal" disabled={!isEditing} InputLabelProps={{ shrink: true }} />
-                <TextField label="Total Amount" value={selectedSalesOrder.totalAmount} fullWidth margin="normal" disabled />
-                <TextField label="Discount" value={selectedSalesOrder.discount} fullWidth margin="normal" disabled={!isEditing} />
-                <TextField label="Currency" value={selectedSalesOrder.currency} fullWidth margin="normal" disabled={!isEditing} />
+                <TextField
+                  label="Order Number"
+                  value={selectedSalesOrder.order_number}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                />
+                <TextField
+                  label="Customer"
+                  value={selectedSalesOrder.customer}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                />
+                <TextField
+                  label="Date"
+                  type="date"
+                  value={selectedSalesOrder.date}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                  InputLabelProps={{ shrink: true }}
+                />
+                <TextField
+                  label="Total Amount"
+                  value={selectedSalesOrder.totalAmount}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                />
+                <TextField
+                  label="Discount"
+                  value={selectedSalesOrder.discount}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                />
+                <TextField
+                  label="Currency"
+                  value={selectedSalesOrder.currency}
+                  fullWidth
+                  margin="normal"
+                  disabled={!isEditing}
+                />
                 {isEditing ? (
                   <Box mt={2}>
-                    <Button variant="contained" color="primary" onClick={handleSaveEdit}>Save</Button>
-                    <Button variant="contained" color="secondary" onClick={handleCancelEdit}>Cancel</Button>
+                    <Button variant="contained" color="primary" onClick={handleSaveEdit}>
+                      Save
+                    </Button>
+                    <Button variant="contained" color="secondary" onClick={handleCancelEdit}>
+                      Cancel
+                    </Button>
                   </Box>
                 ) : (
                   <Box mt={2}>
-                    <Button variant="contained" color="primary" onClick={handleEdit}>Edit</Button>
-                    <Button variant="contained" color="secondary" onClick={handleDelete}>Delete</Button>
+                    <Button variant="contained" color="primary" onClick={handleEdit}>
+                      Edit
+                    </Button>
+                    <Button variant="contained" color="secondary" onClick={handleDelete}>
+                      Delete
+                    </Button>
                   </Box>
                 )}
               </Box>
@@ -451,11 +530,16 @@ const SalesOrderManagement = () => {
                 </TableHead>
                 <TableBody>
                   {salesOrders.map((salesOrder) => (
-                    <TableRow key={salesOrder.id} onClick={() => handleSalesOrderSelect(salesOrder)}>
+                    <TableRow
+                      key={salesOrder.id}
+                      onClick={() => handleSalesOrderSelect(salesOrder)}
+                    >
                       <TableCell>{salesOrder.order_number}</TableCell>
                       <TableCell>{salesOrder.customer}</TableCell>
                       <TableCell>{new Date(salesOrder.date).toLocaleDateString()}</TableCell>
-                      <TableCell>{salesOrder.totalAmount} {salesOrder.currency}</TableCell>
+                      <TableCell>
+                        {salesOrder.totalAmount} {salesOrder.currency}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -470,7 +554,7 @@ const SalesOrderManagement = () => {
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
         >
-          <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
+          <DialogTitle id="alert-dialog-title">{'Confirm Delete'}</DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
               Are you sure you want to delete this sales order?

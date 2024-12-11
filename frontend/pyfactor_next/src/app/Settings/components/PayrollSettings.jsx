@@ -19,16 +19,14 @@ const PayrollSettings = ({ selectedTab }) => {
     }
   };
 
-  return (
-    <Box>
-      {renderContent()}
-    </Box>
-  );
+  return <Box>{renderContent()}</Box>;
 };
 
 const BusinessProfile = () => (
   <Box>
-    <Typography variant="h6" gutterBottom>Business Profile</Typography>
+    <Typography variant="h6" gutterBottom>
+      Business Profile
+    </Typography>
     <Grid container spacing={2}>
       <Grid item xs={12}>
         <TextField fullWidth label="Business Name" />
@@ -45,7 +43,9 @@ const BusinessProfile = () => (
 
 const CompanySignatory = () => (
   <Box>
-    <Typography variant="h6" gutterBottom>Company Signatory</Typography>
+    <Typography variant="h6" gutterBottom>
+      Company Signatory
+    </Typography>
     <Grid container spacing={2}>
       <Grid item xs={12}>
         <TextField fullWidth label="Signatory Name" />
@@ -59,7 +59,9 @@ const CompanySignatory = () => (
 
 const SourceBankAccount = () => (
   <Box>
-    <Typography variant="h6" gutterBottom>Source Bank Account</Typography>
+    <Typography variant="h6" gutterBottom>
+      Source Bank Account
+    </Typography>
     <Grid container spacing={2}>
       <Grid item xs={12}>
         <TextField fullWidth label="Bank Name" />
@@ -76,7 +78,9 @@ const SourceBankAccount = () => (
 
 const TaxProfile = () => (
   <Box>
-    <Typography variant="h6" gutterBottom>Tax Profile</Typography>
+    <Typography variant="h6" gutterBottom>
+      Tax Profile
+    </Typography>
     <Grid container spacing={2}>
       <Grid item xs={12}>
         <TextField fullWidth label="Tax ID" />
@@ -90,7 +94,9 @@ const TaxProfile = () => (
 
 const PayrollSetup = () => (
   <Box>
-    <Typography variant="h6" gutterBottom>Payroll Setup</Typography>
+    <Typography variant="h6" gutterBottom>
+      Payroll Setup
+    </Typography>
     <Grid container spacing={2}>
       <Grid item xs={12}>
         <TextField fullWidth label="Pay Period" />

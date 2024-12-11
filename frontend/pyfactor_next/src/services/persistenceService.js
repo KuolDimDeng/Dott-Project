@@ -4,7 +4,7 @@ import { logger } from '@/utils/logger';
 const STORAGE_KEYS = {
   ONBOARDING: 'onboarding_data',
   PROGRESS: 'onboarding_progress',
-  VERSION: '1.0'
+  VERSION: '1.0',
 };
 
 export const persistenceService = {
@@ -13,7 +13,7 @@ export const persistenceService = {
       const storageData = {
         version: STORAGE_KEYS.VERSION,
         timestamp: Date.now(),
-        data
+        data,
       };
       localStorage.setItem(key, JSON.stringify(storageData));
       logger.debug(`Data persisted for ${key}`, storageData);
@@ -47,7 +47,7 @@ export const persistenceService = {
       if (key instanceof RegExp) {
         // Handle regex pattern matching for keys
         const keys = this.getAllKeys();
-        keys.forEach(storageKey => {
+        keys.forEach((storageKey) => {
           if (key.test(storageKey)) {
             localStorage.removeItem(storageKey);
             logger.debug(`Cleared data for ${storageKey}`);
@@ -65,11 +65,12 @@ export const persistenceService = {
 
   getAllKeys: () => {
     try {
-      return Object.keys(localStorage).filter(key => 
-        key.startsWith('step') || 
-        key.includes('_draft') || 
-        key === STORAGE_KEYS.ONBOARDING || 
-        key === STORAGE_KEYS.PROGRESS
+      return Object.keys(localStorage).filter(
+        (key) =>
+          key.startsWith('step') ||
+          key.includes('_draft') ||
+          key === STORAGE_KEYS.ONBOARDING ||
+          key === STORAGE_KEYS.PROGRESS
       );
     } catch (error) {
       logger.error('Failed to get storage keys:', error);
@@ -97,5 +98,5 @@ export const persistenceService = {
     } catch (error) {
       logger.error('Failed to clean expired data:', error);
     }
-  }
+  },
 };

@@ -6,17 +6,11 @@ const INIT_STATES = {
   IDLE: 'idle',
   PENDING: 'pending',
   SUCCESS: 'success',
-  ERROR: 'error'
+  ERROR: 'error',
 };
 
 export const useInitialization = (options = {}) => {
-  const {
-    maxAttempts = 3,
-    timeout = 10000,
-    onSuccess,
-    onError,
-    dependencies = []
-  } = options;
+  const { maxAttempts = 3, timeout = 10000, onSuccess, onError, dependencies = [] } = options;
 
   const [status, setStatus] = useState(INIT_STATES.IDLE);
   const [error, setError] = useState(null);
@@ -35,7 +29,7 @@ export const useInitialization = (options = {}) => {
 
     try {
       setStatus(INIT_STATES.PENDING);
-      
+
       // Create timeout promise
       const timeoutPromise = new Promise((_, reject) => {
         timeoutRef.current = setTimeout(() => {
@@ -44,10 +38,7 @@ export const useInitialization = (options = {}) => {
       });
 
       // Race between initialization and timeout
-      const result = await Promise.race([
-        options.onInitialize?.(),
-        timeoutPromise
-      ]);
+      const result = await Promise.race([options.onInitialize?.(), timeoutPromise]);
 
       if (mounted.current) {
         setStatus(INIT_STATES.SUCCESS);
@@ -60,7 +51,7 @@ export const useInitialization = (options = {}) => {
       logger.error('Initialization failed:', {
         attempt: attempts.current + 1,
         error,
-        maxAttempts
+        maxAttempts,
       });
 
       if (mounted.current) {
@@ -109,6 +100,6 @@ export const useInitialization = (options = {}) => {
     isInitialized: status === INIT_STATES.SUCCESS,
     isInitializing: status === INIT_STATES.PENDING,
     initialize,
-    reset
+    reset,
   };
 };

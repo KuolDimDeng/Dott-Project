@@ -18,22 +18,6 @@
   --border-color: rgba(0, 0, 0, 0.12);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Dark theme variables */
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-    --primary-main: #90caf9;
-    --primary-light: #e3f2fd;
-    --primary-dark: #42a5f5;
-    --error-main: #f44336;
-    --success-main: #4caf50;
-    --warning-main: #ff9800;
-    --info-main: #29b6f6;
-    --border-color: rgba(255, 255, 255, 0.12);
-  }
-}
 
 /* Base styles */
 body {

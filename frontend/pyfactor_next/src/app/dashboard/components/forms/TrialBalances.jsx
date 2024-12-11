@@ -13,7 +13,7 @@ import {
   Alert,
   useTheme,
 } from '@mui/material';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const TrialBalance = () => {
@@ -22,7 +22,6 @@ const TrialBalance = () => {
   const { addMessage } = useUserMessageContext();
   const theme = useTheme();
 
-
   useEffect(() => {
     fetchTrialBalance();
   }, []);
@@ -30,7 +29,7 @@ const TrialBalance = () => {
   const fetchTrialBalance = async () => {
     try {
       const response = await axiosInstance.get('/api/reports/trial-balance/');
-      console.log("Trial balance response:", response.data);
+      console.log('Trial balance response:', response.data);
       setTrialBalanceData(response.data);
       setLoading(false);
     } catch (error) {
@@ -77,9 +76,15 @@ const TrialBalance = () => {
                   </TableRow>
                 ))}
                 <TableRow>
-                  <TableCell colSpan={3}><strong>Total</strong></TableCell>
-                  <TableCell align="right"><strong>{formatCurrency(trialBalanceData.total_debits)}</strong></TableCell>
-                  <TableCell align="right"><strong>{formatCurrency(trialBalanceData.total_credits)}</strong></TableCell>
+                  <TableCell colSpan={3}>
+                    <strong>Total</strong>
+                  </TableCell>
+                  <TableCell align="right">
+                    <strong>{formatCurrency(trialBalanceData.total_debits)}</strong>
+                  </TableCell>
+                  <TableCell align="right">
+                    <strong>{formatCurrency(trialBalanceData.total_credits)}</strong>
+                  </TableCell>
                 </TableRow>
               </TableBody>
             </Table>

@@ -1,7 +1,15 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/chart/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, Grid, Button, FormControl, InputLabel, Select, MenuItem, TextField,
+  Box,
+  Typography,
+  Grid,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
 } from '@mui/material';
 import axios from 'axios';
 import ChartComponent from './ChartComponent';
@@ -31,7 +39,9 @@ const Dashboard = () => {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>Dashboard</Typography>
+      <Typography variant="h4" gutterBottom>
+        Dashboard
+      </Typography>
       <Grid container spacing={3}>
         <Grid item xs={12} md={3}>
           <TextField
@@ -73,9 +83,7 @@ const Dashboard = () => {
           </Box>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Box height={400}>
-            {/* Additional charts can be rendered here */}
-          </Box>
+          <Box height={400}>{/* Additional charts can be rendered here */}</Box>
         </Grid>
       </Grid>
     </Box>

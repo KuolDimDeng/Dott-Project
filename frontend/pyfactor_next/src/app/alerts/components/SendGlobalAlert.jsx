@@ -49,11 +49,7 @@ const SendGlobalAlert = () => {
       />
       <FormControl fullWidth margin="normal">
         <InputLabel>Priority</InputLabel>
-        <Select
-          value={priority}
-          onChange={(e) => setPriority(e.target.value)}
-          label="Priority"
-        >
+        <Select value={priority} onChange={(e) => setPriority(e.target.value)} label="Priority">
           <MenuItem value="low">Low</MenuItem>
           <MenuItem value="medium">Medium</MenuItem>
           <MenuItem value="high">High</MenuItem>

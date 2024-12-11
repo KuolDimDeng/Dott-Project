@@ -14,14 +14,14 @@ export const theme = createTheme({
     h6: { fontWeight: 500 },
     // Add common text styles
     body1: { fontSize: '1rem', lineHeight: 1.5 },
-    button: { textTransform: 'none' }
+    button: { textTransform: 'none' },
   },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
           textTransform: 'none',
-          minHeight: 42
+          minHeight: 42,
         },
       },
     },
@@ -29,9 +29,9 @@ export const theme = createTheme({
     MuiTextField: {
       defaultProps: {
         variant: 'outlined',
-        fullWidth: true
-      }
-    }
+        fullWidth: true,
+      },
+    },
   },
 });
 
@@ -39,12 +39,12 @@ export const theme = createTheme({
 const commonFlexStyles = {
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center'
+  alignItems: 'center',
 };
 
 const commonSpacing = {
   gap: theme.spacing(3),
-  padding: theme.spacing(3)
+  padding: theme.spacing(3),
 };
 
 // Export styled components
@@ -97,8 +97,8 @@ export const StyledComponents = {
         fontSize: '1.25rem',
       },
       '& strong': {
-        fontWeight: 600
-      }
+        fontWeight: 600,
+      },
     },
   })),
 
@@ -119,7 +119,7 @@ export const StyledComponents = {
         width: '100%',
       },
     },
-  }))
+  })),
 };
 
 export const IMAGE_CONFIG = {
@@ -128,22 +128,22 @@ export const IMAGE_CONFIG = {
     height: 50,
     path: '/static/images/Pyfactor.png',
     alt: 'Pyfactor Logo',
-    priority: true
+    priority: true,
   },
   sideImage: {
     width: '80%',
     height: '50%',
     path: '/static/images/Being-Productive-3--Streamline-Brooklyn.png',
     alt: 'Productive workspace illustration',
-    priority: true
+    priority: true,
   },
 };
 
 // Development PropTypes
 if (process.env.NODE_ENV !== 'production') {
   const PropTypes = require('prop-types');
-  
-  Object.values(StyledComponents).forEach(Component => {
+
+  Object.values(StyledComponents).forEach((Component) => {
     Component.propTypes = {
       children: PropTypes.node,
       className: PropTypes.string,
@@ -153,6 +153,6 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Type checking for styled components
-Object.values(StyledComponents).forEach(Component => {
+Object.values(StyledComponents).forEach((Component) => {
   Component.displayName = `Styled${Component.toString().split('(')[0]}`;
 });

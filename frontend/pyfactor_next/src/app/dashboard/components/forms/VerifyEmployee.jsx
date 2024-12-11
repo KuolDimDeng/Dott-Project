@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TextField, Button, Box, Typography, Switch, FormControlLabel } from '@mui/material';
 import { useParams } from 'react-router-dom';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const VerifyEmployee = () => {
   const { employeeId } = useParams();
@@ -22,7 +22,7 @@ const VerifyEmployee = () => {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setEmployeeData(prev => ({ ...prev, [name]: value }));
+    setEmployeeData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleVerifyToggle = () => {
@@ -45,11 +45,27 @@ const VerifyEmployee = () => {
 
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>Verify Employee Information</Typography>
+      <Typography variant="h5" gutterBottom>
+        Verify Employee Information
+      </Typography>
       <form onSubmit={handleSubmit}>
         {/* Add all the necessary fields from employeeData */}
-        <TextField label="First Name" name="first_name" value={employeeData.first_name} onChange={handleInputChange} fullWidth margin="normal" />
-        <TextField label="Last Name" name="last_name" value={employeeData.last_name} onChange={handleInputChange} fullWidth margin="normal" />
+        <TextField
+          label="First Name"
+          name="first_name"
+          value={employeeData.first_name}
+          onChange={handleInputChange}
+          fullWidth
+          margin="normal"
+        />
+        <TextField
+          label="Last Name"
+          name="last_name"
+          value={employeeData.last_name}
+          onChange={handleInputChange}
+          fullWidth
+          margin="normal"
+        />
         {/* Add other fields */}
         <FormControlLabel
           control={<Switch checked={verified} onChange={handleVerifyToggle} />}

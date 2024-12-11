@@ -13,7 +13,7 @@ export const ERROR_TYPES = {
   LOAD_FAILED: 'LOAD_FAILED',
   API_ERROR: 'API_ERROR',
   DATA_ERROR: 'DATA_ERROR',
-  NETWORK_ERROR: 'NETWORK_ERROR'
+  NETWORK_ERROR: 'NETWORK_ERROR',
 };
 
 // Step names from APP_CONFIG
@@ -22,29 +22,33 @@ export const STEP_NAMES = {
   STEP2: APP_CONFIG.onboarding.steps.PLAN,
   STEP3: APP_CONFIG.onboarding.steps.PAYMENT,
   STEP4: APP_CONFIG.onboarding.steps.SETUP,
-  COMPLETE: APP_CONFIG.onboarding.steps.COMPLETE
+  COMPLETE: APP_CONFIG.onboarding.steps.COMPLETE,
 };
 
 // Validation with more specific checks
 export const STEP_VALIDATION = {
   [STEP_NAMES.STEP1]: (data) => {
     const requiredFields = ['businessName', 'industry', 'country', 'legalStructure'];
-    return requiredFields.every(field => !!data?.[field]);
+    return requiredFields.every((field) => !!data?.[field]);
   },
   [STEP_NAMES.STEP2]: (data) => {
-    return !!data?.selectedPlan && 
-           ['Basic', 'Professional'].includes(data.selectedPlan) &&
-           !!data?.billingCycle && 
-           ['monthly', 'annual'].includes(data.billingCycle);
+    return (
+      !!data?.selectedPlan &&
+      ['Basic', 'Professional'].includes(data.selectedPlan) &&
+      !!data?.billingCycle &&
+      ['monthly', 'annual'].includes(data.billingCycle)
+    );
   },
   [STEP_NAMES.STEP3]: (data) => {
     if (data?.selectedPlan === 'Basic') return true;
     return data?.selectedPlan === 'Professional' && !!data?.paymentMethod;
   },
   [STEP_NAMES.STEP4]: (data) => {
-    return data?.selectedPlan === 'Basic' || 
-           (data?.selectedPlan === 'Professional' && !!data?.paymentMethod);
-  }
+    return (
+      data?.selectedPlan === 'Basic' ||
+      (data?.selectedPlan === 'Professional' && !!data?.paymentMethod)
+    );
+  },
 };
 
 // Metadata using APP_CONFIG endpoints
@@ -56,7 +60,7 @@ export const STEP_METADATA = {
     stepNumber: 1,
     isRequired: true,
     validationRules: ['businessName', 'industry', 'country', 'legalStructure'],
-    apiEndpoint: APP_CONFIG.api.endpoints.onboarding.step1
+    apiEndpoint: APP_CONFIG.api.endpoints.onboarding.step1,
   },
   [STEP_NAMES.STEP2]: {
     title: 'Choose Your Plan',
@@ -66,7 +70,7 @@ export const STEP_METADATA = {
     stepNumber: 2,
     isRequired: true,
     validationRules: ['selectedPlan', 'billingCycle'],
-    apiEndpoint: APP_CONFIG.api.endpoints.onboarding.step2
+    apiEndpoint: APP_CONFIG.api.endpoints.onboarding.step2,
   },
   [STEP_NAMES.STEP3]: {
     title: 'Payment Details',
@@ -76,7 +80,7 @@ export const STEP_METADATA = {
     stepNumber: 3,
     isRequired: false,
     validationRules: ['paymentMethod'],
-    apiEndpoint: APP_CONFIG.api.endpoints.onboarding.step3
+    apiEndpoint: APP_CONFIG.api.endpoints.onboarding.step3,
   },
   [STEP_NAMES.STEP4]: {
     title: 'Setup Your Workspace',
@@ -85,8 +89,8 @@ export const STEP_METADATA = {
     stepNumber: 4,
     isRequired: true,
     validationRules: [],
-    apiEndpoint: APP_CONFIG.api.endpoints.onboarding.step4
-  }
+    apiEndpoint: APP_CONFIG.api.endpoints.onboarding.step4,
+  },
 };
 
 // Step routes from APP_CONFIG
@@ -95,7 +99,7 @@ export const STEP_ROUTES = {
   [STEP_NAMES.STEP2.toLowerCase()]: APP_CONFIG.routes.onboarding.steps.step2,
   [STEP_NAMES.STEP3.toLowerCase()]: APP_CONFIG.routes.onboarding.steps.step3,
   [STEP_NAMES.STEP4.toLowerCase()]: APP_CONFIG.routes.onboarding.steps.step4,
-  [STEP_NAMES.COMPLETE.toLowerCase()]: '/dashboard'
+  [STEP_NAMES.COMPLETE.toLowerCase()]: '/dashboard',
 };
 
 // Validation utility with detailed error messages
@@ -107,27 +111,27 @@ export const validateStep = (stepName, formData) => {
       return {
         valid: false,
         error: ERROR_TYPES.INVALID_STEP,
-        message: `Invalid step: ${stepName}`
+        message: `Invalid step: ${stepName}`,
       };
     }
-    
+
     const isValid = validation(formData);
     const metadata = STEP_METADATA[stepName];
-    const missingFields = metadata.validationRules.filter(rule => !formData?.[rule]);
-    
+    const missingFields = metadata.validationRules.filter((rule) => !formData?.[rule]);
+
     return {
       valid: isValid,
       error: isValid ? null : ERROR_TYPES.VALIDATION_FAILED,
       message: isValid ? null : 'Please complete all required fields',
       missingFields,
-      stepMetadata: metadata
+      stepMetadata: metadata,
     };
   } catch (error) {
     logger.error('Validation error:', error);
     return {
       valid: false,
       error: ERROR_TYPES.DATA_ERROR,
-      message: 'An error occurred during validation'
+      message: 'An error occurred during validation',
     };
   }
 };
@@ -138,10 +142,10 @@ const DynamicLoadingComponent = ({ stepNumber, error, retry }) => {
     logger.error(`Error loading step ${stepNumber}:`, {
       type: ERROR_TYPES.LOAD_FAILED,
       step: stepNumber,
-      error
+      error,
     });
     return (
-      <ErrorStep 
+      <ErrorStep
         error={error}
         stepNumber={stepNumber}
         onRetry={retry}
@@ -151,12 +155,7 @@ const DynamicLoadingComponent = ({ stepNumber, error, retry }) => {
     );
   }
 
-  return (
-    <LoadingStateWithProgress 
-      message={`Loading Step ${stepNumber}...`}
-      showSpinner={true}
-    />
-  );
+  return <LoadingStateWithProgress message={`Loading Step ${stepNumber}...`} showSpinner={true} />;
 };
 
 // Error boundary wrapper
@@ -178,19 +177,16 @@ const withErrorBoundary = (Component, stepNumber) => {
 // Dynamic import utility
 const createDynamicStep = (stepNumber) => {
   const DynamicComponent = dynamic(
-    () => import(`./Step${stepNumber}`).catch(error => {
-      logger.error(`Failed to load Step${stepNumber}:`, error);
-      throw error;
-    }), 
+    () =>
+      import(`./Step${stepNumber}`).catch((error) => {
+        logger.error(`Failed to load Step${stepNumber}:`, error);
+        throw error;
+      }),
     {
       loading: ({ error, retry }) => (
-        <DynamicLoadingComponent 
-          stepNumber={stepNumber} 
-          error={error} 
-          retry={retry} 
-        />
+        <DynamicLoadingComponent stepNumber={stepNumber} error={error} retry={retry} />
       ),
-      ssr: false
+      ssr: false,
     }
   );
 
@@ -208,7 +204,7 @@ export const STEP_COMPONENTS = {
   [STEP_NAMES.STEP1]: Step1,
   [STEP_NAMES.STEP2]: Step2,
   [STEP_NAMES.STEP3]: Step3,
-  [STEP_NAMES.STEP4]: Step4
+  [STEP_NAMES.STEP4]: Step4,
 };
 
 // Utility function for getting components
@@ -216,7 +212,7 @@ export const getStepComponent = (stepName, formData) => {
   const component = STEP_COMPONENTS[stepName];
   if (!component) {
     logger.error(`Invalid step name: ${stepName}`, {
-      type: ERROR_TYPES.INVALID_STEP
+      type: ERROR_TYPES.INVALID_STEP,
     });
     return null;
   }
@@ -233,24 +229,29 @@ export const getStepComponent = (stepName, formData) => {
 // Development utilities
 if (process.env.NODE_ENV !== 'production') {
   const PropTypes = require('prop-types');
-  
+
   DynamicLoadingComponent.propTypes = {
     stepNumber: PropTypes.number.isRequired,
     error: PropTypes.shape({
       message: PropTypes.string,
-      type: PropTypes.oneOf(Object.values(ERROR_TYPES))
+      type: PropTypes.oneOf(Object.values(ERROR_TYPES)),
     }),
-    retry: PropTypes.func.isRequired
+    retry: PropTypes.func.isRequired,
   };
 
-  Object.values(STEP_METADATA).forEach(metadata => {
-    PropTypes.checkPropTypes({
-      title: PropTypes.string.isRequired,
-      description: PropTypes.string.isRequired,
-      stepNumber: PropTypes.number.isRequired,
-      isRequired: PropTypes.bool.isRequired,
-      validationRules: PropTypes.arrayOf(PropTypes.string).isRequired,
-      apiEndpoint: PropTypes.string
-    }, metadata, 'prop', 'StepMetadata');
+  Object.values(STEP_METADATA).forEach((metadata) => {
+    PropTypes.checkPropTypes(
+      {
+        title: PropTypes.string.isRequired,
+        description: PropTypes.string.isRequired,
+        stepNumber: PropTypes.number.isRequired,
+        isRequired: PropTypes.bool.isRequired,
+        validationRules: PropTypes.arrayOf(PropTypes.string).isRequired,
+        apiEndpoint: PropTypes.string,
+      },
+      metadata,
+      'prop',
+      'StepMetadata'
+    );
   });
 }

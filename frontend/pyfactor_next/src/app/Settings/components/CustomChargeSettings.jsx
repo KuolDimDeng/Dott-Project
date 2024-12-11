@@ -1,7 +1,17 @@
 // In BusinessSettings.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, TextField, Button, Grid, List, ListItem, ListItemText, IconButton } from '@mui/material';
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Grid,
+  List,
+  ListItem,
+  ListItemText,
+  IconButton,
+} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useApi } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
@@ -26,7 +36,7 @@ const CustomChargeSettings = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewPlan(prev => ({ ...prev, [name]: value }));
+    setNewPlan((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleCreatePlan = async () => {
@@ -52,35 +62,77 @@ const CustomChargeSettings = () => {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>Custom Charge Settings</Typography>
+      <Typography variant="h6" gutterBottom>
+        Custom Charge Settings
+      </Typography>
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="Plan Name" name="name" value={newPlan.name} onChange={handleInputChange} />
+          <TextField
+            fullWidth
+            label="Plan Name"
+            name="name"
+            value={newPlan.name}
+            onChange={handleInputChange}
+          />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="Quantity" name="quantity" type="number" value={newPlan.quantity} onChange={handleInputChange} />
+          <TextField
+            fullWidth
+            label="Quantity"
+            name="quantity"
+            type="number"
+            value={newPlan.quantity}
+            onChange={handleInputChange}
+          />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="Unit" name="unit" value={newPlan.unit} onChange={handleInputChange} />
+          <TextField
+            fullWidth
+            label="Unit"
+            name="unit"
+            value={newPlan.unit}
+            onChange={handleInputChange}
+          />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="Period" name="period" value={newPlan.period} onChange={handleInputChange} />
+          <TextField
+            fullWidth
+            label="Period"
+            name="period"
+            value={newPlan.period}
+            onChange={handleInputChange}
+          />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="Price" name="price" type="number" value={newPlan.price} onChange={handleInputChange} />
+          <TextField
+            fullWidth
+            label="Price"
+            name="price"
+            type="number"
+            value={newPlan.price}
+            onChange={handleInputChange}
+          />
         </Grid>
         <Grid item xs={12}>
-          <Button variant="contained" onClick={handleCreatePlan}>Create Custom Plan</Button>
+          <Button variant="contained" onClick={handleCreatePlan}>
+            Create Custom Plan
+          </Button>
         </Grid>
       </Grid>
       <List>
         {customPlans.map((plan) => (
-          <ListItem key={plan.id} secondaryAction={
-            <IconButton edge="end" aria-label="delete" onClick={() => handleDeletePlan(plan.id)}>
-              <DeleteIcon />
-            </IconButton>
-          }>
-            <ListItemText primary={plan.name} secondary={`${plan.quantity} ${plan.unit} per ${plan.period} - $${plan.price}`} />
+          <ListItem
+            key={plan.id}
+            secondaryAction={
+              <IconButton edge="end" aria-label="delete" onClick={() => handleDeletePlan(plan.id)}>
+                <DeleteIcon />
+              </IconButton>
+            }
+          >
+            <ListItemText
+              primary={plan.name}
+              secondary={`${plan.quantity} ${plan.unit} per ${plan.period} - $${plan.price}`}
+            />
           </ListItem>
         ))}
       </List>

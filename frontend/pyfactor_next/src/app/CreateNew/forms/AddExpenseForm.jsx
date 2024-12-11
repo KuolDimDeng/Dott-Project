@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Button, 
-  TextField, 
-  Select, 
-  MenuItem, 
-  InputLabel, 
+import {
+  Box,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  InputLabel,
   FormControl,
-  InputAdornment
+  InputAdornment,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -110,7 +110,10 @@ const AddExpenseForm = ({ onClose }) => {
         logger.error('Error response data:', error.response.data);
         logger.error('Error response status:', error.response.status);
         logger.error('Error response headers:', error.response.headers);
-        addMessage('error', `Error creating expense record: ${error.response.data.message || 'Unknown error'}`);
+        addMessage(
+          'error',
+          `Error creating expense record: ${error.response.data.message || 'Unknown error'}`
+        );
       } else if (error.request) {
         logger.error('Error request:', error.request);
         addMessage('error', 'Error creating expense record: No response received from server');

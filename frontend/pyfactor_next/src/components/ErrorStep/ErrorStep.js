@@ -3,13 +3,7 @@ import React from 'react';
 import { Box, Typography, Button, Alert, CircularProgress } from '@mui/material';
 import { logger } from '@/utils/logger';
 
-export function ErrorStep({ 
-  error, 
-  stepNumber, 
-  onRetry, 
-  isRetrying = false,
-  message
-}) {
+export function ErrorStep({ error, stepNumber, onRetry, isRetrying = false, message }) {
   // Log error for debugging
   React.useEffect(() => {
     if (error) {
@@ -40,12 +34,12 @@ export function ErrorStep({
             {isRetrying ? 'Retrying...' : 'Retry'}
           </Button>
         }
-        sx={{ 
-          maxWidth: 500, 
+        sx={{
+          maxWidth: 500,
           width: '100%',
           '& .MuiAlert-message': {
-            width: '100%'
-          }
+            width: '100%',
+          },
         }}
       >
         <Typography variant="subtitle2" gutterBottom>
@@ -64,18 +58,18 @@ export function ErrorStep({
 // Add PropTypes
 if (process.env.NODE_ENV !== 'production') {
   const PropTypes = require('prop-types');
-  
+
   ErrorStep.propTypes = {
     error: PropTypes.oneOfType([
       PropTypes.string,
       PropTypes.shape({
         message: PropTypes.string,
-        code: PropTypes.string
-      })
+        code: PropTypes.string,
+      }),
     ]),
     stepNumber: PropTypes.number.isRequired,
     onRetry: PropTypes.func.isRequired,
     isRetrying: PropTypes.bool,
-    message: PropTypes.string
+    message: PropTypes.string,
   };
 }

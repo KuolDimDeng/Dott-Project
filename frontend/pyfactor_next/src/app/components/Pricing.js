@@ -109,28 +109,32 @@ const FeatureClose = styled(CloseIcon)(({ theme }) => ({
 }));
 
 const features = [
-  { name: "Track income and expenses", starter: true, pro: true },
-  { name: "Mobile money payments", starter: true, pro: true },
-  { name: "Send automated invoices and reminders", starter: false, pro: true },
-  { name: "Payroll processing (self-service)", starter: false, pro: true },
-  { name: "Advanced reporting and analytics", starter: false, pro: true },
-  { name: "Custom integrations and API access", starter: false, pro: true },
-  { name: "Accept Stripe, PayPal, and more", starter: false, pro: true },
-  { name: "20 GB of storage", starter: false, pro: true },
+  { name: 'Track income and expenses', starter: true, pro: true },
+  { name: 'Mobile money payments', starter: true, pro: true },
+  { name: 'Send automated invoices and reminders', starter: false, pro: true },
+  { name: 'Payroll processing (self-service)', starter: false, pro: true },
+  { name: 'Advanced reporting and analytics', starter: false, pro: true },
+  { name: 'Custom integrations and API access', starter: false, pro: true },
+  { name: 'Accept Stripe, PayPal, and more', starter: false, pro: true },
+  { name: '20 GB of storage', starter: false, pro: true },
 ];
 function CompareFeatures() {
   return (
     <FeatureComparison>
       <Container maxWidth="lg">
-        <Typography variant="h4" align="center" gutterBottom >
+        <Typography variant="h4" align="center" gutterBottom>
           Compare Full Plan Features
         </Typography>
         <Grid container spacing={4}>
           <Grid item xs={12} md={4}>
-            <Typography variant="h6" align="left" fontWeight="bold">Features</Typography>
+            <Typography variant="h6" align="left" fontWeight="bold">
+              Features
+            </Typography>
           </Grid>
           <Grid item xs={6} md={4}>
-            <Typography variant="h6" align="center" fontWeight="bold">Basic</Typography>
+            <Typography variant="h6" align="center" fontWeight="bold">
+              Basic
+            </Typography>
             <Box mt={2} display="flex" justifyContent="center">
               <Button variant="outlined" color="primary" size="large">
                 Select Basic
@@ -138,7 +142,9 @@ function CompareFeatures() {
             </Box>
           </Grid>
           <Grid item xs={6} md={4}>
-            <Typography variant="h6" align="center" fontWeight="bold">Professional</Typography>
+            <Typography variant="h6" align="center" fontWeight="bold">
+              Professional
+            </Typography>
             <Box mt={2} display="flex" justifyContent="center">
               <Button variant="contained" color="primary" size="large">
                 Select Professional
@@ -205,7 +211,7 @@ export default function Pricing() {
             Choose the plan that's right for your business
           </Typography>
         </Box>
-        
+
         <BillingToggle>
           <Box
             className={`MuiBillingToggle-option ${billingCycle === 'monthly' ? 'active' : ''}`}
@@ -292,10 +298,10 @@ export default function Pricing() {
                         alignItems: 'center',
                       }}
                     >
-                      <CheckCircleRoundedIcon sx={{ color: tier.title === 'Professional' ? 'white' : 'primary.main' }} />
-                      <Typography variant="body1">
-                        {line}
-                      </Typography>
+                      <CheckCircleRoundedIcon
+                        sx={{ color: tier.title === 'Professional' ? 'white' : 'primary.main' }}
+                      />
+                      <Typography variant="body1">{line}</Typography>
                     </Box>
                   ))}
                 </CardContent>
@@ -325,7 +331,7 @@ export default function Pricing() {
           ))}
         </Grid>
       </Container>
-      
+
       <CompareFeatures />
     </>
   );

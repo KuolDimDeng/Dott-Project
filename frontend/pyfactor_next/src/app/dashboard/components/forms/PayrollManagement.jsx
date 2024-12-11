@@ -27,12 +27,12 @@ import {
   Checkbox,
   RadioGroup,
   Radio,
-  useTheme
+  useTheme,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 import { format, addDays, addWeeks } from 'date-fns';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
@@ -56,7 +56,6 @@ const PayrollManagement = () => {
   const [biWeeklyStartDate, setBiWeeklyStartDate] = useState(null);
   const [scheduledPayrolls, setScheduledPayrolls] = useState([]);
   const theme = useTheme();
-
 
   useEffect(() => {
     fetchPayPeriods();
@@ -104,9 +103,9 @@ const PayrollManagement = () => {
   const fetchEmployees = async () => {
     try {
       const response = await axiosInstance.get('/api/hr/employees/');
-      const employeesWithLastPayPeriod = response.data.map(employee => ({
+      const employeesWithLastPayPeriod = response.data.map((employee) => ({
         ...employee,
-        lastPayPeriod: employee.lastPayPeriod || 'N/A'
+        lastPayPeriod: employee.lastPayPeriod || 'N/A',
       }));
       setEmployees(employeesWithLastPayPeriod);
     } catch (error) {
@@ -130,7 +129,10 @@ const PayrollManagement = () => {
       setPayrollSummary(response.data);
       setOpenConfirmDialog(true);
     } catch (error) {
-      addMessage('error', `Error calculating payroll: ${error.response?.data?.detail || error.message}`);
+      addMessage(
+        'error',
+        `Error calculating payroll: ${error.response?.data?.detail || error.message}`
+      );
     } finally {
       setLoading(false);
     }
@@ -159,9 +161,9 @@ const PayrollManagement = () => {
   };
 
   const handleEmployeeSelection = (employeeId) => {
-    setSelectedEmployees(prev => {
+    setSelectedEmployees((prev) => {
       const newSelection = prev.includes(employeeId)
-        ? prev.filter(id => id !== employeeId)
+        ? prev.filter((id) => id !== employeeId)
         : [...prev, employeeId];
       setSelectAll(newSelection.length === employees.length);
       return newSelection;
@@ -186,7 +188,7 @@ const PayrollManagement = () => {
   const handleSelectAll = (event) => {
     setSelectAll(event.target.checked);
     if (event.target.checked) {
-      setSelectedEmployees(employees.map(emp => emp.id));
+      setSelectedEmployees(employees.map((emp) => emp.id));
     } else {
       setSelectedEmployees([]);
     }
@@ -212,8 +214,8 @@ const PayrollManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
           <AttachMoneyIcon sx={{ fontSize: 40, mr: 1, color: 'primary.main' }} />
           <Typography variant="h4" component="h1">
             Payroll Management
@@ -225,7 +227,9 @@ const PayrollManagement = () => {
 
         {/* Scheduled Payrolls Section */}
         <Box mb={3}>
-          <Typography variant="h6" gutterBottom>Scheduled Payrolls</Typography>
+          <Typography variant="h6" gutterBottom>
+            Scheduled Payrolls
+          </Typography>
           <Grid container spacing={2}>
             {scheduledPayrolls.map((payroll, index) => (
               <Grid item xs={12} sm={6} md={4} key={index}>
@@ -243,14 +247,18 @@ const PayrollManagement = () => {
 
         {/* Connected Bank Accounts Section */}
         <Box mb={3}>
-          <Typography variant="h6" gutterBottom>Connected Bank Accounts</Typography>
+          <Typography variant="h6" gutterBottom>
+            Connected Bank Accounts
+          </Typography>
           <Grid container spacing={2}>
             {connectedAccounts.map((account) => (
               <Grid item xs={12} sm={6} md={4} key={account.account_id}>
                 <Card>
                   <CardContent>
                     <Typography variant="h6">{account.name}</Typography>
-                    <Typography>Balance: ${account.balances?.current?.toFixed(2) || 'N/A'}</Typography>
+                    <Typography>
+                      Balance: ${account.balances?.current?.toFixed(2) || 'N/A'}
+                    </Typography>
                     <Typography>Account Type: {account.type || 'N/A'}</Typography>
                     <FormControlLabel
                       control={
@@ -271,22 +279,23 @@ const PayrollManagement = () => {
         {selectedAccount && (
           <Box mb={3}>
             <Typography variant="body1" color="primary" gutterBottom>
-              The selected account ({connectedAccounts.find(a => a.account_id === selectedAccount)?.name}) 
-              will be used to fund this payroll run.
+              The selected account (
+              {connectedAccounts.find((a) => a.account_id === selectedAccount)?.name}) will be used
+              to fund this payroll run.
             </Typography>
           </Box>
         )}
 
         {/* Pay Period Selection */}
         <Box mb={3}>
-          <Typography variant="h6" gutterBottom>Select Pay Period</Typography>
-          <Typography variant="body2" gutterBottom>
-            Choose either monthly, bi-weekly, or a custom date range for your pay period. You can only select one option.
+          <Typography variant="h6" gutterBottom>
+            Select Pay Period
           </Typography>
-          <RadioGroup
-            value={payPeriodType}
-            onChange={handlePayPeriodTypeChange}
-          >
+          <Typography variant="body2" gutterBottom>
+            Choose either monthly, bi-weekly, or a custom date range for your pay period. You can
+            only select one option.
+          </Typography>
+          <RadioGroup value={payPeriodType} onChange={handlePayPeriodTypeChange}>
             <FormControlLabel value="monthly" control={<Radio />} label="Monthly" />
             <FormControlLabel value="biweekly" control={<Radio />} label="Bi-weekly" />
             <FormControlLabel value="custom" control={<Radio />} label="Custom Date Range" />
@@ -295,12 +304,11 @@ const PayrollManagement = () => {
           {payPeriodType === 'monthly' && (
             <FormControl fullWidth sx={{ mt: 2 }}>
               <InputLabel>Accounting Period</InputLabel>
-              <Select
-                value={accountingPeriod}
-                onChange={handleAccountingPeriodChange}
-              >
+              <Select value={accountingPeriod} onChange={handleAccountingPeriodChange}>
                 {getAccountingPeriods().map((period) => (
-                  <MenuItem key={period} value={period}>{period}</MenuItem>
+                  <MenuItem key={period} value={period}>
+                    {period}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -335,13 +343,17 @@ const PayrollManagement = () => {
 
         {/* Employee Summary Section */}
         <Box mb={3}>
-          <Typography variant="h6" gutterBottom>Employee Summary</Typography>
+          <Typography variant="h6" gutterBottom>
+            Employee Summary
+          </Typography>
           <FormControlLabel
             control={
               <Checkbox
                 checked={selectAll}
                 onChange={handleSelectAll}
-                indeterminate={selectedEmployees.length > 0 && selectedEmployees.length < employees.length}
+                indeterminate={
+                  selectedEmployees.length > 0 && selectedEmployees.length < employees.length
+                }
               />
             }
             label="Select All"
@@ -371,9 +383,7 @@ const PayrollManagement = () => {
                     <TableCell>{employee.department || 'N/A'}</TableCell>
                     <TableCell>{employee.job_title || 'N/A'}</TableCell>
                     <TableCell>
-                      {employee.salary 
-                        ? `$${Number(employee.salary).toFixed(2)}` 
-                        : 'N/A'}
+                      {employee.salary ? `$${Number(employee.salary).toFixed(2)}` : 'N/A'}
                     </TableCell>
                     <TableCell>{employee.lastPayPeriod}</TableCell>
                   </TableRow>
@@ -388,14 +398,21 @@ const PayrollManagement = () => {
           color="primary"
           onClick={handleRunPayroll}
           sx={{ mt: 2 }}
-          disabled={!selectedAccount || (!accountingPeriod && !biWeeklyStartDate && (!startDate || !endDate)) || loading || selectedEmployees.length === 0}
+          disabled={
+            !selectedAccount ||
+            (!accountingPeriod && !biWeeklyStartDate && (!startDate || !endDate)) ||
+            loading ||
+            selectedEmployees.length === 0
+          }
         >
           {loading ? <CircularProgress size={24} /> : 'Run Payroll'}
         </Button>
-          <Dialog open={openConfirmDialog} onClose={() => setOpenConfirmDialog(false)}>
-        <DialogTitle>Confirm Payroll Run</DialogTitle>
-        <DialogContent>
-        <Typography>Total Payroll Amount: ${payrollSummary?.total_amount.toFixed(2)}</Typography>
+        <Dialog open={openConfirmDialog} onClose={() => setOpenConfirmDialog(false)}>
+          <DialogTitle>Confirm Payroll Run</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Total Payroll Amount: ${payrollSummary?.total_amount.toFixed(2)}
+            </Typography>
             <Typography>Number of Employees: {payrollSummary?.employee_count}</Typography>
             <Typography>Pay Period: {payrollSummary?.pay_period}</Typography>
           </DialogContent>

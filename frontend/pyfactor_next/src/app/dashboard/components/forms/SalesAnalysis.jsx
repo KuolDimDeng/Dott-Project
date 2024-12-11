@@ -1,10 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Box, FormControl, InputLabel, Select, MenuItem, Grid, Paper, Tabs, Tab } from '@mui/material';
+import {
+  Typography,
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Grid,
+  Paper,
+  Tabs,
+  Tab,
+} from '@mui/material';
 import { Bar, Line, Pie } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title } from 'chart.js';
-import axiosInstance from '@/lib/axiosConfig';;
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+} from 'chart.js';
+import { axiosInstance } from '@/lib/axiosConfig';
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title);
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title
+);
 
 const timeRanges = [
   { value: '1', label: '1 Month' },
@@ -30,7 +62,7 @@ export default function SalesAnalysis() {
   const fetchData = async () => {
     try {
       const response = await axiosInstance.get(`/api/analysis/sales-data`, {
-        params: { time_range: timeRange }
+        params: { time_range: timeRange },
       });
       setData(response.data);
     } catch (error) {
@@ -53,11 +85,11 @@ export default function SalesAnalysis() {
   if (!data) return <Typography>Loading...</Typography>;
 
   const salesOverTimeData = {
-    labels: data.salesOverTime.map(item => item.date),
+    labels: data.salesOverTime.map((item) => item.date),
     datasets: [
       {
         label: 'Sales',
-        data: data.salesOverTime.map(item => item.amount),
+        data: data.salesOverTime.map((item) => item.amount),
         fill: false,
         borderColor: 'rgb(75, 192, 192)',
         tension: 0.1,
@@ -66,10 +98,10 @@ export default function SalesAnalysis() {
   };
 
   const topProductsData = {
-    labels: data.topProducts.map(item => item.product__name),
+    labels: data.topProducts.map((item) => item.product__name),
     datasets: [
       {
-        data: data.topProducts.map(item => item.sales),
+        data: data.topProducts.map((item) => item.sales),
         backgroundColor: [
           'rgba(255, 99, 132, 0.6)',
           'rgba(54, 162, 235, 0.6)',
@@ -82,23 +114,29 @@ export default function SalesAnalysis() {
   };
 
   const salesByCustomerData = {
-    labels: data.salesByCustomer.map(item => item.customer__customerName),
-    datasets: [{
-      label: 'Sales',
-      data: data.salesByCustomer.map(item => item.sales),
-      backgroundColor: 'rgba(75, 192, 192, 0.6)',
-    }]
+    labels: data.salesByCustomer.map((item) => item.customer__customerName),
+    datasets: [
+      {
+        label: 'Sales',
+        data: data.salesByCustomer.map((item) => item.sales),
+        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+      },
+    ],
   };
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>Sales Analysis</Typography>
-      
+      <Typography variant="h4" gutterBottom>
+        Sales Analysis
+      </Typography>
+
       <FormControl fullWidth margin="normal">
         <InputLabel>Time Range</InputLabel>
         <Select value={timeRange} onChange={handleTimeRangeChange}>
           {timeRanges.map((range) => (
-            <MenuItem key={range.value} value={range.value}>{range.label}</MenuItem>
+            <MenuItem key={range.value} value={range.value}>
+              {range.label}
+            </MenuItem>
           ))}
         </Select>
       </FormControl>
@@ -114,28 +152,36 @@ export default function SalesAnalysis() {
 
       {activeTab === 0 && (
         <Paper elevation={3} sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Sales Over Time</Typography>
+          <Typography variant="h6" gutterBottom>
+            Sales Over Time
+          </Typography>
           <Line data={salesOverTimeData} />
         </Paper>
       )}
 
       {activeTab === 1 && (
         <Paper elevation={3} sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Top Products</Typography>
+          <Typography variant="h6" gutterBottom>
+            Top Products
+          </Typography>
           <Pie data={topProductsData} />
         </Paper>
       )}
 
       {activeTab === 2 && (
         <Paper elevation={3} sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Sales by Customer</Typography>
+          <Typography variant="h6" gutterBottom>
+            Sales by Customer
+          </Typography>
           <Bar data={salesByCustomerData} />
         </Paper>
       )}
 
       {activeTab === 3 && (
         <Paper elevation={3} sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Summary</Typography>
+          <Typography variant="h6" gutterBottom>
+            Summary
+          </Typography>
           <Typography>Total Sales: ${formatAmount(data.totalSales)}</Typography>
           <Typography>Average Order Value: ${formatAmount(data.averageOrderValue)}</Typography>
           <Typography>Number of Orders: {data.numberOfOrders}</Typography>

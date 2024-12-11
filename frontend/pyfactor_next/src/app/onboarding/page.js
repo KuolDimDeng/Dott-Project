@@ -14,15 +14,16 @@ import { STEP_ROUTES } from './constants/onboardingConstants';
 
 function OnboardingContent() {
   const router = useRouter();
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const [isInitializing, setIsInitializing] = useState(false);
+  const [initializationAttempts, setInitializationAttempts] = useState(0);
 
-  // Add form methods
+  // Add form methods with proper initial state
   const methods = useForm({
     defaultValues: {
       selectedPlan: '',
-      billingCycle: 'monthly'
-    }
+      billingCycle: 'monthly',
+    },
   });
 
   const {
@@ -30,27 +31,43 @@ function OnboardingContent() {
     loading: storeLoading,
     error: storeError,
     initialized,
-    initialize
+    initialize,
+    progress,
   } = useOnboarding(methods);
 
-  // Initialization effect
+  // Enhanced initialization effect with retry logic
   useEffect(() => {
     let mounted = true;
+    let timeoutId;
 
     const initStore = async () => {
       if (!initialized && !isInitializing && status === 'authenticated') {
         try {
           setIsInitializing(true);
           await initialize();
-          
+
           if (mounted) {
             logger.debug('Store initialization complete', {
               currentStep,
-              initialized: true
+              initialized: true,
+              attempts: initializationAttempts,
             });
           }
         } catch (error) {
-          logger.error('Store initialization failed:', error);
+          logger.error('Store initialization failed:', {
+            error,
+            attempts: initializationAttempts,
+          });
+
+          // Add retry logic with exponential backoff
+          if (initializationAttempts < 3) {
+            const delay = Math.pow(2, initializationAttempts) * 1000;
+            timeoutId = setTimeout(() => {
+              if (mounted) {
+                setInitializationAttempts((prev) => prev + 1);
+              }
+            }, delay);
+          }
         } finally {
           if (mounted) {
             setIsInitializing(false);
@@ -63,59 +80,54 @@ function OnboardingContent() {
 
     return () => {
       mounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
-  }, [initialize, initialized, isInitializing, status, currentStep]);
+  }, [initialize, initialized, isInitializing, status, currentStep, initializationAttempts]);
 
-  // State logging effect
-  useEffect(() => {
-    logger.debug('Page state updated:', {
-      initialized,
-      isInitializing,
-      storeLoading,
-      currentStep,
-      status
-    });
-  }, [initialized, isInitializing, storeLoading, currentStep, status]);
-
-  // Authentication effect
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace('/auth/signin');
-    }
-  }, [status, router]);
-
-  // Routing effect
-  useEffect(() => {
-    if (status === 'authenticated' && initialized && currentStep) {
-      const route = STEP_ROUTES[currentStep] || STEP_ROUTES.step1;
-      logger.debug('Routing to:', { route, currentStep });
-      router.replace(route);
-    }
-  }, [status, initialized, currentStep, router]);
-
+  // Enhanced loading state with more context
   if (!initialized || storeLoading || isInitializing) {
-    const message = isInitializing ? "Initializing..." :
-                   !initialized && status === 'authenticated' ? "Loading..." :
-                   "Preparing...";
-    
-    logger.debug('Loading state:', { 
+    const message = isInitializing
+      ? `Initializing... (Attempt ${initializationAttempts + 1}/3)`
+      : !initialized && status === 'authenticated'
+        ? 'Loading your information...'
+        : `${progress?.currentStep || 'Preparing'} (${progress?.progress || 0}%)`;
+
+    logger.debug('Loading state:', {
       message,
       initialized,
       storeLoading,
       isInitializing,
-      status 
+      status,
+      progress,
     });
-    
-    return <LoadingStateWithProgress message={message} />;
+
+    return (
+      <LoadingStateWithProgress
+        message={message}
+        progress={progress?.progress || 0}
+        isIndeterminate={!progress?.progress}
+      />
+    );
   }
+
+  // Enhanced error handling
   if (storeError) {
-    logger.error('Store error:', storeError);
+    logger.error('Store error:', {
+      error: storeError,
+      currentStep,
+      initializationAttempts,
+    });
+
     return (
       <ErrorStep
         error={storeError}
-        stepNumber={1}
+        stepNumber={currentStep?.replace('step', '') || 1}
         onRetry={() => {
           logger.debug('Retrying initialization');
+          setInitializationAttempts(0);
+          setIsInitializing(false);
           initialize();
         }}
       />
@@ -129,11 +141,7 @@ export default function OnboardingPage() {
   return (
     <OnboardingErrorBoundary
       fallback={({ error, resetError }) => (
-        <ErrorStep
-          error={error}
-          stepNumber={1}
-          onRetry={resetError}
-        />
+        <ErrorStep error={error} stepNumber={1} onRetry={resetError} />
       )}
     >
       <OnboardingContent />

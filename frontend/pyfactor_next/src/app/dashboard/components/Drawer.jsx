@@ -26,7 +26,6 @@ const Drawer = ({
   handleInventoryClick,
   handleHomeClick,
 }) => {
-
   const scrollThumbColor = '#64b5f6'; // Light blue color for the scrollbar thumb
   const scrollTrackColor = '#e3f2fd'; // Slightly lighter blue for the scrollbar track
 
@@ -42,12 +41,11 @@ const Drawer = ({
           boxSizing: 'border-box',
           overflowX: 'hidden', // Prevent horizontal scrollbar
           overflowY: 'hidden', // Allow vertical scrollbar
-
         },
       }}
     >
-      <Box 
-        sx={{ 
+      <Box
+        sx={{
           overflowY: 'hidden',
           overflowX: 'hidden',
           mt: '60px',
@@ -68,7 +66,9 @@ const Drawer = ({
           scrollbarWidth: 'thin',
           scrollbarColor: `${scrollThumbColor} ${scrollTrackColor}`,
         }}
-      >       <MainListItems
+      >
+        {' '}
+        <MainListItems
           handleShowInvoiceBuilder={handleShowInvoiceBuilder}
           handleCloseInvoiceBuilder={handleCloseInvoiceBuilder}
           handleShowCreateOptions={handleShowCreateOptions}

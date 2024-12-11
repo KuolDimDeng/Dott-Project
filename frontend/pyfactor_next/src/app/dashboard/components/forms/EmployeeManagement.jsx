@@ -24,8 +24,6 @@ import {
   Alert,
   Snackbar,
   useTheme,
-
-
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { countries } from 'countries-list';
@@ -36,7 +34,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { format, parseISO } from 'date-fns'; // Add this import
 
 const EmployeeManagement = () => {
@@ -47,7 +45,6 @@ const EmployeeManagement = () => {
   const [payrollProgress, setPayrollProgress] = useState(10);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const theme = useTheme();
-
 
   const [newEmployee, setNewEmployee] = useState({
     first_name: '',
@@ -74,7 +71,6 @@ const EmployeeManagement = () => {
     job_title: '',
   });
 
-
   const countryList = Object.entries(countries).map(([code, country]) => ({
     code,
     name: country.name,
@@ -94,7 +90,6 @@ const EmployeeManagement = () => {
     }
   };
 
-
   useEffect(() => {
     fetchEmployees();
   }, []);
@@ -107,9 +102,9 @@ const EmployeeManagement = () => {
       backgroundColor: theme.palette.grey[300],
     },
     [`& .MuiLinearProgress-bar`]: {
-        borderRadius: 5,
-        backgroundColor: '#4caf50', // green color
-      },
+      borderRadius: 5,
+      backgroundColor: '#4caf50', // green color
+    },
   }));
 
   const fetchEmployees = async () => {
@@ -129,13 +124,13 @@ const EmployeeManagement = () => {
     const { name, value } = event.target;
     if (name === 'country') {
       const securityNumberType = getSecurityNumberType(value);
-      setNewEmployee(prev => ({
+      setNewEmployee((prev) => ({
         ...prev,
         [name]: value,
         security_number_type: securityNumberType,
       }));
     } else {
-      setNewEmployee(prev => ({
+      setNewEmployee((prev) => ({
         ...prev,
         [name]: value,
       }));
@@ -143,9 +138,9 @@ const EmployeeManagement = () => {
   };
 
   const handleDateChange = (name, date) => {
-    setNewEmployee(prev => ({
+    setNewEmployee((prev) => ({
       ...prev,
-      [name]: date
+      [name]: date,
     }));
   };
 
@@ -154,7 +149,6 @@ const EmployeeManagement = () => {
     const parsedDate = typeof date === 'string' ? parseISO(date) : date;
     return format(parsedDate, 'yyyy-MM-dd');
   };
-
 
   const handleCreateEmployee = async (e) => {
     e.preventDefault();
@@ -168,16 +162,16 @@ const EmployeeManagement = () => {
         dob: formatDate(newEmployee.dob),
         date_joined: formatDate(newEmployee.date_joined),
       };
-  
+
       console.log('Sending employee data:', formattedEmployee);
       const response = await axiosInstance.post('/api/hr/employees/create/', formattedEmployee);
       console.log('Employee created:', response.data);
-      
+
       fetchEmployees();
       setActiveTab(2);
       setPayrollProgress(20); // Increase progress when employee is added
       setSnackbar({ open: true, message: 'Employee created successfully', severity: 'success' });
-      
+
       // Reset the form
       setNewEmployee({
         first_name: '',
@@ -234,12 +228,12 @@ const EmployeeManagement = () => {
 
   const validateForm = () => {
     const requiredFields = ['first_name', 'last_name', 'email', 'dob', 'date_joined', 'email'];
-    const missingFields = requiredFields.filter(field => !newEmployee[field]);
+    const missingFields = requiredFields.filter((field) => !newEmployee[field]);
     if (missingFields.length > 0) {
-      setSnackbar({ 
-        open: true, 
-        message: `Please fill in the following required fields: ${missingFields.join(', ')}`, 
-        severity: 'error' 
+      setSnackbar({
+        open: true,
+        message: `Please fill in the following required fields: ${missingFields.join(', ')}`,
+        severity: 'error',
       });
       return false;
     }
@@ -248,27 +242,29 @@ const EmployeeManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-    <Box sx={{ position: 'relative', mt: 2, mb: 2 }}>
-              {/* Progress Bar Section */}
-              <Box sx={{ width: '50%' }}>
-                <GreenLinearProgress variant="determinate" value={payrollProgress} />
-              </Box>
-              <Typography variant="body2" color="text.secondary" align="left" sx={{ mt: 1 }}>
-                Payroll setup {payrollProgress}% completed
-              </Typography>
+      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+        <Box sx={{ position: 'relative', mt: 2, mb: 2 }}>
+          {/* Progress Bar Section */}
+          <Box sx={{ width: '50%' }}>
+            <GreenLinearProgress variant="determinate" value={payrollProgress} />
+          </Box>
+          <Typography variant="body2" color="text.secondary" align="left" sx={{ mt: 1 }}>
+            Payroll setup {payrollProgress}% completed
+          </Typography>
 
-              {/* Image Section */}
-              <Box sx={{ position: 'absolute', right: 0, top: 0 }}>
-                <img
-                  src="/static/images/good4.png"
-                  alt="Good icon"
-                  style={{ width: 100, height: 100, // Adjust the size as needed
-                  borderRadius: '50%', // If the image is circular
-                  imageRendering: 'auto', // For smooth scaling
-                  objectFit: 'contain', // Adjust how the image fits in the space
-                }}
-          />
+          {/* Image Section */}
+          <Box sx={{ position: 'absolute', right: 0, top: 0 }}>
+            <img
+              src="/static/images/good4.png"
+              alt="Good icon"
+              style={{
+                width: 100,
+                height: 100, // Adjust the size as needed
+                borderRadius: '50%', // If the image is circular
+                imageRendering: 'auto', // For smooth scaling
+                objectFit: 'contain', // Adjust how the image fits in the space
+              }}
+            />
           </Box>
         </Box>
 
@@ -292,7 +288,7 @@ const EmployeeManagement = () => {
           <Tab label="Employee Details" />
           <Tab label="View Employees" />
         </Tabs>
-  
+
         <Box sx={{ flexGrow: 1, mt: 2, overflow: 'auto' }}>
           {activeTab === 0 && (
             <Box>
@@ -302,31 +298,58 @@ const EmployeeManagement = () => {
                   Add Employee
                 </Typography>
               </Box>
-              <Typography variant="h8" gutterBottom sx={{ mb: 0 }}>Add basic information about the employee.</Typography>
+              <Typography variant="h8" gutterBottom sx={{ mb: 0 }}>
+                Add basic information about the employee.
+              </Typography>
 
               <form onSubmit={handleCreateEmployee}>
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
                     <Paper elevation={3} sx={{ p: 3 }}>
-                      <Typography variant="h6" gutterBottom>Personal Information</Typography>
-                      <TextField label="First Name" name="first_name" value={newEmployee.first_name} onChange={handleInputChange} fullWidth margin="normal" />
-                      <TextField label="Middle Name" name="middle_name" value={newEmployee.middle_name} onChange={handleInputChange} fullWidth margin="normal" />
-                      <TextField label="Last Name" name="last_name" value={newEmployee.last_name} onChange={handleInputChange} fullWidth margin="normal" />
-                      <TextField 
-                            label="Email" 
-                            name="email" 
-                            type="email"
-                            value={newEmployee.email} 
-                            onChange={handleInputChange} 
-                            fullWidth 
-                            margin="normal" 
-                            required
-                          />
+                      <Typography variant="h6" gutterBottom>
+                        Personal Information
+                      </Typography>
+                      <TextField
+                        label="First Name"
+                        name="first_name"
+                        value={newEmployee.first_name}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Middle Name"
+                        name="middle_name"
+                        value={newEmployee.middle_name}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Last Name"
+                        name="last_name"
+                        value={newEmployee.last_name}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Email"
+                        name="email"
+                        type="email"
+                        value={newEmployee.email}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                        required
+                      />
                       <DatePicker
                         label="Date of Birth"
                         value={newEmployee.dob}
                         onChange={(date) => handleDateChange('dob', date)}
-                        renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+                        renderInput={(params) => (
+                          <TextField {...params} fullWidth margin="normal" />
+                        )}
                       />
                       <TextField
                         select
@@ -356,11 +379,46 @@ const EmployeeManagement = () => {
                         <MenuItem value="D">Divorced</MenuItem>
                         <MenuItem value="W">Widowed</MenuItem>
                       </TextField>
-                      <TextField label="Nationality" name="nationality" value={newEmployee.nationality} onChange={handleInputChange} fullWidth margin="normal" />
-                      <TextField label="Street" name="street" value={newEmployee.street} onChange={handleInputChange} fullWidth margin="normal" />
-                      <TextField label="Postcode" name="postcode" value={newEmployee.postcode} onChange={handleInputChange} fullWidth margin="normal" />
-                      <TextField label="City" name="city" value={newEmployee.city} onChange={handleInputChange} fullWidth margin="normal" />
-                      <TextField label="Country" name="country" value={newEmployee.country} onChange={handleInputChange} fullWidth margin="normal" />
+                      <TextField
+                        label="Nationality"
+                        name="nationality"
+                        value={newEmployee.nationality}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Street"
+                        name="street"
+                        value={newEmployee.street}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Postcode"
+                        name="postcode"
+                        value={newEmployee.postcode}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="City"
+                        name="city"
+                        value={newEmployee.city}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Country"
+                        name="country"
+                        value={newEmployee.country}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      />
                       <TextField
                         select
                         label="Security Number Type"
@@ -374,12 +432,24 @@ const EmployeeManagement = () => {
                         <MenuItem value="NIN">National Insurance Number (UK)</MenuItem>
                         {/* Add other options as needed */}
                       </TextField>
-                      <TextField label="Security Number" name="security_number" value={newEmployee.security_number} onChange={handleInputChange} fullWidth margin="normal" />
+                      <TextField
+                        label="Security Number"
+                        name="security_number"
+                        value={newEmployee.security_number}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      />
                       <FormControlLabel
                         control={
                           <Switch
                             checked={newEmployee.invite_to_onboard}
-                            onChange={(e) => setNewEmployee(prev => ({ ...prev, invite_to_onboard: e.target.checked }))}
+                            onChange={(e) =>
+                              setNewEmployee((prev) => ({
+                                ...prev,
+                                invite_to_onboard: e.target.checked,
+                              }))
+                            }
                             name="invite_to_onboard"
                           />
                         }
@@ -389,12 +459,16 @@ const EmployeeManagement = () => {
                   </Grid>
                   <Grid item xs={12} md={6}>
                     <Paper elevation={3} sx={{ p: 3 }}>
-                      <Typography variant="h6" gutterBottom>Work Information</Typography>
+                      <Typography variant="h6" gutterBottom>
+                        Work Information
+                      </Typography>
                       <DatePicker
                         label="Start Date"
                         value={newEmployee.date_joined}
                         onChange={(date) => handleDateChange('date_joined', date)}
-                        renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+                        renderInput={(params) => (
+                          <TextField {...params} fullWidth margin="normal" />
+                        )}
                       />
                       <TextField
                         select
@@ -409,31 +483,72 @@ const EmployeeManagement = () => {
                         <MenuItem value="wage">Wage</MenuItem>
                       </TextField>
                       {newEmployee.wage_type === 'salary' ? (
-                        <TextField label="Salary" name="salary" type="number" value={newEmployee.salary} onChange={handleInputChange} fullWidth margin="normal" />
+                        <TextField
+                          label="Salary"
+                          name="salary"
+                          type="number"
+                          value={newEmployee.salary}
+                          onChange={handleInputChange}
+                          fullWidth
+                          margin="normal"
+                        />
                       ) : (
-                        <TextField label="Wage Rate per Hour" name="wage_rate" type="number" value={newEmployee.wage_rate} onChange={handleInputChange} fullWidth margin="normal" />
+                        <TextField
+                          label="Wage Rate per Hour"
+                          name="wage_rate"
+                          type="number"
+                          value={newEmployee.wage_rate}
+                          onChange={handleInputChange}
+                          fullWidth
+                          margin="normal"
+                        />
                       )}
                       <FormControlLabel
                         control={
                           <Switch
                             checked={newEmployee.direct_deposit}
-                            onChange={(e) => setNewEmployee(prev => ({ ...prev, direct_deposit: e.target.checked }))}
+                            onChange={(e) =>
+                              setNewEmployee((prev) => ({
+                                ...prev,
+                                direct_deposit: e.target.checked,
+                              }))
+                            }
                             name="direct_deposit"
                           />
                         }
                         label="Direct Deposit"
                       />
-                      <TextField label="Department" name="department" value={newEmployee.department} onChange={handleInputChange} fullWidth margin="normal" />
-                      <TextField label="Job Title" name="job_title" value={newEmployee.job_title} onChange={handleInputChange} fullWidth margin="normal" />
+                      <TextField
+                        label="Department"
+                        name="department"
+                        value={newEmployee.department}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Job Title"
+                        name="job_title"
+                        value={newEmployee.job_title}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                      />
                     </Paper>
                   </Grid>
                 </Grid>
-                <Button 
-                  type="submit" 
-                  variant="contained" 
-                  color="primary" 
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
                   sx={{ mt: 3 }}
-                  disabled={!newEmployee.first_name || !newEmployee.last_name || !newEmployee.email || !newEmployee.dob || !newEmployee.date_joined}
+                  disabled={
+                    !newEmployee.first_name ||
+                    !newEmployee.last_name ||
+                    !newEmployee.email ||
+                    !newEmployee.dob ||
+                    !newEmployee.date_joined
+                  }
                 >
                   Add Employee
                 </Button>
@@ -442,45 +557,132 @@ const EmployeeManagement = () => {
           )}
           {activeTab === 1 && (
             <Box>
-              <Typography variant="h4" gutterBottom>Employee Details</Typography>
+              <Typography variant="h4" gutterBottom>
+                Employee Details
+              </Typography>
               {selectedEmployee && (
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
                     <Paper elevation={3} sx={{ p: 3 }}>
-                      <Typography variant="h6" gutterBottom>Personal Information</Typography>
-                      <TextField label="Employee Number" value={selectedEmployee.employee_number} fullWidth margin="normal" disabled />
-                      <TextField label="First Name" value={selectedEmployee.first_name} fullWidth margin="normal" />
-                      <TextField label="Middle Name" value={selectedEmployee.middle_name} fullWidth margin="normal" />
-                      <TextField label="Last Name" value={selectedEmployee.last_name} fullWidth margin="normal" />
-                      <TextField label="Date of Birth" value={new Date(selectedEmployee.dob).toLocaleDateString()} fullWidth margin="normal" />
-                      <TextField 
-                              label="Email" 
-                              name="email" 
-                              type="email"
-                              value={newEmployee.email} 
-                              onChange={handleInputChange} 
-                              fullWidth 
-                              margin="normal" 
-                              required
-                            />
-                      <TextField label="Gender" value={selectedEmployee.gender} fullWidth margin="normal" />
-                      <TextField label="Marital Status" value={selectedEmployee.marital_status} fullWidth margin="normal" />
-                      <TextField label="Nationality" value={selectedEmployee.nationality} fullWidth margin="normal" />
-                      <TextField label="Security Number Type" value={selectedEmployee.security_number_type} fullWidth margin="normal" />
-                      <TextField label="Security Number" value={selectedEmployee.security_number} fullWidth margin="normal" />
+                      <Typography variant="h6" gutterBottom>
+                        Personal Information
+                      </Typography>
+                      <TextField
+                        label="Employee Number"
+                        value={selectedEmployee.employee_number}
+                        fullWidth
+                        margin="normal"
+                        disabled
+                      />
+                      <TextField
+                        label="First Name"
+                        value={selectedEmployee.first_name}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Middle Name"
+                        value={selectedEmployee.middle_name}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Last Name"
+                        value={selectedEmployee.last_name}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Date of Birth"
+                        value={new Date(selectedEmployee.dob).toLocaleDateString()}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Email"
+                        name="email"
+                        type="email"
+                        value={newEmployee.email}
+                        onChange={handleInputChange}
+                        fullWidth
+                        margin="normal"
+                        required
+                      />
+                      <TextField
+                        label="Gender"
+                        value={selectedEmployee.gender}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Marital Status"
+                        value={selectedEmployee.marital_status}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Nationality"
+                        value={selectedEmployee.nationality}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Security Number Type"
+                        value={selectedEmployee.security_number_type}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Security Number"
+                        value={selectedEmployee.security_number}
+                        fullWidth
+                        margin="normal"
+                      />
                     </Paper>
                   </Grid>
                   <Grid item xs={12} md={6}>
                     <Paper elevation={3} sx={{ p: 3 }}>
-                      <Typography variant="h6" gutterBottom>Work Information</Typography>
-                      <TextField label="Job Title" value={selectedEmployee.job_title} fullWidth margin="normal" />
-                      <TextField label="Department" value={selectedEmployee.department} fullWidth margin="normal" />
-                      <TextField label="Date Joined" value={new Date(selectedEmployee.date_joined).toLocaleDateString()} fullWidth margin="normal" />
-                      <TextField label="Wage Type" value={selectedEmployee.wage_type} fullWidth margin="normal" />
+                      <Typography variant="h6" gutterBottom>
+                        Work Information
+                      </Typography>
+                      <TextField
+                        label="Job Title"
+                        value={selectedEmployee.job_title}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Department"
+                        value={selectedEmployee.department}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Date Joined"
+                        value={new Date(selectedEmployee.date_joined).toLocaleDateString()}
+                        fullWidth
+                        margin="normal"
+                      />
+                      <TextField
+                        label="Wage Type"
+                        value={selectedEmployee.wage_type}
+                        fullWidth
+                        margin="normal"
+                      />
                       {selectedEmployee.wage_type === 'salary' ? (
-                        <TextField label="Salary" value={selectedEmployee.salary} fullWidth margin="normal" />
+                        <TextField
+                          label="Salary"
+                          value={selectedEmployee.salary}
+                          fullWidth
+                          margin="normal"
+                        />
                       ) : (
-                        <TextField label="Wage Rate" value={selectedEmployee.wage_rate} fullWidth margin="normal" />
+                        <TextField
+                          label="Wage Rate"
+                          value={selectedEmployee.wage_rate}
+                          fullWidth
+                          margin="normal"
+                        />
                       )}
                       <FormControlLabel
                         control={<Switch checked={selectedEmployee.direct_deposit} />}
@@ -494,7 +696,9 @@ const EmployeeManagement = () => {
           )}
           {activeTab === 2 && (
             <Box>
-              <Typography variant="h4" gutterBottom>View Employees</Typography>
+              <Typography variant="h4" gutterBottom>
+                View Employees
+              </Typography>
               <TextField
                 fullWidth
                 variant="outlined"
@@ -546,15 +750,18 @@ const EmployeeManagement = () => {
             </Box>
           )}
         </Box>
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-      >
-        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+        >
+          <Alert
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            severity={snackbar.severity}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </LocalizationProvider>
   );

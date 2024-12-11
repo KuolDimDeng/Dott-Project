@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper, 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
   Typography,
   Collapse,
   IconButton,
   Box,
-  useTheme
+  useTheme,
 } from '@mui/material';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const formatAmount = (amount) => {
   return typeof amount === 'number' ? amount.toFixed(2) : 'N/A';
@@ -23,17 +23,17 @@ const formatAmount = (amount) => {
 const ExpandableRow = ({ name, data }) => {
   const [open, setOpen] = useState(false);
 
-
   if (!data || typeof data !== 'object') {
     return null;
   }
 
-  const total = data.total || (Array.isArray(data) ? data.reduce((sum, item) => sum + (item.amount || 0), 0) : 0);
+  const total =
+    data.total ||
+    (Array.isArray(data) ? data.reduce((sum, item) => sum + (item.amount || 0), 0) : 0);
   const accounts = data.accounts || (Array.isArray(data) ? data : []);
 
   return (
     <>
-    
       <TableRow>
         <TableCell>
           <IconButton size="small" onClick={() => setOpen(!open)}>
@@ -73,7 +73,6 @@ export default function BalanceSheetReport() {
   const [error, setError] = useState(null);
   const theme = useTheme();
 
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -104,61 +103,84 @@ export default function BalanceSheetReport() {
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+      <TableContainer component={Paper}>
+        <Typography variant="h4" gutterBottom>
+          Balance Sheet
+        </Typography>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Item</TableCell>
+              <TableCell align="right">Amount</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            <TableRow>
+              <TableCell colSpan={2}>
+                <strong>Assets</strong>
+              </TableCell>
+            </TableRow>
+            <ExpandableRow name="Current Assets" data={assets.Current} />
+            <ExpandableRow name="Non-Current Assets" data={assets.NonCurrent} />
+            <TableRow>
+              <TableCell>
+                <strong>Total Assets</strong>
+              </TableCell>
+              <TableCell align="right">
+                <strong>${formatAmount(assets.total)}</strong>
+              </TableCell>
+            </TableRow>
 
-    <TableContainer component={Paper}>
-      <Typography variant="h4" gutterBottom>Balance Sheet</Typography>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Item</TableCell>
-            <TableCell align="right">Amount</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          <TableRow>
-            <TableCell colSpan={2}><strong>Assets</strong></TableCell>
-          </TableRow>
-          <ExpandableRow name="Current Assets" data={assets.Current} />
-          <ExpandableRow name="Non-Current Assets" data={assets.NonCurrent} />
-          <TableRow>
-            <TableCell><strong>Total Assets</strong></TableCell>
-            <TableCell align="right"><strong>${formatAmount(assets.total)}</strong></TableCell>
-          </TableRow>
+            <TableRow>
+              <TableCell colSpan={2}>
+                <strong>Liabilities</strong>
+              </TableCell>
+            </TableRow>
+            <ExpandableRow name="Current Liabilities" data={liabilities.Current} />
+            <ExpandableRow name="Non-Current Liabilities" data={liabilities.NonCurrent} />
+            <TableRow>
+              <TableCell>
+                <strong>Total Liabilities</strong>
+              </TableCell>
+              <TableCell align="right">
+                <strong>${formatAmount(liabilities.total)}</strong>
+              </TableCell>
+            </TableRow>
 
-          <TableRow>
-            <TableCell colSpan={2}><strong>Liabilities</strong></TableCell>
-          </TableRow>
-          <ExpandableRow name="Current Liabilities" data={liabilities.Current} />
-          <ExpandableRow name="Non-Current Liabilities" data={liabilities.NonCurrent} />
-          <TableRow>
-            <TableCell><strong>Total Liabilities</strong></TableCell>
-            <TableCell align="right"><strong>${formatAmount(liabilities.total)}</strong></TableCell>
-          </TableRow>
+            <TableRow>
+              <TableCell colSpan={2}>
+                <strong>Equity</strong>
+              </TableCell>
+            </TableRow>
+            <ExpandableRow name="Equity Accounts" data={equity} />
+            <TableRow>
+              <TableCell>
+                <strong>Total Equity</strong>
+              </TableCell>
+              <TableCell align="right">
+                <strong>${formatAmount(equity.total)}</strong>
+              </TableCell>
+            </TableRow>
 
-          <TableRow>
-            <TableCell colSpan={2}><strong>Equity</strong></TableCell>
-          </TableRow>
-          <ExpandableRow name="Equity Accounts" data={equity} />
-          <TableRow>
-            <TableCell><strong>Total Equity</strong></TableCell>
-            <TableCell align="right"><strong>${formatAmount(equity.total)}</strong></TableCell>
-          </TableRow>
-
-          <TableRow>
-            <TableCell><strong>Total Liabilities and Equity</strong></TableCell>
-            <TableCell align="right"><strong>${formatAmount((liabilities.total || 0) + (equity.total || 0))}</strong></TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-      {process.env.NODE_ENV === 'development' && (
-        <>
-          <Typography variant="body2" style={{marginTop: '20px'}}>
-            Raw data for debugging:
-          </Typography>
-          <pre>{JSON.stringify(data, null, 2)}</pre>
-        </>
-      )}
-    </TableContainer>
+            <TableRow>
+              <TableCell>
+                <strong>Total Liabilities and Equity</strong>
+              </TableCell>
+              <TableCell align="right">
+                <strong>${formatAmount((liabilities.total || 0) + (equity.total || 0))}</strong>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+        {process.env.NODE_ENV === 'development' && (
+          <>
+            <Typography variant="body2" style={{ marginTop: '20px' }}>
+              Raw data for debugging:
+            </Typography>
+            <pre>{JSON.stringify(data, null, 2)}</pre>
+          </>
+        )}
+      </TableContainer>
     </Box>
   );
 }

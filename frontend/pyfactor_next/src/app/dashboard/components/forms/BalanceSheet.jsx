@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Table, useTheme, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from '@mui/material';
-import axiosInstance from '@/lib/axiosConfig';;
+import {
+  Table,
+  useTheme,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Typography,
+} from '@mui/material';
+import { axiosInstance } from '@/lib/axiosConfig';
 
 export default function BalanceSheet() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const theme = useTheme();
 
-
-
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axiosInstance.get('/api/financial-statements/balance-sheet/');  // adjust URL for each component
+        const response = await axiosInstance.get('/api/financial-statements/balance-sheet/'); // adjust URL for each component
         console.log('API Response:', response);
         if (response.data && response.data.data) {
           setData(response.data.data);
@@ -37,25 +45,24 @@ export default function BalanceSheet() {
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Item</TableCell>
-            <TableCell align="right">Amount</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {Object.entries(data).map(([key, value]) => (
-            <TableRow key={key}>
-              <TableCell>{key}</TableCell>
-              <TableCell align="right">{value}</TableCell>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Item</TableCell>
+              <TableCell align="right">Amount</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          </TableHead>
+          <TableBody>
+            {Object.entries(data).map(([key, value]) => (
+              <TableRow key={key}>
+                <TableCell>{key}</TableCell>
+                <TableCell align="right">{value}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </Box>
   );
 }

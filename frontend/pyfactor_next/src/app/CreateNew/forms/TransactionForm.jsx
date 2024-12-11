@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Button, 
-  Modal, 
-  Typography, 
-  Grid, 
-  Paper, 
+import {
+  Box,
+  Button,
+  Modal,
+  Typography,
+  Grid,
+  Paper,
   Tooltip,
   useTheme,
   useMediaQuery,
@@ -15,7 +15,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material';
 import AddIncomeForm from './AddIncomeForm';
 import AddExpenseForm from './AddExpenseForm';
@@ -158,13 +158,13 @@ const TransactionForm = () => {
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: 3, 
+      <Paper
+        elevation={3}
+        sx={{
+          p: 3,
           backgroundColor: theme.palette.background.paper,
           borderRadius: 2,
-          mb: 3
+          mb: 3,
         }}
       >
         <Box display="flex" alignItems="center" mb={2}>
@@ -178,7 +178,7 @@ const TransactionForm = () => {
             </Typography>
           </Box>
         </Box>
-        
+
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6} md={3}>
             <Tooltip title="Create a new sale">
@@ -240,12 +240,12 @@ const TransactionForm = () => {
       </Paper>
 
       {/* Recent Transactions Section */}
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: 3, 
+      <Paper
+        elevation={3}
+        sx={{
+          p: 3,
           backgroundColor: theme.palette.background.paper,
-          borderRadius: 2
+          borderRadius: 2,
         }}
       >
         <Typography variant="h5" gutterBottom>

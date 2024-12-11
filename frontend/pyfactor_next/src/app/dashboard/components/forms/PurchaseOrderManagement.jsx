@@ -32,7 +32,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const PurchaseOrderManagement = () => {
@@ -56,7 +56,6 @@ const PurchaseOrderManagement = () => {
   const [products, setProducts] = useState([]);
   const [customProduct, setCustomProduct] = useState('');
   const theme = useTheme();
-
 
   useEffect(() => {
     fetchPurchaseOrders();
@@ -100,23 +99,23 @@ const PurchaseOrderManagement = () => {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setNewPurchaseOrder(prev => ({
+    setNewPurchaseOrder((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleDateChange = (date) => {
-    setNewPurchaseOrder(prev => ({
+    setNewPurchaseOrder((prev) => ({
       ...prev,
-      date: date
+      date: date,
     }));
   };
 
   const handleItemAdd = () => {
-    setNewPurchaseOrder(prev => ({
+    setNewPurchaseOrder((prev) => ({
       ...prev,
-      items: [...prev.items, { product: '', quantity: 1, unit_price: 0 }]
+      items: [...prev.items, { product: '', quantity: 1, unit_price: 0 }],
     }));
   };
 
@@ -125,7 +124,7 @@ const PurchaseOrderManagement = () => {
     newItems[index][field] = value;
 
     if (field === 'product') {
-      const selectedProduct = products.find(p => p.id === value);
+      const selectedProduct = products.find((p) => p.id === value);
       if (selectedProduct) {
         newItems[index].description = selectedProduct.name;
         newItems[index].unit_price = parseFloat(selectedProduct.price) || 0;
@@ -138,15 +137,15 @@ const PurchaseOrderManagement = () => {
 
     newItems[index].total = newItems[index].quantity * newItems[index].unit_price;
 
-    setNewPurchaseOrder(prev => ({
+    setNewPurchaseOrder((prev) => ({
       ...prev,
       items: newItems,
-      totalAmount: calculateTotalAmount(newItems, prev.discount)
+      totalAmount: calculateTotalAmount(newItems, prev.discount),
     }));
   };
 
   const calculateTotalAmount = (items, discount) => {
-    const total = items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+    const total = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
     return total - discount;
   };
 
@@ -163,17 +162,20 @@ const PurchaseOrderManagement = () => {
       if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
-        console.error("Error data:", error.response.data);
-        console.error("Error status:", error.response.status);
-        console.error("Error headers:", error.response.headers);
+        console.error('Error data:', error.response.data);
+        console.error('Error status:', error.response.status);
+        console.error('Error headers:', error.response.headers);
       } else if (error.request) {
         // The request was made but no response was received
-        console.error("Error request:", error.request);
+        console.error('Error request:', error.request);
       } else {
         // Something happened in setting up the request that triggered an Error
         console.error('Error message:', error.message);
       }
-      addMessage('error', 'Failed to create purchase order: ' + (error.response?.data?.error || error.message));
+      addMessage(
+        'error',
+        'Failed to create purchase order: ' + (error.response?.data?.error || error.message)
+      );
     }
   };
 
@@ -194,7 +196,10 @@ const PurchaseOrderManagement = () => {
 
   const handleSaveEdit = async () => {
     try {
-      const response = await axiosInstance.put(`/api/purchase-orders/${selectedPurchaseOrder.id}/`, editedPurchaseOrder);
+      const response = await axiosInstance.put(
+        `/api/purchase-orders/${selectedPurchaseOrder.id}/`,
+        editedPurchaseOrder
+      );
       setSelectedPurchaseOrder(response.data);
       setIsEditing(false);
       fetchPurchaseOrders();
@@ -225,11 +230,11 @@ const PurchaseOrderManagement = () => {
 
   const handleAddCustomProduct = () => {
     if (customProduct.trim() !== '') {
-      setNewPurchaseOrder(prev => ({
+      setNewPurchaseOrder((prev) => ({
         ...prev,
         items: [
           ...prev.items,
-          { product: null, description: customProduct, quantity: 1, unit_price: 0, total: 0 }
+          { product: null, description: customProduct, quantity: 1, unit_price: 0, total: 0 },
         ],
       }));
       setCustomProduct('');
@@ -238,8 +243,8 @@ const PurchaseOrderManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-    <Box>
+      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+        <Box>
           <Typography variant="h4" gutterBottom>
             Purchase Order Management
           </Typography>
@@ -248,10 +253,12 @@ const PurchaseOrderManagement = () => {
             <Tab label="Details" />
             <Tab label="List" />
           </Tabs>
-  
+
           {activeTab === 0 && (
             <Box mt={3}>
-              <Typography variant="h6" gutterBottom>Create Purchase Order</Typography>
+              <Typography variant="h6" gutterBottom>
+                Create Purchase Order
+              </Typography>
               <form onSubmit={handleCreatePurchaseOrder}>
                 <FormControl fullWidth margin="normal">
                   <InputLabel>Vendor</InputLabel>
@@ -267,22 +274,26 @@ const PurchaseOrderManagement = () => {
                     ))}
                   </Select>
                 </FormControl>
-  
+
                 <DatePicker
                   label="Date"
                   value={newPurchaseOrder.date}
                   onChange={handleDateChange}
-                  slotProps={{ textField: { fullWidth: true, margin: "normal" } }}
+                  slotProps={{ textField: { fullWidth: true, margin: 'normal' } }}
                 />
-                <Typography variant="h6" gutterBottom>Items</Typography>
+                <Typography variant="h6" gutterBottom>
+                  Items
+                </Typography>
                 {newPurchaseOrder.items.map((item, index) => (
                   <Box key={index} sx={{ display: 'flex', mb: 2 }}>
                     <Autocomplete
                       sx={{ mr: 2, flexGrow: 1 }}
                       options={products}
                       getOptionLabel={(option) => option.name}
-                      value={products.find(p => p.id === item.product) || null}
-                      onChange={(e, newValue) => handleItemChange(index, 'product', newValue ? newValue.id : null)}
+                      value={products.find((p) => p.id === item.product) || null}
+                      onChange={(e, newValue) =>
+                        handleItemChange(index, 'product', newValue ? newValue.id : null)
+                      }
                       renderInput={(params) => <TextField {...params} label="Product" />}
                     />
                     <TextField
@@ -331,25 +342,25 @@ const PurchaseOrderManagement = () => {
                 <Button startIcon={<AddIcon />} onClick={handleItemAdd}>
                   Add Item
                 </Button>
-  
-                <TextField 
-                  label="Discount" 
-                  name="discount" 
-                  type="number" 
-                  value={newPurchaseOrder.discount} 
-                  onChange={handleInputChange} 
-                  fullWidth 
-                  margin="normal" 
+
+                <TextField
+                  label="Discount"
+                  name="discount"
+                  type="number"
+                  value={newPurchaseOrder.discount}
+                  onChange={handleInputChange}
+                  fullWidth
+                  margin="normal"
                 />
-  
-                <TextField 
-                  label="Total Amount" 
-                  value={newPurchaseOrder.totalAmount.toFixed(2)} 
-                  fullWidth 
-                  margin="normal" 
-                  disabled 
+
+                <TextField
+                  label="Total Amount"
+                  value={newPurchaseOrder.totalAmount.toFixed(2)}
+                  fullWidth
+                  margin="normal"
+                  disabled
                 />
-  
+
                 <FormControl fullWidth margin="normal">
                   <InputLabel>Currency</InputLabel>
                   <Select
@@ -362,7 +373,7 @@ const PurchaseOrderManagement = () => {
                     <MenuItem value="GBP">GBP</MenuItem>
                   </Select>
                 </FormControl>
-  
+
                 <FormControl fullWidth margin="normal">
                   <InputLabel>Status</InputLabel>
                   <Select
@@ -376,26 +387,76 @@ const PurchaseOrderManagement = () => {
                     <MenuItem value="cancelled">Cancelled</MenuItem>
                   </Select>
                 </FormControl>
-  
-                <Button type="submit" variant="contained" color="primary">Create Purchase Order</Button>
+
+                <Button type="submit" variant="contained" color="primary">
+                  Create Purchase Order
+                </Button>
               </form>
             </Box>
           )}
-  
+
           {activeTab === 1 && (
             <Box mt={3}>
-              <Typography variant="h6" gutterBottom>Purchase Order Details</Typography>
+              <Typography variant="h6" gutterBottom>
+                Purchase Order Details
+              </Typography>
               {selectedPurchaseOrder ? (
                 <Box>
-                  <TextField label="Order Number" value={selectedPurchaseOrder.order_number} fullWidth margin="normal" disabled />
-                  <TextField label="Vendor" value={selectedPurchaseOrder.vendor_name} fullWidth margin="normal" disabled={!isEditing} />
-                  <TextField label="Date" type="date" value={selectedPurchaseOrder.date} fullWidth margin="normal" disabled={!isEditing} InputLabelProps={{ shrink: true }} />
-                  <TextField label="Total Amount" value={selectedPurchaseOrder.totalAmount} fullWidth margin="normal" disabled />
-                  <TextField label="Discount" value={selectedPurchaseOrder.discount} fullWidth margin="normal" disabled={!isEditing} />
-                  <TextField label="Currency" value={selectedPurchaseOrder.currency} fullWidth margin="normal" disabled={!isEditing} />
-                  <TextField label="Status" value={selectedPurchaseOrder.status} fullWidth margin="normal" disabled={!isEditing} />
-                  
-                  <Typography variant="h6" gutterBottom>Items</Typography>
+                  <TextField
+                    label="Order Number"
+                    value={selectedPurchaseOrder.order_number}
+                    fullWidth
+                    margin="normal"
+                    disabled
+                  />
+                  <TextField
+                    label="Vendor"
+                    value={selectedPurchaseOrder.vendor_name}
+                    fullWidth
+                    margin="normal"
+                    disabled={!isEditing}
+                  />
+                  <TextField
+                    label="Date"
+                    type="date"
+                    value={selectedPurchaseOrder.date}
+                    fullWidth
+                    margin="normal"
+                    disabled={!isEditing}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  <TextField
+                    label="Total Amount"
+                    value={selectedPurchaseOrder.totalAmount}
+                    fullWidth
+                    margin="normal"
+                    disabled
+                  />
+                  <TextField
+                    label="Discount"
+                    value={selectedPurchaseOrder.discount}
+                    fullWidth
+                    margin="normal"
+                    disabled={!isEditing}
+                  />
+                  <TextField
+                    label="Currency"
+                    value={selectedPurchaseOrder.currency}
+                    fullWidth
+                    margin="normal"
+                    disabled={!isEditing}
+                  />
+                  <TextField
+                    label="Status"
+                    value={selectedPurchaseOrder.status}
+                    fullWidth
+                    margin="normal"
+                    disabled={!isEditing}
+                  />
+
+                  <Typography variant="h6" gutterBottom>
+                    Items
+                  </Typography>
                   <TableContainer component={Paper}>
                     <Table>
                       <TableHead>
@@ -410,7 +471,9 @@ const PurchaseOrderManagement = () => {
                       <TableBody>
                         {selectedPurchaseOrder.items.map((item, index) => (
                           <TableRow key={index}>
-                            <TableCell>{item.product ? item.product.name : 'Custom Product'}</TableCell>
+                            <TableCell>
+                              {item.product ? item.product.name : 'Custom Product'}
+                            </TableCell>
                             <TableCell>{item.description}</TableCell>
                             <TableCell>{item.quantity}</TableCell>
                             <TableCell>{item.unit_price}</TableCell>
@@ -420,16 +483,24 @@ const PurchaseOrderManagement = () => {
                       </TableBody>
                     </Table>
                   </TableContainer>
-                  
+
                   {isEditing ? (
                     <Box mt={2}>
-                      <Button variant="contained" color="primary" onClick={handleSaveEdit}>Save</Button>
-                      <Button variant="contained" color="secondary" onClick={handleCancelEdit}>Cancel</Button>
+                      <Button variant="contained" color="primary" onClick={handleSaveEdit}>
+                        Save
+                      </Button>
+                      <Button variant="contained" color="secondary" onClick={handleCancelEdit}>
+                        Cancel
+                      </Button>
                     </Box>
                   ) : (
                     <Box mt={2}>
-                      <Button variant="contained" color="primary" onClick={handleEdit}>Edit</Button>
-                      <Button variant="contained" color="secondary" onClick={handleDelete}>Delete</Button>
+                      <Button variant="contained" color="primary" onClick={handleEdit}>
+                        Edit
+                      </Button>
+                      <Button variant="contained" color="secondary" onClick={handleDelete}>
+                        Delete
+                      </Button>
                     </Box>
                   )}
                 </Box>
@@ -438,10 +509,12 @@ const PurchaseOrderManagement = () => {
               )}
             </Box>
           )}
-  
+
           {activeTab === 2 && (
             <Box mt={3}>
-              <Typography variant="h6" gutterBottom>Purchase Order List</Typography>
+              <Typography variant="h6" gutterBottom>
+                Purchase Order List
+              </Typography>
               <TableContainer component={Paper}>
                 <Table>
                   <TableHead>
@@ -455,11 +528,16 @@ const PurchaseOrderManagement = () => {
                   </TableHead>
                   <TableBody>
                     {purchaseOrders.map((purchaseOrder) => (
-                      <TableRow key={purchaseOrder.id} onClick={() => handlePurchaseOrderSelect(purchaseOrder)}>
+                      <TableRow
+                        key={purchaseOrder.id}
+                        onClick={() => handlePurchaseOrderSelect(purchaseOrder)}
+                      >
                         <TableCell>{purchaseOrder.order_number}</TableCell>
                         <TableCell>{purchaseOrder.vendor_name}</TableCell>
                         <TableCell>{new Date(purchaseOrder.date).toLocaleDateString()}</TableCell>
-                        <TableCell>{purchaseOrder.totalAmount} {purchaseOrder.currency}</TableCell>
+                        <TableCell>
+                          {purchaseOrder.totalAmount} {purchaseOrder.currency}
+                        </TableCell>
                         <TableCell>{purchaseOrder.status}</TableCell>
                       </TableRow>
                     ))}
@@ -468,14 +546,14 @@ const PurchaseOrderManagement = () => {
               </TableContainer>
             </Box>
           )}
-  
+
           <Dialog
             open={deleteDialogOpen}
             onClose={() => setDeleteDialogOpen(false)}
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
           >
-            <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
+            <DialogTitle id="alert-dialog-title">{'Confirm Delete'}</DialogTitle>
             <DialogContent>
               <DialogContentText id="alert-dialog-description">
                 Are you sure you want to delete this purchase order?
@@ -494,7 +572,6 @@ const PurchaseOrderManagement = () => {
       </Box>
     </LocalizationProvider>
   );
-
-};  
+};
 
 export default PurchaseOrderManagement;

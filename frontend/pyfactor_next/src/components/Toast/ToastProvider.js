@@ -11,7 +11,7 @@ const debug = (message, ...args) => {
 };
 
 const TOAST_CONFIG = {
-  position: "top-right",
+  position: 'top-right',
   autoClose: 5000,
   hideProgressBar: false,
   newestOnTop: true,
@@ -20,12 +20,12 @@ const TOAST_CONFIG = {
   pauseOnFocusLoss: true,
   draggable: true,
   pauseOnHover: true,
-  theme: "light",
+  theme: 'light',
   limit: 3,
   style: {
     fontSize: '14px',
     padding: '16px',
-  }
+  },
 };
 
 const ToastContext = React.createContext(null);
@@ -40,7 +40,7 @@ export const ToastProvider = memo(function ToastProvider({ children }) {
 
   const initializeToast = useCallback(() => {
     if (!mountedRef.current || !containerRef.current) return;
-    
+
     try {
       toastInstanceRef.current = reactToastify;
       setIsInitialized(true);
@@ -56,53 +56,60 @@ export const ToastProvider = memo(function ToastProvider({ children }) {
     }
   }, []);
 
-  const toastMethods = useCallback((type) => (...args) => {
-    if (!mountedRef.current || !isInitialized || !toastInstanceRef.current) {
-      toastQueueRef.current.push({ type, args });
-      return;
-    }
+  const toastMethods = useCallback(
+    (type) =>
+      (...args) => {
+        if (!mountedRef.current || !isInitialized || !toastInstanceRef.current) {
+          toastQueueRef.current.push({ type, args });
+          return;
+        }
 
-    try {
-      const result = toastInstanceRef.current[type]?.(...args);
-      return result;
-    } catch (error) {
-      console.error(`Toast ${type} error:`, error);
-    }
-  }, [isInitialized]);
+        try {
+          const result = toastInstanceRef.current[type]?.(...args);
+          return result;
+        } catch (error) {
+          console.error(`Toast ${type} error:`, error);
+        }
+      },
+    [isInitialized]
+  );
 
-  const toast = React.useMemo(() => ({
-    success: toastMethods('success'),
-    error: toastMethods('error'),
-    info: toastMethods('info'),
-    warning: toastMethods('warning'),
-    loading: (message) => {
-      const id = toastMethods('info')({ 
-        message,
-        isLoading: true,
-        autoClose: false
-      });
-      loadingToastsRef.current.add(id);
-      return id;
-    },
-    dismiss: (id) => {
-      if (id) {
+  const toast = React.useMemo(
+    () => ({
+      success: toastMethods('success'),
+      error: toastMethods('error'),
+      info: toastMethods('info'),
+      warning: toastMethods('warning'),
+      loading: (message) => {
+        const id = toastMethods('info')({
+          message,
+          isLoading: true,
+          autoClose: false,
+        });
+        loadingToastsRef.current.add(id);
+        return id;
+      },
+      dismiss: (id) => {
+        if (id) {
+          loadingToastsRef.current.delete(id);
+          toastInstanceRef.current?.dismiss(id);
+        } else {
+          loadingToastsRef.current.clear();
+          toastInstanceRef.current?.dismiss();
+        }
+      },
+      update: (id, props) => {
+        if (!id || !toastInstanceRef.current) return;
+        toastInstanceRef.current.update(id, {
+          ...props,
+          isLoading: false,
+          autoClose: 5000,
+        });
         loadingToastsRef.current.delete(id);
-        toastInstanceRef.current?.dismiss(id);
-      } else {
-        loadingToastsRef.current.clear();
-        toastInstanceRef.current?.dismiss();
-      }
-    },
-    update: (id, props) => {
-      if (!id || !toastInstanceRef.current) return;
-      toastInstanceRef.current.update(id, {
-        ...props,
-        isLoading: false,
-        autoClose: 5000
-      });
-      loadingToastsRef.current.delete(id);
-    }
-  }), [toastMethods]);
+      },
+    }),
+    [toastMethods]
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -111,15 +118,15 @@ export const ToastProvider = memo(function ToastProvider({ children }) {
     return () => {
       mountedRef.current = false;
       clearTimeout(initTimer);
-      
+
       if (toastInstanceRef.current) {
-        Array.from(loadingToastsRef.current).forEach(id => {
+        Array.from(loadingToastsRef.current).forEach((id) => {
           toastInstanceRef.current.dismiss(id);
         });
         loadingToastsRef.current.clear();
         toastInstanceRef.current = null;
       }
-      
+
       setIsInitialized(false);
     };
   }, [initializeToast]);
@@ -128,11 +135,7 @@ export const ToastProvider = memo(function ToastProvider({ children }) {
     <ToastContext.Provider value={toast}>
       {children}
       <div ref={containerRef} id="toast-root">
-        <ToastContainer
-          {...TOAST_CONFIG}
-          enableMultiContainer
-          containerId="toast-root"
-        />
+        <ToastContainer {...TOAST_CONFIG} enableMultiContainer containerId="toast-root" />
       </div>
     </ToastContext.Provider>
   );
@@ -140,7 +143,7 @@ export const ToastProvider = memo(function ToastProvider({ children }) {
 
 export function useToast() {
   const context = React.useContext(ToastContext);
-  
+
   if (!context) {
     console.warn('useToast must be used within a ToastProvider');
     return {

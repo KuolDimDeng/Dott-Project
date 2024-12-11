@@ -24,7 +24,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const ProcurementManagement = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -40,7 +40,6 @@ const ProcurementManagement = () => {
   });
   const [vendors, setVendors] = useState([]);
   const theme = useTheme();
-
 
   useEffect(() => {
     fetchProcurements();
@@ -71,16 +70,16 @@ const ProcurementManagement = () => {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setNewProcurement(prev => ({
+    setNewProcurement((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleDateChange = (date) => {
-    setNewProcurement(prev => ({
+    setNewProcurement((prev) => ({
       ...prev,
-      date: date
+      date: date,
     }));
   };
 
@@ -103,8 +102,8 @@ const ProcurementManagement = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-    <Typography variant="h4" gutterBottom>
+      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+        <Typography variant="h4" gutterBottom>
           Procurement Management
         </Typography>
         <Tabs value={activeTab} onChange={handleTabChange}>
@@ -115,15 +114,13 @@ const ProcurementManagement = () => {
 
         {activeTab === 0 && (
           <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Create Procurement</Typography>
+            <Typography variant="h6" gutterBottom>
+              Create Procurement
+            </Typography>
             <form onSubmit={handleCreateProcurement}>
               <FormControl fullWidth margin="normal">
                 <InputLabel>Vendor</InputLabel>
-                <Select
-                  name="vendor"
-                  value={newProcurement.vendor}
-                  onChange={handleInputChange}
-                >
+                <Select name="vendor" value={newProcurement.vendor} onChange={handleInputChange}>
                   {vendors.map((vendor) => (
                     <MenuItem key={vendor.id} value={vendor.id}>
                       {vendor.vendor_name}
@@ -158,11 +155,7 @@ const ProcurementManagement = () => {
               />
               <FormControl fullWidth margin="normal">
                 <InputLabel>Status</InputLabel>
-                <Select
-                  name="status"
-                  value={newProcurement.status}
-                  onChange={handleInputChange}
-                >
+                <Select name="status" value={newProcurement.status} onChange={handleInputChange}>
                   <MenuItem value="draft">Draft</MenuItem>
                   <MenuItem value="submitted">Submitted</MenuItem>
                   <MenuItem value="approved">Approved</MenuItem>
@@ -170,22 +163,66 @@ const ProcurementManagement = () => {
                   <MenuItem value="cancelled">Cancelled</MenuItem>
                 </Select>
               </FormControl>
-              <Button type="submit" variant="contained" color="primary">Create Procurement</Button>
+              <Button type="submit" variant="contained" color="primary">
+                Create Procurement
+              </Button>
             </form>
           </Box>
         )}
 
         {activeTab === 1 && (
           <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Procurement Details</Typography>
+            <Typography variant="h6" gutterBottom>
+              Procurement Details
+            </Typography>
             {selectedProcurement ? (
               <Box>
-                <TextField label="Procurement Number" value={selectedProcurement.procurement_number} fullWidth margin="normal" disabled />
-                <TextField label="Vendor" value={selectedProcurement.vendor} fullWidth margin="normal" disabled />
-                <TextField label="Date" type="date" value={selectedProcurement.date} fullWidth margin="normal" disabled InputLabelProps={{ shrink: true }} />
-                <TextField label="Description" value={selectedProcurement.description} fullWidth margin="normal" disabled multiline rows={4} />
-                <TextField label="Total Amount" value={selectedProcurement.total_amount} fullWidth margin="normal" disabled />
-                <TextField label="Status" value={selectedProcurement.status} fullWidth margin="normal" disabled />
+                <TextField
+                  label="Procurement Number"
+                  value={selectedProcurement.procurement_number}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                />
+                <TextField
+                  label="Vendor"
+                  value={selectedProcurement.vendor}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                />
+                <TextField
+                  label="Date"
+                  type="date"
+                  value={selectedProcurement.date}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                  InputLabelProps={{ shrink: true }}
+                />
+                <TextField
+                  label="Description"
+                  value={selectedProcurement.description}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                  multiline
+                  rows={4}
+                />
+                <TextField
+                  label="Total Amount"
+                  value={selectedProcurement.total_amount}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                />
+                <TextField
+                  label="Status"
+                  value={selectedProcurement.status}
+                  fullWidth
+                  margin="normal"
+                  disabled
+                />
               </Box>
             ) : (
               <Typography>Select a procurement from the list to view details</Typography>
@@ -195,7 +232,9 @@ const ProcurementManagement = () => {
 
         {activeTab === 2 && (
           <Box mt={3}>
-            <Typography variant="h6" gutterBottom>Procurement List</Typography>
+            <Typography variant="h6" gutterBottom>
+              Procurement List
+            </Typography>
             <TableContainer component={Paper}>
               <Table>
                 <TableHead>
@@ -209,7 +248,10 @@ const ProcurementManagement = () => {
                 </TableHead>
                 <TableBody>
                   {procurements.map((procurement) => (
-                    <TableRow key={procurement.id} onClick={() => handleProcurementSelect(procurement)}>
+                    <TableRow
+                      key={procurement.id}
+                      onClick={() => handleProcurementSelect(procurement)}
+                    >
                       <TableCell>{procurement.procurement_number}</TableCell>
                       <TableCell>{procurement.vendor}</TableCell>
                       <TableCell>{new Date(procurement.date).toLocaleDateString()}</TableCell>

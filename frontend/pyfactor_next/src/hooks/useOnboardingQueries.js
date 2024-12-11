@@ -13,7 +13,6 @@ export function useOnboardingQueries() {
   const queryClient = useQueryClient();
   const toast = useToast();
 
-
   // Get status query function with auth check
   const getStatus = async () => {
     if (!session?.user?.accessToken) {
@@ -46,7 +45,7 @@ export function useOnboardingQueries() {
       onError: (error) => {
         logger.error('Failed to save step 1:', error);
         toast.error(error.message || 'Failed to save step 1');
-      }
+      },
     }),
 
     step2: useMutation({
@@ -64,7 +63,7 @@ export function useOnboardingQueries() {
       onError: (error) => {
         logger.error('Failed to save step 2:', error);
         toast.error(error.message || 'Failed to save step 2');
-      }
+      },
     }),
 
     step3: useMutation({
@@ -82,7 +81,7 @@ export function useOnboardingQueries() {
       onError: (error) => {
         logger.error('Failed to save step 3:', error);
         toast.error(error.message || 'Failed to save step 3');
-      }
+      },
     }),
 
     step4: useMutation({
@@ -100,7 +99,7 @@ export function useOnboardingQueries() {
       onError: (error) => {
         logger.error('Failed to save step 4:', error);
         toast.error(error.message || 'Failed to save step 4');
-      }
+      },
     }),
 
     complete: useMutation({
@@ -108,7 +107,10 @@ export function useOnboardingQueries() {
         if (!session?.user?.accessToken) {
           throw new Error('Authentication required');
         }
-        const response = await axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.complete, data);
+        const response = await axiosInstance.post(
+          APP_CONFIG.api.endpoints.onboarding.complete,
+          data
+        );
         return response.data;
       },
       onSuccess: (data) => {
@@ -118,8 +120,8 @@ export function useOnboardingQueries() {
       onError: (error) => {
         logger.error('Failed to complete onboarding:', error);
         toast.error(error.message || 'Failed to complete onboarding');
-      }
-    })
+      },
+    }),
   };
 
   // Status query with auth check
@@ -135,7 +137,7 @@ export function useOnboardingQueries() {
     },
     onError: (error) => {
       logger.error('Failed to fetch onboarding status:', error);
-    }
+    },
   });
 
   return {
@@ -148,11 +150,11 @@ export function useOnboardingQueries() {
         },
         onSuccess: () => {
           toast.success('Step 1 saved successfully');
-        }
+        },
       }),
     },
     isLoading,
     error,
-    isAuthenticated: authStatus === 'authenticated' && !!session?.user?.accessToken
+    isAuthenticated: authStatus === 'authenticated' && !!session?.user?.accessToken,
   };
 }

@@ -21,7 +21,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const BankingReport = () => {
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -32,7 +32,6 @@ const BankingReport = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const theme = useTheme();
-
 
   useEffect(() => {
     fetchBankAccounts();
@@ -114,24 +113,25 @@ const BankingReport = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-    <Typography variant="h4" gutterBottom>
+      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+        <Typography variant="h4" gutterBottom>
           Banking Report
         </Typography>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
 
         {/* Filters and Controls */}
         <Paper sx={{ p: 2, mb: 3 }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} sm={3}>
-              <Select
-                fullWidth
-                value={selectedAccount}
-                onChange={handleAccountChange}
-                displayEmpty
-              >
-                <MenuItem value="" disabled>Select Bank Account</MenuItem>
+              <Select fullWidth value={selectedAccount} onChange={handleAccountChange} displayEmpty>
+                <MenuItem value="" disabled>
+                  Select Bank Account
+                </MenuItem>
                 {Array.isArray(bankAccounts) && bankAccounts.length > 0 ? (
                   bankAccounts.map((account) => (
                     <MenuItem key={account.account_id} value={account.account_id}>
@@ -166,10 +166,10 @@ const BankingReport = () => {
               />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <Button 
-                variant="contained" 
-                color="primary" 
-                onClick={handleGenerateReport} 
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleGenerateReport}
                 fullWidth
                 disabled={loading}
               >
@@ -178,7 +178,12 @@ const BankingReport = () => {
             </Grid>
           </Grid>
           <Box sx={{ mt: 2 }}>
-            <Button variant="outlined" onClick={() => handleExport('PDF')} sx={{ mr: 1 }} disabled={!reportData}>
+            <Button
+              variant="outlined"
+              onClick={() => handleExport('PDF')}
+              sx={{ mr: 1 }}
+              disabled={!reportData}
+            >
               Export PDF
             </Button>
             <Button variant="outlined" onClick={() => handleExport('CSV')} disabled={!reportData}>
@@ -191,7 +196,9 @@ const BankingReport = () => {
           <>
             {/* Header Section */}
             <Paper sx={{ p: 2, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>Report Summary</Typography>
+              <Typography variant="h6" gutterBottom>
+                Report Summary
+              </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={6} sm={3}>
                   <Typography>Bank: {reportData.bank_name}</Typography>
@@ -200,7 +207,9 @@ const BankingReport = () => {
                   <Typography>Account: {reportData.account_number}</Typography>
                 </Grid>
                 <Grid item xs={6} sm={3}>
-                  <Typography>Beginning Balance: ${reportData.beginning_balance.toFixed(2)}</Typography>
+                  <Typography>
+                    Beginning Balance: ${reportData.beginning_balance.toFixed(2)}
+                  </Typography>
                 </Grid>
                 <Grid item xs={6} sm={3}>
                   <Typography>Ending Balance: ${reportData.ending_balance.toFixed(2)}</Typography>
@@ -227,8 +236,12 @@ const BankingReport = () => {
                       <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
                       <TableCell>{transaction.description}</TableCell>
                       <TableCell>{transaction.check_number || '-'}</TableCell>
-                      <TableCell align="right">{transaction.debit ? `$${transaction.debit.toFixed(2)}` : '-'}</TableCell>
-                      <TableCell align="right">{transaction.credit ? `$${transaction.credit.toFixed(2)}` : '-'}</TableCell>
+                      <TableCell align="right">
+                        {transaction.debit ? `$${transaction.debit.toFixed(2)}` : '-'}
+                      </TableCell>
+                      <TableCell align="right">
+                        {transaction.credit ? `$${transaction.credit.toFixed(2)}` : '-'}
+                      </TableCell>
                       <TableCell align="right">${transaction.balance.toFixed(2)}</TableCell>
                     </TableRow>
                   ))}
@@ -238,20 +251,28 @@ const BankingReport = () => {
 
             {/* Reconciliation Summary */}
             <Paper sx={{ p: 2, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>Reconciliation Summary</Typography>
+              <Typography variant="h6" gutterBottom>
+                Reconciliation Summary
+              </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <Typography>Outstanding Checks: ${reportData.outstanding_checks.toFixed(2)}</Typography>
+                  <Typography>
+                    Outstanding Checks: ${reportData.outstanding_checks.toFixed(2)}
+                  </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography>Deposits in Transit: ${reportData.deposits_in_transit.toFixed(2)}</Typography>
+                  <Typography>
+                    Deposits in Transit: ${reportData.deposits_in_transit.toFixed(2)}
+                  </Typography>
                 </Grid>
               </Grid>
             </Paper>
 
             {/* Summary Section */}
             <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>Summary</Typography>
+              <Typography variant="h6" gutterBottom>
+                Summary
+              </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={4}>
                   <Typography>Total Debits: ${reportData.total_debits.toFixed(2)}</Typography>

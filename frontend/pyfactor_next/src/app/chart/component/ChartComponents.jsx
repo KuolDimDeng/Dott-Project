@@ -1,19 +1,48 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/chart/ChartComponent.jsx
 import React, { useState, useEffect } from 'react';
 import { Line, Bar, Pie } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
-import { useApi } from '../../dashboard/components/components/axiosConfig';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { useApi } from '@/lib/axiosConfig';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
-const ChartComponent = ({ account, dateRange, startDate, endDate, chartType, lineColor, barColor }) => {
+const ChartComponent = ({
+  account,
+  dateRange,
+  startDate,
+  endDate,
+  chartType,
+  lineColor,
+  barColor,
+}) => {
   const [chartData, setChartData] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await useApi.get('/api/chart/transaction-data/', {
-          params: { account, date_range: dateRange, start_date: startDate, end_date: endDate }
+          params: { account, date_range: dateRange, start_date: startDate, end_date: endDate },
         });
         setChartData(response.data);
       } catch (error) {
@@ -29,11 +58,11 @@ const ChartComponent = ({ account, dateRange, startDate, endDate, chartType, lin
   }
 
   const data = {
-    labels: chartData.map(item => item.date),
+    labels: chartData.map((item) => item.date),
     datasets: [
       {
         label: 'Transaction Amount',
-        data: chartData.map(item => item.amount),
+        data: chartData.map((item) => item.amount),
         backgroundColor: barColor || 'rgba(75,192,192,0.4)',
         borderColor: lineColor || 'rgba(75,192,192,1)',
         borderWidth: 1,

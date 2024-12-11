@@ -10,7 +10,7 @@ const metadata = {
   title: 'Business Information',
   description: 'Tell us about your business',
   nextStep: 'step2',
-  isRequired: true
+  isRequired: true,
 };
 
 export default function Step1Page() {

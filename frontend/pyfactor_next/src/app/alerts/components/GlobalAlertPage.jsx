@@ -1,7 +1,16 @@
 // src/app/alerts/components/GlobalAlertPage.jsx
 import React, { useState } from 'react';
-import { Box, TextField, Button, Select, MenuItem, FormControl, InputLabel, Typography } from '@mui/material';
-import { useApi } from '../../dashboard/components/components/axiosConfig';
+import {
+  Box,
+  TextField,
+  Button,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Typography,
+} from '@mui/material';
+import { useApi } from '@/lib/axiosConfig';
 
 const GlobalAlertPage = () => {
   const [subject, setSubject] = useState('');
@@ -54,11 +63,7 @@ const GlobalAlertPage = () => {
         />
         <FormControl fullWidth margin="normal">
           <InputLabel>Priority</InputLabel>
-          <Select
-            value={priority}
-            onChange={(e) => setPriority(e.target.value)}
-            label="Priority"
-          >
+          <Select value={priority} onChange={(e) => setPriority(e.target.value)} label="Priority">
             <MenuItem value="low">Low</MenuItem>
             <MenuItem value="medium">Medium</MenuItem>
             <MenuItem value="high">High</MenuItem>

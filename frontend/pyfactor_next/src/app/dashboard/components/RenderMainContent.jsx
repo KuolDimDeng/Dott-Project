@@ -71,7 +71,7 @@ import InventoryItems from '@/app/inventory/components/InventoryItemList';
 import MainDashboard from './forms/MainDashboard.jsx';
 import BankTransactions from './forms/BankTransactionPage';
 //import PayrollDashboard from './forms/PayrollDashboard';
-import InventoryManagement from '@/app/inventory/components/InventoryManagement.jsx'
+import InventoryManagement from '@/app/inventory/components/InventoryManagement.jsx';
 import Home from './forms/Home';
 
 const ContentWrapper = ({ children }) => (
@@ -184,20 +184,35 @@ const RenderMainContent = ({
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
   };
-  
+
   const renderSettingsTabs = () => {
-    console.log('RenderMainContent: renderSettingsTabs called with selectedSettingsOption:', selectedSettingsOption);
+    console.log(
+      'RenderMainContent: renderSettingsTabs called with selectedSettingsOption:',
+      selectedSettingsOption
+    );
 
     let tabs = [];
     let content = null;
 
     switch (selectedSettingsOption) {
       case 'Profile Settings':
-        tabs = ['Personal Information', 'Password and Security', 'Notifications', 'Businesses', 'Billing and Subscriptions'];
+        tabs = [
+          'Personal Information',
+          'Password and Security',
+          'Notifications',
+          'Businesses',
+          'Billing and Subscriptions',
+        ];
         content = <ProfileSettings selectedTab={selectedTab} />;
         break;
       case 'Business Settings':
-        tabs = ['User Management', 'Invoices and Estimates', 'Payments', 'Email Templates', 'Custom Charge Settings'];
+        tabs = [
+          'User Management',
+          'Invoices and Estimates',
+          'Payments',
+          'Email Templates',
+          'Custom Charge Settings',
+        ];
         content = <BusinessSettings selectedTab={selectedTab} />;
         break;
       case 'Accounting Settings':
@@ -205,7 +220,13 @@ const RenderMainContent = ({
         content = <AccountingSettings selectedTab={selectedTab} />;
         break;
       case 'Payroll Settings':
-        tabs = ['Business Profile', 'Company Signatory', 'Source Bank Account', 'Tax Profile', 'Payroll Setup'];
+        tabs = [
+          'Business Profile',
+          'Company Signatory',
+          'Source Bank Account',
+          'Tax Profile',
+          'Payroll Setup',
+        ];
         content = <PayrollSettings selectedTab={selectedTab} />;
         break;
       case 'Device Settings':
@@ -224,9 +245,7 @@ const RenderMainContent = ({
             ))}
           </Tabs>
         )}
-        <Box sx={{ p: 1 }}>
-          {content}
-        </Box>
+        <Box sx={{ p: 1 }}>{content}</Box>
       </Box>
     );
   };
@@ -353,13 +372,19 @@ const RenderMainContent = ({
     } else if (selectedInvoiceId !== null) {
       content = <InvoiceDetails invoiceId={selectedInvoiceId} onBack={handleBackFromInvoice} />;
     } else if (showCustomerDetails && selectedCustomer) {
-      content = <CustomerDetails customer={selectedCustomer} onInvoiceSelect={handleInvoiceSelect} onBack={handleBackToCustomerDetails} />;
+      content = (
+        <CustomerDetails
+          customer={selectedCustomer}
+          onInvoiceSelect={handleInvoiceSelect}
+          onBack={handleBackToCustomerDetails}
+        />
+      );
     } else if (showAnalysisPage) {
       content = <AnalysisPage />;
     } else if (showCustomerList) {
       content = (
-        <CustomerList 
-          onCreateCustomer={handleCreateCustomer} 
+        <CustomerList
+          onCreateCustomer={handleCreateCustomer}
           onInvoiceSelect={handleInvoiceSelect}
           onCustomerSelect={handleCustomerSelect}
         />
@@ -373,8 +398,7 @@ const RenderMainContent = ({
     } else if (showPayrollDashboard) {
       content = <PayrollDashboard section={payrollSection} />;
     } else if (showHome) {
-      content = <Home/>
-    
+      content = <Home />;
     } else if (showAccountPage) {
       content = (
         <Grid container spacing={3}>
@@ -398,10 +422,7 @@ const RenderMainContent = ({
       );
     } else if (showInvoiceBuilder) {
       content = (
-        <InvoiceTemplateBuilder
-          handleClose={handleCloseInvoiceBuilder}
-          userData={userData}
-        />
+        <InvoiceTemplateBuilder handleClose={handleCloseInvoiceBuilder} userData={userData} />
       );
     } else if (showCreateOptions) {
       content = (
@@ -415,15 +436,8 @@ const RenderMainContent = ({
 
     return content;
   };
-  
-  return (
 
-  
-        <ContentWrapper>
-          {renderContent()}
-        </ContentWrapper>
-
-  );
+  return <ContentWrapper>{renderContent()}</ContentWrapper>;
 };
 
 export default RenderMainContent;

@@ -1,14 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
-  TableHead, TableRow, Button, TextField, Select, MenuItem, FormControl, 
-  InputLabel, IconButton, Toolbar, InputAdornment, Drawer, List, ListItem, 
-  ListItemText, Checkbox, useTheme,
-} from '@mui/material'; 
+import {
+  Box,
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  IconButton,
+  Toolbar,
+  InputAdornment,
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
+  Checkbox,
+  useTheme,
+} from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const AccountReconManagement = () => {
   const [reconciliations, setReconciliations] = useState([]);
@@ -19,7 +39,7 @@ const AccountReconManagement = () => {
     bank_account: '',
     reconciliation_date: null,
     statement_balance: '',
-    book_balance: ''
+    book_balance: '',
   });
 
   useEffect(() => {
@@ -55,7 +75,7 @@ const AccountReconManagement = () => {
         bank_account: '',
         reconciliation_date: null,
         statement_balance: '',
-        book_balance: ''
+        book_balance: '',
       });
       fetchReconciliations();
     } catch (error) {
@@ -70,7 +90,9 @@ const AccountReconManagement = () => {
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom>Account Reconciliation</Typography>
+      <Typography variant="h4" gutterBottom>
+        Account Reconciliation
+      </Typography>
       <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2, mb: 2 }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           <TextField

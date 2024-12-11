@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from '@mui/material';
-import axiosInstance from '@/lib/axiosConfig';;
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Typography,
+} from '@mui/material';
+import { axiosInstance } from '@/lib/axiosConfig';
 
 export default function CashFlow() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
-
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axiosInstance.get('/api/financial-statements/cash-flow/');  // adjust URL for each component
+        const response = await axiosInstance.get('/api/financial-statements/cash-flow/'); // adjust URL for each component
         console.log('API Response:', response);
         if (response.data && response.data.data) {
           setData(response.data.data);
@@ -32,7 +40,6 @@ export default function CashFlow() {
   if (Object.keys(data).length === 0) {
     return <Typography>No data available for the current date.</Typography>;
   }
-
 
   return (
     <TableContainer component={Paper}>

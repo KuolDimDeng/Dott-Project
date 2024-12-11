@@ -22,18 +22,13 @@ function Step2Content() {
     status,
     hasSession: !!session,
     userId: session?.user?.id,
-    hasMetadata: !!metadata
+    hasMetadata: !!metadata,
   });
 
   // Metadata validation
   if (!metadata) {
     logger.error('Missing metadata for Step2');
-    return (
-      <ErrorStep 
-        error="Configuration error: Missing step metadata"
-        stepNumber={2}
-      />
-    );
+    return <ErrorStep error="Configuration error: Missing step metadata" stepNumber={2} />;
   }
 
   // Authentication check with proper redirect
@@ -45,20 +40,11 @@ function Step2Content() {
 
   // Loading check with more informative state
   if (status === 'loading') {
-    return (
-      <LoadingStateWithProgress 
-        message="Verifying your session..." 
-        progress={50}
-      />
-    );
+    return <LoadingStateWithProgress message="Verifying your session..." progress={50} />;
   }
 
   return (
-    <Step2 
-      metadata={metadata}
-      onBack={() => router.push('/onboarding/step1')}
-      session={session}
-    />
+    <Step2 metadata={metadata} onBack={() => router.push('/onboarding/step1')} session={session} />
   );
 }
 
@@ -66,11 +52,7 @@ export default function Step2Page() {
   return (
     <OnboardingErrorBoundary
       fallback={({ error, resetError }) => (
-        <ErrorStep 
-          error={error}
-          stepNumber={2}
-          onRetry={resetError}
-        />
+        <ErrorStep error={error} stepNumber={2} onRetry={resetError} />
       )}
     >
       <Step2Content />

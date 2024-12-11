@@ -99,3 +99,40 @@ def return_connection(conn):
 def initialize_database_pool():
     """Initialize the database pool"""
     return DatabasePool.get_instance()
+
+def database_exists_and_accessible(cursor, database_name):
+    """
+    Comprehensive verification that a database exists and is accessible.
+    
+    Args:
+        cursor: Active database cursor
+        database_name: Name of database to verify
+        
+    Returns:
+        tuple: (exists: bool, message: str)
+    """
+    try:
+        # First check system catalog
+        cursor.execute(
+            "SELECT 1 FROM pg_database WHERE datname = %s", 
+            (database_name,)
+        )
+        exists = cursor.fetchone()
+        
+        if not exists:
+            return False, "Database does not exist in system catalog"
+            
+        # Try establishing a test connection
+        test_conn = psycopg2.connect(
+            dbname=database_name,
+            user=settings.DATABASES['default']['USER'],
+            password=settings.DATABASES['default']['PASSWORD'],
+            host=settings.DATABASES['default']['HOST'],
+            port=settings.DATABASES['default']['PORT'],
+            connect_timeout=5  # Short timeout for quick verification
+        )
+        test_conn.close()
+        return True, "Database exists and is accessible"
+        
+    except Exception as e:
+        return False, f"Error verifying database: {str(e)}"

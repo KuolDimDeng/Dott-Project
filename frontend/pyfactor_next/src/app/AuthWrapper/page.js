@@ -12,27 +12,20 @@ import { APP_CONFIG } from '@/config';
 
 // Constants - Move to config if they might change
 const ROUTE_CONFIG = {
-  public: [
-    '/', 
-    '/about', 
-    '/contact', 
-    '/auth/signin', 
-    '/auth/signup',
-    '/auth/forgot-password'
-  ],
+  public: ['/', '/about', '/contact', '/auth/signin', '/auth/signup', '/auth/forgot-password'],
   onboarding: [
     '/onboarding',
-    '/onboarding/save-step1',  // Update to match API routes
-    '/onboarding/save-step2',  // Update to match API routes
-    '/onboarding/save-step3',  // Update to match API routes
-    '/onboarding/step4/setup'  // Update to match API routes
-  ]
+    '/onboarding/save-step1', // Update to match API routes
+    '/onboarding/save-step2', // Update to match API routes
+    '/onboarding/save-step3', // Update to match API routes
+    '/onboarding/step4/setup', // Update to match API routes
+  ],
 };
 
 // Loading component
 const LoadingState = memo(function LoadingState({ message }) {
   return (
-    <Box 
+    <Box
       display="flex"
       flexDirection="column"
       justifyContent="center"
@@ -51,7 +44,7 @@ const LoadingState = memo(function LoadingState({ message }) {
 // Error component
 const ErrorState = memo(function ErrorState({ error, onRetry }) {
   return (
-    <Box 
+    <Box
       display="flex"
       flexDirection="column"
       justifyContent="center"
@@ -59,8 +52,8 @@ const ErrorState = memo(function ErrorState({ error, onRetry }) {
       minHeight="100vh"
       p={3}
     >
-      <Alert 
-        severity="error" 
+      <Alert
+        severity="error"
         action={
           <Button color="inherit" size="small" onClick={onRetry}>
             Retry
@@ -70,11 +63,7 @@ const ErrorState = memo(function ErrorState({ error, onRetry }) {
       >
         {error}
       </Alert>
-      <Typography 
-        variant="body2" 
-        color="textSecondary" 
-        sx={{ mt: 2, textAlign: 'center' }}
-      >
+      <Typography variant="body2" color="textSecondary" sx={{ mt: 2, textAlign: 'center' }}>
         Please try refreshing the page or contact support if the problem persists.
       </Typography>
     </Box>
@@ -96,32 +85,35 @@ function AuthWrapper({ children }) {
   }, [session]);
 
   // Onboarding status query - Update the enabled condition
-  const { 
-    data: onboardingData, 
+  const {
+    data: onboardingData,
     isLoading: onboardingLoading,
     error: onboardingError,
-    refetch: refetchOnboarding
+    refetch: refetchOnboarding,
   } = useApi.useOnboardingStatus({
     enabled: isTokenValid() && mounted,
     onError: (error) => {
       logger.error('Error fetching onboarding status:', error);
       handleError(error);
-    }
+    },
   });
 
   // Error handling - Update to handle token errors
-  const handleError = useCallback((error) => {
-    if (error.response?.status === 401 || error.message === 'RefreshAccessTokenError') {
-      setError('Session expired. Please sign in again.');
-      toast.error('Session expired. Please sign in again.');
-      router.push('/auth/signin?error=SessionExpired');
-    } else {
-      setError(error.message || 'Failed to load user information');
-      toast.error(error.message || 'Failed to load user information');
-    }
-  }, [router]);
+  const handleError = useCallback(
+    (error) => {
+      if (error.response?.status === 401 || error.message === 'RefreshAccessTokenError') {
+        setError('Session expired. Please sign in again.');
+        toast.error('Session expired. Please sign in again.');
+        router.push('/auth/signin?error=SessionExpired');
+      } else {
+        setError(error.message || 'Failed to load user information');
+        toast.error(error.message || 'Failed to load user information');
+      }
+    },
+    [router]
+  );
 
-   // Session management - Add token validation
+  // Session management - Add token validation
   useEffect(() => {
     if (!mounted) return;
 
@@ -137,13 +129,13 @@ function AuthWrapper({ children }) {
     }
   }, [status, pathname, mounted, router, isPublicRoute, isTokenValid]);
 
-
   // Route checking
-  const isPublicRoute = useCallback((path) => 
-    ROUTE_CONFIG.public.includes(path), []);
+  const isPublicRoute = useCallback((path) => ROUTE_CONFIG.public.includes(path), []);
 
-  const isOnboardingRoute = useCallback((path) => 
-    ROUTE_CONFIG.onboarding.some(route => path.startsWith(route)), []);
+  const isOnboardingRoute = useCallback(
+    (path) => ROUTE_CONFIG.onboarding.some((route) => path.startsWith(route)),
+    []
+  );
 
   // Initialization
   useEffect(() => {
@@ -167,20 +159,33 @@ function AuthWrapper({ children }) {
 
     const handleRouting = async () => {
       try {
-        if (isPublicRoute(pathname)) return;
+        if (isPublicRoute(pathname)) {
+          // We need to check onboarding status even on public routes
+          if (status === 'authenticated') {
+            const { onboarding_status } = onboardingData;
+            if (onboarding_status === 'complete') {
+              logger.info('Redirecting completed user to dashboard from public route');
+              router.push('/dashboard');
+              return;
+            }
+          }
+          return;
+        }
 
         const { onboarding_status } = onboardingData;
         const onboardingRoute = isOnboardingRoute(pathname);
 
-        if (onboarding_status !== 'complete' && !onboardingRoute) {
-          logger.info('Redirecting to onboarding:', onboarding_status);
-          router.push(`/onboarding/${onboarding_status || 'step1'}`);
-          return;
-        }
-
+        // First check if user is completed and trying to access onboarding
         if (onboarding_status === 'complete' && onboardingRoute) {
           logger.info('Redirecting completed user to dashboard');
           router.push('/dashboard');
+          return;
+        }
+
+        // Then check if incomplete user is trying to access non-onboarding route
+        if (onboarding_status !== 'complete' && !onboardingRoute) {
+          logger.info('Redirecting to onboarding:', onboarding_status);
+          router.push(`/onboarding/${onboarding_status || 'step1'}`);
           return;
         }
       } catch (err) {
@@ -191,24 +196,26 @@ function AuthWrapper({ children }) {
 
     handleRouting();
   }, [
-    status, 
-    pathname, 
-    router, 
-    mounted, 
-    onboardingData, 
-    isPublicRoute, 
-    isOnboardingRoute, 
-    handleError
+    status,
+    pathname,
+    router,
+    mounted,
+    onboardingData,
+    isPublicRoute,
+    isOnboardingRoute,
+    handleError,
   ]);
 
   // Loading states
   if (!mounted || status === 'loading' || onboardingLoading) {
     return (
-      <LoadingState 
+      <LoadingState
         message={
-          !mounted ? 'Initializing...' : 
-          status === 'loading' ? 'Checking authentication...' : 
-          'Loading your information...'
+          !mounted
+            ? 'Initializing...'
+            : status === 'loading'
+              ? 'Checking authentication...'
+              : 'Loading your information...'
         }
       />
     );
@@ -217,8 +224,8 @@ function AuthWrapper({ children }) {
   // Error states
   if (error || onboardingError) {
     return (
-      <ErrorState 
-        error={error || 'Failed to load user information'} 
+      <ErrorState
+        error={error || 'Failed to load user information'}
         onRetry={() => {
           setError(null);
           refetchOnboarding();

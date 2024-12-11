@@ -1,8 +1,22 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/EstimateForm.jsx
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Button, TextField, Typography, Grid, Paper, Select, MenuItem, InputLabel,
-  FormControl, IconButton, Divider, CircularProgress, Snackbar, useTheme, useMediaQuery,
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Grid,
+  Paper,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  IconButton,
+  Divider,
+  CircularProgress,
+  Snackbar,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -13,28 +27,35 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import PreviewIcon from '@mui/icons-material/Preview';
 import SaveIcon from '@mui/icons-material/Save';
 import Alert from '@mui/material/Alert';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 import EstimatePreviewModal from './EstimatePreview';
-import { saveEstimate, printEstimate, emailEstimate, getEstimatePdf } from '../actions/estimateActions';
+import {
+  saveEstimate,
+  printEstimate,
+  emailEstimate,
+  getEstimatePdf,
+} from '../actions/estimateActions';
 
 const EstimateForm = ({ onSave, onPreview, initialData }) => {
   const theme = useTheme();
 
-  const [estimate, setEstimate] = useState(initialData || {
-    title: 'Estimate',
-    summary: '',
-    logo: null,
-    customerRef: '',
-    date: new Date(),
-    valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    items: [],
-    discount: 0,
-    currency: 'USD',
-    footer: '',
-    attachments: []
-  });
+  const [estimate, setEstimate] = useState(
+    initialData || {
+      title: 'Estimate',
+      summary: '',
+      logo: null,
+      customerRef: '',
+      date: new Date(),
+      valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      items: [],
+      discount: 0,
+      currency: 'USD',
+      footer: '',
+      attachments: [],
+    }
+  );
 
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
@@ -68,24 +89,24 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
     const selectedId = event.target.value;
     const customerData = customers.find((customer) => customer.id === selectedId);
     setSelectedCustomerData(customerData);
-    
-    setEstimate(prevEstimate => ({
+
+    setEstimate((prevEstimate) => ({
       ...prevEstimate,
       customerRef: selectedId,
-      customer: customerData ? {
-        id: selectedId,
-        name: customerData.customerName || `${customerData.first_name} ${customerData.last_name}`
-      } : null
+      customer: customerData
+        ? {
+            id: selectedId,
+            name:
+              customerData.customerName || `${customerData.first_name} ${customerData.last_name}`,
+          }
+        : null,
     }));
   };
-
-
-
 
   useEffect(() => {
     fetchUserProfile();
   }, []);
-  
+
   useEffect(() => {
     if (userDatabase) {
       fetchCustomers(userDatabase);
@@ -103,17 +124,22 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
         params: { database: userDatabase },
       });
       console.log('Fetched customers:', response.data);
-      console.log('Fetched customers:', customers.map(c => c.id));
+      console.log(
+        'Fetched customers:',
+        customers.map((c) => c.id)
+      );
       setCustomers(response.data);
     } catch (error) {
       console.error('Error fetching customers:', error);
       if (error.response) {
-        console.error("Data:", error.response.data);
-        console.error("Status:", error.response.status);
-        console.error("Headers:", error.response.headers);
-        setCustomersError(`Failed to load customers. Server responded with status ${error.response.status}`);
+        console.error('Data:', error.response.data);
+        console.error('Status:', error.response.status);
+        console.error('Headers:', error.response.headers);
+        setCustomersError(
+          `Failed to load customers. Server responded with status ${error.response.status}`
+        );
       } else if (error.request) {
-        console.error("Request:", error.request);
+        console.error('Request:', error.request);
         setCustomersError('Failed to load customers. No response received from server.');
       } else {
         console.error('Error', error.message);
@@ -124,7 +150,7 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
       setCustomersLoading(false);
     }
   };
-  
+
   const fetchProducts = async (database_name) => {
     try {
       console.log('Fetching products from database:', database_name);
@@ -137,7 +163,7 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
       logger.error('Error fetching products:', error);
     }
   };
-  
+
   const fetchServices = async (database_name) => {
     try {
       console.log('Fetching services from database:', database_name);
@@ -178,7 +204,7 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
       const estimateData = {
         ...estimate,
         customer: estimate.customerRef,
-        items: estimate.items.map(item => ({
+        items: estimate.items.map((item) => ({
           ...item,
           description: item.description || 'No description',
           unit_price: item.unitPrice,
@@ -186,7 +212,7 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
         totalAmount,
       };
 
-      console.log("Estimate data being saved:", JSON.stringify(estimateData, null, 2));
+      console.log('Estimate data being saved:', JSON.stringify(estimateData, null, 2));
 
       let response;
       if (typeof onSave === 'function') {
@@ -199,18 +225,17 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
       setSuccessMessage('Estimate saved successfully');
       addMessage('info', 'Estimate saved successfully');
 
-
-    // Set the estimateId if it's returned from the server
-    if (response.data && response.data.id) {
-      setEstimateId(response.data.id);
-    }
-
+      // Set the estimateId if it's returned from the server
+      if (response.data && response.data.id) {
+        setEstimateId(response.data.id);
+      }
     } catch (err) {
       console.error('Error saving estimate:', err);
       if (err.response && err.response.data) {
-        const errorMessage = typeof err.response.data === 'string' 
-          ? err.response.data 
-          : JSON.stringify(err.response.data);
+        const errorMessage =
+          typeof err.response.data === 'string'
+            ? err.response.data
+            : JSON.stringify(err.response.data);
         setError(`Failed to save estimate: ${errorMessage}`);
       } else {
         setError(err.message || 'Failed to save estimate');
@@ -229,7 +254,7 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
       setError('Failed to save estimate');
     }
   };
-  
+
   const handlePrintEstimate = async () => {
     try {
       await printEstimate(estimateId);
@@ -237,7 +262,7 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
       setError('Failed to print estimate');
     }
   };
-  
+
   const handleEmailEstimate = async () => {
     try {
       await emailEstimate(estimateId);
@@ -246,17 +271,17 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
       setError('Failed to email estimate');
     }
   };
-  
+
   const handlePreview = async () => {
     try {
       if (!estimateId) {
         // If the estimate hasn't been saved yet, save it first
         await handleSave();
       }
-      
+
       if (estimateId) {
         console.log('Delaying...:');
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         console.log('Fetching estimate PDF:', estimateId);
         const pdfBlob = await getEstimatePdf(estimateId);
@@ -275,10 +300,12 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
   const handleAddInvoiceItem = () => {
     setEstimate({
       ...estimate,
-      items: [...estimate.items, { type: '', description: '', quantity: 1, unitPrice: 0, amount: 0 }]
+      items: [
+        ...estimate.items,
+        { type: '', description: '', quantity: 1, unitPrice: 0, amount: 0 },
+      ],
     });
   };
-
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -297,36 +324,37 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
   const handleItemAdd = () => {
     setEstimate({
       ...estimate,
-      items: [...estimate.items, { product: '', quantity: 1, unitPrice: 0 }]
+      items: [...estimate.items, { product: '', quantity: 1, unitPrice: 0 }],
     });
   };
 
   const handleItemChange = (index, field, value) => {
     const newItems = [...estimate.items];
     newItems[index][field] = value;
-    
+
     if (field === 'product' || field === 'service') {
-      const selectedItem = field === 'product'
-        ? products.find((product) => product.id === value)
-        : services.find((service) => service.id === value);
-  
+      const selectedItem =
+        field === 'product'
+          ? products.find((product) => product.id === value)
+          : services.find((service) => service.id === value);
+
       if (selectedItem) {
         newItems[index].unitPrice = parseFloat(selectedItem.price);
         newItems[index].description = selectedItem.name || 'No description';
         newItems[index].amount = newItems[index].quantity * newItems[index].unitPrice;
       }
     }
-  
+
     if (field === 'quantity' || field === 'unitPrice') {
       newItems[index].amount = newItems[index].quantity * newItems[index].unitPrice;
     }
-  
+
     const totalAmount = newItems.reduce((sum, item) => sum + (item.amount || 0), 0);
-  
-    setEstimate({ 
-      ...estimate, 
+
+    setEstimate({
+      ...estimate,
       items: newItems,
-      totalAmount: totalAmount - estimate.discount
+      totalAmount: totalAmount - estimate.discount,
     });
   };
 
@@ -346,16 +374,12 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
   };
 
   const calculateTotal = () => {
-    return estimate.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    return estimate.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
   };
-
-
-
-
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
         <Typography variant="h4" gutterBottom>
           Create New Estimate
         </Typography>
@@ -378,11 +402,7 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
               onChange={handleLogoUpload}
             />
             <label htmlFor="logo-upload">
-              <Button
-                variant="outlined"
-                component="span"
-                startIcon={<CloudUploadIcon />}
-              >
+              <Button variant="outlined" component="span" startIcon={<CloudUploadIcon />}>
                 Upload Logo
               </Button>
             </label>
@@ -400,30 +420,30 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
             />
           </Grid>
           <Grid item xs={12} sm={6}>
-          <FormControl fullWidth>
-            <InputLabel>Customer</InputLabel>
-            <Select
-              name="customerRef"
-              value={estimate.customerRef}
-              onChange={handleCustomerChange}
-              error={!!customersError}
-            >
-              <MenuItem value="">
-                <em>Select a customer</em>
-              </MenuItem>
-              {customers.map((customer) => (
-                <MenuItem key={customer.id} value={String(customer.id)}>
-                  {customer.customerName || `${customer.first_name} ${customer.last_name}`}
+            <FormControl fullWidth>
+              <InputLabel>Customer</InputLabel>
+              <Select
+                name="customerRef"
+                value={estimate.customerRef}
+                onChange={handleCustomerChange}
+                error={!!customersError}
+              >
+                <MenuItem value="">
+                  <em>Select a customer</em>
                 </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          {customersError && (
-            <Typography color="error" variant="caption">
-              {customersError}
-            </Typography>
-          )}
-        </Grid>
+                {customers.map((customer) => (
+                  <MenuItem key={customer.id} value={String(customer.id)}>
+                    {customer.customerName || `${customer.first_name} ${customer.last_name}`}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {customersError && (
+              <Typography color="error" variant="caption">
+                {customersError}
+              </Typography>
+            )}
+          </Grid>
           <Grid item xs={12} sm={3}>
             <DatePicker
               label="Date"
@@ -466,12 +486,12 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
                   </Select>
                 </FormControl>
                 <TextField
-                    label="Description"
-                    value={item.description || ''}
-                    onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                    fullWidth
-                    required
-                  />
+                  label="Description"
+                  value={item.description || ''}
+                  onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                  fullWidth
+                  required
+                />
                 <TextField
                   sx={{ mr: 2, width: '100px' }}
                   type="number"
@@ -496,37 +516,33 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
             </Button>
           </Grid>
           <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Discount"
-                name="discount"
-                value={estimate.discount}
-                onChange={handleInputChange}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <FormControl fullWidth>
-                <InputLabel>Currency</InputLabel>
-                <Select
-                  name="currency"
-                  value={estimate.currency}
-                  onChange={handleInputChange}
-                >
-                  <MenuItem value="USD">USD</MenuItem>
-                  <MenuItem value="EUR">EUR</MenuItem>
-                  <MenuItem value="GBP">GBP</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                label="Total Amount"
-                value={estimate.totalAmount ? estimate.totalAmount.toFixed(2) : '0.00'}
-                disabled
-              />
-            </Grid>
+            <TextField
+              fullWidth
+              type="number"
+              label="Discount"
+              name="discount"
+              value={estimate.discount}
+              onChange={handleInputChange}
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <FormControl fullWidth>
+              <InputLabel>Currency</InputLabel>
+              <Select name="currency" value={estimate.currency} onChange={handleInputChange}>
+                <MenuItem value="USD">USD</MenuItem>
+                <MenuItem value="EUR">EUR</MenuItem>
+                <MenuItem value="GBP">GBP</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              fullWidth
+              label="Total Amount"
+              value={estimate.totalAmount ? estimate.totalAmount.toFixed(2) : '0.00'}
+              disabled
+            />
+          </Grid>
           <Grid item xs={12}>
             <TextField
               fullWidth
@@ -548,11 +564,7 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
               onChange={handleAttachmentUpload}
             />
             <label htmlFor="attachment-upload">
-              <Button
-                variant="outlined"
-                component="span"
-                startIcon={<CloudUploadIcon />}
-              >
+              <Button variant="outlined" component="span" startIcon={<CloudUploadIcon />}>
                 Attach Documents
               </Button>
             </label>
@@ -584,27 +596,31 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
             </Button>
           </Grid>
         </Grid>
-      <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError('')}>
-        <Alert onClose={() => setError('')} severity="error" sx={{ width: '100%' }}>
-          {error}
-        </Alert>
-      </Snackbar>
-      <Snackbar open={!!successMessage} autoHideDuration={6000} onClose={() => setSuccessMessage('')}>
-      <Alert onClose={() => setSuccessMessage('')} severity="success" sx={{ width: '100%' }}>
-        {successMessage}
-      </Alert>
-    </Snackbar>
-    <EstimatePreviewModal
-        isOpen={isPreviewModalOpen}
-        onClose={() => setIsPreviewModalOpen(false)}
-        estimateId={estimateId}  // Make sure this is correct
-        onSave={handleSaveEstimate}
-        onPrint={handlePrintEstimate}
-        onEmail={handleEmailEstimate}
-      />
+        <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError('')}>
+          <Alert onClose={() => setError('')} severity="error" sx={{ width: '100%' }}>
+            {error}
+          </Alert>
+        </Snackbar>
+        <Snackbar
+          open={!!successMessage}
+          autoHideDuration={6000}
+          onClose={() => setSuccessMessage('')}
+        >
+          <Alert onClose={() => setSuccessMessage('')} severity="success" sx={{ width: '100%' }}>
+            {successMessage}
+          </Alert>
+        </Snackbar>
+        <EstimatePreviewModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => setIsPreviewModalOpen(false)}
+          estimateId={estimateId} // Make sure this is correct
+          onSave={handleSaveEstimate}
+          onPrint={handlePrintEstimate}
+          onEmail={handleEmailEstimate}
+        />
       </Box>
-  </LocalizationProvider>
-);
+    </LocalizationProvider>
+  );
 };
 
 export default EstimateForm;

@@ -20,11 +20,7 @@ const ProfileSettings = ({ selectedTab }) => {
     }
   };
 
-  return (
-    <Box>
-      {renderContent()}
-    </Box>
-  );
+  return <Box>{renderContent()}</Box>;
 };
 
 export default ProfileSettings;

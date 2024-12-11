@@ -19,7 +19,7 @@ function Step4Content() {
   // Debug logging
   logger.info('Step4 page render:', {
     status,
-    hasFormData: !!formData
+    hasFormData: !!formData,
   });
 
   // Authentication check
@@ -39,10 +39,5 @@ function Step4Content() {
     return null;
   }
 
-  return (
-    <Step4 
-      metadata={STEP_METADATA.STEP4}
-      onBack={() => router.push('/onboarding/step3')}
-    />
-  );
+  return <Step4 metadata={STEP_METADATA.STEP4} onBack={() => router.push('/onboarding/step3')} />;
 }

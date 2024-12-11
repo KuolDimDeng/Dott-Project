@@ -23,7 +23,7 @@ export const logger = {
   },
   info: (...args) => {
     console.info('[INFO]', ...args);
-  }
+  },
 };
 
 export const UserMessage = {
@@ -34,7 +34,7 @@ export const UserMessage = {
   error: (...args) => {
     // This will be displayed in the user console
     console.error('USER_ERROR:', ...args);
-  }
+  },
 };
 
 export default logger;

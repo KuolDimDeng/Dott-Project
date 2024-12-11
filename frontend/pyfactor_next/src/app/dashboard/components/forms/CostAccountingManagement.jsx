@@ -1,17 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Tabs, Tab, Box, Typography, Button,
-  Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Paper, TextField,
-  Select, MenuItem, FormControl, InputLabel
+  Tabs,
+  Tab,
+  Box,
+  Typography,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import { Pie, Bar } from 'react-chartjs-2';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
-
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -51,7 +63,7 @@ const CostAccountingManagement = () => {
     job_process_id: '',
     budgeted_amount: '',
     notes: '',
-    allocations: []
+    allocations: [],
   });
 
   useEffect(() => {
@@ -94,7 +106,10 @@ const CostAccountingManagement = () => {
   const handleAddAllocation = () => {
     setFormData({
       ...formData,
-      allocations: [...formData.allocations, { allocation_base: '', allocation_percentage: '', allocated_amount: '' }]
+      allocations: [
+        ...formData.allocations,
+        { allocation_base: '', allocation_percentage: '', allocated_amount: '' },
+      ],
     });
   };
 
@@ -120,7 +135,7 @@ const CostAccountingManagement = () => {
         job_process_id: '',
         budgeted_amount: '',
         notes: '',
-        allocations: []
+        allocations: [],
       });
       setSelectedEntry(null);
       setValue(1); // Switch to the List tab
@@ -152,13 +167,17 @@ const CostAccountingManagement = () => {
       datasets: [
         {
           data: [
-            costEntries.filter(entry => entry.cost_type === 'direct').reduce((sum, entry) => sum + parseFloat(entry.amount), 0),
-            costEntries.filter(entry => entry.cost_type === 'indirect').reduce((sum, entry) => sum + parseFloat(entry.amount), 0)
+            costEntries
+              .filter((entry) => entry.cost_type === 'direct')
+              .reduce((sum, entry) => sum + parseFloat(entry.amount), 0),
+            costEntries
+              .filter((entry) => entry.cost_type === 'indirect')
+              .reduce((sum, entry) => sum + parseFloat(entry.amount), 0),
           ],
           backgroundColor: ['#FF6384', '#36A2EB'],
-          hoverBackgroundColor: ['#FF6384', '#36A2EB']
-        }
-      ]
+          hoverBackgroundColor: ['#FF6384', '#36A2EB'],
+        },
+      ],
     };
 
     return <Pie data={data} />;
@@ -166,27 +185,27 @@ const CostAccountingManagement = () => {
 
   const renderCostVarianceChart = () => {
     const data = {
-      labels: costEntries.map(entry => entry.description),
+      labels: costEntries.map((entry) => entry.description),
       datasets: [
         {
           label: 'Actual Cost',
-          data: costEntries.map(entry => entry.amount),
+          data: costEntries.map((entry) => entry.amount),
           backgroundColor: 'rgba(255, 99, 132, 0.5)',
         },
         {
           label: 'Budgeted Cost',
-          data: costEntries.map(entry => entry.budgeted_amount),
+          data: costEntries.map((entry) => entry.budgeted_amount),
           backgroundColor: 'rgba(54, 162, 235, 0.5)',
-        }
-      ]
+        },
+      ],
     };
 
     const options = {
       scales: {
         y: {
-          beginAtZero: true
-        }
-      }
+          beginAtZero: true,
+        },
+      },
     };
 
     return <Bar data={data} options={options} />;
@@ -214,179 +233,179 @@ const CostAccountingManagement = () => {
           />
           <FormControl fullWidth margin="normal">
             <InputLabel>Category</InputLabel>
-            <Select
-              name="category"
-              value={formData.category}
-              onChange={handleInputChange}
-            >
+            <Select name="category" value={formData.category} onChange={handleInputChange}>
               {costCategories.map((category) => (
-                <MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>
+                <MenuItem key={category.id} value={category.id}>
+                  {category.name}
+                </MenuItem>
               ))}
             </Select>
           </FormControl>
           <FormControl fullWidth margin="normal">
             <InputLabel>Cost Type</InputLabel>
-            <Select
-              name="cost_type"
-              value={formData.cost_type}
-              onChange={handleInputChange}
-            >
+            <Select name="cost_type" value={formData.cost_type} onChange={handleInputChange}>
               <MenuItem value="direct">Direct</MenuItem>
               <MenuItem value="indirect">Indirect</MenuItem>
             </Select>
           </FormControl>
           <FormControl fullWidth margin="normal">
             <InputLabel>Cost Nature</InputLabel>
-            <Select
-              name="cost_nature"
-                value={formData.cost_nature}
-                onChange={handleInputChange}
-              >
-                <MenuItem value="fixed">Fixed</MenuItem>
-                <MenuItem value="variable">Variable</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField
-              name="amount"
-              label="Amount"
-              type="number"
-              value={formData.amount}
-              onChange={handleInputChange}
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              name="date"
-              label="Date"
-              type="date"
-              value={formData.date}
-              onChange={handleInputChange}
-              fullWidth
-              margin="normal"
-              InputLabelProps={{ shrink: true }}
-            />
-            <TextField
-              name="department"
-              label="Department"
-              value={formData.department}
-              onChange={handleInputChange}
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              name="project"
-              label="Project"
-              value={formData.project}
-              onChange={handleInputChange}
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              name="cost_driver"
-              label="Cost Driver"
-              value={formData.cost_driver}
-              onChange={handleInputChange}
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              name="job_process_id"
-              label="Job/Process ID"
-              value={formData.job_process_id}
-              onChange={handleInputChange}
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              name="budgeted_amount"
-              label="Budgeted Amount"
-              type="number"
-              value={formData.budgeted_amount}
-              onChange={handleInputChange}
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              name="notes"
-              label="Notes"
-              value={formData.notes}
-              onChange={handleInputChange}
-              fullWidth
-              margin="normal"
-              multiline
-              rows={4}
-            />
-            <Button type="submit" variant="contained" color="primary">
-              {selectedEntry ? 'Update Cost Entry' : 'Create Cost Entry'}
-            </Button>
-          </form>
-        </TabPanel>
-        <TabPanel value={value} index={1}>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Description</TableCell>
-                  <TableCell>Category</TableCell>
-                  <TableCell>Cost Type</TableCell>
-                  <TableCell>Amount</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {costEntries.map((entry) => (
-                  <TableRow key={entry.cost_id}>
-                    <TableCell>{entry.description}</TableCell>
-                    <TableCell>{costCategories.find(cat => cat.id === entry.category)?.name}</TableCell>
-                    <TableCell>{entry.cost_type}</TableCell>
-                    <TableCell>${entry.amount}</TableCell>
-                    <TableCell>{entry.date}</TableCell>
-                    <TableCell>
-                      <Button onClick={() => handleEdit(entry)}>Edit</Button>
-                      <Button onClick={() => handleDelete(entry.cost_id)}>Delete</Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </TabPanel>
-        <TabPanel value={value} index={2}>
-          <Typography variant="h6" gutterBottom>Cost Breakdown</Typography>
-          {renderCostBreakdownChart()}
-          <Typography variant="h6" gutterBottom>Cost Variance Analysis</Typography>
-          {renderCostVarianceChart()}
-        </TabPanel>
-        <TabPanel value={value} index={3}>
-          <Typography variant="h6" gutterBottom>Cost Allocation</Typography>
-          {formData.allocations.map((allocation, index) => (
-            <Box key={index} sx={{ display: 'flex', gap: 2, mb: 2 }}>
-              <TextField
-                label="Allocation Base"
-                value={allocation.allocation_base}
-                onChange={(e) => handleAllocationChange(index, 'allocation_base', e.target.value)}
-              />
-              <TextField
-                label="Allocation Percentage"
-                type="number"
-                value={allocation.allocation_percentage}
-                onChange={(e) => handleAllocationChange(index, 'allocation_percentage', e.target.value)}
-              />
-              <TextField
-                label="Allocated Amount"
-                type="number"
-                value={allocation.allocated_amount}
-                onChange={(e) => handleAllocationChange(index, 'allocated_amount', e.target.value)}
-              />
-            </Box>
-          ))}
-          <Button onClick={handleAddAllocation} variant="outlined">
-            Add Allocation
+            <Select name="cost_nature" value={formData.cost_nature} onChange={handleInputChange}>
+              <MenuItem value="fixed">Fixed</MenuItem>
+              <MenuItem value="variable">Variable</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            name="amount"
+            label="Amount"
+            type="number"
+            value={formData.amount}
+            onChange={handleInputChange}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            name="date"
+            label="Date"
+            type="date"
+            value={formData.date}
+            onChange={handleInputChange}
+            fullWidth
+            margin="normal"
+            InputLabelProps={{ shrink: true }}
+          />
+          <TextField
+            name="department"
+            label="Department"
+            value={formData.department}
+            onChange={handleInputChange}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            name="project"
+            label="Project"
+            value={formData.project}
+            onChange={handleInputChange}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            name="cost_driver"
+            label="Cost Driver"
+            value={formData.cost_driver}
+            onChange={handleInputChange}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            name="job_process_id"
+            label="Job/Process ID"
+            value={formData.job_process_id}
+            onChange={handleInputChange}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            name="budgeted_amount"
+            label="Budgeted Amount"
+            type="number"
+            value={formData.budgeted_amount}
+            onChange={handleInputChange}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            name="notes"
+            label="Notes"
+            value={formData.notes}
+            onChange={handleInputChange}
+            fullWidth
+            margin="normal"
+            multiline
+            rows={4}
+          />
+          <Button type="submit" variant="contained" color="primary">
+            {selectedEntry ? 'Update Cost Entry' : 'Create Cost Entry'}
           </Button>
-        </TabPanel>
-      </Box>
-    );
-  };
-  
-  export default CostAccountingManagement;
+        </form>
+      </TabPanel>
+      <TabPanel value={value} index={1}>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Description</TableCell>
+                <TableCell>Category</TableCell>
+                <TableCell>Cost Type</TableCell>
+                <TableCell>Amount</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {costEntries.map((entry) => (
+                <TableRow key={entry.cost_id}>
+                  <TableCell>{entry.description}</TableCell>
+                  <TableCell>
+                    {costCategories.find((cat) => cat.id === entry.category)?.name}
+                  </TableCell>
+                  <TableCell>{entry.cost_type}</TableCell>
+                  <TableCell>${entry.amount}</TableCell>
+                  <TableCell>{entry.date}</TableCell>
+                  <TableCell>
+                    <Button onClick={() => handleEdit(entry)}>Edit</Button>
+                    <Button onClick={() => handleDelete(entry.cost_id)}>Delete</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </TabPanel>
+      <TabPanel value={value} index={2}>
+        <Typography variant="h6" gutterBottom>
+          Cost Breakdown
+        </Typography>
+        {renderCostBreakdownChart()}
+        <Typography variant="h6" gutterBottom>
+          Cost Variance Analysis
+        </Typography>
+        {renderCostVarianceChart()}
+      </TabPanel>
+      <TabPanel value={value} index={3}>
+        <Typography variant="h6" gutterBottom>
+          Cost Allocation
+        </Typography>
+        {formData.allocations.map((allocation, index) => (
+          <Box key={index} sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            <TextField
+              label="Allocation Base"
+              value={allocation.allocation_base}
+              onChange={(e) => handleAllocationChange(index, 'allocation_base', e.target.value)}
+            />
+            <TextField
+              label="Allocation Percentage"
+              type="number"
+              value={allocation.allocation_percentage}
+              onChange={(e) =>
+                handleAllocationChange(index, 'allocation_percentage', e.target.value)
+              }
+            />
+            <TextField
+              label="Allocated Amount"
+              type="number"
+              value={allocation.allocated_amount}
+              onChange={(e) => handleAllocationChange(index, 'allocated_amount', e.target.value)}
+            />
+          </Box>
+        ))}
+        <Button onClick={handleAddAllocation} variant="outlined">
+          Add Allocation
+        </Button>
+      </TabPanel>
+    </Box>
+  );
+};
+
+export default CostAccountingManagement;

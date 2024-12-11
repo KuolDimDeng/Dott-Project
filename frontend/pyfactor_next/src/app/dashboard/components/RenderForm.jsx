@@ -14,7 +14,7 @@ import TransactionForm from '../../createNew/forms/TransactionForm.jsx';
 const renderForm = (option, userData) => {
   switch (option) {
     case 'Transaction':
-      return <TransactionForm/>
+      return <TransactionForm />;
     case 'Product':
       return <ProductForm />;
     case 'Service':

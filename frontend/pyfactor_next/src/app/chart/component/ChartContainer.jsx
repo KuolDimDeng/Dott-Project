@@ -1,6 +1,16 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/chart/ChartContainer.jsx
 import React, { useState, useEffect } from 'react';
-import { Box, FormControl, InputLabel, Select, MenuItem, TextField, Button, CircularProgress, Typography } from '@mui/material';
+import {
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
+  Button,
+  CircularProgress,
+  Typography,
+} from '@mui/material';
 import { ChromePicker } from 'react-color';
 import ChartComponent from './ChartComponents';
 
@@ -52,7 +62,7 @@ const ChartContainer = () => {
       <Typography variant="h4" component="h2" gutterBottom>
         Sales Analysis
       </Typography>
-      
+
       <FormControl fullWidth>
         <InputLabel>Account</InputLabel>
         <Select value={account} onChange={(e) => setAccount(e.target.value)}>

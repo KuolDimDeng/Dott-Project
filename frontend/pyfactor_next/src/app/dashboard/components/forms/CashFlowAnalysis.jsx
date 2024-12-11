@@ -1,10 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Typography, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { Pie, Line } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title } from 'chart.js';
-import axiosInstance from '@/lib/axiosConfig';;
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+} from 'chart.js';
+import { axiosInstance } from '@/lib/axiosConfig';
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title);
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title
+);
 
 const timeRanges = [
   { value: '1', label: '1 Month' },
@@ -29,7 +48,7 @@ export default function CashFlowAnalysis() {
   const fetchData = async () => {
     try {
       const response = await axiosInstance.get(`/api/analysis/cash-flow-data`, {
-        params: { time_granularity: timeRange }
+        params: { time_granularity: timeRange },
       });
       setData(response.data);
     } catch (error) {
@@ -52,7 +71,11 @@ export default function CashFlowAnalysis() {
     labels: ['Operating', 'Investing', 'Financing'],
     datasets: [
       {
-        data: [Math.abs(operatingCashFlow), Math.abs(investingCashFlow), Math.abs(financingCashFlow)],
+        data: [
+          Math.abs(operatingCashFlow),
+          Math.abs(investingCashFlow),
+          Math.abs(financingCashFlow),
+        ],
         backgroundColor: ['#36A2EB', '#FFCE56', '#FF6384'],
         hoverBackgroundColor: ['#36A2EB', '#FFCE56', '#FF6384'],
       },
@@ -60,25 +83,25 @@ export default function CashFlowAnalysis() {
   };
 
   const lineChartData = {
-    labels: data.map(item => item.date),
+    labels: data.map((item) => item.date),
     datasets: [
       {
         label: 'Operating Cash Flow',
-        data: data.map(item => item.operating.total),
+        data: data.map((item) => item.operating.total),
         fill: false,
         borderColor: 'rgb(75, 192, 192)',
         tension: 0.1,
       },
       {
         label: 'Investing Cash Flow',
-        data: data.map(item => item.investing.total),
+        data: data.map((item) => item.investing.total),
         fill: false,
         borderColor: 'rgb(255, 99, 132)',
         tension: 0.1,
       },
       {
         label: 'Financing Cash Flow',
-        data: data.map(item => item.financing.total),
+        data: data.map((item) => item.financing.total),
         fill: false,
         borderColor: 'rgb(255, 205, 86)',
         tension: 0.1,
@@ -90,29 +113,39 @@ export default function CashFlowAnalysis() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>Cash Flow Analysis</Typography>
-      
+      <Typography variant="h4" gutterBottom>
+        Cash Flow Analysis
+      </Typography>
+
       <FormControl fullWidth margin="normal">
         <InputLabel>Time Range</InputLabel>
         <Select value={timeRange} onChange={handleTimeRangeChange}>
           {timeRanges.map((range) => (
-            <MenuItem key={range.value} value={range.value}>{range.label}</MenuItem>
+            <MenuItem key={range.value} value={range.value}>
+              {range.label}
+            </MenuItem>
           ))}
         </Select>
       </FormControl>
 
       <Box display="flex" justifyContent="space-between" mt={4}>
         <Box width="45%">
-          <Typography variant="h6" gutterBottom>Cash Flow Breakdown</Typography>
+          <Typography variant="h6" gutterBottom>
+            Cash Flow Breakdown
+          </Typography>
           <Pie data={pieChartData} />
         </Box>
         <Box width="45%">
-          <Typography variant="h6" gutterBottom>Cash Flow Trends Over Time</Typography>
+          <Typography variant="h6" gutterBottom>
+            Cash Flow Trends Over Time
+          </Typography>
           <Line data={lineChartData} />
         </Box>
       </Box>
 
-      <Typography variant="h6" mt={4}>Summary</Typography>
+      <Typography variant="h6" mt={4}>
+        Summary
+      </Typography>
       <Typography>Operating Cash Flow: ${formatAmount(operatingCashFlow)}</Typography>
       <Typography>Investing Cash Flow: ${formatAmount(investingCashFlow)}</Typography>
       <Typography>Financing Cash Flow: ${formatAmount(financingCashFlow)}</Typography>

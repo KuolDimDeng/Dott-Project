@@ -57,7 +57,13 @@ const BusinessRegistration = () => {
             {/* Add other platforms */}
           </select>
           <button onClick={handlePlatformSelection}>Continue</button>
-          <button onClick={() => { /* redirect to dashboard */ }}>Set Up Later</button>
+          <button
+            onClick={() => {
+              /* redirect to dashboard */
+            }}
+          >
+            Set Up Later
+          </button>
         </div>
       )}
     </div>

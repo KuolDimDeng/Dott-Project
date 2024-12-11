@@ -36,10 +36,7 @@ function ConsoleMessages({ backgroundColor }) {
   return (
     <MessageContainer backgroundColor={backgroundColor}>
       {latestMessage && (
-        <Typography
-          style={getMessageStyle(latestMessage.type)}
-          aria-label={latestMessage.type}
-        >
+        <Typography style={getMessageStyle(latestMessage.type)} aria-label={latestMessage.type}>
           {latestMessage.content}
         </Typography>
       )}

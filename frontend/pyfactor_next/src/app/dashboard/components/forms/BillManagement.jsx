@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -20,12 +20,12 @@ import {
   Select,
   MenuItem,
   Autocomplete,
-  useTheme
+  useTheme,
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const BillManagement = () => {
@@ -77,9 +77,8 @@ const BillManagement = () => {
   };
 
   const calculateTotalAmount = (items) => {
-    return items.reduce((total, item) => total + (item.quantity * item.price), 0);
+    return items.reduce((total, item) => total + item.quantity * item.price, 0);
   };
-
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -88,21 +87,21 @@ const BillManagement = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevData => ({
+    setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
   };
 
   const handleVendorChange = (event, newValue) => {
-    setFormData(prevData => ({
+    setFormData((prevData) => ({
       ...prevData,
       vendor: newValue,
     }));
   };
 
   const handleDateChange = (name, value) => {
-    setFormData(prevData => ({
+    setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
@@ -113,16 +112,19 @@ const BillManagement = () => {
     updatedItems[index][field] = value;
     updatedItems[index].amount = updatedItems[index].quantity * updatedItems[index].price;
     const totalAmount = calculateTotalAmount(updatedItems);
-    setFormData(prevData => ({
+    setFormData((prevData) => ({
       ...prevData,
       items: updatedItems,
       totalAmount: totalAmount,
     }));
   };
   const handleAddItem = () => {
-    setFormData(prevData => ({
+    setFormData((prevData) => ({
       ...prevData,
-      items: [...prevData.items, { category: '', description: '', quantity: 1, price: 0, tax: 0, amount: 0 }],
+      items: [
+        ...prevData.items,
+        { category: '', description: '', quantity: 1, price: 0, tax: 0, amount: 0 },
+      ],
     }));
   };
 
@@ -132,10 +134,10 @@ const BillManagement = () => {
       const billData = {
         ...formData,
         vendor: formData.vendor.id,
-        items: formData.items.map(item => ({
+        items: formData.items.map((item) => ({
           ...item,
-          amount: item.quantity * item.price
-        }))
+          amount: item.quantity * item.price,
+        })),
       };
       const response = await axiosInstance.post('/api/bills/create/', billData);
       addMessage('success', 'Bill created successfully');
@@ -157,7 +159,9 @@ const BillManagement = () => {
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h5" gutterBottom>Bill Management</Typography>
+      <Typography variant="h5" gutterBottom>
+        Bill Management
+      </Typography>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={tabValue} onChange={handleTabChange}>
           <Tab label="Create Bill" />
@@ -175,19 +179,13 @@ const BillManagement = () => {
                 getOptionLabel={(option) => `${option.vendor_name} (${option.vendor_number})`}
                 value={formData.vendor}
                 onChange={handleVendorChange}
-                renderInput={(params) => (
-                  <TextField {...params} label="Vendor" required />
-                )}
+                renderInput={(params) => <TextField {...params} label="Vendor" required />}
               />
             </Grid>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
                 <InputLabel>Currency</InputLabel>
-                <Select
-                  name="currency"
-                  value={formData.currency}
-                  onChange={handleInputChange}
-                >
+                <Select name="currency" value={formData.currency} onChange={handleInputChange}>
                   <MenuItem value="USD">USD</MenuItem>
                   <MenuItem value="EUR">EUR</MenuItem>
                   <MenuItem value="GBP">GBP</MenuItem>
@@ -223,7 +221,7 @@ const BillManagement = () => {
                 fullWidth
               />
             </Grid>
-    
+
             <Grid item xs={12}>
               <TextField
                 label="Notes"
@@ -287,7 +285,9 @@ const BillManagement = () => {
             </Grid>
           ))}
 
-          <Button onClick={handleAddItem} sx={{ mt: 2 }}>Add Item</Button>
+          <Button onClick={handleAddItem} sx={{ mt: 2 }}>
+            Add Item
+          </Button>
 
           <Box display="flex" justifyContent="flex-end" mt={3}>
             <Button variant="contained" color="primary" type="submit">
@@ -302,12 +302,18 @@ const BillManagement = () => {
           <Typography variant="h6">Bill Details</Typography>
           <Typography>Bill Number: {selectedBill.bill_number}</Typography>
           <Typography>Vendor: {selectedBill.vendor_name || 'N/A'}</Typography>
-          <Typography>Total Amount: {selectedBill.totalAmount} {selectedBill.currency}</Typography>
-          <Typography>Bill Date: {new Date(selectedBill.bill_date).toLocaleDateString()}</Typography>
+          <Typography>
+            Total Amount: {selectedBill.totalAmount} {selectedBill.currency}
+          </Typography>
+          <Typography>
+            Bill Date: {new Date(selectedBill.bill_date).toLocaleDateString()}
+          </Typography>
           <Typography>Due Date: {new Date(selectedBill.due_date).toLocaleDateString()}</Typography>
           <Typography>P.O./S.O.: {selectedBill.poso_number}</Typography>
           <Typography>Notes: {selectedBill.notes}</Typography>
-          <Typography variant="h6" sx={{ mt: 2 }}>Items</Typography>
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Items
+          </Typography>
           <TableContainer>
             <Table>
               <TableHead>
@@ -353,7 +359,9 @@ const BillManagement = () => {
                 <TableRow key={bill.id}>
                   <TableCell>{bill.bill_number}</TableCell>
                   <TableCell>{bill.vendor_name || 'N/A'}</TableCell>
-                  <TableCell>{bill.totalAmount} {bill.currency}</TableCell>
+                  <TableCell>
+                    {bill.totalAmount} {bill.currency}
+                  </TableCell>
                   <TableCell>{new Date(bill.bill_date).toLocaleDateString()}</TableCell>
                   <TableCell>{new Date(bill.due_date).toLocaleDateString()}</TableCell>
                   <TableCell>

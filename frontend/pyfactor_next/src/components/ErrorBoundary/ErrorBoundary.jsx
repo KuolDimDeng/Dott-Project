@@ -18,12 +18,7 @@ const ErrorFallback = ({ error, resetErrorBoundary, isLoading }) => (
     <Alert
       severity="error"
       action={
-        <Button 
-          color="inherit" 
-          size="small" 
-          onClick={resetErrorBoundary}
-          disabled={isLoading}
-        >
+        <Button color="inherit" size="small" onClick={resetErrorBoundary} disabled={isLoading}>
           {isLoading ? <CircularProgress size={20} /> : 'Try Again'}
         </Button>
       }
@@ -43,7 +38,7 @@ const logErrorToService = (error, info) => {
     stack: error.stack,
     componentStack: info.componentStack,
     timestamp: new Date().toISOString(),
-    url: window?.location?.href
+    url: window?.location?.href,
   });
 };
 
@@ -107,8 +102,7 @@ export const withErrorBoundary = (WrappedComponent, options = {}) => {
     );
   }
 
-  WithErrorBoundaryComponent.displayName = 
-    `WithErrorBoundary(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+  WithErrorBoundaryComponent.displayName = `WithErrorBoundary(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
 
   return WithErrorBoundaryComponent;
 };

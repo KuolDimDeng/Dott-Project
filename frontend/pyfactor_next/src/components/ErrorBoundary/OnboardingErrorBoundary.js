@@ -12,15 +12,15 @@ export class OnboardingErrorBoundary extends React.Component {
       error: null,
       errorInfo: null,
       recoveryAttempts: 0,
-      isRetrying: false // Match ErrorStep's prop name
+      isRetrying: false, // Match ErrorStep's prop name
     };
   }
 
   static getDerivedStateFromError(error) {
-    return { 
-      hasError: true, 
+    return {
+      hasError: true,
       error,
-      errorType: error.name || 'UnknownError'
+      errorType: error.name || 'UnknownError',
     };
   }
 
@@ -29,7 +29,7 @@ export class OnboardingErrorBoundary extends React.Component {
       error,
       errorInfo,
       component: this.props.componentName,
-      step: this.props.stepNumber // Match ErrorStep's prop name
+      step: this.props.stepNumber, // Match ErrorStep's prop name
     });
 
     // Save error state
@@ -39,15 +39,15 @@ export class OnboardingErrorBoundary extends React.Component {
       componentName: this.props.componentName,
       stepNumber: this.props.stepNumber,
       type: error.name,
-      recoveryAttempts: this.state.recoveryAttempts
+      recoveryAttempts: this.state.recoveryAttempts,
     });
   }
 
   handleRetry = async () => {
     try {
-      this.setState(prev => ({
+      this.setState((prev) => ({
         recoveryAttempts: prev.recoveryAttempts + 1,
-        isRetrying: true // Match ErrorStep's prop name
+        isRetrying: true, // Match ErrorStep's prop name
       }));
 
       // Clear error state
@@ -60,14 +60,14 @@ export class OnboardingErrorBoundary extends React.Component {
       }
 
       // Add delay to prevent rapid retries
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Reset error state
       this.setState({
         hasError: false,
         error: null,
         errorInfo: null,
-        isRetrying: false
+        isRetrying: false,
       });
 
       // Call custom retry handler if provided
@@ -75,16 +75,15 @@ export class OnboardingErrorBoundary extends React.Component {
 
       logger.info('Error recovery successful', {
         component: this.props.componentName,
-        attempts: this.state.recoveryAttempts
+        attempts: this.state.recoveryAttempts,
       });
-
     } catch (error) {
       logger.error('Error recovery failed:', {
         error,
         component: this.props.componentName,
-        attempts: this.state.recoveryAttempts
+        attempts: this.state.recoveryAttempts,
       });
-      
+
       this.setState({ isRetrying: false });
 
       // If max attempts reached, force refresh
@@ -118,7 +117,7 @@ export class OnboardingErrorBoundary extends React.Component {
         error: this.state.error,
         resetError: this.handleRetry,
         attempts: this.state.recoveryAttempts,
-        isRetrying: this.state.isRetrying
+        isRetrying: this.state.isRetrying,
       });
     }
 
@@ -129,14 +128,14 @@ export class OnboardingErrorBoundary extends React.Component {
 // Add PropTypes
 if (process.env.NODE_ENV !== 'production') {
   const PropTypes = require('prop-types');
-  
+
   OnboardingErrorBoundary.propTypes = {
     children: PropTypes.node.isRequired,
     fallback: PropTypes.func,
     componentName: PropTypes.string,
     stepNumber: PropTypes.number.isRequired, // Match ErrorStep's prop requirement
     onRetry: PropTypes.func,
-    errorMessage: PropTypes.string
+    errorMessage: PropTypes.string,
   };
 }
 
@@ -144,7 +143,7 @@ if (process.env.NODE_ENV !== 'production') {
 export const withOnboardingErrorBoundary = (WrappedComponent, options = {}) => {
   return function WithErrorBoundary(props) {
     return (
-      <OnboardingErrorBoundary 
+      <OnboardingErrorBoundary
         componentName={options.componentName}
         stepNumber={options.stepNumber}
         errorMessage={options.errorMessage}
@@ -162,6 +161,6 @@ export const createOnboardingStep = (Component, stepNumber) => {
   return withOnboardingErrorBoundary(Component, {
     componentName: Component.displayName || Component.name,
     stepNumber,
-    errorMessage: `We encountered an error in step ${stepNumber}. Please try again.`
+    errorMessage: `We encountered an error in step ${stepNumber}. Please try again.`,
   });
 };

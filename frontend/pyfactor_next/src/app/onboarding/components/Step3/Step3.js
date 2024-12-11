@@ -12,18 +12,18 @@ import { useInitialization } from '@/hooks/useInitialization';
 import { logger } from '@/utils/logger';
 import { useStep3Form } from './useStep3Form';
 import { useToast } from '@/components/Toast/ToastProvider';
-import { 
-  STEP_METADATA, 
+import {
+  STEP_METADATA,
   STEP_NAMES,
   ERROR_TYPES,
-  validateStep
+  validateStep,
 } from '@/app/onboarding/components/registry';
-import { 
-  theme, 
-  PaymentContainer, 
-  LogoContainer, 
+import {
+  theme,
+  PaymentContainer,
+  LogoContainer,
   PaymentDetails,
-  PaymentSummary 
+  PaymentSummary,
 } from './Step3.styles';
 
 const Step3Component = ({ metadata = STEP_METADATA[STEP_NAMES.STEP3] }) => {
@@ -33,28 +33,19 @@ const Step3Component = ({ metadata = STEP_METADATA[STEP_NAMES.STEP3] }) => {
   // Add error boundary for metadata
   if (!metadata) {
     logger.error('Step3: Missing metadata');
-    return (
-      <ErrorStep 
-        error="Configuration error"
-        stepNumber={3}
-      />
-    );
+    return <ErrorStep error="Configuration error" stepNumber={3} />;
   }
 
-  const { 
+  const {
     formData,
     loading: storeLoading,
     error: storeError,
     saveStep,
-    initialize
+    initialize,
   } = useOnboarding();
 
-  const {
-    checkoutLoading,
-    checkoutError,
-    handlePayment,
-    setCheckoutError
-  } = useStep3Form(formData);
+  const { checkoutLoading, checkoutError, handlePayment, setCheckoutError } =
+    useStep3Form(formData);
 
   // Combined loading state
   const isLoading = storeLoading || checkoutLoading;
@@ -73,15 +64,11 @@ const Step3Component = ({ metadata = STEP_METADATA[STEP_NAMES.STEP3] }) => {
     onError: (error) => {
       logger.error('Initialization failed:', error);
       toast.error('Failed to initialize payment setup');
-    }
+    },
   });
 
   if (initialization.isInitializing) {
-    return (
-      <LoadingStateWithProgress 
-        message="Initializing payment setup..."
-      />
-    );
+    return <LoadingStateWithProgress message="Initializing payment setup..." />;
   }
 
   return (
@@ -100,12 +87,12 @@ const Step3Component = ({ metadata = STEP_METADATA[STEP_NAMES.STEP3] }) => {
         <Container maxWidth="sm">
           <PaymentContainer>
             <LogoContainer>
-              <Image 
-                src="/static/images/Pyfactor.png" 
-                alt="Pyfactor Logo" 
-                width={150} 
-                height={50} 
-                priority 
+              <Image
+                src="/static/images/Pyfactor.png"
+                alt="Pyfactor Logo"
+                width={150}
+                height={50}
+                priority
               />
               <Typography variant="h4" sx={{ mt: 2, mb: 4 }}>
                 {metadata.title}
@@ -161,14 +148,14 @@ const Step3Component = ({ metadata = STEP_METADATA[STEP_NAMES.STEP3] }) => {
 // PropTypes for development
 if (process.env.NODE_ENV !== 'production') {
   const PropTypes = require('prop-types');
-  
+
   Step3Component.propTypes = {
     metadata: PropTypes.shape({
       title: PropTypes.string.isRequired,
       description: PropTypes.string.isRequired,
       nextStep: PropTypes.string,
-      prevStep: PropTypes.string
-    })
+      prevStep: PropTypes.string,
+    }),
   };
 }
 

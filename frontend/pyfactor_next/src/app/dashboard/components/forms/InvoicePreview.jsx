@@ -1,9 +1,28 @@
 import React from 'react';
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+} from '@mui/material';
 import { Button } from '@mui/material';
 
-const InvoicePreview = ({ logo, accentColor, template, userData, invoiceItems, products, services }) => {
-  const { first_name, last_name, business_name, address, city, state, zip_code, phone, email } = userData || {};
+const InvoicePreview = ({
+  logo,
+  accentColor,
+  template,
+  userData,
+  invoiceItems,
+  products,
+  services,
+}) => {
+  const { first_name, last_name, business_name, address, city, state, zip_code, phone, email } =
+    userData || {};
   const subtotal = invoiceItems.reduce((total, item) => total + item.quantity * item.unitPrice, 0);
   const tax = subtotal * 0.1;
   const total = subtotal + tax;
@@ -32,7 +51,16 @@ const InvoicePreview = ({ logo, accentColor, template, userData, invoiceItems, p
         <Typography variant="body2">{email}</Typography>
         <Typography variant="body2">{business_name}.com</Typography>
       </Box>
-      <Box borderTop={1} borderBottom={1} py={2} px={4} display="grid" gap={2} textAlign="left" mb={2}>
+      <Box
+        borderTop={1}
+        borderBottom={1}
+        py={2}
+        px={4}
+        display="grid"
+        gap={2}
+        textAlign="left"
+        mb={2}
+      >
         <Box display="flex" justifyContent="space-between">
           <Typography variant="body2" fontWeight="bold">
             Invoice number
@@ -51,7 +79,9 @@ const InvoicePreview = ({ logo, accentColor, template, userData, invoiceItems, p
           <Typography variant="body2" fontWeight="bold">
             Due date
           </Typography>
-          <Typography variant="body2">{new Date(new Date().setDate(new Date().getDate() + 7)).toLocaleDateString()}</Typography>
+          <Typography variant="body2">
+            {new Date(new Date().setDate(new Date().getDate() + 7)).toLocaleDateString()}
+          </Typography>
         </Box>
       </Box>
       <Box borderTop={1} py={2} px={4} display="grid" gap={2} textAlign="left" mb={2}>
@@ -83,13 +113,22 @@ const InvoicePreview = ({ logo, accentColor, template, userData, invoiceItems, p
                 <TableCell>{item.description}</TableCell>
                 <TableCell>{item.quantity}</TableCell>
                 <TableCell>${item.unitPrice?.toFixed(2) || '0.00'}</TableCell>
-                <TableCell>${((item.quantity * item.unitPrice) || 0).toFixed(2)}</TableCell>
+                <TableCell>${(item.quantity * item.unitPrice || 0).toFixed(2)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
-      <Box borderTop={1} borderBottom={1} py={2} px={4} display="grid" gap={2} textAlign="right" mt={2}>
+      <Box
+        borderTop={1}
+        borderBottom={1}
+        py={2}
+        px={4}
+        display="grid"
+        gap={2}
+        textAlign="right"
+        mt={2}
+      >
         <Box display="flex" justifyContent="space-between">
           <Typography variant="body2">Subtotal</Typography>
           <Typography variant="body2">${subtotal.toFixed(2)}</Typography>

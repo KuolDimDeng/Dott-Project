@@ -1,10 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Button, TextField, MenuItem, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, useTheme
+  Box,
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  TextField,
+  MenuItem,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  useTheme,
 } from '@mui/material';
 import { Add, Edit, Delete, Check, Close } from '@mui/icons-material';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const JournalEntryManagement = () => {
   const [journalEntries, setJournalEntries] = useState([]);
@@ -12,7 +28,6 @@ const JournalEntryManagement = () => {
   const [currentEntry, setCurrentEntry] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const theme = useTheme();
-
 
   useEffect(() => {
     fetchJournalEntries();
@@ -41,7 +56,7 @@ const JournalEntryManagement = () => {
     setCurrentEntry({
       date: new Date().toISOString().split('T')[0],
       description: '',
-      lines: [{ account: '', description: '', debit_amount: 0, credit_amount: 0 }]
+      lines: [{ account: '', description: '', debit_amount: 0, credit_amount: 0 }],
     });
     setOpenDialog(true);
   };
@@ -90,7 +105,10 @@ const JournalEntryManagement = () => {
   const addLine = () => {
     setCurrentEntry({
       ...currentEntry,
-      lines: [...currentEntry.lines, { account: '', description: '', debit_amount: 0, credit_amount: 0 }]
+      lines: [
+        ...currentEntry.lines,
+        { account: '', description: '', debit_amount: 0, credit_amount: 0 },
+      ],
     });
   };
 
@@ -101,7 +119,9 @@ const JournalEntryManagement = () => {
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom>Journal Entry Management</Typography>
+      <Typography variant="h4" gutterBottom>
+        Journal Entry Management
+      </Typography>
       <Button variant="contained" color="primary" startIcon={<Add />} onClick={handleCreateEntry}>
         Create Journal Entry
       </Button>
@@ -122,8 +142,12 @@ const JournalEntryManagement = () => {
                 <TableCell>{entry.description}</TableCell>
                 <TableCell>{entry.is_posted ? 'Posted' : 'Draft'}</TableCell>
                 <TableCell>
-                  <IconButton onClick={() => handleEditEntry(entry)}><Edit /></IconButton>
-                  <IconButton onClick={() => handleDeleteEntry(entry.id)}><Delete /></IconButton>
+                  <IconButton onClick={() => handleEditEntry(entry)}>
+                    <Edit />
+                  </IconButton>
+                  <IconButton onClick={() => handleDeleteEntry(entry.id)}>
+                    <Delete />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -132,7 +156,9 @@ const JournalEntryManagement = () => {
       </TableContainer>
 
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
-        <DialogTitle>{currentEntry?.id ? 'Edit Journal Entry' : 'Create Journal Entry'}</DialogTitle>
+        <DialogTitle>
+          {currentEntry?.id ? 'Edit Journal Entry' : 'Create Journal Entry'}
+        </DialogTitle>
         <DialogContent>
           <TextField
             label="Date"
@@ -152,7 +178,9 @@ const JournalEntryManagement = () => {
             value={currentEntry?.description || ''}
             onChange={(e) => handleInputChange(e)}
           />
-          <Typography variant="h6" sx={{ mt: 2 }}>Journal Entry Lines</Typography>
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Journal Entry Lines
+          </Typography>
           {currentEntry?.lines.map((line, index) => (
             <Box key={index} sx={{ display: 'flex', gap: 2, mb: 2 }}>
               <TextField
@@ -164,7 +192,9 @@ const JournalEntryManagement = () => {
                 onChange={(e) => handleInputChange(e, index)}
               >
                 {accounts.map((account) => (
-                  <MenuItem key={account.id} value={account.id}>{account.name}</MenuItem>
+                  <MenuItem key={account.id} value={account.id}>
+                    {account.name}
+                  </MenuItem>
                 ))}
               </TextField>
               <TextField
@@ -190,14 +220,22 @@ const JournalEntryManagement = () => {
                 value={line.credit_amount}
                 onChange={(e) => handleInputChange(e, index)}
               />
-              <IconButton onClick={() => removeLine(index)}><Delete /></IconButton>
+              <IconButton onClick={() => removeLine(index)}>
+                <Delete />
+              </IconButton>
             </Box>
           ))}
-          <Button startIcon={<Add />} onClick={addLine}>Add Line</Button>
+          <Button startIcon={<Add />} onClick={addLine}>
+            Add Line
+          </Button>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)} startIcon={<Close />}>Cancel</Button>
-          <Button onClick={handleSaveEntry} color="primary" startIcon={<Check />}>Save</Button>
+          <Button onClick={() => setOpenDialog(false)} startIcon={<Close />}>
+            Cancel
+          </Button>
+          <Button onClick={handleSaveEntry} color="primary" startIcon={<Check />}>
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

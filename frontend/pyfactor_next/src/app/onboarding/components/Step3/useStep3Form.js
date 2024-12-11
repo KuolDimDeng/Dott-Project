@@ -26,7 +26,7 @@ export const useStep3Form = (formData) => {
       await persistenceService.saveData('step3-payment-initiated', {
         timestamp: Date.now(),
         plan: formData.selectedPlan,
-        billingCycle: formData.billingCycle
+        billingCycle: formData.billingCycle,
       });
 
       // Create checkout session
@@ -47,18 +47,17 @@ export const useStep3Form = (formData) => {
 
       // Redirect to Stripe
       const { error } = await stripe.redirectToCheckout({
-        sessionId: response.data.sessionId
+        sessionId: response.data.sessionId,
       });
 
       if (error) {
         throw error;
       }
-
     } catch (error) {
       logger.error('Payment process failed:', {
         error,
         formData,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       let errorMessage = 'Payment setup failed';
@@ -76,9 +75,8 @@ export const useStep3Form = (formData) => {
       await persistenceService.saveData('step3-payment-error', {
         timestamp: Date.now(),
         error: errorMessage,
-        details: error.message
+        details: error.message,
       });
-
     } finally {
       setCheckoutLoading(false);
     }
@@ -88,6 +86,6 @@ export const useStep3Form = (formData) => {
     checkoutLoading,
     checkoutError,
     handlePayment,
-    setCheckoutError
+    setCheckoutError,
   };
 };

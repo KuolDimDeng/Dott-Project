@@ -18,10 +18,13 @@ export const useOnboardingProgress = (step, options = {}) => {
   const [saving, setSaving] = useState(false);
 
   // Important: Ensure data structure is maintained
-  const formData = useMemo(() => ({
-    ...storeFormData,
-    ...localFormData
-  }), [storeFormData, localFormData]);
+  const formData = useMemo(
+    () => ({
+      ...storeFormData,
+      ...localFormData,
+    }),
+    [storeFormData, localFormData]
+  );
 
   useEffect(() => {
     const loadSavedProgress = async () => {
@@ -40,61 +43,58 @@ export const useOnboardingProgress = (step, options = {}) => {
   }, [step]);
 
   // Key improvement: Better data handling in saveProgress
-  const saveProgress = useCallback(async (data) => {
-    if (saving) {
-      logger.debug('Save already in progress, skipping');
-      return;
-    }
+  const saveProgress = useCallback(
+    async (data) => {
+      if (saving) {
+        logger.debug('Save already in progress, skipping');
+        return;
+      }
 
-    try {
-      setSaving(true);
-      logger.debug('Saving progress locally:', {
-        step,
-        data: data
-      });
+      try {
+        setSaving(true);
 
-      // First save locally
-      await persistenceService.saveData(`onboarding_${step}`, {
-        timestamp: Date.now(),
-        data: data
-      });
+        // First validate completion state
+        if (data.status === 'complete' && !data.database_name) {
+          throw new Error('Database name required for completion');
+        }
 
-      // Create backup
-      await persistenceService.saveData(`onboarding_${step}_backup`, {
-        timestamp: Date.now(),
-        data: data
-      });
+        // Save to backend first
+        const result = await saveStep(step, data);
 
-      setLocalFormData(data);
-      setLastSaved(Date.now());
+        // Then save locally only if backend succeeds
+        if (result) {
+          await persistenceService.saveData(`onboarding_${step}`, {
+            timestamp: Date.now(),
+            data: data,
+          });
 
-      // Then save to backend with the complete data object
-      logger.debug('Saving to backend:', {
-        step,
-        data: data
-      });
+          setLocalFormData(data);
+          setLastSaved(Date.now());
+        }
 
-      const result = await saveStep(step, data);
-      return result;
-
-    } catch (error) {
-      logger.error(`Failed to save progress for ${step}:`, error);
-      throw error;
-    } finally {
-      setSaving(false);
-    }
-  }, [step, saving, saveStep]);
+        return result;
+      } catch (error) {
+        logger.error(`Failed to save progress for ${step}:`, error);
+        throw error;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [step, saving, saveStep]
+  );
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (localFormData && !saving) {
-        persistenceService.saveData(`onboarding_${step}_cleanup`, {
-          timestamp: Date.now(),
-          data: localFormData
-        }).catch(error => {
-          logger.error('Cleanup save failed:', error);
-        });
+        persistenceService
+          .saveData(`onboarding_${step}_cleanup`, {
+            timestamp: Date.now(),
+            data: localFormData,
+          })
+          .catch((error) => {
+            logger.error('Cleanup save failed:', error);
+          });
       }
     };
   }, [step, localFormData, saving]);
@@ -107,6 +107,6 @@ export const useOnboardingProgress = (step, options = {}) => {
     saving: saving || storeLoading,
     error: storeError,
     saveProgress,
-    ...otherStoreProps
+    ...otherStoreProps,
   };
 };

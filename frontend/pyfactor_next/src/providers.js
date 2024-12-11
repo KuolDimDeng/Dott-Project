@@ -19,7 +19,7 @@ const TOAST_MESSAGES = {
   MUTATION_ERROR: 'An error occurred while saving data',
   GLOBAL_ERROR: 'Something went wrong! Please try again later.',
   RESET_SUCCESS: 'Application reset successful',
-  MOUNT_ERROR: 'Failed to initialize application'
+  MOUNT_ERROR: 'Failed to initialize application',
 };
 
 // Toast-aware component wrapper
@@ -52,7 +52,7 @@ const ClientOnly = memo(function ClientOnly({ children }) {
         setMounted(true);
         mountedRef.current = true;
         logger.info('Client-side rendering mounted');
-        
+
         return () => {
           mountedRef.current = false;
           setMounted(false);
@@ -88,15 +88,15 @@ const QueryProvider = memo(function QueryProvider({ children }) {
           onError: (error) => {
             logger.error('Query error:', error);
             toast.error(error.message || TOAST_MESSAGES.QUERY_ERROR);
-          }
+          },
         },
         mutations: {
           retry: 1,
           onError: (error) => {
             logger.error('Mutation error:', error);
             toast.error(error.message || TOAST_MESSAGES.MUTATION_ERROR);
-          }
-        }
+          },
+        },
       });
       configuredRef.current = true;
     }
@@ -105,9 +105,7 @@ const QueryProvider = memo(function QueryProvider({ children }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      {process.env.NODE_ENV === 'development' && (
-        <ReactQueryDevtools position="bottom-right" />
-      )}
+      {process.env.NODE_ENV === 'development' && <ReactQueryDevtools position="bottom-right" />}
     </QueryClientProvider>
   );
 });
@@ -145,7 +143,7 @@ const ErrorWrapper = memo(function ErrorWrapper({ children }) {
         <div role="alert">
           <h2>Something went wrong!</h2>
           <pre>{error.message}</pre>
-          <button 
+          <button
             onClick={() => {
               resetError();
               if (toast) {
@@ -174,9 +172,7 @@ const Providers = memo(function Providers({ children }) {
             <QueryProvider>
               <ErrorWrapper>
                 <ThemeWrapper>
-                  <OnboardingProvider>
-                    {children}
-                  </OnboardingProvider>
+                  <OnboardingProvider>{children}</OnboardingProvider>
                 </ThemeWrapper>
               </ErrorWrapper>
             </QueryProvider>
@@ -190,7 +186,7 @@ const Providers = memo(function Providers({ children }) {
 // Add prop-types validation
 if (process.env.NODE_ENV !== 'production') {
   const PropTypes = require('prop-types');
-  
+
   const providerPropTypes = {
     children: PropTypes.node.isRequired,
   };
@@ -201,18 +197,19 @@ if (process.env.NODE_ENV !== 'production') {
     ThemeWrapper,
     ErrorWrapper,
     Providers,
-    ToastAware
+    ToastAware,
   };
 
   Object.entries(components).forEach(([name, Component]) => {
     Component.displayName = name;
-    Component.propTypes = name === 'ErrorWrapper' 
-      ? {
-          ...providerPropTypes,
-          fallback: PropTypes.func,
-          onError: PropTypes.func
-        }
-      : providerPropTypes;
+    Component.propTypes =
+      name === 'ErrorWrapper'
+        ? {
+            ...providerPropTypes,
+            fallback: PropTypes.func,
+            onError: PropTypes.func,
+          }
+        : providerPropTypes;
   });
 }
 

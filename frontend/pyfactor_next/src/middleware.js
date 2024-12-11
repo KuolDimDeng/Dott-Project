@@ -1,17 +1,17 @@
 // src/middleware.js
-import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { withAuth } from 'next-auth/middleware';
+import { NextResponse } from 'next/server';
 import { APP_CONFIG } from '@/config';
 import { logger } from '@/utils/logger';
 
 // Helper function for path matching - improved to handle exact matches
 const matchesPattern = (pathname, patterns) => {
   if (!patterns) return false;
-  
+
   // Convert single string to array
   const patternArray = Array.isArray(patterns) ? patterns : [patterns];
-  
-  return patternArray.some(pattern => {
+
+  return patternArray.some((pattern) => {
     // Handle exact matches (like root '/')
     if (pattern === pathname) return true;
     // Handle prefix matches
@@ -26,10 +26,10 @@ const isPublicAccess = (pathname) => {
 
   // Check all public path patterns
   const publicPatterns = [
-    ...APP_CONFIG.routes.public,           // Public routes like '/', '/about'
-    APP_CONFIG.routes.auth.paths,          // Auth paths
-    ...APP_CONFIG.routes.static,           // Static files
-    '/api/auth'                            // Auth API routes
+    ...APP_CONFIG.routes.public, // Public routes like '/', '/about'
+    APP_CONFIG.routes.auth.paths, // Auth paths
+    ...APP_CONFIG.routes.static, // Static files
+    '/api/auth', // Auth API routes
   ].flat();
 
   return matchesPattern(pathname, publicPatterns);
@@ -50,9 +50,9 @@ const SECURITY_HEADERS = {
     'accelerometer=()',
     'autoplay=()',
     'payment=()',
-    'usb=()'
+    'usb=()',
   ].join(', '),
-  'X-XSS-Protection': '1; mode=block'
+  'X-XSS-Protection': '1; mode=block',
 };
 
 // Token expiration check
@@ -60,7 +60,7 @@ const isTokenExpired = (token) => {
   if (!token?.exp) return true;
   const gracePeriod = APP_CONFIG.auth.tokenGracePeriod || 0;
   const expiry = new Date(token.exp * 1000);
-  return (expiry.getTime() + gracePeriod) < Date.now();
+  return expiry.getTime() + gracePeriod < Date.now();
 };
 
 // Main middleware
@@ -83,7 +83,7 @@ export default withAuth(
 
       // Handle protected routes
       const token = req.nextauth?.token;
-      
+
       // Check token existence
       if (!token) {
         logger.warn('No authentication token found for:', pathname);
@@ -107,12 +107,11 @@ export default withAuth(
 
       logger.debug('Access granted for:', pathname);
       return response;
-
     } catch (error) {
       logger.error('Middleware error:', {
         path: pathname,
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
       return NextResponse.redirect(new URL(APP_CONFIG.routes.auth.error, req.url));
     }
@@ -125,7 +124,7 @@ export default withAuth(
           if (isPublicAccess(req.nextUrl.pathname)) {
             return true;
           }
-          
+
           // Check token for protected routes
           return !!token && !isTokenExpired(token);
         } catch (error) {
@@ -138,7 +137,7 @@ export default withAuth(
     pages: {
       signIn: APP_CONFIG.routes.auth.signIn,
       error: APP_CONFIG.routes.auth.error,
-    }
+    },
   }
 );
 
@@ -147,10 +146,10 @@ const handleUnauthorized = (req, options = {}) => {
   try {
     const returnTo = options.returnTo || req.url;
     const signInPath = options.signInPath || APP_CONFIG.routes.auth.signIn;
-    
+
     const callbackUrl = encodeURIComponent(returnTo);
     const signInUrl = new URL(`${signInPath}?callbackUrl=${callbackUrl}`, req.url);
-    
+
     logger.info('Redirecting unauthorized access to:', signInUrl.toString());
     return NextResponse.redirect(signInUrl);
   } catch (error) {
@@ -172,5 +171,5 @@ export const MIDDLEWARE_ERRORS = {
   TOKEN_EXPIRED: 'token_expired',
   UNAUTHORIZED: 'unauthorized',
   INVALID_TOKEN: 'invalid_token',
-  SERVER_ERROR: 'server_error'
+  SERVER_ERROR: 'server_error',
 };

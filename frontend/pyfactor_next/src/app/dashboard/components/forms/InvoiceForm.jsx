@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Grid, TextField, MenuItem, FormControl, InputLabel, Select } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Button,
+  Grid,
+  TextField,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+} from '@mui/material';
 import InvoicePreview from './InvoicePreview';
 import InvoiceTemplateBuilder from './InvoiceTemplateBuilder';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
-
-
 
 const InvoiceForm = () => {
   const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
@@ -77,12 +85,14 @@ const InvoiceForm = () => {
     } catch (error) {
       console.error('Error fetching customers:', error);
       if (error.response) {
-        console.error("Data:", error.response.data);
-        console.error("Status:", error.response.status);
-        console.error("Headers:", error.response.headers);
-        setCustomersError(`Failed to load customers. Server responded with status ${error.response.status}`);
+        console.error('Data:', error.response.data);
+        console.error('Status:', error.response.status);
+        console.error('Headers:', error.response.headers);
+        setCustomersError(
+          `Failed to load customers. Server responded with status ${error.response.status}`
+        );
       } else if (error.request) {
-        console.error("Request:", error.request);
+        console.error('Request:', error.request);
         setCustomersError('Failed to load customers. No response received from server.');
       } else {
         console.error('Error', error.message);
@@ -106,7 +116,7 @@ const InvoiceForm = () => {
       logger.error('Error fetching products:', error);
     }
   };
-  
+
   const fetchServices = async (database_name) => {
     try {
       console.log('Fetching services from database:', database_name);
@@ -124,10 +134,10 @@ const InvoiceForm = () => {
     const selectedId = event.target.value;
     console.log('Selected customer ID:', selectedId);
     setSelectedCustomer(selectedId);
-    
+
     const selectedCustomerData = customers.find((customer) => customer.id === selectedId);
     console.log('Selected customer data:', selectedCustomerData);
-    
+
     if (selectedCustomerData) {
       setUserData({
         first_name: selectedCustomerData.first_name || '',
@@ -170,29 +180,32 @@ const InvoiceForm = () => {
   };
 
   const handleAddInvoiceItem = () => {
-    setInvoiceItems([...invoiceItems, { type: '', description: '', quantity: 1, unitPrice: 0, amount: 0 }]);
+    setInvoiceItems([
+      ...invoiceItems,
+      { type: '', description: '', quantity: 1, unitPrice: 0, amount: 0 },
+    ]);
   };
 
   const handleInvoiceItemChange = (index, field, value) => {
     const updatedItems = [...invoiceItems];
     updatedItems[index][field] = value;
-  
+
     if (field === 'productId' || field === 'serviceId') {
-      const selectedItem = field === 'productId'
-        ? products.find((product) => product.id === value)
-        : services.find((service) => service.id === value);
-  
+      const selectedItem =
+        field === 'productId'
+          ? products.find((product) => product.id === value)
+          : services.find((service) => service.id === value);
+
       if (selectedItem && selectedItem.price) {
         updatedItems[index].unitPrice = parseFloat(selectedItem.price);
         updatedItems[index].amount = updatedItems[index].quantity * parseFloat(selectedItem.price);
       }
     }
-  
-  
+
     if (field === 'quantity') {
       updatedItems[index].amount = updatedItems[index].quantity * updatedItems[index].unitPrice;
     }
-  
+
     setInvoiceItems(updatedItems);
   };
 
@@ -201,16 +214,16 @@ const InvoiceForm = () => {
       addMessage('error', 'Please add at least one item to the invoice');
       return;
     }
-  
-    const subtotal = invoiceItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+
+    const subtotal = invoiceItems.reduce((acc, item) => acc + item.quantity * item.unitPrice, 0);
     const tax = subtotal * 0.1;
     const total = subtotal + tax;
-  
+
     if (total <= 0) {
       addMessage('error', 'Invoice total must be greater than zero');
       return;
     }
-  
+
     try {
       // Generate a unique invoice number
       const currentDate = new Date();
@@ -218,30 +231,30 @@ const InvoiceForm = () => {
       const month = String(currentDate.getMonth() + 1).padStart(2, '0');
       const day = String(currentDate.getDate()).padStart(2, '0');
       const dateString = `${year}${month}${day}`;
-      
+
       // Fetch the last invoice number from the server or local storage
       const lastInvoiceNumber = await getLastInvoiceNumber();
       let newInvoiceNumber;
-  
+
       if (lastInvoiceNumber) {
         const lastNumber = parseInt(lastInvoiceNumber.replace(/\D/g, ''), 10);
         newInvoiceNumber = `INV${String(lastNumber + 1).padStart(5, '0')}`;
       } else {
         newInvoiceNumber = `INV00001`;
       }
-  
+
       const formattedDate = currentDate.toISOString().split('T')[0]; // This will give you YYYY-MM-DD
-  
+
       // Correct transaction data format
       const transactionData = {
-        description: "Invoice Transaction",
+        description: 'Invoice Transaction',
         account: 1, // Make sure this is a valid account ID
-        type: "credit",
+        type: 'credit',
         amount: total,
-        notes: "Automatically created for invoice",
-        date: formattedDate // Add the transaction date
+        notes: 'Automatically created for invoice',
+        date: formattedDate, // Add the transaction date
       };
-      
+
       const invoiceData = {
         invoice_num: newInvoiceNumber,
         customer: selectedCustomer,
@@ -250,43 +263,42 @@ const InvoiceForm = () => {
         status: 'draft',
         transaction: transactionData,
         date: formattedDate, // Add the invoice date
-        items: invoiceItems.map(item => ({
+        items: invoiceItems.map((item) => ({
           product: item.productId,
           service: item.serviceId,
           description: item.description,
           quantity: item.quantity,
           unit_price: item.unitPrice,
-          amount: item.amount
-        }))
+          amount: item.amount,
+        })),
       };
-      
+
       // Save the new invoice number to the server or local storage
       await saveInvoiceNumber(newInvoiceNumber);
-      console.log("Invoice data being sent to server:", invoiceData);
+      console.log('Invoice data being sent to server:', invoiceData);
       const response = await axiosInstance.post('/api/invoices/create/', invoiceData);
-  
+
       console.log('Invoice created successfully', response.data);
       addMessage('info', 'Invoice created successfully');
     } catch (error) {
       console.error('Error creating invoice:', error);
       if (error.response) {
-        console.error("Response data:", error.response.data);
-        console.error("Response status:", error.response.status);
-        console.error("Response headers:", error.response.headers);
+        console.error('Response data:', error.response.data);
+        console.error('Response status:', error.response.status);
+        console.error('Response headers:', error.response.headers);
       }
       logger.error('Error creating invoice', error);
       addMessage('error', `Error creating invoice: ${error.message}`);
     }
   };
 
-  
   // Function to fetch the last invoice number from the server or local storage
   const getLastInvoiceNumber = async () => {
     // Implement logic to fetch the last invoice number from the server or local storage
     // Return the last invoice number or null if not found
     return null; // Replace with your implementation
   };
-  
+
   // Function to save the new invoice number to the server or local storage
   const saveInvoiceNumber = async (invoiceNumber) => {
     // Implement logic to save the new invoice number to the server or local storage
@@ -307,22 +319,22 @@ const InvoiceForm = () => {
           <FormControl fullWidth>
             <InputLabel id="customer-select-label">Customer</InputLabel>
             <Select
-                labelId="customer-select-label"
-                id="customer-select"
-                value={selectedCustomer}
-                onChange={handleCustomerChange}
-                label="Customer"
-                error={!!customersError}
-              >
-                <MenuItem value="">
-                  <em>Select a customer</em>
+              labelId="customer-select-label"
+              id="customer-select"
+              value={selectedCustomer}
+              onChange={handleCustomerChange}
+              label="Customer"
+              error={!!customersError}
+            >
+              <MenuItem value="">
+                <em>Select a customer</em>
+              </MenuItem>
+              {customers.map((customer) => (
+                <MenuItem key={customer.id} value={String(customer.id)}>
+                  {customer.customerName || `${customer.first_name} ${customer.last_name}`}
                 </MenuItem>
-                {customers.map((customer) => (
-                  <MenuItem key={customer.id} value={String(customer.id)}>
-                    {customer.customerName || `${customer.first_name} ${customer.last_name}`}
-                  </MenuItem>
-                ))}
-              </Select>
+              ))}
+            </Select>
           </FormControl>
           {customersError && (
             <Typography color="error" variant="caption">
@@ -400,7 +412,9 @@ const InvoiceForm = () => {
                   label="Quantity"
                   type="number"
                   value={item.quantity}
-                  onChange={(e) => handleInvoiceItemChange(index, 'quantity', parseFloat(e.target.value))}
+                  onChange={(e) =>
+                    handleInvoiceItemChange(index, 'quantity', parseFloat(e.target.value))
+                  }
                   fullWidth
                 />
               </Grid>
@@ -409,7 +423,9 @@ const InvoiceForm = () => {
                   label="Unit Price"
                   type="number"
                   value={item.unitPrice}
-                  onChange={(e) => handleInvoiceItemChange(index, 'unitPrice', parseFloat(e.target.value))}
+                  onChange={(e) =>
+                    handleInvoiceItemChange(index, 'unitPrice', parseFloat(e.target.value))
+                  }
                   fullWidth
                 />
               </Grid>

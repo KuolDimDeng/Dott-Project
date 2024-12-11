@@ -8,34 +8,40 @@ import styles from '@/app/components/ImageStyles.modules.css'; // Import your CS
 const highlights = [
   {
     title: 'Freelancers',
-    description: 'Dott helps freelancers manage their money. Create and send professional invoices in minutes.',
+    description:
+      'Dott helps freelancers manage their money. Create and send professional invoices in minutes.',
     imagePath: '/static/images/Freelancer.png',
   },
   {
     title: 'Self-employed Entrepreneurs',
-    description: 'Self-employed entrepreneurs using Dott to manage their money. Pay your staff easily with our payroll features.',
+    description:
+      'Self-employed entrepreneurs using Dott to manage their money. Pay your staff easily with our payroll features.',
     imagePath: '/static/images/Self-employed.png',
   },
   {
     title: 'Contractors',
-    description: 'A contractor using Dott to manage their money. Track your business expenses with our free accounting tools.',
+    description:
+      'A contractor using Dott to manage their money. Track your business expenses with our free accounting tools.',
     imagePath: '/static/images/Contractor.png',
   },
   {
     title: 'Consultants',
-    description: 'A consultant using Dott to manage their money. Set up recurring invoices and payments for retainer clients.',
+    description:
+      'A consultant using Dott to manage their money. Set up recurring invoices and payments for retainer clients.',
     imagePath: '/static/images/Consultant2.png',
   },
   {
     title: 'Micro Business Owners',
-    description: 'Micro business owners use Dott to manage their finances and accept mobile payments with ease. Track expenses and grow your business effortlessly.',
-    imagePath: '/static/images/MicroBusiness.png',  // New category and image for Micro Business
+    description:
+      'Micro business owners use Dott to manage their finances and accept mobile payments with ease. Track expenses and grow your business effortlessly.',
+    imagePath: '/static/images/MicroBusiness.png', // New category and image for Micro Business
   },
 
   {
-    title: 'Non-Profit Leaders',  // New Non-Profit Category
-    description: 'Small non-profits (NGO) use Dott to manage donations, track expenses, and issue receipts to donors, helping them focus on their mission.',
-    imagePath: '/static/images/NonProfit.png',  // Add corresponding image for Non-Profit
+    title: 'Non-Profit Leaders', // New Non-Profit Category
+    description:
+      'Small non-profits (NGO) use Dott to manage donations, track expenses, and issue receipts to donors, helping them focus on their mission.',
+    imagePath: '/static/images/NonProfit.png', // Add corresponding image for Non-Profit
   },
 ];
 

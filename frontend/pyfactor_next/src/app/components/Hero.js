@@ -11,10 +11,10 @@ import Image from 'next/image';
 
 export default function Hero() {
   const theme = useTheme();
-  
+
   const babyBlueMain = '#03a9f4';
   const babyBlueDark = '#81d4fa';
-  
+
   return (
     <Box
       id="hero"
@@ -58,7 +58,7 @@ export default function Hero() {
               style={{ maxWidth: '100%', height: 'auto' }}
             />
           </Box>
-          
+
           <Typography
             variant="h5"
             align="center"
@@ -71,15 +71,11 @@ export default function Hero() {
               padding: 2,
             }}
           >
-            Simple Accounting, Payroll, HR, Inventory, Reports, Analytics and Mobile Money—all in one intuitive platform.
+            Simple Accounting, Payroll, HR, Inventory, Reports, Analytics and Mobile Money—all in
+            one intuitive platform.
           </Typography>
-          
-          <Stack
-            direction="row"
-            spacing={2}
-            justifyContent="center"
-            alignItems="center"
-          >
+
+          <Stack direction="row" spacing={2} justifyContent="center" alignItems="center">
             <Button
               variant="contained"
               size="large"
@@ -101,7 +97,7 @@ export default function Hero() {
               Get Started Free
             </Button>
           </Stack>
-          
+
           <Box sx={{ width: '100%', mt: 2, padding: 4 }}>
             <iframe
               width="100%"

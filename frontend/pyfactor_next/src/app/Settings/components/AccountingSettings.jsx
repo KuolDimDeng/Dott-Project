@@ -1,5 +1,13 @@
 import React from 'react';
-import { Box, Typography, TextField, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import {
+  Box,
+  Typography,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+} from '@mui/material';
 
 const AccountingSettings = ({ selectedTab }) => {
   const renderContent = () => {
@@ -13,16 +21,14 @@ const AccountingSettings = ({ selectedTab }) => {
     }
   };
 
-  return (
-    <Box>
-      {renderContent()}
-    </Box>
-  );
+  return <Box>{renderContent()}</Box>;
 };
 
 const DatesAndCurrency = () => (
   <Box>
-    <Typography variant="h6" gutterBottom>Dates and Currency</Typography>
+    <Typography variant="h6" gutterBottom>
+      Dates and Currency
+    </Typography>
     <FormControl fullWidth margin="normal">
       <InputLabel>Date Format</InputLabel>
       <Select defaultValue="mm/dd/yyyy">
@@ -44,7 +50,9 @@ const DatesAndCurrency = () => (
 
 const SalesTax = () => (
   <Box>
-    <Typography variant="h6" gutterBottom>Sales Tax</Typography>
+    <Typography variant="h6" gutterBottom>
+      Sales Tax
+    </Typography>
     <TextField
       fullWidth
       margin="normal"

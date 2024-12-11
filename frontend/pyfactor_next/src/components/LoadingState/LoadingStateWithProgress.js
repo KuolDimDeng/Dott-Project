@@ -27,8 +27,8 @@ export function LoadingStateWithProgress({ message = 'Loading...' }) {
 // Add PropTypes in development
 if (process.env.NODE_ENV !== 'production') {
   const PropTypes = require('prop-types');
-  
+
   LoadingStateWithProgress.propTypes = {
-    message: PropTypes.string
+    message: PropTypes.string,
   };
 }

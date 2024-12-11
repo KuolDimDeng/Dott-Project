@@ -22,9 +22,11 @@ const STEP_VALIDATION = {
     return data?.selectedPlan === 'Professional' && !data?.paymentMethod;
   },
   [APP_CONFIG.onboarding.steps.SETUP]: (data) => {
-    return data?.selectedPlan === 'Basic' || 
-           (data?.selectedPlan === 'Professional' && !!data?.paymentMethod);
-  }
+    return (
+      data?.selectedPlan === 'Basic' ||
+      (data?.selectedPlan === 'Professional' && !!data?.paymentMethod)
+    );
+  },
 };
 
 const STEP_ROUTES = {
@@ -32,7 +34,7 @@ const STEP_ROUTES = {
   [APP_CONFIG.onboarding.steps.PLAN]: APP_CONFIG.routes.onboarding.steps.step2,
   [APP_CONFIG.onboarding.steps.PAYMENT]: APP_CONFIG.routes.onboarding.steps.step3,
   [APP_CONFIG.onboarding.steps.SETUP]: APP_CONFIG.routes.onboarding.steps.step4,
-  [APP_CONFIG.onboarding.steps.COMPLETE]: '/dashboard'
+  [APP_CONFIG.onboarding.steps.COMPLETE]: '/dashboard',
 };
 
 const TOAST_MESSAGES = {
@@ -44,7 +46,7 @@ const TOAST_MESSAGES = {
   RESET_ERROR: APP_CONFIG.errors.messages.default,
   API_ERROR: APP_CONFIG.errors.messages.default,
   LOADING: 'Loading your information...',
-  SUCCESS: 'Changes saved successfully'
+  SUCCESS: 'Changes saved successfully',
 };
 
 const createQueryConfig = (handleApiError) => ({
@@ -54,9 +56,9 @@ const createQueryConfig = (handleApiError) => ({
       staleTime: APP_CONFIG.auth.refreshInterval * 1000,
       cacheTime: APP_CONFIG.auth.sessionMaxAge * 1000,
       refetchOnWindowFocus: false,
-      onError: (error) => handleApiError(error, 'query')
-    }
-  }
+      onError: (error) => handleApiError(error, 'query'),
+    },
+  },
 });
 
 export function OnboardingProvider({ children }) {
@@ -70,17 +72,20 @@ export function OnboardingProvider({ children }) {
   const [localError, setLocalError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleError = useCallback((error, context = '') => {
-    logger.error(`Onboarding error [${context}]:`, error);
-    
-    if (typeof window !== 'undefined' && toast) {
-      toast.error(error.message || TOAST_MESSAGES.API_ERROR, {
-        duration: APP_CONFIG.ui.toast.duration
-      });
-    }
-    
-    return error;
-  }, [toast]);
+  const handleError = useCallback(
+    (error, context = '') => {
+      logger.error(`Onboarding error [${context}]:`, error);
+
+      if (typeof window !== 'undefined' && toast) {
+        toast.error(error.message || TOAST_MESSAGES.API_ERROR, {
+          duration: APP_CONFIG.ui.toast.duration,
+        });
+      }
+
+      return error;
+    },
+    [toast]
+  );
 
   const handleSessionExpired = useCallback(async () => {
     if (toast) {
@@ -89,17 +94,19 @@ export function OnboardingProvider({ children }) {
     await signOut({ redirect: true, callbackUrl: '/auth/signin' });
   }, [toast]);
 
+  // Then create handleApiError after handleSessionExpired
+  const handleApiError = useCallback(
+    async (error, endpoint) => {
+      const baseError = handleError(error, `API-${endpoint}`);
 
-    // Then create handleApiError after handleSessionExpired
-  const handleApiError = useCallback(async (error, endpoint) => {
-    const baseError = handleError(error, `API-${endpoint}`);
-    
-    if (error?.response?.status === 401) {
+      if (error?.response?.status === 401) {
         await handleSessionExpired();
-    }
-    
-    throw baseError;
-  }, [handleError, handleSessionExpired]);
+      }
+
+      throw baseError;
+    },
+    [handleError, handleSessionExpired]
+  );
 
   const queryConfig = useMemo(() => createQueryConfig(handleApiError), [handleApiError]);
 
@@ -107,16 +114,14 @@ export function OnboardingProvider({ children }) {
     status: onboardingStatus,
     mutations,
     isLoading: queriesLoading,
-    error: queriesError
+    error: queriesError,
   } = useOnboardingQueries();
 
-
-
-  const { 
-    data: onboardingData, 
+  const {
+    data: onboardingData,
     isLoading: statusLoading,
     error: statusError,
-    refetch: refetchStatus
+    refetch: refetchStatus,
   } = useQuery({
     ...queryConfig.defaultOptions.queries,
     queryKey: [APP_CONFIG.onboarding.queryKeys.status],
@@ -129,149 +134,159 @@ export function OnboardingProvider({ children }) {
       logger.info('Onboarding status updated:', data);
       setLocalError(null);
     },
-    onError: (error) => handleApiError(error, 'status')
+    onError: (error) => handleApiError(error, 'status'),
   });
 
-  
-
-  const validateStep = useCallback((step, data = formData) => {
-    try {
-      const validationFn = STEP_VALIDATION[step];
-      if (!validationFn) return true;
-      const isValid = validationFn(data);
-      if (!isValid && toast) {
-        toast.error(TOAST_MESSAGES.VALIDATION_ERROR);
+  const validateStep = useCallback(
+    (step, data = formData) => {
+      try {
+        const validationFn = STEP_VALIDATION[step];
+        if (!validationFn) return true;
+        const isValid = validationFn(data);
+        if (!isValid && toast) {
+          toast.error(TOAST_MESSAGES.VALIDATION_ERROR);
+        }
+        return isValid;
+      } catch (error) {
+        handleError(error, 'validation');
+        return false;
       }
-      return isValid;
-    } catch (error) {
-      handleError(error, 'validation');
-      return false;
-    }
-  }, [formData, toast, handleError]);
+    },
+    [formData, toast, handleError]
+  );
 
-  const validateFormData = useCallback((data) => {
-    try {
+  const validateFormData = useCallback(
+    (data) => {
+      try {
         if (!data || typeof data !== 'object') {
-            logger.warn('Invalid form data structure', { 
-                receivedType: typeof data,
-                validationContext: 'structure-check'
-            });
-            return false;
+          logger.warn('Invalid form data structure', {
+            receivedType: typeof data,
+            validationContext: 'structure-check',
+          });
+          return false;
         }
 
         // Map step numbers to step keys
         const stepMap = {
-            1: APP_CONFIG.onboarding.steps.INITIAL,
-            2: APP_CONFIG.onboarding.steps.PLAN,
-            3: APP_CONFIG.onboarding.steps.PAYMENT,
-            4: APP_CONFIG.onboarding.steps.SETUP
+          1: APP_CONFIG.onboarding.steps.INITIAL,
+          2: APP_CONFIG.onboarding.steps.PLAN,
+          3: APP_CONFIG.onboarding.steps.PAYMENT,
+          4: APP_CONFIG.onboarding.steps.SETUP,
         };
 
         const currentStep = onboardingData?.step || 1;
         const stepKey = stepMap[currentStep] || APP_CONFIG.onboarding.steps.INITIAL;
-        
+
         const validationContext = {
-            step: stepKey,
-            currentData: data,
-            existingData: formData,
-            isInitialized,
-            sessionStatus: status
+          step: stepKey,
+          currentData: data,
+          existingData: formData,
+          isInitialized,
+          sessionStatus: status,
         };
-        
+
         const validationFn = STEP_VALIDATION[stepKey];
         if (!validationFn) {
-            logger.warn('No validation function found', validationContext);
-            return true;
+          logger.warn('No validation function found', validationContext);
+          return true;
         }
-        
+
         const isValid = validationFn(data);
         if (!isValid) {
-            logger.warn('Validation failed', {
-                ...validationContext,
-                validationFunction: validationFn.toString()
-            });
+          logger.warn('Validation failed', {
+            ...validationContext,
+            validationFunction: validationFn.toString(),
+          });
         }
-        
+
         return isValid;
-    } catch (error) {
+      } catch (error) {
         handleError(error, 'form-validation');
         return false;
-    }
-}, [onboardingData?.step, handleError, formData, isInitialized, status]);
+      }
+    },
+    [onboardingData?.step, handleError, formData, isInitialized, status]
+  );
 
-  const handleOnboardingRedirect = useCallback(async (status) => {
-    if (isSaving) {
-      toast?.warning('Please wait while your changes are being saved...');
-      return;
-    }
-  
-    try {
-      if (!status) {
-        status = APP_CONFIG.onboarding.steps.INITIAL;
+  const handleOnboardingRedirect = useCallback(
+    async (status) => {
+      if (isSaving) {
+        toast?.warning('Please wait while your changes are being saved...');
+        return;
       }
-  
-      // Validate current step before allowing navigation
-      if (!validateStep(status)) {
-        status = APP_CONFIG.onboarding.steps.INITIAL;
-      }
+
+      try {
+        if (!status) {
+          status = APP_CONFIG.onboarding.steps.INITIAL;
+        }
+
+        // Validate current step before allowing navigation
+        if (!validateStep(status)) {
+          status = APP_CONFIG.onboarding.steps.INITIAL;
+        }
         // To this
-      if (status === APP_CONFIG.onboarding.steps.PAYMENT && formData?.selectedPlan === 'Basic') {
-        status = APP_CONFIG.onboarding.steps.SETUP;
+        if (status === APP_CONFIG.onboarding.steps.PAYMENT && formData?.selectedPlan === 'Basic') {
+          status = APP_CONFIG.onboarding.steps.SETUP;
+        }
+
+        const route = STEP_ROUTES[status] || STEP_ROUTES[APP_CONFIG.onboarding.steps.INITIAL];
+
+        await router.replace(route);
+      } catch (error) {
+        handleError(error, 'navigation');
+        toast?.error(TOAST_MESSAGES.NAVIGATION_ERROR);
       }
-  
-      const route = STEP_ROUTES[status] || STEP_ROUTES[APP_CONFIG.onboarding.steps.INITIAL];
+    },
+    [router, validateStep, formData, toast, handleError, isSaving]
+  );
 
-      await router.replace(route);
-    } catch (error) {
-      handleError(error, 'navigation');
-      toast?.error(TOAST_MESSAGES.NAVIGATION_ERROR);
-    }
-  }, [router, validateStep, formData, toast, handleError, isSaving]);
+  const persistProgress = useCallback(
+    async (data) => {
+      if (isSaving) return;
 
-  const persistProgress = useCallback(async (data) => {
-    if (isSaving) return;
-    
-    try {
-      setIsSaving(true);
-      localStorage.setItem(APP_CONFIG.storage.keys.onboarding, JSON.stringify(data));
-      toast?.success(TOAST_MESSAGES.SUCCESS, {
-        duration: APP_CONFIG.ui.toast.duration
+      try {
+        setIsSaving(true);
+        localStorage.setItem(APP_CONFIG.storage.keys.onboarding, JSON.stringify(data));
+        toast?.success(TOAST_MESSAGES.SUCCESS, {
+          duration: APP_CONFIG.ui.toast.duration,
+        });
+      } catch (error) {
+        handleError(error, 'persistence');
+        toast?.error(TOAST_MESSAGES.PERSIST_ERROR, {
+          duration: APP_CONFIG.ui.toast.duration,
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [isSaving, toast, handleError]
+  );
+
+  const updateFormData = useCallback(
+    (data) => {
+      if (!data || typeof data !== 'object') {
+        handleError(new Error('Invalid form data'), 'update');
+        return;
+      }
+
+      // Store previous state for rollback
+      const previousData = { ...formData };
+
+      setFormData((prevData) => {
+        const updatedData = { ...prevData, ...data };
+
+        // Attempt to persist with rollback on failure
+        persistProgress(updatedData).catch((error) => {
+          handleError(error, 'update-persistence');
+          // Rollback to previous state
+          setFormData(previousData);
+        });
+
+        return updatedData;
       });
-    } catch (error) {
-      handleError(error, 'persistence');
-      toast?.error(TOAST_MESSAGES.PERSIST_ERROR, {
-        duration: APP_CONFIG.ui.toast.duration
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  }, [isSaving, toast, handleError]);
-
-  const updateFormData = useCallback((data) => {
-    if (!data || typeof data !== 'object') {
-      handleError(new Error('Invalid form data'), 'update');
-      return;
-    }
-  
-    // Store previous state for rollback
-    const previousData = { ...formData };
-  
-    setFormData(prevData => {
-      const updatedData = { ...prevData, ...data };
-      
-      // Attempt to persist with rollback on failure
-      persistProgress(updatedData).catch(error => {
-        handleError(error, 'update-persistence');
-        // Rollback to previous state
-        setFormData(previousData);
-      });
-      
-      return updatedData;
-    });
-  }, [formData, persistProgress, handleError]);
-
-  
-
+    },
+    [formData, persistProgress, handleError]
+  );
 
   const resetOnboardingData = useCallback(async () => {
     try {
@@ -285,7 +300,6 @@ export function OnboardingProvider({ children }) {
       toast?.error(TOAST_MESSAGES.RESET_ERROR);
     }
   }, [queryClient, toast, handleError]);
-
 
   useEffect(() => {
     const loadPersistedData = async () => {
@@ -316,24 +330,24 @@ export function OnboardingProvider({ children }) {
 
   useEffect(() => {
     return () => {
-        // Clear queries
-        queryClient.removeQueries([APP_CONFIG.onboarding.queryKeys.status]);
-        
-        // Clear state
-        setLocalError(null);
-        setFormData({});
-        setIsInitialized(false);
-        setIsSaving(false);
-        
-        // Clear local storage if needed
-        if (status === 'unauthenticated') {
-            localStorage.removeItem(APP_CONFIG.onboarding.storage.key);
-        }
-        
-        // Log cleanup
-        logger.info('OnboardingProvider cleanup completed');
+      // Clear queries
+      queryClient.removeQueries([APP_CONFIG.onboarding.queryKeys.status]);
+
+      // Clear state
+      setLocalError(null);
+      setFormData({});
+      setIsInitialized(false);
+      setIsSaving(false);
+
+      // Clear local storage if needed
+      if (status === 'unauthenticated') {
+        localStorage.removeItem(APP_CONFIG.onboarding.storage.key);
+      }
+
+      // Log cleanup
+      logger.info('OnboardingProvider cleanup completed');
     };
-}, [queryClient, status]);
+  }, [queryClient, status]);
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
@@ -350,70 +364,69 @@ export function OnboardingProvider({ children }) {
 
   useEffect(() => {
     const navigationState = {
-        isSaving,
-        hasUnsavedChanges: Object.keys(formData).length > 0,
-        isComplete: onboardingStatus?.data?.status === APP_CONFIG.onboarding.steps.COMPLETE,
-        currentPath: window.location.pathname
+      isSaving,
+      hasUnsavedChanges: Object.keys(formData).length > 0,
+      isComplete: onboardingStatus?.data?.status === APP_CONFIG.onboarding.steps.COMPLETE,
+      currentPath: window.location.pathname,
     };
 
     const handlePopState = (event) => {
-        if (navigationState.isSaving || (
-            navigationState.hasUnsavedChanges && 
-            !navigationState.isComplete
-        )) {
-            event.preventDefault();
-            window.history.pushState(
-                { ...navigationState },
-                '',
-                navigationState.currentPath
-            );
-            toast?.warning('Please save or discard your changes before navigating away');
-        }
+      if (
+        navigationState.isSaving ||
+        (navigationState.hasUnsavedChanges && !navigationState.isComplete)
+      ) {
+        event.preventDefault();
+        window.history.pushState({ ...navigationState }, '', navigationState.currentPath);
+        toast?.warning('Please save or discard your changes before navigating away');
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-}, [isSaving, formData, onboardingStatus?.data?.status, toast]);
+  }, [isSaving, formData, onboardingStatus?.data?.status, toast]);
 
-  const contextValue = useMemo(() => ({
-    onboardingStatus: onboardingData?.status || APP_CONFIG.onboarding.steps.INITIAL,
-    currentStep: onboardingData?.step || 1,
-    formData: formData || {},
-    loading: !isInitialized || statusLoading || queriesLoading,
-    error: localError || statusError || queriesError,
-    saveStep1Data: mutations?.step1?.mutate,
-    saveStep2Data: mutations?.step2?.mutate,
-    saveStep3Data: mutations?.step3?.mutate,
-    saveStep4Data: mutations?.step4?.mutate,
-    completeOnboarding: mutations?.complete?.mutate,
-    getStatus: mutations?.getStatus,
-    updateFormData,
-    resetOnboardingData,
-    handleOnboardingRedirect,
-    refetchStatus,
-    validateStep,
-    isAuthenticated: status === 'authenticated' && !!session?.user?.accessToken,
-    session: session || null,
-    isSaving
-  }), [
-    onboardingData,
-    formData,
-    isInitialized,
-    statusLoading,
-    queriesLoading,
-    localError,
-    statusError,
-    queriesError,
-    mutations,
-    updateFormData,
-    resetOnboardingData,
-    handleOnboardingRedirect,
-    refetchStatus,
-    validateStep,
-    status,
-    session,
-    isSaving
-  ]);
+  const contextValue = useMemo(
+    () => ({
+      onboardingStatus: onboardingData?.status || APP_CONFIG.onboarding.steps.INITIAL,
+      currentStep: onboardingData?.step || 1,
+      formData: formData || {},
+      loading: !isInitialized || statusLoading || queriesLoading,
+      error: localError || statusError || queriesError,
+      saveStep1Data: mutations?.step1?.mutate,
+      saveStep2Data: mutations?.step2?.mutate,
+      saveStep3Data: mutations?.step3?.mutate,
+      saveStep4Data: mutations?.step4?.mutate,
+      completeOnboarding: mutations?.complete?.mutate,
+      getStatus: mutations?.getStatus,
+      updateFormData,
+      resetOnboardingData,
+      handleOnboardingRedirect,
+      refetchStatus,
+      validateStep,
+      isAuthenticated: status === 'authenticated' && !!session?.user?.accessToken,
+      session: session || null,
+      isSaving,
+    }),
+    [
+      onboardingData,
+      formData,
+      isInitialized,
+      statusLoading,
+      queriesLoading,
+      localError,
+      statusError,
+      queriesError,
+      mutations,
+      updateFormData,
+      resetOnboardingData,
+      handleOnboardingRedirect,
+      refetchStatus,
+      validateStep,
+      status,
+      session,
+      isSaving,
+    ]
+  );
 
   // Usage in provider
   return (
@@ -421,7 +434,7 @@ export function OnboardingProvider({ children }) {
       fallbackComponent={({ error }) => (
         <div className="error-container">
           <h2>{APP_CONFIG.errors.messages.default}</h2>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
           >
@@ -430,15 +443,13 @@ export function OnboardingProvider({ children }) {
         </div>
       )}
     >
-      <OnboardingContext.Provider value={contextValue}>
-        {children}
-      </OnboardingContext.Provider>
+      <OnboardingContext.Provider value={contextValue}>{children}</OnboardingContext.Provider>
     </OnboardingErrorBoundary>
   );
 }
 
 OnboardingProvider.propTypes = {
-  children: PropTypes.node.isRequired
+  children: PropTypes.node.isRequired,
 };
 
 export function useOnboarding() {

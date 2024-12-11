@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { CircularProgress, Typography, Button, Box } from '@mui/material';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { ErrorBoundary } from 'next/dist/client/components/error-boundary';
@@ -26,24 +26,26 @@ const InvoiceDetails = ({ invoiceId, onBackToCustomerDetails }) => {
 
   const fetchInvoice = useCallback(async () => {
     if (!invoiceId || !userDatabase) {
-      logger.error("Invoice ID or User Database is not provided", { invoiceId, userDatabase });
-      setError("Invoice ID or User Database is not provided");
+      logger.error('Invoice ID or User Database is not provided', { invoiceId, userDatabase });
+      setError('Invoice ID or User Database is not provided');
       setIsLoading(false);
       return;
     }
-    
+
     setIsLoading(true);
     setError(null);
     logger.info(`Fetching invoice with ID: ${invoiceId} from database: ${userDatabase}`);
     try {
       const response = await axiosInstance.get(`/api/invoices/${invoiceId}/`, {
-        params: { database: userDatabase }
+        params: { database: userDatabase },
       });
       setInvoice(response.data);
     } catch (error) {
       logger.error('Error fetching invoice:', error);
       if (error.response && error.response.status === 404) {
-        setError('Invoice not found. It may have been deleted or you may not have permission to view it.');
+        setError(
+          'Invoice not found. It may have been deleted or you may not have permission to view it.'
+        );
       } else {
         setError('Failed to fetch invoice. Please try again.');
       }
@@ -74,7 +76,7 @@ const InvoiceDetails = ({ invoiceId, onBackToCustomerDetails }) => {
       </Box>
     );
   }
-  
+
   if (!invoice) {
     return (
       <Box>
@@ -87,7 +89,6 @@ const InvoiceDetails = ({ invoiceId, onBackToCustomerDetails }) => {
   return (
     <ErrorBoundary>
       <Box>
-      
         <Typography variant="h3">Invoice Details</Typography>
         <Typography>Invoice Number: {invoice.invoice_num}</Typography>
         <Typography>Amount: ${invoice.amount}</Typography>

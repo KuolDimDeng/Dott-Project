@@ -21,7 +21,7 @@ import {
 import { styled } from '@mui/material/styles';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import SearchIcon from '@mui/icons-material/Search';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   maxHeight: 440,
@@ -37,7 +37,6 @@ const BankTransactionPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const theme = useTheme();
-
 
   const fetchBankAccounts = useCallback(async () => {
     try {
@@ -163,10 +162,18 @@ const BankTransactionPage = () => {
           <Table stickyHeader aria-label="transactions table">
             <TableHead>
               <TableRow>
-                <TableCell><strong>Date</strong></TableCell>
-                <TableCell><strong>Description</strong></TableCell>
-                <TableCell align="right"><strong>Amount</strong></TableCell>
-                <TableCell><strong>Category</strong></TableCell>
+                <TableCell>
+                  <strong>Date</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Description</strong>
+                </TableCell>
+                <TableCell align="right">
+                  <strong>Amount</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Category</strong>
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -180,7 +187,9 @@ const BankTransactionPage = () => {
               ))}
               {transactions.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} align="center">No transactions found.</TableCell>
+                  <TableCell colSpan={4} align="center">
+                    No transactions found.
+                  </TableCell>
                 </TableRow>
               )}
             </TableBody>

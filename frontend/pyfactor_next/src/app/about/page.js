@@ -11,10 +11,10 @@ import Image from 'next/image';
 
 export default function AboutUs() {
   const theme = useTheme();
-  
+
   const primaryColor = '#03a9f4'; // Matches your brand's baby blue
-  const hoverColor = '#81d4fa';   // Darker baby blue for hover
-  
+  const hoverColor = '#81d4fa'; // Darker baby blue for hover
+
   return (
     <Box
       sx={{
@@ -40,7 +40,7 @@ export default function AboutUs() {
           >
             About Dott
           </Typography>
-          
+
           <Typography
             variant="h5"
             align="center"
@@ -52,10 +52,11 @@ export default function AboutUs() {
               fontSize: '1.1rem',
             }}
           >
-            Dott is a comprehensive platform built for small business owners, freelancers, consultants, and micro-businesses. 
-            We believe in empowering businesses with the tools they need to manage their finances, HR, inventory, and much more—all in one place.
+            Dott is a comprehensive platform built for small business owners, freelancers,
+            consultants, and micro-businesses. We believe in empowering businesses with the tools
+            they need to manage their finances, HR, inventory, and much more—all in one place.
           </Typography>
-          
+
           {/* Company Mission */}
           <Typography
             variant="h4"
@@ -69,7 +70,7 @@ export default function AboutUs() {
           >
             Our Mission
           </Typography>
-          
+
           <Typography
             align="center"
             sx={{
@@ -79,10 +80,11 @@ export default function AboutUs() {
               fontSize: '1.1rem',
             }}
           >
-            At Dott, our mission is to simplify business management for entrepreneurs by providing an all-in-one platform. 
-            From invoicing and payroll to mobile money integration, we make it easy for businesses to thrive and grow.
+            At Dott, our mission is to simplify business management for entrepreneurs by providing
+            an all-in-one platform. From invoicing and payroll to mobile money integration, we make
+            it easy for businesses to thrive and grow.
           </Typography>
-          
+
           {/* Company Vision */}
           <Typography
             variant="h4"
@@ -96,7 +98,7 @@ export default function AboutUs() {
           >
             Our Vision
           </Typography>
-          
+
           <Typography
             align="center"
             sx={{
@@ -106,8 +108,9 @@ export default function AboutUs() {
               fontSize: '1.1rem',
             }}
           >
-            We envision a world where small businesses have the power to compete and succeed on their own terms. 
-            Our goal is to provide the tools and resources that make running a business easier, no matter the size or location.
+            We envision a world where small businesses have the power to compete and succeed on
+            their own terms. Our goal is to provide the tools and resources that make running a
+            business easier, no matter the size or location.
           </Typography>
 
           {/* Values Section */}
@@ -132,10 +135,14 @@ export default function AboutUs() {
                 fontSize: '1.1rem',
               }}
             >
-              - Simplicity: We strive to make every feature easy to use and accessible to all.<br/>
-              - Innovation: We continuously innovate to bring the latest solutions to small business challenges.<br/>
-              - Empowerment: We empower small business owners with the tools they need to succeed.<br/>
-              - Customer Focus: We prioritize our customers and their business needs in every decision.
+              - Simplicity: We strive to make every feature easy to use and accessible to all.
+              <br />
+              - Innovation: We continuously innovate to bring the latest solutions to small business
+              challenges.
+              <br />
+              - Empowerment: We empower small business owners with the tools they need to succeed.
+              <br />- Customer Focus: We prioritize our customers and their business needs in every
+              decision.
             </Typography>
           </Stack>
 
@@ -165,7 +172,7 @@ export default function AboutUs() {
         {/* Optional Team or Illustration Section */}
         <Box sx={{ mt: 10, display: 'flex', justifyContent: 'center' }}>
           <Image
-            src="/static/images/Team-Building-4--Streamline-Brooklyn.png"  // Replace with an actual image or illustration
+            src="/static/images/Team-Building-4--Streamline-Brooklyn.png" // Replace with an actual image or illustration
             alt="About Us Illustration"
             width={400}
             height={300}

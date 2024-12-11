@@ -1,8 +1,18 @@
-'use client'
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, TextField, Grid, Box, Paper, Typography, CircularProgress, Link, Alert } from '@mui/material';
+import {
+  Button,
+  TextField,
+  Grid,
+  Box,
+  Paper,
+  Typography,
+  CircularProgress,
+  Link,
+  Alert,
+} from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Image from 'next/image';
 import { Controller, useForm } from 'react-hook-form';
@@ -36,7 +46,7 @@ function getCookie(name) {
     const cookies = document.cookie.split(';');
     for (let i = 0; i < cookies.length; i++) {
       const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+      if (cookie.substring(0, name.length + 1) === name + '=') {
         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
         break;
       }
@@ -72,7 +82,7 @@ export default function SignUp() {
     setIsLoading(true);
     try {
       logger.debug('Submitting sign-up data:', data);
-  
+
       const response = await fetch('/api/auth/signup/', {
         method: 'POST',
         headers: {
@@ -84,17 +94,17 @@ export default function SignUp() {
           password2: data.password2,
         }),
       });
-  
+
       logger.debug('Sign-up API response status:', response.status);
-  
+
       const result = await response.json();
-  
+
       if (!response.ok) {
         throw new Error(result.error || 'An error occurred during signup');
       }
-  
+
       logger.debug('Sign-up API response:', result);
-  
+
       setUserEmail(data.email);
       setIsSignupComplete(true);
       logger.info('Sign-up process completed successfully');
@@ -107,7 +117,12 @@ export default function SignUp() {
   };
 
   const renderForm = () => (
-    <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 1, width: '100%' }}>
+    <Box
+      component="form"
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+      sx={{ mt: 1, width: '100%' }}
+    >
       <Controller
         name="email"
         control={control}
@@ -162,8 +177,10 @@ export default function SignUp() {
             id="password2"
             error={!!errors.password2 || (password1 && field.value && password1 !== field.value)}
             helperText={
-              errors?.password2?.message || 
-              (password1 && field.value && password1 !== field.value ? 'Passwords do not match' : '')
+              errors?.password2?.message ||
+              (password1 && field.value && password1 !== field.value
+                ? 'Passwords do not match'
+                : '')
             }
           />
         )}
@@ -187,7 +204,11 @@ export default function SignUp() {
 
       <Box sx={{ mt: 2, textAlign: 'center' }}>
         <Link href="/auth/signin">
-          <Typography variant="body2" component="span" sx={{ cursor: 'pointer', color: 'primary.main' }}>
+          <Typography
+            variant="body2"
+            component="span"
+            sx={{ cursor: 'pointer', color: 'primary.main' }}
+          >
             Already have an account? Sign In
           </Typography>
         </Link>
@@ -204,7 +225,8 @@ export default function SignUp() {
         A confirmation email has been sent to <strong>{userEmail}</strong>.
       </Typography>
       <Typography variant="body1" paragraph>
-        Please check your email inbox, or Junk, and click on the confirmation link to activate your account.
+        Please check your email inbox, or Junk, and click on the confirmation link to activate your
+        account.
       </Typography>
       <Button
         variant="contained"
@@ -219,7 +241,16 @@ export default function SignUp() {
   return (
     <ThemeProvider theme={theme}>
       <Grid container component="main" sx={{ height: '100vh', overflow: 'hidden' }}>
-        <Grid item xs={12} sm={8} md={6} component={Paper} elevation={6} square sx={{ height: '100vh', overflow: 'auto' }}>
+        <Grid
+          item
+          xs={12}
+          sm={8}
+          md={6}
+          component={Paper}
+          elevation={6}
+          square
+          sx={{ height: '100vh', overflow: 'auto' }}
+        >
           <Box
             sx={{
               my: 8,
@@ -267,9 +298,16 @@ export default function SignUp() {
             </Typography>
 
             <ul style={{ listStyleType: 'none', padding: 0, color: 'black' }}>
-              <li>✅ <strong>Effortless invoicing</strong> for freelancers and small businesses.</li>
-              <li>✅ <strong>Track expenses</strong> and manage your cash flow with ease.</li>
-              <li>✅ <strong>Generate reports</strong> to gain insights into your business performance.</li>
+              <li>
+                ✅ <strong>Effortless invoicing</strong> for freelancers and small businesses.
+              </li>
+              <li>
+                ✅ <strong>Track expenses</strong> and manage your cash flow with ease.
+              </li>
+              <li>
+                ✅ <strong>Generate reports</strong> to gain insights into your business
+                performance.
+              </li>
             </ul>
           </Box>
           <Box sx={{ width: '80%', height: '50%', position: 'relative' }}>

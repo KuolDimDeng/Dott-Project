@@ -12,7 +12,7 @@ import {
   CircularProgress,
   useTheme,
 } from '@mui/material';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const AccountBalances = () => {
@@ -20,7 +20,6 @@ const AccountBalances = () => {
   const [loading, setLoading] = useState(true);
   const { addMessage } = useUserMessageContext();
   const theme = useTheme();
-
 
   useEffect(() => {
     fetchAccountBalances();
@@ -44,7 +43,6 @@ const AccountBalances = () => {
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-
       <Typography variant="h4" gutterBottom>
         Account Balances
       </Typography>

@@ -51,14 +51,13 @@ export default function Footer() {
     <Box
       component="footer"
       sx={{
-        backgroundColor: (theme) => theme.palette.mode === 'light' ? '#f5f5f5' : '#101010',
+        backgroundColor: (theme) => (theme.palette.mode === 'light' ? '#f5f5f5' : '#101010'),
         py: 6,
       }}
     >
       <Container maxWidth="lg">
         <Grid container spacing={4} justifyContent="space-between">
           <Grid item xs={12} md={3}>
-           
             <Stack direction="row" spacing={1}>
               {[FacebookIcon, LinkedInIcon, YouTubeIcon].map((Icon, index) => (
                 <IconButton key={index} color="primary" aria-label={`${Icon.name} link`}>
@@ -83,7 +82,6 @@ export default function Footer() {
               </ul>
             </Grid>
           ))}
-          
         </Grid>
         <Box mt={5}>
           <Copyright />

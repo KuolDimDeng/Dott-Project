@@ -38,11 +38,10 @@ const JournalEntryForm = ({ onClose }) => {
     fetchUserProfile();
     fetchAccounts();
   }, []);
-  
+
   useEffect(() => {
     console.log('Accounts state updated:', accounts);
   }, [accounts]);
-
 
   const fetchUserProfile = async () => {
     try {
@@ -56,7 +55,6 @@ const JournalEntryForm = ({ onClose }) => {
       addMessage('error', `Error fetching user profile: ${error.message}`);
     }
   };
-
 
   const fetchAccounts = async () => {
     try {
@@ -79,7 +77,6 @@ const JournalEntryForm = ({ onClose }) => {
       addMessage('error', `Failed to fetch accounts: ${error.message}`);
     }
   };
-
 
   const handleAddEntry = () => {
     setEntries([...entries, { account: '', type: 'debit', amount: '' }]);
@@ -121,18 +118,18 @@ const JournalEntryForm = ({ onClose }) => {
       {entries.map((entry, index) => (
         <Grid container spacing={2} key={index} alignItems="center">
           <Grid item xs={4}>
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Account</InputLabel>
-            <Select
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Account</InputLabel>
+              <Select
                 value={entry.account}
                 onChange={(e) => handleEntryChange(index, 'account', e.target.value)}
-            >
+              >
                 {accounts.map((account) => (
-                <MenuItem key={account.id} value={account.id}>
+                  <MenuItem key={account.id} value={account.id}>
                     {account.name}
-                </MenuItem>
+                  </MenuItem>
                 ))}
-            </Select>
+              </Select>
             </FormControl>
           </Grid>
           <Grid item xs={3}>

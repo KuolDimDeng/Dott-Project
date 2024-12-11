@@ -1,4 +1,3 @@
-
 'use Client';
 
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
@@ -8,17 +7,13 @@ export function UserMessageProvider({ children }) {
   const [messages, setMessages] = useState([]);
 
   const addMessage = useCallback((type, content) => {
-    setMessages(prevMessages => [...prevMessages, { type, content }]);
+    setMessages((prevMessages) => [...prevMessages, { type, content }]);
   }, []);
 
   // Memoize the context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({ messages, addMessage }), [messages, addMessage]);
 
-  return (
-    <UserMessageContext.Provider value={contextValue}>
-      {children}
-    </UserMessageContext.Provider>
-  );
+  return <UserMessageContext.Provider value={contextValue}>{children}</UserMessageContext.Provider>;
 }
 
 export function useUserMessageContext() {

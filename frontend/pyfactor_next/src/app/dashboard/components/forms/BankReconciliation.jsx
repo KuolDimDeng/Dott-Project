@@ -26,9 +26,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import Image from 'next/image';
-
 
 const BankReconciliation = () => {
   const [bankAccount, setBankAccount] = useState('');
@@ -48,7 +47,6 @@ const BankReconciliation = () => {
   const [loading, setLoading] = useState(false);
   const theme = useTheme();
 
-
   useEffect(() => {
     fetchConnectedBanks();
   }, []);
@@ -60,15 +58,12 @@ const BankReconciliation = () => {
     }
   }, [bankAccount, startDate, endDate]);
 
-
-
   useEffect(() => {
     // Calculate difference and adjusted balance
     const calculatedDifference = endingBalance - bookBalance;
     setDifference(calculatedDifference);
     setAdjustedBalance(bookBalance + bankFees + interestEarned);
   }, [endingBalance, bookBalance, bankFees, interestEarned]);
-
 
   const fetchConnectedBanks = async () => {
     try {
@@ -127,7 +122,6 @@ const BankReconciliation = () => {
     }
   };
 
-
   const handleMatch = (bankIndex, bookIndex) => {
     // Logic to match transactions
   };
@@ -173,7 +167,7 @@ const BankReconciliation = () => {
             />
           </Box>
         </Box>
-    
+
         {/* Header/Overview Section */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={3}>
@@ -183,7 +177,9 @@ const BankReconciliation = () => {
               onChange={(e) => setBankAccount(e.target.value)}
               displayEmpty
             >
-              <MenuItem value="" disabled>Select Bank Account</MenuItem>
+              <MenuItem value="" disabled>
+                Select Bank Account
+              </MenuItem>
               {connectedBanks.map((account) => (
                 <MenuItem key={account.account_id} value={account.account_id}>
                   {account.name}
@@ -270,123 +266,124 @@ const BankReconciliation = () => {
             )}
           </Grid>
           <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom>
-                    Book Transactions
-                </Typography>
-                {loading ? (
-                    <CircularProgress />
-                ) : (
-                    <TableContainer component={Paper}>
-                    <Table>
-                        <TableHead>
-                        <TableRow>
-                            <TableCell>Date</TableCell>
-                            <TableCell>Description</TableCell>
-                            <TableCell>Amount</TableCell>
-                            <TableCell>Status</TableCell>
-                        </TableRow>
-                        </TableHead>
-                        <TableBody>
-                        {bookTransactions.map((transaction, index) => (
-                            <TableRow key={index}>
-                            <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                            <TableCell>{transaction.description}</TableCell>
-                            <TableCell>${transaction.amount.toFixed(2)}</TableCell>
-                            <TableCell>{transaction.status || 'Posted'}</TableCell>
-                            </TableRow>
-                        ))}
-                        </TableBody>
-                    </Table>
-                    </TableContainer>
-                )}
-                </Grid>
+            <Typography variant="h6" gutterBottom>
+              Book Transactions
+            </Typography>
+            {loading ? (
+              <CircularProgress />
+            ) : (
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Description</TableCell>
+                      <TableCell>Amount</TableCell>
+                      <TableCell>Status</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {bookTransactions.map((transaction, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                        <TableCell>{transaction.description}</TableCell>
+                        <TableCell>${transaction.amount.toFixed(2)}</TableCell>
+                        <TableCell>{transaction.status || 'Posted'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Grid>
         </Grid>
 
-      {/* Adjustment Section */}
-      <Accordion sx={{ mt: 3 }}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography>Adjustments</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Bank Fees"
-                type="number"
-                value={bankFees}
-                onChange={(e) => setBankFees(Number(e.target.value))}
-              />
+        {/* Adjustment Section */}
+        <Accordion sx={{ mt: 3 }}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography>Adjustments</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Bank Fees"
+                  type="number"
+                  value={bankFees}
+                  onChange={(e) => setBankFees(Number(e.target.value))}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Interest Earned"
+                  type="number"
+                  value={interestEarned}
+                  onChange={(e) => setInterestEarned(Number(e.target.value))}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Button variant="contained" onClick={handleAddMissingTransaction}>
+                  Add Missing Transaction
+                </Button>
+              </Grid>
             </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Interest Earned"
-                type="number"
-                value={interestEarned}
-                onChange={(e) => setInterestEarned(Number(e.target.value))}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Button variant="contained" onClick={handleAddMissingTransaction}>
-                Add Missing Transaction
-              </Button>
-            </Grid>
-          </Grid>
-        </AccordionDetails>
-      </Accordion>
+          </AccordionDetails>
+        </Accordion>
 
-      {/* Unmatched Transactions */}
-      <Accordion sx={{ mt: 3 }}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography>Unmatched Transactions</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Description</TableCell>
-                  <TableCell>Amount</TableCell>
-                  <TableCell>Source</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {unmatchedTransactions.map((transaction, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{transaction.date}</TableCell>
-                    <TableCell>{transaction.description}</TableCell>
-                    <TableCell>{transaction.amount}</TableCell>
-                    <TableCell>{transaction.source}</TableCell>
+        {/* Unmatched Transactions */}
+        <Accordion sx={{ mt: 3 }}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography>Unmatched Transactions</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Description</TableCell>
+                    <TableCell>Amount</TableCell>
+                    <TableCell>Source</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </AccordionDetails>
-      </Accordion>
+                </TableHead>
+                <TableBody>
+                  {unmatchedTransactions.map((transaction, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{transaction.date}</TableCell>
+                      <TableCell>{transaction.description}</TableCell>
+                      <TableCell>{transaction.amount}</TableCell>
+                      <TableCell>{transaction.source}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </AccordionDetails>
+        </Accordion>
 
-      {/* Finalize Section */}
-      <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
-        <Button variant="outlined" onClick={handleSaveDraft}>
-          Save Draft
-        </Button>
-        <Button variant="contained" onClick={handleFinalize}>
-          Finalize & Reconcile
-        </Button>
-        <Button variant="outlined" onClick={handleGenerateReport}>
-          Generate Report
-        </Button>
+        {/* Finalize Section */}
+        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
+          <Button variant="outlined" onClick={handleSaveDraft}>
+            Save Draft
+          </Button>
+          <Button variant="contained" onClick={handleFinalize}>
+            Finalize & Reconcile
+          </Button>
+          <Button variant="outlined" onClick={handleGenerateReport}>
+            Generate Report
+          </Button>
+        </Box>
+
+        {/* Discrepancy Alerts */}
+        {difference !== 0 && (
+          <Alert severity="warning" sx={{ mt: 3 }}>
+            There is a discrepancy of ${Math.abs(difference).toFixed(2)} in your reconciliation.
+            Please review your transactions.
+          </Alert>
+        )}
       </Box>
-
-      {/* Discrepancy Alerts */}
-      {difference !== 0 && (
-        <Alert severity="warning" sx={{ mt: 3 }}>
-          There is a discrepancy of ${Math.abs(difference).toFixed(2)} in your reconciliation. Please review your transactions.
-        </Alert>
-      )}
-    </Box>
     </LocalizationProvider>
   );
 };

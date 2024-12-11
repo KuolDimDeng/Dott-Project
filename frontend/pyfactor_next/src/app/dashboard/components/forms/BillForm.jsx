@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -12,14 +12,13 @@ import {
   Grid,
   Autocomplete,
   Paper,
-  useTheme
+  useTheme,
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import axiosInstance from '@/lib/axiosConfig';;
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
-
 
 const BillForm = () => {
   const [vendor, setVendor] = useState(null);
@@ -30,13 +29,13 @@ const BillForm = () => {
   const [posoNumber, setPosoNumber] = useState('');
   const [totalAmount, setTotalAmount] = useState(0);
   const [notes, setNotes] = useState('');
-  const [items, setItems] = useState([{ category: '', description: '', quantity: 1, price: 0, tax: 0, amount: 0 }]);
+  const [items, setItems] = useState([
+    { category: '', description: '', quantity: 1, price: 0, tax: 0, amount: 0 },
+  ]);
   const [vendorsLoading, setVendorsLoading] = useState(true);
   const [vendorsError, setVendorsError] = useState(null);
   const { addMessage } = useUserMessageContext();
   const theme = useTheme();
-
-
 
   useEffect(() => {
     fetchVendors();
@@ -77,7 +76,10 @@ const BillForm = () => {
   };
 
   const handleAddItem = () => {
-    setItems([...items, { category: '', description: '', quantity: 1, price: 0, tax: 0, amount: 0 }]);
+    setItems([
+      ...items,
+      { category: '', description: '', quantity: 1, price: 0, tax: 0, amount: 0 },
+    ]);
   };
 
   const handleSubmit = async (e) => {
@@ -88,7 +90,8 @@ const BillForm = () => {
       bill_date: billDate,
       due_date: dueDate,
       poso_number: posoNumber,
-      totalAmount, totalAmount,
+      totalAmount,
+      totalAmount,
       notes,
       items,
     };
@@ -97,7 +100,7 @@ const BillForm = () => {
       const response = await axiosInstance.post('/api/bills/create/', billData);
       console.log('Bill created:', response.data);
       addMessage('info', 'Bill created successfully');
-      
+
       // Handle success (e.g., show a success message, redirect, etc.)
     } catch (error) {
       console.error('Error creating bill:', error);
@@ -134,7 +137,7 @@ const BillForm = () => {
                   {option.vendor_name} ({option.vendor_number})
                 </li>
               )}
-              noOptionsText={vendorsLoading ? "Loading..." : "No vendors found"}
+              noOptionsText={vendorsLoading ? 'Loading...' : 'No vendors found'}
             />
           </Grid>
           <Grid item xs={12} md={6}>
