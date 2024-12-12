@@ -7,7 +7,7 @@ import traceback
 import sys
 import time  # Add this import at the top
 import json  # Add this import at the top with your other imports
-
+from django.db.models import Q
 from celery.result import AsyncResult
 from channels.layers import get_channel_layer
 from asgiref.sync import sync_to_async, async_to_sync
@@ -31,7 +31,6 @@ from rest_framework.decorators import (
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.permissions import IsAuthenticated
-from users.utils import create_user_database, setup_user_database
 from .models import OnboardingProgress
 from .serializers import OnboardingProgressSerializer
 from django.utils import timezone
@@ -64,17 +63,25 @@ from rest_framework.exceptions import AuthenticationFailed
 from .tasks import setup_user_database_task  # Add this at the top with other imports
 from .state import OnboardingStateManager
 from django.core.exceptions import ValidationError
+from .utils import (
+    generate_unique_database_name,
+    validate_database_creation,
 
+)
 
+# Keep these imports
+from users.utils import (
+    create_user_database,
+    setup_user_database,
+    check_database_readiness,
+    populate_initial_data,
+    cleanup_database
+)
 from typing import Dict, Any, Optional, Tuple
-
-
-
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 logger = get_logger()
-
 
 
 
@@ -236,9 +243,12 @@ class BaseOnboardingView(APIView):
                 # Send message using proper async call
                 await channel_layer.group_send(
                     f'onboarding_{user_id}',
-                    message_data  # Send updated data directly
+                    {
+                        'type': message_type,
+                        'data': data,
+                        'timestamp': timezone.now().isoformat()
+                    }
                 )
-                
                 logger.debug(f"WebSocket notification sent: {message_type}")
                 return True
                 
@@ -274,15 +284,39 @@ class BaseOnboardingView(APIView):
 
     @sync_to_async
     def get_onboarding_progress(self, user):
-        """Get onboarding progress with transaction handling"""
-        with transaction.atomic():
+        """Get onboarding progress with better race condition handling"""
+        for attempt in range(3):
             try:
-                return OnboardingProgress.objects.select_for_update(nowait=True).get(user=user)
-            except OnboardingProgress.DoesNotExist:
-                logger.error(f"Onboarding progress not found for user: {user.id}")
-                raise
-            except Exception as e:
-                logger.error(f"Error getting onboarding progress: {str(e)}")
+                with transaction.atomic():
+                    # Try to get existing progress with select_for_update
+                    try:
+                        return OnboardingProgress.objects.select_for_update(
+                            nowait=True
+                        ).get(
+                            Q(user=user) | Q(email=user.email)
+                        )
+                    except OnboardingProgress.DoesNotExist:
+                        # Create new if not exists
+                        return OnboardingProgress.objects.create(
+                            user=user,
+                            email=user.email,
+                            onboarding_status='step4',
+                            current_step=1
+                        )
+                        
+            except OperationalError:
+                if attempt == 2:  # Last attempt
+                    raise
+                # Add exponential backoff
+                time.sleep(0.1 * (2 ** attempt))
+                continue
+                
+            except IntegrityError as e:
+                if 'onboarding_progress_email_key' in str(e):
+                    # Handle race condition by getting the existing record
+                    return OnboardingProgress.objects.select_for_update().get(
+                        Q(user=user) | Q(email=user.email)
+                    )
                 raise
 
     async def handle_error(self, error, user_id=None, error_type=None):
@@ -1371,8 +1405,13 @@ class SaveStep3View(BaseOnboardingView):
 
    
 class SaveStep4View(BaseOnboardingView):
-    TASK_STATES = ['PENDING', 'STARTED', 'PROGRESS', 'SUCCESS', 'FAILURE']
+    ASK_STATES = ['PENDING', 'STARTED', 'PROGRESS', 'SUCCESS', 'FAILURE']
     SETUP_TIMEOUT = 30  # seconds
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.task_status_lock = asyncio.Lock()  # Add lock initialization
+ 
 
     @sync_to_async
     def get_state_manager(self, user):
@@ -1386,65 +1425,66 @@ class SaveStep4View(BaseOnboardingView):
             raise
 
     @sync_to_async
-    def get_progress_and_business(self, user) -> Tuple[OnboardingProgress, Business]:
+    def _get_progress_and_business_sync(self, user):
+        """Synchronous part of getting progress and business"""
+        with transaction.atomic():
+            progress = OnboardingProgress.objects.select_for_update().get(user=user)
+            business = Business.objects.get(owner=user)
+            return progress, business
+
+    async def get_progress_and_business(self, user):
         """Get progress and business with proper locking"""
-        for attempt in range(3):
-            try:
-                with transaction.atomic():
-                    # Try to get existing progress first using get_or_create
-                    progress, created = OnboardingProgress.objects.get_or_create(
-                        user=user,
-                        defaults={
-                            'email': user.email,
-                            'onboarding_status': 'step4'
-                        }
-                    )
-                    
-                    # Try to get or create business
-                    business, business_created = Business.objects.get_or_create(
-                        owner=user,
-                        defaults={
-                            'business_name': progress.business_name,
-                            'business_type': progress.business_type,
-                            'country': progress.country,
-                            'legal_structure': progress.legal_structure,
-                            'date_founded': progress.date_founded or timezone.now().date()
-                        }
-                    )
-                    
-                    return progress, business
-                            
-            except OperationalError as e:
-                if attempt == 2:
-                    logger.error("Failed to acquire locks after 3 attempts")
-                    raise
-                time.sleep(0.5 * (2 ** attempt))
-                continue
-            except IntegrityError as e:
-                logger.error(f"IntegrityError in get_progress_and_business: {str(e)}")
-                # Get existing records
-                progress = OnboardingProgress.objects.get(email=user.email)
-                business = Business.objects.filter(owner=user).first()
-                if not business:
-                    # Create business if it doesn't exist
-                    business = Business.objects.create(
-                        owner=user,
-                        business_name=progress.business_name,
-                        business_type=progress.business_type,
-                        country=progress.country,
-                        legal_structure=progress.legal_structure,
-                        date_founded=progress.date_founded or timezone.now().date()
-                    )
-                return progress, business
+        try:
+            return await self._get_progress_and_business_sync(user)
+        except Exception as e:
+            logger.error(f"Error getting progress and business: {str(e)}")
+            raise
+
+    async def handle_complete(self, progress, data):
+        """Handle setup completion"""
+        try:
+            if not progress.database_setup_task_id:
+                return Response({
+                    "error": "No setup task found"
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+            task = AsyncResult(progress.database_setup_task_id)
+            if task.status != 'SUCCESS':
+                return Response({
+                    "error": "Setup task not completed",
+                    "status": task.status
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            await sync_to_async(self._handle_complete_sync)(progress, data)
+            
+            return Response({
+                "status": "complete",
+                "database_name": progress.database_name
+            })
+            
+        except Exception as e:
+            logger.error(f"Error completing setup: {str(e)}")
+            raise
 
     @sync_to_async
-    def update_task_status(self, progress, task_id=None):
-        """Update task status with transaction handling"""
+    def _update_task_status_sync(self, progress, task_id):
+        """Synchronous part of task status update"""
         with transaction.atomic():
             progress.database_setup_task_id = task_id
             progress.last_setup_attempt = timezone.now() if task_id else None
-            progress.save()
+            progress.save(update_fields=[
+                'database_setup_task_id',
+                'last_setup_attempt'
+            ])
             return progress
+
+    async def update_task_status(self, progress, task_id=None):
+        """Update task status with transaction handling"""
+        try:
+            return await self._update_task_status_sync(progress, task_id)
+        except Exception as e:
+            logger.error(f"Error updating task status: {str(e)}")
+            raise
 
     async def manage_setup_task(self, task_id):
         """Manage setup task with timeout"""
@@ -1475,54 +1515,72 @@ class SaveStep4View(BaseOnboardingView):
             lock_id = f"task_lock_database_setup_{progress.user.id}"
             cache.delete(lock_id)
 
+    @sync_to_async
+    def _cleanup_task(self, progress):
+        """Clean up task resources"""
+        logger.debug(f"Cleaning up task for user {progress.user.email}")
+        try:
+            with transaction.atomic():
+                if progress.database_setup_task_id:
+                    task = AsyncResult(progress.database_setup_task_id)
+                    if task.status in ['PENDING', 'STARTED']:
+                        task.revoke(terminate=True)
+                    progress.database_setup_task_id = None
+                    progress.save(update_fields=['database_setup_task_id'])
+        except Exception as e:
+            logger.error(f"Error cleaning up task: {str(e)}")
+
+    @sync_to_async
+    def _start_setup_task(self, user_id, business_id):
+        """Synchronous part of setup task creation"""
+        return setup_user_database_task.delay(str(user_id), str(business_id))
+
     async def handle_start(self, request, user, data):
         try:
-            # Check state first
-            state_manager = await self.get_state_manager(user)
-            if not await self.validate_state(user, 'step4'):
-                return Response({
-                    "error": "Invalid state for setup",
-                    "current_state": await state_manager.get_current_state()
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            # Get progress and business
             progress, business = await self.get_progress_and_business(user)
+            logger.info(f"Starting database setup for user {user.email}")
+            
+            async with self.task_status_lock:
+                # Clear any stale task
+                if progress.database_setup_task_id:
+                    old_task = AsyncResult(progress.database_setup_task_id)
+                    if old_task.status not in ['SUCCESS', 'FAILURE']:
+                        old_task.revoke(terminate=True)
+                        await self.clear_stale_task(progress)
 
-            # Check for existing task and clear if stale
-            if progress.database_setup_task_id:
-                task = AsyncResult(progress.database_setup_task_id)
-                if task.status == 'PENDING' and (timezone.now() - progress.last_setup_attempt).seconds > 30:
-                    await self.clear_stale_task(progress)
-                elif task.status in ['STARTED', 'PROGRESS']:
-                    return Response({
-                        "status": task.status,
-                        "taskId": progress.database_setup_task_id,
-                        "progress": getattr(task.info, 'progress', 0),
-                        "message": "Setup in progress"
-                    }, status.HTTP_200_OK)
-
-            # Start new task
-            @sync_to_async
-            def start_task():
-                task = setup_user_database_task.delay(str(user.id), str(business.id))
-                return task.id
-
-            task_id = await start_task()
-            await self.update_task_status(progress, task_id)
+                # Start new task
+                task = await self._start_setup_task(user.id, business.id)
+                logger.info(f"Created task {task.id} for user {user.email}")
+                
+                # Update progress atomically
+                await self.update_task_status(progress, task.id)
+                
+                # Send initial WebSocket notification
+                await self.notify_websocket(
+                    user.id,
+                    'setup_started', 
+                    {
+                        'task_id': task.id,
+                        'status': 'STARTED',
+                        'progress': 0
+                    }
+                )
 
             return Response({
-                "status": "STARTED", 
-                "taskId": task_id,
-                "message": "Setup started successfully"
+                "status": "started",
+                "task_id": task.id,
+                "message": "Setup initiated successfully"
             }, status=status.HTTP_202_ACCEPTED)
 
         except Exception as e:
-            logger.error(f"Error starting database setup: {str(e)}")
+            logger.error(f"Failed to start setup: {e}", exc_info=True)
             await self.handle_error(e, user.id, 'setup_error')
-            raise
-
+            return Response({
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     async def handle_cancel(self, request, user):
+        """Handle database setup cancellation"""
         try:
             progress = await self.get_onboarding_progress(user)
             if not progress:
@@ -1532,9 +1590,13 @@ class SaveStep4View(BaseOnboardingView):
                 
             if progress.database_setup_task_id:
                 task = AsyncResult(progress.database_setup_task_id)
-                task.revoke(terminate=True)
+                # Only revoke if task is still running
+                if task.status in ['PENDING', 'STARTED']:
+                    task.revoke(terminate=True)
                 await self.update_task_status(progress, None)
+                
             return Response({"status": "cancelled"})
+            
         except Exception as e:
             logger.error(f"Error cancelling setup: {str(e)}")
             await self.handle_error(e, user.id, 'cancel_error')
@@ -1542,6 +1604,7 @@ class SaveStep4View(BaseOnboardingView):
 
     async def handle_setup(self, request, user):
         """Handle general setup operation"""
+        logger.debug(f"Handling setup request for user {user.email}")
         try:
             progress = await self.get_onboarding_progress(user)
             if not progress:
@@ -1559,27 +1622,9 @@ class SaveStep4View(BaseOnboardingView):
             logger.error(f"Error in handle_setup: {str(e)}")
             raise
 
-    async def handle_complete(self, progress, data):
-        try:
-            await sync_to_async(self._handle_complete_sync)(progress, data)
-            
-            return Response({
-                "status": "success",
-                "message": "Setup completed successfully",
-                "database_name": data.get('database_name'),
-                "task_status": data.get('task_status', 'SUCCESS'),
-                "redirect": "/dashboard"
-            }, status=status.HTTP_200_OK)
-                
-        except ValidationError as e:
-            logger.error(f"Validation error in handle_complete: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"Error in handle_complete: {str(e)}")
-            raise
-
     def _handle_complete_sync(self, progress, data):
         """Synchronous part of handle_complete"""
+        logger.debug(f"Completing setup for user {progress.user.email}")
         with transaction.atomic():
             if not data or not isinstance(data, dict):
                 raise ValidationError("Invalid data format")
@@ -1593,149 +1638,159 @@ class SaveStep4View(BaseOnboardingView):
             # Update progress
             progress.onboarding_status = 'complete'
             progress.database_name = data['database_name']
-            progress.current_step = 0  # Indicate completion
+            progress.current_step = 0
             progress.task_status = data.get('task_status', 'SUCCESS')
             
+            # Update user profile
+            profile = progress.user.profile
+            profile.database_name = data['database_name']
+            profile.database_status = 'active'
+            
+            # Save both
             progress.save(update_fields=[
                 'onboarding_status',
-                'database_name', 
-                'current_step',
+                'database_name',
+                'current_step', 
                 'task_status'
             ])
+            profile.save(update_fields=['database_name', 'database_status'])
+
+    @sync_to_async
+    def _get_user_business(self, user):
+        """Get user's business information"""
+        return Business.objects.get(owner=user)
 
     async def post(self, request, *args, **kwargs):
-        """Handle step 4 database setup"""
-        user = await self.get_user(request)
-        path = request.path.strip('/').split('/')
-        
-        # Extract the action from the path
-        if 'save' in path or path[-1] == 'save':
-            # Handle both /step4/save/ and /step4/setup/save/
-            data = json.loads(request.body.decode('utf-8')) if isinstance(request.body, bytes) else request.data
-            progress = await self.get_onboarding_progress(user)
-            
-            if not progress:
-                return Response({"error": "No progress found"}, status=status.HTTP_404_NOT_FOUND)
+        logger.debug("Received setup request")
+        logger.debug(f"Request path: {request.path}")
+        logger.debug(f"Received setup request for user: {request.user.email}")
 
-            return await self.handle_complete(progress, data)
-        elif path[-1] == 'start':
-            data = json.loads(request.body.decode('utf-8')) if request.body else {}
-            return await self.handle_start(request, user, data)
-        elif path[-1] == 'cancel':
-            return await self.handle_cancel(request, user)
-        elif path[-1] == 'setup':
-            return await self.handle_setup(request, user)
-        else:
+        # Fix action extraction
+        path = request.path.strip('/').split('/')
+        action = None
+        for part in path:
+            if part in ['start', 'cancel', 'complete']:  # Remove 'setup' from here
+                action = part
+                break
+        
+        if not action:  # Default to setup if no specific action found
+            action = 'setup'
+
+        try:
+            user = request.user
+            logger.debug(f"Action: {action}")
+            
+            # Parse request data
+            try:
+                raw_body = request.body
+                data = json.loads(raw_body.decode('utf-8')) if raw_body else {}
+                logger.debug(f"Request data: {data}")
+            except json.JSONDecodeError:
+                data = {}
+
+            if action == 'start':
+                logger.debug("Handling start action")
+                return await self.handle_start(request, user, data)
+            elif action == 'cancel':
+                logger.debug("Handling cancel action") 
+                return await self.handle_cancel(request, user)
+            elif action == 'complete':
+                logger.debug("Handling complete action")
+                progress = await self.get_onboarding_progress(user)
+                return await self.handle_complete(progress, data)
+            elif action == 'setup':
+                logger.debug("Handling setup check")
+                return await self.handle_setup(request, user)
+            else:
+                logger.error(f"Invalid action: {action}")
+                return Response({
+                    "error": f"Invalid action: {action}"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error(f"Setup error: {str(e)}")
+            await self.handle_error(e, user.id, 'setup_error')
             return Response({
-                "error": f"Invalid action: {path[-1]}"
-            }, status=status.HTTP_400_BAD_REQUEST)
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @sync_to_async
     def get_onboarding_progress(self, user):
-        """Get onboarding progress with proper user lookup and error handling"""
-        try:
-            with transaction.atomic():
-                # First try to get using user reference
-                try:
-                    return OnboardingProgress.objects.select_for_update(
-                        skip_locked=True
-                    ).get(user=user)
-                except OnboardingProgress.DoesNotExist:
-                    # Then try to get using email
+        """Get onboarding progress with better race condition handling"""
+        for attempt in range(3):  # Add retry logic
+            try:
+                with transaction.atomic():
+                    # Try to get existing progress
                     try:
-                        return OnboardingProgress.objects.select_for_update(
-                            skip_locked=True
-                        ).get(email=user.email)
+                        progress = OnboardingProgress.objects.select_for_update(
+                            nowait=True
+                        ).get(
+                            Q(user=user) | Q(email=user.email)
+                        )
+                        
+                        # If found by email but not linked to user, link it
+                        if progress.user_id != user.id:
+                            progress.user = user
+                            progress.save()
+                        
+                        return progress
+                        
                     except OnboardingProgress.DoesNotExist:
-                        # If still not found, create new
+                        # Create new if not exists
                         return OnboardingProgress.objects.create(
                             user=user,
                             email=user.email,
                             onboarding_status='step4',
                             current_step=1
                         )
-                    except OnboardingProgress.MultipleObjectsReturned:
-                        # Handle duplicate email case
-                        progress = OnboardingProgress.objects.filter(
-                            email=user.email
-                        ).first()
-                        progress.user = user  # Associate with current user
-                        progress.save()
-                        return progress
-        except IntegrityError as e:
-            if 'onboarding_onboardingprogress_email_key' in str(e):
-                # Handle race condition where record was created between our checks
-                return OnboardingProgress.objects.get(email=user.email)
-            raise
-        except OperationalError:
-            # Fallback without locking if database is busy
-            progress, _ = OnboardingProgress.objects.get_or_create(
-                user=user,
-                defaults={
-                    'email': user.email,
-                    'onboarding_status': 'step4',
-                    'current_step': 1
-                }
-            )
-            return progress
+                        
+            except OperationalError:
+                if attempt == 2:  # Last attempt
+                    raise
+                time.sleep(0.1 * (2 ** attempt))  # Exponential backoff
+                continue
+                
+            except IntegrityError as e:
+                if 'onboarding_progress_email_key' in str(e):
+                    # Handle race condition - get the record that was just created
+                    return OnboardingProgress.objects.get(
+                        Q(user=user) | Q(email=user.email)
+                    )
+                raise
 
     async def get(self, request, *args, **kwargs):
         try:
             user = await self.get_user(request)
-            logger.debug(f"Retrieved user: {user.email}")
-
             progress = await self.get_onboarding_progress(user)
+
             if not progress:
                 return Response({
-                    "status": "step4",
+                    "status": "NOT_STARTED",
                     "progress": 0,
-                    "current_step": 1,
-                    "setup_started": None,
-                    "setup_completed": None,
-                    "last_attempt": None,
-                    "task_id": None,
-                    "task_status": None,
-                    "task_info": {},
-                    "task_progress": 0,
-                    "step": None
+                    "current_step": 1
                 })
 
-            setup_status = {
-                "status": progress.onboarding_status,
-                "progress": getattr(progress, 'current_step', 0) * 25,
-                "current_step": progress.current_step,
-                "setup_started": None,
-                "setup_completed": None,
-                "last_attempt": None,
-                "task_id": getattr(progress, 'database_setup_task_id', None)
-            }
-
             if progress.database_setup_task_id:
-                try:
-                    task = AsyncResult(progress.database_setup_task_id)
-                    task_info = task.info if isinstance(task.info, dict) else {}
-                    setup_status.update({
-                        "task_status": task.status,
-                        "task_info": task_info,
-                        "task_progress": task_info.get('progress', 0) if task_info else 0,
-                        "step": task_info.get('step', 'Processing') if task_info else None
-                    })
-                except Exception as e:
-                    logger.error(f"Error getting task status: {str(e)}")
-                    setup_status.update({
-                        "task_status": "ERROR",
-                        "task_info": {},
-                        "task_progress": 0,
-                        "step": None
-                    })
+                task = AsyncResult(progress.database_setup_task_id)
+                task_info = task.info if isinstance(task.info, dict) else {}
+                return Response({
+                    "status": task.status,
+                    "progress": task_info.get('progress', 0),
+                    "step": task_info.get('step', 'Processing'),
+                    "task_id": progress.database_setup_task_id,
+                    "task_info": task_info
+                })
 
-            logger.debug(f"Returning setup status: {setup_status}")
-            return Response(setup_status)
-
-        except Exception as error:
-            logger.error(f"Error in SaveStep4View.get: {str(error)}", exc_info=True)
             return Response({
-                "error": str(error)
+                "status": "READY",
+                "progress": 0,
+                "current_step": progress.current_step
+            })
+
+        except Exception as e:
+            logger.error(f"Error getting setup status: {str(e)}")
+            return Response({
+                "error": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class OnboardingSuccessView(BaseOnboardingView):

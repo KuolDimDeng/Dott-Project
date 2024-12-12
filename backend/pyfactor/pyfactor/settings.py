@@ -200,7 +200,8 @@ CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
 CELERY_SEND_TASK_SENT_EVENT = True
 CELERY_TASK_SEND_SENT_EVENT = True
 CELERY_TASK_REMOTE_TRACEBACKS = True
-
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 CELERY_TASK_RESULT_EXPIRES = 60 * 60 * 24  # 24 hours
 
 
@@ -548,15 +549,15 @@ DATABASES = {
         'NAME': os.getenv('DB_NAME', 'postgres'),
         'USER': os.getenv('DB_USER', 'postgres'),
         'PASSWORD': os.getenv('DB_PASSWORD', 'postgres'),
-        'HOST': os.getenv('DB_HOST', 'db'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5432'),
         'ATOMIC_REQUESTS': False,
         'TIME_ZONE': 'UTC',
-        'CONN_MAX_AGE': 0,
+        'CONN_MAX_AGE': 60,
         'AUTOCOMMIT': True,  # Add this line
         'CONN_HEALTH_CHECKS': True,  # Add this line
         'OPTIONS': {
-            'connect_timeout': 10,
+            'connect_timeout': 30,
             'keepalives': 1,
             'keepalives_idle': 30,
             'keepalives_interval': 10,
@@ -566,6 +567,14 @@ DATABASES = {
 
         },
     }
+}
+
+DB_POOL_OPTIONS = {
+    'MIN_CONNS': 5,
+    'MAX_CONNS': 20,
+    'RETRY_ATTEMPTS': 3,  # Put retry settings here instead
+    'RETRY_ATTEMPTS': 3,
+    'RETRY_DELAY': 0.5,
 }
 
 

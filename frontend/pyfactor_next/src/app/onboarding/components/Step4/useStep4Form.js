@@ -168,40 +168,49 @@ export const useStep4Form = (session, formData, metadata, saveStep) => {
     const maxRetries = WS_CONFIG.MAX_POLL_RETRIES;
 
     const poll = async () => {
-      try {
-        const response = await axiosInstance.get('/api/onboarding/step4/setup/status/');
-        const data = response.data;
-
-        logger.debug('Poll response:', data);
-
-        // Clearer success conditions
-        const isComplete = data.task_status === 'SUCCESS' && data.task_info?.database_name;
-
-        if (isComplete) {
-          clearInterval(pollIntervalRef.current);
-          pollIntervalRef.current = null;
-
-          await handleSetupComplete(data);
-          return;
+        try {
+            const response = await axiosInstance.get('/api/onboarding/step4/setup/status/');
+            const { status, progress, step, task_id, task_info } = response.data;
+            logger.debug('Polling status:', response.data);
+            
+            // Handle different status cases
+            switch(status) {
+                case 'complete':
+                    setProgress(100);
+                    setCurrentStep('Setup Complete');
+                    clearInterval(pollIntervalRef);
+                    return;
+                
+                case 'IN_PROGRESS':
+                    if (task_id) {
+                        setProgress(progress || 0);
+                        setCurrentStep(step || 'Processing');
+                    }
+                    break;
+                    
+                case 'FAILURE':
+                    setLocalError('Setup failed');
+                    clearInterval(pollIntervalRef);
+                    break;
+            }
+        } catch (error) {
+            console.error('Error polling status:', error);
+            logger.error('Error polling status:', error);
         }
-
-        setProgress(data.progress || 0);
-        setCurrentStep(data.current_step || 'Processing');
-      } catch (error) {
-        logger.error('Polling error:', error);
-      }
     };
 
     // Start first poll immediately
     poll();
 
     // Then set up interval
-    pollIntervalRef.current = setInterval(poll, WS_CONFIG.POLL_INTERVAL);
+    // Set interval
+    const pollInterval = setInterval(poll, 2000);
+    pollIntervalRef.current = pollInterval;
 
     return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
+        if (pollInterval) {
+            clearInterval(pollInterval);
+        }
     };
   }, [router, handleSetupComplete, handleError]);
 

@@ -113,6 +113,14 @@ class OnboardingConsumer(AsyncWebsocketConsumer):
             logger.error(f"State manager initialization failed: {str(e)}")
             return False
 
+    async def setup_started(self, event):
+        """Handle setup_started event"""
+        await self.send_json({
+            'type': 'setup_started',
+            'data': event.get('data', {}),
+            'timestamp': timezone.now().isoformat()
+        })
+
     @asynccontextmanager
     async def connection_state(self, new_state: str):
         """Manage WebSocket state transitions"""

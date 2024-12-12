@@ -102,6 +102,20 @@ def create_user_database(user_id, business_id):
                     'PASSWORD': settings.DATABASES['default']['PASSWORD'],
                     'HOST': settings.DATABASES['default']['HOST'],
                     'PORT': settings.DATABASES['default']['PORT'],
+                    'ATOMIC_REQUESTS': False,
+                    'TIME_ZONE': 'UTC',
+                    'CONN_MAX_AGE': 60,
+                    'AUTOCOMMIT': True,
+                    'CONN_HEALTH_CHECKS': True,
+                    'OPTIONS': {
+                        'connect_timeout': 30,
+                        'keepalives': 1,
+                        'keepalives_idle': 30,
+                        'keepalives_interval': 10,
+                        'keepalives_count': 5,
+                        'client_encoding': 'UTF8',
+                        'application_name': 'pyfactor',
+                    }
                 }
                 connections.databases[database_name] = settings.DATABASES[database_name]
                 
@@ -137,6 +151,30 @@ def setup_user_database(database_name, user, business):
         test_conn.close()
 
         with transaction.atomic():
+            # Add database to Django's settings
+            settings.DATABASES[database_name] = {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': database_name,
+                'USER': settings.DATABASES['default']['USER'],
+                'PASSWORD': settings.DATABASES['default']['PASSWORD'],
+                'HOST': settings.DATABASES['default']['HOST'],
+                'PORT': settings.DATABASES['default']['PORT'],
+                'ATOMIC_REQUESTS': False,
+                'TIME_ZONE': 'UTC',
+                'CONN_MAX_AGE': 60,
+                'AUTOCOMMIT': True,
+                'CONN_HEALTH_CHECKS': True,
+                'OPTIONS': {
+                    'connect_timeout': 30,
+                    'keepalives': 1,
+                    'keepalives_idle': 30,
+                    'keepalives_interval': 10,
+                    'keepalives_count': 5,
+                    'client_encoding': 'UTF8',
+                    'application_name': 'pyfactor',
+                }
+            }
+
             # Run migrations
             logger.info(f"Running migrations for database: {database_name}")
             call_command('migrate', database=database_name)
@@ -157,7 +195,7 @@ def setup_user_database(database_name, user, business):
         
     except Exception as e:
         logger.error(f"Error setting up database {database_name}: {str(e)}", exc_info=True)
-        cleanup_database(database_name)
+        cleanup_database_sync(database_name)  # Remove await
         raise
 
 @sync_to_async
