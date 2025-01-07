@@ -6,6 +6,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from phonenumber_field.modelfields import PhoneNumberField
 from .custom_fields import EncryptedCharField
 from decimal import Decimal  # Add this import
+from django.conf import settings
+
 
 def get_current_datetime():
     return timezone.now()
@@ -119,6 +121,13 @@ class Employee(models.Model):
     pension_enrollment = models.BooleanField(default=False)
     termination_date = models.DateField(null=True, blank=True)
     reason_for_leaving = models.TextField(blank=True, null=True)
+    business = models.ForeignKey(
+            'business.Business',
+            on_delete=models.CASCADE,
+            related_name='business_employees',
+            null=True,  
+            blank=True  
+        )
 
     def save(self, *args, **kwargs):
         if not self.employee_number:

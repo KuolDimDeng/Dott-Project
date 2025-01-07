@@ -10,6 +10,8 @@ from django.contrib.auth import authenticate
 from pyfactor.logging_config import get_logger
 from users.models import UserProfile  # Adjust the import path as necessary
 from django.db import transaction
+from business.choices import SUBSCRIPTION_TYPES  # Add this import
+
 
 
 
@@ -33,8 +35,11 @@ class CustomRegisterSerializer(RegisterSerializer):
     postcode = serializers.CharField(required=False, allow_blank=True)
     country = serializers.CharField(required=False)
     phone_number = serializers.CharField(required=False, allow_blank=True)
-    subscription_type = serializers.ChoiceField(choices=Subscription.SUBSCRIPTION_TYPES, required=False, allow_blank=True)
-
+    subscription_type = serializers.ChoiceField(
+            choices=SUBSCRIPTION_TYPES,  # Use the imported choices
+            required=False, 
+            allow_blank=True
+        )
     class Meta:
         model = User
         fields = (

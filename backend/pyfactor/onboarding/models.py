@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.utils import timezone
 from business.models import Business, BUSINESS_TYPES
+from business.choices import BUSINESS_TYPES, LEGAL_STRUCTURE_CHOICES
+from django.core.validators import EmailValidator
 
 User = get_user_model()
 
@@ -25,9 +27,15 @@ class OnboardingProgress(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, db_index=True)
-    email = models.EmailField(unique=True)
+
+    user = models.ForeignKey(
+            settings.AUTH_USER_MODEL,
+            on_delete=models.CASCADE,
+            related_name='onboarding_progress'
+        )    
     
+    email = models.EmailField(unique=True)
+        
     # Personal Information
     first_name = models.CharField(max_length=100, blank=True)
     last_name = models.CharField(max_length=100, blank=True)
@@ -35,21 +43,17 @@ class OnboardingProgress(models.Model):
     # Business Information 
     business_name = models.CharField(max_length=255, blank=True)
     business_type = models.CharField(max_length=100, choices=BUSINESS_TYPES, blank=True)
+    business = models.OneToOneField(
+        'business.Business',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='onboarding'
+    )
     country = models.CharField(max_length=100, blank=True)
     legal_structure = models.CharField(
         max_length=50,
-        choices=[
-            ('Sole Proprietorship', 'Sole Proprietorship'),
-            ('General Partnership', 'General Partnership (GP)'),
-            ('Limited Partnership', 'Limited Partnership (LP)'),
-            ('LLC', 'Limited Liability Company (LLC)'),
-            ('Corporation', 'Corporation (Inc., Corp.)'),
-            ('Non-Profit', 'Non-Profit Organization (NPO)'),
-            ('Joint Venture', 'Joint Venture (JV)'),
-            ('Holding Company', 'Holding Company'),
-            ('Branch Office', 'Branch Office'),
-            ('Representative Office', 'Representative Office'),
-        ],
+        choices=LEGAL_STRUCTURE_CHOICES,
         blank=True
     )
     date_founded = models.DateField(null=True, blank=True)
@@ -87,7 +91,7 @@ class OnboardingProgress(models.Model):
         help_text="Celery task ID for database setup"
     )
     database_status = models.CharField(
-        max_length=20,
+        max_length=50,
         choices=DATABASE_STATUS_CHOICES,
         default='pending'
     )
@@ -113,7 +117,11 @@ class OnboardingProgress(models.Model):
     setup_retries = models.IntegerField(
         default=0
     )
-    
+
+    setup_status = models.CharField(max_length=50, default='pending')
+    is_complete = models.BooleanField(default=False)
+
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -130,13 +138,14 @@ class OnboardingProgress(models.Model):
         ]
         indexes = [
             models.Index(fields=['database_setup_task_id']),
+            models.Index(fields=['email']),
+            models.Index(fields=['user']),
+            models.Index(fields=['onboarding_status']),
             models.Index(fields=['database_status']),
-            models.Index(fields=['onboarding_status'])
+            models.Index(fields=['created_at']),
         ]
         select_on_save = True
         db_table = 'onboarding_progress'
-
-
 
 
     def __str__(self):

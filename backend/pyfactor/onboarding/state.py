@@ -1,12 +1,38 @@
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.db import transaction
+from django.core.cache import cache
 from pyfactor.logging_config import get_logger
 from .models import OnboardingProgress
-from asgiref.sync import sync_to_async  # Changed this line
+from asgiref.sync import sync_to_async
 from typing import Optional, Dict, Any
 
+
 logger = get_logger()
+
+class DatabaseSetupState:
+    """Manages state tracking for database setup operations"""
+    
+    def __init__(self, user_id: str):
+        self.cache_key = f"setup_state_{user_id}"
+        self.user_id = user_id
+        
+    def save_state(self, state: dict):
+        """Saves the current setup state with expiration"""
+        state['last_updated'] = timezone.now().isoformat()
+        cache.set(self.cache_key, state, timeout=3600)
+        logger.debug(f"Saved setup state for user {self.user_id}: {state}")
+        
+    def get_state(self) -> Optional[dict]:
+        """Retrieves the current setup state if it exists"""
+        state = cache.get(self.cache_key)
+        logger.debug(f"Retrieved setup state for user {self.user_id}: {state}")
+        return state
+        
+    def clear_state(self):
+        """Removes the setup state"""
+        cache.delete(self.cache_key)
+        logger.debug(f"Cleared setup state for user {self.user_id}")
 
 class OnboardingStateManager:
     """
@@ -40,6 +66,7 @@ class OnboardingStateManager:
         self.user = user
         self.current_state = None
         self.last_transition = None
+        self.setup_state = DatabaseSetupState(str(user.id))
 
     @sync_to_async
     def initialize(self) -> None:
@@ -175,6 +202,10 @@ class OnboardingStateManager:
             self.current_state = next_state
             self.last_transition = timezone.now()
 
+            # Clear setup state if transitioning to complete
+            if next_state == 'complete':
+                self.setup_state.clear_state()
+
             logger.info(
                 f"State transition successful: {previous_state} -> {next_state}",
                 extra={
@@ -261,3 +292,35 @@ class OnboardingStateManager:
         except Exception as e:
             logger.error(f"Error getting state info: {str(e)}")
             return None
+
+    async def get_setup_state(self) -> Optional[Dict[str, Any]]:
+        """
+        Async method to get current database setup state.
+        """
+        try:
+            return self.setup_state.get_state()
+        except Exception as e:
+            logger.error(f"Error getting setup state: {str(e)}")
+            return None
+
+    async def update_setup_state(self, state: Dict[str, Any]) -> bool:
+        """
+        Async method to update database setup state.
+        """
+        try:
+            self.setup_state.save_state(state)
+            return True
+        except Exception as e:
+            logger.error(f"Error updating setup state: {str(e)}")
+            return False
+
+    async def clear_setup_state(self) -> bool:
+        """
+        Async method to clear database setup state.
+        """
+        try:
+            self.setup_state.clear_state()
+            return True
+        except Exception as e:
+            logger.error(f"Error clearing setup state: {str(e)}")
+            return False

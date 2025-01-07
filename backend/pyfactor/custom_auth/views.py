@@ -17,7 +17,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from users.models import UserProfile  # Adjust the import path as necessary
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.authtoken.views import ObtainAuthToken
-from django.utils.decorators import method_decorator
 from django.contrib.auth import authenticate
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ImproperlyConfigured
@@ -26,6 +25,9 @@ from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmVie
 from django.urls import reverse_lazy
 from django.contrib.auth.tokens import default_token_generator
 from django.core.cache import cache
+from django.utils.decorators import method_decorator
+
+from asgiref.sync import sync_to_async
 
 
 
@@ -46,6 +48,41 @@ from pyfactor.logging_config import get_logger
 
 
 logger = get_logger()
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AsyncAPIView(APIView):
+    async def dispatch(self, request, *args, **kwargs):
+        """
+        Handle async dispatch with proper authentication
+        """
+        try:
+            response = await super().dispatch(request, *args, **kwargs)
+            return response
+        except Exception as exc:
+            return self.handle_exception(exc)
+
+    async def initial(self, request, *args, **kwargs):
+        """
+        Runs anything that needs to occur prior to calling the method handler.
+        """
+        await self.perform_authentication(request)
+        self.check_permissions(request)
+        self.check_throttles(request)
+
+    async def perform_authentication(self, request):
+        """
+        Perform authentication on the incoming request.
+        """
+        authenticator = self.get_authenticators()[0]
+        try:
+            user_auth_tuple = await authenticator.authenticate(request)
+            if user_auth_tuple is not None:
+                self.request.user, self.request.auth = user_auth_tuple
+        except Exception as e:
+            self.request.user = None
+            self.request.auth = None
+            raise
 
 def handle_authentication_error(self, error, context=None):
     logger.error(f"Authentication error: {str(error)}", extra={

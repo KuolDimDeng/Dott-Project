@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
+from django.conf import settings
 
 from pathlib import Path
 from datetime import timedelta
@@ -16,7 +17,6 @@ import sys
 import os
 import logging
 import logging.config
-from django.conf import settings
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from celery.schedules import crontab
@@ -112,20 +112,22 @@ ALLOWED_ORIGINS = [
 ]
 
 # CORS and CSRF configuration
-CORS_ALLOW_ALL_ORIGINS = True #True for DEVELOPMENT
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = ALLOWED_ORIGINS
+CORS_ALLOW_ALL_ORIGINS = False  # Set to True only in development if needed
 
 
-CORS_ALLOWED_METHODS = [
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
     'GET',
+    'OPTIONS',
+    'PATCH',
     'POST',
     'PUT',
-    'PATCH',
-    'DELETE',
-    'OPTIONS'
 ]
-CORS_ALLOWED_HEADERS = [
+
+CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
     'authorization',
@@ -150,6 +152,8 @@ CSRF_USE_SESSIONS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://accounts.google.com",  # Add this for Google OAuth
+
 ]
 
 
@@ -158,7 +162,32 @@ ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False  # Disable username requirement
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None  # Explicitly set no username field
-ACCOUNT_EMAIL_VERIFICATION = 'optional'  # Set this as needed
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # Set to 'none' for development
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_EMAIL_REQUIRED = False
+SOCIALACCOUNT_QUERY_EMAIL = True
+SOCIALACCOUNT_AUTO_SIGNUP = True
+
+
+
+# Google OAuth2 settings
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': GOOGLE_CLIENT_ID,
+            'secret': os.getenv('GOOGLE_CLIENT_SECRET'),
+            'key': ''
+        },
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'offline',  # Change from 'online' to 'offline'
+            'prompt': 'consent'  # Change from 'select_account' to 'consent'
+        }
+    }
+}
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -186,33 +215,122 @@ CELERY_TASK_PUBLISH_RETRY_POLICY = {
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 50
 
-CELERY_BROKER_TRANSPORT_OPTIONS = {
-    'socket_timeout': 10,
-    'socket_connect_timeout': 10,
-}
 
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
 REDIS_DB = 0
+# Redis configuration (consolidate with existing Redis settings)
+REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
+CELERY_REDIS_MAX_CONNECTIONS = 20
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'socket_timeout': 10,
+    'socket_connect_timeout': 10,
+    'visibility_timeout': 43200,  # 12 hours
+    'max_connections': 20,
+    'retry_policy': {
+        'max_retries': 5
+    }
+}
 
 CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
 CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
 CELERY_SEND_TASK_SENT_EVENT = True
 CELERY_TASK_SEND_SENT_EVENT = True
 CELERY_TASK_REMOTE_TRACEBACKS = True
-CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 CELERY_TASK_RESULT_EXPIRES = 60 * 60 * 24  # 24 hours
+# Add these Celery settings
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = True
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
+# Task routing
+CELERY_TASK_ROUTES = {
+    'onboarding.setup_user_database_task': {'queue': 'setup'},
+    'onboarding.send_websocket_notification': {'queue': 'default'},
+    'onboarding.tasks.*': {'queue': 'onboarding'},
+    'users.tasks.*': {'queue': 'users'},
+}
+
+# Task default configuration
+CELERY_TASK_DEFAULT_QUEUE = 'default'
+CELERY_TASK_DEFAULT_EXCHANGE = 'default'
+CELERY_TASK_DEFAULT_ROUTING_KEY = 'default'
+
+# Result backend settings
+CELERY_RESULT_EXTENDED = True
+CELERY_RESULT_BACKEND_MAX_RETRIES = 10
+CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {'retry_policy': {
+    'max_retries': 5
+}}
+# Celery monitoring
+CELERY_SEND_EVENTS = True
+CELERY_EVENT_QUEUE_EXPIRES = 60  # seconds
+CELERY_EVENT_QUEUE_TTL = 10  # seconds
+# Error handling
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_TASK_ANNOTATIONS = {
+    '*': {
+        'rate_limit': '10/s',
+        'acks_late': True,
+        'reject_on_worker_lost': True
+    }
+}
+
+CELERY_QUEUES = {
+    'default': {
+        'exchange': 'default',
+        'routing_key': 'default',
+    },
+    'setup': {
+        'exchange': 'setup',
+        'routing_key': 'setup',
+    },
+    'onboarding': {
+        'exchange': 'onboarding',
+        'routing_key': 'onboarding',
+    },
+    'users': {
+        'exchange': 'users',
+        'routing_key': 'users',
+    }
+}
+
+CELERY_BEAT_SCHEDULE = {
+    'cleanup_expired_onboarding': {
+        'task': 'onboarding.views.cleanup_expired_onboarding',
+        'schedule': crontab(hour='*/2'),  # Every 2 hours
+    },
+}
 
 # Session and authentication settings
 AUTH_USER_MODEL = 'custom_auth.User'
 # Session Settings
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Change to db backend temporarily
+SESSION_CACHE_ALIAS = "default"
 SESSION_COOKIE_AGE = 1209600  # 2 weeks
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_NAME = 'sessionid'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_SAMESITE = 'Lax'  # Add this
+CSRF_COOKIE_SAMESITE = 'Lax'  # Add this
+
+
+# Update your CACHES setting in settings.py
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
+        'OPTIONS': {
+            'db': 1,
+            'socket_timeout': 5,
+            'socket_connect_timeout': 5,
+            'retry_on_timeout': True,
+            'max_connections': 100,
+            # Remove parser_class and pool_class
+        }
+    }
+}
 
 # Security Settings
 SECURE_BROWSER_XSS_FILTER = True
@@ -225,9 +343,8 @@ SECURE_HSTS_PRELOAD = True
 DJANGO_ALLOW_ASYNC_UNSAFE = True  # Only for development
 
 
-if not DEBUG:
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = False if DEBUG else True
+
 
 # REST framework settings
 REST_FRAMEWORK = {
@@ -235,6 +352,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -244,16 +365,14 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser',
     ],
-    # Add rate limiting
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle'
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/minute',  # Changed from 100/day
-        'user': '1000/minute'  # Changed from 1000/day
+        'anon': '100/minute',
+        'user': '1000/minute'
     },
-
 }
 # JWT settings
 SIMPLE_JWT = {
@@ -267,7 +386,7 @@ SIMPLE_JWT = {
     'AUTH_COOKIE': 'access_token',  # Cookie name for access token
     'AUTH_COOKIE_REFRESH': 'refresh_token',  # Cookie name for refresh token
     'AUTH_COOKIE_DOMAIN': None,  # Specify domain if needed
-    'AUTH_COOKIE_SECURE': True,  # Should be True in production
+    'AUTH_COOKIE_SECURE': False if DEBUG else True,  # Match your environment
     'AUTH_COOKIE_HTTP_ONLY': True,  # Prevent JavaScript access
     'AUTH_COOKIE_PATH': '/',  # Cookie path
     'AUTH_COOKIE_SAMESITE': 'Lax',  # Cookie SameSite policy
@@ -365,6 +484,10 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+        'Pyfactor': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
     },
 }
 
@@ -435,10 +558,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    'django_celery_beat',
     'corsheaders',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',  # Add this for Google auth
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -449,12 +574,10 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'channels',  # Add this line
     'users.apps.UsersConfig',  # replace 'users' with your actual app name
-    'business',
     'sales',
     'finance',
     'reports',
     'banking',
-    'hr',
     'payroll',
     'inventory',
     'analysis',
@@ -465,32 +588,38 @@ INSTALLED_APPS = [
     'taxes',
     'purchases',
     'barcode',
-    'debug_toolbar',
     'django_extensions',
-    'onboarding',
     'custom_auth',  # Add the new auth app
-
-
-    
+    'hr.apps.HrConfig',
+    'business.apps.BusinessConfig',
+    'onboarding.apps.OnboardingConfig'
 
 
 ]
-
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
-    'onboarding.middleware.HTTPAuthMiddleware',  # Add HTTP middleware
 
 ]
+# Check if we're running in ASGI mode
+IS_ASGI = any(arg in sys.argv for arg in ['daphne', '--async', 'runserver --async'])
+
+# Only enable Debug Toolbar for non-ASGI environments
+if DEBUG and not IS_ASGI:  # Make sure DEBUG is True as well
+    INSTALLED_APPS.append("debug_toolbar")
+    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # Add at start
+    
+    # Debug Toolbar settings
+    INTERNAL_IPS = [
+        "127.0.0.1",
+    ]
+
 
 # Add this setting for WebSocket routing
 WEBSOCKET_MIDDLEWARE = [
@@ -526,13 +655,14 @@ INTERNAL_IPS = [
 
 ASGI_APPLICATION = 'pyfactor.asgi.application'
 
+# Update the Redis connection settings
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
             "capacity": 1500,
-            "expiry": 10,
+            "expiry": 120,
         },
     },
 }
@@ -554,35 +684,65 @@ DATABASES = {
         'ATOMIC_REQUESTS': False,
         'TIME_ZONE': 'UTC',
         'CONN_MAX_AGE': 60,
-        'AUTOCOMMIT': True,  # Add this line
-        'CONN_HEALTH_CHECKS': True,  # Add this line
+        'AUTOCOMMIT': True,
+        'CONN_HEALTH_CHECKS': False,
         'OPTIONS': {
-            'connect_timeout': 30,
+            'connect_timeout': 10,
             'keepalives': 1,
             'keepalives_idle': 30,
             'keepalives_interval': 10,
             'keepalives_count': 5,
             'client_encoding': 'UTF8',
-            'application_name': 'pyfactor',
-
-        },
+            'application_name': 'pyfactor'
+        }
     }
 }
+
+# Define template settings separately
+USER_DATABASE_TEMPLATE = 'template0'
+
+DATABASE_RESOURCE_LIMITS = {
+    'MAX_CONNECTIONS_PER_DB': 50,
+    'MAX_DB_SIZE': 1024 * 1024 * 1024,  # 1GB
+    'STATEMENT_TIMEOUT': 30000,
+    'LOCK_TIMEOUT': 5000,
+}
+
+USER_DATABASE_TEMPLATE = 'template_db'
+
+
+DATABASE_ROUTERS = ['pyfactor.userDatabaseRouter.UserDatabaseRouter']
+
+# User database settings
+USER_DATABASE_SETTINGS = {
+    'CONNECTION_LIMIT': 50,  # Max connections per database
+    'POOL_MIN_SIZE': 5,
+    'POOL_MAX_SIZE': 20,
+    'MAX_USER_DATABASES': 10000,  # Maximum number of user databases
+    'TEMPLATE_NAME': 'template_db',  # Template database name
+    'SHARD_COUNT': 10,  # Number of database shards
+    'MAX_DB_SIZE': 1024 * 1024 * 1024,  # 1GB max size per database
+    'BACKUP_RETENTION_DAYS': 30,
+}
+
 
 DB_POOL_OPTIONS = {
     'MIN_CONNS': 5,
     'MAX_CONNS': 20,
-    'RETRY_ATTEMPTS': 3,  # Put retry settings here instead
+    'MAX_QUERIES': 50000,
+    'MAX_IDLE_TIME': 300,  # 5 minutes
+    'CONN_LIFETIME': 3600,  # 1 hour
     'RETRY_ATTEMPTS': 3,
     'RETRY_DELAY': 0.5,
+    'METRICS_ENABLED': True
 }
 
-
-    # Add connection pooling settings
 DATABASE_CONNECTION_POOL = {
-    'MAX_CONNS': 20,
-    'MIN_CONNS': 5,
+    'MAX_CONNS': 100,  # Total max connections
+    'MIN_CONNS': 20,
     'CONN_LIFETIME': 300,
+    'CONN_TIMEOUT': 30,
+    'MAX_QUERIES_PER_CONN': 5000,
 }
 
 # WebSocket specific settings
