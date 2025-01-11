@@ -1,110 +1,155 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/components/ErrorBoundary/ErrorBoundary.jsx
 'use client';
 
 import React from 'react';
-import { ErrorBoundary as ReactErrorBoundary } from 'react-error-boundary';
-import { Box, Typography, Button, Alert, CircularProgress } from '@mui/material';
+import { Box, Typography, Alert, Button, CircularProgress } from '@mui/material';
 import { logger } from '@/utils/logger';
+import PropTypes from 'prop-types';
 
-const ErrorFallback = ({ error, resetErrorBoundary, isLoading }) => (
-  <Box
-    display="flex"
-    flexDirection="column"
-    justifyContent="center"
-    alignItems="center"
-    minHeight="100vh"
-    p={3}
-    gap={2}
-  >
-    <Alert
-      severity="error"
-      action={
-        <Button color="inherit" size="small" onClick={resetErrorBoundary} disabled={isLoading}>
-          {isLoading ? <CircularProgress size={20} /> : 'Try Again'}
-        </Button>
-      }
-      sx={{ maxWidth: 500, width: '100%' }}
-    >
-      {error?.message || 'An unexpected error occurred'}
-    </Alert>
-    <Typography variant="body2" color="text.secondary">
-      {error?.cause || 'Please try again or contact support if the problem persists'}
-    </Typography>
-  </Box>
-);
+// Base Error Boundary Component
+export class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { 
+      hasError: false, 
+      error: null,
+      errorInfo: null,
+      requestId: crypto.randomUUID()
+    };
+  }
 
-const logErrorToService = (error, info) => {
-  logger.error('Error caught by boundary:', {
-    error: error.message,
-    stack: error.stack,
-    componentStack: info.componentStack,
-    timestamp: new Date().toISOString(),
-    url: window?.location?.href,
-  });
-};
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
 
-export const AppErrorBoundary = ({ children, FallbackComponent = ErrorFallback, onReset }) => {
-  const [isLoading, setIsLoading] = React.useState(false);
+  componentDidCatch(error, errorInfo) {
+    const { componentName = 'Unknown' } = this.props;
+    logger.error('Error Boundary caught error:', {
+      requestId: this.state.requestId,
+      componentName,
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo?.componentStack,
+      timestamp: new Date().toISOString()
+    });
 
-  const handleReset = async () => {
+    this.setState({ errorInfo });
+
+    // Call onError prop if provided
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    }
+  }
+
+  handleReset = async () => {
     try {
-      setIsLoading(true);
-      await onReset?.();
-      logger.info('Error boundary reset successful');
+      if (this.props.onReset) {
+        await this.props.onReset();
+      }
+      this.setState({ 
+        hasError: false, 
+        error: null, 
+        errorInfo: null 
+      });
     } catch (error) {
-      logger.error('Error boundary reset failed:', error);
-      window.location.href = '/';
-    } finally {
-      setIsLoading(false);
+      logger.error('Error boundary reset failed:', {
+        requestId: this.state.requestId,
+        error: error.message
+      });
+      window.location.reload();
     }
   };
 
-  return (
-    <ReactErrorBoundary
-      FallbackComponent={(props) => <FallbackComponent {...props} isLoading={isLoading} />}
-      onError={logErrorToService}
-      onReset={handleReset}
-    >
-      {children}
-    </ReactErrorBoundary>
-  );
+  render() {
+    const { hasError, error, requestId } = this.state;
+    const { FallbackComponent, children } = this.props;
+
+    if (hasError) {
+      if (FallbackComponent) {
+        return <FallbackComponent 
+          error={error}
+          resetErrorBoundary={this.handleReset}
+          requestId={requestId}
+        />;
+      }
+
+      // Default fallback UI
+      return (
+        <Box
+          display="flex"
+          flexDirection="column"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="100vh"
+          p={3}
+          gap={2}
+        >
+          <Alert
+            severity="error"
+            action={
+              <Button 
+                color="inherit" 
+                size="small" 
+                onClick={this.handleReset}
+              >
+                Try Again
+              </Button>
+            }
+            sx={{ maxWidth: 500, width: '100%' }}
+          >
+            An unexpected error occurred
+          </Alert>
+          <Typography variant="body2" color="text.secondary" align="center">
+            Please try again or refresh the page.
+            <br />
+            Error ID: {requestId}
+          </Typography>
+        </Box>
+      );
+    }
+
+    return children;
+  }
+}
+
+ErrorBoundary.propTypes = {
+  children: PropTypes.node.isRequired,
+  FallbackComponent: PropTypes.elementType,
+  onError: PropTypes.func,
+  onReset: PropTypes.func,
+  componentName: PropTypes.string
 };
 
+// Export a HOC for easier usage
 export const withErrorBoundary = (WrappedComponent, options = {}) => {
-  function WithErrorBoundaryComponent(props) {
-    const [isLoading, setIsLoading] = React.useState(false);
-
-    const handleReset = async () => {
-      try {
-        setIsLoading(true);
-        await options.onReset?.();
-      } catch (error) {
-        logger.error('Component reset failed:', error);
-        window.location.href = '/';
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
+  function WithErrorBoundary(props) {
     return (
-      <ReactErrorBoundary
-        FallbackComponent={(fallbackProps) => (
-          <ErrorFallback {...fallbackProps} isLoading={isLoading} />
-        )}
-        onError={(error, info) => {
-          logErrorToService(error, info);
-          options.onError?.(error, info);
-        }}
-        onReset={handleReset}
-        {...options}
-      >
+      <ErrorBoundary {...options}>
         <WrappedComponent {...props} />
-      </ReactErrorBoundary>
+      </ErrorBoundary>
     );
   }
 
-  WithErrorBoundaryComponent.displayName = `WithErrorBoundary(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+  WithErrorBoundary.displayName = `WithErrorBoundary(${
+    options.componentName || 
+    WrappedComponent.displayName || 
+    WrappedComponent.name || 
+    'Component'
+  })`;
 
-  return WithErrorBoundaryComponent;
+  return WithErrorBoundary;
 };
 
-export { ReactErrorBoundary as ErrorBoundary };
+// Create pre-configured app error boundary
+export const AppErrorBoundary = ({ children, ...props }) => (
+  <ErrorBoundary
+    componentName="App"
+    {...props}
+  >
+    {children}
+  </ErrorBoundary>
+);
+
+AppErrorBoundary.propTypes = {
+  children: PropTypes.node.isRequired
+};

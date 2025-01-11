@@ -1,3 +1,5 @@
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/next.config.mjs
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -6,15 +8,24 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  poweredByHeader: false, // You had this twice
-  swcMinify: false, // Keep this if you need to use Babel
+  poweredByHeader: false,
+  swcMinify: false,
 
-  // Webpack configuration
   webpack: (config, { isServer }) => {
-    // Aliases configuration
-    const baseDir = path.resolve(__dirname);
+    // Handle PDF dependencies
     config.resolve.alias = {
       ...config.resolve.alias,
+      canvas: false,
+      encoding: false,
+      '@': path.join(process.cwd(), 'src'),
+
+    }
+
+    // Base directory for aliases
+    const baseDir = process.cwd();
+
+    // Path aliases
+    Object.assign(config.resolve.alias, {
       '@': path.join(baseDir, 'src'),
       '@app': path.join(baseDir, 'src/app'),
       '@components': path.join(baseDir, 'src/components'),
@@ -29,17 +40,26 @@ const nextConfig = {
       '@auth': path.join(baseDir, 'src/app/auth'),
       '@onboarding': path.join(baseDir, 'src/app/onboarding'),
       '@api': path.join(baseDir, 'src/app/api'),
-    };
+    });
 
-    // Source maps for development only
+    // Development source maps
     if (process.env.NODE_ENV === 'development' && !isServer) {
       config.devtool = 'eval-source-map';
     }
 
+      // Add this for recharts support
+  if (!isServer) {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      stream: false,
+      zlib: false,
+    };
+  }
+
+
     return config;
   },
 
-  // Image configuration
   images: {
     remotePatterns: [
       {
@@ -62,42 +82,32 @@ const nextConfig = {
     ]
   },
 
-  // Security headers
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          { key: 'X-DNS-Prefetch-Control', value: 'on' },
-          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
-          { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' }
-        ],
-      }
-    ];
-  },
+  headers: async () => [
+    {
+      source: '/:path*',
+      headers: [
+        { key: 'X-DNS-Prefetch-Control', value: 'on' },
+        { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+        { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
+        { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' }
+      ],
+    }
+  ],
 
-  // Experimental features - removed deprecated options
   experimental: {
     scrollRestoration: true,
     typedRoutes: true
   },
 
-  // Environment configuration
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   },
 
-  // Build configuration
   output: 'standalone',
-  
-  // Performance optimizations
   compress: true,
-  
-  // Disable source maps in production
   productionBrowserSourceMaps: false,
 };
 

@@ -2,26 +2,36 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';  // Not 'next/router'
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { logger } from '@/utils/logger';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { persistenceService } from '@/services/persistenceService';
 import { APP_CONFIG } from '@/config';
+import { 
+  validateUserState, 
+  validateOnboardingTransition,
+  validateOnboardingStep,
+  saveOnboardingStep,
+  handleAuthError,
+  isTokenExpired,
+  AUTH_ERRORS,
+  makeRequest,
+  generateRequestId,  // Add this
+  TIMEOUT            // Add this
+} from '@/lib/authUtils';
 
-// At the top, add this validation helper
-const validateTransition = (fromStep, toStep, transitions) => {
-  // Special case for completion
-  if (toStep === 'complete') {
-    return true;
-  }
 
-  const validTransitions = transitions[fromStep];
-  if (!validTransitions?.includes(toStep)) {
-    throw new Error(APP_CONFIG.errors.messages.transition_error);
-  }
-  return true;
-};
+import { 
+  validateStep,
+  canTransitionToStep, 
+  validateTierAccess,
+  STEP_VALIDATION,
+  STEP_PROGRESSION,
+  VALIDATION_DIRECTION 
+} from '@/app/onboarding/components/registry';
+
 
 export const useOnboarding = (formMethods) => {
   const { data: session, status } = useSession();
@@ -32,9 +42,14 @@ export const useOnboarding = (formMethods) => {
   const [initAttempts, setInitAttempts] = useState(0);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [requestId] = useState(() => generateRequestId());
+  const steps = Object.values(APP_CONFIG.onboarding.steps);
+  const currentIndex = steps.indexOf(currentStep);
+
   const [initializationState, setInitializationState] = useState({
     initialized: false,
     initializing: false,
+    requestId: generateRequestId()
   });
 
   const [progress, setProgress] = useState({
@@ -42,7 +57,10 @@ export const useOnboarding = (formMethods) => {
     completedSteps: new Set(),
     lastActiveStep: '',
     stepValidation: {},
+    selectedTier: null  // Add this
   });
+
+  const router = useRouter();
 
   if (!formMethods) {
     logger.warn('formMethods not provided to useOnboarding hook');
@@ -87,87 +105,176 @@ export const useOnboarding = (formMethods) => {
     });
   }, []);
 
-  const validateStepData = useCallback(
-    (step, data) => {
-      logger.debug('Starting step data validation:', {
+  const validateStepData = useCallback(async (step, data) => {
+    logger.debug('Starting step data validation:', {
+      step,
+      dataType: typeof data,
+      dataPresent: !!data,
+      dataKeys: data ? Object.keys(data) : [],
+      currentStep: progress.currentStep,
+      tier: data?.selectedPlan,
+      requestId
+    });
+  
+    try {
+      // First check step transition
+      const canTransition = canTransitionToStep(
+        progress.currentStep, 
+        step, 
+        data?.selectedPlan
+      );
+  
+      if (!canTransition) {
+        throw new Error('Invalid step transition');
+      }
+  
+      // Then validate tier access
+      const tierValidation = validateTierAccess(step, data?.selectedPlan);
+      if (!tierValidation.valid) {
+        throw new Error(tierValidation.message);
+      }
+  
+      // Finally validate step data
+      const validationResult = await validateOnboardingStep(
+        session,
         step,
-        dataType: typeof data,
-        dataPresent: !!data,
-        dataKeys: data ? Object.keys(data) : [],
-        currentStep: progress.currentStep,
+        data,
+        requestId
+      );
+  
+      if (!validationResult.isValid) {
+        throw new Error(validationResult.reason);
+      }
+  
+      // Update progress with tier if it's subscription step
+      if (step === 'subscription' && data?.selectedPlan) {
+        setProgress(prev => ({
+          ...prev,
+          selectedTier: data.selectedPlan
+        }));
+      }
+  
+      return validationResult.data;
+    } catch (error) {
+      const errorResult = handleAuthError(error);
+      logger.error('Step validation failed:', {
+        error: errorResult,
+        step,
+        tier: data?.selectedPlan, 
+        requestId
       });
-      if (formMethods?.formState?.isValid === false) {
-        throw new Error(APP_CONFIG.errors.messages.validation_error);
-      }
+      throw error;
+    }
+  }, [session, progress.currentStep, requestId]);
 
-      if (!Object.values(APP_CONFIG.onboarding.steps).includes(step)) {
-        throw new Error(APP_CONFIG.errors.messages.validation_error);
-      }
-      // Validate transition
-      const currentStep = progress.currentStep || APP_CONFIG.onboarding.steps.INITIAL;
-      validateTransition(currentStep, step, APP_CONFIG.onboarding.transitions);
-
-      let validatedData = data;
-
-      if (step === APP_CONFIG.onboarding.steps.PLAN) {
-        if (!validatedData?.selectedPlan || !validatedData?.billingCycle) {
-          throw new Error(APP_CONFIG.errors.messages.validation_error);
-        }
-
-        const validPlans = APP_CONFIG.app?.plans?.validPlans || ['Basic', 'Professional'];
-        const validBillingCycles = APP_CONFIG.app?.plans?.validBillingCycles || [
-          'monthly',
-          'annual',
-        ];
-
-        if (!validPlans.includes(validatedData.selectedPlan)) {
-          throw new Error(APP_CONFIG.errors.messages.validation_error);
-        }
-
-        if (!validBillingCycles.includes(validatedData.billingCycle)) {
-          throw new Error(APP_CONFIG.errors.messages.validation_error);
-        }
-
-        return {
-          selectedPlan: validatedData.selectedPlan,
-          billingCycle: validatedData.billingCycle,
-        };
-      }
-
-      return validatedData;
-    },
-    [progress.currentStep, formMethods]
-  );
 
   const saveStepMutation = useMutation({
     mutationFn: async ({ step, data }) => {
-      if (formMethods) {
-        await formMethods.trigger(); // Validate form before saving
+      try {
+        // Special handling for business-info step
+        if (step === 'business-info') {
+          logger.debug('Processing business-info submission', {
+            requestId,
+            hasData: !!data
+          });
+  
+          // Skip token validation for business-info
+          const response = await saveOnboardingStep(
+            {
+              user: {
+                ...session?.user,
+                onboardingStatus: 'business-info'
+              }
+            },
+            step,
+            data,
+            requestId
+          );
+  
+          logger.debug('Business info saved successfully', {
+            requestId,
+            hasResponse: !!response?.data
+          });
+  
+          // Force immediate navigation to subscription
+          router.push('/onboarding/subscription');
+          return response.data;
+        }
+  
+        // For other steps, perform full validation
+        if (formMethods) {
+          await formMethods.trigger();
+        }
+  
+        // Check step transition
+        if (!canTransitionToStep(progress.currentStep, step, data?.selectedPlan)) {
+          throw new Error('Invalid step transition');
+        }
+  
+        // Validate tier access
+        const tierValidation = validateTierAccess(step, data?.selectedPlan);
+        if (!tierValidation.valid) {
+          throw new Error(tierValidation.message);
+        }
+      
+        // Validate transition
+        const transitionResult = await validateOnboardingTransition(
+          progress.currentStep || APP_CONFIG.onboarding.steps.INITIAL,
+          step,
+          APP_CONFIG.onboarding.transitions,
+          data?.selectedPlan
+        );
+  
+        if (!transitionResult.isValid) {
+          throw new Error(transitionResult.reason);
+        }
+  
+        // Validate and save step
+        const response = await saveOnboardingStep(
+          session,
+          step,
+          data,
+          requestId
+        );
+  
+        logger.debug('Step saved successfully:', {
+          step,
+          requestId,
+          hasResponse: !!response?.data
+        });
+  
+        return response.data;
+      } catch (error) {
+        const errorResult = handleAuthError(error);
+        logger.error('Step save failed:', {
+          error: errorResult,
+          step,
+          requestId
+        });
+        throw errorResult;
       }
-      const currentStep = progress.currentStep || APP_CONFIG.onboarding.steps.INITIAL;
-
-      // Validate transition before making request
-      validateTransition(currentStep, step, APP_CONFIG.onboarding.transitions);
-
-      const validatedData = validateStepData(step, data);
-      const endpoint = APP_CONFIG.api.endpoints.onboarding[step];
-
-      const response = await axiosInstance.post(endpoint, validatedData);
-      return response.data;
     },
+  
     onSuccess: (data, { step }) => {
+      logger.debug('Handling successful step save:', {
+        step,
+        requestId,
+        hasData: !!data
+      });
+  
+      // Update form data
       setFormData((prev) => ({
         ...prev,
         [step]: data,
       }));
-
+  
       setLastSavedAt(new Date().toISOString());
-
-      // Update progress with new step
+  
+      // Update progress state
       setProgress((prev) => {
         const completedSteps = new Set(prev.completedSteps);
         completedSteps.add(step);
-
+  
         return {
           currentStep: step,
           completedSteps,
@@ -178,25 +285,63 @@ export const useOnboarding = (formMethods) => {
           },
         };
       });
-
+  
       setSaveStatus('success');
+  
+      // Handle business-info success
+      if (step === 'business-info') {
+        router.push('/onboarding/subscription');
+        return;
+      }
+  
+      // Handle other step redirects
+      if (data?.redirect_url) {
+        router.push(data.redirect_url);
+      }
     },
+  
     onError: (error, { step }) => {
-      logger.error(`Failed to save step ${step}:`, {
-        error: error.message,
-        stack: error.stack,
+      const errorResult = handleAuthError(error);
+      
+      logger.error('Step save error:', {
+        error: errorResult,
+        step,
+        requestId,
+        stack: error.stack
       });
-
-      setProgress((prev) => ({
-        ...prev,
-        stepValidation: {
-          ...prev.stepValidation,
-          [step]: false,
-        },
-      }));
-
-      setError(error.message);
-      setSaveStatus('error');
+  
+      // Only update progress for non-business-info steps
+      if (step !== 'business-info') {
+        setProgress((prev) => ({
+          ...prev,
+          stepValidation: {
+            ...prev.stepValidation,
+            [step]: false,
+          },
+        }));
+  
+        setError(errorResult.message);
+        setSaveStatus('error');
+  
+        if (errorResult.redirectTo) {
+          router.push(errorResult.redirectTo);
+        }
+      }
+    },
+  
+    retry: (failureCount, error) => {
+      // Don't retry for business-info
+      if (error?.step === 'business-info') {
+        return false;
+      }
+  
+      // Don't retry for auth errors
+      if (error?.type === AUTH_ERRORS.AUTH_ERROR || 
+          error?.type === AUTH_ERRORS.TOKEN_EXPIRED) {
+        return false;
+      }
+  
+      return failureCount < APP_CONFIG.auth.maxRetries;
     },
   });
 
@@ -206,40 +351,121 @@ export const useOnboarding = (formMethods) => {
         step,
         data,
         retryCount,
-        maxRetries: APP_CONFIG.auth.maxRetries,
+        requestId
       });
-
+  
       try {
-        const validatedData = await validateStepData(step, data);
-        const result = await saveStepMutation.mutateAsync({
-          step,
-          data: validatedData,
-        });
-
-        if (step === 'complete') {
-          logger.debug('Onboarding completed successfully');
+        // Special handling for business-info step
+        if (step === 'business-info') {
+          logger.debug('Processing business-info step', {
+            requestId,
+            hasSession: !!session?.user
+          });
+  
+          const validationResult = await validateOnboardingStep(
+            session,
+            step,
+            data,
+            requestId
+          );
+  
+          if (!validationResult.isValid) {
+            throw new Error(validationResult.reason);
+          }
+  
+          const response = await saveOnboardingStep(
+            session, 
+            step, 
+            validationResult.data,
+            requestId
+          );
+  
+          logger.debug('Business info saved, redirecting to subscription', {
+            requestId
+          });
+  
+          router.push('/onboarding/subscription');
+          return response.data;
         }
-
-        return result;
-      } catch (error) {
-        logger.error('Save attempt failed:', {
-          error,
-          retryCount,
-          maxRetries: APP_CONFIG.auth.maxRetries,
+  
+        // For other steps, perform full validation
+        if (isTokenExpired(session?.user)) {
+          router.push('/auth/signin');
+          throw new Error(AUTH_ERRORS.TOKEN_EXPIRED);
+        }
+  
+        // Validate step transition
+        const transitionResult = validateOnboardingTransition(
+          progress.currentStep || APP_CONFIG.onboarding.steps.INITIAL,
+          step,
+          APP_CONFIG.onboarding.transitions
+        );
+  
+        if (!transitionResult.isValid) {
+          router.push(transitionResult.redirectTo);
+          throw new Error(transitionResult.reason);
+        }
+  
+        // Validate step data
+        const validationResult = await validateOnboardingStep(
+          session,
           step,
           data,
+          requestId
+        );
+  
+        if (!validationResult.isValid) {
+          router.push(validationResult.redirectTo);
+          throw new Error(validationResult.reason);
+        }
+  
+        // Save step
+        const response = await saveOnboardingStep(
+          session, 
+          step, 
+          validationResult.data,
+          requestId
+        );
+  
+        // Handle redirects
+        if (response.data?.redirect_url) {
+          router.push(response.data.redirect_url);
+        } else if (step === 'complete') {
+          router.push('/dashboard');
+        }
+  
+        return response.data;
+  
+      } catch (error) {
+        const errorResult = handleAuthError(error);
+        logger.error('Save attempt failed:', {
+          error: errorResult,
+          step,
+          retryCount,
+          requestId
         });
-
-        if (retryCount < APP_CONFIG.auth.maxRetries) {
+  
+        // Only handle redirects for non-business-info steps
+        if (step !== 'business-info' && errorResult.redirectTo) {
+          router.push(errorResult.redirectTo);
+        }
+  
+        // Only retry for non-business-info steps
+        if (step !== 'business-info' && retryCount < APP_CONFIG.auth.maxRetries) {
           const delay = APP_CONFIG.auth.retryDelay * Math.pow(2, retryCount);
-          await new Promise((resolve) => setTimeout(resolve, delay));
+          logger.debug('Retrying after delay:', {
+            delay,
+            retryCount,
+            requestId
+          });
+          await new Promise(resolve => setTimeout(resolve, delay));
           return saveStepWithRetry(step, data, retryCount + 1);
         }
-
+  
         throw error;
       }
     },
-    [saveStepMutation, validateStepData]
+    [session, router, progress.currentStep, requestId]
   );
 
   const cleanupStaleData = useCallback(async () => {
@@ -257,115 +483,233 @@ export const useOnboarding = (formMethods) => {
     }
   }, []);
 
-  // Initialize function with better state management
+  const updateInitializationState = useCallback((initializing, error = null) => {
+    setInitializationState(prev => ({ ...prev, initializing }));
+    setLoading(initializing);
+    setError(error);
+  }, []);
+
+  const handleNavigation = useCallback((url) => {
+    if (!url) return;
+    try {
+      logger.debug('Navigating to:', url);
+      router.push(url);
+    } catch (error) {
+      logger.error('Navigation failed:', error);
+    }
+  }, [router]);
+
+
+
   const initialize = useCallback(async () => {
+    const requestId = generateRequestId();
+
+
+    logger.debug('Starting initialization', {
+      requestId,
+      userId: session.user.id,
+      attempt: initAttempts + 1,
+      status,
+    });
+  
+    // Special handling for business-info page
+    if (window.location.pathname === '/onboarding/business-info') {
+      logger.debug('Direct business-info access initialization', {
+        requestId,
+        pathname: window.location.pathname
+      });
+      
+      return {
+        status: 'business-info',
+        data: {},
+        progress: {
+          currentStep: 'business-info',
+          completedSteps: new Set(['business-info']),
+          lastActiveStep: 'business-info',
+          stepValidation: {
+            'business-info': true
+          },
+          selectedTier: null
+        }
+      };
+    }
+  
     if (initializationState.initializing) {
       logger.debug('Initialization already in progress', {
+        requestId,
         status,
         initAttempts,
         sessionId: session?.user?.id,
       });
       return;
     }
-
+  
     if (!session?.user?.id) {
-      logger.warn('No user session for initialization', { status });
+      logger.warn('No user session for initialization', { requestId, status });
       return;
     }
-
-    logger.debug('Starting initialization', {
-      userId: session.user.id,
-      attempt: initAttempts + 1,
-      status,
-    });
-
+  
+  
+    updateInitializationState(true);
+  
     try {
-      setInitializationState((prev) => ({ ...prev, initializing: true }));
-      setLoading(true);
-      setError(null);
-
+      // First validate user state using authUtils
+      const userState = await validateUserState(session, requestId);
+      if (!userState.isValid) {
+        handleNavigation(userState.redirectTo);
+        return;
+      }
+  
       // Clean up any stale data first
       await cleanupStaleData();
-
+  
       // Get saved data from storage
       const savedData = await persistenceService.loadData(APP_CONFIG.storage.keys.onboarding);
-      logger.debug('Retrieved storage data', { savedData });
-
-      // Get current status from API
-      const response = await axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status);
+      logger.debug('Retrieved storage data', { requestId, savedData });
+  
+      // Get current status using makeRequest from authUtils
+      const response = await makeRequest(() => 
+        axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status, {
+          headers: { Authorization: `Bearer ${session.user.accessToken}` },
+          timeout: TIMEOUT
+        })
+      );
+  
       logger.debug('Retrieved API status', {
+        requestId,
         statusCode: response.status,
         data: response.data,
       });
-
-      // Update step progress
-      const currentStep = response.data.status || APP_CONFIG.onboarding.steps.INITIAL;
+  
+      if (!response.data?.status) {
+        throw new Error(AUTH_ERRORS.VALIDATION_FAILED);
+      }
+  
+      const currentStep = response.data.status;
+  
+      if (currentStep === 'complete') {
+        logger.info('Onboarding is complete, redirecting to dashboard', { requestId });
+        const redirectUrl = response.data?.redirect_url || '/dashboard';
+        handleNavigation(redirectUrl);
+        return;
+      }
+  
+      // Process onboarding steps
       const steps = Object.values(APP_CONFIG.onboarding.steps);
       const currentIndex = steps.indexOf(currentStep);
+      
+      if (currentIndex === -1) {
+        throw new Error(AUTH_ERRORS.INVALID_STEP);
+      }
 
-      // Build step validation state
-      const stepValidation = steps.reduce(
-        (acc, step, index) => ({
+      // Build step validation state using new validation system
+      const stepValidation = steps.reduce((acc, step) => {
+        const canTransition = canTransitionToStep(currentStep, step, response.data?.selectedPlan);
+        return {
           ...acc,
-          [step]: index <= currentIndex,
-        }),
-        {}
-      );
-
+          [step]: canTransition
+        };
+      }, {});
+  
       // Set progress state
-      setProgress({
+      const newProgress = {
         currentStep,
         completedSteps: new Set(steps.slice(0, currentIndex + 1)),
         lastActiveStep: currentStep,
         stepValidation,
-      });
-
+      };
+  
+      logger.debug('Setting new progress state:', { requestId, newProgress });
+      setProgress(newProgress);
+  
       // Merge and validate data
       const mergedData = {
         ...(savedData?.data || {}),
         ...response.data,
       };
-
-      // Filter out invalid data
-      const validatedData = Object.entries(mergedData).reduce((acc, [step, data]) => {
+  
+      // Validate each step using validateOnboardingStep from authUtils
+      const validatedData = await Object.entries(mergedData).reduce(async (promiseAcc, [step, data]) => {
+        const acc = await promiseAcc;
         if (data && typeof data === 'object' && !Array.isArray(data)) {
-          acc[step] = data;
+          try {
+            const validationResult = await validateOnboardingStep(
+              session, 
+              step, 
+              data,
+              requestId
+            );
+            if (validationResult.isValid) {
+              acc[step] = validationResult.data;
+              // Update tier if subscription data is valid
+              if (step === 'subscription' && data.selectedPlan) {
+                setProgress(prev => ({
+                  ...prev,
+                  selectedTier: data.selectedPlan
+                }));
+              }
+            }
+          } catch (error) {
+            const errorResult = handleAuthError(error);
+            logger.warn(`Invalid data for step ${step}:`, {
+              requestId,
+              error: errorResult.message
+            });
+          }
         }
         return acc;
-      }, {});
-
+      }, Promise.resolve({}));
+  
       // Update state
       setFormData(validatedData);
-      setInitializationState({ initialized: true, initializing: false });
       setInitialized(true);
       setInitAttempts(0);
-
+  
       logger.info('Initialization completed successfully', {
+        requestId,
         userId: session.user.id,
         currentStep,
         dataSize: Object.keys(validatedData).length,
+        completedSteps: Array.from(newProgress.completedSteps),
       });
-
-      return validatedData;
+  
+      return {
+        status: currentStep,
+        data: validatedData,
+        progress: newProgress,
+      };
+  
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message;
+      const errorResult = handleAuthError(error);
       logger.error('Initialization failed', {
-        error: errorMessage,
+        requestId,
+        error: errorResult.message,
         userId: session?.user?.id,
         attempt: initAttempts + 1,
         status: error.response?.status,
       });
-
-      setError(errorMessage);
-      setInitializationState({ initialized: false, initializing: false });
+  
       setInitialized(false);
       setInitAttempts((prev) => prev + 1);
-
+      updateInitializationState(false, errorResult.message);
+  
+      if (errorResult.redirectTo) {
+        handleNavigation(errorResult.redirectTo);
+      }
+  
       throw error;
     } finally {
-      setLoading(false);
+      updateInitializationState(false);
     }
-  }, [session, status, initAttempts, cleanupStaleData, initializationState.initializing]);
+  }, [
+    session,
+    status, 
+    initAttempts,
+    cleanupStaleData,
+    initializationState.initializing,
+    updateInitializationState,
+    handleNavigation
+  ]);
 
   const resetOnboarding = useCallback(async () => {
     logger.debug('Starting onboarding reset', {
@@ -415,8 +759,9 @@ export const useOnboarding = (formMethods) => {
 
   return {
     formData,
-    loading: loading || saveStepMutation.isLoading || initializationState.initializing,
-    error,
+    isLoading: loading || saveStepMutation.isLoading || initializationState.initializing || queryResult.isLoading,
+    error: error || queryResult.error,
+    router,
     initialized: initializationState.initialized,
     initializing: initializationState.initializing,
     initialize,
@@ -424,11 +769,10 @@ export const useOnboarding = (formMethods) => {
     saveStep: saveStepWithRetry,
     resetOnboarding,
     progress,
+    selectedTier: progress.selectedTier,
     saveStatus,
     lastSavedAt,
-    status: queryResult.data?.status,
+    onboardingStatus: queryResult.data?.status,
     currentStep: queryResult.data?.currentStep,
-    loading: queryResult.isLoading,
-    error: queryResult.error,
   };
 };

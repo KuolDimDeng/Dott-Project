@@ -1,28 +1,96 @@
-// src/app/onboarding/page.js
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
-import { OnboardingErrorBoundary } from '@/components/ErrorBoundary/OnboardingErrorBoundary';
+import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
+import { Box, Typography, Alert, Button, CircularProgress } from '@mui/material';
 import { LoadingStateWithProgress } from '@/components/LoadingState';
-import { ErrorStep } from '@/components/ErrorStep';
 import { useOnboarding } from './hooks/useOnboarding';
 import { logger } from '@/utils/logger';
-import { STEP_ROUTES } from './constants/onboardingConstants';
+import PropTypes from 'prop-types';
 
-function OnboardingContent() {
+// Onboarding-specific error fallback
+const OnboardingErrorFallback = memo(function OnboardingErrorFallback({ 
+  error, 
+  resetErrorBoundary, 
+  stepNumber = 1 
+}) {
+  const [isResetting, setIsResetting] = React.useState(false);
+  const errorId = React.useRef(crypto.randomUUID()).current;
+
+  React.useEffect(() => {
+    logger.error('Onboarding error occurred:', {
+      errorId,
+      stepNumber,
+      error: error?.message,
+      stack: error?.stack
+    });
+  }, [error, stepNumber, errorId]);
+
+  const handleReset = async () => {
+    try {
+      setIsResetting(true);
+      await resetErrorBoundary();
+    } catch (error) {
+      logger.error('Onboarding reset failed:', {
+        errorId,
+        error: error.message
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  return (
+    <Box
+      display="flex"
+      flexDirection="column"
+      justifyContent="center"
+      alignItems="center"
+      minHeight="100vh"
+      p={3}
+      gap={2}
+    >
+      <Alert
+        severity="error"
+        action={
+          <Button 
+            color="inherit" 
+            size="small" 
+            onClick={handleReset}
+            disabled={isResetting}
+          >
+            {isResetting ? <CircularProgress size={20} /> : 'Try Again'}
+          </Button>
+        }
+        sx={{ maxWidth: 500, width: '100%' }}
+      >
+        Error in Step {stepNumber}: {error?.message || 'Failed to load onboarding'}
+      </Alert>
+      <Typography variant="body2" color="text.secondary" align="center">
+        Please try again or contact support if the problem persists.
+        <br />
+        Error Reference: {errorId}
+      </Typography>
+    </Box>
+  );
+});
+
+// Main onboarding content component
+const OnboardingContent = memo(function OnboardingContent() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [isInitializing, setIsInitializing] = useState(false);
   const [initializationAttempts, setInitializationAttempts] = useState(0);
+  const requestIdRef = React.useRef(crypto.randomUUID());
 
-  // Add form methods with proper initial state
   const methods = useForm({
     defaultValues: {
       selectedPlan: '',
       billingCycle: 'monthly',
+      tier: '' // Add tier
     },
   });
 
@@ -33,9 +101,9 @@ function OnboardingContent() {
     initialized,
     initialize,
     progress,
+    selectedTier, // Add this
   } = useOnboarding(methods);
 
-  // Enhanced initialization effect with retry logic
   useEffect(() => {
     let mounted = true;
     let timeoutId;
@@ -44,27 +112,39 @@ function OnboardingContent() {
       if (!initialized && !isInitializing && status === 'authenticated') {
         try {
           setIsInitializing(true);
+          
+          logger.info('Starting store initialization', {
+            requestId: requestIdRef.current,
+            attempt: initializationAttempts + 1,
+            tier: selectedTier // Add tier logging
+
+          });
+
           await initialize();
 
           if (mounted) {
             logger.debug('Store initialization complete', {
+              requestId: requestIdRef.current,
               currentStep,
               initialized: true,
-              attempts: initializationAttempts,
+              tier: selectedTier // Add tier logging
+
             });
           }
         } catch (error) {
           logger.error('Store initialization failed:', {
-            error,
-            attempts: initializationAttempts,
+            requestId: requestIdRef.current,
+            error: error.message,
+            attempt: initializationAttempts + 1,
+            tier: selectedTier // Add tier logging
+
           });
 
-          // Add retry logic with exponential backoff
           if (initializationAttempts < 3) {
             const delay = Math.pow(2, initializationAttempts) * 1000;
             timeoutId = setTimeout(() => {
               if (mounted) {
-                setInitializationAttempts((prev) => prev + 1);
+                setInitializationAttempts(prev => prev + 1);
               }
             }, delay);
           }
@@ -84,67 +164,89 @@ function OnboardingContent() {
         clearTimeout(timeoutId);
       }
     };
-  }, [initialize, initialized, isInitializing, status, currentStep, initializationAttempts]);
+  }, [initialize, initialized, isInitializing, status, currentStep, initializationAttempts, selectedTier]); // Add selectedTier to deps
 
-  // Enhanced loading state with more context
   if (!initialized || storeLoading || isInitializing) {
     const message = isInitializing
       ? `Initializing... (Attempt ${initializationAttempts + 1}/3)`
       : !initialized && status === 'authenticated'
         ? 'Loading your information...'
-        : `${progress?.currentStep || 'Preparing'} (${progress?.progress || 0}%)`;
-
-    logger.debug('Loading state:', {
-      message,
-      initialized,
-      storeLoading,
-      isInitializing,
-      status,
-      progress,
-    });
-
+        : `${progress?.currentStep || 'Preparing'} ${
+            selectedTier ? `(${selectedTier} tier)` : ''
+          } (${progress?.progress || 0}%)`;
+  
     return (
       <LoadingStateWithProgress
         message={message}
         progress={progress?.progress || 0}
         isIndeterminate={!progress?.progress}
+        tier={selectedTier} // Add tier
       />
     );
   }
 
-  // Enhanced error handling
   if (storeError) {
-    logger.error('Store error:', {
-      error: storeError,
-      currentStep,
-      initializationAttempts,
+    throw new Error(storeError.message || 'Failed to initialize onboarding', {
+      cause: storeError
     });
-
-    return (
-      <ErrorStep
-        error={storeError}
-        stepNumber={currentStep?.replace('step', '') || 1}
-        onRetry={() => {
-          logger.debug('Retrying initialization');
-          setInitializationAttempts(0);
-          setIsInitializing(false);
-          initialize();
-        }}
-      />
-    );
   }
 
   return null;
-}
+});
 
+// Main page component with error boundary
 export default function OnboardingPage() {
+  const handleRecovery = async () => {
+    const recoveryId = crypto.randomUUID();
+    
+    logger.info('Starting onboarding recovery', { 
+      recoveryId,
+      tier: selectedTier // Add tier logging
+    });
+    
+    try {
+      await fetch('/api/onboarding/reset', {
+        method: 'POST',
+        headers: { 
+          'x-recovery-id': recoveryId,
+          'x-subscription-tier': selectedTier // Add tier header
+        }
+      });
+      
+      logger.info('Onboarding recovery successful', { 
+        recoveryId,
+        tier: selectedTier // Add tier logging
+      });
+      return true;
+    } catch (error) {
+      logger.error('Onboarding recovery failed', {
+        recoveryId,
+        error: error.message,
+        tier: selectedTier // Add tier logging
+      });
+      return false;
+    }
+  };
+
   return (
-    <OnboardingErrorBoundary
-      fallback={({ error, resetError }) => (
-        <ErrorStep error={error} stepNumber={1} onRetry={resetError} />
-      )}
+    <ErrorBoundary
+      componentName="Onboarding"
+      onReset={handleRecovery}
+      FallbackComponent={OnboardingErrorFallback}
     >
       <OnboardingContent />
-    </OnboardingErrorBoundary>
+    </ErrorBoundary>
   );
 }
+
+// PropTypes definitions
+OnboardingErrorFallback.propTypes = {
+  error: PropTypes.shape({
+    message: PropTypes.string,
+    stack: PropTypes.string
+  }),
+  resetErrorBoundary: PropTypes.func.isRequired,
+  stepNumber: PropTypes.number
+};
+
+OnboardingContent.propTypes = {};

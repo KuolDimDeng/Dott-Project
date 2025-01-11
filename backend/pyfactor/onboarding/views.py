@@ -1088,17 +1088,16 @@ def update_session(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-
+@method_decorator(csrf_exempt, name='dispatch')
 class SaveStep1View(APIView):
-    """
-    Enhanced Step 1 handler with improved validation and error handling
-    """
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication, SessionAuthentication]
+    renderer_classes = [JSONRenderer]
+    parser_classes = [JSONParser]
     
     REQUIRED_FIELDS = [
         'businessName',
-        'industry',
+        'industry', 
         'country',
         'legalStructure',
         'dateFounded',
@@ -1106,14 +1105,8 @@ class SaveStep1View(APIView):
         'lastName'
     ]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.channel_layer = get_channel_layer()
-
     def validate_data(self, data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
-        """Validate incoming data"""
         try:
-            # Check required fields
             missing_fields = [
                 field for field in self.REQUIRED_FIELDS 
                 if not data.get(field)
@@ -1122,7 +1115,6 @@ class SaveStep1View(APIView):
             if missing_fields:
                 return False, f"Missing required fields: {', '.join(missing_fields)}"
 
-            # Validate date format
             if data.get('dateFounded'):
                 datetime.strptime(data['dateFounded'], '%Y-%m-%d')
             
@@ -1136,157 +1128,110 @@ class SaveStep1View(APIView):
 
     @transaction.atomic
     def save_business_data(self, user, data: Dict[str, Any]) -> Tuple[Business, bool]:
-        try:
-            # Format date
-            date_founded = datetime.strptime(
-                data['dateFounded'], 
-                '%Y-%m-%d'
-            ).date()
+        date_founded = datetime.strptime(
+            data['dateFounded'], 
+            '%Y-%m-%d'
+        ).date()
 
-            # Create/update business
-            business, created = Business.objects.get_or_create(
-                owner=user,
-                defaults={
-                    'business_name': data['businessName'],
-                    'business_type': data['industry'],
-                    'country': data['country'],
-                    'legal_structure': data['legalStructure'],
-                    'date_founded': date_founded
-                }
-            )
+        business, created = Business.objects.get_or_create(
+            owner=user,
+            defaults={
+                'business_name': data['businessName'],
+                'business_type': data['industry'],
+                'country': data['country'],
+                'legal_structure': data['legalStructure'],
+                'date_founded': date_founded
+            }
+        )
 
-            if not created:
-                # Update existing business
-                business.business_name = data['businessName']
-                business.business_type = data['industry']
-                business.country = data['country']
-                business.legal_structure = data['legalStructure']
-                business.date_founded = date_founded
-                business.save()
+        if not created:
+            business.business_name = data['businessName']
+            business.business_type = data['industry']
+            business.country = data['country']
+            business.legal_structure = data['legalStructure']
+            business.date_founded = date_founded
+            business.save()
 
-            # Link the business to the user's profile
-            UserProfile.objects.filter(user=user).update(
-                business=business,
-                is_business_owner=True
-            )
+        UserProfile.objects.filter(user=user).update(
+            business=business,
+            is_business_owner=True
+        )
 
-            return business, created
-
-        except Exception as e:
-            logger.error(f"Error saving business data: {str(e)}")
-            raise
+        return business, created
 
     @transaction.atomic
     def save_onboarding_progress(self, user: User, data: Dict[str, Any]) -> OnboardingProgress:
-        """Save onboarding progress with validation"""
-        try:
-            # Get or create progress
-            progress, _ = OnboardingProgress.objects.get_or_create(
-                user=user,
-                defaults={
-                    'email': user.email,
-                    'onboarding_status': 'step1',
-                    'current_step': 1
-                }
-            )
+        progress, _ = OnboardingProgress.objects.get_or_create(
+            user=user,
+            defaults={
+                'email': user.email,
+                'onboarding_status': 'subscription',
+                'current_step': 2
+            }
+        )
 
-            # Update progress fields
-            date_founded = datetime.strptime(data['dateFounded'], '%Y-%m-%d').date()
-            
-            progress.first_name = data['firstName']
-            progress.last_name = data['lastName']
-            progress.business_name = data['businessName']
-            progress.business_type = data['industry']
-            progress.country = data['country']
-            progress.legal_structure = data['legalStructure']
-            progress.date_founded = date_founded
-            progress.onboarding_status = 'step2'  # Move to next step
-            progress.current_step = 2
-            progress.last_updated = timezone.now()
-            progress.save()
+        date_founded = datetime.strptime(data['dateFounded'], '%Y-%m-%d').date()
+        
+        progress.first_name = data['firstName']
+        progress.last_name = data['lastName']
+        progress.business_name = data['businessName']
+        progress.business_type = data['industry']
+        progress.country = data['country']
+        progress.legal_structure = data['legalStructure']
+        progress.date_founded = date_founded
+        progress.onboarding_status = 'subscription'
+        progress.current_step = 2
+        progress.last_updated = timezone.now()
+        progress.save()
 
-            return progress
-
-        except Exception as e:
-            logger.error(f"Error saving onboarding progress: {str(e)}")
-            raise
+        return progress
 
     def post(self, request, *args, **kwargs):
-        """Handle step 1 submission"""
         logger.info("Received Step1 save request")
         logger.debug(f"Request data: {request.data}")
 
         try:
-            # Validate data first
+            # Validate data
             is_valid, error = self.validate_data(request.data)
             if not is_valid:
                 return Response({
-                    'error': error
+                    'error': error,
+                    'code': 'validation_error'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            # Save business data
-            business, created = self.save_business_data(
-                request.user,
-                request.data
-            )
+            with transaction.atomic():
+                # Save business data
+                business, created = self.save_business_data(request.user, request.data)
+                
+                # Save onboarding progress
+                progress = self.save_onboarding_progress(request.user, request.data)
 
-            # Save onboarding progress
-            progress = self.save_onboarding_progress(
-                request.user,
-                request.data
-            )
+                return Response({
+                    "success": True,
+                    "message": "Business information saved successfully",
+                    "data": {
+                        "onboardingStatus": "subscription",
+                        "currentStep": 2,
+                        "allowedStepNumber": 2,
+                        "completedSteps": ["business-info"],
+                        "businessInfo": {
+                            "businessName": business.business_name,
+                            "industry": business.business_type,
+                            "country": business.country,
+                            "legalStructure": business.legal_structure,
+                            "dateFounded": business.date_founded.isoformat()
+                        }
+                    }
+                }, status=status.HTTP_200_OK)
 
-            # Return success response
-            return Response({
-                "message": "Step 1 completed successfully",
-                "business_id": str(business.id),
-                "next_step": "step2",
-                "business_created": created
-            }, status=status.HTTP_200_OK)
-
-        except ValueError as e:
-            logger.warning(f"Validation error: {str(e)}")
-            return Response({
-                "error": str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
-            
-        except (Business.DoesNotExist, OnboardingProgress.DoesNotExist) as e:
-            logger.error(f"Data not found error: {str(e)}")
-            return Response({
-                "error": "Required data not found",
-                "details": str(e)
-            }, status=status.HTTP_404_NOT_FOUND)
-            
-        except IntegrityError as e:
-            logger.error(f"Database integrity error: {str(e)}")
-            return Response({
-                "error": "Database constraint violation",
-                "details": str(e)
-            }, status=status.HTTP_409_CONFLICT)
-            
         except Exception as e:
-            logger.error(f"Unexpected error in SaveStep1View: {str(e)}", exc_info=True)
+            logger.error(f"Error saving business info: {str(e)}", exc_info=True)
             return Response({
-                "error": "An unexpected error occurred",
-                "details": str(e)
+                "error": "Failed to save business information",
+                "message": str(e),
+                "code": "server_error"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-def validate_plan_selection(data):
-    """Validate plan selection data with comprehensive checks"""
-    if not data.get('selectedPlan'):
-        raise ValidationError("Selected plan is required")
-        
-    if not data.get('billingCycle'):
-        raise ValidationError("Billing cycle is required")
-        
-    valid_plans = ['Basic', 'Professional']
-    if data['selectedPlan'] not in valid_plans:
-        raise ValidationError(f"Invalid plan. Must be one of: {valid_plans}")
-        
-    valid_cycles = ['monthly', 'annual']
-    if data['billingCycle'] not in valid_cycles:
-        raise ValidationError(f"Invalid billing cycle. Must be one of: {valid_cycles}")
-
+            
 @method_decorator(csrf_exempt, name='dispatch')
 class SaveStep2View(BaseOnboardingView):
     """Handle Step 2 of the onboarding process"""
@@ -2457,4 +2402,26 @@ class SetupStatusView(BaseOnboardingView):
             return Response({
                 "status": "error",
                 "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ValidateSubscriptionAccessView(BaseOnboardingView):
+    def get(self, request):
+        try:
+            progress = OnboardingProgress.objects.get(user=request.user)
+            
+            can_access = (
+                progress.onboarding_status == 'subscription' or 
+                progress.onboarding_status == 'business-info'
+            )
+            
+            return Response({
+                'canAccess': can_access,
+                'currentStatus': progress.onboarding_status,
+                'currentStep': progress.current_step
+            })
+            
+        except Exception as e:
+            logger.error(f"Access validation error: {str(e)}")
+            return Response({
+                'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

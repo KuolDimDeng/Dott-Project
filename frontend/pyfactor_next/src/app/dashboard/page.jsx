@@ -5,103 +5,159 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import DashboardContent from './DashboardContent';
-import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
 import { axiosInstance } from '@/lib/axiosConfig';
+import { SetupProgressIndicator } from '@/components/SetupProgressIndicator';
 import { logger } from '@/utils/logger';
-import { LoadingStateWithProgress } from '@/components/LoadingState';
-import { ErrorStep } from '@/components/ErrorStep';
+import { 
+  validateUserState, 
+  SETUP_STATUS, 
+  handleAuthError, 
+  checkSetupStatus, 
+  POLL_INTERVALS,
+  createErrorHandler, // Add this import
+  validateAndRouteUser // Add this import
+} from '@/lib/authUtils';
 
 export default function Dashboard() {
-  // Get session and navigation tools
-  const { data: session, status } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
-  const { onboardingStatus, loading: onboardingLoading } = useOnboarding();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  
+  const [setupStatus, setSetupStatus] = useState(null);
+  const [setupProgress, setSetupProgress] = useState(0);
+  const [setupError, setSetupError] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [authError, setAuthError] = useState(null);
+  const [requestId] = useState(() => crypto.randomUUID());
+
+
+  const handleSetupStatus = (setupState, progress) => {
+    if (Object.values(SETUP_STATUS).includes(setupState)) {
+      setSetupStatus(setupState);
+      setSetupProgress(progress || 0);
+      
+      if (setupState === SETUP_STATUS.SUCCESS) {
+        setIsInitialized(true);
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const handleValidationError = useCallback(async (error, context = {}) => {
+    const errorHandler = createErrorHandler(router, logger);
+    return errorHandler(error, requestId, {
+      component: 'Dashboard',
+      ...context
+    });
+  }, [router, requestId]);
+
+  const handleStatusError = (error) => {
+    const errorResult = handleAuthError(error);
+    
+    logger.error('Status check failed:', {
+      requestId,  // Add this
+      error,
+      errorType: errorResult.type,
+      currentUrl: window.location.pathname,
+      setupStatus
+    });
+  
+    if (errorResult.redirectTo) {
+      setAuthError(errorResult.message);
+      router.replace(errorResult.redirectTo);
+      return true;
+    }
+  
+    setSetupError(errorResult.message);
+    return false;
+  };
 
   useEffect(() => {
-    // Create a flag to handle component unmounting
+    if (!session?.user || isInitialized) return;
+
     let mounted = true;
+    let pollInterval = null;
 
-    const checkAccess = async () => {
+    const checkStatus = async () => {
       try {
-        if (status === 'loading') {
-          return;
+        const validationResult = await validateAndRouteUser(
+          { user: session?.user },
+          { pathname, requestId }
+        );
+    
+        if (!validationResult.isValid) {
+          throw new Error(validationResult.reason);
         }
-
-        if (status === 'unauthenticated') {
-          logger.info('Redirecting unauthenticated user to signin');
-          router.replace('/auth/signin');
-          return;
+    
+        const setupResult = await checkSetupStatus(session, requestId);
+        if (!mounted) return;
+    
+        const setupComplete = handleSetupStatus(setupResult.status, setupResult.progress);
+        if (setupComplete) {
+          clearInterval(pollInterval);
         }
-
-        if (status === 'authenticated' && session?.user?.accessToken) {
-          const response = await axiosInstance.get('/api/onboarding/status/');
-
-          if (!mounted) return;
-
-          const backendStatus = response.data.status;
-
-          // Important change: Don't check session status since it might be stale
-          logger.debug('Checking user access:', {
-            backendStatus,
-            userId: session.user.id,
-          });
-
-          // Only check backend status
-          if (backendStatus !== 'complete') {
-            const currentStep = response.data.currentStep || 'step1';
-            logger.info(`Redirecting to onboarding step: ${currentStep}`);
-            router.replace(`/onboarding/${currentStep}`);
-            return;
-          }
-
-          // User is properly authenticated and onboarded
-          setIsLoading(false);
-        }
+    
       } catch (error) {
-        logger.error('Dashboard access check failed:', error);
-        setError(error);
-        setIsLoading(false);
+        if (!mounted) return;
+        
+        // Use single error handler instead of both handleValidationError and handleStatusError
+        await handleValidationError(error, {
+          statusCheck: true,
+          setupStatus: setupStatus,
+          operation: 'checkStatus'
+        });
+        
+        clearInterval(pollInterval);
       }
     };
 
-    checkAccess();
+    // Initial check
+    checkStatus();
+    
+    // Start polling with dynamic interval
+    pollInterval = setInterval(
+      checkStatus, 
+      setupStatus === SETUP_STATUS.SUCCESS ? 
+        POLL_INTERVALS.SETUP_SUCCESS : 
+        POLL_INTERVALS.SETUP_IN_PROGRESS
+    );
 
-    // Cleanup function
     return () => {
       mounted = false;
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+      setAuthError(null);
+      setSetupError(null);
+      setSetupStatus(null); // Add this
+      setSetupProgress(0); // Add this
     };
-  }, [session, status, router]);
+  }, [session, router, isInitialized, setupStatus, requestId]); // Add requestId dependency
 
-  // Show loading state
-  if (status === 'loading' || isLoading) {
-    return <LoadingStateWithProgress message="Loading your dashboard..." showProgress={true} />;
-  }
 
-  // Show error state if something went wrong
-  if (error) {
-    return (
-      <ErrorStep
-        error={error}
-        onRetry={() => {
-          setError(null);
-          setIsLoading(true);
-        }}
-      />
-    );
-  }
-
-  // Show nothing while redirecting unauthenticated users
-  if (!session || status !== 'authenticated') {
+  if (sessionStatus === 'loading' || !session) {
     return null;
   }
 
-  // Render dashboard for authenticated and onboarded users
+  if (authError) {
+    return (
+      <div className="auth-error-container">
+        <p className="auth-error-message">{authError}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-container">
-      <h1>Welcome to Your Dashboard</h1>
-      <DashboardContent token={session.accessToken} user={session.user} />
+      <DashboardContent />
+      {setupStatus && setupStatus !== SETUP_STATUS.SUCCESS && (
+        <SetupProgressIndicator 
+          status={setupStatus}
+          progress={setupProgress}
+          error={setupError}
+          authError={authError}
+        />
+      )}
     </div>
   );
 }

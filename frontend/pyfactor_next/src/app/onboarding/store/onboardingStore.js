@@ -1,46 +1,89 @@
 // src/app/onboarding/store/onboardingStore.js
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { APP_CONFIG } from '@/config';
+import { 
+  validateUserState, 
+  validateOnboardingStep,
+  handleAuthError,
+  makeRequest,
+  generateRequestId,
+  AUTH_ERRORS 
+} from '@/lib/authUtils';
 
 const createOnboardingStore = () => {
   return create(
     devtools(
       persist(
         (set, get) => ({
-          // State
+          // Add tier state
+          selectedTier: null,
+          billingCycle: null,
+
+          // Update State
           currentStep: APP_CONFIG.onboarding.steps.INITIAL,
           formData: {},
           loading: false,
           error: null,
           initialized: false,
           initializationAttempts: 0,
+          requestId: generateRequestId(),
 
-          // Actions
-          initialize: async () => {
+          // Add tier actions
+          setTier: (tier) => {
+            if (!['free', 'professional'].includes(tier)) {
+              logger.error('Invalid tier selected', { tier });
+              throw new Error('Invalid subscription tier');
+            }
+            set({ selectedTier: tier });
+          },
+
+          setBillingCycle: (cycle) => {
+            if (!['monthly', 'annual'].includes(cycle)) {
+              logger.error('Invalid billing cycle', { cycle });
+              throw new Error('Invalid billing cycle');
+            }
+            set({ billingCycle: cycle });
+          },
+
+          // Update initialize to handle tier
+          initialize: async (session) => {
             const state = get();
+            const requestId = state.requestId;
 
             if (state.loading) {
-              logger.warn('Initialization already in progress');
+              logger.warn('Initialization already in progress', { requestId });
               return;
             }
 
             try {
               set({ loading: true, error: null });
 
-              const response = await axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status, {
-                timeout: APP_CONFIG.api.timeout,
-              });
-
-              if (!response?.data) {
-                throw new Error(APP_CONFIG.errors.messages.default);
+              const userState = await validateUserState(session, requestId);
+              if (!userState.isValid) {
+                throw new Error(userState.reason);
               }
 
+              const response = await makeRequest(() => ({
+                promise: fetch(APP_CONFIG.api.endpoints.onboarding.status, {
+                  headers: {
+                    'Authorization': `Bearer ${session.user.accessToken}`
+                  },
+                  timeout: APP_CONFIG.api.timeout
+                })
+              }));
+
+              if (!response?.data) {
+                throw new Error(AUTH_ERRORS.VALIDATION_FAILED);
+              }
+
+              // Include tier in state
               set({
                 currentStep: response.data.status || APP_CONFIG.onboarding.steps.INITIAL,
                 formData: response.data.form_data || {},
+                selectedTier: response.data.tier || null,
+                billingCycle: response.data.billing_cycle || null,
                 initialized: true,
                 loading: false,
                 error: null,
@@ -48,83 +91,94 @@ const createOnboardingStore = () => {
 
               return response.data;
             } catch (error) {
-              const errorMsg =
-                error.response?.status === 401
-                  ? APP_CONFIG.errors.messages.unauthorized
-                  : error.response?.status === 404
-                    ? APP_CONFIG.errors.messages.default
-                    : error.message || APP_CONFIG.errors.messages.initialization_failed;
-
+              const errorResult = handleAuthError(error);
+              
               logger.error('Store initialization failed:', {
-                error: errorMsg,
+                error: errorResult,
+                requestId,
                 status: error.response?.status,
-                data: error.response?.data,
               });
 
               set({
-                error: errorMsg,
+                error: errorResult.message,
                 loading: false,
                 initialized: false,
               });
 
-              throw error;
+              throw errorResult;
             }
           },
 
-          validateTransition: (fromStep, toStep) => {
-            const validTransitions = APP_CONFIG.onboarding.transitions[fromStep];
-            return validTransitions?.includes(toStep) || false;
-          },
-
-          saveStep: async (step, data) => {
+          validateTransition: async (fromStep, toStep, session) => {
             const state = get();
-
-            if (state.loading) {
-              logger.warn('Save already in progress');
-              throw new Error(APP_CONFIG.errors.messages.default);
-            }
-
-            if (!get().validateTransition(state.currentStep, step)) {
-              logger.error('Invalid step transition', {
-                from: state.currentStep,
-                to: step,
-              });
-              throw new Error(APP_CONFIG.errors.messages.transition_error);
-            }
-
-            set({ loading: true, error: null });
+            const requestId = state.requestId;
 
             try {
-              logger.debug(`Saving step ${step}:`, data);
+              const stepValidation = await validateOnboardingStep(
+                session,
+                toStep,
+                state.formData[toStep],
+                requestId
+              );
 
-              if (!data || typeof data !== 'object') {
-                throw new Error(APP_CONFIG.errors.messages.validation_error);
+              return stepValidation.isValid;
+            } catch (error) {
+              logger.error('Transition validation failed:', {
+                error,
+                requestId,
+                fromStep,
+                toStep
+              });
+              return false;
+            }
+          },
+
+          saveStep: async (step, data, session) => {
+            const state = get();
+            const requestId = state.requestId;
+            const currentTier = state.selectedTier;
+
+            if (state.loading) {
+              logger.warn('Save already in progress', { requestId });
+              throw new Error(AUTH_ERRORS.VALIDATION_FAILED);
+            }
+
+            // Add tier validation for payment step
+            if (step === 'payment' && currentTier !== 'professional') {
+              logger.error('Payment step not allowed for free tier', {
+                requestId,
+                tier: currentTier
+              });
+              throw new Error('Payment step not allowed for free tier');
+            }
+
+            // Rest of saveStep logic with tier context...
+            try {
+              const validationResult = await validateOnboardingStep(
+                session,
+                step,
+                { ...data, tier: currentTier },
+                requestId
+              );
+
+              if (!validationResult.isValid) {
+                throw new Error(validationResult.reason);
               }
 
-              let response;
-
-              // Special handling for step4 setup
-              if (step === APP_CONFIG.onboarding.steps.SETUP) {
-                response = await axiosInstance.post('/api/onboarding/step4/setup/', data);
-
-                // If setup started successfully, return immediately
-                if (response.data.status === 'started') {
-                  set({
-                    formData: { ...state.formData, ...data },
-                    currentStep: step,
-                    error: null,
-                    loading: false,
-                  });
-                  return response.data;
-                }
-              } else {
-                // Normal step saving
-                const endpoint = APP_CONFIG.api.endpoints.onboarding[step];
-                response = await axiosInstance.post(endpoint, data);
-              }
+              const endpoint = APP_CONFIG.api.endpoints.onboarding[step];
+              const response = await makeRequest(() => ({
+                promise: fetch(endpoint, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${session.user.accessToken}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(validationResult.data)
+                })
+              }));
 
               set({
-                formData: { ...state.formData, ...data },
+                formData: { ...state.formData, [step]: validationResult.data },
                 currentStep: response.data.next_step || step,
                 error: null,
                 loading: false,
@@ -132,52 +186,43 @@ const createOnboardingStore = () => {
 
               return response.data;
             } catch (error) {
-              const errorMessage = error.response?.data?.message || error.message;
-              logger.error(`Failed to save step ${step}:`, error);
+              const errorResult = handleAuthError(error);
+              
+              logger.error(`Failed to save step ${step}:`, {
+                error: errorResult,
+                requestId
+              });
 
               set({
-                error: errorMessage,
+                error: errorResult.message,
                 loading: false,
               });
 
-              throw error;
+              throw errorResult;
             }
           },
 
-          validateStep: (step) => {
+          // Update validateStep to include tier
+          validateStep: async (step, session) => {
+            const state = get();
+            const requestId = state.requestId;
+            const currentTier = state.selectedTier;
+
             try {
-              const { currentStep, formData } = get();
-              const steps = Object.values(APP_CONFIG.onboarding.steps);
+              const validationResult = await validateOnboardingStep(
+                session,
+                step,
+                { ...state.formData[step], tier: currentTier },
+                requestId
+              );
 
-              const isValidOrder = steps.indexOf(step) <= steps.indexOf(currentStep);
-
-              const validationRules = {
-                [APP_CONFIG.onboarding.steps.INITIAL]: () =>
-                  !!formData.businessName && !!formData.industry,
-                [APP_CONFIG.onboarding.steps.PLAN]: () => {
-                  return (
-                    !!formData.selectedPlan &&
-                    APP_CONFIG.app.plans.validPlans.includes(formData.selectedPlan) &&
-                    !!formData.billingCycle &&
-                    APP_CONFIG.app.plans.validBillingCycles.includes(formData.billingCycle)
-                  );
-                },
-                [APP_CONFIG.onboarding.steps.PAYMENT]: () => {
-                  if (formData.selectedPlan === APP_CONFIG.app.plans.defaultPlan) return false;
-                  return formData.selectedPlan === 'Professional' && !formData.paymentMethod;
-                },
-                [APP_CONFIG.onboarding.steps.SETUP]: () => {
-                  return (
-                    formData.selectedPlan === APP_CONFIG.app.plans.defaultPlan ||
-                    (formData.selectedPlan === 'Professional' && !!formData.paymentMethod)
-                  );
-                },
-              };
-
-              const stepValidation = validationRules[step];
-              return isValidOrder && (!stepValidation || stepValidation());
+              return validationResult.isValid;
             } catch (error) {
-              logger.error(`Step validation error for ${step}:`, error);
+              logger.error(`Step validation error for ${step}:`, {
+                error,
+                requestId,
+                tier: currentTier
+              });
               return false;
             }
           },
@@ -187,10 +232,13 @@ const createOnboardingStore = () => {
             set({
               currentStep: APP_CONFIG.onboarding.steps.INITIAL,
               formData: {},
+              selectedTier: null,
+              billingCycle: null,
               loading: false,
               error: null,
               initialized: false,
               initializationAttempts: 0,
+              requestId: generateRequestId(),
             });
           },
         }),
@@ -208,6 +256,8 @@ const createOnboardingStore = () => {
             JSON.stringify({
               currentStep: state.currentStep,
               formData: state.formData,
+              selectedTier: state.selectedTier,
+              billingCycle: state.billingCycle,
               initialized: false,
             }),
           deserialize: (str) => {
@@ -219,6 +269,7 @@ const createOnboardingStore = () => {
                 error: null,
                 initialized: false,
                 initializationAttempts: 0,
+                requestId: generateRequestId(),
               };
             } catch (error) {
               logger.error('Store deserialization failed:', error);
@@ -229,13 +280,14 @@ const createOnboardingStore = () => {
                 error: null,
                 initialized: false,
                 initializationAttempts: 0,
+                requestId: generateRequestId(),
               };
             }
           },
           onRehydrateStorage: () => {
             logger.debug('Store rehydrating...');
             return (state) => {
-              logger.debug('Store rehydrated:', state);
+              logger.debug('Store rehydrated:', { state });
             };
           },
         }

@@ -1,6 +1,8 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/providers.js
 'use client';
 
 import React, { useState, useEffect, memo, useRef } from 'react';
+import dynamic from 'next/dynamic';  // Add this line
 import { QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from '@mui/material/styles';
@@ -10,7 +12,8 @@ import { ToastProvider, useToast } from '@/components/Toast/ToastProvider';
 import theme from '@/styles/theme';
 import { queryClient } from '@/lib/axiosConfig';
 import { AppErrorBoundary } from '@/components/ErrorBoundary';
-import { OnboardingProvider } from '@/app/onboarding/contexts/onboardingContext';
+import { OnboardingProvider } from '@/app/onboarding/contexts/OnboardingContext';
+import { AuthWrapper } from '@/app/AuthWrapper';
 import { logger } from '@/utils/logger';
 
 const TOAST_MESSAGES = {
@@ -21,6 +24,10 @@ const TOAST_MESSAGES = {
   RESET_SUCCESS: 'Application reset successful',
   MOUNT_ERROR: 'Failed to initialize application',
 };
+
+const CrispChatWrapper = dynamic(() => import('@/components/CrispChat/CrispChatWrapper'), {
+  ssr: false
+});
 
 // Toast-aware component wrapper
 const ToastAware = memo(function ToastAware({ children }) {
@@ -43,28 +50,40 @@ const ToastAware = memo(function ToastAware({ children }) {
 // Memoize the ClientOnly component
 const ClientOnly = memo(function ClientOnly({ children }) {
   const [mounted, setMounted] = useState(false);
-  const toast = useToast();
   const mountedRef = useRef(false);
+  const initializationTimer = useRef(null);
+  const toast = useToast();
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && !mountedRef.current) {
-      try {
-        setMounted(true);
-        mountedRef.current = true;
-        logger.info('Client-side rendering mounted');
+    // Clear any existing timer
+    if (initializationTimer.current) {
+      clearTimeout(initializationTimer.current);
+    }
 
-        return () => {
-          mountedRef.current = false;
-          setMounted(false);
-          logger.info('Client-side rendering unmounted');
-        };
-      } catch (error) {
-        logger.error('Error in ClientOnly component:', error);
-        if (toast) {
-          toast.error(TOAST_MESSAGES.INIT_ERROR);
+    // Set a timeout to prevent rapid mount/unmount
+    initializationTimer.current = setTimeout(() => {
+      if (typeof window !== 'undefined' && !mountedRef.current) {
+        try {
+          setMounted(true);
+          mountedRef.current = true;
+          logger.info('Client-side rendering mounted');
+        } catch (error) {
+          logger.error('Client initialization error:', error);
+          toast?.error(TOAST_MESSAGES.INIT_ERROR);
         }
       }
-    }
+    }, 100); // Small delay to prevent rapid cycles
+
+    return () => {
+      if (initializationTimer.current) {
+        clearTimeout(initializationTimer.current);
+      }
+      if (mountedRef.current) {
+        mountedRef.current = false;
+        setMounted(false);
+        logger.info('Client-side rendering unmounted');
+      }
+    };
   }, [toast]);
 
   if (!mounted) return null;
@@ -162,23 +181,41 @@ const ErrorWrapper = memo(function ErrorWrapper({ children }) {
   );
 });
 
-// Main Providers component
+// Modify your Providers component to handle auth state internally
 const Providers = memo(function Providers({ children }) {
+  const initializationComplete = useRef(false);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    if (!initializationComplete.current) {
+      initializationComplete.current = true;
+      setIsReady(true);
+    }
+    return () => {
+      initializationComplete.current = false;
+    };
+  }, []);
+
+  if (!isReady) return null;
+
   return (
     <ToastProvider>
-      <ToastAware>
-        <ClientOnly>
-          <SessionProvider>
-            <QueryProvider>
-              <ErrorWrapper>
-                <ThemeWrapper>
-                  <OnboardingProvider>{children}</OnboardingProvider>
-                </ThemeWrapper>
-              </ErrorWrapper>
-            </QueryProvider>
-          </SessionProvider>
-        </ClientOnly>
-      </ToastAware>
+      <SessionProvider>
+        <QueryProvider>
+          <ThemeWrapper>
+            <ErrorWrapper>
+              <OnboardingProvider>
+                <AuthWrapper>
+                  <ClientOnly>
+                    {children}
+                    <CrispChatWrapper />
+                  </ClientOnly>
+                </AuthWrapper>
+              </OnboardingProvider>
+            </ErrorWrapper>
+          </ThemeWrapper>
+        </QueryProvider>
+      </SessionProvider>
     </ToastProvider>
   );
 });

@@ -36,6 +36,7 @@ from .views import (
    SetupStatusView,
    get_task_status,
    cancel_task,
+   ValidateSubscriptionAccessView
 )
 
 app_name = 'onboarding'
@@ -52,7 +53,8 @@ urlpatterns = [
    path('save-email/', SaveEmailView.as_view(), name='save_email'),
 
    # Onboarding Step routes
-   path('business-info/', SaveStep1View.as_view(), name='save_business_info'),
+   path('save-business-info/', SaveStep1View.as_view(), name='save_business_info'),
+   path('subscription/validate/', ValidateSubscriptionAccessView.as_view(), name='validate_subscription'),
    path('subscription/', SaveStep2View.as_view(), name='save_subscription'),
    path('payment/', SaveStep3View.as_view(), name='save_payment'),
    path('setup/', SaveStep4View.as_view(), name='save_setup'),

@@ -1,14 +1,25 @@
-// src/lib/axiosConfig.js
+// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/lib/axiosConfig.js
+
 'use client';
 
 import axios from 'axios';
 import { QueryClient, useQuery, useMutation } from '@tanstack/react-query';
-import { getSession, signOut, getCsrfToken } from 'next-auth/react';
+import { getSession, signOut, getCsrfToken, useSession } from 'next-auth/react';
 import { logger } from '@/utils/logger';
-import APP_CONFIG from '@/config'; // Change to default import
+import APP_CONFIG from '@/config';
 import { useState, useEffect, useCallback } from 'react';
 
-// QueryClient Configuration
+const RETRY_COUNT = 3;
+const RETRY_DELAY = 1000;
+
+const DATABASE_ERROR_TYPES = {
+  NOT_FOUND: 'not_found',
+  DELETED: 'deleted',
+  UNHEALTHY: 'unhealthy',
+  AUTH_ERROR: 'auth_error',
+  UNKNOWN: 'unknown'
+};
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -31,7 +42,6 @@ export const queryClient = new QueryClient({
   },
 });
 
-// Axios instance
 export const axiosInstance = axios.create({
   baseURL: APP_CONFIG.api.baseURL,
   timeout: APP_CONFIG.api.timeout || 10000,
@@ -43,205 +53,95 @@ export const axiosInstance = axios.create({
   timeoutErrorMessage: 'Request timed out - please try again',
 });
 
-// Token refresh state management
-let isRefreshing = false;
-let failedQueue = [];
+const useWebSocket = (endpoint, options = {}) => {
+  const [socket, setSocket] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const { data: session } = useSession();
 
-const processQueue = (error, token = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
+  useEffect(() => {
+    if (!session?.user?.accessToken) return;
 
-// WebSocket helper
-export const createWebSocket = async (path, options = {}) => {
-  try {
-    const session = await getSession();
-    if (!session?.user?.accessToken) {
-      throw new Error('No authentication token available');
-    }
-
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProtocol}//${window.location.host}${path}?token=${encodeURIComponent(session.user.accessToken)}`;
-
-    const ws = new WebSocket(wsUrl);
-
+    const ws = new WebSocket(`${APP_CONFIG.websocket.baseURL}${endpoint}`);
+    
+    ws.onopen = () => setIsConnected(true);
+    ws.onclose = () => setIsConnected(false);
     ws.onerror = (error) => {
       logger.error('WebSocket error:', error);
       options.onError?.(error);
     };
+    ws.onmessage = (event) => options.onMessage?.(JSON.parse(event.data));
 
-    ws.onclose = (event) => {
-      logger.info(`WebSocket closed with code ${event.code}`);
-      options.onClose?.(event);
-    };
+    setSocket(ws);
+    return () => ws.close();
+  }, [endpoint, session?.user?.accessToken]);
 
-    ws.onopen = () => {
-      logger.info('WebSocket connected');
-      options.onOpen?.();
-    };
+  return { socket, isConnected };
+};
 
-    return ws;
-  } catch (error) {
-    logger.error('Failed to create WebSocket:', error);
-    throw error;
+const createWebSocket = (url, options = {}) => {
+  const ws = new WebSocket(url);
+  ws.onopen = options.onOpen;
+  ws.onclose = options.onClose;
+  ws.onerror = options.onError;
+  ws.onmessage = options.onMessage;
+  return ws;
+};
+
+export const authApi = {
+  refreshToken: async (refreshToken) => {
+    return axiosInstance.post('/api/auth/refresh', { refreshToken });
   }
 };
 
-// Auth API methods
-// Update the refreshToken function
-export const authApi = {
-  refreshToken: async (refreshToken) => {
-    try {
-      logger.info('Attempting token refresh');
+// Hooks
+const useSaveBusinessInfo = (options = {}) =>
+  useMutation({
+    mutationFn: async (data) => {
       const response = await axiosInstance.post(
-        APP_CONFIG.api.endpoints.auth.refresh,
-        { refresh: refreshToken },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          // Skip refresh token interceptor for this request
-          skipAuthRefresh: true,
-        }
+        APP_CONFIG.api.endpoints.onboarding.businessInfo,
+        data
       );
-      logger.info('Token refresh successful');
       return response.data;
-    } catch (error) {
-      logger.error('Token refresh failed:', error);
-      throw error;
-    }
-  },
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['onboardingStatus']);
+    },
+    ...options,
+  });
 
-  exchangeGoogleToken: async (idToken, accessToken) => {
-    try {
-      const response = await axiosInstance.post('/api/auth/google/', {
-        token: idToken,
-        access_token: accessToken,
-      });
-      return response.data;
-    } catch (error) {
-      logger.error('Google token exchange failed:', error);
-      throw error;
-    }
-  },
-
-  refreshSession: async (refreshTokenValue) => {
-    try {
-      return await authApi.refreshToken(refreshTokenValue);
-    } catch (error) {
-      logger.error('Session refresh failed:', error);
-      throw error;
-    }
-  },
-};
-
-const useWebSocket = (userId, options = {}) => {
-  const [ws, setWs] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState(null);
-
-  const connect = useCallback(async () => {
-    try {
-      const socket = await createWebSocket(`/ws/onboarding/${userId}/`, {
-        onOpen: () => {
-          setIsConnected(true);
-          setError(null);
-          options.onOpen?.();
-        },
-        onError: (err) => {
-          setError(err);
-          setIsConnected(false);
-          options.onError?.(err);
-        },
-        onClose: () => {
-          setIsConnected(false);
-          options.onClose?.();
-        },
-      });
-      setWs(socket);
-    } catch (err) {
-      setError(err);
-      logger.error('WebSocket connection failed:', err);
-    }
-  }, [userId, options]);
-
-  useEffect(() => {
-    let mounted = true;
-
-    if (mounted) {
-      connect();
-    }
-
-    return () => {
-      mounted = false;
-      if (ws?.readyState === WebSocket.OPEN) {
-        ws.close();
-      }
-    };
-  }, [connect, ws]);
-
-  return { ws, isConnected, error, connect };
-};
-
-// Update the hooks to use correct URLs
-const useSaveStep1 = (options = {}) =>
-  useMutation({
-    mutationFn: async (data) => {
-      try {
-        logger.debug('Making request to:', APP_CONFIG.api.endpoints.onboarding.step1);
-        logger.debug('With data:', data);
-
+  const useSaveSubscription = (options = {}) =>
+    useMutation({
+      mutationFn: async (data) => {
+        // Add tier to request payload
+        const requestData = {
+          ...data,
+          tier: data.selectedPlan // Ensure tier is included
+        };
+  
         const response = await axiosInstance.post(
-          // Use the config URL
-          APP_CONFIG.api.endpoints.onboarding.step1,
-          data
+          APP_CONFIG.api.endpoints.onboarding.subscription,
+          requestData
         );
-
-        logger.info('Step 1 saved successfully');
         return response.data;
-      } catch (error) {
-        logger.error('Error saving Step 1:', error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['onboardingStatus']);
-    },
-    ...options,
-  });
+      },
+      onSuccess: (data) => {
+        queryClient.invalidateQueries(['onboardingStatus']);
+        // Add tier to cached data
+        queryClient.setQueryData(['onboardingStatus'], (old) => ({
+          ...old,
+          tier: data.tier
+        }));
+      },
+      ...options,
+    });
 
-const useSaveStep2 = (options = {}) =>
+const useSavePayment = (options = {}) =>
   useMutation({
     mutationFn: async (data) => {
-      try {
-        logger.debug('Making request to:', APP_CONFIG.api.endpoints.onboarding.step2);
-        logger.debug('With data:', data);
-
-        const response = await axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.step2, data);
-
-        logger.info('Step 2 saved successfully');
-        return response.data;
-      } catch (error) {
-        logger.error('Error saving Step 2:', error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['onboardingStatus']);
-    },
-    ...options,
-  });
-
-const useSaveStep3 = (options = {}) =>
-  useMutation({
-    mutationFn: async (data) => {
-      const response = await axiosInstance.post('/api/onboarding/save-step3/', data);
+      const response = await axiosInstance.post(
+        APP_CONFIG.api.endpoints.onboarding.payment,
+        data
+      );
       return response.data;
     },
     onSuccess: () => {
@@ -250,10 +150,13 @@ const useSaveStep3 = (options = {}) =>
     ...options,
   });
 
-const useSaveStep4 = (options = {}) =>
+const useSetup = (options = {}) =>
   useMutation({
     mutationFn: async (data) => {
-      const response = await axiosInstance.post('/api/onboarding/step4/save/', data);
+      const response = await axiosInstance.post(
+        APP_CONFIG.api.endpoints.onboarding.setup.root,
+        data
+      );
       return response.data;
     },
     onSuccess: () => {
@@ -262,22 +165,104 @@ const useSaveStep4 = (options = {}) =>
     ...options,
   });
 
-const useOnboardingStatus = (options = {}) => {
-  const { data: session } = useSession();
+  const useOnboardingStatus = (options = {}) => {
+    const { data: session, status } = useSession();
+    
+    return useQuery({
+      queryKey: ['onboardingStatus'],
+      queryFn: async () => {
+        if (!session?.user?.accessToken) {
+          throw new Error('Not authenticated');
+        }
+        const response = await axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status);
+        // Include tier in response
+        return {
+          ...response.data,
+          tier: response.data.tier || response.data.selectedPlan
+        };
+      },
+      enabled: !!session?.user?.accessToken && status === 'authenticated',
+      staleTime: 30000,
+      ...options,
+    });
+  };
 
-  return useQuery({
-    queryKey: ['onboardingStatus'],
-    queryFn: async () => {
-      if (!session?.user?.accessToken) {
-        throw new Error('Not authenticated');
+const checkDatabaseHealth = async (retryCount = 0) => {
+  try {
+    const response = await axiosInstance.get(APP_CONFIG.api.endpoints.database.healthCheck);
+    
+    if (response.data.status === 'deleted' || response.data.status === 'not_found') {
+      await axiosInstance.post(APP_CONFIG.api.endpoints.database.reset);
+      return {
+        isHealthy: false,
+        errorType: DATABASE_ERROR_TYPES.NOT_FOUND,
+        requiresSetup: true
+      };
+    }
+
+    return {
+      isHealthy: response.data.status === 'healthy',
+      errorType: response.data.status === 'unhealthy' ? DATABASE_ERROR_TYPES.UNHEALTHY : null
+    };
+
+  } catch (error) {
+    if (retryCount < RETRY_COUNT) {
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      return checkDatabaseHealth(retryCount + 1);
+    }
+
+    return {
+      isHealthy: false,
+      errorType: DATABASE_ERROR_TYPES.UNKNOWN,
+      error: error.message
+    };
+  }
+};
+
+const checkSession = async () => {
+  try {
+    const session = await getSession();
+    if (!session?.user?.accessToken || isTokenExpired(session)) {
+      window.location.href = '/auth/signin';
+      return false;
+    }
+    return true;
+  } catch (error) {
+    logger.error('Session check failed:', error);
+    return false;
+  }
+};
+
+const refreshSession = async () => {
+  const timeout = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Session refresh timeout')), 10000)
+  );
+
+  try {
+    const refreshPromise = (async () => {
+      const session = await getSession();
+      if (!session?.user?.refreshToken) {
+        throw new Error('No refresh token available');
       }
-      const response = await axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status);
-      return response.data;
-    },
-    enabled: !!session?.user?.accessToken,
-    staleTime: 30000,
-    ...options,
-  });
+
+      const response = await authApi.refreshToken(session.user.refreshToken);
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: response.access,
+          refreshToken: response.refresh || session.user.refreshToken,
+          accessTokenExpires: Date.now() + APP_CONFIG.auth.tokenGracePeriod,
+        }),
+      });
+      return response;
+    })();
+
+    return Promise.race([refreshPromise, timeout]);
+  } catch (error) {
+    logger.error('Session refresh failed:', error);
+    throw error;
+  }
 };
 
 const useCompleteOnboarding = (options = {}) =>
@@ -292,85 +277,51 @@ const useCompleteOnboarding = (options = {}) =>
     ...options,
   });
 
-// Generic save step function
-const useSaveStep = (step, options = {}) =>
-  useMutation({
-    mutationFn: async (data) => {
-      try {
-        const endpoint = APP_CONFIG.api.endpoints.onboarding[`step${step}`];
-        if (!endpoint) {
-          throw new Error(`Invalid step: ${step}`);
-        }
-
-        // Ensure we're sending an object and not an array or string
-        if (typeof data !== 'object' || Array.isArray(data)) {
-          throw new Error('Invalid data format');
-        }
-
-        logger.debug('Making request to:', endpoint);
-        logger.debug('With data:', data);
-
-        const response = await axiosInstance.post(endpoint, data);
-        return response.data;
-      } catch (error) {
-        logger.error(`Error saving step ${step}:`, error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['onboardingStatus']);
-    },
-    ...options,
-  });
-
-// Update the useApi object
-export const useApi = {
-  useOnboardingStatus,
-  useWebSocket,
-  useSaveStep1,
-  useSaveStep2,
-  useSaveStep3,
-  useSaveStep4,
-  useSaveStep,
-  useCompleteOnboarding,
-};
-
-const isTokenExpired = (session) => {
-  if (!session?.user?.accessTokenExpires) return true;
-  return Date.now() >= session.user.accessTokenExpires;
-};
-
 // Update axios interceptors
 axiosInstance.interceptors.request.use(
   async (config) => {
-    // Log full request details
-    logger.debug('Request:', {
+    const requestId = crypto.randomUUID();
+
+    logger.debug('Request interceptor:', {
+      requestId,
       url: config.url,
-      method: config.method,
-      data: config.data,
-      headers: config.headers,
+      method: config.method
     });
 
-    if (config.skipAuthRefresh) {
-      return config;
+    // Skip auth for certain routes
+    if (config.skipAuthRefresh || 
+      config.url.includes('/auth/signin') ||
+      config.url.includes('/api/auth/session') ||
+      config.url.includes('/api/auth/callback')) {
+    return config;
     }
 
     try {
       const session = await getSession();
 
+      // Add auth headers if we have a session
       if (session?.user?.accessToken) {
         config.headers.Authorization = `Bearer ${session.user.accessToken}`;
       }
 
+      // Add CSRF protection
       const csrfToken = await getCsrfToken();
       if (csrfToken) {
         config.headers['X-CSRFToken'] = csrfToken;
       }
 
+      // Add request tracking
+      config.headers['X-Request-ID'] = requestId;
+      config.metadata = { requestId, startTime: Date.now() };
+
       return config;
     } catch (error) {
-      logger.error('Request interceptor error:', error);
-      return config;
+      logger.error('Request interceptor failed:', {
+        requestId,
+        url: config.url,
+        error: error.message
+      });
+      return Promise.reject(error);
     }
   },
   (error) => {
@@ -382,117 +333,131 @@ axiosInstance.interceptors.request.use(
 // Update response interceptor with better logging
 axiosInstance.interceptors.response.use(
   (response) => {
-    logger.debug('Response:', {
-      url: response.config.url,
+    const { config } = response;
+    const requestId = config.metadata?.requestId;
+    const duration = Date.now() - (config.metadata?.startTime || 0);
+
+    logger.debug('Response received:', {
+      requestId,
+      url: config.url,
       status: response.status,
-      data: response.data,
-      method: response.config.method,
+      duration
     });
+
     return response;
   },
   async (error) => {
+    const { config } = error.config || {};
+    const requestId = config?.metadata?.requestId;
+    const duration = Date.now() - (config?.metadata?.startTime || 0);
+
+    // Log error details
     logger.error('Response error:', {
-      url: error.config?.url,
+      requestId,
+      url: config?.url,
       status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-      method: error.config?.method,
-      requestData: error.config?.data,
+      duration,
+      error: error.message
     });
-    const originalRequest = error.config;
 
-    // Don't retry refresh token requests
-    if (originalRequest.skipAuthRefresh) {
-      return Promise.reject(error);
-    }
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            originalRequest.headers['Authorization'] = `Bearer ${token}`;
-            return axiosInstance(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
+    // Handle authentication errors
+    if (error.response?.status === 401) {
+      // Skip for auth-related endpoints to prevent loops
+      if (config?.skipAuthRefresh || 
+          config?.url.includes('/auth/') ||
+          config?.url.includes('/api/auth/')) {
+        return Promise.reject(error);
       }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
 
       try {
+        // Attempt to refresh token
         const session = await getSession();
-        if (!session?.user?.refreshToken) {
-          throw new Error('No refresh token available');
+        if (session?.user?.refreshToken) {
+          const refreshResult = await refreshSession();
+          if (refreshResult) {
+            // Retry original request with new token
+            const retryConfig = {
+              ...config,
+              headers: {
+                ...config.headers,
+                Authorization: `Bearer ${refreshResult.access}`
+              }
+            };
+            return axiosInstance(retryConfig);
+          }
         }
 
-        const { access: newAccessToken } = await authApi.refreshToken(session.user.refreshToken);
-
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
-        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
-
-        processQueue(null, newAccessToken);
-        return axiosInstance(originalRequest);
+        // If refresh fails, redirect to sign in
+        if (!window.location.pathname.includes('/auth/signin')) {
+          const currentPath = encodeURIComponent(window.location.pathname);
+          window.location.href = `/auth/signin?callbackUrl=${currentPath}`;
+        }
       } catch (refreshError) {
-        processQueue(refreshError);
-        logger.error('Token refresh failed:', refreshError);
-
-        // Clear session and redirect
-        await signOut({
-          redirect: true,
-          callbackUrl: '/auth/signin?error=RefreshTokenFailed',
+        logger.error('Token refresh failed:', {
+          requestId,
+          error: refreshError.message
         });
-
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
 
+    // Handle database errors
+    if (error.response?.data?.status === 'unhealthy' || 
+        error.response?.data?.status === 'not_found') {
+      try {
+        // Attempt database reset
+        await axiosInstance.post(APP_CONFIG.api.endpoints.database.reset);
+        
+        // Redirect to onboarding if needed
+        if (error.response?.data?.onboarding_required) {
+          if (!window.location.pathname.includes('/onboarding/business-info')) {
+            window.location.href = '/onboarding/business-info';
+          }
+        }
+      } catch (resetError) {
+        logger.error('Database reset failed:', {
+          requestId,
+          error: resetError.message
+        });
+        
+        // Only redirect to error if not already there
+        if (!window.location.pathname.includes('/error')) {
+          window.location.href = '/onboarding/error';
+        }
+      }
+    }
+
+    // Handle service unavailability
+    if (error.response?.status === 503) {
+      logger.warn('Service unavailable:', {
+        requestId,
+        retryAfter: error.response.headers['retry-after']
+      });
+    }
+
+    // Add request context to error
+    error.requestId = requestId;
+    error.duration = duration;
+    
     return Promise.reject(error);
   }
 );
 
-// Add session management helper
-export const refreshSession = async () => {
-  try {
-    const session = await getSession();
-    if (!session?.user?.refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    const response = await authApi.refreshToken(session.user.refreshToken);
-
-    // Update session with new tokens
-    await fetch('/api/auth/session', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        accessToken: response.access,
-        refreshToken: response.refresh || session.user.refreshToken,
-        accessTokenExpires: Date.now() + APP_CONFIG.auth.tokenGracePeriod,
-      }),
-    });
-
-    return response;
-  } catch (error) {
-    logger.error('Session refresh failed:', error);
-    throw error;
-  }
-};
-
-// Add direct API methods
 export const api = {
   onboarding: {
-    saveStep: async (step, data) => {
-      const endpoint = APP_CONFIG.api.endpoints.onboarding[`step${step}`];
-      if (!endpoint) {
-        throw new Error(`Invalid step: ${step}`);
-      }
-      return axiosInstance.post(endpoint, data);
+    saveBusinessInfo: async (data) => {
+      return axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.businessInfo, data);
+    },
+    saveSubscription: async (data) => {
+      return axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.subscription, {
+        ...data,
+        tier: data.selectedPlan
+      });
+    },
+    savePayment: async (data) => {
+      return axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.payment, data);
+    },
+    saveSetup: async (data) => {
+      return axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.setup.root, data);
     },
     getStatus: async () => {
       return axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status);
@@ -500,26 +465,35 @@ export const api = {
   },
 };
 
-// Global error handler
+export const useApi = {
+  useOnboardingStatus,
+  useWebSocket,
+  useSaveBusinessInfo,
+  useSaveSubscription,
+  useSavePayment,
+  useSetup,
+  useCompleteOnboarding,
+};
+
 if (typeof window !== 'undefined') {
   window.addEventListener('unhandledrejection', (event) => {
     logger.error('Unhandled Promise Rejection:', event.reason);
   });
 }
 
-// Export individual hooks
 export {
   useOnboardingStatus,
   useWebSocket,
-  useSaveStep1,
-  useSaveStep2,
-  useSaveStep3,
-  useSaveStep4,
-  useSaveStep,
+  useSaveBusinessInfo,
+  useSaveSubscription,
+  useSavePayment,
+  useSetup,
   useCompleteOnboarding,
+  checkDatabaseHealth,
+  checkSession,
+  refreshSession,
 };
 
-// Default export
 export default {
   axiosInstance,
   queryClient,

@@ -1,9 +1,8 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/components/AppBar.js
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import {
   AppBar,
@@ -15,8 +14,13 @@ import {
   Container,
   Button,
   MenuItem,
+  CircularProgress,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import SettingsIcon from '@mui/icons-material/Settings';
+import { validateUserState, AUTH_ERRORS } from '@/lib/authUtils';
+import { logger } from '@/utils/logger';
 import Image from 'next/image';
 
 const pages = [
@@ -37,6 +41,44 @@ function AppAppBar() {
   const router = useRouter();
   const [anchorElNav, setAnchorElNav] = useState(null);
   const { data: session, status } = useSession();
+  const [userState, setUserState] = useState(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [requestId] = useState(() => crypto.randomUUID());
+
+  useEffect(() => {
+    let mounted = true;
+
+    const validateUser = async () => {
+      if (status !== 'authenticated' || !session) return;
+
+      try {
+        setIsValidating(true);
+        const validationResult = await validateUserState(session, requestId);
+
+        if (!mounted) return;
+
+        setUserState({
+          isValid: validationResult.isValid,
+          redirectTo: validationResult.redirectTo,
+          reason: validationResult.reason
+        });
+      } catch (error) {
+        logger.error('User validation failed:', {
+          requestId,
+          error: error.message,
+          status: error.response?.status
+        });
+      } finally {
+        if (mounted) setIsValidating(false);
+      }
+    };
+
+    validateUser();
+
+    return () => {
+      mounted = false;
+    };
+  }, [session, status, requestId]);
 
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
@@ -68,58 +110,73 @@ function AppAppBar() {
   };
 
   const handleLogout = async () => {
-    await signOut({ redirect: false });
-    router.push('/');
+    try {
+      await signOut({ redirect: false });
+      router.push('/');
+    } catch (error) {
+      logger.error('Logout failed:', {
+        requestId,
+        error: error.message
+      });
+    }
   };
 
   const handleNavigation = (path) => {
     router.push(path);
   };
 
+  const getButtonProps = () => {
+    if (!userState?.isValid) {
+      return {
+        text: 'Complete Setup',
+        route: userState?.redirectTo || '/onboarding/step1',
+        icon: <SettingsIcon />
+      };
+    }
+
+    if (userState.reason === AUTH_ERRORS.ALL_VALID) {
+      return {
+        text: 'Dashboard',
+        route: '/dashboard',
+        icon: <DashboardIcon />
+      };
+    }
+
+    return {
+      text: 'Start Setup',
+      route: '/onboarding/step1',
+      icon: <SettingsIcon />
+    };
+  };
+
   const renderAuthButtons = () => {
+    if (status === 'loading' || isValidating) {
+      return <CircularProgress size={24} />;
+    }
+
     if (status === 'authenticated') {
+      const buttonProps = getButtonProps();
       return (
         <>
-          <Button
+          <Button 
             variant="contained"
-            onClick={() =>
-              handleNavigation(
-                // Check both onboarding status and isComplete flag
-                session.user.onboardingStatus === 'complete' || session.user.isComplete
-                  ? '/dashboard'
-                  : '/onboarding/step1'
-              )
-            }
+            onClick={() => handleNavigation(buttonProps.route)}
+            startIcon={buttonProps.icon}
           >
-            {session.user.onboardingStatus === 'complete' || session.user.isComplete
-              ? 'Your Account'
-              : 'Complete Onboarding'}
+            {buttonProps.text}
           </Button>
-          <Button
-            variant="text"
-            onClick={handleLogout}
-            sx={{
-              fontFamily: 'Inter, sans-serif',
-            }}
-          >
+          <Button variant="text" onClick={handleLogout}>
             Log Out
           </Button>
         </>
       );
-    } else if (status === 'unauthenticated') {
-      return (
-        <Button
-          variant="contained"
-          onClick={() => handleNavigation('/auth/signin')}
-          sx={{
-            fontFamily: 'Inter, sans-serif',
-          }}
-        >
-          Sign In / Sign Up
-        </Button>
-      );
     }
-    return null; // Return null when status is 'loading'
+
+    return (
+      <Button variant="contained" onClick={() => handleNavigation('/auth/signin')}>
+        Sign In / Sign Up
+      </Button>
+    );
   };
 
   return (
@@ -141,6 +198,7 @@ function AppAppBar() {
               width={100}
               height={33}
               style={logoStyle}
+              onClick={() => handleNavigation('/')}
             />
           </Box>
 

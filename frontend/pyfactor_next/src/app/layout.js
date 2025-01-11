@@ -6,6 +6,8 @@ import '@/app/globals.css';
 import { APP_CONFIG } from '@/config';
 import { logger } from '@/utils/logger';
 import { ToastProvider, useToast } from '@/components/Toast/ToastProvider';
+import CrispChatWrapper from '@/components/CrispChat/CrispChatWrapper';
+
 
 // Memoize the Loading component
 const Loading = memo(function Loading() {
@@ -66,11 +68,17 @@ const RootLayout = memo(function RootLayout({ children }) {
         <Head />
       </head>
       <body suppressHydrationWarning>
-        <ContentWrapper>{children}</ContentWrapper>
+        <ToastProvider>
+          <ContentWrapper>
+            {children}
+            {/* Move CrispChatWrapper inside ContentWrapper since that's where Providers is */}
+          </ContentWrapper>
+          {/* The ToastProvider here is outside SessionProvider */}
+        </ToastProvider>
       </body>
     </html>
   );
-});
+})
 
 // Error boundary component
 const LayoutErrorBoundary = memo(

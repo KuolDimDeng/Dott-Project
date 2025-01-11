@@ -1,173 +1,366 @@
 // src/hooks/useFormStatePersistence.js
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { persistenceService } from '@/services/persistenceService';
 import { logger } from '@/utils/logger';
 import { useCleanup } from './useCleanup';
+import { generateRequestId } from '@/lib/authUtils';
 
 const DRAFT_VERSION = '1.0';
 
-export const useFormStatePersistence = (formId, options = {}) => {
-  const {
-    autoSaveInterval = 30000,
-    maxDrafts = 5,
-    validateBeforeSave = true,
-    onLoadDraft,
-    onSaveDraft,
-    form: formMethods, // Accept form methods from react-hook-form
-  } = options;
+// First, let's enhance our FormStateManager to work with the existing ValidationCoordinator
+class FormStateManager {
+  constructor(formId, coordinator) {
+    // Store references to external dependencies
+    this.formId = formId;
+    this.coordinator = coordinator;
+    
+    // Initialize core state
+    this.state = {
+      isDirty: false,
+      isValid: false,
+      isValidating: false,
+      isSaving: false,
+      
+      // Track changes at a granular level
+      pendingChanges: new Map(),
+      lastValidated: null,
+      lastSaved: null,
+      
+      // Timing controls
+      validationCooldown: 2000,
+      persistenceCooldown: 1000,
+      selectedTier: null,
+      tierValidated: false
+    };
 
-  const form = useRef(formMethods);
-  const lastSaved = useRef(null);
-  const saveInProgress = useRef(false);
-  const { addInterval, addEventListener, addCleanupFn } = useCleanup();
+    // Create debounce timers
+    this.validationTimer = null;
+    this.persistenceTimer = null;
+    
+    // Track subscribers
+    this.subscribers = new Set();
+    
+    logger.debug('FormStateManager initialized', {
+      formId,
+      timestamp: Date.now()
+    });
+  }
 
-  // Update form methods ref when they change
-  useEffect(() => {
-    form.current = formMethods;
-  }, [formMethods]);
+   // Add tier-specific change handling
+   async handleTierChange(tier, options = {}) {
+    const changeId = generateRequestId();
+    
+    logger.debug('Tier change detected', {
+      formId: this.formId,
+      tier,
+      changeId,
+      timestamp: Date.now()
+    });
 
-  const saveDraft = useCallback(
-    async (data) => {
-      if (saveInProgress.current) {
-        logger.debug('Save already in progress, skipping');
-        return null;
-      }
-
-      if (!data || Object.keys(data).length === 0) {
-        logger.warn('Attempted to save empty form data');
-        return null;
-      }
-
-      saveInProgress.current = true;
-
-      try {
-        const drafts = (await persistenceService.loadData(`${formId}_drafts`)) || [];
-
-        const newDraft = {
-          version: DRAFT_VERSION,
-          timestamp: Date.now(),
-          data,
-          formId,
-          metadata: {
-            lastModified: new Date().toISOString(),
-            formId,
-            version: DRAFT_VERSION,
-          },
-        };
-
-        // Filter out old versions of this form's drafts
-        const updatedDrafts = [newDraft, ...drafts]
-          .filter((draft) => draft.formId === formId && draft.version === DRAFT_VERSION)
-          .slice(0, maxDrafts);
-
-        await persistenceService.saveData(`${formId}_drafts`, updatedDrafts);
-        lastSaved.current = newDraft.timestamp;
-
-        onSaveDraft?.(newDraft);
-        logger.info(`Draft saved for form ${formId}`, { timestamp: newDraft.timestamp });
-
-        return newDraft;
-      } catch (error) {
-        logger.error(`Failed to save draft for form ${formId}:`, error);
-        throw error;
-      } finally {
-        saveInProgress.current = false;
-      }
-    },
-    [formId, maxDrafts, onSaveDraft]
-  );
-
-  const loadLatestDraft = useCallback(async () => {
-    try {
-      const drafts = await persistenceService.loadData(`${formId}_drafts`);
-      if (!drafts?.length) return null;
-
-      // Find latest valid draft
-      const latestDraft = drafts
-        .filter((draft) => draft.formId === formId && draft.version === DRAFT_VERSION)
-        .sort((a, b) => b.timestamp - a.timestamp)[0];
-
-      if (!latestDraft) return null;
-
-      onLoadDraft?.(latestDraft);
-      lastSaved.current = latestDraft.timestamp;
-      logger.info(`Loaded latest draft for form ${formId}`, { timestamp: latestDraft.timestamp });
-
-      return latestDraft.data;
-    } catch (error) {
-      logger.error(`Failed to load draft for form ${formId}:`, error);
-      return null;
+    // Validate tier
+    if (!['free', 'professional'].includes(tier)) {
+      logger.error('Invalid tier selected', { tier, changeId });
+      throw new Error('Invalid subscription tier');
     }
-  }, [formId, onLoadDraft]);
 
-  // Setup autosave with debounce
-  useEffect(() => {
-    let timeoutId;
+    // Update state
+    this.state.selectedTier = tier;
+    this.state.tierValidated = false;
+    this.state.isDirty = true;
 
-    const intervalId = addInterval(async () => {
-      if (!form.current || saveInProgress.current) return;
+    // Add to pending changes
+    this.state.pendingChanges.set('tier', {
+      value: tier,
+      changeId,
+      timestamp: Date.now(),
+      validated: false,
+      persisted: false
+    });
 
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(async () => {
-        try {
-          const currentValues = form.current.getValues();
-          if (!currentValues || Object.keys(currentValues).length === 0) return;
+    this.notifySubscribers();
 
-          if (validateBeforeSave) {
-            const isValid = await form.current.trigger();
-            if (!isValid) {
-              logger.debug('Form validation failed, skipping auto-save');
-              return;
-            }
+    // Process validation
+    return this.coordinator.coordinate(
+      async () => this.processValidation({ ...options, includeTier: true }),
+      {
+        type: 'tier-change',
+        tier,
+        changeId,
+        ...options
+      }
+    );
+  }
+
+  // Handle form field changes
+  async handleFieldChange(fieldName, value, options = {}) {
+    const changeId = generateRequestId();
+    
+    logger.debug('Field change detected', {
+      formId: this.formId,
+      fieldName,
+      changeId,
+      timestamp: Date.now()
+    });
+
+    // Record the change
+    this.state.pendingChanges.set(fieldName, {
+      value,
+      changeId,
+      timestamp: Date.now(),
+      validated: false,
+      persisted: false
+    });
+
+    // Update form state
+    this.state.isDirty = true;
+    this.notifySubscribers();
+
+    // Schedule validation through coordinator
+    return this.coordinator.coordinate(
+      async () => this.processValidation(options),
+      {
+        type: 'field-change',
+        fieldName,
+        changeId,
+        ...options
+      }
+    );
+  }
+
+  // Process validation with proper coordination
+  async processValidation(options = {}) {
+    if (this.state.isValidating) {
+      logger.debug('Validation already in progress', {
+        formId: this.formId,
+        timestamp: Date.now()
+      });
+      return;
+    }
+
+    try {
+      this.state.isValidating = true;
+      this.notifySubscribers();
+
+      // Group changes that need validation
+      const pendingValidations = Array.from(this.state.pendingChanges.entries())
+        .filter(([_, change]) => !change.validated);
+
+      if (pendingValidations.length === 0) return;
+
+      // Perform validation through coordinator
+      const validationResult = await this.coordinator.coordinate(
+        async () => this.validateChanges(pendingValidations),
+        { type: 'validation', ...options }
+      );
+
+      // Update change tracking
+      if (validationResult.isValid) {
+        pendingValidations.forEach(([fieldName]) => {
+          const change = this.state.pendingChanges.get(fieldName);
+          if (change) {
+            change.validated = true;
+          }
+        });
+
+        // Schedule persistence if validation succeeded
+        await this.schedulePersistence(pendingValidations);
+      }
+
+      this.state.isValid = validationResult.isValid;
+      this.state.lastValidated = Date.now();
+      
+    } finally {
+      this.state.isValidating = false;
+      this.notifySubscribers();
+    }
+  }
+
+  // Handle persistence scheduling
+  async schedulePersistence(validatedChanges) {
+    if (this.persistenceTimer) {
+      clearTimeout(this.persistenceTimer);
+    }
+
+    return new Promise((resolve) => {
+      this.persistenceTimer = setTimeout(
+        async () => {
+          try {
+            await this.processPersistence(validatedChanges);
+            resolve();
+          } catch (error) {
+            logger.error('Persistence failed', {
+              formId: this.formId,
+              error: error.message
+            });
+            resolve();
+          }
+        },
+        this.state.persistenceCooldown
+      );
+    });
+  }
+
+  // Process actual persistence
+  async processPersistence(changes) {
+    if (this.state.isSaving) return;
+
+    try {
+      this.state.isSaving = true;
+      this.notifySubscribers();
+
+      await this.coordinator.coordinate(
+        async () => {
+          const dataToSave = changes.reduce((acc, [fieldName, change]) => {
+            acc[fieldName] = change.value;
+            return acc;
+          }, {});
+
+          // Include tier in saved data
+          if (this.state.selectedTier) {
+            dataToSave.tier = this.state.selectedTier;
           }
 
-          await saveDraft(currentValues);
-        } catch (error) {
-          logger.error('Auto-save failed:', error);
-        }
-      }, 500); // Debounce auto-save
-    }, autoSaveInterval);
+          await persistenceService.saveData(
+            `${this.formId}_draft`,
+            {
+              version: DRAFT_VERSION,
+              timestamp: Date.now(),
+              data: dataToSave,
+              metadata: {
+                changeIds: changes.map(([_, change]) => change.changeId),
+                tier: this.state.selectedTier
+              }
+            }
+          );
 
-    return () => {
-      clearInterval(intervalId);
-      clearTimeout(timeoutId);
-    };
-  }, [autoSaveInterval, saveDraft, validateBeforeSave, addInterval]);
+          // Update change tracking
+          changes.forEach(([fieldName]) => {
+            const change = this.state.pendingChanges.get(fieldName);
+            if (change) {
+              change.persisted = true;
+            }
+          });
+        },
+        { type: 'persistence' }
+      );
+    } finally {
+      this.state.isSaving = false;
+      this.notifySubscribers();
+    }
+  }
 
-  // Setup beforeunload handler
-  useEffect(() => {
-    const handleBeforeUnload = async (e) => {
-      if (!form.current?.formState?.isDirty) return;
 
-      try {
-        const currentValues = form.current.getValues();
-        if (currentValues && Object.keys(currentValues).length > 0) {
-          await saveDraft(currentValues);
-          e.preventDefault();
-          e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-        }
-      } catch (error) {
-        logger.error('Failed to save form before unload:', error);
+  // Utility methods
+  cleanupProcessedChanges() {
+    for (const [fieldName, change] of this.state.pendingChanges.entries()) {
+      if (change.validated && change.persisted) {
+        this.state.pendingChanges.delete(fieldName);
       }
+    }
+
+    this.state.isDirty = this.state.pendingChanges.size > 0;
+    this.notifySubscribers();
+  }
+
+  // Subscription management
+  subscribe(callback) {
+    this.subscribers.add(callback);
+    return () => this.subscribers.delete(callback);
+  }
+
+  notifySubscribers() {
+    const stateSnapshot = {
+      isDirty: this.state.isDirty,
+      isValid: this.state.isValid,
+      isValidating: this.state.isValidating,
+      isSaving: this.state.isSaving,
+      lastValidated: this.state.lastValidated,
+      lastSaved: this.state.lastSaved
     };
 
-    addEventListener(window, 'beforeunload', handleBeforeUnload);
-  }, [saveDraft, addEventListener]);
+    this.subscribers.forEach(callback => callback(stateSnapshot));
+  }
 
-  // Cleanup
+  // Cleanup resources
+  cleanup() {
+    if (this.validationTimer) {
+      clearTimeout(this.validationTimer);
+    }
+    if (this.persistenceTimer) {
+      clearTimeout(this.persistenceTimer);
+    }
+    this.subscribers.clear();
+  }
+}
+
+// Now enhance the useFormStatePersistence hook to use FormStateManager
+export const useFormStatePersistence = (formId, options = {}) => {
+  // Existing setup code remains the same...
+  const [tierState, setTierState] = useState(null);
+
+
+  // Initialize FormStateManager
+  const stateManager = useRef(null);
+  if (!stateManager.current) {
+    stateManager.current = new FormStateManager(formId, coordinator.current);
+  }
+
+  // Add React state for component updates
+  const [formState, setFormState] = useState(() => ({
+    isDirty: false,
+    isValid: true,
+    isProcessing: false
+  }));
+
+  // Subscribe to state manager updates
+  // Subscribe to state manager updates with tier
+  useEffect(() => {
+    const unsubscribe = stateManager.current.subscribe((newState) => {
+      setFormState(prev => ({
+        ...prev,
+        isDirty: newState.isDirty,
+        isValid: newState.isValid,
+        isProcessing: newState.isValidating || newState.isSaving,
+        selectedTier: newState.selectedTier
+      }));
+
+      if (newState.selectedTier !== tierState) {
+        setTierState(newState.selectedTier);
+      }
+    });
+
+    return unsubscribe;
+  }, [tierState]);
+
+  // Enhanced cleanup
   useEffect(() => {
     addCleanupFn(() => {
+      stateManager.current?.cleanup();
+      stateManager.current = null;
+      coordinator.current?.cleanup();
+      coordinator.current = null;
       form.current = null;
-      lastSaved.current = null;
-      saveInProgress.current = false;
     });
   }, [addCleanupFn]);
 
+  // Return enhanced API
   return {
     form,
+    formState,
     lastSaved: lastSaved.current,
     saveDraft,
     loadLatestDraft,
     isSaving: saveInProgress.current,
+    handleTierChange: useCallback(
+      (tier, options) => 
+        stateManager.current?.handleTierChange(tier, options),
+      []
+    ),
+    selectedTier: tierState,
+    coordinate: useCallback(
+      (operation, metadata) => 
+        coordinator.current?.coordinate(operation, metadata),
+      []
+    )
   };
 };

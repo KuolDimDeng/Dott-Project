@@ -55,7 +55,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "additional.d.ts"  // Added for custom type definitions
-  ],
+, "src/app/onboarding/components/shared/StepHeader/StepHeader.types.js"  ],
   "exclude": [
     "node_modules",
     ".next",

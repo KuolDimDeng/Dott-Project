@@ -1,94 +1,117 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/DashboardContent.jsx
 'use client';
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
+import { CircularProgress } from '@mui/material';
 import {
   CssBaseline,
   Box,
   Container,
-  AppBar as MuiAppBar,
-  Toolbar,
   Typography,
 } from '@mui/material';
-import ConsoleMessages from './components/components/ConsoleMessages';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { axiosInstance } from '@/lib/axiosConfig';
+import { logger } from '@/utils/logger';
+import { UserMessageProvider, useUserMessageContext } from '@/contexts/UserMessageContext';
+
+
+// Component imports
 import Drawer from './components/Drawer';
 import AppBar from './components/AppBar';
+import ConsoleMessages from './components/components/ConsoleMessages';
 import renderMainContent from './components/RenderMainContent';
-import { UserMessageProvider, useUserMessageContext } from '@/contexts/UserMessageContext';
-import { logger } from '@/utils/logger';
 import ErrorBoundary from './components/ErrorBoundary';
-import { secondary } from '../getLPTheme';
-import InvoiceDetails from './components/forms/InvoiceDetails';
+import AlertsComponent from '../alerts/components/AlertsComponents';
 import CustomerDetails from './components/forms/CustomerDetails';
 import ProductList from './components/lists/ProductList';
 import ServiceList from './components/lists/ServiceList';
-import { axiosInstance } from '@/lib/axiosConfig';
+import InvoiceDetails from './components/forms/InvoiceDetails';
 import ChartContainer from '../chart/component/ChartContainer';
-import { FamilyRestroomRounded } from '@mui/icons-material';
 import IntegrationSettings from '../Settings/integrations/components/IntegrationSettings';
-import { useSearchParams } from 'next/navigation';
-import { useRouter } from 'next/navigation';
 import APIIntegrations from './components/APIIntegrations';
 import AlertsPage from '../alerts/components/AlertsPage';
 import SendGlobalAlert from '../alerts/components/SendGlobalAlert';
-import AlertsComponent from '../alerts/components/AlertsComponents';
 
 const theme = createTheme({
   palette: {
-    primary: { main: '#b3e5fc' }, // Navy blue color
-    secondary: { main: '#81d4fa' }, // Light blue color
+    primary: { main: '#b3e5fc' },
+    secondary: { main: '#81d4fa' },
   },
 });
 
+const drawerWidth = 225;
+
 function DashboardContent() {
-  const [anchorEl, setAnchorEl] = useState(null);
-  const openMenu = Boolean(anchorEl);
+  const { data: session } = useSession();
+  const router = useRouter();
+  const { addMessage } = useUserMessageContext();
+  const searchParams = useSearchParams();
+  const status = searchParams.get('status');
+  const platform = searchParams.get('platform');
+
+  // Core state
   const [userData, setUserData] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(true);
+  const [view, setView] = useState('main');
+
+  // Menu state
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
+  const openMenu = Boolean(anchorEl);
+  const settingsMenuOpen = Boolean(settingsAnchorEl);
+
+  // Selection state
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [selectedSettingsOption, setSelectedSettingsOption] = useState(null);
+  const [selectedAnalysis, setSelectedAnalysis] = useState(null);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+
+  // Data state
+  const [products, setProducts] = useState([]);
+  const [services, setServices] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [isShopifyConnected, setIsShopifyConnected] = useState(false);
+
+  // Section state
+  const [hrSection, setHRSection] = useState('');
+  const [payrollSection, setPayrollSection] = useState('');
+
+  // UI visibility state (first batch)
   const [showInvoiceBuilder, setShowInvoiceBuilder] = useState(false);
   const [showCreateOptions, setShowCreateOptions] = useState(false);
-  const [selectedOption, setSelectedOption] = useState(null);
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [showAccountPage, setShowAccountPage] = useState(false);
-  const { addMessage } = useUserMessageContext();
-  const [selectedReport, setSelectedReport] = useState(null);
   const [showReports, setShowReports] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(true);
   const [showBankingDashboard, setShowBankingDashboard] = useState(false);
   const [showHRDashboard, setShowHRDashboard] = useState(false);
   const [showPayrollDashboard, setShowPayrollDashboard] = useState(false);
-  const [hrSection, setHRSection] = useState('');
-  const [payrollSection, setPayrollSection] = useState('');
   const [showAnalysisPage, setShowAnalysisPage] = useState(false);
   const [showCustomerList, setShowCustomerList] = useState(false);
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [view, setView] = useState('customerList');
-  const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [showProductList, setShowProductList] = useState(false);
   const [showServiceList, setShowServiceList] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [services, setServices] = useState([]);
+
+
+
+  // UI visibility state (second batch)
   const [showProductManagement, setShowProductManagement] = useState(false);
   const [showServiceManagement, setShowServiceManagement] = useState(false);
   const [showEstimateManagement, setShowEstimateManagement] = useState(false);
   const [showChart, setShowChart] = useState(false);
   const [showSalesAnalysis, setShowSalesAnalysis] = useState(false);
   const [showIntegrationSettings, setShowIntegrationSettings] = useState(false);
-  const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
-  const settingsMenuOpen = Boolean(settingsAnchorEl);
-  const searchParams = useSearchParams();
-  const status = searchParams.get('status');
-  const platform = searchParams.get('platform');
-  const [isShopifyConnected, setIsShopifyConnected] = useState(false);
   const [showAPIIntegrations, setShowAPIIntegrations] = useState(false);
   const [showECommercePlatformAPI, setShowECommercePlatformAPI] = useState(false);
   const [showUserProfileSettings, setShowUserProfileSettings] = useState(false);
   const [showAlerts, setShowAlerts] = useState(false);
-  const [alerts, setAlerts] = useState([]);
   const [showSendGlobalAlert, setShowSendGlobalAlert] = useState(false);
   const [showSalesOrderManagement, setShowSalesOrderManagement] = useState(false);
   const [showInvoiceManagement, setShowInvoiceManagement] = useState(false);
@@ -101,34 +124,40 @@ function DashboardContent() {
   const [showEmployeeManagement, setShowEmployeeManagement] = useState(false);
   const [showPayrollManagement, setShowPayrollManagement] = useState(false);
   const [showTimesheetManagement, setShowTimeSheetManagement] = useState(false);
+
+
+    // Accounting management states
   const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
   const [showJournalEntryManagement, setShowJournalEntryManagement] = useState(false);
-  const [showGeneralLedgerManagement, setShowGeneralLedger] = useState(false);
-  const [showAccountReconManagement, setShowAccountReconManagement] = useState(false);
-  const [showMonthEndManagement, setShowMonthEndManagement] = useState(false);
-  const [showFinancialStatements, setShowFinancialStatements] = useState(false);
   const [showFixedAssetManagement, setShowFixedAssetManagement] = useState(false);
   const [showBudgetManagement, setShowBudgetManagement] = useState(false);
-  const [showCostAccountingManagement, setShowCostAccountingManagement] = useState(false);
-  const [showIntercompanyManagement, setShowIntercompanyManagement] = useState(false);
+  const [showMonthEndManagement, setShowMonthEndManagement] = useState(false);
+  const [showAccountReconManagement, setShowAccountReconManagement] = useState(false);
   const [showAuditTrailManagement, setShowAuditTrailManagement] = useState(false);
+  const [showCostAccountingManagement, setShowCostAccountingManagement] = useState(false);
+  const [showAccountBalances, setShowAccountBalances] = useState(false);
+  const [showTrialBalances, setShowTrialBalances] = useState(false);
+  const [showGeneralLedger, setShowGeneralLedger] = useState(false);
+  const [showFinancialStatements, setShowFinancialStatements] = useState(false);
+  const [showIntercompanyManagement, setShowIntercompanyManagement] = useState(false);
   const [showProfitAndLossReport, setShowProfitAndLossReport] = useState(false);
   const [showBalanceSheetReport, setShowBalanceSheetReport] = useState(false);
   const [showCashFlowReport, setShowCashFlowReport] = useState(false);
   const [showIncomeByCustomer, setShowIncomeByCustomer] = useState(false);
   const [showAgedReceivables, setShowAgedReceivables] = useState(false);
   const [showAgedPayables, setShowAgedPayables] = useState(false);
-  const [showAccountBalances, setShowAccountBalances] = useState(false);
-  const [showTrialBalances, setShowTrialBalances] = useState(false);
   const [showProfitAndLossAnalysis, setShowProfitAndLossAnalysis] = useState(false);
-  const [selectedAnalysis, setSelectedAnalysis] = useState(null);
   const [showBalanceSheetAnalysis, setShowBalanceSheetAnalysis] = useState(false);
   const [showCashFlowAnalysis, setShowCashFlowAnalysis] = useState(false);
   const [showBudgetVsActualAnalysis, setShowBudgetVsActualAnalysis] = useState(false);
   const [showExpenseAnalysis, setShowExpenseAnalysis] = useState(false);
+  const [showGeneralLedgerManagement, setShowGeneralLedgerManagement] = useState(false);
+
+
+
+// Dashboard visibility states
   const [showKPIDashboard, setShowKPIDashboard] = useState(false);
   const [showDeviceSettings, setShowDeviceSettings] = useState(false);
-  const [selectedSettingsOption, setSelectedSettingsOption] = useState(null);
   const [showHelpCenter, setShowHelpCenter] = useState(false);
   const [showTermsAndConditions, setShowTermsAndConditions] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
@@ -139,12 +168,13 @@ function DashboardContent() {
   const [showPayrollReport, setShowPayrollReport] = useState(false);
   const [showBankReport, setShowBankReport] = useState(false);
   const [showInventoryItems, setShowInventoryItems] = useState(false);
-  const [showInventoryManagement, setShowInventoryManagement] = useState(false);
   const [showMainDashboard, setShowMainDashboard] = useState(false);
   const [showBankTransactions, setShowBankTransactions] = useState(false);
+  const [showInventoryManagement, setShowInventoryManagement] = useState(false);
   const [showHome, setShowHome] = useState(false);
 
-  const router = useRouter();
+
+
 
   const AllResetState = [
     setShowInvoiceBuilder,
@@ -225,62 +255,151 @@ function DashboardContent() {
     setShowHome,
   ];
 
-  const drawerWidth = 225; // or whatever width you want for your drawer
 
-  const resetAllStatesExcept = (exceptionSetter) => {
-    AllResetState.forEach((setter) => {
-      if (typeof setter === 'function' && setter !== exceptionSetter) {
-        setter(false);
-      } else if (typeof setter !== 'function') {
-        console.warn('Non-function setter found in AllResetState:', setter);
-      }
-    });
-  };
+ // Reset state functions
+ const resetAllStates = () => {
+  AllResetState.forEach((setter) => {
+    if (typeof setter === 'function') {
+      setter(false);
+    } else {
+      console.warn('Non-function setter found in AllResetState:', setter);
+    }
+  });
+};
 
-  const resetAllStates = () => {
-    AllResetState.forEach((setter) => {
-      if (typeof setter === 'function') {
-        setter(false);
-      } else {
-        console.warn('Non-function setter found in AllResetState:', setter);
-      }
+const resetAllStatesExcept = (exceptionSetter) => {
+  AllResetState.forEach((setter) => {
+    if (typeof setter === 'function' && setter !== exceptionSetter) {
+      setter(false);
+    } else if (typeof setter !== 'function') {
+      console.warn('Non-function setter found in AllResetState:', setter);
+    }
+  });
+};
+
+// Data fetching functions
+const fetchUserData = useCallback(async () => {
+  try {
+    setLoadingProfile(true);
+    const token = localStorage.getItem('token');
+    const response = await axiosInstance.get('/api/profile/', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
-  };
-  const fetchUserData = useCallback(async () => {
+
+    if (response.status === 200) {
+      const { data } = response;
+      
+      // Add defensive checks
+      if (!data || !data.data || !data.data.email || !data.data.profile) {
+        logger.error('Invalid profile data structure:', data);
+        addMessage('error', 'Invalid profile data received');
+        return;
+      }
+
+      const { email, profile } = data.data;
+      
+      // Use the profile data for name information
+      const userData = {
+        email,
+        first_name: profile.first_name,    // Use profile's first name
+        last_name: profile.last_name,      // Use profile's last name
+        full_name: `${profile.first_name} ${profile.last_name}`.trim(),  // Construct full name from profile
+        profile: profile,
+        subscription_type: profile.active_subscription?.subscription_type || 'free'
+      };
+
+      setUserData(userData);
+      
+    } else {
+      throw new Error(response.statusText);
+    }
+  } catch (error) {
+    logger.error('Error fetching user data:', error);
+    addMessage('error', `Error fetching user data: ${error.message}`);
+    localStorage.removeItem('token');
+    router.push('/auth/signin');
+  } finally {
+    setLoadingProfile(false);
+  }
+}, [addMessage, router]);
+
+
+const fetchProducts = async () => {
+  try {
+    const response = await axiosInstance.get('/api/products/');
+    setProducts(response.data);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    addMessage('error', 'Failed to fetch products');
+  }
+};
+
+const fetchServices = async () => {
+  try {
+    const response = await axiosInstance.get('/api/services/');
+    setServices(response.data);
+  } catch (error) {
+    console.error('Error fetching services:', error);
+    addMessage('error', 'Failed to fetch services');
+  }
+};
+
+  // Core handlers
+  const handleDrawerToggle = () => setDrawerOpen(!drawerOpen);
+
+  const handleLogout = async () => {
+    try {
+        console.log('Logout clicked');
+        
+        // First clear all local storage and state
+        localStorage.clear();
+        sessionStorage.clear();
+        setUserData(null);
+        resetAllStates();
+
+        // Use the signOut function from next-auth
+        await signOut({ 
+            callbackUrl: '/auth/signin',
+            redirect: true
+        });
+
+        // If for some reason the signOut redirect doesn't work, force redirect
+        router.push('/auth/signin');
+        
+    } catch (error) {
+        logger.error('Error during logout:', error);
+        // Force redirect to signin even if there's an error
+        router.push('/auth/signin');
+    }
+};
+
+  const deleteUserAccount = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axiosInstance.get('/api/profile/', {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+
+      const response = await fetch('http://localhost:8000/api/delete-account/', {
+        method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (response.status === 200) {
-        const data = response.data;
-        console.log('Dashboard User data:', data);
-        logger.log('Dashboard User data:', data);
-        data.first_name = data.first_name || data.email.split('@')[0];
-        data.full_name = data.full_name || `${data.first_name} ${data.last_name}`;
-        const activeSubscription = data.active_subscription;
-        const subscriptionType = activeSubscription ? activeSubscription.subscription_type : 'free';
-
-        setUserData({
-          ...data,
-          subscription_type: subscriptionType,
-        });
+      if (!response.ok) {
+        logger.error('Error deleting account:', response.statusText);
+        addMessage('error', `Error deleting account: ${response.statusText}`);
       } else {
-        logger.error('Error fetching user data:', response.statusText);
-        addMessage('error', `Error fetching user data: ${response.statusText}`);
-        localStorage.removeItem('token');
-        router.push('/auth/signin');
+        addMessage('info', 'Account deleted successfully');
       }
     } catch (error) {
-      logger.error('Error fetching user data:', error);
-      addMessage('error', `Error fetching user data: ${error.message}`);
-      localStorage.removeItem('token');
-      router.push('/auth/signin');
+      logger.error('Error deleting account:', error);
+      addMessage('error', `Error deleting account: ${error.message}`);
     }
-  }, [addMessage, router]);
+  };
+  
 
   const handleUserProfileClick = () => {
     resetAllStates();
@@ -322,13 +441,7 @@ function DashboardContent() {
     }
   };
 
-  const handleLogout = () => {
-    console.log('Logout clicked');
-    // Clear any user-related data from local storage
-    localStorage.removeItem('token');
-    // Redirect to the landing page
-    router.push('/');
-  };
+
 
   const handleTermsClick = () => {
     console.log('Terms clicked');
@@ -713,10 +826,6 @@ function DashboardContent() {
     setShowIntegrationSettings(false);
   };
 
-  const handleDrawerToggle = () => {
-    setDrawerOpen(!drawerOpen);
-  };
-
   const handleReportClick = (reportType) => {
     console.log('handleReportClick called with reportType:', reportType);
 
@@ -935,56 +1044,35 @@ function DashboardContent() {
     }
   };
 
-  const deleteUserAccount = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      localStorage.removeItem('token');
-      window.location.href = '/';
 
-      const response = await fetch('http://localhost:8000/api/delete-account/', {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        logger.error('Error deleting account:', response.statusText);
-        addMessage('error', `Error deleting account: ${response.statusText}`);
-      } else {
-        addMessage('info', 'Account deleted successfully');
-      }
-    } catch (error) {
-      logger.error('Error deleting account:', error);
-      addMessage('error', `Error deleting account: ${error.message}`);
-    }
-  };
 
   useEffect(() => {
     fetchUserData();
   }, [fetchUserData]);
 
-  const fetchProducts = async () => {
-    try {
-      console.log('fetchProducts called');
-      const response = await axiosInstance.get('/api/products/');
-      setProducts(response.data);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      addMessage('error', 'Failed to fetch products');
-    }
-  };
 
-  const fetchServices = async () => {
-    try {
-      console.log('fetchServices called');
-      const response = await axiosInstance.get('/api/services/');
-      setServices(response.data);
-    } catch (error) {
-      console.error('Error fetching services:', error);
-      addMessage('error', 'Failed to fetch services');
+
+    // Return loading state or content
+    if (loadingProfile) {
+      return (
+        <Box sx={{ opacity: 0.7 }}>
+          <Container
+            sx={{
+              marginLeft: drawerWidth,
+              width: `calc(100% - ${drawerWidth}px)`,
+              transition: 'margin-left 0.3s ease, width 0.3s ease',
+              padding: 2,
+              paddingTop: '66px',
+              height: '100vh',
+              overflow: 'auto',
+            }}
+          >
+            <CircularProgress />
+            <Typography>Loading dashboard...</Typography>
+          </Container>
+        </Box>
+      );
     }
-  };
 
   return (
     <ThemeProvider theme={theme}>

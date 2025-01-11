@@ -11,8 +11,9 @@ import {
   ArcElement,
   Title,
   Tooltip,
-  Legend,
+  Legend
 } from 'chart.js';
+
 import { useApi } from '@/lib/axiosConfig';
 
 ChartJS.register(

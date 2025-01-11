@@ -6,7 +6,6 @@ import { logger } from '@/utils/logger';
 import { APP_CONFIG } from '@/config';
 import { OnboardingErrorBoundary } from '@/components/ErrorBoundary/OnboardingErrorBoundary';
 
-// Error types
 export const ERROR_TYPES = {
   INVALID_STEP: 'INVALID_STEP',
   VALIDATION_FAILED: 'VALIDATION_FAILED',
@@ -14,96 +13,191 @@ export const ERROR_TYPES = {
   API_ERROR: 'API_ERROR',
   DATA_ERROR: 'DATA_ERROR',
   NETWORK_ERROR: 'NETWORK_ERROR',
+  INVALID_TIER: 'INVALID_TIER',
+  PROGRESSION_ERROR: 'PROGRESSION_ERROR'
 };
 
-// Step names from APP_CONFIG
+export const VALIDATION_DIRECTION = {
+  FORWARD: 'forward',
+  BACKWARD: 'backward'
+};
+
 export const STEP_NAMES = {
-  STEP1: APP_CONFIG.onboarding.steps.INITIAL,
-  STEP2: APP_CONFIG.onboarding.steps.PLAN,
-  STEP3: APP_CONFIG.onboarding.steps.PAYMENT,
-  STEP4: APP_CONFIG.onboarding.steps.SETUP,
-  COMPLETE: APP_CONFIG.onboarding.steps.COMPLETE,
+  BUSINESS_INFO: 'business-info',
+  SUBSCRIPTION: 'subscription',
+  PAYMENT: 'payment',
+  SETUP: 'setup',
+  COMPLETE: 'complete'
 };
 
-// Validation with more specific checks
+export const STEP_PROGRESSION = {
+  [STEP_NAMES.BUSINESS_INFO]: {
+    next: ['subscription'],
+    prev: []
+  },
+  [STEP_NAMES.SUBSCRIPTION]: {
+    next: ['payment', 'setup'],
+    prev: ['business-info']
+  },
+  [STEP_NAMES.PAYMENT]: {
+    next: ['setup'],
+    prev: ['subscription']
+  },
+  [STEP_NAMES.SETUP]: {
+    next: ['complete'],
+    prev: ['payment', 'subscription']
+  }
+};
+
 export const STEP_VALIDATION = {
-  [STEP_NAMES.STEP1]: (data) => {
+  [STEP_NAMES.BUSINESS_INFO]: (data) => {
     const requiredFields = ['businessName', 'industry', 'country', 'legalStructure'];
     return requiredFields.every((field) => !!data?.[field]);
   },
-  [STEP_NAMES.STEP2]: (data) => {
+  [STEP_NAMES.SUBSCRIPTION]: (data) => {
     return (
       !!data?.selectedPlan &&
-      ['Basic', 'Professional'].includes(data.selectedPlan) &&
+      ['free', 'professional'].includes(data.selectedPlan) && // Updated values
       !!data?.billingCycle &&
       ['monthly', 'annual'].includes(data.billingCycle)
     );
   },
-  [STEP_NAMES.STEP3]: (data) => {
-    if (data?.selectedPlan === 'Basic') return true;
-    return data?.selectedPlan === 'Professional' && !!data?.paymentMethod;
+  [STEP_NAMES.PAYMENT]: (data) => {
+    if (data?.selectedPlan === 'free') return true; // Updated value
+    return data?.selectedPlan === 'professional' && !!data?.paymentMethod; // Updated value
   },
-  [STEP_NAMES.STEP4]: (data) => {
+  [STEP_NAMES.SETUP]: (data) => {
     return (
-      data?.selectedPlan === 'Basic' ||
-      (data?.selectedPlan === 'Professional' && !!data?.paymentMethod)
+      data?.selectedPlan === 'free' || // Updated value
+      (data?.selectedPlan === 'professional' && !!data?.paymentMethod) // Updated value
     );
   },
 };
 
-// Metadata using APP_CONFIG endpoints
 export const STEP_METADATA = {
-  [STEP_NAMES.STEP1]: {
+  [STEP_NAMES.BUSINESS_INFO]: {
     title: 'Business Information',
     description: 'Tell us about your business',
-    nextStep: STEP_NAMES.STEP2.toLowerCase(),
+    nextStep: '/onboarding/subscription',
     stepNumber: 1,
     isRequired: true,
     validationRules: ['businessName', 'industry', 'country', 'legalStructure'],
-    apiEndpoint: APP_CONFIG.api.endpoints.onboarding.step1,
+    apiEndpoint: `${APP_CONFIG.api.base}/onboarding/business-info`,
   },
-  [STEP_NAMES.STEP2]: {
+  [STEP_NAMES.SUBSCRIPTION]: {
     title: 'Choose Your Plan',
     description: 'Select the plan that best fits your needs',
-    nextStep: STEP_NAMES.STEP3.toLowerCase(),
-    prevStep: STEP_NAMES.STEP1.toLowerCase(),
+    nextStep: (tier) => tier === 'free' ? '/onboarding/setup' : '/onboarding/payment', // Make nextStep dynamic
+    prevStep: '/onboarding/business-info',
     stepNumber: 2,
     isRequired: true,
     validationRules: ['selectedPlan', 'billingCycle'],
-    apiEndpoint: APP_CONFIG.api.endpoints.onboarding.step2,
+    apiEndpoint: `${APP_CONFIG.api.base}/onboarding/subscription`,
   },
-  [STEP_NAMES.STEP3]: {
+  [STEP_NAMES.PAYMENT]: {
     title: 'Payment Details',
     description: 'Complete your subscription',
-    nextStep: STEP_NAMES.STEP4.toLowerCase(),
-    prevStep: STEP_NAMES.STEP2.toLowerCase(),
+    nextStep: '/onboarding/setup',
+    prevStep: '/onboarding/subscription',
     stepNumber: 3,
     isRequired: false,
     validationRules: ['paymentMethod'],
-    apiEndpoint: APP_CONFIG.api.endpoints.onboarding.step3,
+    apiEndpoint: `${APP_CONFIG.api.base}/onboarding/payment`,
   },
-  [STEP_NAMES.STEP4]: {
+  [STEP_NAMES.SETUP]: {
     title: 'Setup Your Workspace',
     description: "We're getting everything ready for you",
-    prevStep: STEP_NAMES.STEP3.toLowerCase(),
+    prevStep: (tier) => tier === 'professional' ? '/onboarding/payment' : '/onboarding/subscription',
     stepNumber: 4,
     isRequired: true,
     validationRules: [],
-    apiEndpoint: APP_CONFIG.api.endpoints.onboarding.step4,
+    apiEndpoint: `${APP_CONFIG.api.base}/onboarding/setup`,
+    basicSteps: [
+      'Initializing workspace',
+      'Setting up basic features',
+      'Configuring default settings',
+      'Completing setup'
+    ],
+    professionalSteps: [
+      'Initializing professional workspace',
+      'Setting up advanced features',
+      'Configuring custom settings',
+      'Setting up API access',
+      'Configuring analytics',
+      'Completing professional setup'
+    ],
+    getSteps: (tier) => tier === 'professional' ? 
+      STEP_METADATA[STEP_NAMES.SETUP].professionalSteps : 
+      STEP_METADATA[STEP_NAMES.SETUP].basicSteps
   },
 };
 
-// Step routes from APP_CONFIG
 export const STEP_ROUTES = {
-  [STEP_NAMES.STEP1.toLowerCase()]: APP_CONFIG.routes.onboarding.steps.step1,
-  [STEP_NAMES.STEP2.toLowerCase()]: APP_CONFIG.routes.onboarding.steps.step2,
-  [STEP_NAMES.STEP3.toLowerCase()]: APP_CONFIG.routes.onboarding.steps.step3,
-  [STEP_NAMES.STEP4.toLowerCase()]: APP_CONFIG.routes.onboarding.steps.step4,
-  [STEP_NAMES.COMPLETE.toLowerCase()]: '/dashboard',
+  [STEP_NAMES.BUSINESS_INFO]: '/onboarding/business-info',
+  [STEP_NAMES.SUBSCRIPTION]: '/onboarding/subscription',
+  [STEP_NAMES.PAYMENT]: '/onboarding/payment',
+  [STEP_NAMES.SETUP]: '/onboarding/setup',
+  [STEP_NAMES.COMPLETE]: '/dashboard',
 };
 
-// Validation utility with detailed error messages
-export const validateStep = (stepName, formData) => {
+export const validateTierAccess = (stepName, tier) => {
+  switch (stepName) {
+    case STEP_NAMES.PAYMENT:
+      if (tier !== 'professional') {
+        return {
+          valid: false,
+          error: ERROR_TYPES.INVALID_TIER,
+          message: 'Payment is only available for Professional tier'
+        };
+      }
+      break;
+    case STEP_NAMES.SETUP:
+      if (!tier) {
+        return {
+          valid: false,
+          error: ERROR_TYPES.INVALID_TIER,
+          message: 'No subscription tier selected'
+        };
+      }
+      break;
+  }
+  return { valid: true };
+};
+
+export const canTransitionToStep = (currentStep, targetStep, tier) => {
+  try {
+    if (!STEP_NAMES[currentStep] || !STEP_NAMES[targetStep]) {
+      logger.error('Invalid step transition:', {
+        from: currentStep,
+        to: targetStep,
+        tier
+      });
+      return false;
+    }
+
+    const progression = STEP_PROGRESSION[currentStep];
+    if (!progression) return false;
+
+    const direction = STEP_METADATA[targetStep].stepNumber > STEP_METADATA[currentStep].stepNumber
+      ? VALIDATION_DIRECTION.FORWARD
+      : VALIDATION_DIRECTION.BACKWARD;
+
+    const allowedSteps = direction === VALIDATION_DIRECTION.FORWARD
+      ? progression.next
+      : progression.prev;
+
+    if (targetStep === STEP_NAMES.PAYMENT && tier !== 'professional') {
+      return false;
+    }
+
+    return allowedSteps.includes(targetStep);
+  } catch (error) {
+    logger.error('Step transition validation error:', error);
+    return false;
+  }
+};
+
+export const validateStep = (stepName, formData, direction = VALIDATION_DIRECTION.FORWARD) => {
   try {
     const validation = STEP_VALIDATION[stepName];
     if (!validation) {
@@ -111,32 +205,57 @@ export const validateStep = (stepName, formData) => {
       return {
         valid: false,
         error: ERROR_TYPES.INVALID_STEP,
-        message: `Invalid step: ${stepName}`,
+        message: `Invalid step: ${stepName}`
       };
+    }
+
+    const progression = STEP_PROGRESSION[stepName];
+    if (!progression) {
+      return {
+        valid: false,
+        error: ERROR_TYPES.INVALID_STEP,
+        message: `Invalid step progression for: ${stepName}`
+      };
+    }
+
+    const allowedSteps = direction === VALIDATION_DIRECTION.FORWARD 
+      ? progression.next 
+      : progression.prev;
+
+    const isValidTier = validateTierAccess(stepName, formData?.selectedPlan);
+    if (!isValidTier.valid) {
+      return isValidTier;
     }
 
     const isValid = validation(formData);
     const metadata = STEP_METADATA[stepName];
     const missingFields = metadata.validationRules.filter((rule) => !formData?.[rule]);
 
+    const nextStep = typeof metadata.nextStep === 'function' 
+      ? metadata.nextStep(formData?.selectedPlan)
+      : metadata.nextStep;
+
     return {
       valid: isValid,
       error: isValid ? null : ERROR_TYPES.VALIDATION_FAILED,
       message: isValid ? null : 'Please complete all required fields',
       missingFields,
-      stepMetadata: metadata,
+      allowedSteps,
+      stepMetadata: {
+        ...metadata,
+        nextStep
+      }
     };
   } catch (error) {
     logger.error('Validation error:', error);
     return {
       valid: false,
       error: ERROR_TYPES.DATA_ERROR,
-      message: 'An error occurred during validation',
+      message: 'An error occurred during validation'
     };
   }
 };
 
-// Loading component with retry logic
 const DynamicLoadingComponent = ({ stepNumber, error, retry }) => {
   if (error) {
     logger.error(`Error loading step ${stepNumber}:`, {
@@ -158,7 +277,6 @@ const DynamicLoadingComponent = ({ stepNumber, error, retry }) => {
   return <LoadingStateWithProgress message={`Loading Step ${stepNumber}...`} showSpinner={true} />;
 };
 
-// Error boundary wrapper
 const withErrorBoundary = (Component, stepNumber) => {
   return function ErrorBoundaryWrapper(props) {
     return (
@@ -174,14 +292,14 @@ const withErrorBoundary = (Component, stepNumber) => {
   };
 };
 
-// Dynamic import utility
-const createDynamicStep = (stepNumber) => {
+const createDynamicStep = (stepName) => {
+  const stepNumber = STEP_METADATA[stepName].stepNumber;
+  
   const DynamicComponent = dynamic(
-    () =>
-      import(`./Step${stepNumber}`).catch((error) => {
-        logger.error(`Failed to load Step${stepNumber}:`, error);
-        throw error;
-      }),
+    () => import(`./steps/${stepName}`).catch((error) => {
+      logger.error(`Failed to load ${stepName}:`, error);
+      throw error;
+    }),
     {
       loading: ({ error, retry }) => (
         <DynamicLoadingComponent stepNumber={stepNumber} error={error} retry={retry} />
@@ -193,21 +311,13 @@ const createDynamicStep = (stepNumber) => {
   return withErrorBoundary(DynamicComponent, stepNumber);
 };
 
-// Dynamic imports with error handling
-const Step1 = createDynamicStep(1);
-const Step2 = createDynamicStep(2);
-const Step3 = createDynamicStep(3);
-const Step4 = createDynamicStep(4);
-
-// Component mapping
 export const STEP_COMPONENTS = {
-  [STEP_NAMES.STEP1]: Step1,
-  [STEP_NAMES.STEP2]: Step2,
-  [STEP_NAMES.STEP3]: Step3,
-  [STEP_NAMES.STEP4]: Step4,
+  [STEP_NAMES.BUSINESS_INFO]: createDynamicStep(STEP_NAMES.BUSINESS_INFO),
+  [STEP_NAMES.SUBSCRIPTION]: createDynamicStep(STEP_NAMES.SUBSCRIPTION),
+  [STEP_NAMES.PAYMENT]: createDynamicStep(STEP_NAMES.PAYMENT),
+  [STEP_NAMES.SETUP]: createDynamicStep(STEP_NAMES.SETUP),
 };
 
-// Utility function for getting components
 export const getStepComponent = (stepName, formData) => {
   const component = STEP_COMPONENTS[stepName];
   if (!component) {
@@ -226,7 +336,6 @@ export const getStepComponent = (stepName, formData) => {
   return component;
 };
 
-// Development utilities
 if (process.env.NODE_ENV !== 'production') {
   const PropTypes = require('prop-types');
 

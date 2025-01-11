@@ -1,21 +1,5 @@
 // src/config/index.js
 
-// Move helper functions to top
-const getWebSocketUrl = () => {
-  if (typeof window === 'undefined') return '';
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${window.location.hostname}:8000`;
-};
-
-// Add helper for deep freezing objects
-const deepFreeze = (obj) => {
-  Object.keys(obj).forEach((prop) => {
-    if (typeof obj[prop] === 'object' && obj[prop] !== null) {
-      deepFreeze(obj[prop]);
-    }
-  });
-  return Object.freeze(obj);
-};
 
 export const APP_CONFIG = {
   api: {
@@ -23,33 +7,35 @@ export const APP_CONFIG = {
     timeout: 40000,
     endpoints: {
       auth: {
+        profile: '/api/profile/',
         google: '/api/onboarding/token-exchange/',
-        // Update refresh endpoint to match Django URL
-        refresh: '/api/onboarding/token/refresh/', // Changed to match backend URL
-        verify: '/api/onboarding/token/verify/', // Updated for consistency
+        refresh: '/api/onboarding/token/refresh/',
+        verify: '/api/onboarding/token/verify/',
         session: '/api/auth/session/',
       },
       onboarding: {
         status: '/api/onboarding/status/',
-        // Update step endpoints to match backend URLs
-        step1: '/api/onboarding/save-step1/', // Changed to match backend
-        step2: '/api/onboarding/save-step2/', // Changed to match backend
-        step3: '/api/onboarding/save-step3/', // Changed to match backend
-        step4: {
-          // Make this an object with all step4 endpoints
-          setup: '/api/onboarding/step4/setup/',
-          start: '/api/onboarding/step4/setup/start/',
-          status: '/api/onboarding/step4/setup/status/',
-          cancel: '/api/onboarding/step4/setup/cancel/',
+        businessInfo: '/api/onboarding/save-business-info/',
+        subscription: '/api/onboarding/save-subscription/',
+        payment: '/api/onboarding/save-payment/',
+        setup: {
+          root: '/api/onboarding/setup/',
+          start: '/api/onboarding/setup/start/',
+          status: '/api/onboarding/setup/status/',
+          cancel: '/api/onboarding/setup/cancel/',
         },
         complete: '/api/onboarding/complete/',
-        taskStatus: (taskId) => `/api/onboarding/tasks/${taskId}/status/`, // Updated to match backend
+        taskStatus: (taskId) => `/api/onboarding/tasks/${taskId}/status/`,
+      },
+      database: {
+        exists: '/api/onboarding/database/exists/',
+        healthCheck: '/api/onboarding/database/health-check/',
+        status: '/api/onboarding/database/status/',
+        reset: '/api/onboarding/reset/'
       },
     },
   },
-
-  // Add type info for better intellisense
-  /** @type {Record<string, (userId: string, token: string) => string>} */
+ 
   websocket: {
     baseURL: process.env.NEXT_PUBLIC_WS_URL || getWebSocketUrl(),
     reconnectAttempts: 3,
@@ -58,10 +44,10 @@ export const APP_CONFIG = {
       onboarding: (userId, token) => `/ws/onboarding/${userId}/?token=${token}`,
     },
   },
-
+ 
   app: {
     name: 'Dott',
-    title: 'Dott: Small Business Software',
+    title: 'Dott: Small Business Software', 
     description: 'Streamline your business operations with Dott',
     keywords: 'business management, finance, operations',
     favicon: '/static/images/favicon.png',
@@ -76,13 +62,13 @@ export const APP_CONFIG = {
       defaultBillingCycle: 'monthly',
     },
   },
-
+ 
   routes: {
     public: ['/'],
     auth: {
       paths: ['/auth'],
       signIn: '/auth/signin',
-      signOut: '/auth/signout',
+      signOut: '/auth/signout', 
       error: '/auth/error',
       verifyRequest: '/auth/verify-request',
       callback: '/api/auth/callback',
@@ -94,56 +80,57 @@ export const APP_CONFIG = {
       success: '/onboarding/success',
       error: '/onboarding/error',
       steps: {
-        step1: '/onboarding/step1',
-        step2: '/onboarding/step2',
-        step3: '/onboarding/step3',
-        step4: {
-          setup: '/onboarding/step4/setup',
-          start: '/onboarding/step4/setup/start',
-          status: '/onboarding/step4/setup/status',
-          cancel: '/onboarding/step4/setup/cancel',
-        },
+        businessInfo: '/onboarding/business-info',
+        subscription: '/onboarding/subscription',
+        payment: '/onboarding/payment', 
+        setup: '/onboarding/setup'
       },
     },
     protected: ['/dashboard', '/settings', '/profile'],
+    database: {
+      paths: ['/api/onboarding/database'],
+      healthCheck: '/api/onboarding/database/health-check/',
+      status: '/api/onboarding/database/status/',
+      reset: '/api/onboarding/database/reset/'
+    },
   },
-
+ 
   onboarding: {
     steps: {
-      INITIAL: 'step1',
-      PLAN: 'step2',
-      PAYMENT: 'step3',
-      SETUP: 'step4',
+      BUSINESS_INFO: 'business-info',
+      SUBSCRIPTION: 'subscription', 
+      PAYMENT: 'payment',
+      SETUP: 'setup',
       COMPLETE: 'complete',
     },
     transitions: {
-      step1: ['step2'],
-      step2: ['step3', 'step4'],
-      step3: ['step4'],
-      step4: ['complete'],
-      complete: ['dashboard'],
+      'business-info': ['subscription'],
+      'subscription': ['payment', 'setup'],
+      'payment': ['setup'],
+      'setup': ['complete'],
+      'complete': ['dashboard'],
     },
     storage: {
       key: 'onboarding_data',
       version: '1.0',
-      draftExpiration: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+      draftExpiration: 24 * 60 * 60 * 1000,
     },
     queryKeys: {
       status: 'onboardingStatus',
       steps: 'onboardingSteps',
-      progress: 'onboardingProgress',
+      progress: 'onboardingProgress', 
     },
   },
-
+ 
   auth: {
-    tokenGracePeriod: 5 * 60 * 1000, // 5 minutes
-    sessionMaxAge: 30 * 24 * 60 * 60, // 30 days
-    refreshInterval: 5 * 60, // Changed to 5 minutes to match backend
+    tokenGracePeriod: 3600 * 1000,  // 1 hour
+    sessionMaxAge: 30 * 24 * 60 * 60,  // 30 days
+    refreshInterval: 5 * 60,
     providers: ['google', 'apple'],
-    retryDelay: 1000, // Add retry delay for token refresh
-    maxRetries: 3, // Add max retries for token refresh
+    retryDelay: 1000,
+    maxRetries: 3,
   },
-
+ 
   security: {
     headers: {
       'X-DNS-Prefetch-Control': 'on',
@@ -156,11 +143,11 @@ export const APP_CONFIG = {
     },
     csrf: true,
     rateLimit: {
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100, // limit each IP to 100 requests per windowMs
+      windowMs: 15 * 60 * 1000,
+      max: 100,
     },
   },
-
+ 
   validation: {
     businessName: {
       minLength: 2,
@@ -172,7 +159,7 @@ export const APP_CONFIG = {
       requireSpecialChars: true,
     },
   },
-
+ 
   storage: {
     prefix: 'app_',
     version: '1.0.0',
@@ -182,20 +169,19 @@ export const APP_CONFIG = {
       onboarding: 'onboarding_progress',
       onboardingDrafts: 'onboarding_drafts',
     },
-    draftExpiration: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+    draftExpiration: 24 * 60 * 60 * 1000,
   },
-
+ 
   ui: {
     theme: 'light',
     animation: {
       duration: 300,
     },
-    // Add specific theme colors and styles
     colors: {
       background: {
-        primary: '#ffffff', // Pure white background
-        secondary: '#ffffff', // Keep secondary also white
-        paper: '#ffffff', // Paper/card backgrounds also white
+        primary: '#ffffff',
+        secondary: '#ffffff',
+        paper: '#ffffff',
       },
     },
     toast: {
@@ -205,7 +191,7 @@ export const APP_CONFIG = {
       style: {
         fontSize: '14px',
         padding: '16px',
-        backgroundColor: '#ffffff', // Ensure white background for toasts
+        backgroundColor: '#ffffff',
       },
       toastStyle: {
         backgroundColor: '#ffffff',
@@ -216,20 +202,21 @@ export const APP_CONFIG = {
       toastClassName: 'custom-toast-class',
     },
   },
-
-  // Add more specific error codes for auth
+ 
   errors: {
     codes: {
       UNAUTHORIZED: 'unauthorized',
-      SESSION_EXPIRED: 'session_expired',
+      SESSION_EXPIRED: 'session_expired', 
       VALIDATION_ERROR: 'validation_error',
       SERVER_ERROR: 'server_error',
       NETWORK_ERROR: 'network_error',
-      REFRESH_TOKEN_FAILED: 'refresh_token_failed', // Added
-      TOKEN_EXPIRED: 'token_expired', // Added
+      REFRESH_TOKEN_FAILED: 'refresh_token_failed',
+      TOKEN_EXPIRED: 'token_expired',
       AUTHENTICATION_FAILED: 'authentication_failed',
       PLAN_VALIDATION_ERROR: 'plan_validation_error',
-      // Added
+      ONBOARDING_STEP_INVALID: 'onboarding_step_invalid',
+      ONBOARDING_DATA_MISSING: 'onboarding_data_missing',
+      ONBOARDING_TRANSITION_INVALID: 'onboarding_transition_invalid'
     },
     messages: {
       default: 'An unexpected error occurred',
@@ -246,28 +233,35 @@ export const APP_CONFIG = {
       initialization_failed: 'Failed to initialize onboarding process.',
     },
   },
-};
-
-// Add helper functions
-export const getApiUrl = (endpoint) => `${APP_CONFIG.api.baseURL}${endpoint}`;
-export const getWebsocketEndpoint = (path) => `${APP_CONFIG.websocket.baseURL}${path}`;
-export const getStorageKey = (key) => `${APP_CONFIG.storage.prefix}${key}`;
-
-// Deep freeze all nested objects
-deepFreeze(APP_CONFIG);
-
-// Type checking in development
-if (process.env.NODE_ENV === 'development') {
-  // Validate required environment variables
-  const requiredEnvVars = ['NEXT_PUBLIC_API_URL', 'NEXT_PUBLIC_WS_URL', 'NEXT_PUBLIC_APP_URL'];
-
-  requiredEnvVars.forEach((envVar) => {
-    if (!process.env[envVar]) {
-      console.warn(`Warning: ${envVar} is not set`);
+ };
+ 
+ // Helper functions
+ const getWebSocketUrl = () => {
+  if (typeof window === 'undefined') return '';
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${window.location.hostname}:8000`;
+ };
+ 
+ const deepFreeze = (obj) => {
+  Object.keys(obj).forEach((prop) => {
+    if (typeof obj[prop] === 'object' && obj[prop] !== null) {
+      deepFreeze(obj[prop]);
     }
   });
-
-  // Validate config structure
+  return Object.freeze(obj);
+ };
+ 
+ export const getApiUrl = (endpoint) => `${APP_CONFIG.api.baseURL}${endpoint}`;
+ export const getWebsocketEndpoint = (path) => `${APP_CONFIG.websocket.baseURL}${path}`;
+ export const getStorageKey = (key) => `${APP_CONFIG.storage.prefix}${key}`;
+ 
+ // Validation
+ if (process.env.NODE_ENV === 'development') {
+  const requiredEnvVars = ['NEXT_PUBLIC_API_URL', 'NEXT_PUBLIC_WS_URL', 'NEXT_PUBLIC_APP_URL'];
+  requiredEnvVars.forEach((envVar) => {
+    if (!process.env[envVar]) console.warn(`Warning: ${envVar} is not set`);
+  });
+ 
   const validateConfig = (config) => {
     const required = [
       'api.baseURL',
@@ -277,21 +271,21 @@ if (process.env.NODE_ENV === 'development') {
       'routes.auth',
       'onboarding.steps',
       'auth.tokenGracePeriod',
-      'security.headers',
+      'security.headers',  
       'onboarding.transitions',
       'onboarding.storage',
       'app.plans',
     ];
-
+ 
     required.forEach((path) => {
       const value = path.split('.').reduce((obj, key) => obj?.[key], config);
-      if (value === undefined) {
-        throw new Error(`Required config path ${path} is missing`);
-      }
+      if (value === undefined) throw new Error(`Required config path ${path} is missing`);
     });
   };
-
+ 
   validateConfig(APP_CONFIG);
-}
-
-export { APP_CONFIG as default };
+ }
+ 
+ deepFreeze(APP_CONFIG);
+ 
+ export default APP_CONFIG;

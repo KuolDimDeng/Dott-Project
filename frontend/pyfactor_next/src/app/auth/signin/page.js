@@ -2,7 +2,8 @@
 // src/app/auth/signin/page.js
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react'; // Add useCallback here
+import { signIn, useSession, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
   Button,
@@ -15,6 +16,7 @@ import {
   IconButton,
   CircularProgress,
   Alert,
+  ArrowBack as ArrowBackIcon // Rename to avoid conflicts
 } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Image from 'next/image';
@@ -24,12 +26,23 @@ import * as z from 'zod';
 import { logger } from '@/utils/logger';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { GoogleLoginButton, AppleLoginButton } from 'react-social-login-buttons';
-import { signIn, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useOnboarding } from '@/app/onboarding/contexts/onboardingContext';
+import { useOnboarding } from '@/app/onboarding/contexts/OnboardingContext';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { toast } from 'react-toastify';
+import { 
+  validateUserState, 
+  validateAndRouteUser,
+  createErrorHandler, // Add this import
+  handleAuthFlow // Add this import if not already imported
+} from '@/lib/authUtils';
+import { TroubleshootOutlined } from '@mui/icons-material';
+import { RoutingManager } from '@/lib/routingManager';
+import { AuthLoadingState } from '@/components/LoadingState';
+import { OnboardingProvider } from '@/app/onboarding/contexts/OnboardingContext';
+
+
 
 // Theme configuration (same as before)
 const theme = createTheme({
@@ -63,13 +76,17 @@ const signInSchema = z.object({
 
 export default function SignInPage() {
   // State management
+  const mounted = useRef(true);
   const [isPasswordShown, setIsPasswordShown] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
+
+
   // Hooks
   const router = useRouter();
+  const requestIdRef = useRef(crypto.randomUUID());
   const { data: session, status } = useSession();
   const queryClient = useQueryClient();
   const { handleOnboardingRedirect } = useOnboarding();
@@ -78,6 +95,13 @@ export default function SignInPage() {
   useEffect(() => {
     setIsInitialized(true);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
 
   // Form management
   const {
@@ -93,126 +117,170 @@ export default function SignInPage() {
     },
   });
 
-  // Navigation handler
-  const handleNavigation = async (path, options = {}) => {
-    const { replace = true, onSuccess } = options;
-    try {
-      await router[replace ? 'replace' : 'push'](path, undefined, { shallow: true });
-      onSuccess?.();
-    } catch (error) {
-      logger.error(`Navigation error to ${path}:`, error);
-      toast.error('Navigation failed');
-    }
-  };
 
-  // Session management
-  // Session management
   useEffect(() => {
-    let mounted = true;
-
-    const checkSession = async () => {
-      // Only proceed if component is initialized and session status is determined
-      if (!isInitialized || status === 'loading') return;
-
-      // If user is already authenticated, handle redirect
-      if (status === 'authenticated' && session?.user) {
+    if (!isInitialized || status === 'loading' || !mounted.current) return;
+  
+    const checkAuth = async () => {
+      if (status === 'authenticated' && session?.user?.onboardingStatus) {
         try {
-          setIsLoading(true);
-          const response = await axiosInstance.get('/api/onboarding/status/', {
-            headers: {
-              Authorization: `Bearer ${session.user.accessToken}`,
-            },
+          logger.debug('Auth check started:', {
+            status,
+            onboardingStatus: session.user.onboardingStatus
           });
-
-          if (!mounted) return;
-
-          const { onboarding_status: onboardingStatus } = response.data;
-
-          if (onboardingStatus === 'complete') {
-            router.replace('/dashboard');
-          } else {
-            handleOnboardingRedirect(onboardingStatus || 'step1');
-          }
+  
+          await handleOnboardingRedirect(session.user.onboardingStatus);
+          
         } catch (error) {
-          if (!mounted) return;
-
-          logger.error('Error checking session:', error);
-          if (error.response?.status === 401) {
-            queryClient.clear();
-          }
+          logger.error('Navigation failed:', {
+            error: error.message,
+            onboardingStatus: session.user.onboardingStatus
+          });
+          setError('Failed to navigate. Please try again.');
         }
       }
-
-      if (mounted) {
+    };
+  
+    checkAuth();
+  }, [isInitialized, status, session, handleOnboardingRedirect]);
+ 
+    // Update handle login
+    const handleLogin = async (credentials = {}) => {
+      const requestId = crypto.randomUUID();
+      
+      logger.info('Starting login attempt', { 
+        requestId,
+        hasCredentials: !!Object.keys(credentials).length 
+      });
+    
+      try {
+        setIsLoading(true);
+        setError(null);
+    
+        // Handle credentials sign-in
+        logger.debug('Initiating credentials sign-in', {
+          requestId,
+          hasEmail: !!credentials.email
+        });
+    
+        const signInResult = await signIn('credentials', {
+          redirect: false,
+          ...credentials
+        });
+    
+        if (signInResult?.error) {
+          throw new Error(signInResult.error);
+        }
+    
+        const newSession = await getSession();
+    
+        if (!newSession?.user) {
+          logger.error('No session established', { requestId });
+          throw new Error('Failed to establish session');
+        }
+    
+        logger.info('Session established', {
+          requestId,
+          onboardingStatus: newSession.user.onboardingStatus,
+          isComplete: newSession.user.isComplete,
+          email: newSession.user.email
+        });
+    
+        // Handle redirection using onboarding context
+        handleOnboardingRedirect(newSession.user.onboardingStatus);
+    
+      } catch (error) {
+        logger.error('Login failed', {
+          requestId,
+          errorMessage: error.message,
+          errorType: error.name,
+          stack: error.stack
+        });
+        
+        setError(determineErrorMessage(error));
+        throw error;
+      } finally {
         setIsLoading(false);
       }
     };
 
-    checkSession();
+// Update handleValidationError with better context
+const handleValidationError = useCallback(async (error, context = {}) => {
+  const errorHandler = createErrorHandler(router, logger);
+  const requestId = requestIdRef.current;
 
-    return () => {
-      mounted = false;
-    };
-  }, [isInitialized, status, session, router, queryClient, handleOnboardingRedirect]);
-
-  // Login mutation
-  const credentialsLoginMutation = useMutation({
-    mutationFn: async (credentials) => {
-      const result = await signIn('credentials', {
-        redirect: false,
-        ...credentials,
-      });
-
-      if (result?.error) throw new Error(result.error);
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['session']);
-      setError(null);
-      reset();
-    },
-    onError: (error) => {
-      setError(error.message || 'Login failed. Please try again.');
-      logger.error('Login error:', error);
-      toast.error(error.message || 'Login failed. Please try again.');
-    },
+  logger.error('Validation error occurred', {
+    requestId,
+    errorMessage: error.message,
+    errorCode: error.code,
+    errorType: error.name,
+    context
   });
 
-  // Social login handler
-  const handleSocialLogin = async (provider) => {
-    try {
-      setError(null);
-      setIsLoading(true);
+  return errorHandler(error, requestId, {
+    component: 'SignInPage',
+    ...context
+  });
+}, [router]);
 
-      const result = await signIn(provider, {
-        redirect: false,
-        callbackUrl: '/onboarding/step1',
-      });
-
-      if (result?.error) {
-        throw new Error(result.error);
-      }
-
-      if (result?.ok) {
-        await queryClient.invalidateQueries(['session']);
-      }
-    } catch (error) {
-      logger.error(`${provider} login failed:`, error);
-      setError(`${provider} login failed. Please try again.`);
-      toast.error(`${provider} login failed. Please try again.`);
-    } finally {
-      setIsLoading(false);
+  // Helper function to determine error messages
+  const determineErrorMessage = (error) => {
+    if (error.message.includes('timeout')) {
+      return 'Login timed out. Please try again.';
     }
+    if (error.message.includes('Failed to establish session')) {
+      return 'Could not complete login. Please try again.';
+    }
+    if (error.message.includes('network')) {
+      return 'Network error. Please check your connection and try again.';
+    }
+    return error.message || 'Login failed. Please try again.';
   };
 
+  // Single mutation for credentials login
+  const credentialsLoginMutation = useMutation({
+    mutationFn: (credentials) => handleLogin(credentials)
+  });
+  // Simplified social login handler
+  const handleSocialLogin = async (provider) => {
+    const requestId = crypto.randomUUID();
+    
+    logger.debug('Initiating social login', { requestId, provider });
+  
+    try {
+      setIsLoading(true);
+      
+      await signIn(provider, {
+        redirect: true,
+        callbackUrl: '/onboarding/business-info' // Use direct path instead of RoutingManager
+      });
+      
+    } catch (error) {
+      logger.error('Social login failed', { 
+        requestId, 
+        provider, 
+        error: error.message 
+      });
+      setError('Authentication failed. Please try again.');
+    }
+    // Don't set loading to false here since we're redirecting
+  };
+
+    // Add back button to return to home
+    const handleBackToHome = () => {
+      router.push(RoutingManager.ROUTES.HOME);
+    };
+  
   // Loading states
   const showLoading = !isInitialized || status === 'loading' || isLoading;
+
   const loadingMessage = !isInitialized
     ? 'Initializing...'
     : status === 'loading'
       ? 'Checking authentication...'
       : 'Loading your information...';
-
+  
+  // Remove isAuthenticating check since it's redundant
   if (showLoading) {
     return (
       <Box
@@ -230,9 +298,11 @@ export default function SignInPage() {
       </Box>
     );
   }
+
   return (
     <ThemeProvider theme={theme}>
       <Grid container component="main" sx={{ height: '100vh' }}>
+ 
         {/* Marketing Section - Hidden on mobile */}
         <Grid
           item
@@ -286,15 +356,26 @@ export default function SignInPage() {
         >
           <Box sx={{ my: 8, width: '100%', maxWidth: 'sm' }}>
             {/* Logo */}
-            <Box sx={{ mb: 4, textAlign: 'center' }}>
+            <Box sx={{ mb: 2, textAlign: 'center' }}>
               <Image
                 src="/static/images/Pyfactor.png"
                 alt="Logo"
                 width={150}
-                height={40}
+                height={130}
                 priority
               />
-            </Box>
+            <Typography 
+              variant="h4" 
+              component="h1" 
+              sx={{ 
+                mt: 1,
+                fontWeight: 600,
+                color: '#1976d2' // matches your primary color
+              }}
+            >
+              Sign In
+            </Typography>
+          </Box>
 
             {/* Error Alert */}
             {error && (
@@ -414,3 +495,4 @@ export default function SignInPage() {
     </ThemeProvider>
   );
 }
+

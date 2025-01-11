@@ -90,6 +90,72 @@ const ContentWrapper = ({ children }) => (
     {children}
   </Box>
 );
+const SettingsTabPanel = ({ selectedSettingsOption }) => {
+  const [selectedTab, setSelectedTab] = useState(0);
+
+  const handleTabChange = (event, newValue) => {
+    setSelectedTab(newValue);
+  };
+
+  let tabs = [];
+  let content = null;
+
+    switch (selectedSettingsOption) {
+      case 'Profile Settings':
+        tabs = [
+          'Personal Information',
+          'Password and Security',
+          'Notifications',
+          'Businesses',
+          'Billing and Subscriptions',
+        ];
+        content = <ProfileSettings selectedTab={selectedTab} />;
+        break;
+      case 'Business Settings':
+        tabs = [
+          'User Management',
+          'Invoices and Estimates',
+          'Payments',
+          'Email Templates',
+          'Custom Charge Settings',
+        ];
+        content = <BusinessSettings selectedTab={selectedTab} />;
+        break;
+      case 'Accounting Settings':
+        tabs = ['Dates and Currency', 'Sales Tax'];
+        content = <AccountingSettings selectedTab={selectedTab} />;
+        break;
+      case 'Payroll Settings':
+        tabs = [
+          'Business Profile',
+          'Company Signatory',
+          'Source Bank Account',
+          'Tax Profile',
+          'Payroll Setup',
+        ];
+        content = <PayrollSettings selectedTab={selectedTab} />;
+        break;
+      case 'Device Settings':
+        content = <DeviceSettings />;
+        break;
+      default:
+        return null;
+    }
+
+    return (
+      <Box sx={{ width: '100%' }}>
+        {tabs.length > 0 && (
+          <Tabs value={selectedTab} onChange={handleTabChange}>
+            {tabs.map((tab, index) => (
+              <Tab key={index} label={tab} />
+            ))}
+          </Tabs>
+        )}
+        <Box sx={{ p: 1 }}>{content}</Box>
+      </Box>
+    );
+  };
+
 
 const RenderMainContent = ({
   showTransactionForm,
@@ -179,82 +245,12 @@ const RenderMainContent = ({
 }) => {
   console.log('RenderMainContent: Rendering with selectedSettingsOption:', selectedSettingsOption);
 
-  const [selectedTab, setSelectedTab] = useState(0);
-
-  const handleTabChange = (event, newValue) => {
-    setSelectedTab(newValue);
-  };
-
-  const renderSettingsTabs = () => {
-    console.log(
-      'RenderMainContent: renderSettingsTabs called with selectedSettingsOption:',
-      selectedSettingsOption
-    );
-
-    let tabs = [];
-    let content = null;
-
-    switch (selectedSettingsOption) {
-      case 'Profile Settings':
-        tabs = [
-          'Personal Information',
-          'Password and Security',
-          'Notifications',
-          'Businesses',
-          'Billing and Subscriptions',
-        ];
-        content = <ProfileSettings selectedTab={selectedTab} />;
-        break;
-      case 'Business Settings':
-        tabs = [
-          'User Management',
-          'Invoices and Estimates',
-          'Payments',
-          'Email Templates',
-          'Custom Charge Settings',
-        ];
-        content = <BusinessSettings selectedTab={selectedTab} />;
-        break;
-      case 'Accounting Settings':
-        tabs = ['Dates and Currency', 'Sales Tax'];
-        content = <AccountingSettings selectedTab={selectedTab} />;
-        break;
-      case 'Payroll Settings':
-        tabs = [
-          'Business Profile',
-          'Company Signatory',
-          'Source Bank Account',
-          'Tax Profile',
-          'Payroll Setup',
-        ];
-        content = <PayrollSettings selectedTab={selectedTab} />;
-        break;
-      case 'Device Settings':
-        content = <DeviceSettings />;
-        break;
-      default:
-        return null;
-    }
-
-    return (
-      <Box sx={{ width: '100%' }}>
-        {tabs.length > 0 && (
-          <Tabs value={selectedTab} onChange={handleTabChange}>
-            {tabs.map((tab, index) => (
-              <Tab key={index} label={tab} />
-            ))}
-          </Tabs>
-        )}
-        <Box sx={{ p: 1 }}>{content}</Box>
-      </Box>
-    );
-  };
-
+  
   const renderContent = () => {
     let content = null;
 
     if (selectedSettingsOption) {
-      content = renderSettingsTabs();
+      content = <SettingsTabPanel selectedSettingsOption={selectedSettingsOption} />;
     } else if (showUserProfileSettings) {
       content = <UserProfileSettings userData={userData} onUpdate={handleUserProfileUpdate} />;
     } else if (showIntegrationSettings) {
