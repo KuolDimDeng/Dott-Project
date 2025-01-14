@@ -1,5 +1,4 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/lib/axiosConfig.js
-
 'use client';
 
 import axios from 'axios';
@@ -9,8 +8,10 @@ import { logger } from '@/utils/logger';
 import APP_CONFIG from '@/config';
 import { useState, useEffect, useCallback } from 'react';
 
+// Constants
 const RETRY_COUNT = 3;
 const RETRY_DELAY = 1000;
+const REQUEST_TIMEOUT = 10000;
 
 const DATABASE_ERROR_TYPES = {
   NOT_FOUND: 'not_found',
@@ -20,10 +21,18 @@ const DATABASE_ERROR_TYPES = {
   UNKNOWN: 'unknown'
 };
 
+// Query client configuration
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error) => {
+        const requestId = crypto.randomUUID();
+        logger.debug('Query retry evaluation:', {
+          requestId,
+          failureCount,
+          errorStatus: error?.response?.status,
+          shouldRetry: error?.response?.status !== 401 && failureCount < 2
+        });
         if (error?.response?.status === 401) return false;
         return failureCount < 2;
       },
@@ -35,6 +44,13 @@ export const queryClient = new QueryClient({
     },
     mutations: {
       retry: (failureCount, error) => {
+        const requestId = crypto.randomUUID();
+        logger.debug('Mutation retry evaluation:', {
+          requestId,
+          failureCount,
+          errorStatus: error?.response?.status,
+          shouldRetry: error?.response?.status !== 401 && failureCount < 2
+        });
         if (error?.response?.status === 401) return false;
         return failureCount < 2;
       },
@@ -42,427 +58,622 @@ export const queryClient = new QueryClient({
   },
 });
 
+// Axios instance configuration
 export const axiosInstance = axios.create({
-  baseURL: APP_CONFIG.api.baseURL,
-  timeout: APP_CONFIG.api.timeout || 10000,
+  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
+  timeout: APP_CONFIG.api.timeout || REQUEST_TIMEOUT,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
-    Accept: 'application/json',
+    'Accept': 'application/json',
   },
   timeoutErrorMessage: 'Request timed out - please try again',
 });
 
+// WebSocket hook with enhanced logging
 const useWebSocket = (endpoint, options = {}) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const { data: session } = useSession();
+  const requestId = crypto.randomUUID();
 
   useEffect(() => {
-    if (!session?.user?.accessToken) return;
+    if (!session?.user?.accessToken) {
+      logger.debug('WebSocket connection skipped:', {
+        requestId,
+        reason: 'No access token',
+        endpoint
+      });
+      return;
+    }
+
+    logger.debug('Initializing WebSocket connection:', {
+      requestId,
+      endpoint,
+      hasToken: !!session?.user?.accessToken
+    });
 
     const ws = new WebSocket(`${APP_CONFIG.websocket.baseURL}${endpoint}`);
     
-    ws.onopen = () => setIsConnected(true);
-    ws.onclose = () => setIsConnected(false);
+    ws.onopen = () => {
+      logger.debug('WebSocket connected:', { requestId, endpoint });
+      setIsConnected(true);
+    };
+
+    ws.onclose = () => {
+      logger.debug('WebSocket disconnected:', { requestId, endpoint });
+      setIsConnected(false);
+    };
+
     ws.onerror = (error) => {
-      logger.error('WebSocket error:', error);
+      logger.error('WebSocket error:', {
+        requestId,
+        endpoint,
+        error: error.message
+      });
       options.onError?.(error);
     };
-    ws.onmessage = (event) => options.onMessage?.(JSON.parse(event.data));
+
+    ws.onmessage = (event) => {
+      logger.debug('WebSocket message received:', {
+        requestId,
+        endpoint,
+        dataType: typeof event.data
+      });
+      options.onMessage?.(JSON.parse(event.data));
+    };
 
     setSocket(ws);
-    return () => ws.close();
-  }, [endpoint, session?.user?.accessToken]);
+
+    return () => {
+      logger.debug('Cleaning up WebSocket:', { requestId, endpoint });
+      ws.close();
+    };
+  }, [endpoint, session?.user?.accessToken, requestId]);
 
   return { socket, isConnected };
 };
 
+// WebSocket factory with logging
 const createWebSocket = (url, options = {}) => {
+  const requestId = crypto.randomUUID();
+  
+  logger.debug('Creating WebSocket instance:', {
+    requestId,
+    url,
+    hasOptions: !!options
+  });
+
   const ws = new WebSocket(url);
-  ws.onopen = options.onOpen;
-  ws.onclose = options.onClose;
-  ws.onerror = options.onError;
-  ws.onmessage = options.onMessage;
+  
+  ws.onopen = (...args) => {
+    logger.debug('WebSocket opened:', { requestId, url });
+    options.onOpen?.(...args);
+  };
+  
+  ws.onclose = (...args) => {
+    logger.debug('WebSocket closed:', { requestId, url });
+    options.onClose?.(...args);
+  };
+  
+  ws.onerror = (error) => {
+    logger.error('WebSocket error:', {
+      requestId,
+      url,
+      error: error.message
+    });
+    options.onError?.(error);
+  };
+  
+  ws.onmessage = (event) => {
+    logger.debug('WebSocket message:', {
+      requestId,
+      url,
+      dataType: typeof event.data
+    });
+    options.onMessage?.(event);
+  };
+
   return ws;
 };
 
+// Auth API
 export const authApi = {
   refreshToken: async (refreshToken) => {
-    return axiosInstance.post('/api/auth/refresh', { refreshToken });
+    const requestId = crypto.randomUUID();
+    logger.debug('Token refresh initiated:', {
+      requestId,
+      hasRefreshToken: !!refreshToken
+    });
+    // Remove the full URL since baseURL is already set
+    return axiosInstance.post('/api/token/refresh/', { 
+      refresh: refreshToken 
+    });
   }
 };
 
-// Hooks
+// Mutation hooks with detailed logging
 const useSaveBusinessInfo = (options = {}) =>
   useMutation({
     mutationFn: async (data) => {
+      const requestId = crypto.randomUUID();
+      logger.debug('Saving business info:', {
+        requestId,
+        hasData: !!data,
+        fields: Object.keys(data)
+      });
+
       const response = await axiosInstance.post(
         APP_CONFIG.api.endpoints.onboarding.businessInfo,
         data
       );
+
+      logger.debug('Business info saved:', {
+        requestId,
+        status: response.status,
+        hasData: !!response.data
+      });
+
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      logger.debug('Business info save succeeded:', {
+        requestId: crypto.randomUUID(),
+        dataReceived: !!data
+      });
       queryClient.invalidateQueries(['onboardingStatus']);
+    },
+    onError: (error, variables, context) => {
+      logger.error('Business info save failed:', {
+        requestId: crypto.randomUUID(),
+        error: error.message,
+        data: variables
+      });
     },
     ...options,
   });
 
-  const useSaveSubscription = (options = {}) =>
-    useMutation({
-      mutationFn: async (data) => {
-        // Add tier to request payload
-        const requestData = {
-          ...data,
-          tier: data.selectedPlan // Ensure tier is included
-        };
-  
-        const response = await axiosInstance.post(
-          APP_CONFIG.api.endpoints.onboarding.subscription,
-          requestData
-        );
-        return response.data;
-      },
-      onSuccess: (data) => {
-        queryClient.invalidateQueries(['onboardingStatus']);
-        // Add tier to cached data
-        queryClient.setQueryData(['onboardingStatus'], (old) => ({
+const useSaveSubscription = (options = {}) =>
+  useMutation({
+    mutationFn: async (data) => {
+      const requestId = crypto.randomUUID();
+      const requestData = {
+        ...data,
+        tier: data.selectedPlan
+      };
+
+      logger.debug('Saving subscription:', {
+        requestId,
+        selectedPlan: data.selectedPlan,
+        tier: requestData.tier
+      });
+
+      const response = await axiosInstance.post(
+        APP_CONFIG.api.endpoints.onboarding.subscription,
+        requestData
+      );
+
+      logger.debug('Subscription saved:', {
+        requestId,
+        status: response.status,
+        responseData: response.data
+      });
+
+      return response.data;
+    },
+    onSuccess: (data) => {
+      const requestId = crypto.randomUUID();
+      logger.debug('Subscription save succeeded:', {
+        requestId,
+        tier: data.tier
+      });
+      
+      queryClient.invalidateQueries(['onboardingStatus']);
+      queryClient.setQueryData(['onboardingStatus'], (old) => {
+        const updated = {
           ...old,
           tier: data.tier
-        }));
-      },
-      ...options,
-    });
-
-const useSavePayment = (options = {}) =>
-  useMutation({
-    mutationFn: async (data) => {
-      const response = await axiosInstance.post(
-        APP_CONFIG.api.endpoints.onboarding.payment,
-        data
-      );
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['onboardingStatus']);
-    },
-    ...options,
-  });
-
-const useSetup = (options = {}) =>
-  useMutation({
-    mutationFn: async (data) => {
-      const response = await axiosInstance.post(
-        APP_CONFIG.api.endpoints.onboarding.setup.root,
-        data
-      );
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['onboardingStatus']);
-    },
-    ...options,
-  });
-
-  const useOnboardingStatus = (options = {}) => {
-    const { data: session, status } = useSession();
-    
-    return useQuery({
-      queryKey: ['onboardingStatus'],
-      queryFn: async () => {
-        if (!session?.user?.accessToken) {
-          throw new Error('Not authenticated');
-        }
-        const response = await axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status);
-        // Include tier in response
-        return {
-          ...response.data,
-          tier: response.data.tier || response.data.selectedPlan
         };
-      },
-      enabled: !!session?.user?.accessToken && status === 'authenticated',
-      staleTime: 30000,
-      ...options,
-    });
-  };
+        logger.debug('Updated onboarding cache:', {
+          requestId,
+          previousTier: old?.tier,
+          newTier: updated.tier
+        });
+        return updated;
+      });
+    },
+    onError: (error, variables, context) => {
+      const requestId = crypto.randomUUID();
+      logger.error('Subscription save failed:', {
+        requestId,
+        error: error.message,
+        selectedPlan: variables.selectedPlan
+      });
+    },
+    ...options,
+  });
 
-const checkDatabaseHealth = async (retryCount = 0) => {
-  try {
-    const response = await axiosInstance.get(APP_CONFIG.api.endpoints.database.healthCheck);
-    
-    if (response.data.status === 'deleted' || response.data.status === 'not_found') {
-      await axiosInstance.post(APP_CONFIG.api.endpoints.database.reset);
+  const checkDatabaseHealth = async (retryCount = 0) => {
+    const requestId = crypto.randomUUID();
+    const timestamp = new Date().toISOString();
+   
+    logger.debug('Database health check started:', {
+      requestId,
+      timestamp,
+      attempt: retryCount + 1,
+      maxRetries: RETRY_COUNT,
+      endpoint: APP_CONFIG.api.endpoints.database.healthCheck
+    });
+   
+    try {
+      // Get session for auth
+      const session = await getSession();
+      logger.debug('Session retrieved for health check:', {
+        requestId,
+        hasSession: !!session,
+        hasToken: !!session?.user?.accessToken
+      });
+   
+      const response = await axiosInstance.get(APP_CONFIG.api.endpoints.database.healthCheck);
+      
+      logger.debug('Health check response received:', {
+        requestId,
+        status: response.status,
+        dbStatus: response.data.status,
+        responseTime: Date.now() - new Date(timestamp).getTime()
+      });
+      
+      // Handle deleted/not found status
+      if (response.data.status === 'deleted' || response.data.status === 'not_found') {
+        logger.debug('Database needs reset:', {
+          requestId,
+          reason: response.data.status,
+          details: response.data
+        });
+   
+        try {
+          logger.debug('Initiating database reset:', {
+            requestId,
+            previousStatus: response.data.status
+          });
+   
+          const resetResponse = await axiosInstance.post(APP_CONFIG.api.endpoints.database.reset);
+          
+          logger.debug('Database reset completed:', {
+            requestId,
+            resetStatus: resetResponse.status,
+            newDbStatus: resetResponse.data.status
+          });
+   
+          return {
+            isHealthy: false,
+            errorType: DATABASE_ERROR_TYPES.NOT_FOUND,
+            requiresSetup: true,
+            resetPerformed: true,
+            resetSuccess: resetResponse.status === 200
+          };
+        } catch (resetError) {
+          logger.error('Database reset failed:', {
+            requestId,
+            error: resetError.message,
+            stack: resetError.stack,
+            originalStatus: response.data.status
+          });
+   
+          return {
+            isHealthy: false,
+            errorType: DATABASE_ERROR_TYPES.NOT_FOUND,
+            requiresSetup: true,
+            resetPerformed: true,
+            resetSuccess: false,
+            resetError: resetError.message
+          };
+        }
+      }
+   
+      // Handle normal health status
+      const isHealthy = response.data.status === 'healthy';
+      logger.debug('Database health status determined:', {
+        requestId,
+        isHealthy,
+        rawStatus: response.data.status,
+        errorType: !isHealthy ? DATABASE_ERROR_TYPES.UNHEALTHY : null,
+        details: response.data
+      });
+   
+      return {
+        isHealthy,
+        errorType: isHealthy ? null : DATABASE_ERROR_TYPES.UNHEALTHY,
+        status: response.data.status,
+        timestamp,
+        checkDuration: Date.now() - new Date(timestamp).getTime()
+      };
+   
+    } catch (error) {
+      logger.error('Health check failed:', {
+        requestId,
+        timestamp,
+        attempt: retryCount + 1,
+        error: {
+          message: error.message,
+          type: error.constructor.name,
+          stack: error.stack
+        },
+        response: error.response?.data
+      });
+   
+      // Handle retries
+      if (retryCount < RETRY_COUNT) {
+        const delayMs = RETRY_DELAY * Math.pow(2, retryCount);
+        
+        logger.debug('Scheduling retry:', {
+          requestId,
+          attempt: retryCount + 1,
+          delayMs,
+          nextAttemptAt: new Date(Date.now() + delayMs).toISOString()
+        });
+   
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        return checkDatabaseHealth(retryCount + 1);
+      }
+   
+      // All retries exhausted
+      logger.error('Health check permanently failed:', {
+        requestId,
+        timestamp,
+        totalAttempts: retryCount + 1,
+        finalError: error.message
+      });
+   
       return {
         isHealthy: false,
-        errorType: DATABASE_ERROR_TYPES.NOT_FOUND,
-        requiresSetup: true
+        errorType: DATABASE_ERROR_TYPES.UNKNOWN,
+        error: error.message,
+        attempts: retryCount + 1,
+        timestamp,
+        duration: Date.now() - new Date(timestamp).getTime()
       };
     }
+   };
 
-    return {
-      isHealthy: response.data.status === 'healthy',
-      errorType: response.data.status === 'unhealthy' ? DATABASE_ERROR_TYPES.UNHEALTHY : null
-    };
-
-  } catch (error) {
-    if (retryCount < RETRY_COUNT) {
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-      return checkDatabaseHealth(retryCount + 1);
-    }
-
-    return {
-      isHealthy: false,
-      errorType: DATABASE_ERROR_TYPES.UNKNOWN,
-      error: error.message
-    };
-  }
-};
-
-const checkSession = async () => {
-  try {
-    const session = await getSession();
-    if (!session?.user?.accessToken || isTokenExpired(session)) {
-      window.location.href = '/auth/signin';
+   const checkSession = async () => {
+    const requestId = crypto.randomUUID();
+    try {
+      logger.debug('Checking session:', { requestId });
+      const session = await getSession();
+      
+      if (!session?.user?.accessToken) {
+        logger.debug('No valid session found:', { requestId });
+        return false;
+      }
+      
+      // Remove full URL
+      const response = await axiosInstance.post(
+        '/api/token/verify/',
+        { token: session.user.accessToken },
+        { skipAuthRefresh: true }
+      );
+  
+      return response.status === 200;
+      
+    } catch (error) {
+      logger.error('Session check failed:', {
+        requestId,
+        error: error.message
+      });
       return false;
     }
-    return true;
-  } catch (error) {
-    logger.error('Session check failed:', error);
-    return false;
-  }
-};
-
-const refreshSession = async () => {
-  const timeout = new Promise((_, reject) => 
-    setTimeout(() => reject(new Error('Session refresh timeout')), 10000)
-  );
-
-  try {
-    const refreshPromise = (async () => {
+  };
+  
+  const refreshSession = async () => {
+    const requestId = crypto.randomUUID();
+    logger.debug('Session refresh started:', { requestId });
+  
+    try {
       const session = await getSession();
       if (!session?.user?.refreshToken) {
         throw new Error('No refresh token available');
       }
-
+  
       const response = await authApi.refreshToken(session.user.refreshToken);
-      await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accessToken: response.access,
-          refreshToken: response.refresh || session.user.refreshToken,
-          accessTokenExpires: Date.now() + APP_CONFIG.auth.tokenGracePeriod,
-        }),
+      logger.debug('Token refresh succeeded:', {
+        requestId,
+        hasNewToken: !!response?.access
       });
+  
       return response;
-    })();
+    } catch (error) {
+      logger.error('Session refresh failed:', {
+        requestId,
+        error: error.message
+      });
+      throw error;
+    }
+  };
 
-    return Promise.race([refreshPromise, timeout]);
-  } catch (error) {
-    logger.error('Session refresh failed:', error);
-    throw error;
-  }
-};
+const useOnboardingStatus = (options = {}) => {
+  const { data: session, status } = useSession();
+  const requestId = crypto.randomUUID();
 
-const useCompleteOnboarding = (options = {}) =>
-  useMutation({
-    mutationFn: async (data) => {
-      const response = await axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.complete, data);
-      return response.data;
+  return useQuery({
+    queryKey: ['onboardingStatus'],
+    queryFn: async () => {
+      logger.debug('Fetching onboarding status:', {
+        requestId,
+        sessionStatus: status,
+        hasToken: !!session?.user?.accessToken
+      });
+
+      if (!session?.user?.accessToken) {
+        logger.debug('Onboarding status fetch failed:', {
+          requestId,
+          reason: 'No access token'
+        });
+        throw new Error('Not authenticated');
+      }
+
+      const response = await axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status);
+      
+      const responseData = {
+        ...response.data,
+        tier: response.data.tier || response.data.selectedPlan
+      };
+
+      logger.debug('Onboarding status fetched:', {
+        requestId,
+        status: responseData.status,
+        tier: responseData.tier,
+        onboardingStatus: responseData.onboardingStatus,
+        currentStep: responseData.currentStep
+      });
+
+      return responseData;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['onboardingStatus']);
-    },
+    enabled: !!session?.user?.accessToken && status === 'authenticated',
+    staleTime: 30000,
     ...options,
   });
+};
 
-// Update axios interceptors
+// Axios interceptors with enhanced logging
 axiosInstance.interceptors.request.use(
   async (config) => {
     const requestId = crypto.randomUUID();
 
-    logger.debug('Request interceptor:', {
+    logger.debug('Request interceptor started:', {
       requestId,
       url: config.url,
-      method: config.method
     });
 
-    // Skip auth for certain routes
+    // Skip auth for public routes
     if (config.skipAuthRefresh || 
-      config.url.includes('/auth/signin') ||
-      config.url.includes('/api/auth/session') ||
-      config.url.includes('/api/auth/callback')) {
-    return config;
+        config.url.includes('/auth/signin') ||
+        config.url.includes('/api/token/') ||
+        config.url.includes('/api/auth/')) {
+      return config;
     }
 
     try {
       const session = await getSession();
-
-      // Add auth headers if we have a session
+      
+      // Add Django JWT token
       if (session?.user?.accessToken) {
         config.headers.Authorization = `Bearer ${session.user.accessToken}`;
       }
 
-      // Add CSRF protection
+      // Add Django CSRF token
       const csrfToken = await getCsrfToken();
       if (csrfToken) {
         config.headers['X-CSRFToken'] = csrfToken;
       }
 
-      // Add request tracking
       config.headers['X-Request-ID'] = requestId;
-      config.metadata = { requestId, startTime: Date.now() };
-
+      
       return config;
     } catch (error) {
       logger.error('Request interceptor failed:', {
         requestId,
-        url: config.url,
         error: error.message
       });
       return Promise.reject(error);
     }
   },
-  (error) => {
-    logger.error('Request error:', error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Update response interceptor with better logging
+
 axiosInstance.interceptors.response.use(
-  (response) => {
-    const { config } = response;
-    const requestId = config.metadata?.requestId;
-    const duration = Date.now() - (config.metadata?.startTime || 0);
-
-    logger.debug('Response received:', {
-      requestId,
-      url: config.url,
-      status: response.status,
-      duration
-    });
-
-    return response;
-  },
+  (response) => response,
   async (error) => {
     const { config } = error.config || {};
-    const requestId = config?.metadata?.requestId;
-    const duration = Date.now() - (config?.metadata?.startTime || 0);
+    const requestId = config?.metadata?.requestId || crypto.randomUUID();
 
-    // Log error details
-    logger.error('Response error:', {
-      requestId,
-      url: config?.url,
-      status: error.response?.status,
-      duration,
-      error: error.message
-    });
-
-    // Handle authentication errors
+    // Handle Django token expiration (401 errors)
     if (error.response?.status === 401) {
-      // Skip for auth-related endpoints to prevent loops
       if (config?.skipAuthRefresh || 
-          config?.url.includes('/auth/') ||
+          config?.url.includes('/api/token/') ||
           config?.url.includes('/api/auth/')) {
         return Promise.reject(error);
       }
 
       try {
-        // Attempt to refresh token
         const session = await getSession();
-        if (session?.user?.refreshToken) {
-          const refreshResult = await refreshSession();
-          if (refreshResult) {
-            // Retry original request with new token
-            const retryConfig = {
-              ...config,
-              headers: {
-                ...config.headers,
-                Authorization: `Bearer ${refreshResult.access}`
-              }
-            };
-            return axiosInstance(retryConfig);
-          }
-        }
+        
+        const refreshResponse = await axiosInstance.post(
+          '/api/token/refresh/',  // Remove full URL here too
+          { refresh: session?.user?.refreshToken },
+          { skipAuthRefresh: true }
+        );
 
-        // If refresh fails, redirect to sign in
-        if (!window.location.pathname.includes('/auth/signin')) {
-          const currentPath = encodeURIComponent(window.location.pathname);
-          window.location.href = `/auth/signin?callbackUrl=${currentPath}`;
+        if (refreshResponse.data?.access) {
+          // Need to update NextAuth session properly
+          await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              accessToken: refreshResponse.data.access
+            })
+          });
+
+          // Then retry request
+          return axiosInstance({
+            ...config,
+            headers: {
+              ...config.headers,
+              Authorization: `Bearer ${refreshResponse.data.access}`
+            }
+          });
         }
       } catch (refreshError) {
         logger.error('Token refresh failed:', {
           requestId,
           error: refreshError.message
         });
+        
+        // Redirect to login if refresh fails
+        window.location.href = `/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
       }
     }
 
-    // Handle database errors
-    if (error.response?.data?.status === 'unhealthy' || 
-        error.response?.data?.status === 'not_found') {
-      try {
-        // Attempt database reset
-        await axiosInstance.post(APP_CONFIG.api.endpoints.database.reset);
-        
-        // Redirect to onboarding if needed
-        if (error.response?.data?.onboarding_required) {
-          if (!window.location.pathname.includes('/onboarding/business-info')) {
-            window.location.href = '/onboarding/business-info';
-          }
-        }
-      } catch (resetError) {
-        logger.error('Database reset failed:', {
-          requestId,
-          error: resetError.message
-        });
-        
-        // Only redirect to error if not already there
-        if (!window.location.pathname.includes('/error')) {
-          window.location.href = '/onboarding/error';
-        }
-      }
-    }
-
-    // Handle service unavailability
-    if (error.response?.status === 503) {
-      logger.warn('Service unavailable:', {
-        requestId,
-        retryAfter: error.response.headers['retry-after']
-      });
-    }
-
-    // Add request context to error
-    error.requestId = requestId;
-    error.duration = duration;
-    
     return Promise.reject(error);
   }
 );
 
+// Export everything
+export {
+  useOnboardingStatus,
+  useWebSocket,
+  useSaveBusinessInfo,
+  useSaveSubscription,
+  checkDatabaseHealth,
+  checkSession,
+  refreshSession,
+};
+
 export const api = {
   onboarding: {
     saveBusinessInfo: async (data) => {
+      const requestId = crypto.randomUUID();
+      logger.debug('API saveBusinessInfo called:', {
+        requestId,
+        hasData: !!data
+      });
       return axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.businessInfo, data);
     },
     saveSubscription: async (data) => {
+      const requestId = crypto.randomUUID();
+      logger.debug('API saveSubscription called:', {
+        requestId,
+        selectedPlan: data.selectedPlan
+      });
       return axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.subscription, {
         ...data,
         tier: data.selectedPlan
       });
-    },
-    savePayment: async (data) => {
-      return axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.payment, data);
-    },
-    saveSetup: async (data) => {
-      return axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.setup.root, data);
-    },
-    getStatus: async () => {
-      return axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status);
-    },
-  },
+    }
+  }
 };
 
 export const useApi = {
@@ -470,28 +681,7 @@ export const useApi = {
   useWebSocket,
   useSaveBusinessInfo,
   useSaveSubscription,
-  useSavePayment,
-  useSetup,
-  useCompleteOnboarding,
-};
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('unhandledrejection', (event) => {
-    logger.error('Unhandled Promise Rejection:', event.reason);
-  });
-}
-
-export {
-  useOnboardingStatus,
-  useWebSocket,
-  useSaveBusinessInfo,
-  useSaveSubscription,
-  useSavePayment,
-  useSetup,
-  useCompleteOnboarding,
-  checkDatabaseHealth,
-  checkSession,
-  refreshSession,
+  
 };
 
 export default {

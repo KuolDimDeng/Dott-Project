@@ -4,13 +4,25 @@ import { generateRequestId } from '@/lib/authUtils';
 import { STEPS, STEP_ORDER, VALIDATION_REASONS } from './constants';
 
 // Validation utilities
-function validateTierRequirements(step, tier) {
-  if (step === STEPS.PAYMENT && tier !== 'professional') {
+function validateTierRequirements(step, selectedPlan) {
+  // Payment step is only for professional tier
+  if (step === STEPS.PAYMENT) {
+    if (selectedPlan !== 'professional') {
+      return {
+        isValid: false,
+        allowedSteps: [STEPS.SETUP],
+        reason: VALIDATION_REASONS.TIER_RESTRICTION,
+        error: 'Payment step is only available for professional tier'
+      };
+    }
+  }
+
+  // Setup step is allowed for all tiers
+  if (step === STEPS.SETUP) {
     return {
-      isValid: false,
+      isValid: true,
       allowedSteps: [STEPS.SETUP],
-      reason: VALIDATION_REASONS.TIER_RESTRICTION,
-      error: 'Payment step is only available for professional tier'
+      reason: VALIDATION_REASONS.VALID
     };
   }
 
@@ -21,12 +33,15 @@ function validateTierRequirements(step, tier) {
 }
 
 export function validateStep(context) {
-  const { currentStep, requestedStep, tier, metadata } = context;
+  const { currentStep, requestedStep, formData, metadata } = context;
+  // Get selectedPlan from either formData or context
+  const selectedPlan = formData?.selectedPlan || context?.selectedPlan || context?.tier;
 
   logger.debug('Step validation started:', {
     currentStep,
     requestedStep,
-    tier,
+    selectedPlan,
+    formData,
     metadata,
     type: 'step_validation_start'
   });
@@ -40,7 +55,7 @@ export function validateStep(context) {
     };
   }
 
-  // Special handling for subscription transition
+  // Allow subscription access from business-info
   if (requestedStep === STEPS.SUBSCRIPTION && 
       (currentStep === STEPS.BUSINESS_INFO || currentStep === STEPS.SUBSCRIPTION)) {
     return {
@@ -62,65 +77,99 @@ export function validateStep(context) {
       };
     }
 
+    // Special handling for subscription -> setup transition for free tier
+    if (currentStep === STEPS.SUBSCRIPTION && requestedStep === STEPS.SETUP && selectedPlan === 'free') {
+      logger.debug('Allowing free tier setup access', {
+        currentStep,
+        requestedStep,
+        selectedPlan
+      });
+      return {
+        isValid: true,
+        allowedSteps: [STEPS.SETUP],
+        reason: VALIDATION_REASONS.FREE_TIER_SETUP
+      };
+    }
+
+    // Special handling for subscription -> payment for professional tier
+    if (currentStep === STEPS.SUBSCRIPTION && requestedStep === STEPS.PAYMENT && selectedPlan === 'professional') {
+      logger.debug('Allowing subscription to payment access', {
+        currentStep,
+        requestedStep,
+        selectedPlan
+      });
+      return {
+        isValid: true,
+        allowedSteps: [STEPS.PAYMENT],
+        reason: VALIDATION_REASONS.PROFESSIONAL_TIER_PAYMENT
+      };
+    }
+
+    // Special handling for payment -> setup for professional tier
+    if (currentStep === STEPS.PAYMENT && requestedStep === STEPS.SETUP && selectedPlan === 'professional') {
+      logger.debug('Allowing payment to setup access', {
+        currentStep,
+        requestedStep,
+        selectedPlan
+      });
+      return {
+        isValid: true,
+        allowedSteps: [STEPS.SETUP],
+        reason: VALIDATION_REASONS.PROFESSIONAL_TIER_SETUP
+      };
+    }
+
     const currentIdx = STEP_ORDER.indexOf(currentStep);
     const requestedIdx = STEP_ORDER.indexOf(requestedStep);
 
-    // Prevent backward navigation
-    if (requestedIdx < currentIdx) {
-      return {
-        isValid: false,
-        allowedSteps: [currentStep],
-        reason: VALIDATION_REASONS.INVALID_TRANSITION,
-        error: 'Cannot navigate to previous steps'
-      };
-    }
-
-    // Only allow moving to next step or setup
-    if (requestedIdx > currentIdx + 1 && requestedStep !== STEPS.SETUP) {
-      return {
-        isValid: false,
-        allowedSteps: [currentStep],
-        reason: VALIDATION_REASONS.INVALID_TRANSITION,
-        error: 'Can only move to next step'
-      };
-    }
-
-    // Special handling for subscription -> setup (free tier)
-    if (currentStep === STEPS.SUBSCRIPTION && requestedStep === STEPS.SETUP && tier !== 'professional') {
+    // Allow backward navigation only to the immediate previous step
+    if (requestedIdx < currentIdx && requestedIdx === currentIdx - 1) {
       return {
         isValid: true,
-        allowedSteps: [STEPS.SETUP],
+        allowedSteps: [STEP_ORDER[requestedIdx]],
         reason: VALIDATION_REASONS.VALID
       };
     }
 
-    // Special handling for payment -> setup (professional tier)
-    if (currentStep === STEPS.PAYMENT && requestedStep === STEPS.SETUP && tier === 'professional') {
+    // Prevent skipping steps (except for setup after subscription for free tier)
+    if (requestedIdx > currentIdx + 1) {
       return {
-        isValid: true,
-        allowedSteps: [STEPS.SETUP],
-        reason: VALIDATION_REASONS.VALID
+        isValid: false,
+        allowedSteps: [currentStep],
+        reason: VALIDATION_REASONS.INVALID_TRANSITION,
+        error: 'Cannot skip steps'
       };
     }
 
     // Add tier-specific validation
-    const tierValidation = validateTierRequirements(requestedStep, tier);
+    const tierValidation = validateTierRequirements(requestedStep, selectedPlan);
     if (!tierValidation.isValid) {
       return tierValidation;
     }
 
-    // Calculate allowed next step
-    const allowedSteps = [currentStep, STEP_ORDER[currentIdx + 1]].filter(Boolean);
+    // Calculate allowed next steps based on selectedPlan
+    let allowedSteps = [currentStep];
+    if (selectedPlan === 'free' && currentStep === STEPS.SUBSCRIPTION) {
+      allowedSteps.push(STEPS.SETUP);
+    } else if (selectedPlan === 'professional') {
+      if (currentStep === STEPS.SUBSCRIPTION) {
+        allowedSteps.push(STEPS.PAYMENT);
+      } else if (currentStep === STEPS.PAYMENT) {
+        allowedSteps.push(STEPS.SETUP);
+      }
+    } else {
+      allowedSteps.push(STEP_ORDER[currentIdx + 1]);
+    }
 
     // Determine if step transition is valid
-    const isValid = requestedIdx === currentIdx + 1;
+    const isValid = allowedSteps.includes(requestedStep);
 
     logger.debug('Step validation result:', {
       currentStep,
       requestedStep,
       isValid,
       allowedSteps,
-      tier,
+      selectedPlan,
       type: 'step_validation_result'
     });
 
@@ -177,26 +226,27 @@ export class StepValidator {
     }
   }
 
-  static canNavigate(currentStep, targetStep, tier) {
+  static canNavigate(currentStep, targetStep, selectedPlan) {
     const result = validateStep({
       currentStep,
       requestedStep: targetStep,
-      tier
+      selectedPlan,
+      formData: { selectedPlan }
     });
     return result.isValid;
   }
 
-  static validateTier(step, tier) {
-    return validateTierRequirements(step, tier);
+  static validateTier(step, selectedPlan) {
+    return validateTierRequirements(step, selectedPlan);
   }
 
-  static getAllowedSteps(currentStep, tier) {
+  static getAllowedSteps(currentStep, selectedPlan) {
     const result = validateStep({
       currentStep,
       requestedStep: currentStep,
-      tier
+      selectedPlan,
+      formData: { selectedPlan }
     });
     return result.allowedSteps;
   }
 }
-

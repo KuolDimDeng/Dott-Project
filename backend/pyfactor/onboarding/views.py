@@ -9,7 +9,7 @@ import asyncio
 import traceback
 import uuid
 import google.auth.exceptions  # Add this import
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from inspect import isawaitable
 from typing import Dict, Any, Optional, Tuple
 
@@ -32,6 +32,7 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator, sync_and_async_middleware
 from django.views.decorators.csrf import csrf_exempt
 
+
 # REST framework imports
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -43,8 +44,11 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework.authentication import SessionAuthentication
+from rest_framework_simplejwt.exceptions import TokenError
+
+
 
 # Third-party imports
 import stripe
@@ -632,112 +636,78 @@ class GoogleTokenExchangeView(APIView):
             raise AuthenticationFailed("Failed to generate authentication tokens")
 
     def post(self, request, *args, **kwargs):
-        """Handle token exchange with comprehensive error handling"""
         request_id = str(uuid.uuid4())
-        start_time = time.time()
-        
-        logger.info("Starting token exchange", {
-            'request_id': request_id,
-            'method': request.method,
-            'content_type': request.content_type
-        })
         
         try:
-            # Parse and validate request
-            try:
-                data = json.loads(request.body) if request.body else {}
-            except json.JSONDecodeError as e:
-                logger.error("Invalid JSON body", {
-                    'request_id': request_id,
-                    'error': str(e)
-                })
-                return Response(
-                    {'error': 'Invalid request format'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            # Validate request data
+            data = request.data
+            id_token = data.get('id_token')
+            access_token = data.get('access_token')
+            
+            if not id_token or not access_token:
+                raise ValidationError("Missing required tokens")
 
-            try:
-                id_token, access_token = self.validate_request_data(data, request_id)
-            except ValidationError as e:
-                return Response(
-                    {'error': str(e)},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            # Verify Google token
+            user_info = self.verify_google_token(id_token, request_id)
+            
+            # Get or create user records
+            user, created, progress = self.get_or_create_user(user_info, request_id)
+            
+            # Generate Django JWT tokens
+            tokens = self.generate_tokens(user, request_id)
 
-            # Verify tokens
-            try:
-                user_info = self.verify_google_token(id_token, request_id)
-            except ValidationError as e:
-                return Response(
-                    {'error': f'Token validation failed: {str(e)}'},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
+            # Get or create profile
+            profile, _ = UserProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    'email_verified': True,
+                    'database_status': 'not_created',
+                    'setup_status': 'not_started'
+                }
+            )
 
-            # Create or get user
-            try:
-                user, created, progress = self.get_or_create_user(user_info, request_id)
-                profile = UserProfile.objects.get(user=user)
-            except Exception as e:
-                logger.error("User creation/retrieval failed", {
-                    'request_id': request_id,
-                    'error': str(e),
-                    'stack_trace': traceback.format_exc()
-                })
-                return Response(
-                    {'error': 'User processing failed'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
+            # Return standardized response
+            response_data = {
+                'tokens': {
+                    'access': tokens['access'],
+                    'refresh': tokens['refresh']
+                },
+                'user': {
+                    'id': str(user.id),
+                    'email': user.email,
+                    'first_name': user_info.get('given_name', ''),
+                    'last_name': user_info.get('family_name', ''),
+                    'picture': user_info.get('picture', '')
+                },
+                'onboarding': {
+                    'status': progress.onboarding_status or 'business-info',
+                    'current_step': progress.current_step or 1,
+                    'database_status': profile.database_status,
+                    'setup_status': profile.setup_status,
+                    'completed_steps': []
+                },
+                'redirect_to': f'/onboarding/{progress.onboarding_status or "business-info"}'
+            }
 
-            # Generate tokens
-            try:
-                tokens = self.generate_tokens(user, request_id)
-            except AuthenticationFailed as e:
-                return Response(
-                    {'error': str(e)},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-
-            # Create session
-            try:
-                session_data = self.create_session_data(
-                    user, tokens, progress, profile, request_id
-                )
-            except Exception as e:
-                logger.error("Session creation failed", {
-                    'request_id': request_id,
-                    'error': str(e)
-                })
-                return Response(
-                    {'error': 'Session creation failed'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-
-            duration = time.time() - start_time
-            logger.info("Token exchange completed successfully", {
+            logger.info('Token exchange successful:', {
                 'request_id': request_id,
                 'user_id': str(user.id),
-                'duration_ms': int(duration * 1000),
-                'is_new_user': created
+                'onboarding_status': progress.onboarding_status
             })
 
-            return Response(session_data)
+            return Response(response_data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            logger.error("Unexpected error in token exchange", {
+            logger.error('Token exchange failed:', {
                 'request_id': request_id,
                 'error': str(e),
-                'error_type': type(e).__name__,
-                'stack_trace': traceback.format_exc()
+                'trace': traceback.format_exc()
             })
-            return Response(
-                {
-                    'error': 'Authentication failed',
-                    'message': str(e),
-                    'request_id': request_id
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-            
+            return Response({
+                'error': str(e),
+                'request_id': request_id
+            }, status=status.HTTP_400_BAD_REQUEST)
+
 class StartOnboardingView(BaseOnboardingView):
    @sync_to_async
    def get_user(self, request):
@@ -1191,20 +1161,74 @@ class SaveStep1View(APIView):
         logger.debug(f"Request data: {request.data}")
 
         try:
-            # Validate data
-            is_valid, error = self.validate_data(request.data)
-            if not is_valid:
+            # Validate required fields
+            required_fields = [
+                'business_name', 
+                'business_type', 
+                'country',
+                'legal_structure', 
+                'date_founded',
+                'first_name',
+                'last_name'
+            ]
+            
+            # Check for missing fields
+            missing_fields = [field for field in required_fields if field not in request.data]
+            if missing_fields:
                 return Response({
-                    'error': error,
-                    'code': 'validation_error'
+                    'error': f'Missing required fields: {", ".join(missing_fields)}',
+                    'code': 'missing_fields'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             with transaction.atomic():
                 # Save business data
-                business, created = self.save_business_data(request.user, request.data)
-                
-                # Save onboarding progress
-                progress = self.save_onboarding_progress(request.user, request.data)
+                business, created = Business.objects.get_or_create(
+                    owner=request.user,
+                    defaults={
+                        'business_name': request.data['business_name'],
+                        'business_type': request.data['business_type'],
+                        'country': request.data['country'],
+                        'legal_structure': request.data['legal_structure'],
+                        'date_founded': request.data['date_founded']
+                    }
+                )
+
+                if not created:
+                    # Update existing business
+                    business.business_name = request.data['business_name']
+                    business.business_type = request.data['business_type']
+                    business.country = request.data['country']
+                    business.legal_structure = request.data['legal_structure']
+                    business.date_founded = request.data['date_founded']
+                    business.save()
+
+                # Update user profile
+                UserProfile.objects.filter(user=request.user).update(
+                    business=business,
+                    is_business_owner=True
+                )
+
+                # Update onboarding progress
+                progress, _ = OnboardingProgress.objects.get_or_create(
+                    user=request.user,
+                    defaults={
+                        'email': request.user.email,
+                        'onboarding_status': 'subscription',
+                        'current_step': 2
+                    }
+                )
+
+                progress.first_name = request.data['first_name']
+                progress.last_name = request.data['last_name']
+                progress.business_name = request.data['business_name']
+                progress.business_type = request.data['business_type']
+                progress.country = request.data['country']
+                progress.legal_structure = request.data['legal_structure']
+                progress.date_founded = request.data['date_founded']
+                progress.onboarding_status = 'subscription'
+                progress.current_step = 2
+                progress.last_updated = timezone.now()
+                progress.save()
 
                 return Response({
                     "success": True,
@@ -1217,9 +1241,9 @@ class SaveStep1View(APIView):
                         "businessInfo": {
                             "businessName": business.business_name,
                             "industry": business.business_type,
-                            "country": business.country,
+                            "country": str(business.country),  # Convert Country object to string
                             "legalStructure": business.legal_structure,
-                            "dateFounded": business.date_founded.isoformat()
+                            "dateFounded": business.date_founded.strftime('%Y-%m-%d') if isinstance(business.date_founded, date) else business.date_founded  # Add this check
                         }
                     }
                 }, status=status.HTTP_200_OK)
@@ -1231,11 +1255,11 @@ class SaveStep1View(APIView):
                 "message": str(e),
                 "code": "server_error"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
+
 @method_decorator(csrf_exempt, name='dispatch')
 class SaveStep2View(BaseOnboardingView):
     """Handle Step 2 of the onboarding process"""
-    VALID_PLANS = ['Basic', 'Professional']
+    VALID_PLANS = ['free', 'professional']  # Update from Basic/Professional
     VALID_BILLING_CYCLES = ['monthly', 'annual']
 
     def verify_services(self):
@@ -1315,47 +1339,116 @@ class SaveStep2View(BaseOnboardingView):
             logger.error(f"Setup initialization error: {str(e)}")
             raise
 
-    def post(self, request, *args, **kwargs):
-        """Handle POST request"""
+    async def post(self, request, *args, **kwargs):
         try:
-            data = request.data
-            progress = self.save_onboarding_data(request.user, data)
-            selected_plan = data.get('selectedPlan')
-            
-            if selected_plan == 'Basic':
-                try:
-                    task_id = self.start_setup(request.user)
-                    return Response({
-                        "message": "Setup initiated",
-                        "nextStep": "dashboard",
-                        "plan": "Basic",
-                        "setup_status": "in_progress",
-                        "task_id": task_id
-                    })
-                except ServiceUnavailableError as e:
-                    return Response({
-                        "error": str(e),
-                        "type": "service_unavailable",
-                        "retry_after": 30
-                    }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-                    
-            return Response({
-                "message": "Step 2 completed successfully",
-                "nextStep": "step3",
-                "plan": "Professional"
+            # Log initial request data
+            logger.debug('Initial subscription request:', {
+                'request_data': request.data,
+                'user': request.user.email,
+                'raw_data': request.body.decode('utf-8')
             })
-        except ValidationError as e:
-            return Response({
-                "error": str(e),
-                "type": "validation_error" 
-            }, status=status.HTTP_400_BAD_REQUEST)
+
+            subscription_data = {
+                'selectedPlan': request.data.get('selectedPlan'),
+                'billingCycle': request.data.get('billingCycle', 'monthly')
+            }
+
+            # Log subscription data before saving
+            logger.debug('Subscription data before save:', {
+                'subscription_data': subscription_data,
+                'selected_plan': subscription_data['selectedPlan'],
+                'billing_cycle': subscription_data['billingCycle']
+            })
+
+            # Save subscription data
+            async with transaction.atomic():
+                # Get subscription data
+                onboarding_progress = await OnboardingProgress.objects.aget(user=request.user)
+
+                # Log current state
+                logger.debug('Current onboarding state:', {
+                    'current_status': onboarding_progress.onboarding_status,
+                    'current_plan': onboarding_progress.selectedPlan,
+                    'current_step': onboarding_progress.current_step
+                })
+
+
+
+                onboarding_progress.selectedPlan = subscription_data['selectedPlan']
+                onboarding_progress.billing_cycle = subscription_data['billingCycle']
+
+                # Log changes before save
+                logger.debug('Changes to be saved:', {
+                    'new_plan': onboarding_progress.selectedPlan,
+                    'new_billing_cycle': onboarding_progress.billing_cycle
+                })
+                
+                # Set next step based on plan
+                if subscription_data['selectedPlan'] == 'free':
+                    onboarding_progress.onboarding_status = 'setup'
+                    onboarding_progress.current_step = 4
+                    next_step = 'setup'
+                else:
+                    onboarding_progress.onboarding_status = 'payment'  
+                    onboarding_progress.current_step = 3
+                    next_step = 'payment'
+                
+                await onboarding_progress.asave()
+
+                # Initialize setup process for free tier
+                if subscription_data['selectedPlan'] == 'free':
+                    setup_task = setup_user_database_task.delay(
+                        str(request.user.id),
+                        str(request.user.userprofile.business.id)
+                    )
+                    
+                    onboarding_progress.database_setup_task_id = setup_task.id
+                    await onboarding_progress.asave(update_fields=['database_setup_task_id'])
+
+                return Response({
+                    'success': True,
+                    'message': 'Subscription saved successfully',
+                    'data': {
+                        'onboardingStatus': onboarding_progress.onboarding_status,
+                        'currentStep': onboarding_progress.current_step,
+                        'subscription': {
+                            'plan': subscription_data['selectedPlan'],
+                            'billingCycle': subscription_data['billingCycle']
+                        },
+                        'nextStep': next_step,
+                        'setup_task_id': setup_task.id if subscription_data['selectedPlan'] == 'free' else None
+                    }
+                }, status=status.HTTP_200_OK)
+
         except Exception as e:
-            logger.error(f"Error in SaveStep2View: {str(e)}")
+            logger.error('Subscription save error:', {
+                'error': str(e),
+                'user': request.user.email
+            })
             return Response({
-                "error": "An unexpected error occurred",
-                "type": "server_error"
+                'error': 'Failed to save subscription',
+                'message': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    async def get(self, request, *args, **kwargs):
+        try:
+            onboarding_progress = await OnboardingProgress.objects.aget(user=request.user)
+            
+            return Response({
+                'selectedPlan': onboarding_progress.selectedPlan,
+                'billingCycle': onboarding_progress.billing_cycle,
+                'onboardingStatus': onboarding_progress.onboarding_status,
+                'currentStep': onboarding_progress.current_step
+            })
+            
+        except OnboardingProgress.DoesNotExist:
+            return Response({
+                'error': 'Onboarding progress not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class SaveStep3View(BaseOnboardingView):
     @sync_to_async 
@@ -2367,29 +2460,20 @@ class SetupStatusView(BaseOnboardingView):
         Returns comprehensive information about setup progress.
         """
         try:
-
-            validation_result = self.validate_user_state(request.user)
-
-            # Get the user's onboarding progress
             progress = OnboardingProgress.objects.get(user=request.user)
-
             
-            # If there's an active setup task, get its status
+            response_data = {
+                "status": progress.database_status,
+                "selectedPlan": progress.selectedPlan,  # Add selected plan
+                "setupStatus": progress.setup_status,
+                "progress": progress.setup_progress
+            }
+
             if progress.database_setup_task_id:
                 task_info = self.get_task_info(progress.database_setup_task_id)
-                return Response({
-                    **task_info,
-                    "validation_state": validation_result
-                })
-            
-            # If no active task, return pending status
-            return Response({
-                "status": "pending",
-                "validation_state": validation_result,
-                "progress": 0,
-                "step": None,
-                "message": "No active setup task"
-            })
+                response_data.update(task_info)
+                
+            return Response(response_data)
             
         except OnboardingProgress.DoesNotExist:
             return Response({
@@ -2425,3 +2509,80 @@ class ValidateSubscriptionAccessView(BaseOnboardingView):
             return Response({
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class TokenVerifyView(APIView):
+    permission_classes = [AllowAny]  # Allow unauthenticated requests to verify tokens
+    
+    def post(self, request):
+        try:
+            # Get the token from Authorization header
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith('Bearer '):
+                return Response({
+                    'isValid': False, 
+                    'error': 'No token provided'
+                }, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Extract token
+            token = auth_header.split(' ')[1]
+            
+            try:
+                # Verify token
+                access_token = AccessToken(token)
+                
+                # Check if token is expired
+                access_token.verify()
+                
+                # Return success response with token info
+                return Response({
+                    'isValid': True,
+                    'userId': str(access_token['user_id']),
+                    'exp': access_token['exp'],
+                    'token_type': access_token['token_type']
+                }, status=status.HTTP_200_OK)
+                
+            except TokenError as e:
+                return Response({
+                    'isValid': False,
+                    'error': 'Invalid or expired token'
+                }, status=status.HTTP_401_UNAUTHORIZED)
+
+        except Exception as e:
+            logger.error(f"Token verification error: {str(e)}")
+            return Response({
+                'isValid': False,
+                'error': 'Token verification failed'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+    def get(self, request):
+        # Add GET method to check token from query params
+        token = request.query_params.get('token')
+        if not token:
+            return Response({
+                'isValid': False,
+                'error': 'No token provided'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            access_token = AccessToken(token)
+            access_token.verify()
+            
+            return Response({
+                'isValid': True,
+                'userId': str(access_token['user_id']),
+                'exp': access_token['exp'],
+                'token_type': access_token['token_type']
+            }, status=status.HTTP_200_OK)
+            
+        except TokenError:
+            return Response({
+                'isValid': False,
+                'error': 'Invalid or expired token'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+            logger.error(f"Token verification error: {str(e)}")
+            return Response({
+                'isValid': False,
+                'error': 'Token verification failed'
+            }, status=status.HTTP_401_UNAUTHORIZED)

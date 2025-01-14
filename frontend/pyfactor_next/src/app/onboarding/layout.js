@@ -1,25 +1,29 @@
 // src/app/onboarding/layout.js
+// Keep only /onboarding/layout.js
 'use client';
 
 import React from 'react';
 import { OnboardingProvider } from '@/app/onboarding/contexts/OnboardingContext';
-import PropTypes from 'prop-types';
-import { logger } from '@/utils/logger';
+import { Container, Box } from '@mui/material';
+import { useSession } from 'next-auth/react';
+import { LoadingStateWithProgress } from '@/components/LoadingState';
 
 function OnboardingLayout({ children }) {
-  logger.debug('Initializing OnboardingLayout');
+  const { data: session, status } = useSession();
+
+  if (status === 'loading') {
+    return <LoadingStateWithProgress message="Loading..." />;
+  }
 
   return (
     <OnboardingProvider>
-      <main className="min-h-screen bg-gray-50">
-        {children}
-      </main>
+      <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
+        <Container component="main" maxWidth="md" sx={{ py: 4 }}>
+          {children}
+        </Container>
+      </Box>
     </OnboardingProvider>
   );
 }
-
-OnboardingLayout.propTypes = {
-  children: PropTypes.node.isRequired
-};
 
 export default OnboardingLayout;

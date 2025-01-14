@@ -9,6 +9,13 @@ import { z } from 'zod';
 import debounce from 'lodash/debounce';
 import { logger } from '@/utils/logger';
 import { businessInfoDefaultValues, businessInfoValidation } from './BusinessInfo.types';
+import { 
+  validateStep,
+  canTransitionToStep, 
+  validateTierAccess,
+  STEP_PROGRESSION,
+  VALIDATION_DIRECTION 
+} from '@/app/onboarding/components/registry';
 
 import { 
   validateUserState, 

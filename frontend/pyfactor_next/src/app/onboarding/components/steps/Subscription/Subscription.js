@@ -14,7 +14,7 @@ import { logger } from '@/utils/logger';
 
 const SubscriptionComponent = ({ metadata }) => {
   const [selectedTier, setSelectedTier] = useState(null);
-  const { canNavigateToStep } = useOnboarding();
+  const { canNavigateToStep, currentStep } = useOnboarding();
 
   const {
     methods,
@@ -28,36 +28,51 @@ const SubscriptionComponent = ({ metadata }) => {
 
   const handleTierSelect = async (tier) => {
     try {
-      const nextStep = tier.type === 'professional' ? 'payment' : 'setup';
-      const canNavigate = canNavigateToStep(nextStep);
-
-      logger.debug('Tier selection attempted:', {
-        requestId,
-        tier: tier.type,
-        nextStep,
-        canNavigate
-      });
-
-      if (!canNavigate) {
-        logger.warn('Navigation blocked - invalid step transition', {
-          requestId,
-          currentStep: 'subscription',
-          nextStep
+        logger.debug('Tier selection initiated:', {
+            tier: tier.type,
+            currentStep: currentStep,
+            selectedTier: selectedTier
         });
-        return;
-      }
 
-      setSelectedTier(tier.type);
-      await handleSubscriptionSelect(tier);
+        const nextStep = tier.type === 'free' ? 'setup' : 'payment';
+        const canNavigate = await canNavigateToStep(nextStep);
+
+        logger.debug('Navigation check:', {
+            requestedStep: nextStep,
+            canNavigate: canNavigate,
+            tier: tier.type
+        });
+
+        if (!canNavigate) {
+            logger.warn('Navigation blocked:', {
+                currentStep: 'subscription',
+                requestedStep: nextStep,
+                reason: 'Invalid step transition'
+            });
+            return;
+        }
+
+        setSelectedTier(tier.type);
+        
+        logger.debug('About to call handleSubscriptionSelect:', {
+            tier: tier.type,
+            selectedTier: tier.type,
+            isProcessing: isSubmitting
+        });
+
+        await handleSubscriptionSelect(tier);
 
     } catch (error) {
-      logger.error('Tier selection failed:', {
-        requestId,
-        error: error.message,
-        tier: tier.type
-      });
+        logger.error('Tier selection failed:', {
+            error: error.message,
+            tier: tier.type,
+            context: {
+                currentStep: currentStep,
+                selectedTier: selectedTier
+            }
+        });
     }
-  };
+};
 
   const steps = [
     { label: 'Business Info', completed: true },
@@ -79,6 +94,20 @@ const SubscriptionComponent = ({ metadata }) => {
   
   return (
     <Container maxWidth="lg">
+         <Box sx={{ 
+      display: 'flex', 
+      justifyContent: 'center',
+      mt: 4, // margin top
+      mb: 4  // margin bottom
+    }}>
+      <Image
+        src="/static/images/Pyfactor.png"
+        alt="Pyfactor Logo"
+        width={150} // adjust size as needed
+        height={120} // adjust size as needed
+        priority
+      />
+    </Box>
       <StepProgress 
         steps={steps} 
         currentStep={2}
@@ -92,13 +121,7 @@ const SubscriptionComponent = ({ metadata }) => {
       />
 
       <Box sx={{ textAlign: 'center', mb: 6 }}>
-        <Image
-          src="/static/images/Pyfactor.png"
-          alt="Pyfactor Logo"
-          width={150}
-          height={50}
-          priority
-        />
+  
 
         <BillingToggle>
           <Box

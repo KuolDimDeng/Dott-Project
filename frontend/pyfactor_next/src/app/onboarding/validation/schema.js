@@ -1,6 +1,11 @@
 // src/app/onboarding/validation/schema.js
 import { z } from 'zod';
 
+export const subscriptionSchema = z.object({
+  selectedPlan: z.enum(['free', 'professional']),  // Add selectedPlan validation
+  billingCycle: z.enum(['monthly', 'annually'])
+});
+
 export const validationSchema = z.object({
   businessName: z
     .string()

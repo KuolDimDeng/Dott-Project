@@ -9,6 +9,10 @@ import { logger } from '@/utils/logger';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { persistenceService } from '@/services/persistenceService';
 import { APP_CONFIG } from '@/config';
+import { OnboardingStateManager, ONBOARDING_EVENTS } from '@/app/onboarding/state/OnboardingStateManager';
+import { FormStateManager, FORM_EVENTS } from '@/app/onboarding/state/FormStateManager';
+
+
 import { 
   validateUserState, 
   validateOnboardingTransition,
@@ -23,18 +27,26 @@ import {
 } from '@/lib/authUtils';
 
 
+
 import { 
   validateStep,
   canTransitionToStep, 
-  validateTierAccess,
   STEP_VALIDATION,
   STEP_PROGRESSION,
-  VALIDATION_DIRECTION 
+  VALIDATION_DIRECTION,
+  validatePlanAccess 
 } from '@/app/onboarding/components/registry';
 
 
 export const useOnboarding = (formMethods) => {
   const { data: session, status } = useSession();
+  const [requestId] = useState(() => generateRequestId());
+  const router = useRouter();
+  
+  // Move form and onboarding managers before other state
+  const onboardingManager = useRef(new OnboardingStateManager('onboarding-flow'));
+  const formManager = useRef(new FormStateManager('onboarding-form'));
+
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -42,9 +54,14 @@ export const useOnboarding = (formMethods) => {
   const [initAttempts, setInitAttempts] = useState(0);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [lastSavedAt, setLastSavedAt] = useState(null);
-  const [requestId] = useState(() => generateRequestId());
-  const steps = Object.values(APP_CONFIG.onboarding.steps);
-  const currentIndex = steps.indexOf(currentStep);
+
+  const [progress, setProgress] = useState({
+    currentStep: APP_CONFIG.onboarding.steps.INITIAL,  // Set initial step
+    completedSteps: new Set(),
+    lastActiveStep: '',
+    stepValidation: {},
+    selectedTier: null
+  });
 
   const [initializationState, setInitializationState] = useState({
     initialized: false,
@@ -52,15 +69,70 @@ export const useOnboarding = (formMethods) => {
     requestId: generateRequestId()
   });
 
-  const [progress, setProgress] = useState({
-    currentStep: '',
-    completedSteps: new Set(),
-    lastActiveStep: '',
-    stepValidation: {},
-    selectedTier: null  // Add this
-  });
+  // Get steps once progress is initialized
+  const steps = Object.values(APP_CONFIG.onboarding.steps);
+  const currentIndex = steps.indexOf(progress.currentStep);
 
-  const router = useRouter();
+
+
+  useEffect(() => {
+    // Subscribe to onboarding state changes
+    const unsubscribeOnboarding = onboardingManager.current.subscribe((state, event) => {
+      switch (event.type) {
+        case ONBOARDING_EVENTS.STEP_COMPLETE:
+          handleStepComplete(state, event);
+          break;
+        case ONBOARDING_EVENTS.STEP_VALIDATION:
+          handleStepValidation(state, event);
+          break;
+        // Add other event handlers as needed
+      }
+    });
+
+    // Subscribe to form state changes
+    const unsubscribeForm = formManager.current.subscribe((state, event) => {
+      switch (event.type) {
+        case FORM_EVENTS.FIELD_CHANGE:
+          handleFieldChange(state, event);
+          break;
+        case FORM_EVENTS.SAVE_COMPLETE:
+          handleSaveComplete(state, event);
+          break;
+        // Add other form event handlers
+      }
+    });
+
+    return () => {
+      unsubscribeOnboarding();
+      unsubscribeForm();
+    };
+  }, []);
+
+  const handleStepComplete = async (state, event) => {
+    if (event.step === 'business-info') {
+      await router.push('/onboarding/subscription');
+    }
+  };
+
+  const handleStepValidation = (state, event) => {
+    logger.debug('Step validation:', {
+      step: event.step,
+      isValid: event.result.isValid
+    });
+  };
+
+  const handleFieldChange = (state, event) => {
+    logger.debug('Field changed:', {
+      field: event.fieldName,
+      value: event.value
+    });
+  };
+
+  const handleSaveComplete = (state, event) => {
+    logger.debug('Save completed:', {
+      operationId: event.operationId
+    });
+  };
 
   if (!formMethods) {
     logger.warn('formMethods not provided to useOnboarding hook');
@@ -168,92 +240,43 @@ export const useOnboarding = (formMethods) => {
   }, [session, progress.currentStep, requestId]);
 
 
-  const saveStepMutation = useMutation({
-    mutationFn: async ({ step, data }) => {
-      try {
-        // Special handling for business-info step
-        if (step === 'business-info') {
-          logger.debug('Processing business-info submission', {
-            requestId,
-            hasData: !!data
-          });
-  
-          // Skip token validation for business-info
-          const response = await saveOnboardingStep(
-            {
-              user: {
-                ...session?.user,
-                onboardingStatus: 'business-info'
-              }
-            },
-            step,
-            data,
-            requestId
-          );
-  
-          logger.debug('Business info saved successfully', {
-            requestId,
-            hasResponse: !!response?.data
-          });
-  
-          // Force immediate navigation to subscription
-          router.push('/onboarding/subscription');
-          return response.data;
-        }
-  
-        // For other steps, perform full validation
-        if (formMethods) {
-          await formMethods.trigger();
-        }
-  
-        // Check step transition
-        if (!canTransitionToStep(progress.currentStep, step, data?.selectedPlan)) {
-          throw new Error('Invalid step transition');
-        }
-  
-        // Validate tier access
-        const tierValidation = validateTierAccess(step, data?.selectedPlan);
-        if (!tierValidation.valid) {
-          throw new Error(tierValidation.message);
-        }
-      
-        // Validate transition
-        const transitionResult = await validateOnboardingTransition(
-          progress.currentStep || APP_CONFIG.onboarding.steps.INITIAL,
-          step,
-          APP_CONFIG.onboarding.transitions,
-          data?.selectedPlan
-        );
-  
-        if (!transitionResult.isValid) {
-          throw new Error(transitionResult.reason);
-        }
-  
-        // Validate and save step
-        const response = await saveOnboardingStep(
-          session,
-          step,
-          data,
-          requestId
-        );
-  
-        logger.debug('Step saved successfully:', {
-          step,
+  // Update the saveStepMutation to use the new saveStep function
+const saveStepMutation = useMutation({
+  mutationFn: async ({ step, data }) => {
+    try {
+      // Special handling for business-info step
+      if (step === 'business-info') {
+        logger.debug('Processing business-info submission', {
           requestId,
-          hasResponse: !!response?.data
+          hasData: !!data
         });
-  
-        return response.data;
-      } catch (error) {
-        const errorResult = handleAuthError(error);
-        logger.error('Step save failed:', {
-          error: errorResult,
-          step,
-          requestId
+
+        const response = await saveStep('business-info', data);
+        
+        logger.debug('Business info saved successfully', {
+          requestId,
+          hasResponse: !!response
         });
-        throw errorResult;
+
+        router.push('/onboarding/subscription');
+        return response;
       }
-    },
+
+      // Normal step handling
+      const response = await saveStep(step, data);
+      return response;
+
+    } catch (error) {
+      const errorResult = handleAuthError(error);
+      logger.error('Step save failed:', {
+        error: errorResult,
+        step,
+        requestId
+      });
+      throw errorResult;
+    }
+  },
+
   
     onSuccess: (data, { step }) => {
       logger.debug('Handling successful step save:', {
@@ -594,10 +617,7 @@ export const useOnboarding = (formMethods) => {
         return;
       }
   
-      // Process onboarding steps
-      const steps = Object.values(APP_CONFIG.onboarding.steps);
-      const currentIndex = steps.indexOf(currentStep);
-      
+
       if (currentIndex === -1) {
         throw new Error(AUTH_ERRORS.INVALID_STEP);
       }
@@ -711,6 +731,29 @@ export const useOnboarding = (formMethods) => {
     handleNavigation
   ]);
 
+  const saveStep = async (step, data) => {
+    try {
+      const response = await axiosInstance.post(
+        `/api/onboarding/save-${step}/`, 
+        data,
+        {
+          headers: {
+            'Authorization': `Bearer ${session?.user?.accessToken}`
+          }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      logger.error('Step save failed:', {
+        step,
+        error: error.message,
+        requestId
+      });
+      throw error;
+    }
+  };
+
   const resetOnboarding = useCallback(async () => {
     logger.debug('Starting onboarding reset', {
       currentState: { initialized, loading, hasError: !!error },
@@ -766,7 +809,7 @@ export const useOnboarding = (formMethods) => {
     initializing: initializationState.initializing,
     initialize,
     initAttempts,
-    saveStep: saveStepWithRetry,
+    saveStep,
     resetOnboarding,
     progress,
     selectedTier: progress.selectedTier,
@@ -774,5 +817,7 @@ export const useOnboarding = (formMethods) => {
     lastSavedAt,
     onboardingStatus: queryResult.data?.status,
     currentStep: queryResult.data?.currentStep,
+    onboardingManager: onboardingManager.current,
+    formManager: formManager.current
   };
 };

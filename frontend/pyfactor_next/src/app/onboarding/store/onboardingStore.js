@@ -12,6 +12,16 @@ import {
   AUTH_ERRORS 
 } from '@/lib/authUtils';
 
+// In onboardingStore.js
+const initialState = {
+  currentStep: APP_CONFIG.onboarding.steps.INITIAL,
+  formData: {
+    selectedPlan: null
+  },
+  isLoading: false,
+  error: null
+};
+
 const createOnboardingStore = () => {
   return create(
     devtools(

@@ -17,6 +17,17 @@ export const ERROR_TYPES = {
   PROGRESSION_ERROR: 'PROGRESSION_ERROR'
 };
 
+export const PLAN_TYPES = {
+  FREE: 'free',
+  PROFESSIONAL: 'professional'
+};
+
+export const BILLING_CYCLES = {
+  MONTHLY: 'monthly',
+  ANNUAL: 'annual'
+};
+
+
 export const VALIDATION_DIRECTION = {
   FORWARD: 'forward',
   BACKWARD: 'backward'
@@ -57,22 +68,23 @@ export const STEP_VALIDATION = {
   [STEP_NAMES.SUBSCRIPTION]: (data) => {
     return (
       !!data?.selectedPlan &&
-      ['free', 'professional'].includes(data.selectedPlan) && // Updated values
+      Object.values(PLAN_TYPES).includes(data.selectedPlan) &&
       !!data?.billingCycle &&
-      ['monthly', 'annual'].includes(data.billingCycle)
+      Object.values(BILLING_CYCLES).includes(data.billingCycle)
     );
   },
   [STEP_NAMES.PAYMENT]: (data) => {
-    if (data?.selectedPlan === 'free') return true; // Updated value
-    return data?.selectedPlan === 'professional' && !!data?.paymentMethod; // Updated value
+    if (data?.selectedPlan === PLAN_TYPES.FREE) return true;
+    return data?.selectedPlan === PLAN_TYPES.PROFESSIONAL && !!data?.paymentMethod;
   },
   [STEP_NAMES.SETUP]: (data) => {
     return (
-      data?.selectedPlan === 'free' || // Updated value
-      (data?.selectedPlan === 'professional' && !!data?.paymentMethod) // Updated value
+      data?.selectedPlan === PLAN_TYPES.FREE ||
+      (data?.selectedPlan === PLAN_TYPES.PROFESSIONAL && !!data?.paymentMethod)
     );
   },
 };
+
 
 export const STEP_METADATA = {
   [STEP_NAMES.BUSINESS_INFO]: {
@@ -82,17 +94,17 @@ export const STEP_METADATA = {
     stepNumber: 1,
     isRequired: true,
     validationRules: ['businessName', 'industry', 'country', 'legalStructure'],
-    apiEndpoint: `${APP_CONFIG.api.base}/onboarding/business-info`,
+    apiEndpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboarding/business-info/`,
   },
   [STEP_NAMES.SUBSCRIPTION]: {
     title: 'Choose Your Plan',
     description: 'Select the plan that best fits your needs',
-    nextStep: (tier) => tier === 'free' ? '/onboarding/setup' : '/onboarding/payment', // Make nextStep dynamic
+    nextStep: (selectedPlan) => selectedPlan === PLAN_TYPES.FREE ? '/onboarding/setup' : '/onboarding/payment',
     prevStep: '/onboarding/business-info',
     stepNumber: 2,
     isRequired: true,
     validationRules: ['selectedPlan', 'billingCycle'],
-    apiEndpoint: `${APP_CONFIG.api.base}/onboarding/subscription`,
+    apiEndpoint: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboarding/subscription/`,
   },
   [STEP_NAMES.PAYMENT]: {
     title: 'Payment Details',
@@ -103,11 +115,12 @@ export const STEP_METADATA = {
     isRequired: false,
     validationRules: ['paymentMethod'],
     apiEndpoint: `${APP_CONFIG.api.base}/onboarding/payment`,
+    requiredPlan: PLAN_TYPES.PROFESSIONAL
   },
   [STEP_NAMES.SETUP]: {
     title: 'Setup Your Workspace',
     description: "We're getting everything ready for you",
-    prevStep: (tier) => tier === 'professional' ? '/onboarding/payment' : '/onboarding/subscription',
+    prevStep: (selectedPlan) => selectedPlan === PLAN_TYPES.PROFESSIONAL ? '/onboarding/payment' : '/onboarding/subscription',
     stepNumber: 4,
     isRequired: true,
     validationRules: [],
@@ -126,11 +139,12 @@ export const STEP_METADATA = {
       'Configuring analytics',
       'Completing professional setup'
     ],
-    getSteps: (tier) => tier === 'professional' ? 
+    getSteps: (selectedPlan) => selectedPlan === PLAN_TYPES.PROFESSIONAL ? 
       STEP_METADATA[STEP_NAMES.SETUP].professionalSteps : 
       STEP_METADATA[STEP_NAMES.SETUP].basicSteps
   },
 };
+
 
 export const STEP_ROUTES = {
   [STEP_NAMES.BUSINESS_INFO]: '/onboarding/business-info',
@@ -140,23 +154,23 @@ export const STEP_ROUTES = {
   [STEP_NAMES.COMPLETE]: '/dashboard',
 };
 
-export const validateTierAccess = (stepName, tier) => {
+export const validatePlanAccess = (stepName, selectedPlan) => {
   switch (stepName) {
     case STEP_NAMES.PAYMENT:
-      if (tier !== 'professional') {
+      if (selectedPlan !== PLAN_TYPES.PROFESSIONAL) {
         return {
           valid: false,
-          error: ERROR_TYPES.INVALID_TIER,
-          message: 'Payment is only available for Professional tier'
+          error: ERROR_TYPES.INVALID_PLAN,
+          message: 'Payment is only available for Professional plan'
         };
       }
       break;
     case STEP_NAMES.SETUP:
-      if (!tier) {
+      if (!selectedPlan) {
         return {
-          valid: false,
-          error: ERROR_TYPES.INVALID_TIER,
-          message: 'No subscription tier selected'
+          valid: false, 
+          error: ERROR_TYPES.INVALID_PLAN,
+          message: 'No subscription plan selected'
         };
       }
       break;
@@ -164,13 +178,14 @@ export const validateTierAccess = (stepName, tier) => {
   return { valid: true };
 };
 
-export const canTransitionToStep = (currentStep, targetStep, tier) => {
+
+export const canTransitionToStep = (currentStep, targetStep, selectedPlan) => {
   try {
     if (!STEP_NAMES[currentStep] || !STEP_NAMES[targetStep]) {
       logger.error('Invalid step transition:', {
         from: currentStep,
         to: targetStep,
-        tier
+        selectedPlan
       });
       return false;
     }
@@ -186,7 +201,7 @@ export const canTransitionToStep = (currentStep, targetStep, tier) => {
       ? progression.next
       : progression.prev;
 
-    if (targetStep === STEP_NAMES.PAYMENT && tier !== 'professional') {
+    if (targetStep === STEP_NAMES.PAYMENT && selectedPlan !== PLAN_TYPES.PROFESSIONAL) {
       return false;
     }
 
@@ -222,7 +237,7 @@ export const validateStep = (stepName, formData, direction = VALIDATION_DIRECTIO
       ? progression.next 
       : progression.prev;
 
-    const isValidTier = validateTierAccess(stepName, formData?.selectedPlan);
+    const isValidTier = validatePlanAccess(stepName, formData?.selectedPlan);
     if (!isValidTier.valid) {
       return isValidTier;
     }
@@ -364,3 +379,6 @@ if (process.env.NODE_ENV !== 'production') {
     );
   });
 }
+
+// At the end of registry.js, add:
+export const validateTierAccess = validatePlanAccess; // Backwards compatibility

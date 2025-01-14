@@ -117,32 +117,38 @@ export default function SignInPage() {
     },
   });
 
-
   useEffect(() => {
-    if (!isInitialized || status === 'loading' || !mounted.current) return;
+    if (!isInitialized || status === 'loading') return;
   
     const checkAuth = async () => {
-      if (status === 'authenticated' && session?.user?.onboardingStatus) {
+      if (status === 'authenticated' && session?.user?.accessToken) {
         try {
-          logger.debug('Auth check started:', {
-            status,
-            onboardingStatus: session.user.onboardingStatus
+          const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboarding/token/verify/`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.user.accessToken}`,
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
           });
   
-          await handleOnboardingRedirect(session.user.onboardingStatus);
-          
+          if (!response.ok) {
+            throw new Error('Invalid session');
+          }
+  
+          // Only redirect if we're on the signin page
+          if (window.location.pathname === '/auth/signin') {
+            router.replace('/onboarding/business-info');
+          }
         } catch (error) {
-          logger.error('Navigation failed:', {
-            error: error.message,
-            onboardingStatus: session.user.onboardingStatus
-          });
-          setError('Failed to navigate. Please try again.');
+          // Stay on signin page if token validation fails
+          logger.error('Auth check failed:', error);
         }
       }
     };
   
     checkAuth();
-  }, [isInitialized, status, session, handleOnboardingRedirect]);
+  }, [isInitialized, status, session, router]);
  
     // Update handle login
     const handleLogin = async (credentials = {}) => {
@@ -224,7 +230,7 @@ const handleValidationError = useCallback(async (error, context = {}) => {
 }, [router]);
 
   // Helper function to determine error messages
-  const determineErrorMessage = (error) => {
+  const determineErrorMessage = useCallback((error) => {
     if (error.message.includes('timeout')) {
       return 'Login timed out. Please try again.';
     }
@@ -235,42 +241,45 @@ const handleValidationError = useCallback(async (error, context = {}) => {
       return 'Network error. Please check your connection and try again.';
     }
     return error.message || 'Login failed. Please try again.';
-  };
+  }, []);
 
   // Single mutation for credentials login
   const credentialsLoginMutation = useMutation({
     mutationFn: (credentials) => handleLogin(credentials)
   });
   // Simplified social login handler
-  const handleSocialLogin = async (provider) => {
-    const requestId = crypto.randomUUID();
-    
-    logger.debug('Initiating social login', { requestId, provider });
+// In SignInPage component
+const handleSocialLogin = async (provider) => {
+  const requestId = crypto.randomUUID();
   
-    try {
-      setIsLoading(true);
-      
-      await signIn(provider, {
-        redirect: true,
-        callbackUrl: '/onboarding/business-info' // Use direct path instead of RoutingManager
-      });
-      
-    } catch (error) {
-      logger.error('Social login failed', { 
-        requestId, 
-        provider, 
-        error: error.message 
-      });
-      setError('Authentication failed. Please try again.');
-    }
-    // Don't set loading to false here since we're redirecting
-  };
+  logger.debug('Starting social login:', {
+    requestId,
+    provider
+  });
 
-    // Add back button to return to home
-    const handleBackToHome = () => {
-      router.push(RoutingManager.ROUTES.HOME);
-    };
-  
+  try {
+    setIsLoading(true);
+    setError(null);
+
+    // Call signIn with specific options for state handling
+    const result = await signIn(provider, {
+      redirect: true,
+      callbackUrl: '/onboarding/business-info'
+    });
+
+    // Let NextAuth handle the redirect
+    
+  } catch (error) {
+    logger.error('Social login failed:', {
+      requestId,
+      error: error.message,
+      provider
+    });
+    setError('Authentication failed. Please try again.');
+    setIsLoading(false);
+  }
+};
+
   // Loading states
   const showLoading = !isInitialized || status === 'loading' || isLoading;
 

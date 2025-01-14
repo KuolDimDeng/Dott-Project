@@ -6,6 +6,8 @@ from django.utils import timezone
 from business.models import Business, BUSINESS_TYPES
 from business.choices import BUSINESS_TYPES, LEGAL_STRUCTURE_CHOICES
 from django.core.validators import EmailValidator
+from django.contrib.postgres.fields import ArrayField
+
 
 User = get_user_model()
 
@@ -59,7 +61,11 @@ class OnboardingProgress(models.Model):
     date_founded = models.DateField(null=True, blank=True)
     
     # Subscription Information
-    subscription_type = models.CharField(max_length=50, blank=True)
+    selectedPlan = models.CharField(  # Change from subscription_type
+        max_length=50,
+        choices=[('free', 'Free'), ('professional', 'Professional')],
+        blank=True
+    )
     billing_cycle = models.CharField(
         max_length=20, 
         choices=[('monthly', 'Monthly'), ('annual', 'Annual')],
@@ -73,6 +79,11 @@ class OnboardingProgress(models.Model):
     last_setup_attempt = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     task_status = models.CharField(max_length=50, null=True, blank=True)
+    completed_steps = ArrayField(
+        models.CharField(max_length=50),
+        default=list,
+        blank=True
+    )
 
     
     # Progress Tracking

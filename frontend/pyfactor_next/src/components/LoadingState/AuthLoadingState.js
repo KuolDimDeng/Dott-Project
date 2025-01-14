@@ -14,6 +14,16 @@ export function AuthLoadingState() {
   const [error, setError] = useState(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
+  useEffect(() => {
+    logger.debug('AuthLoadingState effect triggered:', {
+      status,
+      hasSession: !!session,
+      pathname: window.location.pathname,
+      accessToken: !!session?.user?.accessToken,
+      onboardingStatus: session?.user?.onboardingStatus
+    });
+  }, [status, session]);
+
   const handleRedirect = useCallback((path) => {
     try {
       setIsRedirecting(true);

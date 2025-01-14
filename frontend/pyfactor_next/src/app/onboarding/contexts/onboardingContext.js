@@ -24,9 +24,12 @@ const initialState = {
   currentStep: 'business-info',
   isValidating: false,
   error: null,
-  formData: {},
+  formData: {
+    selectedPlan: null
+  },
   isLoading: false
 };
+
 
 // Reducer for state management
 function onboardingReducer(state, action) {
@@ -39,12 +42,21 @@ function onboardingReducer(state, action) {
       return { ...state, error: action.payload };
     case 'SET_FORM_DATA':
       return { ...state, formData: { ...state.formData, ...action.payload }};
+    case 'SET_SELECTED_PLAN':
+        return {
+          ...state,
+          formData: {
+            ...state.formData,
+            selectedPlan: action.payload
+          }
+        };
     case 'RESET':
       return initialState;
     default:
       return state;
   }
 }
+
 
 const STEP_VALIDATION = {
   'business-info': (data) => !!data?.businessName && !!data?.industry,
@@ -157,30 +169,96 @@ export function OnboardingProvider({ children }) {
     }
   });
 
+  // Move setSelectedPlan inside the component
+  const setSelectedPlan = useCallback((plan) => {
+    logger.debug('Attempting to set selected plan:', {
+        newPlan: plan,
+        currentPlan: state.formData?.selectedPlan,
+        currentStep: state.currentStep
+    });
+
+    dispatch({ type: 'SET_SELECTED_PLAN', payload: plan });
+
+    logger.debug('Selected plan updated:', {
+        newState: state.formData?.selectedPlan,
+        plan: plan
+    });
+}, [state]);
+
+  // validateStep function
   const validateStep = useCallback((currentStep, requestedStep, formData) => {
     try {
+      const selectedPlan = formData?.selectedPlan || state.formData?.selectedPlan;
+      
       logger.debug('Validating step transition:', {
         from: currentStep,
         to: requestedStep,
-        hasFormData: !!formData
+        hasFormData: !!formData,
+        selectedPlan,
+        formData: {
+          ...formData,
+          selectedPlan 
+        }
       });
-  
-      if (requestedStep === 'business-info') return true;
-  
-      if (requestedStep === 'subscription' && 
-          (currentStep === 'business-info' || currentStep === 'subscription')) {
+
+      // Special case for free plan setup access
+      if (requestedStep === 'setup' && currentStep === 'subscription' && selectedPlan === 'free') {
+        logger.debug('Allowing free plan setup access');
         return true;
       }
   
+      // Allow direct access to business-info
+      if (requestedStep === 'business-info') return true;
+  
+      // Allow subscription access from business-info
+      if (requestedStep === 'subscription' && currentStep === 'business-info') {
+        return true;
+      }
+  
+      // Allow setup access from subscription for free plan
+      if (requestedStep === 'setup' && 
+          currentStep === 'subscription' && 
+          selectedPlan === 'free') {
+        logger.debug('Allowing free plan setup access', {
+          currentStep,
+          requestedStep,
+          selectedPlan
+        });
+        return true;
+      }
+  
+      // Allow payment access from subscription for professional plan
+      if (requestedStep === 'payment' && 
+          currentStep === 'subscription' && 
+          selectedPlan === 'professional') {
+        return true;
+      }
+  
+      // Allow setup access from payment for professional plan
+      if (requestedStep === 'setup' && 
+          currentStep === 'payment' && 
+          selectedPlan === 'professional') {
+        return true;
+      }
+  
+      // Check step order for other cases
       const steps = ['business-info', 'subscription', 'payment', 'setup'];
       const currentIdx = steps.indexOf(currentStep);
       const requestedIdx = steps.indexOf(requestedStep);
   
-      if (requestedIdx <= currentIdx) return true;
-      if (requestedIdx !== currentIdx + 1) return false;
+      // Allow backward navigation to immediate previous step
+      if (requestedIdx === currentIdx - 1) return true;
   
+      // Prevent skipping steps
+      if (requestedIdx > currentIdx + 1) return false;
+  
+      // Validate current step data if needed
       const validationFn = STEP_VALIDATION[currentStep];
-      return validationFn ? validationFn(formData) : true;
+      if (validationFn && !validationFn(formData)) {
+        return false;
+      }
+  
+      return requestedIdx === currentIdx + 1;
   
     } catch (error) {
       logger.error('Step validation failed:', {
@@ -190,7 +268,7 @@ export function OnboardingProvider({ children }) {
       });
       return false;
     }
-  }, []);
+  }, [state.formData]);
 
   // Callback hooks
   const updateAuthState = useCallback((updates) => {
@@ -215,12 +293,27 @@ export function OnboardingProvider({ children }) {
 
 // Session validation effect
 useEffect(() => {
-  if (!mountedRef.current || authStatus !== 'authenticated') return;
+  if (!mountedRef.current || authStatus !== 'authenticated') {
+    logger.debug('Skipping session validation:', {
+      mounted: mountedRef.current,
+      authStatus,
+      pathname: window?.location?.pathname,
+      hasSession: !!session,
+      hasAccessToken: !!session?.user?.accessToken
+    });
+    return;
+  }
 
   const validateSession = async () => {
     const pathname = window.location.pathname;
     
-
+    logger.debug('Starting session validation:', {
+      pathname,
+      authStatus,
+      hasAccessToken: !!session?.user?.accessToken,
+      onboardingStatus: session?.user?.onboardingStatus,
+      currentStep: state.currentStep
+    });
 
     try {
       // Allow direct business-info access without token
@@ -347,36 +440,47 @@ useEffect(() => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       
-      // Add delay for session propagation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-  
-      // Special case for business-info
+      // Allow direct business-info access
       if (targetStep === 'business-info') {
         await router.replace('/onboarding/business-info');
         return;
       }
   
-      // Handle subscription transition with updated session check
+      const currentFormData = state.formData;
+      const selectedPlan = currentFormData?.selectedPlan;
+  
+      logger.debug('Checking step transition:', {
+        currentStep: state.currentStep,
+        targetStep,
+        selectedPlan,
+        formData: currentFormData
+      });
+  
+      // Special handling for subscription
       if (targetStep === 'subscription') {
         const status = session?.user?.onboardingStatus;
-        logger.debug('Checking subscription transition:', {
-          currentStatus: status,
-          targetStep,
-          sessionState: session?.user
-        });
-        
         if (status === 'subscription' || status === 'business-info') {
           await router.replace('/onboarding/subscription');
           return;
         }
       }
   
-      const canNavigate = validateStep(state.currentStep, targetStep, state.formData);
+      // Special handling for setup transition
+      if (targetStep === 'setup') {
+        if (selectedPlan === 'free' && state.currentStep === 'subscription') {
+          await router.replace('/onboarding/setup');
+          return;
+        }
+      }
+  
+      // Validate transition
+      const canNavigate = validateStep(state.currentStep, targetStep, currentFormData);
       if (!canNavigate) {
         toast.error('Please complete the current step first');
         return;
       }
   
+      // Update step and navigate
       dispatch({ type: 'SET_STEP', payload: targetStep });
       await router.replace(`/onboarding/${targetStep}`);
   
@@ -390,8 +494,7 @@ useEffect(() => {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [router, state.currentStep, state.formData, state.isLoading, session, toast, validateStep]);
-
+  }, [router, state, session, toast, validateStep]);
 
 
 
@@ -485,15 +588,18 @@ useEffect(() => {
     isLoading: state.isLoading,
     error: state.error,
     formData: state.formData,
+    selectedPlan: state.formData.selectedPlan,
     handleOnboardingRedirect,
     canNavigateToStep,
     updateFormData,
+    setSelectedPlan,
     mutations
   }), [
     state,
     handleOnboardingRedirect,
     canNavigateToStep,
     updateFormData,
+    setSelectedPlan,
     mutations
   ]);
 

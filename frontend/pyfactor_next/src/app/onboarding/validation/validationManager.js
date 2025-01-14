@@ -5,6 +5,8 @@ import { generateRequestId } from '@/lib/authUtils';
 
 class ValidationManager {
     constructor() {
+      this.baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
       // Initialize with comprehensive logging
       logger.debug('ValidationManager initialized', {
         timestamp: Date.now(),
@@ -166,6 +168,28 @@ class ValidationManager {
   
       } finally {
         await this.cleanupOperation(operationState);
+      }
+    }
+
+    async validateField(name, value, formData) {
+      try {
+        const response = await fetch(`${this.baseUrl}/api/onboarding/validate-field/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            field: name,
+            value,
+            formData
+          })
+        });
+  
+        return await response.json();
+      } catch (error) {
+        logger.error('Field validation failed:', error);
+        return { isValid: false, error: error.message };
       }
     }
   

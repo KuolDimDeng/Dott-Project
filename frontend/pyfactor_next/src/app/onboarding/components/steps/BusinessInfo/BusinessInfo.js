@@ -56,7 +56,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }) => (
   </div>
 );
 
-const BusinessInfo = ({ metadata = defaultMetadata }) => {
+const BusinessInfo = ({ metadata = defaultMetadata, formMethods, onSubmit, isLoading: pageIsLoading, error }) => {
   const { canNavigateToStep } = useOnboarding();
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -68,9 +68,13 @@ const BusinessInfo = ({ metadata = defaultMetadata }) => {
   const {
     methods,
     handleSubmit,
-    isLoading,
+    isLoading: formIsLoading, // Renamed here
     requestId
   } = useBusinessInfoForm();
+
+  // Fixed: Properly reference pageIsLoading from props
+  const isLoading = pageIsLoading || formIsLoading || status === 'loading' || !isInitialized;
+
 
   const COMPONENT_NAME = 'BusinessInfo';
   const CURRENT_STEP = 'business-info';
@@ -238,63 +242,32 @@ const BusinessInfo = ({ metadata = defaultMetadata }) => {
     };
   }, [status, isInitialized, methods, requestId, session]);
 
-  // Session validator
   useEffect(() => {
-    let mounted = true;
-
-    const checkSession = async () => {
-      if (!mounted) return;
-
-      logger.debug('Session check started:', {
-        status,
-        hasSession: !!session,
-        hasUser: !!session?.user,
-        hasToken: !!session?.user?.accessToken,
-        tokenExpiry: session?.user?.accessTokenExpires,
-        currentTime: Date.now()
-      });
-
-      if (status === 'loading') {
-        logger.debug('Session still loading');
-        return;
-      }
-
-      if (status === 'unauthenticated') {
-        logger.debug('User not authenticated, redirecting to signin');
-        const callbackUrl = encodeURIComponent(pathname);
-        router.replace(`/auth/signin?callbackUrl=${callbackUrl}`);
-        return;
-      }
-
+    const validateSession = async () => {
+      if (status === 'loading' || !session?.user?.accessToken) return;
+  
       try {
-        const sessionValidation = await validateSessionState(session, crypto.randomUUID());
-        logger.debug('Session validation result:', {
-          isValid: sessionValidation.isValid,
-          reason: sessionValidation.reason,
-          redirectTo: sessionValidation.redirectTo
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboarding/token/verify/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.user.accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
         });
-
-        if (sessionValidation.isValid === false && sessionValidation.redirectTo && mounted) {
-          router.replace(sessionValidation.redirectTo);
+  
+        if (!response.ok) {
+          router.replace('/auth/signin');
         }
       } catch (error) {
-        logger.error('Session validation failed:', {
-          error: error.message,
-          sessionState: {
-            status,
-            hasUser: !!session?.user,
-            hasToken: !!session?.user?.accessToken
-          }
-        });
+        logger.error('Session validation failed:', error);
+        router.replace('/auth/signin');
       }
     };
+  
+    validateSession();
+  }, [session, status, router]);
 
-    checkSession();
-
-    return () => {
-      mounted = false;
-    };
-  }, [status, session, router, pathname]);
 
   if (status === 'loading' || !isInitialized) {
     return <LoadingStateWithProgress message="Loading..." />;
@@ -314,120 +287,104 @@ const BusinessInfo = ({ metadata = defaultMetadata }) => {
     logger.debug('Starting business info submission:', {
       requestId,
       hasFormData: !!formData,
-      currentStep: 'business-info'
+      sessionState: {
+        hasToken: !!session?.user?.accessToken,
+        status: session?.user?.onboardingStatus
+      }
     });
   
     try {
+      if (!session?.user?.accessToken) {
+        throw new Error('No valid session found');
+      }
+  
       toastId = toast.loading('Saving your information...');
   
-      // Save business info
-      logger.debug('Making save-business-info API call:', {
-        requestId,
-        formData
-      });
+      // Transform data to match Django model fields
+      const transformedData = {
+        business_name: formData.businessName,
+        business_type: formData.industry,
+        country: formData.country,  // Change this line
+        legal_structure: formData.legalStructure,
+        date_founded: formData.dateFounded,
+        first_name: formData.firstName,
+        last_name: formData.lastName
+      };
   
-      const response = await fetch('/api/onboarding/save-business-info', {
+      // Call Django backend directly
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboarding/save-business-info/`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.user?.accessToken}`,
-          'X-Request-ID': requestId
+          'Authorization': `Bearer ${session.user.accessToken}`,
+          'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          ...formData,
-          requestId,
-          lastUpdated: new Date().toISOString()
-        })
+        body: JSON.stringify(transformedData)
       });
-  
-      logger.debug('Received API response:', {
-        requestId,
-        status: response.status,
-        ok: response.ok
-      });
-  
-      if (!response.ok) {
-        throw new Error('Failed to save business information');
+
+      // Log response for debugging
+      console.log('Response status:', response.status);
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+
+
+      let responseData;
+      try {
+          responseData = JSON.parse(responseText);
+      } catch (parseError) {
+          console.error('Failed to parse response:', parseError);
+          throw new Error('Invalid response from server');
       }
+
+      if (!response.ok) {
+          throw new Error(responseData.message || 'Failed to save business information');
+      }
+
   
-      const responseData = await response.json();
-  
-      logger.debug('API response data:', {
-        requestId,
-        responseData,
-        onboardingStatus: responseData?.data?.onboardingStatus,
-        nextStep: responseData?.data?.currentStep
-      });
-  
-      // Update session with more complete data
-      logger.debug('Updating session:', {
-        requestId,
-        sessionUpdatePayload: {
-          onboardingStatus: 'subscription',
-          currentStep: 'subscription',
-          completedSteps: ['business-info'],
-          businessInfo: formData,
-          stepValidation: {
-            'business-info': true
-          }
+      // Clear draft data after successful save
+      await persistenceService.saveData(DRAFT_KEY, {
+        formData: {},
+        metadata: {
+          lastModified: new Date().toISOString(),
+          hasFormData: false,
+          cleared: true
         }
       });
   
-      const sessionResponse = await fetch('/api/auth/update-session', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.user?.accessToken}`
-        },
-        body: JSON.stringify({
-          onboardingStatus: 'subscription',
-          currentStep: 'subscription',
-          completedSteps: ['business-info'],
-          businessInfo: formData,
-          stepValidation: {
-            'business-info': true
-          }
-        })
-      });
-  
-      logger.debug('Session update response:', {
-        requestId,
-        status: sessionResponse.status,
-        ok: sessionResponse.ok
-      });
-  
-      if (!sessionResponse.ok) {
-        throw new Error('Failed to update session');
-      }
-  
-      // Delay to ensure session propagation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-  
       toast.success('Information saved successfully');
   
-      logger.debug('Attempting navigation to subscription page', {
-        requestId,
-        target: '/onboarding/subscription'
-      });
-  
-      // Force page navigation
-      window.location.href = '/onboarding/subscription';
+      // Navigate after delay to allow session update to propagate
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      router.replace('/onboarding/subscription');
   
     } catch (error) {
       logger.error('Form submission failed:', {
         requestId,
         error: error.message,
-        stack: error.stack
+        context: {
+          hasSession: !!session,
+          hasToken: !!session?.user?.accessToken,
+          statusCode: error.statusCode
+        }
       });
-      toast.error(error.message || 'Unable to proceed. Please try again.');
+  
+      // Handle specific error cases
+      if (error.message === 'No valid session' || error.message === 'No valid session found') {
+        toast.error('Please sign in again to continue');
+        const callbackUrl = encodeURIComponent('/onboarding/business-info');
+        router.replace(`/auth/signin?callbackUrl=${callbackUrl}`);
+        return;
+      }
+  
+      toast.error('Failed to save information. Please try again.');
+  
     } finally {
       if (toastId) {
         toast.dismiss(toastId);
       }
     }
-  };
+};
 
   const validateSessionUpdate = (session) => {
     if (!session?.user) {
@@ -488,6 +445,23 @@ const BusinessInfo = ({ metadata = defaultMetadata }) => {
       }
     }
   };
+
+  if (isLoading) {
+    return (
+      <Container maxWidth="md">
+        <LoadingStateWithProgress 
+          message="Setting up your business profile..."
+          isLoading={true}
+          image={{
+            src: '/static/images/Pyfactor.png',
+            alt: 'Pyfactor Logo',
+            width: 150,
+            height: 100
+          }}
+        />
+      </Container>
+    );
+  }
 
   const renderTextField = (name, label, options = {}) => (
     <TextField
@@ -579,17 +553,17 @@ const BusinessInfo = ({ metadata = defaultMetadata }) => {
               >
                 <InputLabel id="country-label">Country</InputLabel>
                 <Select
-                  labelId="country-label"
-                  label="Country"
-                  {...methods.register('country')}
-                  onChange={methods.register('country').onChange}
-                >
-                  {countries.map((country) => (
-                    <MenuItem key={country.code} value={country.name}>
-                      {country.name}
-                    </MenuItem>
-                  ))}
-                </Select>
+                          labelId="country-label"
+                          label="Country"
+                          {...methods.register('country')}
+                          onChange={methods.register('country').onChange}
+                        >
+                          {countries.map((country) => (
+                            <MenuItem key={country.code} value={country.code}>  
+                              {country.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
                 {methods.formState.errors.country && (
                   <FormHelperText>
                     {methods.formState.errors.country.message}
@@ -652,13 +626,28 @@ const BusinessInfo = ({ metadata = defaultMetadata }) => {
   );
 };
 
+// Update PropTypes
 BusinessInfo.propTypes = {
   metadata: PropTypes.shape({
     title: PropTypes.string.isRequired,
     description: PropTypes.string.isRequired,
     nextStep: PropTypes.string,
     prevStep: PropTypes.string
-  })
+  }),
+  formMethods: PropTypes.object,
+  onSubmit: PropTypes.func,
+  isLoading: PropTypes.bool,
+  error: PropTypes.string
 };
 
-export default memo(BusinessInfo);
+// Add default props
+BusinessInfo.defaultProps = {
+  metadata: defaultMetadata,
+  formMethods: null,
+  onSubmit: () => {},
+  isLoading: false,
+  error: null
+};
+
+export { BusinessInfo };
+export default BusinessInfo;

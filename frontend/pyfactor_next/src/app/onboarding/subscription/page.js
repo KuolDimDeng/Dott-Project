@@ -167,47 +167,43 @@ function SubscriptionPage() {
       isAccessChecked
     });
   }, [session, status, isLoading, isAccessChecked, requestId]);
-
+  
   useEffect(() => {
     const validateAccess = async () => {
       try {
-        if (status === 'loading' || isAccessChecked) return;
-  
-        logger.debug('Checking subscription access:', {
-          status,
-          onboardingStatus: session?.user?.onboardingStatus,
-          currentStep: session?.user?.currentStep
-        });
-  
-        // Only fetch fresh session if needed
-        const response = await fetch('/api/auth/session');
-        const freshSession = await response.json();
-  
-        logger.debug('Fresh session state:', {
-          currentStatus: freshSession?.user?.onboardingStatus,
-          step: freshSession?.user?.currentStep
-        });
-  
-        const canAccess = freshSession?.user?.onboardingStatus === 'subscription' || 
-                         freshSession?.user?.onboardingStatus === 'business-info';
-  
-        if (!canAccess) {
-          logger.debug('Access denied to subscription page:', {
-            currentStatus: freshSession?.user?.onboardingStatus
-          });
-          router.replace('/onboarding/business-info');
+        if (status === 'loading') return;
+
+        if (status === 'unauthenticated') {
+          router.replace('/auth/signin');
+          return;
         }
-  
-      } catch (error) {
-        logger.error('Access validation failed:', {
-          error: error.message
+
+        // Get fresh session state
+        const response = await fetch('/api/auth/session', {
+          credentials: 'include'
         });
+        
+        const freshSession = await response.json();
+        
+        const hasAccess = freshSession?.user?.onboardingStatus === 'subscription' || 
+                         freshSession?.user?.onboardingStatus === 'business-info' ||
+                         freshSession?.user?.completedSteps?.includes('business-info');
+
+        if (!hasAccess) {
+          router.replace('/onboarding/business-info');
+          return;
+        }
+
+        setIsLoading(false);
+
+      } catch (error) {
         setError(error.message);
+        setIsLoading(false);
       }
     };
-  
+
     validateAccess();
-  }, [status, session, router, isAccessChecked]);
+  }, [status, router]);
 
   if (status === 'loading' || (isLoading && !isAccessChecked)) {
     return <LoadingStateWithProgress message="Loading subscription options..." />;

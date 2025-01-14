@@ -3,21 +3,19 @@
 
 export const APP_CONFIG = {
   api: {
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
-    timeout: 40000,
+    baseURL: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000',
     endpoints: {
       auth: {
         profile: '/api/profile/',
         google: '/api/onboarding/token-exchange/',
         refresh: '/api/onboarding/token/refresh/',
         verify: '/api/onboarding/token/verify/',
-        session: '/api/auth/session/',
       },
       onboarding: {
         status: '/api/onboarding/status/',
         businessInfo: '/api/onboarding/save-business-info/',
-        subscription: '/api/onboarding/save-subscription/',
-        payment: '/api/onboarding/save-payment/',
+        subscription: '/api/onboarding/subscription/',
+        payment: '/api/onboarding/payment/',
         setup: {
           root: '/api/onboarding/setup/',
           start: '/api/onboarding/setup/start/',
@@ -28,12 +26,11 @@ export const APP_CONFIG = {
         taskStatus: (taskId) => `/api/onboarding/tasks/${taskId}/status/`,
       },
       database: {
-        exists: '/api/onboarding/database/exists/',
         healthCheck: '/api/onboarding/database/health-check/',
         status: '/api/onboarding/database/status/',
-        reset: '/api/onboarding/reset/'
+        reset: '/api/onboarding/database/reset/'
       },
-    },
+    }
   },
  
   websocket: {
@@ -97,11 +94,12 @@ export const APP_CONFIG = {
  
   onboarding: {
     steps: {
+      INITIAL: 'business-info',
       BUSINESS_INFO: 'business-info',
-      SUBSCRIPTION: 'subscription', 
+      SUBSCRIPTION: 'subscription',
       PAYMENT: 'payment',
       SETUP: 'setup',
-      COMPLETE: 'complete',
+      COMPLETE: 'complete'
     },
     transitions: {
       'business-info': ['subscription'],
