@@ -64,15 +64,19 @@ const AppBar = ({
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
   };
 
-  const initials = userData ? getInitials(`${userData.first_name} ${userData.last_name}`) : '';
-  console.log('userData in AppBar:', userData); // Add this log statement
+  const initials = userData ? getInitials(`${userData?.first_name || ''} ${userData?.last_name || ''}`) : '';
+  console.log('userData in AppBar:', {
+    userData,
+    business_name: userData?.business_name,
+    subscription_type: userData?.subscription_type,
+    full_data: JSON.stringify(userData, null, 2)
+  });
   const [subscriptionMenuOpen, setSubscriptionMenuOpen] = useState(false);
   const [subscriptionAnchorEl, setSubscriptionAnchorEl] = useState(null);
   const [isSubscriptionMenuOpen, setIsSubscriptionMenuOpen] = useState(false);
 
-  // In your handleSubscriptionClick function:
   const handleSubscriptionClick = (event) => {
-    if (userData.subscription_type === 'free') {
+    if (userData?.subscription_type !== 'professional') {
       setIsSubscriptionMenuOpen(!isSubscriptionMenuOpen);
       setSubscriptionAnchorEl(subscriptionAnchorEl ? null : event.currentTarget);
     }
@@ -83,6 +87,17 @@ const AppBar = ({
   };
 
   const subscriptionOpen = Boolean(subscriptionAnchorEl);
+
+  const getSubscriptionLabel = (type) => {
+    switch (type) {
+      case 'professional':
+        return 'Professional Plan';
+      case 'basic':
+        return 'Basic Plan';
+      default:
+        return 'Free Plan';
+    }
+  };
 
   return (
     <MuiAppBar
@@ -117,7 +132,7 @@ const AppBar = ({
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-          {userData && userData.business_name && (
+          {userData && (
             <Paper
               elevation={0}
               sx={{
@@ -126,26 +141,26 @@ const AppBar = ({
                 pr: 0.5,
                 py: 0.5,
                 ml: -0.5,
-                backgroundColor: '#ffffff', // Changed from #e3f2fd to white
+                backgroundColor: '#ffffff',
                 border: '#1976d2',
                 borderRadius: '5px',
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography
-                  variant="h6"
-                  sx={{ whiteSpace: 'nowrap', color: textAppColor, lineHeight: 1, mr: 1 }}
-                >
-                  {userData.business_name}
-                </Typography>
+              <Typography
+                variant="h6"
+                sx={{ whiteSpace: 'nowrap', color: textAppColor, lineHeight: 1, mr: 1 }}
+              >
+                {userData?.business_name || 'Business Name'}
+              </Typography>
                 <Box
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    cursor: userData.subscription_type === 'free' ? 'pointer' : 'default',
+                    cursor: userData?.subscription_type !== 'professional' ? 'pointer' : 'default',
                     padding: '4px 8px',
                     borderRadius: '4px',
-                    backgroundColor: '#90caf9', // This is the color used for the selected state
+                    backgroundColor: '#90caf9',
                   }}
                   onClick={handleSubscriptionClick}
                 >
@@ -153,11 +168,9 @@ const AppBar = ({
                     variant="caption"
                     sx={{ color: textAppColor, lineHeight: 2, pr: 0.5 }}
                   >
-                    {userData.subscription_type === 'professional'
-                      ? 'Professional Plan'
-                      : 'Basic Plan'}
+                    {getSubscriptionLabel(userData?.subscription_type)}
                   </Typography>
-                  {userData.subscription_type === 'free' && (
+                  {userData?.subscription_type !== 'professional' && (
                     <IconButton size="small" sx={{ padding: 0, ml: 0.5, color: textAppColor }}>
                       {subscriptionOpen ? (
                         <ExpandLessIcon fontSize="small" />
@@ -246,9 +259,8 @@ const AppBar = ({
               },
             }}
           >
-            {userData && (
-              <>
-                <MenuItem sx={{ pointerEvents: 'none', opacity: 0.7 }}>
+            {userData ? [
+                <MenuItem key="user-info" sx={{ pointerEvents: 'none', opacity: 0.7 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                     <PersonIcon sx={{ mr: 1, color: 'blue' }} />
                     <Box
@@ -263,18 +275,19 @@ const AppBar = ({
                         variant="h6"
                         sx={{ whiteSpace: 'nowrap', color: textAppColor, fontSize: '15px' }}
                       >
-                        {userData.full_name}
+                        {userData?.full_name || ''}
                       </Typography>
                       <Typography variant="caption" sx={{ color: textAppColor, opacity: 0.7 }}>
-                        {userData.occupation}
+                        {userData?.occupation || ''}
                       </Typography>
                     </Box>
                   </Box>
-                </MenuItem>
-                {userData.is_staff && (
-                  <MenuItem onClick={handleSendGlobalAlertClick}>Send Global Alert</MenuItem>
-                )}
+                </MenuItem>,
+                userData?.is_staff && (
+                  <MenuItem key="global-alert" onClick={handleSendGlobalAlertClick}>Send Global Alert</MenuItem>
+                ),
                 <MenuItem
+                  key="terms"
                   onClick={handleTermsClick}
                   sx={{
                     justifyContent: 'center',
@@ -284,8 +297,9 @@ const AppBar = ({
                   }}
                 >
                   Terms of Service
-                </MenuItem>
+                </MenuItem>,
                 <MenuItem
+                  key="privacy"
                   onClick={handlePrivacyClick}
                   sx={{
                     justifyContent: 'center',
@@ -295,8 +309,9 @@ const AppBar = ({
                   }}
                 >
                   Privacy
-                </MenuItem>
+                </MenuItem>,
                 <MenuItem
+                  key="logout"
                   onClick={handleLogout}
                   sx={{
                     justifyContent: 'center',
@@ -307,8 +322,7 @@ const AppBar = ({
                 >
                   Logout
                 </MenuItem>
-              </>
-            )}
+            ].filter(Boolean) : null}
           </Menu>
         </Box>
       </Toolbar>

@@ -26,6 +26,7 @@ from django.urls import reverse_lazy
 from django.contrib.auth.tokens import default_token_generator
 from django.core.cache import cache
 from django.utils.decorators import method_decorator
+from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 
 from asgiref.sync import sync_to_async
 
@@ -44,10 +45,137 @@ from .serializers import (
 from .tokens import account_activation_token
 from users.utils import initial_user_registration
 from pyfactor.logging_config import get_logger
-
+from django.urls import path, re_path
 
 
 logger = get_logger()
+
+ONBOARDING_STATUS_CHOICES = [
+    ('business-info', 'Business Information'),
+    ('subscription', 'Subscription Selection'),
+    ('payment', 'Payment'),
+    ('setup', 'Database Setup'),
+    ('complete', 'Complete'),
+]
+
+class SessionView(APIView):
+    permission_classes = [AllowAny]  # Changed from IsAuthenticated to AllowAny
+
+    def get(self, request):
+        if not request.user.is_authenticated:
+            return Response({
+                'isLoggedIn': False,
+                'user': None
+            }, status=status.HTTP_200_OK)  # Return 200 instead of 401
+
+        return Response({
+            'isLoggedIn': True,
+            'user': {
+                'id': str(request.user.id),
+                'email': request.user.email,
+                'onboarding_status': getattr(request.user, 'onboarding_status', 'business-info'),
+                'currentStep': getattr(request.user, 'current_step', 'business-info'),
+                'nextStep': getattr(request.user, 'next_step', 'subscription'),
+                'selected_plan': getattr(request.user, 'selected_plan', None),
+                'databaseStatus': getattr(request.user, 'database_status', None),
+                'setupStatus': getattr(request.user, 'setup_status', None),
+                'lastUpdated': timezone.now().isoformat()
+            }
+        })
+
+    def validate_status(self, status_value):
+        return status_value in dict(ONBOARDING_STATUS_CHOICES)
+
+    def post(self, request):
+        request_id = str(uuid.uuid4())
+        try:
+            if not request.user.is_authenticated:
+                return Response({
+                    'isLoggedIn': False,
+                    'user': None
+                }, status=status.HTTP_200_OK)
+
+            access_token = request.data.get('accessToken')
+            refresh_token = request.data.get('refreshToken')
+            update = request.data.get('update', {})
+             # Only validate token if we're updating data
+            if update and not access_token:
+                return Response({
+                    'success': False,
+                    'message': 'No access token provided',
+                    'requestId': request_id
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+            # Update user session data with validation
+            user = request.user
+            
+            # Validate and update onboarding status
+            new_onboarding_status = update.get('onboarding_status')
+            if new_onboarding_status and self.validate_status(new_onboarding_status):
+                user.onboarding_status = new_onboarding_status
+
+            # Validate and update current step
+            new_current_step = update.get('currentStep')
+            if new_current_step and self.validate_status(new_current_step):
+                user.current_step = new_current_step
+
+            # Validate and update next step
+            new_next_step = update.get('nextStep')
+            if new_next_step and self.validate_status(new_next_step):
+                user.next_step = new_next_step
+
+            # Update other fields
+            if hasattr(user, 'selected_plan'):
+                user.selected_plan = update.get('selected_plan', user.selected_plan)
+            if hasattr(user, 'database_status'):
+                user.database_status = update.get('databaseStatus', user.database_status)
+            if hasattr(user, 'setup_status'):
+                user.setup_status = update.get('setupStatus', user.setup_status)
+
+            user.last_login = timezone.now()
+            user.save()
+
+            # Prepare response with updated session data
+            return Response({
+                'success': True,
+                'session': {
+                    'user': {
+                        'id': str(user.id),
+                        'email': user.email,
+                        'onboarding_status': user.onboarding_status,
+                        'currentStep': user.current_step,
+                        'nextStep': user.next_step,
+                        'selected_plan': getattr(user, 'selected_plan', None),
+                        'databaseStatus': getattr(user, 'database_status', None),
+                        'setupStatus': getattr(user, 'setup_status', None),
+                        'lastUpdated': timezone.now().isoformat(),
+                        'accessToken': access_token,
+                        'refreshToken': refresh_token
+                    }
+                },
+                'requestId': request_id
+            })
+
+        except Exception as e:
+            logger.error('Session update failed', extra={
+                'request_id': request_id,
+                'user_id': getattr(request.user, 'id', None),
+                'error': str(e)
+            })
+            return Response({
+                'success': False,
+                'message': 'Session update failed',
+                'error': str(e),
+                'requestId': request_id
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def async_csrf_exempt(view_func):
+    """
+    Decorator that wraps the given view with CSRF exemption for async views.
+    """
+    return method_decorator(csrf_exempt)(view_func)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -655,3 +783,40 @@ class health_check(APIView):
 
     def get(self, request):
         return Response({"status": "healthy"}, status=status.HTTP_200_OK)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AuthErrorView(APIView):
+    permission_classes = [AllowAny]
+    parser_classes = (JSONParser, FormParser, MultiPartParser)  # Add this line
+
+    def post(self, request, *args, **kwargs):
+        try:
+            # Handle both JSON and form data
+            error_data = request.data if isinstance(request.data, dict) else {}
+            
+            logger.error("Client-side error logged", extra={
+                'error_data': error_data,
+                'path': request.path,
+                'method': request.method,
+                'user_agent': request.META.get('HTTP_USER_AGENT'),
+                'referer': request.META.get('HTTP_REFERER')
+            })
+            
+            return Response({
+                "status": "logged",
+                "message": "Error logged successfully",
+                "received_data": error_data
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error handling request: {str(e)}")
+            return Response({
+                "status": "error",
+                "message": "Failed to process error log"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, *args, **kwargs):
+        # Handle GET requests
+        return Response({
+            "message": "Error logging endpoint is available",
+            "supported_methods": ["POST"]
+        }, status=status.HTTP_200_OK)

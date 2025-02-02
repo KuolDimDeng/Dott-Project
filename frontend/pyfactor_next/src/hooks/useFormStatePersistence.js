@@ -29,7 +29,7 @@ class FormStateManager {
       // Timing controls
       validationCooldown: 2000,
       persistenceCooldown: 1000,
-      selectedTier: null,
+      selected_plan: null,
       tierValidated: false
     };
 
@@ -64,7 +64,7 @@ class FormStateManager {
     }
 
     // Update state
-    this.state.selectedTier = tier;
+    this.state.selected_plan = tier;
     this.state.tierValidated = false;
     this.state.isDirty = true;
 
@@ -216,8 +216,8 @@ class FormStateManager {
           }, {});
 
           // Include tier in saved data
-          if (this.state.selectedTier) {
-            dataToSave.tier = this.state.selectedTier;
+          if (this.state.selected_plan) {
+            dataToSave.tier = this.state.selected_plan;
           }
 
           await persistenceService.saveData(
@@ -228,7 +228,7 @@ class FormStateManager {
               data: dataToSave,
               metadata: {
                 changeIds: changes.map(([_, change]) => change.changeId),
-                tier: this.state.selectedTier
+                tier: this.state.selected_plan
               }
             }
           );
@@ -321,11 +321,11 @@ export const useFormStatePersistence = (formId, options = {}) => {
         isDirty: newState.isDirty,
         isValid: newState.isValid,
         isProcessing: newState.isValidating || newState.isSaving,
-        selectedTier: newState.selectedTier
+        selected_plan: newState.selected_plan
       }));
 
-      if (newState.selectedTier !== tierState) {
-        setTierState(newState.selectedTier);
+      if (newState.selected_plan !== tierState) {
+        setTierState(newState.selected_plan);
       }
     });
 
@@ -356,7 +356,7 @@ export const useFormStatePersistence = (formId, options = {}) => {
         stateManager.current?.handleTierChange(tier, options),
       []
     ),
-    selectedTier: tierState,
+    selected_plan: tierState,
     coordinate: useCallback(
       (operation, metadata) => 
         coordinator.current?.coordinate(operation, metadata),

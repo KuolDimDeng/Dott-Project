@@ -12,7 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile', unique=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile', unique=True)
     business = models.ForeignKey(
             'business.Business',
             on_delete=models.CASCADE,

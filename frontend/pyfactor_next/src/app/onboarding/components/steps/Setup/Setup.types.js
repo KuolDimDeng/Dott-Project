@@ -3,7 +3,7 @@ export const setupPropTypes = {
     metadata: {
       title: 'string',
       description: 'string',
-      nextStep: 'string?',
+      next_step: 'string?',
       prevStep: 'string?'
     }
   };

@@ -114,7 +114,7 @@ export const APP_CONFIG = {
       draftExpiration: 24 * 60 * 60 * 1000,
     },
     queryKeys: {
-      status: 'onboardingStatus',
+      status: 'onboarding_status',
       steps: 'onboardingSteps',
       progress: 'onboardingProgress', 
     },

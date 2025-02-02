@@ -1,6 +1,6 @@
 // src/app/onboarding/hooks/useOnboardingForm.js
 import { useEffect, useCallback, useRef, useState, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { useFormStatePersistence } from '@/hooks/useFormStatePersistence';
@@ -10,6 +10,8 @@ import { OnboardingStateManager } from '/state/OnboardingStateManager';
 import { ValidationManager } from '/validation/ValidationManager';
 import { generateRequestId } from '@/lib/authUtils';
 import { useCleanup } from '@/hooks/useCleanup';
+
+
 import { 
     validateStep,
     canTransitionToStep, 
@@ -32,6 +34,8 @@ export const useOnboardingForm = (step, options = {}) => {
   const router = useRouter();
   const toast = useToast();
   const { addCleanup } = useCleanup();
+  // Add this state
+  const [isLoading, setIsLoading] = useState(false);
 
   // Refs for managers and state
   const managersRef = useRef({
@@ -81,6 +85,7 @@ export const useOnboardingForm = (step, options = {}) => {
 
   // Handle form field changes
   const handleSubmit = useCallback(async (data) => {
+    const requestId = generateRequestId();  // Add this line
     let toastId;
     
     try {
@@ -94,8 +99,8 @@ export const useOnboardingForm = (step, options = {}) => {
       });
   
       // Validate step transition
-      const nextStep = STEP_PROGRESSION[step]?.next[0];
-      if (!nextStep) {
+      const next_step = STEP_PROGRESSION[step]?.next[0];
+      if (!next_step) {
         throw new Error('Invalid step configuration');
       }
   
@@ -106,8 +111,8 @@ export const useOnboardingForm = (step, options = {}) => {
       }
   
       // Tier validation if needed
-      if (data.selectedPlan) {
-        const tierValidation = validateTierAccess(nextStep, data.selectedPlan);
+      if (data.selected_plan) {
+        const tierValidation = validateTierAccess(next_step, data.selected_plan);
         if (!tierValidation.valid) {
           throw new Error(tierValidation.message);
         }
@@ -144,7 +149,9 @@ export const useOnboardingForm = (step, options = {}) => {
       });
   
       // Clear draft data
-      await persistenceService.clearData(`${step}-draft`);
+      await saveFormDraft(null); // or similar method from your persistence hook
+
+
   
       toast.update(toastId, {
         render: 'Information saved successfully',
@@ -154,8 +161,8 @@ export const useOnboardingForm = (step, options = {}) => {
       });
   
       // Navigate to next step
-      logger.debug(`Navigating to ${nextStep}:`, { requestId });
-      await router.push(`/onboarding/${nextStep}`);
+      logger.debug(`Navigating to ${next_step}:`, { requestId });
+      await router.push(`/onboarding/${next_step}`);
   
     } catch (error) {
       logger.error('Form submission failed:', { 
@@ -181,15 +188,34 @@ export const useOnboardingForm = (step, options = {}) => {
     } finally {
       setIsLoading(false);
     }
-  }, [router, toast, requestId, step, persistenceService]);
+}, [router, toast, step, saveFormDraft]);
+
 
   const handleFieldChange = useCallback(async (name, value) => {
     try {
       // Update form field
       methods.setValue(name, value, {
-        shouldValidate: false,
+        shouldValidate: true,
         shouldDirty: true
       });
+  
+      // Important: Update global state for selected_plan
+      if (name === 'selected_plan') {
+        managersRef.current.state.updateState({
+          selected_plan: value,
+          tier: value
+        }, {
+          type: 'FIELD_CHANGE',
+          fieldName: 'selected_plan',
+          value
+        });  // Added event parameter
+        
+        logger.debug('Updated plan selection:', {
+          selected_plan: value,
+          current_step: step,
+          formValues: methods.getValues()
+        });
+      }
   
       // Track change in state manager
       await managersRef.current.state.handleFieldChange(name, value, {
@@ -197,47 +223,21 @@ export const useOnboardingForm = (step, options = {}) => {
         timestamp: Date.now()
       });
   
-      // Validate field
-      if (validateBeforeSave) {
-        // First use form validation
-        const validationResult = await managersRef.current.validation.validateField(
-          name, 
-          value,
-          methods.getValues()
-        );
-  
-        if (!validationResult.isValid) {
-          methods.setError(name, {
-            type: 'validation',
-            message: validationResult.error
-          });
-          return;
-        }
-  
-        // Then use step validation if it's a key field
-        if (name === 'selectedPlan') {
-          const tierValidation = validateTierAccess(step, value);
-          if (!tierValidation.valid) {
-            methods.setError(name, {
-              type: 'validation',
-              message: tierValidation.message
-            });
-          }
-        }
-      }
+      // Save draft after field change
+      await saveFormDraft(methods.getValues());
   
     } catch (error) {
       logger.error('Field change failed:', {
         step,
         field: name,
+        value,
         error: error.message
       });
-      toast.error('Failed to update field');
     }
-  }, [methods, validateBeforeSave, toast, step]);
+  }, [methods, step, saveFormDraft]);
 
   // Load saved data on mount
-  useEffect(() => {
+useEffect(() => {
     const loadSavedData = async () => {
       try {
         const savedData = await loadLatestDraft();
@@ -248,9 +248,10 @@ export const useOnboardingForm = (step, options = {}) => {
         setFormState(prev => ({
           ...prev,
           isInitialized: true,
-          isLoading: false
+          isLoading: false,
+          selected_plan: savedData?.selected_plan || null
         }));
-
+  
       } catch (error) {
         logger.error('Failed to load saved data:', {
           step,
@@ -264,25 +265,32 @@ export const useOnboardingForm = (step, options = {}) => {
         }));
       }
     };
-
+  
     loadSavedData();
   }, [step, loadLatestDraft, methods]);
 
-  // Subscribe to state changes
   useEffect(() => {
-    const unsubscribe = managersRef.current.state.subscribe((state, event) => {
+    const subscription = managersRef.current.state.subscribe((state, event) => {
+      // Handle plan changes
+      if (state.selected_plan !== methods.getValues().selected_plan) {
+        methods.setValue('selected_plan', state.selected_plan);
+      }
+      
+      // Handle other state changes
       setFormState(prev => ({
         ...prev,
         lastSaved: state.onboarding.stepData.get(step)?.timestamp || prev.lastSaved
       }));
-
+  
       if (event.type === 'error') {
         toast.error(event.error.message);
       }
     });
+  
+    return () => subscription();
+  }, [methods, step, toast]);
 
-    return unsubscribe;
-  }, [step, toast]);
+
 
   // Cleanup on unmount
   useEffect(() => {

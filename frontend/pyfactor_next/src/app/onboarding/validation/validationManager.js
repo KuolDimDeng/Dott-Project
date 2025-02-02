@@ -1,339 +1,191 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/validation/validationManager.js
+// /src/app/onboarding/validation/validationManager.js
 import { logger } from '@/utils/logger';
 import { VALIDATION_CONFIG } from './config';
 import { generateRequestId } from '@/lib/authUtils';
+import { ONBOARDING_STEPS, validateStepData } from '@/config/steps';
+import { onboardingApi, makeRequest } from '@/services/api/onboarding';
 
 class ValidationManager {
     constructor() {
       this.baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-      // Initialize with comprehensive logging
       logger.debug('ValidationManager initialized', {
         timestamp: Date.now(),
         config: VALIDATION_CONFIG
       });
   
-      // Core state management with enhanced tracking
       this.state = {
-        // Queue management
         queue: [],                     
-        priorityQueue: new Map(),      // New: Separate queue for priority operations
-        
-        // Timing and validation state
-        lastValidation: Date.now(),    
-        lastSuccessfulValidation: null, // New: Track successful validations
-        isValidating: false,           
-        currentOperation: null,        
-        
-        // Component lifecycle
+        priorityQueue: new Map(),      
+        last_validation: Date.now(),    
+        last_successful_validation: null,
+        is_validating: false,           
+        current_operation: null,        
         mounted: true,                 
-        
-        // Resource management
-        pendingTimeouts: new Set(),    
-        operationStats: new Map(),     
-        
-        // Error handling
-        lastError: null,               
-        errorCount: 0,                 // New: Track error frequency
-        
-        // Coordination
-        validationLock: null,          
-        formStateManager: null,        // Connection to form state
-        
-        // Performance monitoring
-        performanceMetrics: {          // New: Track performance
-          averageOperationTime: 0,
-          totalOperations: 0,
-          successRate: 1
+        pending_timeouts: new Set(),    
+        operation_stats: new Map(),     
+        last_error: null,               
+        error_count: 0,                 
+        validation_lock: null,          
+        form_state_manager: null,        
+        performance_metrics: {          
+          average_operation_time: 0,
+          total_operations: 0,
+          success_rate: 1
         }
       };
   
-      // Bind methods to maintain context
       this.coordinate = this.coordinate.bind(this);
       this.cleanup = this.cleanup.bind(this);
+      this.stepConfig = ONBOARDING_STEPS;
     }
   
-    /**
-     * Sets up connection with FormStateManager for state coordination
-     */
     setFormStateManager(manager) {
-      this.state.formStateManager = manager;
-      logger.debug('FormStateManager connected', {
-        timestamp: Date.now()
-      });
+      this.state.form_state_manager = manager;
+      logger.debug('FormStateManager connected');
+    }
+
+    async validateStepTransition(from, to, form_data) {
+      const request_id = generateRequestId();
+
+      try {
+        // Use centralized API for validation
+        const validation = await makeRequest(
+          onboardingApi.updateStep(form_data.access_token, from, {
+            current_step: from,
+            next_step: to,
+            form_data,
+            request_id
+          })
+        );
+
+        return {
+          isValid: validation.status === 'success',
+          reason: validation.reason || 'VALID',
+          next_step: validation.next_step
+        };
+
+      } catch (error) {
+        logger.error('Step transition validation failed:', {
+          request_id,
+          error: error.message,
+          from,
+          to
+        });
+
+        return {
+          isValid: false,
+          reason: 'ERROR',
+          error: error.message
+        };
+      }
     }
   
-    /**
-     * Enhanced initialization coordination with better error recovery
-     */
     async coordinateInitialization(operation) {
-      const initState = {
+      const init_state = {
         id: generateRequestId(),
-        startTime: Date.now(),
+        start_time: Date.now(),
         status: 'pending',
-        retryCount: 0,
-        maxRetries: VALIDATION_CONFIG.maxValidationRetries
+        retry_count: 0,
+        max_retries: VALIDATION_CONFIG.maxValidationRetries
       };
   
-      // Clear existing validation state with proper cleanup
-      if (this.state.isValidating) {
+      if (this.state.is_validating) {
         await this.clearExistingValidation();
       }
   
       try {
-        this.state.isValidating = true;
-        this.state.currentOperation = initState.id;
+        this.state.is_validating = true;
+        this.state.current_operation = init_state.id;
         
         logger.debug('Starting initialization', {
-          operationId: initState.id,
-          timestamp: Date.now()
+          operation_id: init_state.id
         });
   
-        // Execute with timeout protection
         const result = await Promise.race([
           operation(),
-          this.createTimeoutPromise(initState.id)
+          this.createTimeoutPromise(init_state.id)
         ]);
   
-        // Update metrics on success
-        this.updatePerformanceMetrics(initState.id, true);
-        initState.status = 'completed';
+        this.updatePerformanceMetrics(init_state.id, true);
+        init_state.status = 'completed';
         
         return result;
   
       } catch (error) {
-        // Handle initialization failure with retry logic
-        initState.status = 'failed';
-        this.recordError(error, initState);
+        init_state.status = 'failed';
+        this.recordError(error, init_state);
   
-        if (initState.retryCount < initState.maxRetries) {
-          return this.retryInitialization(operation, initState);
+        if (init_state.retry_count < init_state.max_retries) {
+          return this.retryInitialization(operation, init_state);
         }
         throw error;
   
       } finally {
-        await this.cleanupOperation(initState);
-      }
-    }
-  
-    /**
-     * Main coordination method with enhanced error handling and queue management
-     */
-    async coordinate(operation, key, minGap) {
-      if (!this.state.mounted) return null;
-  
-      const operationState = {
-        id: generateRequestId(),
-        key,
-        startTime: Date.now(),
-        priority: key?.includes('priority') || false
-      };
-  
-      this.trackOperation(operationState.id, 'started');
-      
-      // Handle queue timeout protection
-      const timeoutId = this.setupQueueTimeout(operationState);
-      
-      // Enhanced queue management
-      if (this.state.isValidating) {
-        return this.handleQueueing(operation, operationState, minGap);
-      }
-  
-      // Enforce validation gaps
-      await this.enforceValidationGap(minGap);
-  
-      try {
-        // Setup validation state
-        this.state.isValidating = true;
-        this.state.lastValidation = Date.now();
-        this.state.currentOperation = operationState.id;
-        
-        // Execute operation with timeout protection
-        const protectedOperation = this.createProtectedOperation(
-          operation, 
-          operationState
-        );
-        
-        const result = await protectedOperation();
-        
-        // Update metrics and process queue
-        this.updatePerformanceMetrics(operationState.id, true);
-        await this.processNextInQueue(minGap);
-        
-        return result;
-  
-      } catch (error) {
-        this.handleOperationError(error, operationState);
-        throw error;
-  
-      } finally {
-        await this.cleanupOperation(operationState);
+        await this.cleanupOperation(init_state);
       }
     }
 
-    async validateField(name, value, formData) {
+    async validateField(field_name, value, form_data) {
       try {
-        const response = await fetch(`${this.baseUrl}/api/onboarding/validate-field/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            field: name,
-            value,
-            formData
-          })
-        });
-  
-        return await response.json();
+        const validation = await makeRequest(
+          onboardingApi.validateField(
+            form_data.access_token,
+            {
+              field: field_name,
+              value,
+              form_data
+            }
+          )
+        );
+
+        return validation;
       } catch (error) {
         logger.error('Field validation failed:', error);
         return { isValid: false, error: error.message };
       }
     }
   
-    /**
-     * Helper methods for operation management
-     */
     async clearExistingValidation() {
-      if (this.state.currentOperation) {
+      if (this.state.current_operation) {
         logger.debug('Clearing existing validation', {
-          currentOperation: this.state.currentOperation,
-          timestamp: Date.now()
+          current_operation: this.state.current_operation
         });
         
-        this.state.isValidating = false;
-        this.state.currentOperation = null;
+        this.state.is_validating = false;
+        this.state.current_operation = null;
         await this.notifyStateChange('validation_cleared');
       }
     }
   
-    createTimeoutPromise(operationId) {
-      return new Promise((_, reject) => {
-        const timeoutId = setTimeout(() => {
-          reject(new Error(`Operation timeout: ${operationId}`));
-        }, VALIDATION_CONFIG.throttleDelay);
-        
-        this.state.pendingTimeouts.add(timeoutId);
-      });
-    }
-  
-    async retryInitialization(operation, state) {
-      state.retryCount++;
-      const delay = Math.min(
-        1000 * Math.pow(2, state.retryCount),
-        VALIDATION_CONFIG.maxRetryDelay
-      );
-      
-      logger.debug('Retrying initialization', {
-        operationId: state.id,
-        attempt: state.retryCount,
-        delay
-      });
-      
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return this.coordinateInitialization(operation);
-    }
-  
-    async handleQueueing(operation, state, minGap) {
-      const queuePromise = new Promise((resolve, reject) => {
-        const queueItem = {
-          id: state.id,
-          operation,
-          resolve,
-          reject,
-          timestamp: Date.now(),
-          priority: state.priority
-        };
-  
-        if (state.priority) {
-          this.state.priorityQueue.set(state.key, queueItem);
-        } else {
-          this.state.queue.push(queueItem);
-        }
-      });
-  
-      this.trackOperation(state.id, 'queued');
-      return queuePromise;
-    }
-  
-    async notifyStateChange(type, data = {}) {
-      if (this.state.formStateManager) {
-        await this.state.formStateManager.handleValidationStateChange(type, data);
-      }
-    }
-  
-    /**
-     * Enhanced cleanup with proper resource management
-     */
     cleanup() {
       logger.debug('Starting cleanup', {
-        pendingTimeouts: this.state.pendingTimeouts.size,
-        queueLength: this.state.queue.length,
-        isValidating: this.state.isValidating
+        pending_timeouts: this.state.pending_timeouts.size,
+        queue_length: this.state.queue.length,
+        is_validating: this.state.is_validating
       });
   
       this.state.mounted = false;
-      
-      // Clear queues
       this.clearQueues();
-      
-      // Reset state
       this.resetState();
-      
-      // Clear timeouts
       this.clearTimeouts();
       
       logger.debug('Cleanup completed', {
-        finalStats: this.getStats()
+        final_stats: this.getStats()
       });
     }
   
-    clearQueues() {
-      const error = new Error('Cleanup in progress');
-      
-      [...this.state.queue, ...this.state.priorityQueue.values()]
-        .forEach(item => {
-          try {
-            item.reject(error);
-          } catch (e) {
-            logger.error('Queue cleanup error:', e);
-          }
-        });
-  
-      this.state.queue = [];
-      this.state.priorityQueue.clear();
-    }
-  
-    resetState() {
-      this.state.isValidating = false;
-      this.state.currentOperation = null;
-      this.state.validationLock = null;
-    }
-  
-    clearTimeouts() {
-      this.state.pendingTimeouts.forEach(timeoutId => {
-        clearTimeout(timeoutId);
-      });
-      this.state.pendingTimeouts.clear();
-    }
-  
-    /**
-     * Performance monitoring and statistics
-     */
     getStats() {
       return {
-        queueLength: this.state.queue.length + this.state.priorityQueue.size,
-        isValidating: this.state.isValidating,
-        lastValidation: this.state.lastValidation,
-        pendingTimeouts: this.state.pendingTimeouts.size,
-        operations: Array.from(this.state.operationStats.entries()),
-        lastError: this.state.lastError,
-        performanceMetrics: { ...this.state.performanceMetrics }
+        queue_length: this.state.queue.length + this.state.priorityQueue.size,
+        is_validating: this.state.is_validating,
+        last_validation: this.state.last_validation,
+        pending_timeouts: this.state.pending_timeouts.size,
+        operations: Array.from(this.state.operation_stats.entries()),
+        last_error: this.state.last_error,
+        performance_metrics: { ...this.state.performance_metrics }
       };
     }
-  }
-  
-  // Export the enhanced ValidationManager
-  export { ValidationManager };
+}
+
+export { ValidationManager };

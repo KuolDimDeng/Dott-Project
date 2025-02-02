@@ -1,3 +1,5 @@
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/api/auth/resend-verification/route.js
 import { NextResponse } from 'next/server';
 import logger from '@/utils/logger';
 

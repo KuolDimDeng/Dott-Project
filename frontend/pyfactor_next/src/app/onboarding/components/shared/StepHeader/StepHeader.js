@@ -4,10 +4,10 @@ import PropTypes from 'prop-types';
 import { Typography } from '@mui/material';
 import { HeaderContainer, StepIndicator } from './StepHeader.styles';
 
-const StepHeader = ({ title, description, currentStep, totalSteps, stepName }) => (
+const StepHeader = ({ title, description, current_step, totalSteps, stepName }) => (
     <HeaderContainer>
         <StepIndicator>
-            Step {currentStep} of {totalSteps} - {stepName}
+            Step {current_step} of {totalSteps} - {stepName}
         </StepIndicator>
         <Typography variant="h4" component="h1" gutterBottom>
             {title}
@@ -24,7 +24,7 @@ const StepHeader = ({ title, description, currentStep, totalSteps, stepName }) =
 StepHeader.propTypes = {
     title: PropTypes.string.isRequired,
     description: PropTypes.string,
-    currentStep: PropTypes.number.isRequired,
+    current_step: PropTypes.number.isRequired,
     totalSteps: PropTypes.number.isRequired,
     stepName: PropTypes.string.isRequired
 };

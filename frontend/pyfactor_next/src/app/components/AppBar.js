@@ -129,7 +129,7 @@ function AppAppBar() {
     if (!userState?.isValid) {
       return {
         text: 'Complete Setup',
-        route: userState?.redirectTo || '/onboarding/step1',
+        route: userState?.redirectTo || '/onboarding/business-info',
         icon: <SettingsIcon />
       };
     }
@@ -144,7 +144,7 @@ function AppAppBar() {
 
     return {
       text: 'Start Setup',
-      route: '/onboarding/step1',
+      route: '/onboarding/business-info',
       icon: <SettingsIcon />
     };
   };

@@ -7,29 +7,30 @@ import { loadStripe } from '@stripe/stripe-js';
 import { logger } from '@/utils/logger';
 import { persistenceService } from '@/services/persistenceService';
 import { useOnboarding } from '@/app/onboarding/contexts/OnboardingContext';
+import { canNavigateToStep } from '@/app/onboarding/constants/onboardingConstants'; // Import directly from constants
+
 import { 
   validateUserState, 
   handleAuthError, 
   generateRequestId,
   validateOnboardingStep,
-  makeRequest 
+  makeAuthRequest,
 } from '@/lib/authUtils';
+import { onboardingApi } from '@/services/api/onboarding';
 
-const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY
-  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY)
-  : Promise.reject(new Error('Stripe public key not found'));
+// Initialize Stripe with the public key
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
 export const usePaymentForm = () => {
   const router = useRouter();
   const { data: session } = useSession();
   const toast = useToast();
-  const { canNavigateToStep } = useOnboarding();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState(null);
   const [requestId] = useState(() => generateRequestId());
-  const [selectedTier, setSelectedTier] = useState(null);
+  const [selected_plan, setselected_plan] = useState(null);
   const [billingCycle, setBillingCycle] = useState(null);
 
   const loadSubscriptionData = useCallback(async () => {
@@ -37,7 +38,7 @@ export const usePaymentForm = () => {
       const data = await persistenceService.getData('subscription-data');
       const tier = await persistenceService.getCurrentTier();
       
-      if (!data?.selectedPlan || !data?.billingCycle) {
+      if (!data?.selected_plan || !data?.billingCycle) {
         throw new Error('Missing subscription data');
       }
       
@@ -61,14 +62,14 @@ export const usePaymentForm = () => {
       }
 
       setFormData(data);
-      setSelectedTier(tier);
+      setselected_plan(tier);
       setBillingCycle(data.billingCycle);
     } catch (error) {
       const errorResult = handleAuthError(error);
       logger.error('Failed to load subscription data:', { 
         error: errorResult,
         requestId,
-        tier: selectedTier
+        tier: selected_plan
       });
       router.replace('/onboarding/subscription');
     }
@@ -80,22 +81,13 @@ export const usePaymentForm = () => {
 
   const handlePayment = useCallback(async () => {
     try {
-      // Add step validation for next step
       if (!canNavigateToStep('setup')) {
-        logger.warn('Payment blocked - cannot proceed to setup', {
+        logger.warn('Payment submission blocked - cannot proceed to setup', {
           requestId,
-          currentStep: 'payment',
-          nextStep: 'setup'
+          current_step: 'payment',
+          next_step: 'setup'
         });
-        throw new Error('Cannot proceed to next step');
-      }
-
-      if (selectedTier !== 'professional') {
-        throw new Error('Payment is only required for Professional tier');
-      }
-
-      if (!formData?.selectedPlan || !formData?.billingCycle) {
-        throw new Error('Missing plan or billing cycle selection');
+        return;
       }
 
       setCheckoutLoading(true);
@@ -106,17 +98,74 @@ export const usePaymentForm = () => {
         throw new Error(userState.reason);
       }
 
-
-      // Save payment initiation state with tier
-      await persistenceService.saveData('payment-initiated', {
-        timestamp: Date.now(),
-        plan: formData.selectedPlan,
-        billingCycle: formData.billingCycle,
-        tier: selectedTier
+      // Start database setup first
+      const setupResponse = await onboardingApi.startSetup({
+        request_id: requestId
       });
 
-      // Create checkout session with tier information
-      const response = await makeRequest(() => ({
+      if (!setupResponse?.success) {
+        throw new Error('Failed to start database setup');
+      }
+
+      // Connect to WebSocket for monitoring setup progress
+      const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}/ws/onboarding/${session.user.id}/`;
+      const ws = new WebSocket(wsUrl);
+
+      ws.onmessage = async (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'setup_complete') {
+          ws.close();
+          await handleStripeCheckout();
+        } else if (data.type === 'setup_error') {
+          ws.close();
+          setCheckoutError(data.error || 'Database setup failed');
+          setCheckoutLoading(false);
+        }
+      };
+
+      ws.onerror = (error) => {
+        ws.close();
+        setCheckoutError('WebSocket connection failed');
+        setCheckoutLoading(false);
+      };
+
+    } catch (error) {
+      const errorResult = handleAuthError(error);
+      logger.error('Payment process failed:', { 
+        error: errorResult,
+        requestId,
+        tier: selected_plan
+      });
+
+      let errorMessage = 'Payment setup failed';
+
+      if (error.message.includes('Professional tier')) {
+        errorMessage = 'Payment is only required for Professional tier';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Please sign in to continue';
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response.data?.message || 'Invalid payment details';
+      } else if (!navigator.onLine) {
+        errorMessage = 'Please check your internet connection';
+      }
+
+      setCheckoutError(errorMessage);
+      setCheckoutLoading(false);
+    }
+  }, [formData, session, requestId, selected_plan, canNavigateToStep]);
+
+  const handleStripeCheckout = async () => {
+    try {
+      // Save payment initiation state
+      await persistenceService.saveData('payment-initiated', {
+        timestamp: Date.now(),
+        plan: formData.selected_plan,
+        billingCycle: formData.billingCycle,
+        tier: selected_plan
+      });
+
+      // Create checkout session
+      const response = await makeAuthRequest(() => ({
         promise: fetch('/api/checkout/create-session/', {
           method: 'POST',
           headers: {
@@ -125,8 +174,8 @@ export const usePaymentForm = () => {
           },
           body: JSON.stringify({
             billingCycle: formData.billingCycle,
-            plan: formData.selectedPlan,
-            tier: selectedTier
+            plan: formData.selected_plan,
+            tier: selected_plan
           })
         })
       }));
@@ -151,37 +200,21 @@ export const usePaymentForm = () => {
       }
 
     } catch (error) {
-        const errorResult = handleAuthError(error);
-        logger.error('Payment process failed:', { 
-          error: errorResult,
-          requestId,
-          tier: selectedTier
-        });
-  
-        let errorMessage = 'Payment setup failed';
-  
-        if (error.message.includes('Professional tier')) {
-          errorMessage = 'Payment is only required for Professional tier';
-        } else if (error.response?.status === 401) {
-          errorMessage = 'Please sign in to continue';
-        } else if (error.response?.status === 400) {
-          errorMessage = error.response.data?.message || 'Invalid payment details';
-        } else if (!navigator.onLine) {
-          errorMessage = 'Please check your internet connection';
-        }
-  
-        setCheckoutError(errorMessage);
-    } finally {
+      logger.error('Stripe checkout failed:', {
+        requestId,
+        error: error.message
+      });
+      setCheckoutError(error.message);
       setCheckoutLoading(false);
     }
-  }, [formData, session, requestId, selectedTier, canNavigateToStep]);
+  };
 
   const handlePreviousStep = useCallback(async () => {
     try {
       if (!canNavigateToStep('subscription')) {
         logger.warn('Navigation blocked - cannot return to subscription', {
           requestId,
-          currentStep: 'payment'
+          current_step: 'payment'
         });
         return;
       }
@@ -210,7 +243,7 @@ export const usePaymentForm = () => {
     handlePreviousStep,
     isLoading,
     requestId,
-    selectedTier,
+    selected_plan,
     billingCycle
   };
 };

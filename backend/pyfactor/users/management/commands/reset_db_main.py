@@ -1,3 +1,4 @@
+#/Users/kuoldeng/projectx/backend/pyfactor/users/management/commands/reset_db_main.py
 import os
 import shutil
 import sys
@@ -100,12 +101,18 @@ class Command(BaseCommand):
             # Step 8: Recreate the public schema
             with connection.cursor() as cursor:
                 self.drop_public_schema(cursor)
+                           # Clear inventory data
+                self.clear_inventory_data(cursor)
+                
+                # Clear report data  
+                self.clear_report_data(cursor)
 
             # Step 9: Recreate and apply migrations
             self.recreate_and_apply_migrations()
 
             # Step 10: Reset sequences again after migrations
             self.reset_all_sequences()
+
 
             # Step 11: Check for lingering data
             self.check_and_clear_lingering_data()
@@ -133,40 +140,84 @@ class Command(BaseCommand):
             'user': default_db['USER'],
             'password': default_db['PASSWORD'],
             'host': default_db['HOST'],
-            'port': default_db['PORT']
+            'port': default_db['PORT'],
+            'connect_timeout': 30,  # Increased timeout for RDS
+            'options': '-c statement_timeout=0',  # No statement timeout
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5
         }
         
     def drop_all_user_databases(self, conn_details):
         database_status = {}
+        max_retries = 3
+        retry_delay = 5  # seconds
+
         try:
-            with psycopg2.connect(**conn_details) as conn:
+            # First connect to postgres database to get list of databases
+            with psycopg2.connect(**{**conn_details, 'dbname': 'postgres'}) as conn:
                 conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
                 with conn.cursor() as cur:
-                    # Get all databases owned by the current user, excluding default ones
+                    # Get all databases owned by the current user, excluding system DBs
                     cur.execute("""
-                        SELECT datname FROM pg_database 
-                        WHERE datistemplate = false 
-                        AND datname NOT IN ('postgres', 'template0', 'template1', 'rdsadmin');
+                        SELECT d.datname 
+                        FROM pg_database d
+                        JOIN pg_roles r ON d.datdba = r.oid
+                        WHERE d.datistemplate = false 
+                        AND d.datname NOT IN ('postgres', 'template0', 'template1', 'rdsadmin')
+                        AND r.rolname = current_user;
                     """)
                     databases = cur.fetchall()
 
-                    for db in databases:
-                        db_name = db[0]
-                        try:
-                            # Terminate existing connections to the database
-                            cur.execute(f"""
-                                SELECT pg_terminate_backend(pid)
-                                FROM pg_stat_activity
-                                WHERE datname = %s AND pid <> pg_backend_pid()
-                            """, (db_name,))
-                            
-                            # Drop the database
-                            cur.execute(f'DROP DATABASE IF EXISTS "{db_name}";')
-                            database_status[db_name] = "Dropped"
-                            logger.info(f"Database {db_name} dropped successfully.")
-                        except Exception as e:
+            # Now process each database
+            for db in databases:
+                db_name = db[0]
+                for attempt in range(max_retries):
+                    try:
+                        # Connect to postgres database for each operation
+                        with psycopg2.connect(**{**conn_details, 'dbname': 'postgres'}) as conn:
+                            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+                            with conn.cursor() as cur:
+                                try:
+                                    # Force terminate all connections except our own
+                                    cur.execute("""
+                                        SELECT pg_terminate_backend(pid)
+                                        FROM pg_stat_activity
+                                        WHERE datname = %s 
+                                        AND pid <> pg_backend_pid()
+                                        AND usename = current_user;
+                                    """, (db_name,))
+                                    
+                                    # Wait a moment for connections to close
+                                    import time
+                                    time.sleep(2)
+                                    
+                                    # Drop the database
+                                    cur.execute(f'DROP DATABASE IF EXISTS "{db_name}";')
+                                    database_status[db_name] = "Dropped"
+                                    logger.info(f"Database {db_name} dropped successfully.")
+                                    break  # Success - exit retry loop
+                                        
+                                except Exception as e:
+                                    if "cannot run inside a transaction block" in str(e):
+                                        # If in transaction, reconnect with autocommit
+                                        conn.rollback()
+                                        continue
+                                    elif "permission denied" in str(e) and "SUPERUSER" in str(e):
+                                        # Skip if we don't have permission
+                                        database_status[db_name] = f"Skipped: {str(e)}"
+                                        logger.warning(f"Skipping database {db_name} due to permissions: {e}")
+                                        break
+                                    else:
+                                        raise
+                    except Exception as e:
+                        if attempt == max_retries - 1:
                             database_status[db_name] = f"Error: {str(e)}"
-                            logger.error(f"Error dropping database {db_name}: {e}")
+                            logger.error(f"Error dropping database {db_name} after {max_retries} attempts: {e}")
+                        else:
+                            logger.warning(f"Attempt {attempt + 1} failed for {db_name}: {e}")
+                            time.sleep(retry_delay)
 
             logger.info("\nDatabase Status:")
             for db, status in database_status.items():
@@ -179,21 +230,63 @@ class Command(BaseCommand):
 
 
     def recreate_main_database(self, conn_details):
-        try:
-            with psycopg2.connect(**conn_details) as conn:
-                conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-                with conn.cursor() as cur:
-                    main_db_name = settings.DATABASES['default']['NAME']
-                    cur.execute(f'CREATE DATABASE "{main_db_name}";')
-                    logger.info(f"Main database '{main_db_name}' recreated successfully.")
-
-                    # Set the owner of the new database to the current user
-                    cur.execute("SELECT current_user;")
-                    current_user = cur.fetchone()[0]
-                    cur.execute(f'ALTER DATABASE "{main_db_name}" OWNER TO {current_user};')
-                    logger.info(f"Ownership of '{main_db_name}' transferred to {current_user}.")
-        except Exception as e:
-            logger.error(f"Error recreating main database: {e}")
+        max_retries = 3
+        retry_delay = 5  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                with psycopg2.connect(**conn_details) as conn:
+                    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+                    with conn.cursor() as cur:
+                        main_db_name = settings.DATABASES['default']['NAME']
+                        
+                        # First check if we have the necessary permissions
+                        cur.execute("SELECT current_user, current_setting('is_superuser');")
+                        current_user, is_superuser = cur.fetchone()
+                        logger.info(f"Connected as {current_user} (superuser: {is_superuser})")
+                        
+                        # Terminate existing connections
+                        cur.execute("""
+                            SELECT pg_terminate_backend(pid)
+                            FROM pg_stat_activity
+                            WHERE datname = %s 
+                            AND pid <> pg_backend_pid()
+                            AND usename = current_user;
+                        """, (main_db_name,))
+                        
+                        # Wait for connections to close
+                        import time
+                        time.sleep(2)
+                        
+                        # Drop and recreate the database
+                        cur.execute(f'DROP DATABASE IF EXISTS "{main_db_name}";')
+                        cur.execute(f"""
+                            CREATE DATABASE "{main_db_name}"
+                            WITH 
+                            OWNER = {current_user}
+                            ENCODING = 'UTF8'
+                            LC_COLLATE = 'en_US.UTF-8'
+                            LC_CTYPE = 'en_US.UTF-8'
+                            TEMPLATE = template0;
+                        """)
+                        logger.info(f"Main database '{main_db_name}' recreated successfully.")
+                        
+                        # Set default privileges
+                        cur.execute(f"""
+                            REVOKE CONNECT ON DATABASE "{main_db_name}" FROM PUBLIC;
+                            GRANT CONNECT ON DATABASE "{main_db_name}" TO {current_user};
+                            GRANT ALL PRIVILEGES ON DATABASE "{main_db_name}" TO {current_user};
+                        """)
+                        logger.info(f"Privileges set for '{main_db_name}'")
+                        
+                        return  # Success - exit the retry loop
+                        
+            except Exception as e:
+                logger.error(f"Attempt {attempt + 1} failed: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                else:
+                    raise Exception(f"Failed to recreate main database after {max_retries} attempts: {e}")
 
 
     def get_db_connection_details(self):
@@ -207,14 +300,39 @@ class Command(BaseCommand):
         }
 
     def drop_public_schema(self, cursor):
-        try:
-            cursor.execute("DROP SCHEMA public CASCADE;")
-            cursor.execute("CREATE SCHEMA public;")
-            cursor.execute("GRANT ALL ON SCHEMA public TO postgres;")
-            cursor.execute("GRANT ALL ON SCHEMA public TO public;")
-            logger.info("Public schema dropped and recreated successfully.")
-        except Exception as e:
-            logger.error(f"Error dropping public schema: {e}")
+        max_retries = 3
+        retry_delay = 5  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                # First check if we have the necessary permissions
+                cursor.execute("SELECT current_user, current_setting('is_superuser');")
+                current_user, is_superuser = cursor.fetchone()
+                logger.info(f"Connected as {current_user} (superuser: {is_superuser})")
+                
+                # Drop and recreate schema with proper ownership
+                cursor.execute("DROP SCHEMA IF EXISTS public CASCADE;")
+                cursor.execute("CREATE SCHEMA public;")
+                
+                # Set proper ownership and permissions for RDS
+                cursor.execute(f"ALTER SCHEMA public OWNER TO {current_user};")
+                cursor.execute("GRANT ALL ON SCHEMA public TO postgres;")
+                cursor.execute("GRANT ALL ON SCHEMA public TO public;")
+                cursor.execute(f"GRANT ALL ON SCHEMA public TO {current_user};")
+                
+                # Set search path
+                cursor.execute(f"ALTER DATABASE {settings.DATABASES['default']['NAME']} SET search_path TO public;")
+                
+                logger.info("Public schema dropped and recreated successfully with proper permissions.")
+                return  # Success - exit the retry loop
+                
+            except Exception as e:
+                logger.error(f"Attempt {attempt + 1} to reset public schema failed: {e}")
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(retry_delay)
+                else:
+                    raise Exception(f"Failed to reset public schema after {max_retries} attempts: {e}")
 
     def clear_user_data(self, cursor):
         try:
@@ -227,31 +345,85 @@ class Command(BaseCommand):
 
     def drop_non_template_databases(self, conn_details):
         database_status = {}
+        max_retries = 3
+        retry_delay = 5  # seconds
+
         try:
-            with psycopg2.connect(**conn_details) as conn:
+            # First connect to postgres database to get list of databases
+            with psycopg2.connect(**{**conn_details, 'dbname': 'postgres'}) as conn:
                 conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
                 with conn.cursor() as cur:
-                    cur.execute("SELECT datname FROM pg_database WHERE datistemplate = false;")
+                    cur.execute("""
+                        SELECT d.datname 
+                        FROM pg_database d
+                        WHERE d.datistemplate = false 
+                        AND d.datname NOT IN ('postgres', 'template0', 'template1', 'rdsadmin', %s);
+                    """, (settings.DATABASES['default']['NAME'],))
                     databases = cur.fetchall()
 
+            # Now process each database
             for db in databases:
                 db_name = db[0]
-                if db_name not in ['postgres', 'template0', 'template1', settings.DATABASES['default']['NAME']]:
+                for attempt in range(max_retries):
                     try:
-                        with psycopg2.connect(**conn_details) as conn:
+                        # Connect to postgres database for each operation
+                        with psycopg2.connect(**{**conn_details, 'dbname': 'postgres'}) as conn:
                             conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
                             with conn.cursor() as cur:
-                                cur.execute(f"""
-                                    SELECT pg_terminate_backend(pid)
-                                    FROM pg_stat_activity
-                                    WHERE datname = %s AND pid <> pg_backend_pid()
-                                """, (db_name,))
-                                cur.execute(f'DROP DATABASE IF EXISTS "{db_name}";')
-                        database_status[db_name] = "Dropped"
-                        logger.info(f"Database {db_name} dropped successfully.")
+                                try:
+                                    # Check if we have permission to manage this database
+                                    cur.execute("""
+                                        SELECT has_database_privilege(current_user, %s, 'CREATE')
+                                    """, (db_name,))
+                                    has_permission = cur.fetchone()[0]
+                                    
+                                    if not has_permission:
+                                        database_status[db_name] = "Skipped: No permission"
+                                        logger.warning(f"Skipping database {db_name} due to insufficient permissions")
+                                        break
+                                    
+                                    # Force terminate all connections except our own
+                                    cur.execute("""
+                                        SELECT pg_terminate_backend(pid)
+                                        FROM pg_stat_activity
+                                        WHERE datname = %s 
+                                        AND pid <> pg_backend_pid()
+                                        AND usename = current_user;
+                                    """, (db_name,))
+                                    
+                                    # Wait a moment for connections to close
+                                    import time
+                                    time.sleep(2)
+                                    
+                                    # Drop the database
+                                    cur.execute(f'DROP DATABASE IF EXISTS "{db_name}";')
+                                    database_status[db_name] = "Dropped"
+                                    logger.info(f"Database {db_name} dropped successfully.")
+                                    break  # Success - exit retry loop
+                                        
+                                except Exception as e:
+                                    if "cannot run inside a transaction block" in str(e):
+                                        # If in transaction, reconnect with autocommit
+                                        conn.rollback()
+                                        continue
+                                    elif "permission denied" in str(e) and "SUPERUSER" in str(e):
+                                        # Skip if we don't have permission
+                                        database_status[db_name] = f"Skipped: {str(e)}"
+                                        logger.warning(f"Skipping database {db_name} due to permissions: {e}")
+                                        break
+                                    else:
+                                        raise
                     except Exception as e:
-                        database_status[db_name] = f"Error: {str(e)}"
-                        logger.error(f"Error dropping database {db_name}: {e}")
+                        if attempt == max_retries - 1:
+                            database_status[db_name] = f"Error: {str(e)}"
+                            logger.error(f"Error dropping database {db_name} after {max_retries} attempts: {e}")
+                        else:
+                            logger.warning(f"Attempt {attempt + 1} failed for {db_name}: {e}")
+                            time.sleep(retry_delay)
+
+            logger.info("\nDatabase Status:")
+            for db, status in database_status.items():
+                logger.info(f"{db}: {status}")
 
         except Exception as e:
             logger.error(f"Error in drop_non_template_databases: {e}")
@@ -328,11 +500,18 @@ class Command(BaseCommand):
     def recreate_and_apply_migrations(self):
         logger.info("Making new migrations...")
         django.core.management.call_command('makemigrations')
-
+        
         logger.info("Applying migrations...")
         django.core.management.call_command('migrate')
-
-        logger.info("Migrations recreated and applied.")
+        
+        # Add indexes after migrations
+        logger.info("Adding indexes...")
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_inventory_item_sku ON inventory_inventoryitem(sku);
+                CREATE INDEX IF NOT EXISTS idx_inventory_item_name ON inventory_inventoryitem(name);
+                CREATE INDEX IF NOT EXISTS idx_report_type ON reports_report(report_type);
+            """)
 
     def check_and_clear_lingering_data(self):
         logger.info("Checking for lingering data...")
@@ -354,8 +533,8 @@ class Command(BaseCommand):
         from finance.models import AccountType
         AccountType.objects.all().delete()
         account_types = [
-            "Current Asset", "Current Liability", "Equity", "Revenue",
-            "Operating Expense", "Cost of Goods Sold", "Non-Operating Expense"
+            'Current Asset', 'Current Liability', 'Equity', 'Revenue',
+            'Operating Expense', 'Cost of Goods Sold', 'Non-Operating Expense'
         ]
         for account_type in account_types:
             AccountType.objects.create(name=account_type)
@@ -367,6 +546,24 @@ class Command(BaseCommand):
         django.core.management.call_command('migrate')
         logger.info("Any remaining changes have been captured and applied.")
 
+    def clear_inventory_data(self, cursor):
+        try:
+            cursor.execute("TRUNCATE TABLE inventory_inventoryitem CASCADE;")
+            cursor.execute("TRUNCATE TABLE inventory_category CASCADE;")
+            cursor.execute("TRUNCATE TABLE inventory_supplier CASCADE;")
+            cursor.execute("TRUNCATE TABLE inventory_location CASCADE;")
+            cursor.execute("TRUNCATE TABLE inventory_inventorytransaction CASCADE;")
+            logger.info("Inventory data cleared successfully.")
+        except Exception as e:
+            logger.error(f"Error clearing inventory data: {e}")
+
+    def clear_report_data(self, cursor):
+        try:
+            cursor.execute("TRUNCATE TABLE reports_report CASCADE;")
+            logger.info("Report data cleared successfully.")
+        except Exception as e:
+            logger.error(f"Error clearing report data: {e}")
+
     def create_nextauth_tables(self, conn_details):
         logger.info("Starting to create NextAuth.js tables")
         
@@ -376,20 +573,33 @@ class Command(BaseCommand):
                 with conn.cursor() as cur:
                     commands = (
                         """
-                        CREATE TABLE IF NOT EXISTS users (
-                            id SERIAL PRIMARY KEY,
-                            name VARCHAR(255),
+                        CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+                        """,
+                        """
+                        CREATE TABLE IF NOT EXISTS users_user (
+                            id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                             email VARCHAR(255) UNIQUE NOT NULL,
-                            email_verified TIMESTAMP,
-                            image VARCHAR(255),
-                            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                            first_name VARCHAR(100),
+                            last_name VARCHAR(100),
+                            is_active BOOLEAN DEFAULT TRUE,
+                            occupation VARCHAR(50) DEFAULT 'OTHER',
+                            role VARCHAR(20) DEFAULT 'EMPLOYEE',
+                            is_business_owner BOOLEAN DEFAULT FALSE,
+                            is_staff BOOLEAN DEFAULT FALSE,
+                            date_joined TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            email_confirmed BOOLEAN DEFAULT FALSE,
+                            confirmation_token UUID DEFAULT uuid_generate_v4(),
+                            is_onboarded BOOLEAN DEFAULT FALSE,
+                            stripe_customer_id VARCHAR(255),
+                            password VARCHAR(128),
+                            is_superuser BOOLEAN DEFAULT FALSE,
+                            last_login TIMESTAMP
                         )
                         """,
                         """
-                        CREATE TABLE IF NOT EXISTS accounts (
+                        CREATE TABLE IF NOT EXISTS users_account (
                             id SERIAL PRIMARY KEY,
-                            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                            user_id UUID NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
                             provider VARCHAR(255) NOT NULL,
                             provider_account_id VARCHAR(255) NOT NULL,
                             refresh_token TEXT,
@@ -404,9 +614,9 @@ class Command(BaseCommand):
                         )
                         """,
                         """
-                        CREATE TABLE IF NOT EXISTS sessions (
+                        CREATE TABLE IF NOT EXISTS users_session (
                             id SERIAL PRIMARY KEY,
-                            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                            user_id UUID NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
                             expires TIMESTAMP NOT NULL,
                             session_token VARCHAR(255) UNIQUE NOT NULL,
                             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -414,7 +624,7 @@ class Command(BaseCommand):
                         )
                         """,
                         """
-                        CREATE TABLE IF NOT EXISTS verification_tokens (
+                        CREATE TABLE IF NOT EXISTS users_verification_token (
                             identifier VARCHAR(255) NOT NULL,
                             token VARCHAR(255) NOT NULL,
                             expires TIMESTAMP NOT NULL,

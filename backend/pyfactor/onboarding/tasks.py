@@ -21,8 +21,13 @@ from users.models import UserProfile
 from .models import OnboardingProgress
 from .locks import get_setup_lock, LockAcquisitionError
 from .utils import generate_unique_database_name
-from .task_utils import get_database_settings
-
+from .task_utils import (
+    get_db_connection,
+    get_database_settings,
+    setup_database_parameters,
+    check_database_health,
+    timeout
+)
 logger = logging.getLogger('Pyfactor')
 User = get_user_model()
 
@@ -38,6 +43,7 @@ VALID_STATUS_TRANSITIONS = {
     'not_created': ['pending'],
     'pending': ['in_progress', 'error'],
     'in_progress': ['complete', 'error'],
+    'active': ['pending', 'error'],  # Allow transition from active to pending
     'error': ['pending', 'in_progress'],
     'complete': []  # No transitions from complete
 }
@@ -55,8 +61,17 @@ class DatabaseHealthCheckError(DatabaseSetupError):
     pass
 
 def validate_status_transition(current_status: str, new_status: str) -> bool:
-    """Validate if a status transition is allowed"""
-    return new_status in VALID_STATUS_TRANSITIONS.get(current_status, [])
+    """
+    Validate if a status transition is allowed
+    """
+    allowed_transitions = {
+        'not_created': ['pending'],
+        'pending': ['active', 'error'],
+        'active': ['pending', 'inactive', 'error'],  # Allow transition from active to pending
+        'inactive': ['active', 'error'],
+        'error': ['pending']
+    }
+    return new_status in allowed_transitions.get(current_status, [])
 
 @contextmanager
 def timeout(seconds: int):
@@ -161,6 +176,7 @@ def setup_user_database_task(self, user_id: str, business_id: str) -> Dict[str, 
     database_name = None
     success = False
     profile = None
+    onboarding_progress = None
     
     def update_state(phase: str, progress: int, status: str = 'in_progress'):
         """Update task state and send notification"""
@@ -190,34 +206,72 @@ def setup_user_database_task(self, user_id: str, business_id: str) -> Dict[str, 
         update_state('initial_setup', 0)
         
         with transaction.atomic(using='default'):
-            user = User.objects.select_related('userprofile').get(id=user_id)
-            profile = UserProfile.objects.select_for_update().get(user=user)
+            user = User.objects.select_related('profile').get(id=user_id)
+            profile = user.profile
             
-            if profile.setup_status == 'complete' and profile.database_name:
-                return {
-                    "status": "already_complete",
-                    "database_name": profile.database_name,
-                    "business_id": business_id
-                }
+            # Lock the profile for updates
+            profile = UserProfile.objects.select_for_update().get(id=profile.id)
             
+            # Get onboarding progress
+            onboarding_progress = OnboardingProgress.objects.select_for_update().get(user=user)
+            
+            # Only check setup_status if onboarding is complete
+            if onboarding_progress.onboarding_status == 'complete':
+                if profile.setup_status == 'complete' and profile.database_name:
+                    return {
+                        "status": "already_complete",
+                        "database_name": profile.database_name,
+                        "business_id": business_id
+                    }
+            
+            # Reset setup status if needed
+            if profile.setup_status == 'complete':
+                profile.setup_status = 'in_progress'
+                profile.save(update_fields=['setup_status'])
+
+            # Check for pending setup and handle retry logic
+            if profile.database_status == 'pending':
+                # If already pending, check if it's a retry
+                if profile.last_setup_attempt and \
+                   (timezone.now() - profile.last_setup_attempt).total_seconds() < 300:  # 5 minutes
+                    logger.warning(f"Setup already in progress for user {user_id}")
+                    return {
+                        "status": "in_progress",
+                        "message": "Setup already in progress",
+                        "database_name": profile.database_name
+                    }
+                # If it's been a while, allow retry
+                profile.database_status = 'not_created'
+                profile.save(update_fields=['database_status'])
+
             # Generate database name within the transaction
             database_name = generate_unique_database_name(user)
             
-            # Validate status transition
+            # Now check the transition
             if not validate_status_transition(profile.database_status, 'pending'):
-                raise DatabaseSetupError(f"Invalid status transition from {profile.database_status} to pending")
+                logger.error(f"Invalid status transition from {profile.database_status} to pending")
+                raise DatabaseSetupError(f"Cannot transition from {profile.database_status} to pending")
             
             # Update profile with pending status and new database name
             profile.database_name = database_name
             profile.database_status = 'pending'
             profile.setup_status = 'in_progress'
             profile.last_setup_attempt = timezone.now()
+            profile.database_setup_task_id = self.request.id
             profile.save(update_fields=[
                 'database_name',
                 'database_status', 
                 'setup_status',
-                'last_setup_attempt'
+                'last_setup_attempt',
+                'database_setup_task_id'
             ])
+
+            # Update onboarding progress
+            onboarding_progress = OnboardingProgress.objects.get(user=user)
+            onboarding_progress.current_step = "setup"
+            onboarding_progress.next_step = "complete"
+            onboarding_progress.onboarding_status = "setup"
+            onboarding_progress.save()
 
         # Phase 2: Database Creation
         update_state('creating_database', 20)
@@ -247,7 +301,6 @@ def setup_user_database_task(self, user_id: str, business_id: str) -> Dict[str, 
         # Phase 4: Run Migrations
         update_state('running_migrations', 60)
         try:
-            # Ensure clean connection state before migrations
             connections.close_all()
             call_command('migrate', database=database_name)
         except Exception as e:
@@ -263,29 +316,35 @@ def setup_user_database_task(self, user_id: str, business_id: str) -> Dict[str, 
         # Phase 6: Complete Setup
         update_state('finalizing', 90)
         
-        # Use a fresh connection for final update
         connections.close_all()
         with transaction.atomic(using='default'):
-            # Get fresh instances of both user and profile
             user = User.objects.select_for_update().get(id=user_id)
             profile = UserProfile.objects.select_for_update().get(user=user)
             
-            # Update user onboarding status
             user.is_onboarded = True
             user.save(update_fields=['is_onboarded'])
             
-            # Update profile
             profile.database_name = database_name
+            profile.database_status = 'active'
             profile.setup_status = 'complete'
-            profile.save()
+            profile.last_health_check = timezone.now()
+            profile.save(update_fields=[
+                'database_name',
+                'database_status',
+                'setup_status',
+                'last_health_check'
+            ])
 
-            # Update onboarding progress
-            OnboardingProgress.objects.filter(user=user).update(
-                onboarding_status='complete',
-                current_step=0,
-                completed_at=timezone.now()
-            )
-
+            onboarding_progress = OnboardingProgress.objects.get(user=user)
+            onboarding_progress.current_step = "complete"
+            onboarding_progress.next_step = 'dashboard'  # Set explicit next step
+            onboarding_progress.onboarding_status = "complete"
+            onboarding_progress.save(update_fields=[
+                        'current_step',
+                        'next_step',
+                        'onboarding_status'
+                    ])
+                    
         success = True
         update_state('complete', 100, 'success')
 
@@ -293,6 +352,7 @@ def setup_user_database_task(self, user_id: str, business_id: str) -> Dict[str, 
             "status": "success",
             "database_name": database_name,
             "user_id": user_id,
+            "business_id": business_id,
             "task_id": self.request.id,
             "is_onboarded": True
         }
@@ -301,35 +361,20 @@ def setup_user_database_task(self, user_id: str, business_id: str) -> Dict[str, 
         error_message = str(e)
         logger.error(f"Setup failed: {error_message}", exc_info=True)
         update_state('error', -1, 'failed')
-        
-        if profile:
-            try:
-                connections.close_all()
-                with transaction.atomic(using='default'):
-                    profile = UserProfile.objects.select_for_update().get(user=user)
-                    profile.database_status = 'error'
-                    profile.setup_status = 'error'
-                    profile.setup_error_message = error_message
-                    profile.save(update_fields=[
-                        'database_status',
-                        'setup_status',
-                        'setup_error_message'
-                    ])
-            except Exception as profile_error:
-                logger.error(f"Profile update failed: {str(profile_error)}")
 
-        if database_name:
-            try:
-                with get_db_connection(autocommit=True) as conn:
-                    with conn.cursor() as cursor:
-                        cursor.execute("""
-                            SELECT pg_terminate_backend(pid) 
-                            FROM pg_stat_activity 
-                            WHERE datname = %s AND pid != pg_backend_pid()
-                        """, [database_name])
-                        cursor.execute(f'DROP DATABASE IF EXISTS "{database_name}"')
-            except Exception as cleanup_error:
-                logger.error(f"Cleanup failed: {str(cleanup_error)}")
+        try:
+            if profile:
+                profile.setup_status = 'error'
+                profile.setup_error_message = error_message
+                profile.save(update_fields=['setup_status', 'setup_error_message'])
+            if onboarding_progress:
+                onboarding_progress.onboarding_status = "error"
+                onboarding_progress.current_step = "setup"
+                onboarding_progress.next_step = "setup"
+                onboarding_progress.save()
+        except Exception as update_error:
+            logger.error(f"Error status update failed: {str(update_error)}")
+
         raise
 
     finally:

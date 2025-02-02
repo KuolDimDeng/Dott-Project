@@ -88,20 +88,20 @@ const OnboardingContent = memo(function OnboardingContent() {
 
   const methods = useForm({
     defaultValues: {
-      selectedPlan: '',
+      selected_plan: '',
       billingCycle: 'monthly',
       tier: '' // Add tier
     },
   });
 
   const {
-    currentStep,
+    current_step,
     loading: storeLoading,
     error: storeError,
     initialized,
     initialize,
     progress,
-    selectedTier, // Add this
+    selected_plan, // Add this
   } = useOnboarding(methods);
 
   useEffect(() => {
@@ -116,7 +116,7 @@ const OnboardingContent = memo(function OnboardingContent() {
           logger.info('Starting store initialization', {
             requestId: requestIdRef.current,
             attempt: initializationAttempts + 1,
-            tier: selectedTier // Add tier logging
+            tier: selected_plan // Add tier logging
 
           });
 
@@ -125,9 +125,9 @@ const OnboardingContent = memo(function OnboardingContent() {
           if (mounted) {
             logger.debug('Store initialization complete', {
               requestId: requestIdRef.current,
-              currentStep,
+              current_step,
               initialized: true,
-              tier: selectedTier // Add tier logging
+              tier: selected_plan // Add tier logging
 
             });
           }
@@ -136,7 +136,7 @@ const OnboardingContent = memo(function OnboardingContent() {
             requestId: requestIdRef.current,
             error: error.message,
             attempt: initializationAttempts + 1,
-            tier: selectedTier // Add tier logging
+            tier: selected_plan // Add tier logging
 
           });
 
@@ -164,15 +164,15 @@ const OnboardingContent = memo(function OnboardingContent() {
         clearTimeout(timeoutId);
       }
     };
-  }, [initialize, initialized, isInitializing, status, currentStep, initializationAttempts, selectedTier]); // Add selectedTier to deps
+  }, [initialize, initialized, isInitializing, status, current_step, initializationAttempts, selected_plan]); // Add selected_plan to deps
 
   if (!initialized || storeLoading || isInitializing) {
     const message = isInitializing
       ? `Initializing... (Attempt ${initializationAttempts + 1}/3)`
       : !initialized && status === 'authenticated'
         ? 'Loading your information...'
-        : `${progress?.currentStep || 'Preparing'} ${
-            selectedTier ? `(${selectedTier} tier)` : ''
+        : `${progress?.current_step || 'Preparing'} ${
+            selected_plan ? `(${selected_plan} tier)` : ''
           } (${progress?.progress || 0}%)`;
   
     return (
@@ -180,7 +180,7 @@ const OnboardingContent = memo(function OnboardingContent() {
         message={message}
         progress={progress?.progress || 0}
         isIndeterminate={!progress?.progress}
-        tier={selectedTier} // Add tier
+        tier={selected_plan} // Add tier
       />
     );
   }
@@ -201,7 +201,7 @@ export default function OnboardingPage() {
     
     logger.info('Starting onboarding recovery', { 
       recoveryId,
-      tier: selectedTier // Add tier logging
+      tier: selected_plan // Add tier logging
     });
     
     try {
@@ -209,20 +209,20 @@ export default function OnboardingPage() {
         method: 'POST',
         headers: { 
           'x-recovery-id': recoveryId,
-          'x-subscription-tier': selectedTier // Add tier header
+          'x-subscription-tier': selected_plan // Add tier header
         }
       });
       
       logger.info('Onboarding recovery successful', { 
         recoveryId,
-        tier: selectedTier // Add tier logging
+        tier: selected_plan // Add tier logging
       });
       return true;
     } catch (error) {
       logger.error('Onboarding recovery failed', {
         recoveryId,
         error: error.message,
-        tier: selectedTier // Add tier logging
+        tier: selected_plan // Add tier logging
       });
       return false;
     }

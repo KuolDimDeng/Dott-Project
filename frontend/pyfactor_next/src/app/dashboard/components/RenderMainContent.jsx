@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Paper, Grid, Button, Tabs, Tab } from '@mui/material';
 import CustomerList from './lists/CustomerList.js';
 import InvoiceTemplateBuilder from './forms/InvoiceTemplateBuilder.jsx';
@@ -53,11 +53,11 @@ import BalanceSheetAnalysis from './forms/BalanceSheetAnalysis.jsx';
 import ChartContainer from '@/app/chart/component/ChartContainer';
 import IntegrationSettings from '../../Settings/integrations/components/IntegrationSettings.jsx';
 import UserProfileSettings from '@/app/Settings/UserProfile/components/UserProfileSettings';
-import ProfileSettings from '@/app/settings/components/ProfileSettings';
-import BusinessSettings from '@/app/settings/components/BusinessSettings';
-import AccountingSettings from '@/app/settings/components/AccountingSettings';
-import PayrollSettings from '@/app/settings/components/PayrollSettings';
-import DeviceSettings from '@/app/settings/components/DeviceSettings';
+import ProfileSettings from '@/app/Settings/components/ProfileSettings';
+import BusinessSettings from '@/app/Settings/components/BusinessSettings';
+import AccountingSettings from '@/app/Settings/components/AccountingSettings';
+import PayrollSettings from '@/app/Settings/components/PayrollSettings';
+import DeviceSettings from '@/app/Settings/components/DeviceSettings';
 import HelpCenter from '@/app/helpcenter/components/HelpCenter';
 import TermsAndConditions from '@/app/Terms&Privacy/components/TermsOfUse';
 import PrivacyPolicy from '@/app/Terms&Privacy/components/PrivacyPolicy';
@@ -70,9 +70,10 @@ import BankReport from './forms/BankReport';
 import InventoryItems from '@/app/inventory/components/InventoryItemList';
 import MainDashboard from './forms/MainDashboard.jsx';
 import BankTransactions from './forms/BankTransactionPage';
-//import PayrollDashboard from './forms/PayrollDashboard';
+import PayrollDashboard from './forms/PayrollDashboard.jsx';
 import InventoryManagement from '@/app/inventory/components/InventoryManagement.jsx';
 import Home from './forms/Home';
+import HRDashboard from './forms/HRDashboard.jsx';
 
 const ContentWrapper = ({ children }) => (
   <Box
@@ -92,55 +93,62 @@ const ContentWrapper = ({ children }) => (
 );
 const SettingsTabPanel = ({ selectedSettingsOption }) => {
   const [selectedTab, setSelectedTab] = useState(0);
+  const [tabs, setTabs] = useState([]);
+  const [content, setContent] = useState(null);
 
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
   };
 
-  let tabs = [];
-  let content = null;
+  useEffect(() => {
+    let newTabs = [];
+    let newContent = null;
 
     switch (selectedSettingsOption) {
       case 'Profile Settings':
-        tabs = [
+        newTabs = [
           'Personal Information',
           'Password and Security',
           'Notifications',
           'Businesses',
           'Billing and Subscriptions',
         ];
-        content = <ProfileSettings selectedTab={selectedTab} />;
+        newContent = <ProfileSettings selectedTab={selectedTab} />;
         break;
       case 'Business Settings':
-        tabs = [
+        newTabs = [
           'User Management',
           'Invoices and Estimates',
           'Payments',
           'Email Templates',
           'Custom Charge Settings',
         ];
-        content = <BusinessSettings selectedTab={selectedTab} />;
+        newContent = <BusinessSettings selectedTab={selectedTab} />;
         break;
       case 'Accounting Settings':
-        tabs = ['Dates and Currency', 'Sales Tax'];
-        content = <AccountingSettings selectedTab={selectedTab} />;
+        newTabs = ['Dates and Currency', 'Sales Tax'];
+        newContent = <AccountingSettings selectedTab={selectedTab} />;
         break;
       case 'Payroll Settings':
-        tabs = [
+        newTabs = [
           'Business Profile',
           'Company Signatory',
           'Source Bank Account',
           'Tax Profile',
           'Payroll Setup',
         ];
-        content = <PayrollSettings selectedTab={selectedTab} />;
+        newContent = <PayrollSettings selectedTab={selectedTab} />;
         break;
       case 'Device Settings':
-        content = <DeviceSettings />;
+        newContent = <DeviceSettings />;
         break;
       default:
         return null;
     }
+
+    setTabs(newTabs);
+    setContent(newContent);
+  }, [selectedSettingsOption, selectedTab]);
 
     return (
       <Box sx={{ width: '100%' }}>

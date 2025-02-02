@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Button,
@@ -19,6 +19,8 @@ import { Controller, useForm } from 'react-hook-form';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { object, minLength, string, email } from 'valibot';
 import { logger } from '@/utils/logger';
+import { toast } from 'react-toastify';
+
 
 const theme = createTheme({
   palette: {
@@ -61,6 +63,12 @@ export default function SignUp() {
   const [isSignupComplete, setIsSignupComplete] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const router = useRouter();
+  const [resendStatus, setResendStatus] = useState({
+    loading: false,
+    error: null,
+    success: false
+  });
+
 
   const {
     control,
@@ -100,6 +108,11 @@ export default function SignUp() {
       const result = await response.json();
 
       if (!response.ok) {
+        // Check if it's a duplicate email error
+        if (result.error === 'An account with this email already exists') {
+          setErrorState('An account with this email already exists. Please sign in or use a different email.');
+          return;
+        }
         throw new Error(result.error || 'An error occurred during signup');
       }
 
@@ -115,6 +128,30 @@ export default function SignUp() {
       setIsLoading(false);
     }
   };
+
+
+  // Add resend handler
+  const handleResendVerification = async () => {
+    setResendStatus({ loading: true, error: null, success: false });
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to resend verification email');
+      }
+
+      setResendStatus(prev => ({ ...prev, loading: false, success: true }));
+      toast.success('Verification email resent successfully!');
+    } catch (error) {
+      setResendStatus({ loading: false, error: error.message, success: false });
+      toast.error(error.message);
+    }
+  };
+
 
   const renderForm = () => (
     <Box
@@ -216,27 +253,41 @@ export default function SignUp() {
     </Box>
   );
 
-  const renderConfirmation = () => (
-    <Box sx={{ mt: 4, textAlign: 'center' }}>
-      <Alert severity="success" sx={{ mb: 2 }}>
-        Sign up successful!
-      </Alert>
-      <Typography variant="body1" paragraph>
-        A confirmation email has been sent to <strong>{userEmail}</strong>.
-      </Typography>
-      <Typography variant="body1" paragraph>
-        Please check your email inbox, or Junk, and click on the confirmation link to activate your
-        account.
-      </Typography>
-      <Button
-        variant="contained"
-        onClick={() => router.push('/auth/signin')}
-        sx={{ mt: 2, borderRadius: '20px', textTransform: 'none' }}
-      >
-        Go to Sign In
-      </Button>
-    </Box>
-  );
+    // Update renderConfirmation
+    const renderConfirmation = () => (
+      <Box sx={{ mt: 4, textAlign: 'center' }}>
+        <Alert severity="success" sx={{ mb: 2 }}>
+          Sign up successful!
+        </Alert>
+        <Typography variant="body1" paragraph>
+          A confirmation email has been sent to <strong>{userEmail}</strong>.
+        </Typography>
+        
+        <Button
+          variant="contained"
+          onClick={handleResendVerification}
+          disabled={resendStatus.loading}
+          sx={{ mt: 2, mr: 2 }}
+        >
+          {resendStatus.loading ? <CircularProgress size={24} /> : 'Resend Email'}
+        </Button>
+  
+        <Button
+          variant="outlined"
+          onClick={() => router.push('/auth/signin')}
+          sx={{ mt: 2 }}
+        >
+          Go to Sign In
+        </Button>
+  
+        {resendStatus.error && (
+          <Typography color="error" sx={{ mt: 2 }}>
+            {resendStatus.error}
+          </Typography>
+        )}
+      </Box>
+    );
+  
 
   return (
     <ThemeProvider theme={theme}>

@@ -7,91 +7,141 @@ import { logger } from '@/utils/logger';
 import { setupStates, slideShowConfig, wsConfig } from './Setup.types';
 import { persistenceService } from '@/services/persistenceService';
 import { useOnboarding } from '@/app/onboarding/contexts/OnboardingContext';
-import { 
-  validateUserState, 
-  handleAuthError, 
-  generateRequestId,
-  validateOnboardingStep,
-  makeRequest,
-  getWebSocketUrl 
-} from '@/lib/authUtils';
+import { onboardingApi } from '@/services/api/onboarding';
+import { canNavigateToStep } from '@/app/onboarding/constants/onboardingConstants';
+import { generateRequestId, getWebSocketUrl } from '@/lib/authUtils';
+
+const WEBSOCKET_RETRY_DELAY = 3000;
+const WEBSOCKET_MAX_RETRIES = 3;
+const SETUP_REDIRECT_DELAY = 1000;
 
 export const useSetupForm = () => {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const toast = useToast();
-  const { canNavigateToStep } = useOnboarding();
-  const [progress, setProgress] = useState(0);
-  const [currentStep, setCurrentStep] = useState(setupStates.INITIALIZING);
-  const [isComplete, setIsComplete] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [wsConnected, setWsConnected] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [requestId] = useState(() => generateRequestId());
-  const [selectedTier, setSelectedTier] = useState(null);
 
-  const ws = useRef(null);
+  const [state, setState] = useState({
+    progress: 0,
+    current_step: setupStates.INITIALIZING,
+    isComplete: false,
+    currentImageIndex: 0,
+    wsConnected: false,
+    isInitializing: true,
+    selected_plan: null,
+    requestId: generateRequestId()
+  });
+
+  const wsRef = useRef(null);
+  const retryCountRef = useRef(0);
   const slideShowIntervalRef = useRef(null);
   const pollIntervalRef = useRef(null);
+
+  const handleSetupError = (error, requestId) => {
+    logger.error('Setup step failed:', {
+      requestId,
+      error: error.message,
+      stack: error.stack,
+      currentStep: session?.user?.onboarding_status
+    });
+
+    toast.dismiss();
+    toast.error(error.message || 'Failed to complete setup');
+
+    if (error.statusCode === 401) {
+      router.replace('/auth/signin');
+      return;
+    }
+
+    if (error.statusCode === 403) {
+      router.replace('/onboarding/subscription');
+      return;
+    }
+  };
 
   const handleSetupComplete = useCallback(async (data) => {
     try {
       if (!canNavigateToStep('setup')) {
-        throw new Error('Cannot access setup step');
+        throw new Error('Setup step access denied');
       }
 
-      const response = await makeRequest(() => ({
-        promise: fetch('/api/onboarding/setup/complete', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session?.user?.accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            status: 'complete',
-            tier: selectedTier,
-            ...data
-          })
-        })
-      }));
-
-      setIsComplete(true);
-      setProgress(100);
-
-      if (response.data?.redirect_url) {
-        logger.debug('Setup complete, redirecting to:', {
-          url: response.data.redirect_url,
-          tier: selectedTier
-        });
-        
-        setTimeout(() => {
-          router.replace(response.data.redirect_url);
-        }, 1000);
-      } else {
-        const dashboardPath = selectedTier === 'professional' ? '/pro/dashboard' : '/dashboard';
-        logger.debug('Setup complete, redirecting to dashboard:', {
-          path: dashboardPath,
-          tier: selectedTier
-        });
-        await router.replace(dashboardPath);
-      }
-
-    } catch (error) {
-      const errorResult = handleAuthError(error);
-      logger.error('Setup completion failed:', { 
-        error: errorResult,
-        requestId,
-        tier: selectedTier
+      const response = await onboardingApi.completeSetup({
+        status: 'complete',
+        tier: state.selected_plan,
+        ...data,
       });
-      toast.error(errorResult.message);
+
+      if (response.data?.success) {
+        // First update state to mark completion
+        setState((prev) => ({
+          ...prev,
+          isComplete: true,
+          progress: 100,
+          wsConnected: false
+        }));
+
+        // Then perform cleanup
+        const cleanup = async () => {
+          // Close WebSocket connection first
+          if (wsRef.current) {
+            wsRef.current.close();
+            wsRef.current = null;
+          }
+
+          // Clear any existing intervals
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+          if (slideShowIntervalRef.current) {
+            clearInterval(slideShowIntervalRef.current);
+            slideShowIntervalRef.current = null;
+          }
+
+          // Update session last
+          await update({
+            ...session,
+            user: {
+              ...session?.user,
+              onboarding_status: 'complete',
+              setup_completed: true
+            }
+          });
+        };
+
+        // Perform cleanup and wait for it to complete
+        await cleanup();
+
+        const redirectUrl = `/${state.selected_plan === 'professional' ? 'pro/' : ''}dashboard`;
+
+        logger.info('Setup completion successful:', {
+          requestId: state.requestId,
+          redirectUrl,
+          tier: state.selected_plan,
+        });
+
+        // Let the parent component handle the redirect
+        // This allows for proper cleanup in the component's unmount phase
+        setState(prev => ({
+          ...prev,
+          redirectUrl
+        }));
+      }
+    } catch (error) {
+      logger.error('Setup completion failed:', {
+        error: error.message,
+        requestId: state.requestId,
+        tier: state.selected_plan,
+      });
+      toast.error('Failed to complete setup. Please try again.');
     }
-  }, [router, toast, session, requestId, selectedTier, canNavigateToStep]);
+  }, [router, toast, session, update, state.requestId, state.selected_plan]);
 
   const handleWebSocketMessage = useCallback((event) => {
     try {
       const data = JSON.parse(event.data);
       
       logger.debug('WebSocket message received:', {
+        requestId: state.requestId,
         type: data.type,
         progress: data.progress,
         step: data.step
@@ -99,139 +149,175 @@ export const useSetupForm = () => {
 
       switch (data.type) {
         case 'progress':
-          setProgress(data.progress || 0);
-          setCurrentStep(data.step || 'Processing');
+          setState(prev => ({
+            ...prev,
+            progress: data.progress || prev.progress,
+            current_step: data.step || 'Processing'
+          }));
+          
           if (data.status === 'complete') {
             handleSetupComplete(data);
           }
           break;
 
         case 'error':
-          throw new Error(data.message);
+          throw new Error(data.message || 'WebSocket error occurred');
 
         default:
           logger.warn('Unknown WebSocket message type:', {
+            requestId: state.requestId,
             type: data.type,
             data
           });
       }
     } catch (error) {
-      const errorResult = handleAuthError(error);
-      logger.error('WebSocket message error:', { 
-        error: errorResult,
-        requestId 
+      logger.error('WebSocket message handling failed:', {
+        error: error.message,
+        requestId: state.requestId
       });
     }
-  }, [handleSetupComplete, requestId]);
+  }, [handleSetupComplete, state.requestId]);
 
   const setupWebSocket = useCallback(() => {
-    if (!session?.user?.id || !selectedTier) {
-      logger.debug('Cannot setup WebSocket - missing requirements:', {
-        hasUserId: !!session?.user?.id,
-        tier: selectedTier
-      });
+    if (!session?.user?.id || !state.selected_plan) {
       return;
     }
 
-    const wsUrl = getWebSocketUrl(session.user.id, session.user.accessToken, selectedTier);
-    if (!wsUrl) {
-      logger.error('Failed to create WebSocket URL');
-      return;
-    }
+    const connectWebSocket = async () => {
+      try {
+        const wsUrl = getWebSocketUrl(
+          session.user.id,
+          session.user.accessToken,
+          state.selected_plan
+        );
 
-    ws.current = new WebSocket(wsUrl);
-    const reconnectConfig = wsConfig[selectedTier];
+        wsRef.current = new WebSocket(wsUrl);
 
-    ws.current.onopen = () => {
-      setWsConnected(true);
-      logger.info('WebSocket connected', { tier: selectedTier });
-    };
+        wsRef.current.onopen = () => {
+          setState(prev => ({ ...prev, wsConnected: true }));
+          retryCountRef.current = 0;
+          logger.info('WebSocket connected:', { requestId: state.requestId });
+        };
 
-    ws.current.onmessage = handleWebSocketMessage;
+        wsRef.current.onmessage = handleWebSocketMessage;
 
-    ws.current.onclose = () => {
-      setWsConnected(false);
-      logger.info('WebSocket closed', { tier: selectedTier });
-    };
+        wsRef.current.onclose = () => {
+          setState((prev) => ({ ...prev, wsConnected: false }));
+          
+          if (retryCountRef.current < WEBSOCKET_MAX_RETRIES) {
+            retryCountRef.current++;
+            setTimeout(() => {
+              if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
+                setupWebSocket();
+              }
+            }, WEBSOCKET_RETRY_DELAY);
+          }
+        };
 
-    ws.current.onerror = (error) => {
-      const errorResult = handleAuthError(error);
-      logger.error('WebSocket error:', { 
-        error: errorResult,
-        requestId,
-        tier: selectedTier
-      });
-      setWsConnected(false);
-    };
-
-    return () => {
-      if (ws.current) {
-        ws.current.close();
-        ws.current = null;
+        wsRef.current.onerror = (error) => {
+          setState(prev => ({ ...prev, wsConnected: false }));
+          logger.error('WebSocket error:', {
+            error: error.message,
+            requestId: state.requestId
+          });
+        };
+      } catch (error) {
+        logger.error('WebSocket setup failed:', {
+          error: error.message,
+          requestId: state.requestId
+        });
       }
     };
-  }, [session?.user?.id, handleWebSocketMessage, requestId, selectedTier]);
 
-  const startSetup = useCallback(async () => {
-    try {
-      if (!canNavigateToStep('setup')) {
-        throw new Error('Cannot access setup step');
+    connectWebSocket();
+  }, [session?.user?.id, state.selected_plan, state.requestId, handleWebSocketMessage]);
+
+  useEffect(() => {
+    const initializeSetup = async () => {
+      if (session?.user?.id && state.isInitializing) {
+        logger.info('Initializing setup:', { requestId: state.requestId });
+        const requestId = state.requestId;
+
+        try {
+          let selected_plan = session.user.selected_plan;
+
+          if (!selected_plan) {
+            const tierResponse = await onboardingApi.getSubscriptionStatus();
+            selected_plan = tierResponse?.data?.plan || 'free';
+
+            await update({
+              ...session,
+              user: {
+                ...session.user,
+                selected_plan
+              }
+            });
+          }
+
+          setState((prev) => ({ ...prev, selected_plan }));
+
+          const response = await onboardingApi.startSetup({
+            tier: selected_plan,
+            operation: 'create_database'
+          });
+
+          if (response?.success) {
+            setState((prev) => ({ ...prev, isInitializing: false }));
+            setupWebSocket();
+          }
+        } catch (error) {
+          handleSetupError(error, requestId);
+        }
       }
+    };
 
-      const userState = await validateUserState(session, requestId);
-      if (!userState.isValid) {
-        throw new Error(userState.reason);
-      }
+    initializeSetup();
+  }, [session?.user?.id, state.isInitializing, update, setupWebSocket]);
 
-      const tier = await persistenceService.getCurrentTier();
-      setSelectedTier(tier);
-
-      logger.debug('Starting setup:', {
-        tier,
-        requestId
-      });
-
-      const response = await makeRequest(() => ({
-        promise: fetch('/api/onboarding/setup/start', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session?.user?.accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ tier })
-        })
-      }));
-
+  useEffect(() => {
+    if (!state.isInitializing && !state.wsConnected && state.selected_plan) {
       setupWebSocket();
-      setIsInitializing(false);
-
-      return response.data;
-
-    } catch (error) {
-      const errorResult = handleAuthError(error);
-      logger.error('Setup initialization failed:', { 
-        error: errorResult,
-        requestId,
-        tier: selectedTier
-      });
-      toast.error(errorResult.message);
-      router.replace('/onboarding/subscription');
     }
-  }, [session, router, toast, setupWebSocket, requestId, canNavigateToStep]);
+  }, [state.isInitializing, state.wsConnected, state.selected_plan, setupWebSocket]);
 
   useEffect(() => {
-    if (session?.user?.id && isInitializing) {
-      startSetup();
-    }
-  }, [session?.user?.id, isInitializing, startSetup]);
+    if (!session?.user?.accessToken || !state.selected_plan) return;
+
+    const pollStatus = async () => {
+      try {
+        const response = await onboardingApi.getSetupStatus();
+
+        if (response.data?.status === 'complete') {
+          handleSetupComplete(response.data);
+        } else if (response.data?.progress) {
+          setState(prev => ({
+            ...prev,
+            progress: response.data.progress,
+            current_step: response.data.current_step || prev.current_step
+          }));
+        }
+      } catch (error) {
+        logger.error('Status polling failed:', {
+          error: error.message,
+          requestId: state.requestId
+        });
+      }
+    };
+
+    pollIntervalRef.current = setInterval(pollStatus, 5000);
+
+    return () => clearInterval(pollIntervalRef.current);
+  }, [session, state.selected_plan, handleSetupComplete]);
 
   useEffect(() => {
-    if (!selectedTier) return;
+    if (!state.selected_plan) return;
 
     slideShowIntervalRef.current = setInterval(() => {
-      setCurrentImageIndex((prev) => 
-        (prev + 1) % (slideShowConfig.IMAGES[selectedTier]?.length || 1)
-      );
+      setState(prev => ({
+        ...prev,
+        currentImageIndex: (prev.currentImageIndex + 1) % 
+          (slideShowConfig.IMAGES[state.selected_plan]?.length || 1)
+      }));
     }, slideShowConfig.INTERVAL);
 
     return () => {
@@ -239,12 +325,13 @@ export const useSetupForm = () => {
         clearInterval(slideShowIntervalRef.current);
       }
     };
-  }, [selectedTier]);
+  }, [state.selected_plan]);
 
   useEffect(() => {
     return () => {
-      if (ws.current) {
-        ws.current.close();
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
       }
       if (slideShowIntervalRef.current) {
         clearInterval(slideShowIntervalRef.current);
@@ -256,13 +343,14 @@ export const useSetupForm = () => {
   }, []);
 
   return {
-    progress,
-    currentStep,
-    isComplete,
-    currentImageIndex,
-    wsConnected,
-    isInitializing,
-    requestId,
-    selectedTier
+    progress: state.progress,
+    current_step: state.current_step,
+    isComplete: state.isComplete,
+    currentImageIndex: state.currentImageIndex,
+    wsConnected: state.wsConnected,
+    isInitializing: state.isInitializing,
+    requestId: state.requestId,
+    selected_plan: state.selected_plan,
+    redirectUrl: state.redirectUrl,
   };
 };

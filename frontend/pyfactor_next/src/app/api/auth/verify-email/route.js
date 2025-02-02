@@ -23,11 +23,14 @@ export async function GET(req) {
         { status: backendResponse.status }
       );
     }
-
-    // Redirect to signin page after successful verification
-    return NextResponse.redirect(new URL('/auth/signin', req.url));
+    // Redirect with success parameter
+    const redirectUrl = new URL('/auth/signin', req.url);
+    redirectUrl.searchParams.set('verified', 'true');
+    return NextResponse.redirect(redirectUrl);
   } catch (error) {
     logger.error('Email verification error:', error);
-    return NextResponse.json({ message: 'An unexpected error occurred' }, { status: 500 });
+    const redirectUrl = new URL('/auth/signin', req.url);
+    redirectUrl.searchParams.set('verificationError', error.message);
+    return NextResponse.redirect(redirectUrl);
   }
 }

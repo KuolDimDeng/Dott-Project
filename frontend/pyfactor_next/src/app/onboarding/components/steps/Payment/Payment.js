@@ -12,9 +12,10 @@ import { usePaymentForm } from './usePaymentForm';
 import { PaymentContainer, LogoContainer, PaymentDetails, PaymentSummary } from './Payment.styles';
 import { useOnboarding } from '@/app/onboarding/contexts/OnboardingContext';
 import { logger } from '@/utils/logger';
+import { canNavigateToStep } from '@/app/onboarding/constants/onboardingConstants'; // Import directly from constants
+
 
 const PaymentComponent = ({ metadata }) => {
-  const { canNavigateToStep } = useOnboarding();
   
   const {
     formData,
@@ -24,7 +25,7 @@ const PaymentComponent = ({ metadata }) => {
     handlePreviousStep,
     isLoading,
     requestId,
-    selectedTier,
+    selected_plan,
     billingCycle
   } = usePaymentForm();
 
@@ -32,7 +33,7 @@ const PaymentComponent = ({ metadata }) => {
   const steps = [
     { label: 'Business Info', current: false, completed: true },
     { label: 'Subscription', current: false, completed: true },
-    ...(selectedTier === 'professional' ? [
+    ...(selected_plan === 'professional' ? [
       { label: 'Payment', current: true, completed: false, isAccessible: canNavigateToStep('payment') }
     ] : []),
     { 
@@ -48,8 +49,8 @@ const PaymentComponent = ({ metadata }) => {
       if (!canNavigateToStep('setup')) {
         logger.warn('Payment submission blocked - cannot proceed to setup', {
           requestId,
-          currentStep: 'payment',
-          nextStep: 'setup'
+          current_step: 'payment',
+          next_step: 'setup'
         });
         return;
       }
@@ -65,10 +66,10 @@ const PaymentComponent = ({ metadata }) => {
   };
 
   // Verify tier and step access
-  if (selectedTier !== 'professional' || !canNavigateToStep('payment')) {
+  if (selected_plan !== 'professional' || !canNavigateToStep('payment')) {
     logger.warn('Invalid payment page access:', {
       requestId,
-      selectedTier,
+      selected_plan,
       canAccessPayment: canNavigateToStep('payment')
     });
     
@@ -105,8 +106,8 @@ const PaymentComponent = ({ metadata }) => {
           <StepHeader 
             title={metadata.title}
             description={metadata.description}
-            currentStep={3}
-            totalSteps={selectedTier === 'professional' ? 4 : 3}
+            current_step={3}
+            totalSteps={selected_plan === 'professional' ? 4 : 3}
             stepName="Payment"
           />
         </LogoContainer>
@@ -174,7 +175,7 @@ PaymentComponent.propTypes = {
   metadata: PropTypes.shape({
     title: PropTypes.string.isRequired,
     description: PropTypes.string.isRequired,
-    nextStep: PropTypes.string,
+    next_step: PropTypes.string,
     prevStep: PropTypes.string
   }).isRequired
 };

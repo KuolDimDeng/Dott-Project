@@ -98,6 +98,9 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': lambda request: False,
@@ -105,16 +108,19 @@ DEBUG_TOOLBAR_CONFIG = {
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    # Add any other allowed origins
-]
+
 
 # CORS and CSRF configuration
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = ALLOWED_ORIGINS
-CORS_ALLOW_ALL_ORIGINS = False  # Set to True only in development if needed
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+APPEND_SLASH = False  # Add this to disable automatic slash appending
+
+
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all in development
 
 
 
@@ -126,7 +132,6 @@ CORS_ALLOW_METHODS = [
     'POST',
     'PUT',
 ]
-
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -137,26 +142,49 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
-    'x-request-id',  # Add this
+    'x-request-id',
+    'cache-control',
+    'pragma',  # Added this to match the frontend configuration
+    'x-onboarding-step',  # Add this line
+    'x-debug-step',  # Add this line
+    'x-current-step',  # Recommended for your flow
+    'x-request-version'  # Optional but useful
 ]
 
 CORS_EXPOSE_HEADERS = [
     'access-token',
     'refresh-token',
     'content-type',
-    'authorization'
+    'authorization',
+    'cache-control',
+    'last-modified',
+    'etag',
+    'x-debug-step',  # Add this
+    'x-current-step'  # Add this
 ]
+
+# Add this new setting for preflight caching
+CORS_PREFLIGHT_MAX_AGE = 86400
+
+# Add these security headers
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
 
 
 # Update CSRF settings
-CSRF_COOKIE_SECURE = True if not DEBUG else False
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = True
 CSRF_USE_SESSIONS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://accounts.google.com",  # Add this for Google OAuth
-
+    "http://localhost:8000",  # Add this
+    "http://127.0.0.1:8000"   # Add this
 ]
 
 
@@ -184,13 +212,21 @@ SOCIALACCOUNT_PROVIDERS = {
         'SCOPE': [
             'profile',
             'email',
+            'openid',  # Add this
         ],
         'AUTH_PARAMS': {
-            'access_type': 'offline',  # Change from 'online' to 'offline'
-            'prompt': 'consent'  # Change from 'select_account' to 'consent'
-        }
+            'access_type': 'offline',
+            'prompt': 'consent',
+            'response_type': 'code'  # Add this
+        },
+        'VERIFIED_EMAIL': True,  # Add this
+        'VERSION': 'v2'  # Add this
     }
 }
+
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http' if DEBUG else 'https'
+FRONTEND_URL = 'http://localhost:3000'  # Your React app URL
+OAUTH_CALLBACK_URL = f"{FRONTEND_URL}/api/auth/callback/google"
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -309,15 +345,28 @@ CELERY_BEAT_SCHEDULE = {
 # Session and authentication settings
 AUTH_USER_MODEL = 'custom_auth.User'
 # Session Settings
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Change to db backend temporarily
 SESSION_CACHE_ALIAS = "default"
 SESSION_COOKIE_AGE = 1209600  # 2 weeks
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_NAME = 'sessionid'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_COOKIE_SAMESITE = 'Lax'  # Add this
-CSRF_COOKIE_SAMESITE = 'Lax'  # Add this
+SESSION_COOKIE_SAMESITE = 'None'  # Even in development for cross-origin
+CSRF_COOKIE_SAMESITE = 'None'
 
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'  # Use this instead of 'db'
+
+if DEBUG:
+    SESSION_COOKIE_DOMAIN = None
+    CSRF_COOKIE_DOMAIN = None
+else:
+    SESSION_COOKIE_DOMAIN = '.dottapps.com'  # Production domain
+    CSRF_COOKIE_DOMAIN = '.dottapps.com'
+
+FILE_UPLOAD_HANDLERS = [
+    'django.core.files.uploadhandler.MemoryFileUploadHandler',
+    'django.core.files.uploadhandler.TemporaryFileUploadHandler',
+]
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
 
 # Update your CACHES setting in settings.py
 CACHES = {
@@ -326,56 +375,48 @@ CACHES = {
         'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
         'OPTIONS': {
             'db': 1,
+            'parser_class': 'redis.connection.DefaultParser',
+            'pool_class': 'redis.connection.ConnectionPool',
             'socket_timeout': 5,
             'socket_connect_timeout': 5,
             'retry_on_timeout': True,
-            'max_connections': 100,
-            # Remove parser_class and pool_class
+            'max_connections': 100
         }
     }
 }
+
+
+# Add these settings
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+FILE_UPLOAD_PERMISSIONS = 0o644
 
 # Security Settings
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-
+if not DEBUG:
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
 DJANGO_ALLOW_ASYNC_UNSAFE = True  # Only for development
 
 
-SESSION_COOKIE_SECURE = False if DEBUG else True
 
 
 # REST framework settings
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'users.utils_error.error_handling.custom_exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
-    ],
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
-        'rest_framework.parsers.FormParser',
-        'rest_framework.parsers.MultiPartParser',
     ],
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle'
-    ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/minute',
-        'user': '1000/minute'
-    },
 }
 # JWT settings
 SIMPLE_JWT = {
@@ -389,10 +430,10 @@ SIMPLE_JWT = {
     'AUTH_COOKIE': 'access_token',  # Cookie name for access token
     'AUTH_COOKIE_REFRESH': 'refresh_token',  # Cookie name for refresh token
     'AUTH_COOKIE_DOMAIN': None,  # Specify domain if needed
-    'AUTH_COOKIE_SECURE': False if DEBUG else True,  # Match your environment
+    'AUTH_COOKIE_SECURE': True,
     'AUTH_COOKIE_HTTP_ONLY': True,  # Prevent JavaScript access
     'AUTH_COOKIE_PATH': '/',  # Cookie path
-    'AUTH_COOKIE_SAMESITE': 'Lax',  # Cookie SameSite policy
+    'AUTH_COOKIE_SAMESITE': 'None' if DEBUG else 'Lax',
     
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
@@ -413,15 +454,6 @@ SIMPLE_JWT = {
     ],
 }
 
-JWT_AUTH = {
-    'JWT_SECRET_KEY': settings.SECRET_KEY,
-    'JWT_ALGORITHM': 'HS256',
-    'JWT_VERIFY': True,
-    'JWT_VERIFY_EXPIRATION': True,
-    'JWT_EXPIRATION_DELTA': timedelta(days=1),
-    'JWT_ALLOW_REFRESH': True,
-    'JWT_REFRESH_EXPIRATION_DELTA': timedelta(days=7),
-}
 
 
 # Logging configuration
@@ -442,71 +474,12 @@ class DeduplicationFilter(logging.Filter):
 
 LOGGING_CONFIG = None
 
+LOGLEVEL = os.getenv('DJANGO_LOGLEVEL', 'DEBUG').upper()
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {asctime} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': 'debug.log',
-            'formatter': 'verbose',
-        },
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
-    },
-    'loggers': {
-        '': {  # Root logger
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-        },
-        'django': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'celery': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'celery.task': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'Pyfactor': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
-    },
-}
-
-LOGLEVEL = os.getenv('DJANGO_LOGLEVEL', 'info').upper()
-
-logging.config.dictConfig({
-    'version': 1,
-    'disable_existing_loggers': False,
-    'filters': {
-        'deduplication': {
-            '()': DeduplicationFilter,
-            'capacity': 200
-        },
-    },
+ 
     'formatters': {
         'default': {
             'format': '%(asctime)s %(levelname)s %(message)s',
@@ -514,44 +487,60 @@ logging.config.dictConfig({
         'verbose': {
             'format': '%(asctime)s %(levelname)s [%(name)s:%(lineno)s] %(message)s',
         },
+        'colored': {
+            'format': '\033[1;34m%(levelname)s\033[0m %(asctime)s \033[1;33m%(name)s\033[0m %(message)s',
+        },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'formatter': 'default',
-            'filters': ['deduplication'],
+            'formatter': 'colored',  # Better readability for console logs
         },
         'file': {
             'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'debug.log'),
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(os.getcwd(), 'debug.log'),  # Adjust to use BASE_DIR if available
             'formatter': 'verbose',
-            'filters': ['deduplication'],
+            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'backupCount': 5,
         },
     },
     'loggers': {
-        'django': {
-            'handlers': ['console'],
+        '': {  # Root logger
+            'handlers': ['console', 'file'],
             'level': LOGLEVEL,
-            'propagate': False,  # Ensure no propagation to avoid duplicate logs
+            'propagate': True,
+        },
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': LOGLEVEL,
+            'propagate': False,
+        },
+        'django.db.backends': {  # Reduce verbosity for database logs
+            'handlers': ['console', 'file'],
+            'level': 'INFO',  # Change DEBUG to INFO to suppress detailed SQL logs
+            'propagate': False,
         },
         'pyfactor': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
-            'propagate': False,  # Ensure no propagation to avoid duplicate logs
+            'propagate': False,
         },
         'finance.utils': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
-            'propagate': False,  # Ensure no propagation to avoid duplicate logs
+            'propagate': False,
         },
         'chatbot': {
-        'handlers': ['console', 'file'],
-        'level': 'DEBUG',
-        'propagate': False,
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
     },
-    },
-})
+
+}
+
+logging.config.dictConfig(LOGGING)
 
 # Application definition
 INSTALLED_APPS = [
@@ -609,7 +598,9 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',  # Add this
     'allauth.account.middleware.AccountMiddleware',
+
 
 ]
 # Check if we're running in ASGI mode
@@ -633,7 +624,9 @@ WEBSOCKET_MIDDLEWARE = [
 
 CHANNEL_ROUTING = "pyfactor.routing.application"
 
-
+# Add to existing settings
+REQUEST_ID_HEADER = 'HTTP_X_REQUEST_ID'
+GENERATE_REQUEST_ID_IF_ABSENT = True
 
 ROOT_URLCONF = 'pyfactor.urls'
 
@@ -668,7 +661,7 @@ CHANNEL_LAYERS = {
             "hosts": [(REDIS_HOST, REDIS_PORT)],
             "capacity": 1500,
             "expiry": 120,
-        },
+        }
     },
 }
 
@@ -693,10 +686,6 @@ DATABASES = {
         'CONN_HEALTH_CHECKS': False,
         'OPTIONS': {
             'connect_timeout': 10,
-            'keepalives': 1,
-            'keepalives_idle': 30,
-            'keepalives_interval': 10,
-            'keepalives_count': 5,
             'client_encoding': 'UTF8',
             'application_name': 'pyfactor'
         }

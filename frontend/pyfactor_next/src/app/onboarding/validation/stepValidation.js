@@ -1,214 +1,185 @@
 // src/app/onboarding/validation/stepValidation.js
 import { logger } from '@/utils/logger';
 import { generateRequestId } from '@/lib/authUtils';
-import { STEPS, STEP_ORDER, VALIDATION_REASONS } from './constants';
+import { 
+  ONBOARDING_STEPS, 
+  validateStepData, 
+  getnext_step,
+  canAccessStep 
+} from '@/config/steps';
 
-// Validation utilities
-function validateTierRequirements(step, selectedPlan) {
-  // Payment step is only for professional tier
-  if (step === STEPS.PAYMENT) {
-    if (selectedPlan !== 'professional') {
+export const VALIDATION_REASONS = {
+  VALID: 'valid',
+  INVALID: 'invalid',
+  INITIAL_ACCESS: 'initial_access',
+  INVALID_STEP: 'invalid_step',
+  INVALID_DATA: 'invalid_data',
+  ACCESS_DENIED: 'access_denied',
+  INVALID_TRANSITION: 'invalid_transition',
+  ERROR: 'error',
+  FREE_TIER_SETUP: 'free_tier_setup',
+  PROFESSIONAL_TIER_PAYMENT: 'professional_tier_payment',
+  PROFESSIONAL_TIER_SETUP: 'professional_tier_setup',
+  TIER_RESTRICTION: 'tier_restriction'
+};
+
+function validateTierRequirements(step, selected_plan) {
+  if (step === 'payment') {
+    if (selected_plan !== 'professional') {
       return {
         isValid: false,
-        allowedSteps: [STEPS.SETUP],
+        allowedSteps: ['setup'],
         reason: VALIDATION_REASONS.TIER_RESTRICTION,
         error: 'Payment step is only available for professional tier'
       };
     }
   }
 
-  // Setup step is allowed for all tiers
-  if (step === STEPS.SETUP) {
-    return {
-      isValid: true,
-      allowedSteps: [STEPS.SETUP],
-      reason: VALIDATION_REASONS.VALID
-    };
-  }
-
   return {
     isValid: true,
-    allowedSteps: STEP_ORDER
+    allowedSteps: Object.keys(ONBOARDING_STEPS)
   };
 }
 
-export function validateStep(context) {
-  const { currentStep, requestedStep, formData, metadata } = context;
-  // Get selectedPlan from either formData or context
-  const selectedPlan = formData?.selectedPlan || context?.selectedPlan || context?.tier;
+export async function validateStep(context) {
+  const { current_step, requested_step, form_data, metadata } = context;
+  const selected_plan = form_data?.selected_plan || context?.selected_plan;
+  const request_id = generateRequestId();
 
   logger.debug('Step validation started:', {
-    currentStep,
-    requestedStep,
-    selectedPlan,
-    formData,
-    metadata,
+    request_id,
+    current_step,
+    requested_step,
+    selected_plan,
     type: 'step_validation_start'
   });
 
-  // Handle initial state or business-info access
-  if (!currentStep || requestedStep === STEPS.BUSINESS_INFO) {
-    return {
-      isValid: true,
-      allowedSteps: [STEPS.BUSINESS_INFO],
-      reason: VALIDATION_REASONS.INITIAL
-    };
-  }
-
-  // Allow subscription access from business-info
-  if (requestedStep === STEPS.SUBSCRIPTION && 
-      (currentStep === STEPS.BUSINESS_INFO || currentStep === STEPS.SUBSCRIPTION)) {
-    return {
-      isValid: true,
-      allowedSteps: [STEPS.SUBSCRIPTION],
-      reason: VALIDATION_REASONS.VALID
-    };
-  }
-
   try {
-    // Validate steps exist
-    if (!STEP_ORDER.includes(requestedStep)) {
-      logger.error('Invalid step requested:', { requestedStep });
+    // Always allow business-info access
+    if (requested_step === 'business-info') {
+      return {
+        isValid: true,
+        allowedSteps: ['business-info'],
+        reason: VALIDATION_REASONS.INITIAL_ACCESS
+      };
+    }
+
+    // Validate step exists
+    const stepConfig = ONBOARDING_STEPS[requested_step];
+    if (!stepConfig) {
       return {
         isValid: false,
-        allowedSteps: [currentStep],
-        reason: VALIDATION_REASONS.INVALID,
+        allowedSteps: [current_step],
+        reason: VALIDATION_REASONS.INVALID_STEP,
         error: 'Invalid step requested'
       };
     }
 
-    // Special handling for subscription -> setup transition for free tier
-    if (currentStep === STEPS.SUBSCRIPTION && requestedStep === STEPS.SETUP && selectedPlan === 'free') {
-      logger.debug('Allowing free tier setup access', {
-        currentStep,
-        requestedStep,
-        selectedPlan
-      });
-      return {
-        isValid: true,
-        allowedSteps: [STEPS.SETUP],
-        reason: VALIDATION_REASONS.FREE_TIER_SETUP
-      };
+    // Validate step data if provided
+    if (form_data) {
+      const validation = await validateStepData(requested_step, form_data);
+      if (!validation.isValid) {
+        return {
+          isValid: false,
+          allowedSteps: [current_step],
+          reason: VALIDATION_REASONS.INVALID_DATA,
+          errors: validation.errors
+        };
+      }
     }
 
-    // Special handling for subscription -> payment for professional tier
-    if (currentStep === STEPS.SUBSCRIPTION && requestedStep === STEPS.PAYMENT && selectedPlan === 'professional') {
-      logger.debug('Allowing subscription to payment access', {
-        currentStep,
-        requestedStep,
-        selectedPlan
-      });
-      return {
-        isValid: true,
-        allowedSteps: [STEPS.PAYMENT],
-        reason: VALIDATION_REASONS.PROFESSIONAL_TIER_PAYMENT
-      };
-    }
-
-    // Special handling for payment -> setup for professional tier
-    if (currentStep === STEPS.PAYMENT && requestedStep === STEPS.SETUP && selectedPlan === 'professional') {
-      logger.debug('Allowing payment to setup access', {
-        currentStep,
-        requestedStep,
-        selectedPlan
-      });
-      return {
-        isValid: true,
-        allowedSteps: [STEPS.SETUP],
-        reason: VALIDATION_REASONS.PROFESSIONAL_TIER_SETUP
-      };
-    }
-
-    const currentIdx = STEP_ORDER.indexOf(currentStep);
-    const requestedIdx = STEP_ORDER.indexOf(requestedStep);
-
-    // Allow backward navigation only to the immediate previous step
-    if (requestedIdx < currentIdx && requestedIdx === currentIdx - 1) {
-      return {
-        isValid: true,
-        allowedSteps: [STEP_ORDER[requestedIdx]],
-        reason: VALIDATION_REASONS.VALID
-      };
-    }
-
-    // Prevent skipping steps (except for setup after subscription for free tier)
-    if (requestedIdx > currentIdx + 1) {
-      return {
-        isValid: false,
-        allowedSteps: [currentStep],
-        reason: VALIDATION_REASONS.INVALID_TRANSITION,
-        error: 'Cannot skip steps'
-      };
-    }
-
-    // Add tier-specific validation
-    const tierValidation = validateTierRequirements(requestedStep, selectedPlan);
+    // Check tier requirements
+    const tierValidation = validateTierRequirements(requested_step, selected_plan);
     if (!tierValidation.isValid) {
       return tierValidation;
     }
 
-    // Calculate allowed next steps based on selectedPlan
-    let allowedSteps = [currentStep];
-    if (selectedPlan === 'free' && currentStep === STEPS.SUBSCRIPTION) {
-      allowedSteps.push(STEPS.SETUP);
-    } else if (selectedPlan === 'professional') {
-      if (currentStep === STEPS.SUBSCRIPTION) {
-        allowedSteps.push(STEPS.PAYMENT);
-      } else if (currentStep === STEPS.PAYMENT) {
-        allowedSteps.push(STEPS.SETUP);
-      }
-    } else {
-      allowedSteps.push(STEP_ORDER[currentIdx + 1]);
-    }
-
-    // Determine if step transition is valid
-    const isValid = allowedSteps.includes(requestedStep);
-
-    logger.debug('Step validation result:', {
-      currentStep,
-      requestedStep,
-      isValid,
-      allowedSteps,
-      selectedPlan,
-      type: 'step_validation_result'
+    // Get next step based on current state
+    const next_step = getnext_step(current_step, form_data);
+    
+    // Check access permission
+    const canAccess = canAccessStep(requested_step, {
+      current_step,
+      selected_plan,
+      form_data
     });
 
+    if (!canAccess) {
+      return {
+        isValid: false,
+        allowedSteps: [current_step],
+        reason: VALIDATION_REASONS.ACCESS_DENIED,
+        error: 'Cannot access requested step'
+      };
+    }
+
+    // Always allow transition from business-info to subscription
+    if (current_step === 'business-info' && requested_step === 'subscription') {
     return {
-      isValid,
-      allowedSteps,
-      reason: isValid ? VALIDATION_REASONS.VALID : VALIDATION_REASONS.INVALID_TRANSITION
+        isValid: true,
+        allowedSteps: ['subscription'],
+        reason: VALIDATION_REASONS.VALID
+    };
+}
+
+    // Handle special transitions
+    if (current_step === 'subscription') {
+      if (selected_plan === 'free' && requested_step === 'setup') {
+        return {
+          isValid: true,
+          allowedSteps: ['setup'],
+          reason: VALIDATION_REASONS.FREE_TIER_SETUP
+        };
+      }
+      if (selected_plan === 'professional' && requested_step === 'payment') {
+        return {
+          isValid: true,
+          allowedSteps: ['payment'],
+          reason: VALIDATION_REASONS.PROFESSIONAL_TIER_PAYMENT
+        };
+      }
+    }
+
+    // Validate transition
+    const isValidTransition = next_step === requested_step;
+    return {
+      isValid: isValidTransition,
+      allowedSteps: isValidTransition ? [next_step] : [current_step],
+      reason: isValidTransition ? VALIDATION_REASONS.VALID : VALIDATION_REASONS.INVALID_TRANSITION
     };
 
   } catch (error) {
     logger.error('Step validation error:', {
+      request_id,
       error: error.message,
       context,
       type: 'step_validation_error'
     });
+    
     return {
       isValid: false,
-      allowedSteps: [currentStep],
+      allowedSteps: [current_step],
       reason: VALIDATION_REASONS.ERROR,
-      error: error.message || 'Unknown validation error'
+      error: error.message
     };
   }
 }
 
 export class StepValidator {
   static async validateStepTransition(context) {
-    const operationId = generateRequestId();
+    const operation_id = generateRequestId();
     
     logger.debug('Starting step validation:', {
-      operationId,
+      operation_id,
       ...context,
       type: 'step_validation_operation'
     });
 
     try {
-      const result = validateStep(context);
+      const result = await validateStep(context);
 
       logger.debug('Step validation completed:', {
-        operationId,
+        operation_id,
         result,
         type: 'step_validation_complete'
       });
@@ -217,7 +188,7 @@ export class StepValidator {
 
     } catch (error) {
       logger.error('Step validation failed:', {
-        operationId,
+        operation_id,
         error: error.message,
         context,
         type: 'step_validation_failure'
@@ -226,26 +197,26 @@ export class StepValidator {
     }
   }
 
-  static canNavigate(currentStep, targetStep, selectedPlan) {
+  static canNavigate(current_step, target_step, selected_plan) {
     const result = validateStep({
-      currentStep,
-      requestedStep: targetStep,
-      selectedPlan,
-      formData: { selectedPlan }
+      current_step,
+      requested_step: target_step,
+      selected_plan,
+      form_data: { selected_plan }
     });
     return result.isValid;
   }
 
-  static validateTier(step, selectedPlan) {
-    return validateTierRequirements(step, selectedPlan);
+  static validateTier(step, selected_plan) {
+    return validateTierRequirements(step, selected_plan);
   }
 
-  static getAllowedSteps(currentStep, selectedPlan) {
+  static getAllowedSteps(current_step, selected_plan) {
     const result = validateStep({
-      currentStep,
-      requestedStep: currentStep,
-      selectedPlan,
-      formData: { selectedPlan }
+      current_step,
+      requested_step: current_step,
+      selected_plan,
+      form_data: { selected_plan }
     });
     return result.allowedSteps;
   }

@@ -27,29 +27,22 @@ export class OnboardingStateManager extends FormStateManager {
   constructor(formId) {
     super(formId);
 
-    // Extend core state with onboarding-specific state
+    // Initialize onboarding-specific state
     this.state = {
       ...this.state,
       onboarding: {
-        currentStep: '',
+        current_step: 'business-info',  // Changed from empty string
+        pathname: '',
+        selected_plan: null,
+        onboarding_status: 'business-info',  // Added default
         steps: new Map(),
+        stepData: new Map(), // Added missing stepData initialization
         progress: {
           completedSteps: new Set(),
           lastActiveStep: '',
           stepValidation: new Map(),
           overallProgress: 0
-        },
-        tier: {
-            current: null,
-            history: [],
-            validationStatus: null
-        },
-        stepsByTier: new Map(),
-        tierSpecificData: new Map(),
-        stepData: new Map(),
-        initialized: false,
-        initializing: false,
-        initError: null
+        }
       }
     };
 
@@ -62,119 +55,78 @@ export class OnboardingStateManager extends FormStateManager {
     });
   }
 
-    // Add tier-specific step management
-    async setCurrentStep(step, options = {}) {
-        const operationId = generateRequestId();
-        const currentTier = this.state.tier.selected;
-    
-        try {
-          // Get tier-specific step configuration
-          const stepConfig = this.state.onboarding.stepsByTier.get(currentTier)?.get(step);
-          
-          if (!stepConfig && currentTier) {
-            logger.warn('Step not configured for tier:', {
-              step,
-              tier: currentTier,
-              operationId
-            });
-          }
-    
-          const previousStep = this.state.onboarding.currentStep;
-    
-          // Update step state with tier context
-          this.setState({
-            onboarding: {
-              ...this.state.onboarding,
-              currentStep: step,
-              steps: this.state.onboarding.steps.set(step, {
-                status: options.status || STEP_STATUS.IN_PROGRESS,
-                timestamp: Date.now(),
-                visitCount: (this.state.onboarding.steps.get(step)?.visitCount || 0) + 1,
-                tier: currentTier
-              })
-            }
-          }, 'step_change');
-    
-          // Track tier-specific metrics
-          this.updateStepMetrics(step, {
-            transitionFrom: previousStep,
-            transitionTime: Date.now(),
-            tier: currentTier
-          });
-    
-          return {
-            success: true,
-            operationId,
-            step,
-            tier: currentTier
-          };
-        } catch (error) {
-          logger.error('Step change failed:', {
-            formId: this.formId,
-            operationId,
-            step,
-            tier: currentTier,
-            error: error.message
-          });
-          throw error;
-        }
-      }
-
-  // Step Management
-  async setCurrentStep(step, options = {}) {
+  // Consolidated setcurrent_step method with tier handling
+  async setcurrent_step(step, options = {}) {
     const operationId = generateRequestId();
+    const currentTier = this.state.tier?.selected; // Added optional chaining
 
     try {
-      const previousStep = this.state.onboarding.currentStep;
+      // Get tier-specific step configuration
+      const stepConfig = currentTier && 
+        this.state.onboarding.stepsByTier?.get(currentTier)?.get(step);
+      
+      if (!stepConfig && currentTier) {
+        logger.warn('Step not configured for tier:', {
+          step,
+          tier: currentTier,
+          operationId
+        });
+      }
 
-      // Update step state
+      const previousStep = this.state.onboarding.current_step;
+
+      // Update step state with tier context
       this.setState({
         onboarding: {
           ...this.state.onboarding,
-          currentStep: step,
-          steps: this.state.onboarding.steps.set(step, {
+          current_step: step,
+          steps: new Map(this.state.onboarding.steps).set(step, {
             status: options.status || STEP_STATUS.IN_PROGRESS,
             timestamp: Date.now(),
-            visitCount: (this.state.onboarding.steps.get(step)?.visitCount || 0) + 1
+            visitCount: (this.state.onboarding.steps.get(step)?.visitCount || 0) + 1,
+            tier: currentTier
           })
         }
       }, 'step_change');
 
-      // Track step metrics
+      // Track tier-specific metrics
       this.updateStepMetrics(step, {
         transitionFrom: previousStep,
-        transitionTime: Date.now()
+        transitionTime: Date.now(),
+        tier: currentTier
       });
 
       this.notifySubscribers({
         type: ONBOARDING_EVENTS.STEP_CHANGE,
         operationId,
         previousStep,
-        currentStep: step,
+        current_step: step,
         options
       });
 
       return {
         success: true,
         operationId,
-        step
+        step,
+        tier: currentTier
       };
-
     } catch (error) {
       logger.error('Step change failed:', {
         formId: this.formId,
         operationId,
         step,
+        tier: currentTier,
         error: error.message
       });
-
       throw error;
     }
   }
 
+  // Removed duplicate setcurrent_step method
+
   async completeStep(step, data = {}) {
     const operationId = generateRequestId();
-    const currentTier = this.state.tier.selected;
+    const currentTier = this.state.tier?.selected;
 
     try {
       // Validate step completion against tier requirements
@@ -183,19 +135,35 @@ export class OnboardingStateManager extends FormStateManager {
       }
 
       // Update step completion state
-      this.state.onboarding.progress.completedSteps.add(step);
-      this.state.onboarding.steps.set(step, {
-        ...this.state.onboarding.steps.get(step),
+      const newCompletedSteps = new Set(this.state.onboarding.progress.completedSteps);
+      newCompletedSteps.add(step);
+      
+      const newSteps = new Map(this.state.onboarding.steps);
+      newSteps.set(step, {
+        ...newSteps.get(step),
         status: STEP_STATUS.COMPLETED,
         completedAt: Date.now()
       });
 
       // Save step data
-      this.state.onboarding.stepData.set(step, {
+      const newStepData = new Map(this.state.onboarding.stepData);
+      newStepData.set(step, {
         data,
         timestamp: Date.now(),
         validationStatus: 'complete'
       });
+
+      this.setState({
+        onboarding: {
+          ...this.state.onboarding,
+          steps: newSteps,
+          stepData: newStepData,
+          progress: {
+            ...this.state.onboarding.progress,
+            completedSteps: newCompletedSteps
+          }
+        }
+      }, 'step_complete');
 
       // Update overall progress
       this.updateProgress();
@@ -213,8 +181,7 @@ export class OnboardingStateManager extends FormStateManager {
         step,
         progress: this.getProgress()
       };
-
-     } catch (error) {
+    } catch (error) {
       logger.error('Step completion failed:', {
         formId: this.formId,
         operationId,
@@ -247,7 +214,7 @@ export class OnboardingStateManager extends FormStateManager {
 
   getProgress() {
     return {
-      currentStep: this.state.onboarding.currentStep,
+      current_step: this.state.onboarding.current_step,
       completedSteps: Array.from(this.state.onboarding.progress.completedSteps),
       lastActiveStep: this.state.onboarding.progress.lastActiveStep,
       stepValidation: Object.fromEntries(this.state.onboarding.progress.stepValidation),
@@ -385,6 +352,78 @@ export class OnboardingStateManager extends FormStateManager {
       }
     };
   }
+
+  async updateOnboardingState(updates) {
+    const operationId = generateRequestId();
+    
+    try {
+        const previousState = { ...this.state.onboarding };
+        
+        this.setState({
+            onboarding: {
+                ...this.state.onboarding,
+                ...updates,
+                lastUpdated: Date.now()
+            }
+        }, 'onboarding_update');
+
+        this.notifySubscribers({
+            type: ONBOARDING_EVENTS.STATE_UPDATE,
+            operationId,
+            previousState,
+            currentState: this.state.onboarding,
+            updates
+        });
+
+        logger.debug('Onboarding state updated:', {
+            operationId,
+            updates,
+            onboarding_status: this.state.onboarding.onboarding_status,
+            selected_plan: this.state.onboarding.selected_plan,
+            pathname: this.state.onboarding.pathname
+        });
+
+    } catch (error) {
+        logger.error('Failed to update onboarding state:', {
+            operationId,
+            error: error.message,
+            updates
+        });
+        throw error;
+    }
+}
+
+async setselected_plan(plan) {
+  const operationId = generateRequestId();
+  
+  try {
+      await this.updateOnboardingState({
+          selected_plan: plan,
+          onboarding_status: plan === 'free' ? 'setup' : 'subscription'
+      });
+      
+      return {
+          success: true,
+          selected_plan: plan,
+          operationId
+      };
+  } catch (error) {
+      logger.error('Failed to set selected plan:', {
+          operationId,
+          error: error.message,
+          plan
+      });
+      throw error;
+  }
+}
+
+async setPathname(pathname) {
+    return this.updateOnboardingState({ pathname });
+}
+
+async setonboarding_status(status) {
+    return this.updateOnboardingState({ onboarding_status: status });
+}
 
   // Extended Cleanup
   cleanup() {

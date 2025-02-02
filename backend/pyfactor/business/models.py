@@ -5,6 +5,8 @@ from hr.models import Employee
 
 import uuid
 from django_countries.fields import CountryField
+from django.core.validators import EmailValidator, MinValueValidator
+
 
 from .choices import (
     BUSINESS_TYPES, 
@@ -49,7 +51,7 @@ class Business(models.Model):
     date_founded = models.DateField(
         null=True,
         blank=True,
-        help_text="The date when the business was founded"
+        validators=[MinValueValidator(limit_value=timezone.now().date())]
     )
 
     def save(self, *args, **kwargs):
@@ -75,9 +77,13 @@ class Subscription(models.Model):
 
     
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='subscriptions')
-    subscription_type = models.CharField(
-        max_length=20, 
-        choices=SUBSCRIPTION_TYPES
+    selected_plan = models.CharField(
+        max_length=20,
+        choices=[
+            ('free', 'Free'),
+            ('professional', 'Professional')
+        ],
+        default='free'
     )
     start_date = models.DateField()
     is_active = models.BooleanField(default=True)
@@ -87,6 +93,8 @@ class Subscription(models.Model):
             choices=BILLING_CYCLES, 
             default='monthly'
         )
+
+
 
     def __str__(self):
         return f"Subscription {self.pk if self.pk else 'unsaved'}"

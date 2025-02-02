@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Badge, IconButton, Snackbar } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import { useApi } from '@/lib/axiosConfig';
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const AlertsComponent = ({ onAlertClick }) => {
   const [alerts, setAlerts] = useState([]);
@@ -16,7 +16,7 @@ const AlertsComponent = ({ onAlertClick }) => {
 
   const fetchAlerts = async () => {
     try {
-      const response = await useApi.get('/api/alerts/user_alerts/');
+      const response = await axiosInstance.get('/api/alerts/user_alerts/');
       setAlerts(response.data);
       setUnreadCount(response.data.filter((alert) => !alert.is_read).length);
     } catch (error) {

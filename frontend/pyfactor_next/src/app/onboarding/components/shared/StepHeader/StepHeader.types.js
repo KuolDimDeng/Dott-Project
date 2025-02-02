@@ -2,7 +2,7 @@
 export const stepHeaderPropTypes = {
   title: 'string',
   description: 'string?',
-  currentStep: 'number',
+  current_step: 'number',
   totalSteps: 'number',
   stepName: 'string'
 };

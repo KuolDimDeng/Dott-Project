@@ -1,5 +1,4 @@
-
-///Users/kuoldeng/projectx/frontend/pyfactor_next/next.config.mjs
+// next.config.mjs
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -7,81 +6,63 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Core configuration
   reactStrictMode: true,
   poweredByHeader: false,
-  swcMinify: false,
+  swcMinify: true,
 
-  webpack: (config, { isServer }) => {
-    // Handle PDF dependencies
+  // Webpack configuration
+  webpack: (config, { dev, isServer }) => {
     config.resolve.alias = {
       ...config.resolve.alias,
-      canvas: false,
-      encoding: false,
       '@': path.join(process.cwd(), 'src'),
-
-    }
-
-    // Base directory for aliases
-    const baseDir = process.cwd();
-
-    // Path aliases
-    Object.assign(config.resolve.alias, {
-      '@': path.join(baseDir, 'src'),
-      '@app': path.join(baseDir, 'src/app'),
-      '@components': path.join(baseDir, 'src/components'),
-      '@layouts': path.join(baseDir, 'src/layouts'),
-      '@styles': path.join(baseDir, 'src/styles'),
-      '@lib': path.join(baseDir, 'src/lib'),
-      '@utils': path.join(baseDir, 'src/utils'),
-      '@hooks': path.join(baseDir, 'src/hooks'),
-      '@contexts': path.join(baseDir, 'src/contexts'),
-      '@providers': path.join(baseDir, 'src/providers'),
-      '@dashboard': path.join(baseDir, 'src/app/dashboard'),
-      '@auth': path.join(baseDir, 'src/app/auth'),
-      '@onboarding': path.join(baseDir, 'src/app/onboarding'),
-      '@api': path.join(baseDir, 'src/app/api'),
-    });
-
-    // Development source maps
-    if (process.env.NODE_ENV === 'development' && !isServer) {
-      config.devtool = 'eval-source-map';
-    }
-
-      // Add this for recharts support
-  if (!isServer) {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      stream: false,
-      zlib: false,
+      '@app': path.join(process.cwd(), 'src/app'),
+      '@components': path.join(process.cwd(), 'src/components'),
+      '@layouts': path.join(process.cwd(), 'src/layouts'),
+      '@styles': path.join(process.cwd(), 'src/styles'),
+      '@lib': path.join(process.cwd(), 'src/lib'),
+      '@utils': path.join(process.cwd(), 'src/utils'),
+      '@hooks': path.join(process.cwd(), 'src/hooks'),
+      '@contexts': path.join(process.cwd(), 'src/contexts'),
+      '@providers': path.join(process.cwd(), 'src/providers'),
+      '@dashboard': path.join(process.cwd(), 'src/app/dashboard'),
+      '@auth': path.join(process.cwd(), 'src/app/auth'),
+      '@onboarding': path.join(process.cwd(), 'src/app/onboarding'),
+      '@api': path.join(process.cwd(), 'src/app/api'),
     };
-  }
 
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        canvas: false,
+        encoding: false,
+        stream: false,
+        zlib: false,
+      };
+    }
 
     return config;
   },
 
+  // Image configuration
   images: {
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '*.googleusercontent.com',
-        pathname: '/**',
       },
       {
         protocol: 'http',
         hostname: 'localhost',
-        port: '3000',
-        pathname: '/static/**',
       },
       {
         protocol: 'http',
         hostname: '127.0.0.1',
-        port: '3000',
-        pathname: '/static/**',
       }
     ]
   },
 
+  // Headers configuration
   headers: async () => [
     {
       source: '/:path*',
@@ -89,26 +70,75 @@ const nextConfig = {
         { key: 'X-DNS-Prefetch-Control', value: 'on' },
         { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
         { key: 'X-Content-Type-Options', value: 'nosniff' },
-        { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
-        { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
-        { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' }
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        { 
+          key: 'Content-Security-Policy',
+          value: [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.crisp.chat https://client.crisp.chat https://*.stripe.com",
+            "connect-src 'self' https://*.crisp.chat wss://*.crisp.chat http://127.0.0.1:8000 http://localhost:8000 https://*.stripe.com https://api.stripe.com",
+            "img-src 'self' data: https://*.crisp.chat blob: https://*.googleusercontent.com https://*.stripe.com https://q.stripe.com",
+            "style-src 'self' 'unsafe-inline' https://*.crisp.chat",
+            "frame-src 'self' https://*.crisp.chat https://www.youtube.com https://youtube.com https://*.stripe.com",
+            "child-src 'self' https://*.crisp.chat blob:",
+            "font-src 'self' https://client.crisp.chat",
+            "manifest-src 'self'",
+            "worker-src 'self'"
+          ].join('; ')
+        },
+      ],
+    },
+    {
+      source: '/api/:path*',
+      headers: [
+        { key: 'Access-Control-Allow-Credentials', value: 'true' },
+        { key: 'Access-Control-Allow-Origin', value: process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8000' : process.env.NEXT_PUBLIC_API_URL },
+        { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS, PATCH' },
+        { key: 'Access-Control-Allow-Headers', value: 'X-Request-ID, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, X-Onboarding-Step' },
+        { key: 'Access-Control-Expose-Headers', value: 'Set-Cookie' },
       ],
     }
   ],
 
-  experimental: {
-    scrollRestoration: true,
-    typedRoutes: true
+  // Routing configuration
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: '/api/:path*',
+          destination: `${process.env.NEXT_PUBLIC_API_URL}/api/:path*`,
+          has: [
+            {
+              type: 'query',
+              key: 'path',
+              value: '(?!auth/).*'
+            }
+          ]
+        }
+      ],
+    
+    };
   },
 
+  // Environment variables
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   },
 
+  // App Router features
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['localhost:3000', '127.0.0.1:3000'],
+    },
+    serverComponentsExternalPackages: [],
+  },
+
+  // Output configuration
   output: 'standalone',
+  distDir: '.next',
+  generateEtags: true,
   compress: true,
-  productionBrowserSourceMaps: false,
 };
 
 export default nextConfig;

@@ -1,6 +1,7 @@
 // src/app/api/auth/[...nextauth]/options.js
 
 import GoogleProvider from 'next-auth/providers/google';
+import CredentialsProvider from 'next-auth/providers/credentials'; // Add this import
 import { getSession } from 'next-auth/react';
 import { logger } from '@/utils/logger';
 import { APP_CONFIG } from '@/config';
@@ -31,7 +32,7 @@ const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith('https://') ?? !!p
       'id', 
       'accessToken', 
       'refreshToken', 
-      'onboardingStatus', 
+      'onboarding_status', 
       'email'
     ];
     const errors = [];
@@ -87,7 +88,7 @@ const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith('https://') ?? !!p
   }
 
 
-  async function exchangeGoogleToken(idToken, accessToken) {
+  async function exchangeGoogleToken(idToken, accessToken, profile) {  // Add profile parameter
     const requestId = crypto.randomUUID();
     const timestamp = new Date().toISOString();
     
@@ -123,12 +124,21 @@ const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith('https://') ?? !!p
             'X-Request-ID': requestId
           },
           body: JSON.stringify({
-            id_token: idToken,
-            access_token: accessToken
+            OAuthProfile: profile,
+            account: {
+              id_token: idToken,
+              access_token: accessToken
+            },
+            profile: {
+              email: profile.email,
+              name: profile.name,
+              image: profile.picture
+            }
           }),
           credentials: 'include',
         }
       );
+    
   
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ 
@@ -173,7 +183,7 @@ const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith('https://') ?? !!p
       // Normalize onboarding status
       const normalizedStatus = data.onboarding.status || 'step1';
       const originalStatus = data.onboarding.status;
-      data.onboarding.status = normalizeOnboardingStatus(normalizedStatus);
+      data.onboarding.status = normalizeonboarding_status(normalizedStatus);
   
       logger.debug('Onboarding status normalized:', {
         requestId,
@@ -196,7 +206,7 @@ const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith('https://') ?? !!p
         },
         onboarding: {
           status: 'business-info',
-          currentStep: 1,
+          current_step: 'business-info',
           databaseStatus: data.onboarding?.database_status || 'not_created',
           setupStatus: data.onboarding?.setup_status || 'pending'
         }
@@ -206,7 +216,7 @@ const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith('https://') ?? !!p
         requestId,
         timestamp,
         userId: result.user.id,
-        onboardingStatus: result.onboarding.status,
+        onboarding_status: result.onboarding.status,
         hasTokens: !!result.tokens.access && !!result.tokens.refresh,
         responseTime: Date.now() - new Date(timestamp).getTime()
       });
@@ -235,7 +245,7 @@ const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith('https://') ?? !!p
 
 
 // Replace both functions with this single version
-function normalizeOnboardingStatus(status) {
+function normalizeonboarding_status(status) {
   const requestId = crypto.randomUUID();
   const timestamp = new Date().toISOString();
 
@@ -372,7 +382,7 @@ async function refreshAccessToken(token) {
       database_status: token.database_status,
       database_name: token.database_name,
       setup_status: token.setup_status,
-      onboardingStatus: token.onboardingStatus,
+      onboarding_status: token.onboarding_status,
       isComplete: token.isComplete
     };
 
@@ -384,7 +394,7 @@ async function refreshAccessToken(token) {
         refreshTokenChanged: updatedToken.refreshToken !== token.refreshToken,
         newExpiryTime: new Date(updatedToken.accessTokenExpires).toISOString(),
         preservedFields: {
-          onboardingStatus: updatedToken.onboardingStatus,
+          onboarding_status: updatedToken.onboarding_status,
           databaseStatus: updatedToken.database_status,
           setupStatus: updatedToken.setup_status
         }
@@ -423,7 +433,7 @@ function determineUserCompletion(tokenData) {
     requestId,
     timestamp,
     tokenState: {
-      onboardingStatus: tokenData.onboarding_status,
+      onboarding_status: tokenData.onboarding_status,
       databaseStatus: tokenData.database_status,
       hasUserId: !!tokenData.user_id,
       hasTokens: !!(tokenData.access && tokenData.refresh)
@@ -485,6 +495,68 @@ export const authOptions = {
         },
       },
     }),
+    CredentialsProvider({
+      name: 'Credentials',
+      credentials: {},
+      async authorize(credentials, req) {
+        try {
+          // If this is a status update
+          if (credentials.onboarding_status) {
+            const session = await getSession({ req });
+            if (!session?.user) {
+              throw new Error('No session found');
+            }
+    
+            // Create updated user object
+            const user = {
+              ...session.user,
+              id: session.user.id,
+              email: session.user.email,
+              accessToken: session.user.accessToken,
+              refreshToken: session.user.refreshToken,
+              onboarding_status: credentials.onboarding_status,
+              current_step: credentials.onboarding_status,
+              selected_plan: credentials.selected_plan,
+              isAuthenticated: true
+            };
+    
+            return user;
+          }
+    
+          // If this is a regular credential verification
+          if (credentials.email && credentials.password) {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/verify-credentials`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: credentials.email,
+                password: credentials.password,
+              }),
+            });
+    
+            if (!response.ok) {
+              return null;
+            }
+    
+            const user = await response.json();
+            return user;
+          }
+    
+          throw new Error('Invalid credentials request');
+    
+        } catch (error) {
+          logger.error('Credentials authorize failed:', {
+            error: error.message,
+            credentials: credentials
+          });
+          return null;
+        }
+      }
+    })
+    
+    
   ],
 
   timeout: {
@@ -560,55 +632,93 @@ export const authOptions = {
         hasTokens: !!account?.id_token
       });
     
+      logger.debug('Starting signin process - Full data:', {
+        requestId,
+        accountData: {
+          provider: account?.provider,
+          type: account?.type,
+          hasIdToken: !!account?.id_token,
+          hasAccessToken: !!account?.access_token,
+          tokenLength: account?.id_token?.length
+        },
+        profileData: {
+          email: profile?.email,
+          name: profile?.name,
+          picture: profile?.picture
+        }
+      });
+    
       try {
-        if (!account?.id_token) {
-          throw new Error('Missing OAuth tokens');
+        // Handle OAuth sign in (Google)
+        if (account?.provider === 'google') {
+          if (!account.id_token || !account.access_token) {
+            logger.error('Missing OAuth tokens:', {
+              requestId,
+              account: account
+            });
+            throw new Error('Missing OAuth tokens');
+          }
+    
+          const result = await exchangeGoogleToken(
+            account.id_token,
+            account.access_token,
+            profile
+          );
+    
+          // Set user fields from exchange result
+          user.id = result.user.id;
+          user.sub = result.user.id;
+          user.accessToken = result.tokens.access;
+          user.refreshToken = result.tokens.refresh;
+          user.email = profile.email;
+          user.name = profile.name;
+          user.image = profile.picture;
+          user.onboarding_status = result.onboarding.status;
+          user.current_step = result.onboarding.current_step;
+          user.accessTokenExpires = Date.now() + 3600 * 1000;
+          user.isInitialized = true;
+          user.isAuthenticated = true;
+    
+          // Validate the user object
+          const validation = validateUserObject(user);
+          if (!validation.isValid) {
+            logger.error('Invalid user object after token exchange:', {
+              requestId,
+              errors: validation.errors
+            });
+            throw new Error(`Invalid user object: ${validation.errors.join(', ')}`);
+          }
+    
+        // Handle credentials sign in
+        } else if (account?.provider === 'credentials') {
+          // For credentials, we just validate the existing user object
+          const validation = validateUserObject(user);
+          if (!validation.isValid) {
+            logger.error('Invalid credentials user object:', {
+              requestId,
+              errors: validation.errors
+            });
+            throw new Error(`Invalid user object: ${validation.errors.join(', ')}`);
+          }
+    
+          user.isAuthenticated = true;
+          
+        } else {
+          logger.error('Unknown provider:', {
+            requestId,
+            provider: account?.provider
+          });
+          throw new Error('Unsupported authentication provider');
         }
-    
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboarding/token-exchange/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Request-ID': requestId
-          },
-          body: JSON.stringify({
-            id_token: account.id_token,
-            access_token: account.access_token,
-            provider: account.provider,
-            profile: {
-              email: profile.email,
-              name: profile.name,
-              picture: profile.picture
-            }
-          })
-        });
-    
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || 'Token exchange failed');
-        }
-    
-        const data = await response.json();
-        
-        // Set all required fields on user object
-        user.id = data.user.id;
-        user.sub = data.user.id; // Add sub for JWT compatibility
-        user.accessToken = data.tokens.access;
-        user.refreshToken = data.tokens.refresh;
-        user.email = profile.email;
-        user.name = profile.name;
-        user.image = profile.picture;
-        user.onboardingStatus = 'business-info';
-        user.currentStep = 1;
-        user.accessTokenExpires = Date.now() + 3600 * 1000;
-        user.isInitialized = true;
-        user.isAuthenticated = true;
     
         logger.debug('User object populated:', {
           requestId,
           userId: user.id,
+          provider: account?.provider,
           hasTokens: !!(user.accessToken && user.refreshToken),
-          onboardingStatus: user.onboardingStatus
+          onboarding_status: user.onboarding_status,
+          current_step: user.current_step,
+          isAuthenticated: user.isAuthenticated
         });
     
         return true;
@@ -617,7 +727,12 @@ export const authOptions = {
         logger.error('Authentication failed:', {
           requestId,
           error: error.message,
-          stack: error.stack
+          stack: error.stack,
+          context: {
+            provider: account?.provider,
+            hasIdToken: !!account?.id_token,
+            hasAccessToken: !!account?.access_token
+          }
         });
         return false;
       }
@@ -625,13 +740,54 @@ export const authOptions = {
     
     async jwt({ token, user, account, profile, trigger }) {
       const requestId = crypto.randomUUID();
-      const timestamp = new Date().toISOString();
+    
+      logger.debug('JWT callback started:', {
+        requestId,
+        trigger,
+        hasUser: !!user,
+        hasAccount: !!account,
+        currentStatus: token?.onboarding_status,
+        tokenState: {
+          hasAccessToken: !!token?.accessToken,
+          hasRefreshToken: !!token?.refreshToken,
+          currentonboarding_status: token?.onboarding_status
+        }
+      });
     
       try {
+        if (!token && !user) {
+          logger.warn('No token or user available:', { requestId });
+          return null;
+        }
+    
         // Handle initial sign in
         if (account && user) {
+          logger.debug('Processing initial sign in:', {
+            requestId,
+            userId: user.id,
+            hasTokens: !!(user.accessToken && user.refreshToken)
+          });
+
+          const validation = validateUserObject(user);
+          if (!validation.isValid) {
+            logger.error('Invalid user object:', {
+              requestId,
+              errors: validation.errors
+            });
+            return {
+              ...token,
+              error: 'InvalidUserObject',
+              isAuthenticated: false
+            };
+          }
+    
           // Validate required tokens
           if (!user.accessToken || !user.refreshToken) {
+            logger.error('Missing required tokens during sign in:', {
+              requestId,
+              hasAccessToken: !!user.accessToken,
+              hasRefreshToken: !!user.refreshToken
+            });
             return {
               ...token,
               error: 'MissingTokens',
@@ -650,81 +806,191 @@ export const authOptions = {
             accessToken: user.accessToken,
             refreshToken: user.refreshToken,
             accessTokenExpires: user.accessTokenExpires,
-            onboardingStatus: 'business-info',
-            currentStep: 1,
+            onboarding_status: user.onboarding_status || 'business-info',
+            current_step: user.current_step || 'business-info',
+            selected_plan: user.selected_plan,  // Changed from selected_plan
             isInitialized: true,
-            isAuthenticated: true
+            isAuthenticated: true,
+            lastUpdated: new Date().toISOString()
           };
     
           logger.debug('Initial JWT created:', {
             requestId,
             hasTokens: !!(newToken.accessToken && newToken.refreshToken),
-            onboardingStatus: newToken.onboardingStatus
+            onboarding_Status: newToken.onboarding_status,
+            tokenState: {
+              current_step: newToken.current_step,
+              selected_plan: newToken.selected_plan,
+              isInitialized: newToken.isInitialized
+            }
           });
     
           return newToken;
         }
     
-        // Handle updates
-        if (trigger === 'update' && token?.accessToken) {
-          return {
-            ...token,
-            ...user,
-            accessToken: user?.accessToken || token.accessToken,
-            refreshToken: user?.refreshToken || token.refreshToken,
-            accessTokenExpires: user?.accessTokenExpires || token.accessTokenExpires
-          };
-        }
-    
-        // Check expiration
-        const gracePeriod = 60 * 1000;
-        if (token?.accessTokenExpires && 
-            Date.now() >= (token.accessTokenExpires - gracePeriod)) {
-          try {
-            const refreshedToken = await refreshAccessToken(token);
-            if (!refreshedToken.error) {
-              return {
-                ...token,
-                ...refreshedToken,
-                isAuthenticated: true
-              };
+        // Handle explicit updates
+        if (trigger === 'update' && user) {
+          logger.debug('Processing token update:', {
+            requestId,
+            updateType: user?.onboarding_status ? 'onboarding' : 'plan',
+            currentState: {
+              onboarding_status: token.onboarding_status,
+              selected_plan: token.selected_plan
+            },
+            newState: {
+              onboarding_status: user?.onboarding_status,
+              selected_plan: user?.selected_plan || null
             }
-          } catch (error) {
+          });
+    
+          // Update onboarding status if provided
+          if (user?.onboarding_status) {
+            logger.debug('Updating onboarding status:', {
+              requestId,
+              from: token.onboarding_status,
+              to: user.onboarding_status
+            });
+    
             return {
               ...token,
-              error: 'RefreshAccessTokenError',
-              isAuthenticated: false
+              onboarding_status: user.onboarding_status,
+              current_step: user.current_step || token.current_step,
+              selected_plan: user.selected_plan || token.selected_plan || null,
+              isAuthenticated: true, // Add this
+              lastUpdated: new Date().toISOString()
+            };
+          }
+    
+          // Update selected plan if provided
+          if (user?.selected_plan) {
+            logger.debug('Updating selected plan:', {
+              requestId,
+              from: token.selected_plan,
+              to: user.selected_plan
+            });
+    
+            return {
+              ...token,
+              selected_plan: user.selected_plan,
+              lastUpdated: new Date().toISOString()
             };
           }
         }
     
+        // Handle token expiration
+        const gracePeriod = 60 * 1000; // 1 minute
+        if (token?.accessTokenExpires && 
+            Date.now() >= (token.accessTokenExpires - gracePeriod)) {
+          logger.debug('Token requires refresh:', {
+            requestId,
+            expiresAt: new Date(token.accessTokenExpires).toISOString(),
+            gracePeriod: `${gracePeriod}ms`
+          });
+    
+          try {
+            const refreshedToken = await refreshAccessToken(token);
+            if (!refreshedToken.error) {
+              logger.debug('Token refreshed successfully:', {
+                requestId,
+                newExpiryTime: new Date(refreshedToken.accessTokenExpires).toISOString()
+              });
+    
+              return {
+                ...token,
+                ...refreshedToken,
+                isAuthenticated: true,
+                lastUpdated: new Date().toISOString()
+              };
+            }
+    
+            throw new Error('Token refresh failed');
+          } catch (error) {
+            logger.error('Token refresh error:', {
+              requestId,
+              error: error.message,
+              tokenState: {
+                hasAccessToken: !!token.accessToken,
+                hasRefreshToken: !!token.refreshToken
+              }
+            });
+    
+            return {
+              ...token,
+              error: 'RefreshAccessTokenError',
+              isAuthenticated: false,
+              lastUpdated: new Date().toISOString()
+            };
+          }
+        }
+    
+        // Return existing token if no updates needed
         return token;
     
       } catch (error) {
         logger.error('JWT processing failed:', {
           requestId,
-          error: error.message
+          error: error.message,
+          stack: error.stack,
+          tokenState: {
+            hasAccessToken: !!token?.accessToken,
+            hasRefreshToken: !!token?.refreshToken,
+            onboarding_status: token?.onboarding_status
+          }
         });
+    
         return {
           ...token,
           error: 'JWTError',
-          isAuthenticated: false
+          isAuthenticated: false,
+          lastUpdated: new Date().toISOString()
         };
       }
     },
     
     async session({ session, token, trigger }) {
       const requestId = crypto.randomUUID();
-      const timestamp = new Date().toISOString();
+      
+      logger.debug('Session callback started:', {
+        requestId,
+        trigger,
+        currentStatus: token?.onboarding_status,
+        hasToken: !!token,
+        hasSession: !!session
+      });
     
       try {
-        // Validate token existence
-        if (!token?.accessToken || !token?.refreshToken) {
+        // If no token exists, return null immediately
+        if (!token) {
+          logger.warn('Missing token:', {
+            requestId,
+            hasToken: false
+          });
           return null;
         }
     
-        // Create session user object
+        // If no session exists, create a basic one
+        if (!session) {
+          session = {
+            user: {},
+            expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          };
+        }
+    
+        // Handle token refresh errors
+        if (token.error === 'RefreshAccessTokenError') {
+          logger.error('Token refresh error detected:', {
+            requestId,
+            error: token.error
+          });
+          return {
+            ...session,
+            error: 'RefreshAccessTokenError'
+          };
+        }
+    
+        // Create session user object with all required fields
         const sessionUser = {
+          ...session.user,
           id: token.userId || token.sub,
           email: token.email,
           name: token.name,
@@ -732,22 +998,31 @@ export const authOptions = {
           accessToken: token.accessToken,
           refreshToken: token.refreshToken,
           accessTokenExpires: token.accessTokenExpires,
-          onboardingStatus: token.onboardingStatus || 'business-info',
-          currentStep: token.currentStep || 1,
+          onboarding_status: token.onboarding_status || 'business-info',
+          current_step: token.current_step || token.onboarding_status || 'business-info',
+          selected_plan: token.selected_plan || null,
           isAuthenticated: !!token.accessToken && !token.error,
-          error: token.error
+          error: token.error,
+          sub: token.sub
         };
     
+        // Create the updated session
         const updatedSession = {
           ...session,
           user: sessionUser,
-          expires: new Date(token.accessTokenExpires).toISOString()
+          expires: token.accessTokenExpires 
+            ? new Date(token.accessTokenExpires).toISOString()
+            : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          error: token.error || null
         };
     
-        logger.debug('Session created:', {
+        logger.debug('Session updated successfully:', {
           requestId,
-          hasTokens: !!(sessionUser.accessToken && sessionUser.refreshToken),
-          onboardingStatus: sessionUser.onboardingStatus
+          onboarding_status: sessionUser.onboarding_status,
+          current_step: sessionUser.current_step,
+          isAuthenticated: sessionUser.isAuthenticated,
+          expiresAt: updatedSession.expires,
+          trigger
         });
     
         return updatedSession;
@@ -755,148 +1030,177 @@ export const authOptions = {
       } catch (error) {
         logger.error('Session creation failed:', {
           requestId,
-          error: error.message
+          error: error.message,
+          stack: error.stack,
+          trigger
         });
-        return null;
+        
+        // Return a basic session with error instead of null
+        return {
+          ...session,
+          error: 'SessionCreationError',
+          errorMessage: error.message
+        };
       }
     }
   },
 
-async redirect({ url, baseUrl }) {
-  const requestId = crypto.randomUUID();
-  const timestamp = new Date().toISOString();
-
-  logger.debug('Redirect handling started:', {
-    requestId,
-    timestamp,
-    redirectParams: {
-      url,
-      baseUrl,
-      fullUrl: `${baseUrl}${url}`,
-      isRelative: url.startsWith('/')
-    }
-  });
-
-  try {
-    // Always allow OAuth and callback URLs to proceed
-    if (url.includes('/api/auth/callback') || 
-        url.includes('/callback/google') ||
-        url.includes('oauth')) {
-      logger.debug('OAuth callback detected, allowing through:', {
-        requestId,
-        url
-      });
-      return url;
-    }
-
-    // Get fresh session state
-    const session = await getSession();
-    
-    logger.debug('Session state retrieved:', {
+  async redirect({ url, baseUrl }) {
+    const requestId = crypto.randomUUID();
+    const timestamp = new Date().toISOString();
+  
+    logger.debug('Starting redirect handling:', {
       requestId,
-      sessionState: {
-        exists: !!session,
-        hasToken: !!session?.user?.accessToken,
-        onboardingStatus: session?.user?.onboardingStatus
+      timestamp,
+      context: {
+        url,
+        baseUrl,
+        isRelativeUrl: url.startsWith('/'),
+        isRootPath: url === '/' || url === baseUrl
       }
     });
+  
+    try {
+      // Handle root path specifically
+      if (url === '/' || url === baseUrl) {
+        const session = await getSession();
 
-    // Special handling for business-info
-    if (url.includes('/onboarding/business-info')) {
-      if (session?.user?.accessToken) {
-        logger.debug('Allowing authenticated business-info access:', {
+                // Add this new condition
+        if (session?.user?.onboarding_status === 'complete') {
+          return `${baseUrl}/dashboard`;
+        }
+    
+        
+        if (session?.user?.accessToken) {
+          const targetPath = session.user.onboarding_status 
+            ? `/onboarding/${session.user.onboarding_status}`
+            : '/onboarding/business-info';
+  
+          logger.debug('Redirecting authenticated user from root:', {
+            requestId,
+            to: targetPath,
+            onboarding_status: session.user.onboarding_status
+          });
+          
+          return `${baseUrl}${targetPath}`;
+        }
+  
+        // Allow unauthenticated access to root
+        logger.debug('Allowing unauthenticated root access:', {
+          requestId,
+          url: baseUrl
+        });
+        return baseUrl;
+      }
+
+
+  
+      // Always allow OAuth and callback URLs
+      if (
+        url.includes('/api/auth/callback') || 
+        url.includes('/callback/google') ||
+        url.includes('oauth') ||
+        url.startsWith(`${baseUrl}/api/auth`)
+      ) {
+        logger.debug('Allowing auth-related URL:', {
           requestId,
           url
         });
         return url;
       }
-      logger.debug('Unauthenticated business-info access, redirecting to signin:', {
-        requestId,
-        url
-      });
-      return `${baseUrl}/auth/signin?callbackUrl=${encodeURIComponent(url)}`;
-    }
-
-    // Handle authenticated users
-    if (session?.user?.accessToken) {
-      // Redirect away from signin if already authenticated
-      if (url.includes('/auth/signin')) {
-        const onboardingPath = '/onboarding/business-info';
-        logger.debug('Redirecting authenticated user from signin:', {
-          requestId,
-          to: onboardingPath
-        });
-        return `${baseUrl}${onboardingPath}`;
-      }
-
-      // Route based on onboarding status
-      const currentStatus = session.user.onboardingStatus || 'business-info';
-      const targetPath = `/onboarding/${currentStatus}`;
-
-      logger.debug('Routing authenticated user:', {
-        requestId,
-        currentUrl: url,
-        targetPath,
-        status: currentStatus
-      });
-
-      return `${baseUrl}${targetPath}`;
-    }
-
-    // Handle callback URLs
-    if (url.includes('callbackUrl=')) {
-      const urlObj = new URL(url, baseUrl);
+  
+      const session = await getSession();
+      const isAuthenticated = !!session?.user?.accessToken;
+  
+      // Handle callback URL parameters
+      const urlObj = new URL(url.startsWith('http') ? url : `${baseUrl}${url}`);
       const callbackUrl = urlObj.searchParams.get('callbackUrl');
-      
-      if (callbackUrl && (callbackUrl.startsWith(baseUrl) || callbackUrl.startsWith('/'))) {
-        const finalUrl = callbackUrl.startsWith('/') ? `${baseUrl}${callbackUrl}` : callbackUrl;
+  
+      // Special handling for signin page
+      if (url.includes('/auth/signin')) {
+        if (isAuthenticated) {
+          const targetPath = session.user.onboarding_status 
+            ? `/onboarding/${session.user.onboarding_status}`
+            : '/onboarding/business-info';
+  
+          logger.debug('Redirecting authenticated user from signin:', {
+            requestId,
+            to: targetPath
+          });
+          
+          return `${baseUrl}${targetPath}`;
+        }
+  
+        // Allow unauthenticated users to access signin with callback
+        if (callbackUrl) {
+          return url;
+        }
+  
+        // Default signin without callback
+        return `${baseUrl}/auth/signin`;
+      }
+  
+      // Handle authenticated users
+      if (isAuthenticated) {
+        // If trying to access a protected route, allow it
+        if (url.startsWith(`${baseUrl}/onboarding/`) || url.startsWith('/onboarding/')) {
+          logger.debug('Allowing authenticated onboarding access:', {
+            requestId,
+            url
+          });
+          return url;
+        }
+  
+        // Default authenticated redirect
+        const targetPath = session.user.onboarding_status 
+          ? `/onboarding/${session.user.onboarding_status}`
+          : '/onboarding/business-info';
+  
+        logger.debug('Default authenticated redirect:', {
+          requestId,
+          to: targetPath
+        });
         
-        logger.debug('Following callback URL:', {
+        return `${baseUrl}${targetPath}`;
+      }
+  
+      // Handle unauthenticated users
+      if (!isAuthenticated && !url.includes('/auth/signin')) {
+        const encodedCallback = encodeURIComponent(
+          url.startsWith('http') ? url : url.startsWith('/') ? url : `/${url}`
+        );
+  
+        logger.debug('Redirecting unauthenticated user to signin:', {
           requestId,
           from: url,
-          to: finalUrl
+          callback: encodedCallback
         });
-        
-        return finalUrl;
+  
+        return `${baseUrl}/auth/signin?callbackUrl=${encodedCallback}`;
       }
-    }
-
-    // Handle unauthenticated access
-    if (!session?.user) {
-      // Allow direct signin access
-      if (url.includes('/auth/signin')) {
-        return url;
-      }
-
-      // Redirect to signin with callback
-      const signInUrl = `${baseUrl}/auth/signin?callbackUrl=${encodeURIComponent(url)}`;
-      logger.debug('Redirecting unauthenticated user to signin:', {
+  
+      // Final fallback
+      logger.debug('Using fallback redirect:', {
         requestId,
-        from: url,
-        to: signInUrl
+        to: baseUrl
       });
-      return signInUrl;
+      
+      return baseUrl;
+  
+    } catch (error) {
+      logger.error('Redirect error:', {
+        requestId,
+        error: error.message,
+        stack: error.stack,
+        context: { url, baseUrl },
+        url,
+        baseUrl
+      });
+  
+      // Safe fallback on error
+      return baseUrl;
     }
-
-    // Default fallback
-    logger.debug('Using default redirect:', {
-      requestId,
-      to: '/onboarding/business-info'
-    });
-    return `${baseUrl}/onboarding/business-info`;
-
-  } catch (error) {
-    logger.error('Redirect failed:', {
-      requestId,
-      error: error.message,
-      url,
-      baseUrl
-    });
-    
-    // Safe fallback
-    return `${baseUrl}/onboarding/business-info`;
-  }
-},
+  },
 
   events: {
     async signIn(message) {
@@ -908,7 +1212,7 @@ async redirect({ url, baseUrl }) {
     async signOut(message) {
       logger.info('User signed out', message);
       if (message.token) {
-        message.token.onboardingStatus = undefined;
+        message.token.onboarding_status = undefined;
         message.token.database_status = undefined;
         message.token.database_name = undefined;
         message.token.setup_status = undefined;
@@ -946,7 +1250,7 @@ async redirect({ url, baseUrl }) {
       async activated(session) {
         logger.info('Session activated', { 
           userId: session.user.id,
-          onboardingStatus: session.user.onboardingStatus 
+          onboarding_status: session.user.onboarding_status 
         });
       },
       async expired(session) {

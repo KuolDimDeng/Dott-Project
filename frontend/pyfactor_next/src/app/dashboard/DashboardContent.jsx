@@ -15,14 +15,12 @@ import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import { UserMessageProvider, useUserMessageContext } from '@/contexts/UserMessageContext';
-
-
+import { UserMessageProvider, useUserMessageContext } from '@/contexts/userMessageContext';
 // Component imports
 import Drawer from './components/Drawer';
 import AppBar from './components/AppBar';
 import ConsoleMessages from './components/components/ConsoleMessages';
-import renderMainContent from './components/RenderMainContent';
+import RenderMainContent from './components/RenderMainContent';
 import ErrorBoundary from './components/ErrorBoundary';
 import AlertsComponent from '../alerts/components/AlertsComponents';
 import CustomerDetails from './components/forms/CustomerDetails';
@@ -34,6 +32,9 @@ import IntegrationSettings from '../Settings/integrations/components/Integration
 import APIIntegrations from './components/APIIntegrations';
 import AlertsPage from '../alerts/components/AlertsPage';
 import SendGlobalAlert from '../alerts/components/SendGlobalAlert';
+import SetupInProgress from '@/app/dashboard/components/SetupInProgress';
+
+
 
 const theme = createTheme({
   palette: {
@@ -52,370 +53,173 @@ function DashboardContent() {
   const status = searchParams.get('status');
   const platform = searchParams.get('platform');
 
+
   // Core state
   const [userData, setUserData] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [view, setView] = useState('main');
 
-  // Menu state
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
-  const openMenu = Boolean(anchorEl);
-  const settingsMenuOpen = Boolean(settingsAnchorEl);
-
-  // Selection state
-  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
-  const [selectedReport, setSelectedReport] = useState(null);
-  const [selectedSettingsOption, setSelectedSettingsOption] = useState(null);
-  const [selectedAnalysis, setSelectedAnalysis] = useState(null);
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [selectedInvoice, setSelectedInvoice] = useState(null);
-
-  // Data state
-  const [products, setProducts] = useState([]);
-  const [services, setServices] = useState([]);
-  const [alerts, setAlerts] = useState([]);
-  const [isShopifyConnected, setIsShopifyConnected] = useState(false);
-
-  // Section state
-  const [hrSection, setHRSection] = useState('');
-  const [payrollSection, setPayrollSection] = useState('');
-
-  // UI visibility state (first batch)
-  const [showInvoiceBuilder, setShowInvoiceBuilder] = useState(false);
-  const [showCreateOptions, setShowCreateOptions] = useState(false);
-  const [showTransactionForm, setShowTransactionForm] = useState(false);
-  const [showAccountPage, setShowAccountPage] = useState(false);
-  const [showReports, setShowReports] = useState(false);
-  const [showBankingDashboard, setShowBankingDashboard] = useState(false);
-  const [showHRDashboard, setShowHRDashboard] = useState(false);
-  const [showPayrollDashboard, setShowPayrollDashboard] = useState(false);
-  const [showAnalysisPage, setShowAnalysisPage] = useState(false);
-  const [showCustomerList, setShowCustomerList] = useState(false);
-  const [showCustomerDetails, setShowCustomerDetails] = useState(false);
-  const [showProductList, setShowProductList] = useState(false);
-  const [showServiceList, setShowServiceList] = useState(false);
-
-
-
-  // UI visibility state (second batch)
-  const [showProductManagement, setShowProductManagement] = useState(false);
-  const [showServiceManagement, setShowServiceManagement] = useState(false);
-  const [showEstimateManagement, setShowEstimateManagement] = useState(false);
-  const [showChart, setShowChart] = useState(false);
-  const [showSalesAnalysis, setShowSalesAnalysis] = useState(false);
-  const [showIntegrationSettings, setShowIntegrationSettings] = useState(false);
-  const [showAPIIntegrations, setShowAPIIntegrations] = useState(false);
-  const [showECommercePlatformAPI, setShowECommercePlatformAPI] = useState(false);
-  const [showUserProfileSettings, setShowUserProfileSettings] = useState(false);
-  const [showAlerts, setShowAlerts] = useState(false);
-  const [showSendGlobalAlert, setShowSendGlobalAlert] = useState(false);
-  const [showSalesOrderManagement, setShowSalesOrderManagement] = useState(false);
-  const [showInvoiceManagement, setShowInvoiceManagement] = useState(false);
-  const [showVendorManagement, setShowVendorManagement] = useState(false);
-  const [showBillManagement, setShowBillManagement] = useState(false);
-  const [showPurchaseOrderManagement, setShowPurchaseOrderManagement] = useState(false);
-  const [showExpensesManagement, setShowExpensesManagement] = useState(false);
-  const [showPurchaseReturnManagement, setShowPurchaseReturnManagement] = useState(false);
-  const [showProcurementManagement, setShowProcurementManagement] = useState(false);
-  const [showEmployeeManagement, setShowEmployeeManagement] = useState(false);
-  const [showPayrollManagement, setShowPayrollManagement] = useState(false);
-  const [showTimesheetManagement, setShowTimeSheetManagement] = useState(false);
-
-
-    // Accounting management states
-  const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
-  const [showJournalEntryManagement, setShowJournalEntryManagement] = useState(false);
-  const [showFixedAssetManagement, setShowFixedAssetManagement] = useState(false);
-  const [showBudgetManagement, setShowBudgetManagement] = useState(false);
-  const [showMonthEndManagement, setShowMonthEndManagement] = useState(false);
-  const [showAccountReconManagement, setShowAccountReconManagement] = useState(false);
-  const [showAuditTrailManagement, setShowAuditTrailManagement] = useState(false);
-  const [showCostAccountingManagement, setShowCostAccountingManagement] = useState(false);
-  const [showAccountBalances, setShowAccountBalances] = useState(false);
-  const [showTrialBalances, setShowTrialBalances] = useState(false);
-  const [showGeneralLedger, setShowGeneralLedger] = useState(false);
-  const [showFinancialStatements, setShowFinancialStatements] = useState(false);
-  const [showIntercompanyManagement, setShowIntercompanyManagement] = useState(false);
-  const [showProfitAndLossReport, setShowProfitAndLossReport] = useState(false);
-  const [showBalanceSheetReport, setShowBalanceSheetReport] = useState(false);
-  const [showCashFlowReport, setShowCashFlowReport] = useState(false);
-  const [showIncomeByCustomer, setShowIncomeByCustomer] = useState(false);
-  const [showAgedReceivables, setShowAgedReceivables] = useState(false);
-  const [showAgedPayables, setShowAgedPayables] = useState(false);
-  const [showProfitAndLossAnalysis, setShowProfitAndLossAnalysis] = useState(false);
-  const [showBalanceSheetAnalysis, setShowBalanceSheetAnalysis] = useState(false);
-  const [showCashFlowAnalysis, setShowCashFlowAnalysis] = useState(false);
-  const [showBudgetVsActualAnalysis, setShowBudgetVsActualAnalysis] = useState(false);
-  const [showExpenseAnalysis, setShowExpenseAnalysis] = useState(false);
-  const [showGeneralLedgerManagement, setShowGeneralLedgerManagement] = useState(false);
-
-
-
-// Dashboard visibility states
-  const [showKPIDashboard, setShowKPIDashboard] = useState(false);
-  const [showDeviceSettings, setShowDeviceSettings] = useState(false);
-  const [showHelpCenter, setShowHelpCenter] = useState(false);
-  const [showTermsAndConditions, setShowTermsAndConditions] = useState(false);
-  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
-  const [showDownloadTransactions, setShowDownloadTransactions] = useState(false);
-  const [showConnectBank, setShowConnectBank] = useState(false);
-  const [showPayrollTransactions, setShowPayrollTransactions] = useState(false);
-  const [showBankRecon, setShowBankRecon] = useState(false);
-  const [showPayrollReport, setShowPayrollReport] = useState(false);
-  const [showBankReport, setShowBankReport] = useState(false);
-  const [showInventoryItems, setShowInventoryItems] = useState(false);
-  const [showMainDashboard, setShowMainDashboard] = useState(false);
-  const [showBankTransactions, setShowBankTransactions] = useState(false);
-  const [showInventoryManagement, setShowInventoryManagement] = useState(false);
-  const [showHome, setShowHome] = useState(false);
-
-
-
-
-  const AllResetState = [
-    setShowInvoiceBuilder,
-    setShowCreateOptions,
-    setShowTransactionForm,
-    setShowAccountPage,
-    setShowReports,
-    setShowBankingDashboard,
-    setShowHRDashboard,
-    setShowPayrollDashboard,
-    setShowAnalysisPage,
-    setShowCustomerList,
-    setShowCustomerDetails,
-    setShowProductList,
-    setShowServiceList,
-    setShowProductManagement,
-    setShowServiceManagement,
-    setShowEstimateManagement,
-    setShowChart,
-    setShowSalesAnalysis,
-    setShowIntegrationSettings,
-    setShowAPIIntegrations,
-    setShowECommercePlatformAPI,
-    setShowUserProfileSettings,
-    setShowAlerts,
-    setShowSendGlobalAlert,
-    setShowSalesOrderManagement,
-    setShowInvoiceManagement,
-    setShowVendorManagement,
-    setShowBillManagement,
-    setShowPurchaseOrderManagement,
-    setShowExpensesManagement,
-    setShowPurchaseReturnManagement,
-    setShowProcurementManagement,
-    setShowEmployeeManagement,
-    setShowPayrollManagement,
-    setShowTimeSheetManagement,
-    setShowChartOfAccounts,
-    setShowJournalEntryManagement,
-    setShowGeneralLedger,
-    setShowAccountReconManagement,
-    setShowMonthEndManagement,
-    setShowFinancialStatements,
-    setShowFixedAssetManagement,
-    setShowBudgetManagement,
-    setShowCostAccountingManagement,
-    setShowIntercompanyManagement,
-    setShowAuditTrailManagement,
-    setShowProfitAndLossReport,
-    setShowBalanceSheetReport,
-    setShowCashFlowReport,
-    setShowIncomeByCustomer,
-    setShowAgedReceivables,
-    setShowAgedPayables,
-    setShowAccountBalances,
-    setShowTrialBalances,
-    setShowProfitAndLossAnalysis,
-    setShowBalanceSheetAnalysis,
-    setShowCashFlowAnalysis,
-    setShowBudgetVsActualAnalysis,
-    setShowExpenseAnalysis,
-    setShowKPIDashboard,
-    setShowDeviceSettings,
-    setSelectedSettingsOption,
-    setShowHelpCenter,
-    setShowTermsAndConditions,
-    setShowPrivacyPolicy,
-    setShowDownloadTransactions,
-    setShowConnectBank,
-    setShowPayrollTransactions,
-    setShowBankRecon,
-    setShowPayrollReport,
-    setShowBankReport,
-    setShowInventoryItems,
-    setShowMainDashboard,
-    setShowBankTransactions,
-    setShowInventoryManagement,
-    setShowHome,
-  ];
-
-
- // Reset state functions
- const resetAllStates = () => {
-  AllResetState.forEach((setter) => {
-    if (typeof setter === 'function') {
-      setter(false);
-    } else {
-      console.warn('Non-function setter found in AllResetState:', setter);
-    }
-  });
-};
-
-const resetAllStatesExcept = (exceptionSetter) => {
-  AllResetState.forEach((setter) => {
-    if (typeof setter === 'function' && setter !== exceptionSetter) {
-      setter(false);
-    } else if (typeof setter !== 'function') {
-      console.warn('Non-function setter found in AllResetState:', setter);
-    }
-  });
-};
-
-// Data fetching functions
-const fetchUserData = useCallback(async () => {
-  try {
-    setLoadingProfile(true);
-    const token = localStorage.getItem('token');
-    const response = await axiosInstance.get('/api/profile/', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.status === 200) {
-      const { data } = response;
-      
-      // Add defensive checks
-      if (!data || !data.data || !data.data.email || !data.data.profile) {
-        logger.error('Invalid profile data structure:', data);
-        addMessage('error', 'Invalid profile data received');
-        return;
-      }
-
-      const { email, profile } = data.data;
-      
-      // Use the profile data for name information
-      const userData = {
-        email,
-        first_name: profile.first_name,    // Use profile's first name
-        last_name: profile.last_name,      // Use profile's last name
-        full_name: `${profile.first_name} ${profile.last_name}`.trim(),  // Construct full name from profile
-        profile: profile,
-        subscription_type: profile.active_subscription?.subscription_type || 'free'
-      };
-
-      setUserData(userData);
-      
-    } else {
-      throw new Error(response.statusText);
-    }
-  } catch (error) {
-    logger.error('Error fetching user data:', error);
-    addMessage('error', `Error fetching user data: ${error.message}`);
-    localStorage.removeItem('token');
-    router.push('/auth/signin');
-  } finally {
-    setLoadingProfile(false);
-  }
-}, [addMessage, router]);
-
-
-const fetchProducts = async () => {
-  try {
-    const response = await axiosInstance.get('/api/products/');
-    setProducts(response.data);
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    addMessage('error', 'Failed to fetch products');
-  }
-};
-
-const fetchServices = async () => {
-  try {
-    const response = await axiosInstance.get('/api/services/');
-    setServices(response.data);
-  } catch (error) {
-    console.error('Error fetching services:', error);
-    addMessage('error', 'Failed to fetch services');
-  }
-};
-
-  // Core handlers
-  const handleDrawerToggle = () => setDrawerOpen(!drawerOpen);
-
-  const handleLogout = async () => {
-    try {
-        console.log('Logout clicked');
-        
-        // First clear all local storage and state
-        localStorage.clear();
-        sessionStorage.clear();
-        setUserData(null);
-        resetAllStates();
-
-        // Use the signOut function from next-auth
-        await signOut({ 
-            callbackUrl: '/auth/signin',
-            redirect: true
-        });
-
-        // If for some reason the signOut redirect doesn't work, force redirect
-        router.push('/auth/signin');
-        
-    } catch (error) {
-        logger.error('Error during logout:', error);
-        // Force redirect to signin even if there's an error
-        router.push('/auth/signin');
-    }
-};
-
-  const deleteUserAccount = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      localStorage.removeItem('token');
-      window.location.href = '/';
-
-      const response = await fetch('http://localhost:8000/api/delete-account/', {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        logger.error('Error deleting account:', response.statusText);
-        addMessage('error', `Error deleting account: ${response.statusText}`);
-      } else {
-        addMessage('info', 'Account deleted successfully');
-      }
-    } catch (error) {
-      logger.error('Error deleting account:', error);
-      addMessage('error', `Error deleting account: ${error.message}`);
-    }
+  // Reset state function
+  const resetAllStates = () => {
+    setShowInvoiceBuilder(false);
+    setShowCreateOptions(false);
+    setShowTransactionForm(false);
+    setShowAccountPage(false);
+    setShowReports(false);
+    setShowBankingDashboard(false);
+    setShowHRDashboard(false);
+    setShowPayrollDashboard(false);
+    setShowAnalysisPage(false);
+    setShowCustomerList(false);
+    setShowCustomerDetails(false);
+    setShowProductList(false);
+    setShowServiceList(false);
+    setShowProductManagement(false);
+    setShowServiceManagement(false);
+    setShowEstimateManagement(false);
+    setShowChart(false);
+    setShowSalesAnalysis(false);
+    setShowIntegrationSettings(false);
+    setShowAPIIntegrations(false);
+    setShowECommercePlatformAPI(false);
+    setShowUserProfileSettings(false);
+    setShowAlerts(false);
+    setShowSendGlobalAlert(false);
+    setShowSalesOrderManagement(false);
+    setShowInvoiceManagement(false);
+    setShowVendorManagement(false);
+    setShowBillManagement(false);
+    setShowPurchaseOrderManagement(false);
+    setShowExpensesManagement(false);
+    setShowPurchaseReturnManagement(false);
+    setShowProcurementManagement(false);
+    setShowEmployeeManagement(false);
+    setShowPayrollManagement(false);
+    setShowTimesheetManagement(false);
+    setShowChartOfAccounts(false);
+    setShowJournalEntryManagement(false);
+    setShowFixedAssetManagement(false);
+    setShowBudgetManagement(false);
+    setShowMonthEndManagement(false);
+    setShowAccountReconManagement(false);
+    setShowAuditTrailManagement(false);
+    setShowCostAccountingManagement(false);
+    setShowAccountBalances(false);
+    setShowTrialBalances(false);
+    setShowGeneralLedger(false);
+    setShowFinancialStatements(false);
+    setShowIntercompanyManagement(false);
+    setShowProfitAndLossReport(false);
+    setShowBalanceSheetReport(false);
+    setShowCashFlowReport(false);
+    setShowIncomeByCustomer(false);
+    setShowAgedReceivables(false);
+    setShowAgedPayables(false);
+    setShowProfitAndLossAnalysis(false);
+    setShowBalanceSheetAnalysis(false);
+    setShowCashFlowAnalysis(false);
+    setShowBudgetVsActualAnalysis(false);
+    setShowExpenseAnalysis(false);
+    setShowKPIDashboard(false);
+    setShowDeviceSettings(false);
+    setShowHelpCenter(false);
+    setShowTermsAndConditions(false);
+    setShowPrivacyPolicy(false);
+    setShowDownloadTransactions(false);
+    setShowConnectBank(false);
+    setShowPayrollTransactions(false);
+    setShowBankRecon(false);
+    setShowPayrollReport(false);
+    setShowBankReport(false);
+    setShowInventoryItems(false);
+    setShowMainDashboard(false);
+    setShowBankTransactions(false);
+    setShowInventoryManagement(false);
+    setShowHome(false);
   };
-  
 
+  // Event handlers
+  const handleDrawerToggle = () => setDrawerOpen(!drawerOpen);
+  const handleClick = (event) => setAnchorEl(event.currentTarget);
+  const handleClose = () => setAnchorEl(null);
+  const handleSettingsClose = () => setSettingsAnchorEl(null);
+  const handleCloseInvoiceBuilder = () => setShowInvoiceBuilder(false);
+  const handleShowInvoiceBuilder = () => {
+    setShowInvoiceBuilder(true);
+    setShowCreateOptions(false);
+    setSelectedOption(null);
+    setShowTransactionForm(false);
+    setSelectedReport(null);
+  };
+  const handleShowCreateOptions = (option) => {
+    resetAllStates();
+    setShowCreateOptions(true);
+    setSelectedOption(option);
+  };
+  const handleShowTransactionForm = () => {
+    resetAllStates();
+    setShowTransactionForm(true);
+    setShowCreateOptions(false);
+    setShowInvoiceBuilder(false);
+    setSelectedOption(null);
+    setSelectedReport(null);
+  };
+  const handleSettingsClick = (event) => setSettingsAnchorEl(event.currentTarget);
+  const handleSettingsOptionSelect = (option) => {
+    resetAllStates();
+    setSelectedSettingsOption(option);
+    handleSettingsClose();
+  };
   const handleUserProfileClick = () => {
     resetAllStates();
     setShowUserProfileSettings(true);
   };
-
   const handleDeviceSettingsClick = () => {
     resetAllStates();
     setShowDeviceSettings(true);
   };
-
-  const handleBankingClick = (section) => {
-    console.log('handleBankingClick called with section:', section);
-
+  const handleHelpClick = () => {
     resetAllStates();
-
+    setShowHelpCenter(true);
+  };
+  const handlePrivacyClick = () => {
+    resetAllStates();
+    setShowPrivacyPolicy(true);
+  };
+  const handleTermsClick = () => {
+    resetAllStates();
+    setShowTermsAndConditions(true);
+  };
+  const handleAlertClick = async () => {
+    try {
+      const response = await axiosInstance.get('/api/alerts/user_alerts/');
+      setAlerts(response.data);
+      resetAllStates();
+      setShowAlerts(true);
+    } catch (error) {
+      logger.error('Error fetching alerts:', error);
+      addMessage('error', 'Failed to fetch alerts');
+    }
+  };
+  const handleIntegrationsClick = () => {
+    setShowAPIIntegrations(true);
+    handleSettingsClose();
+  };
+  const handleMainDashboardClick = () => {
+    resetAllStates();
+    setShowMainDashboard(true);
+  };
+  const handleKPIDashboardClick = () => {
+    resetAllStates();
+    setShowKPIDashboard(true);
+  };
+  const handleHomeClick = () => {
+    resetAllStates();
+    setShowHome(true);
+  };
+  const handleBankingClick = (section) => {
+    resetAllStates();
     switch (section) {
       case 'dashboard':
         setShowBankingDashboard(true);
@@ -424,201 +228,54 @@ const fetchServices = async () => {
         setShowConnectBank(true);
         break;
       case 'reconciliation':
-        // Handle reconciliation
         setShowBankRecon(true);
         break;
       case 'transactions':
-        // Handle bank balances
         setShowBankTransactions(true);
         break;
       case 'bank-reports':
-        // Handle bank reports
         setShowBankReport(true);
         break;
-      default:
-        console.log('Unknown banking section:', section);
-        break;
     }
   };
-
-
-
-  const handleTermsClick = () => {
-    console.log('Terms clicked');
-    // Implement Terms and Conditions functionality here
-    resetAllStates();
-    setShowTermsAndConditions(true);
-  };
-
-  const handlePrivacyClick = () => {
-    console.log('Privacy clicked');
-    // Implement Privacy Policy functionality here
-    resetAllStates();
-    setShowPrivacyPolicy(true);
-  };
-
-  const handleUserProfileUpdate = (updatedUserData) => {
-    setUserData(updatedUserData);
-    addMessage('info', 'User profile updated successfully');
-  };
-
-  const handleHelpClick = () => {
-    resetAllStates();
-    setShowHelpCenter(true);
-  };
-
-  const handleAPIIntegrationsClick = () => {
-    resetAllStates();
-    setShowAPIIntegrations(true);
-  };
-
-  const handleECommercePlatformAPIClick = () => {
-    setShowECommercePlatformAPI(true);
-    setShowAPIIntegrations(false);
-  };
-
-  const handleCRMAPIClick = () => {
-    // Implement CRM API functionality here
-    console.log('CRM API clicked');
-  };
-
-  const handleSettingsClick = (event) => {
-    setSettingsAnchorEl(event.currentTarget);
-  };
-
-  const handleSettingsClose = () => {
-    setSettingsAnchorEl(null);
-  };
-
-  const handleSettingsOptionSelect = (option) => {
-    console.log('Selected option:', option);
-    resetAllStates(); // Reset all other states
-    setSelectedSettingsOption(option); // Update the selected settings option
-    handleSettingsClose(); // Close the settings menu after selecting an option
-  };
-
-  const handleIntegrationsClick = () => {
-    console.log('handleIntegrationsClick called');
-    setShowAPIIntegrations(true);
-    handleSettingsMenuClose();
-    // Reset other view states as needed
-    setShowBankingDashboard(false);
-    setShowKPIDashboard(false);
-    setShowCreateOptions(false);
-    setShowAnalysisPage(false);
-    setShowHRDashboard(false);
-    setShowPayrollDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowInvoiceBuilder(false);
-    setShowReports(false);
-    setShowTransactionForm(false);
-    setShowAccountPage(false);
-    setShowSalesAnalysis(false);
-    setShowIntegrationSettings(false);
-  };
-
-  const handleSalesClick = (section) => {
-    console.log('handleSalesClick called with section:', section);
-    resetAllStatesExcept(setShowCustomerList);
-
-    switch (section) {
-      case 'customers':
-        setShowCustomerList(true);
-        setView('customerList');
-        break;
-      case 'products':
-        resetAllStatesExcept(setShowProductManagement);
-        setShowProductManagement(true);
-        break;
-      case 'services':
-        resetAllStatesExcept(setShowServiceManagement);
-        setShowServiceManagement(true);
-        break;
-      case 'estimates':
-        resetAllStatesExcept(setShowEstimateManagement);
-        setShowEstimateManagement(true);
-        break;
-      case 'orders':
-        resetAllStatesExcept(setShowSalesOrderManagement);
-        setShowSalesOrderManagement(true);
-        break;
-      case 'invoices':
-        resetAllStatesExcept(setShowInvoiceManagement);
-        setShowInvoiceManagement(true);
-        break;
-      default:
-        resetAllStates();
-        break;
-    }
-
-    // Reset other view states
-    setShowBankingDashboard(false);
-    setShowKPIDashboard(false);
-    setShowCreateOptions(false);
-    setShowAnalysisPage(false);
-    setShowHRDashboard(false);
-    setShowPayrollDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowInvoiceBuilder(false);
-    setShowReports(false);
-    setShowTransactionForm(false);
-    setShowAccountPage(false);
-    setShowSalesAnalysis(false);
-    setShowIntegrationSettings(false);
-  };
-
-  const handleInventoryClick = (section) => {
-    console.log('handleInventoryClick called with section:', section);
+  const handleHRClick = (section) => {
     resetAllStates();
     switch (section) {
-      case 'inventorydashboard':
-        setShowInventoryManagement(true);
+      case 'employees':
+        setShowEmployeeManagement(true);
         break;
-      case 'items':
-        setShowInventoryItems(true);
+      case 'dashboard':
+        setShowHRDashboard(true);
         break;
-      case 'categories':
-        setShowInventoryCategories(true);
-        break;
-      // ... handle other cases
-      default:
-        console.log('Unknown inventory section:', section);
     }
   };
-
-  const handleMainDashboardClick = () => {
-    console.log('handleDashboardClick called.');
+  const handlePayrollClick = (section) => {
     resetAllStates();
-    setShowMainDashboard(true);
-    console.log('view set to: dashboard');
-    setShowKPIDashboard(false); // Ensure KPI Dashboard is not visible
+    switch (section) {
+      case 'dashboard':
+        setShowPayrollDashboard(true);
+        break;
+      case 'run':
+        setShowPayrollManagement(true);
+        setPayrollSection('run');
+        break;
+      case 'transactions':
+        setShowPayrollTransactions(true);
+        setPayrollSection('transactions');
+        break;
+      case 'reports':
+        setShowPayrollReport(true);
+        setPayrollSection('reports');
+        break;
+      case 'timesheet':
+        setShowTimesheetManagement(true);
+        setPayrollSection('timesheet');
+        break;
+    }
   };
-
-  const handleKPIDashboardClick = () => {
-    console.log('handleDashboardClick called.');
-    resetAllStates();
-    console.log('view set to: dashboard');
-    setShowKPIDashboard(true); // Ensure KPI Dashboard is not visible
-  };
-
-  const handleCustomerSelect = (customerId) => {
-    console.log('handleCustomerSelect called with customerId:', customerId);
-    setSelectedCustomerId(customerId);
-    console.log('selectedCustomerId set to:', customerId);
-    setView('customerDetails');
-    console.log('view set to: customerDetails');
-  };
-
-  const handleInvoiceSelect = (invoiceId) => {
-    setSelectedInvoiceId(invoiceId);
-  };
-
   const handleAnalysisClick = (analysisType) => {
-    console.log('handleAnalysisClick called with analysisType:', analysisType);
-
     resetAllStates();
     setShowAnalysisPage(true);
-
     switch (analysisType) {
       case 'sales-analysis':
         setShowSalesAnalysis(true);
@@ -638,154 +295,34 @@ const fetchServices = async () => {
       case 'expense-analysis':
         setShowExpenseAnalysis(true);
         break;
-      case 'kpi-data':
-        setShowKPIDashboard(true);
-        break;
-      default:
-        console.log('Unknown analysis type:', analysisType);
-        break;
     }
   };
-
-  const handleBackFromInvoice = () => {
-    setSelectedInvoice(null);
-    setView('customerDetails');
-  };
-
-  const handleBackToCustomerDetails = () => {
-    setView('customerDetails');
-    setSelectedInvoice(null);
-  };
-
-  const handleBackToList = () => {
-    setView('customerList');
-    setSelectedCustomerId(null);
-    setSelectedInvoiceId(null);
-  };
-
-  const handleHomeClick = () => {
+  const handleSalesClick = (section) => {
     resetAllStates();
-    setShowHome(true);
-  };
-
-  const handleHRClick = (section) => {
-    console.log('handleHRClick called with section:', section);
-
-    // Reset all HR-related states
-    setShowHRDashboard(false);
-    setShowPayrollDashboard(false);
-    setShowBankingDashboard(false);
-    setShowEmployeeManagement(false);
-
-    // Reset other general states
-    setShowBankingDashboard(false);
-    setShowKPIDashboard(false);
-    setShowCreateOptions(false);
-    setShowAnalysisPage(false);
-    setShowPayrollDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowInvoiceBuilder(false);
-    setShowReports(false);
-    setShowTransactionForm(false);
-    setShowAccountPage(false);
-    setShowSalesAnalysis(false);
-    setShowIntegrationSettings(false);
-
     switch (section) {
-      case 'employees':
-        setShowEmployeeManagement(true);
+      case 'customers':
+        setShowCustomerList(true);
+        setView('customerList');
         break;
-      case 'recruitment':
-        // Set state for recruitment management
+      case 'products':
+        setShowProductManagement(true);
         break;
-      case 'onboarding':
-        // Set state for onboarding management
+      case 'services':
+        setShowServiceManagement(true);
         break;
-      case 'performance':
-        // Set state for performance management
+      case 'estimates':
+        setShowEstimateManagement(true);
         break;
-      case 'training':
-        // Set state for training management
+      case 'orders':
+        setShowSalesOrderManagement(true);
         break;
-      case 'time-attendance':
-        // Set state for time and attendance management
-        break;
-      case 'benefits':
-        // Set state for benefits administration
-        break;
-      case 'compensation':
-        // Set state for compensation management
-        break;
-      case 'employee-relations':
-        // Set state for employee relations management
-        break;
-      case 'compliance':
-        // Set state for compliance management
-        break;
-      case 'hr-reports':
-        // Set state for HR reporting and analytics
-        break;
-      default:
-        console.log('Unknown HR section:', section);
+      case 'invoices':
+        setShowInvoiceManagement(true);
         break;
     }
   };
-
-  const handleCreateCustomer = () => {
-    setShowCreateOptions(true);
-    setSelectedOption('Customer');
-    setShowCustomerList(false);
-  };
-
-  const handlePayrollClick = (section) => {
-    console.log('handlePayrollClick called with section:', section);
-
-    resetAllStates();
-
-    switch (section) {
-      case 'employees':
-        setShowEmployeeManagement(true);
-        setPayrollSection('employees');
-        break;
-      case 'payroll':
-      case 'run':
-        setShowPayrollManagement(true);
-        setPayrollSection('run');
-        break;
-      case 'timesheets':
-        setShowTimeSheetManagement(true);
-        setPayrollSection('timesheets');
-        break;
-      case 'transactions':
-        setShowPayrollTransactions(true);
-        setPayrollSection('transactions');
-        break;
-      case 'taxes':
-        setShowPayrollManagement(true);
-        setPayrollSection('taxes');
-        break;
-      case 'taxForms':
-        setShowPayrollManagement(true);
-        setPayrollSection('taxForms');
-        break;
-      case 'payroll-reports':
-        setShowPayrollReport(true);
-        setPayrollSection('reports');
-        break;
-      case 'dashboard':
-        setShowPayrollDashboard(true);
-        break;
-      default:
-        console.log('Unknown payroll section:', section);
-        break;
-    }
-  };
-
   const handlePurchasesClick = (section) => {
-    console.log('handlePurchasesClick called with section:', section);
-
     resetAllStates();
-
     switch (section) {
       case 'vendors':
         setShowVendorManagement(true);
@@ -805,119 +342,10 @@ const fetchServices = async () => {
       case 'procurement':
         setShowProcurementManagement(true);
         break;
-      default:
-        console.log('Unknown purchases section:', section);
-        break;
-    }
-
-    // Reset other view states
-    setShowBankingDashboard(false);
-    setShowKPIDashboard(false);
-    setShowCreateOptions(false);
-    setShowAnalysisPage(false);
-    setShowHRDashboard(false);
-    setShowPayrollDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowInvoiceBuilder(false);
-    setShowReports(false);
-    setShowTransactionForm(false);
-    setShowAccountPage(false);
-    setShowSalesAnalysis(false);
-    setShowIntegrationSettings(false);
-  };
-
-  const handleReportClick = (reportType) => {
-    console.log('handleReportClick called with reportType:', reportType);
-
-    resetAllStates();
-    setShowReports(true);
-    setSelectedReport(reportType);
-
-    switch (reportType) {
-      case 'income_statement':
-        setShowProfitAndLossReport(true);
-        break;
-      case 'balance_sheet':
-        setShowBalanceSheetReport(true);
-        break;
-      case 'cash_flow':
-        setShowCashFlowReport(true);
-        break;
-      case 'sales_tax_report':
-        // setShowSalesTaxReport(true);
-        break;
-      case 'payroll_wage_tax_report':
-        // setShowPayrollWageTaxReport(true);
-        break;
-      case 'income_by_customer':
-        setShowIncomeByCustomer(true);
-        break;
-      case 'aged_receivables':
-        setShowAgedReceivables(true);
-        break;
-      case 'purchases_by_vendor':
-        // setShowPurchasesByVendor(true);
-        break;
-      case 'aged_payables':
-        setShowAgedPayables(true);
-        break;
-      case 'account_balances':
-        setShowAccountBalances(true);
-        break;
-      case 'trial_balance':
-        setShowTrialBalances(true);
-        break;
-      case 'general_ledger':
-        setShowGeneralLedger(true);
-        break;
-      default:
-        console.log('Unknown report type:', reportType);
-        break;
     }
   };
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleShowInvoiceBuilder = () => {
-    setShowInvoiceBuilder(true);
-    setShowCreateOptions(false);
-    setSelectedOption(null);
-    setShowTransactionForm(false);
-    setSelectedReport(null);
-  };
-
-  const handleCloseInvoiceBuilder = () => {
-    setShowInvoiceBuilder(false);
-  };
-
-  const handleShowCreateOptions = (option) => {
-    console.log('Selected Option:', option); // Add this line
-    resetAllStates();
-    setShowCreateOptions(true);
-    setSelectedOption(option);
-  };
-
-  const handleShowTransactionForm = () => {
-    resetAllStates();
-
-    setShowTransactionForm(true);
-    setShowCreateOptions(false);
-    setShowInvoiceBuilder(false);
-    setSelectedOption(null);
-    setSelectedReport(null);
-  };
-
   const handleAccountingClick = (section) => {
-    console.log('handleAccountingClick called with section:', section);
-
     resetAllStates();
-
     switch (section) {
       case 'chart-of-accounts':
         setShowChartOfAccounts(true);
@@ -952,130 +380,422 @@ const fetchServices = async () => {
       case 'audit-trail':
         setShowAuditTrailManagement(true);
         break;
-      case 'accounting-reports':
-        // Set state for accounting reports
+    }
+  };
+  const handleInventoryClick = (section) => {
+    resetAllStates();
+    switch (section) {
+      case 'inventorydashboard':
+        setShowInventoryManagement(true);
         break;
-      default:
-        console.log('Unknown accounting section:', section);
+      case 'items':
+        setShowInventoryItems(true);
         break;
     }
   };
-
-  const handleDeleteAccount = () => {
-    const confirmDelete = window.confirm(
-      'Are you sure you want to close your account permanently?'
-    );
-    if (confirmDelete) {
-      deleteUserAccount();
+  const handleReportClick = (reportType) => {
+    resetAllStates();
+    setShowReports(true);
+    setSelectedReport(reportType);
+    switch (reportType) {
+      case 'income_statement':
+        setShowProfitAndLossReport(true);
+        break;
+      case 'balance_sheet':
+        setShowBalanceSheetReport(true);
+        break;
+      case 'cash_flow':
+        setShowCashFlowReport(true);
+        break;
+      case 'income_by_customer':
+        setShowIncomeByCustomer(true);
+        break;
+      case 'aged_receivables':
+        setShowAgedReceivables(true);
+        break;
+      case 'aged_payables':
+        setShowAgedPayables(true);
+        break;
+      case 'account_balances':
+        setShowAccountBalances(true);
+        break;
+      case 'trial_balance':
+        setShowTrialBalances(true);
+        break;
+      case 'general_ledger':
+        setShowGeneralLedger(true);
+        break;
     }
   };
-
+  const handleCreateCustomer = () => {
+    setShowCreateOptions(true);
+    setSelectedOption('Customer');
+    setShowCustomerList(false);
+  };
   const handleProductsClick = () => {
     setView('productList');
     setShowProductList(true);
     setShowServiceList(false);
     setShowCustomerList(false);
-    // ... (reset other view states)
     fetchProducts();
   };
-
   const handleServicesClick = () => {
     setView('serviceList');
     setShowServiceList(true);
     setShowProductList(false);
     setShowCustomerList(false);
-    // ... (reset other view states)
     fetchServices();
   };
-
-  const handleAlertClick = async () => {
-    try {
-      const response = await axiosInstance.get('/api/alerts/user_alerts/');
-      setAlerts(response.data);
-      resetAllStates();
-      setShowAlerts(true);
-    } catch (error) {
-      console.error('Error fetching alerts:', error);
-      addMessage('error', 'Failed to fetch alerts');
-    }
+  const handleBackFromInvoice = () => {
+    setSelectedInvoice(null);
+    setView('customerDetails');
   };
-
+  const handleBackToCustomerDetails = () => {
+    setView('customerDetails');
+    setSelectedInvoice(null);
+  };
+  const handleBackToList = () => {
+    setView('customerList');
+    setSelectedCustomerId(null);
+    setSelectedInvoiceId(null);
+  };
+  const handleCustomerSelect = (customerId) => {
+    setSelectedCustomerId(customerId);
+    setView('customerDetails');
+  };
+  const handleInvoiceSelect = (invoiceId) => setSelectedInvoiceId(invoiceId);
   const handleMarkAsRead = async (alertId) => {
     try {
       await axiosInstance.post(`/api/alerts/${alertId}/mark_as_read/`);
-      setAlerts(
-        alerts.map((alert) => (alert.id === alertId ? { ...alert, is_read: true } : alert))
-      );
+      setAlerts(alerts.map((alert) => 
+        alert.id === alertId ? { ...alert, is_read: true } : alert
+      ));
     } catch (error) {
-      console.error('Error marking alert as read:', error);
+      logger.error('Error marking alert as read:', error);
     }
   };
-
-  const handleSendGlobalAlertClick = () => {
-    resetAllStates();
-    setShowSendGlobalAlert(true);
+  const handleCRMAPIClick = () => {
+    console.log('CRM API clicked');
   };
-
-  useEffect(() => {
-    fetchUserData();
-    setShowKPIDashboard(true);
-    // Reset other view states
-    setShowBankingDashboard(false);
-    setShowCreateOptions(false);
-    setShowAnalysisPage(false);
-    setShowHRDashboard(false);
-    setShowPayrollDashboard(false);
-    setSelectedInvoiceId(null);
-    setShowInvoiceBuilder(false);
-    setShowReports(false);
-    setShowTransactionForm(false);
-    setShowAccountPage(false);
-    setShowSalesAnalysis(false);
-    setShowIntegrationSettings(false);
-    // ... reset any other view states as necessary
-  }, [fetchUserData]);
-
-  const checkShopifyConnectionStatus = async () => {
+  const handleECommercePlatformAPIClick = () => {
+    setShowECommercePlatformAPI(true);
+    setShowAPIIntegrations(false);
+  };
+  const handleUserProfileUpdate = async (data) => {
     try {
-      const response = await axiosInstance.get('/api/integrations/shopify-status/');
-      setIsShopifyConnected(response.data.connected);
+      const response = await axiosInstance.patch('/api/profile/', data);
+      if (response.status === 200) {
+        setUserData(prevData => ({
+          ...prevData,
+          ...response.data
+        }));
+        addMessage('success', 'Profile updated successfully');
+      }
     } catch (error) {
-      console.error('Error checking Shopify connection status:', error);
+      logger.error('Error updating profile:', error);
+      addMessage('error', 'Failed to update profile');
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      setUserData(null);
+      await signOut({ 
+        callbackUrl: '/',
+        redirect: true
+      });
+    } catch (error) {
+      logger.error('Error during logout:', error);
+      router.push('/');
+    }
+  };
+  const handleDeleteAccount = async () => {
+    try {
+      const response = await axiosInstance.delete('/api/delete-account/');
+      if (!response.ok) {
+        logger.error('Error deleting account:', response.statusText);
+        addMessage('error', `Error deleting account: ${response.statusText}`);
+      } else {
+        addMessage('info', 'Account deleted successfully');
+      }
+    } catch (error) {
+      logger.error('Error deleting account:', error);
+      addMessage('error', `Error deleting account: ${error.message}`);
+    }
+  };
 
+  // Setup state
+  const [setupStatus, setSetupStatus] = useState(null);
+  const [setupProgress, setSetupProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState('');
+  const [setupError, setSetupError] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Menu state
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
+  const openMenu = Boolean(anchorEl);
+  const settingsMenuOpen = Boolean(settingsAnchorEl);
+
+  // Selection state
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [selectedSettingsOption, setSelectedSettingsOption] = useState(null);
+  const [selectedAnalysis, setSelectedAnalysis] = useState(null);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+
+  // Data state
+  const [products, setProducts] = useState([]);
+  const [services, setServices] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [isShopifyConnected, setIsShopifyConnected] = useState(false);
+
+  // Section state
+  const [hrSection, setHRSection] = useState('');
+  const [payrollSection, setPayrollSection] = useState('');
+
+  // UI visibility states
+  const [showInvoiceBuilder, setShowInvoiceBuilder] = useState(false);
+  const [showCreateOptions, setShowCreateOptions] = useState(false);
+  const [showTransactionForm, setShowTransactionForm] = useState(false);
+  const [showAccountPage, setShowAccountPage] = useState(false);
+  const [showReports, setShowReports] = useState(false);
+  const [showBankingDashboard, setShowBankingDashboard] = useState(false);
+  const [showHRDashboard, setShowHRDashboard] = useState(false);
+  const [showPayrollDashboard, setShowPayrollDashboard] = useState(false);
+  const [showAnalysisPage, setShowAnalysisPage] = useState(false);
+  const [showCustomerList, setShowCustomerList] = useState(false);
+  const [showCustomerDetails, setShowCustomerDetails] = useState(false);
+  const [showProductList, setShowProductList] = useState(false);
+  const [showServiceList, setShowServiceList] = useState(false);
+  const [showProductManagement, setShowProductManagement] = useState(false);
+  const [showServiceManagement, setShowServiceManagement] = useState(false);
+  const [showEstimateManagement, setShowEstimateManagement] = useState(false);
+  const [showChart, setShowChart] = useState(false);
+  const [showSalesAnalysis, setShowSalesAnalysis] = useState(false);
+  const [showIntegrationSettings, setShowIntegrationSettings] = useState(false);
+  const [showAPIIntegrations, setShowAPIIntegrations] = useState(false);
+  const [showECommercePlatformAPI, setShowECommercePlatformAPI] = useState(false);
+  const [showUserProfileSettings, setShowUserProfileSettings] = useState(false);
+  const [showAlerts, setShowAlerts] = useState(false);
+  const [showSendGlobalAlert, setShowSendGlobalAlert] = useState(false);
+  const [showSalesOrderManagement, setShowSalesOrderManagement] = useState(false);
+  const [showInvoiceManagement, setShowInvoiceManagement] = useState(false);
+  const [showVendorManagement, setShowVendorManagement] = useState(false);
+  const [showBillManagement, setShowBillManagement] = useState(false);
+  const [showPurchaseOrderManagement, setShowPurchaseOrderManagement] = useState(false);
+  const [showExpensesManagement, setShowExpensesManagement] = useState(false);
+  const [showPurchaseReturnManagement, setShowPurchaseReturnManagement] = useState(false);
+  const [showProcurementManagement, setShowProcurementManagement] = useState(false);
+  const [showEmployeeManagement, setShowEmployeeManagement] = useState(false);
+  const [showPayrollManagement, setShowPayrollManagement] = useState(false);
+  const [showTimesheetManagement, setShowTimesheetManagement] = useState(false);
+  const [showChartOfAccounts, setShowChartOfAccounts] = useState(false);
+  const [showJournalEntryManagement, setShowJournalEntryManagement] = useState(false);
+  const [showFixedAssetManagement, setShowFixedAssetManagement] = useState(false);
+  const [showBudgetManagement, setShowBudgetManagement] = useState(false);
+  const [showMonthEndManagement, setShowMonthEndManagement] = useState(false);
+  const [showAccountReconManagement, setShowAccountReconManagement] = useState(false);
+  const [showAuditTrailManagement, setShowAuditTrailManagement] = useState(false);
+  const [showCostAccountingManagement, setShowCostAccountingManagement] = useState(false);
+  const [showAccountBalances, setShowAccountBalances] = useState(false);
+  const [showTrialBalances, setShowTrialBalances] = useState(false);
+  const [showGeneralLedger, setShowGeneralLedger] = useState(false);
+  const [showFinancialStatements, setShowFinancialStatements] = useState(false);
+  const [showIntercompanyManagement, setShowIntercompanyManagement] = useState(false);
+  const [showProfitAndLossReport, setShowProfitAndLossReport] = useState(false);
+  const [showBalanceSheetReport, setShowBalanceSheetReport] = useState(false);
+  const [showCashFlowReport, setShowCashFlowReport] = useState(false);
+  const [showIncomeByCustomer, setShowIncomeByCustomer] = useState(false);
+  const [showAgedReceivables, setShowAgedReceivables] = useState(false);
+  const [showAgedPayables, setShowAgedPayables] = useState(false);
+  const [showProfitAndLossAnalysis, setShowProfitAndLossAnalysis] = useState(false);
+  const [showBalanceSheetAnalysis, setShowBalanceSheetAnalysis] = useState(false);
+  const [showCashFlowAnalysis, setShowCashFlowAnalysis] = useState(false);
+  const [showBudgetVsActualAnalysis, setShowBudgetVsActualAnalysis] = useState(false);
+  const [showExpenseAnalysis, setShowExpenseAnalysis] = useState(false);
+  const [showKPIDashboard, setShowKPIDashboard] = useState(false);
+  const [showDeviceSettings, setShowDeviceSettings] = useState(false);
+  const [showHelpCenter, setShowHelpCenter] = useState(false);
+  const [showTermsAndConditions, setShowTermsAndConditions] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showDownloadTransactions, setShowDownloadTransactions] = useState(false);
+  const [showConnectBank, setShowConnectBank] = useState(false);
+  const [showPayrollTransactions, setShowPayrollTransactions] = useState(false);
+  const [showBankRecon, setShowBankRecon] = useState(false);
+  const [showPayrollReport, setShowPayrollReport] = useState(false);
+  const [showBankReport, setShowBankReport] = useState(false);
+  const [showInventoryItems, setShowInventoryItems] = useState(false);
+  const [showMainDashboard, setShowMainDashboard] = useState(false);
+  const [showBankTransactions, setShowBankTransactions] = useState(false);
+  const [showInventoryManagement, setShowInventoryManagement] = useState(false);
+  const [showHome, setShowHome] = useState(false);
+
+  // Data fetching functions
+  const fetchProducts = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get('/api/products/');
+      setProducts(response.data);
+    } catch (error) {
+      logger.error('Error fetching products:', error);
+      addMessage('error', 'Failed to fetch products');
+    }
+  }, [addMessage]);
+
+  const fetchServices = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get('/api/services/');
+      setServices(response.data);
+    } catch (error) {
+      logger.error('Error fetching services:', error);
+      addMessage('error', 'Failed to fetch services');
+    }
+  }, [addMessage]);
+
+  const fetchUserData = useCallback(async () => {
+    try {
+      setLoadingProfile(true);
+      
+      const response = await axiosInstance.get('/api/profile/');
+      
+      if (response.status === 200) {
+        const { data } = response;
+        
+        if (!data?.data) {
+          logger.error('Invalid profile data structure:', data);
+          addMessage('error', 'Invalid profile data received');
+          return;
+        }
+
+        const { email, profile } = data.data;
+        
+        const userData = {
+          email: email || '',
+          first_name: profile?.first_name || '',
+          last_name: profile?.last_name || '',
+          full_name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : '',
+          business_name: profile?.business_name || '',
+          profile: profile || {},
+          subscription_type: profile?.active_subscription?.subscription_type || 'free'
+        };
+
+        console.log('Profile response:', data.data);
+        console.log('Constructed userData:', userData);
+
+        setUserData(userData);
+
+        // Check database setup status
+                // Allow dashboard to load immediately while checking setup status
+                setIsInitialized(true);
+                
+                if (profile.database_status === 'pending' || profile.database_status === 'in_progress') {
+                  setSetupStatus('in_progress');
+                  checkSetupStatus();
+                } else if (profile.database_status === 'error') {
+                  setSetupStatus('error');
+                  setSetupError(profile.setup_error_message || 'Database setup failed');
+                } else if (profile.database_status === 'active') {
+                  setSetupStatus('complete');
+                }
+      } else {
+        throw new Error(response.statusText);
+      }
+    } catch (error) {
+      logger.error('Error fetching user data:', error);
+      
+      if (error.response?.status === 401) {
+        await signOut({ 
+          callbackUrl: '/'
+        });
+      } else {
+        addMessage('error', `Error fetching user data: ${error.message}`);
+      }
+    } finally {
+      setLoadingProfile(false);
+    }
+  }, [addMessage]);
+
+  const checkSetupStatus = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get('/api/onboarding/setup-status/');
+      const { status, progress, current_step } = response.data;
+
+      setSetupStatus(status);
+      setSetupProgress(progress);
+      setCurrentStep(current_step);
+
+      if (status === 'in_progress') {
+        // Poll every 3 seconds while setup is in progress
+        setTimeout(checkSetupStatus, 3000);
+      } else if (status === 'complete') {
+        setIsInitialized(true);
+      } else if (status === 'error') {
+        setSetupError(response.data.error || 'Database setup failed');
+      }
+    } catch (error) {
+      logger.error('Error checking setup status:', error);
+      setSetupError('Failed to check setup status');
+    }
+  }, []);
 
   useEffect(() => {
     fetchUserData();
   }, [fetchUserData]);
 
+  // Return loading state or content
+  if (loadingProfile) {
+    return (
+      <Box sx={{ opacity: 0.7 }}>
+        <Container
+          sx={{
+            marginLeft: drawerWidth,
+            width: `calc(100% - ${drawerWidth}px)`,
+            transition: 'margin-left 0.3s ease, width 0.3s ease',
+            padding: 2,
+            paddingTop: '66px',
+            height: '100vh',
+            overflow: 'auto',
+          }}
+        >
+          <CircularProgress />
+          <Typography>Loading dashboard...</Typography>
+        </Container>
+      </Box>
+    );
+  }
 
+  // Show setup progress overlay if setup is in progress
+  const setupOverlay = setupStatus === 'in_progress' && userData && (
+    <Box
+      sx={{
+        position: 'fixed',
+        bottom: 20,
+        right: 20,
+        zIndex: 1000,
+        backgroundColor: 'white',
+        borderRadius: 2,
+        boxShadow: 3,
+        padding: 2,
+        maxWidth: 400,
+      }}
+    >
+      <SetupInProgress 
+        userData={userData}
+        setupProgress={setupProgress}
+        currentStep={currentStep}
+        compact={true}
+      />
+    </Box>
+  );
 
-    // Return loading state or content
-    if (loadingProfile) {
-      return (
-        <Box sx={{ opacity: 0.7 }}>
-          <Container
-            sx={{
-              marginLeft: drawerWidth,
-              width: `calc(100% - ${drawerWidth}px)`,
-              transition: 'margin-left 0.3s ease, width 0.3s ease',
-              padding: 2,
-              paddingTop: '66px',
-              height: '100vh',
-              overflow: 'auto',
-            }}
-          >
-            <CircularProgress />
-            <Typography>Loading dashboard...</Typography>
-          </Container>
-        </Box>
-      );
-    }
-
+  // Show main dashboard
   return (
     <ThemeProvider theme={theme}>
+      {setupOverlay}
+      {session?.user?.onboarding_status === 'setup' && <DashboardSetupStatus />}
       <CssBaseline />
       <AppBar
         mainBackground="#fafafa"
@@ -1103,9 +823,8 @@ const fetchServices = async () => {
         handleHelpClick={handleHelpClick}
         handlePrivacyClick={handlePrivacyClick}
         handleTermsClick={handleTermsClick}
-      >
-        <AlertsComponent onAlertClick={handleAlertClick} />
-      </AppBar>
+      />
+      <AlertsComponent onAlertClick={handleAlertClick} />
       <Drawer
         drawerOpen={drawerOpen}
         handleDrawerToggle={handleDrawerToggle}
@@ -1134,11 +853,11 @@ const fetchServices = async () => {
 
       <Container
         sx={{
-          marginLeft: drawerOpen ? `${drawerWidth}px` : '0px', // Adjust margin based on drawer state
-          width: drawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%', // Adjust width based on drawer state
-          transition: 'margin-left 0.3s ease, width 0.3s ease', // Smooth transition for drawer
+          marginLeft: drawerOpen ? `${drawerWidth}px` : '0px',
+          width: drawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%',
+          transition: 'margin-left 0.3s ease, width 0.3s ease',
           padding: 2,
-          paddingTop: '66px', // Adjust padding-top based on the AppBar height
+          paddingTop: '66px',
           height: '100vh',
           overflow: 'auto',
         }}
@@ -1195,93 +914,94 @@ const fetchServices = async () => {
           view !== 'customerDetails' &&
           view !== 'productList' &&
           view !== 'serviceList' &&
-          renderMainContent({
-            showTransactionForm,
-            showInvoiceBuilder,
-            showCreateOptions,
-            selectedOption,
-            userData,
-            handleCloseInvoiceBuilder,
-            showAccountPage,
-            handleDeleteAccount,
-            selectedReport,
-            showReports,
-            showBankingDashboard,
-            showHRDashboard,
-            hrSection,
-            showPayrollDashboard,
-            payrollSection,
-            showAnalysisPage,
-            showCustomerList,
-            handleCreateCustomer,
-            selectedInvoiceId,
-            handleInvoiceSelect,
-            handleBackFromInvoice,
-            showCustomerDetails,
-            selectedCustomer,
-            handleBackToCustomerDetails,
-            setView,
-            view,
-            handleCustomerSelect,
-            showProductManagement,
-            showServiceManagement,
-            showEstimateManagement,
-            showSalesOrderManagement,
-            showInvoiceManagement,
-            showVendorManagement,
-            showBillManagement,
-            showPurchaseOrderManagement,
-            showExpensesManagement,
-            showPurchaseReturnManagement,
-            showProcurementManagement,
-            showEmployeeManagement,
-            showPayrollManagement,
-            showTimesheetManagement,
-            showChartOfAccounts,
-            showJournalEntryManagement,
-            showGeneralLedgerManagement,
-            showAccountReconManagement,
-            showMonthEndManagement,
-            showFinancialStatements,
-            showFixedAssetManagement,
-            showBudgetManagement,
-            showCostAccountingManagement,
-            showIntercompanyManagement,
-            showAuditTrailManagement,
-            showProfitAndLossReport,
-            showBalanceSheetReport,
-            showCashFlowReport,
-            showIncomeByCustomer,
-            showAgedReceivables,
-            showAgedPayables,
-            showAccountBalances,
-            showTrialBalances,
-            showProfitAndLossAnalysis,
-            showBalanceSheetAnalysis,
-            showCashFlowAnalysis,
-            showBudgetVsActualAnalysis,
-            showSalesAnalysis,
-            showExpenseAnalysis,
-            showKPIDashboard,
-            showIntegrationSettings,
-            showUserProfileSettings,
-            handleUserProfileUpdate,
-            showDeviceSettings,
-            selectedSettingsOption,
-            showHelpCenter,
-            showPrivacyPolicy,
-            showTermsAndConditions,
-            showDownloadTransactions,
-            showConnectBank,
-            showPayrollTransactions,
-            showBankRecon,
-            showPayrollReport,
-            showBankReport,
-            showInventoryItems,
-            showMainDashboard,
-            showBankTransactions,
-            showInventoryManagement,
-          })}
+          <RenderMainContent
+            showTransactionForm={showTransactionForm}
+            showInvoiceBuilder={showInvoiceBuilder}
+            showCreateOptions={showCreateOptions}
+            selectedOption={selectedOption}
+            userData={userData}
+            handleCloseInvoiceBuilder={handleCloseInvoiceBuilder}
+            showAccountPage={showAccountPage}
+            handleDeleteAccount={handleDeleteAccount}
+            selectedReport={selectedReport}
+            showReports={showReports}
+            showBankingDashboard={showBankingDashboard}
+            showHRDashboard={showHRDashboard}
+            hrSection={hrSection}
+            showPayrollDashboard={showPayrollDashboard}
+            payrollSection={payrollSection}
+            showAnalysisPage={showAnalysisPage}
+            showCustomerList={showCustomerList}
+            handleCreateCustomer={handleCreateCustomer}
+            selectedInvoiceId={selectedInvoiceId}
+            handleInvoiceSelect={handleInvoiceSelect}
+            handleBackFromInvoice={handleBackFromInvoice}
+            showCustomerDetails={showCustomerDetails}
+            selectedCustomer={selectedCustomer}
+            handleBackToCustomerDetails={handleBackToCustomerDetails}
+            setView={setView}
+            view={view}
+            handleCustomerSelect={handleCustomerSelect}
+            showProductManagement={showProductManagement}
+            showServiceManagement={showServiceManagement}
+            showEstimateManagement={showEstimateManagement}
+            showSalesOrderManagement={showSalesOrderManagement}
+            showInvoiceManagement={showInvoiceManagement}
+            showVendorManagement={showVendorManagement}
+            showBillManagement={showBillManagement}
+            showPurchaseOrderManagement={showPurchaseOrderManagement}
+            showExpensesManagement={showExpensesManagement}
+            showPurchaseReturnManagement={showPurchaseReturnManagement}
+            showProcurementManagement={showProcurementManagement}
+            showEmployeeManagement={showEmployeeManagement}
+            showPayrollManagement={showPayrollManagement}
+            showTimesheetManagement={showTimesheetManagement}
+            showChartOfAccounts={showChartOfAccounts}
+            showJournalEntryManagement={showJournalEntryManagement}
+            showGeneralLedger={showGeneralLedger}
+            showAccountReconManagement={showAccountReconManagement}
+            showMonthEndManagement={showMonthEndManagement}
+            showFinancialStatements={showFinancialStatements}
+            showFixedAssetManagement={showFixedAssetManagement}
+            showBudgetManagement={showBudgetManagement}
+            showCostAccountingManagement={showCostAccountingManagement}
+            showIntercompanyManagement={showIntercompanyManagement}
+            showAuditTrailManagement={showAuditTrailManagement}
+            showProfitAndLossReport={showProfitAndLossReport}
+            showBalanceSheetReport={showBalanceSheetReport}
+            showCashFlowReport={showCashFlowReport}
+            showIncomeByCustomer={showIncomeByCustomer}
+            showAgedReceivables={showAgedReceivables}
+            showAgedPayables={showAgedPayables}
+            showAccountBalances={showAccountBalances}
+            showTrialBalances={showTrialBalances}
+            showProfitAndLossAnalysis={showProfitAndLossAnalysis}
+            showBalanceSheetAnalysis={showBalanceSheetAnalysis}
+            showCashFlowAnalysis={showCashFlowAnalysis}
+            showBudgetVsActualAnalysis={showBudgetVsActualAnalysis}
+            showSalesAnalysis={showSalesAnalysis}
+            showExpenseAnalysis={showExpenseAnalysis}
+            showKPIDashboard={showKPIDashboard}
+            showIntegrationSettings={showIntegrationSettings}
+            showUserProfileSettings={showUserProfileSettings}
+            handleUserProfileUpdate={handleUserProfileUpdate}
+            showDeviceSettings={showDeviceSettings}
+            selectedSettingsOption={selectedSettingsOption}
+            showHelpCenter={showHelpCenter}
+            showPrivacyPolicy={showPrivacyPolicy}
+            showTermsAndConditions={showTermsAndConditions}
+            showDownloadTransactions={showDownloadTransactions}
+            showConnectBank={showConnectBank}
+            showPayrollTransactions={showPayrollTransactions}
+            showBankRecon={showBankRecon}
+            showPayrollReport={showPayrollReport}
+            showBankReport={showBankReport}
+            showInventoryItems={showInventoryItems}
+            showMainDashboard={showMainDashboard}
+            showBankTransactions={showBankTransactions}
+            showInventoryManagement={showInventoryManagement}
+          />
+        }
       </Container>
     </ThemeProvider>
   );

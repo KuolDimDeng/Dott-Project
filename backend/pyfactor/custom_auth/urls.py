@@ -11,9 +11,16 @@ This module defines the URL patterns for all authentication-related functionalit
 All URLs are prefixed with 'api/' from the main URLs configuration.
 """
 
-from django.urls import path
+from django.urls import path, re_path, include
 from django.contrib.auth import views as auth_views
+from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.views import TokenRefreshView, TokenBlacklistView
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 
 from .views import (
     RegisterView,
@@ -28,10 +35,27 @@ from .views import (
     ActivateAccountView,
     ResendActivationEmailView,
     VerifyEmailView,
-    health_check
+    health_check,
+    AuthErrorView,
+    async_csrf_exempt,  # Import the decorator from views
+    SessionView,
+
 )
 
+
+
 urlpatterns = [
+       # API endpoints
+       path('api/', include('custom_auth.api.urls')),
+
+       # Session endpoints
+    
+       # Auth error logging endpoints - handle both patterns explicitly
+    re_path(r'^auth/_log/?$', AuthErrorView.as_view(), name='auth_log'),
+    re_path(r'^auth/error/?$', AuthErrorView.as_view(), name='auth_error'),
+
+
+    
     # Registration and Signup
     path('register/', RegisterView.as_view(), name='register'),
     path('signup/', SignUpView.as_view(), name='signup'),
@@ -64,8 +88,7 @@ urlpatterns = [
     # Social Authentication
     path('social-login/', SocialLoginView.as_view(), name='social_login'),
 
-    # Session Management
-    path('update-session/', UpdateSessionView.as_view(), name='update_session'),
+
 
     # Email Verification
     path(

@@ -68,41 +68,41 @@ export const BillingToggle = styled(Box)(({ theme }) => ({
 }));
 
 export const tiers = [
-    {
-      title: 'Basic',
-      type: 'free', // Add type
-      price: {
-        monthly: '0',
-        annual: '0',
-      },
-      description: [
-        '1 user included',
-        'Track income and expenses',
-        '2 GB of storage',
-        'Basic reporting',
-        'Email support',
-      ],
-      buttonText: 'Get started for free',
-      buttonVariant: 'outlined',
+  {
+    title: 'Free', // Changed from 'Basic' to match type
+    type: 'free',
+    price: {
+      monthly: 0, // Changed to number
+      annual: 0,  // Changed to number
     },
-    {
-      title: 'Professional',
-      type: 'professional', // Add type
-      subheader: 'Recommended',
-      price: {
-        monthly: '15',
-        annual: '150',
-      },
-      description: [
-        'Unlimited users',
-        'Payroll processing',
-        '20 GB of storage',
-        'Advanced analytics',
-        'Priority support',
-        'Custom reporting',
-        'API access',
-      ],
-      buttonText: 'Start Professional',
-      buttonVariant: 'contained',
+    description: [
+      '1 user included',
+      'Track income and expenses',
+      '2 GB of storage',
+      'Basic reporting',
+      'Email support',
+    ],
+    buttonText: 'Get started for free',
+    buttonVariant: 'outlined',
+  },
+  {
+    title: 'Professional',
+    type: 'professional',
+    subheader: 'Recommended',
+    price: {
+      monthly: 15,  // Changed to number
+      annual: 150,  // Changed to number
     },
-  ];
+    description: [
+      'Unlimited users',
+      'Payroll processing',
+      '20 GB of storage',
+      'Advanced analytics',
+      'Priority support',
+      'Custom reporting',
+      'API access',
+    ],
+    buttonText: 'Start Professional',
+    buttonVariant: 'contained',
+  },
+];

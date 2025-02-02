@@ -4,7 +4,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'; // Add useCallback here
 import { signIn, useSession, getSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+
 import {
   Button,
   TextField,
@@ -81,6 +82,10 @@ export default function SignInPage() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const searchParams = useSearchParams();
+  const verified = searchParams.get('verified')
+  const verificationError = searchParams.get('verificationError');
+
 
 
 
@@ -102,6 +107,19 @@ export default function SignInPage() {
     };
   }, []);
 
+    // Add verification success notification
+    useEffect(() => {
+      if (verified) {
+        setError(null);
+        toast.success('Email successfully verified! You can now sign in.');
+      }
+    }, [verified]);
+  
+    useEffect(() => {
+      if (verificationError) {
+        setError(`Verification failed: ${verificationError}`);
+      }
+    }, [verificationError]);
 
   // Form management
   const {
@@ -121,6 +139,32 @@ export default function SignInPage() {
     if (!isInitialized || status === 'loading') return;
   
     const checkAuth = async () => {
+        // Don't show error for unauthenticated state - this is normal
+        if (status === 'unauthenticated') {
+          logger.debug('User is unauthenticated', { 
+            status, 
+            pathname: window.location.pathname 
+          });
+          return;
+        }
+
+        // Only continue if we have required parameters
+        if (!router) {
+          console.error('Router not initialized');
+          return;
+        }
+
+      const requestId = crypto.randomUUID();
+    
+      logger.debug('Running checkAuth', {
+        requestId,
+        status,
+        sessionExists: !!session,
+        hasToken: !!session?.user?.accessToken,
+        pathname: window.location.pathname,
+      });
+    
+      // First check if we have both authenticated status and access token
       if (status === 'authenticated' && session?.user?.accessToken) {
         try {
           const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboarding/token/verify/`, {
@@ -129,23 +173,38 @@ export default function SignInPage() {
               'Authorization': `Bearer ${session.user.accessToken}`,
               'Content-Type': 'application/json'
             },
+            // Add token to request body as well
+            body: JSON.stringify({
+              token: session.user.accessToken
+            }),
             credentials: 'include'
           });
-  
+    
           if (!response.ok) {
-            throw new Error('Invalid session');
+            const errorText = await response.text();
+            throw new Error(`Token verification failed: ${errorText}`);
           }
-  
-          // Only redirect if we're on the signin page
+    
+          logger.info('Token verified successfully', { requestId });
+    
           if (window.location.pathname === '/auth/signin') {
-            router.replace('/onboarding/business-info');
+            const redirectPath = session.user.onboarding_status === 'complete' 
+              ? '/dashboard' 
+              : `/onboarding/${session.user.onboarding_status || 'business-info'}`;
+            
+            router.replace(redirectPath);
+            logger.info('Redirecting user', { requestId, redirectPath });
           }
         } catch (error) {
-          // Stay on signin page if token validation fails
-          logger.error('Auth check failed:', error);
+          logger.error('Auth check failed', {
+            requestId,
+            error: error.message,
+            stack: error.stack,
+          });
         }
       }
     };
+    
   
     checkAuth();
   }, [isInitialized, status, session, router]);
@@ -187,13 +246,13 @@ export default function SignInPage() {
     
         logger.info('Session established', {
           requestId,
-          onboardingStatus: newSession.user.onboardingStatus,
+          onboarding_status: newSession.user.onboarding_status,
           isComplete: newSession.user.isComplete,
           email: newSession.user.email
         });
     
         // Handle redirection using onboarding context
-        handleOnboardingRedirect(newSession.user.onboardingStatus);
+        handleOnboardingRedirect(newSession.user.onboarding_status);
     
       } catch (error) {
         logger.error('Login failed', {
@@ -231,6 +290,9 @@ const handleValidationError = useCallback(async (error, context = {}) => {
 
   // Helper function to determine error messages
   const determineErrorMessage = useCallback((error) => {
+    if (error.message.includes('Email not verified')) {
+      return 'EMAIL_NOT_VERIFIED';
+    }
     if (error.message.includes('timeout')) {
       return 'Login timed out. Please try again.';
     }
@@ -240,8 +302,29 @@ const handleValidationError = useCallback(async (error, context = {}) => {
     if (error.message.includes('network')) {
       return 'Network error. Please check your connection and try again.';
     }
+    if (error.message === 'CredentialsSignin') {
+      return 'Invalid email or password. Please try again.';
+    }
     return error.message || 'Login failed. Please try again.';
   }, []);
+
+    // Add resend handler
+    const handleResendVerification = async () => {
+      const email = control._formValues.email;
+      try {
+        const response = await fetch('/api/auth/resend-verification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        
+        if (!response.ok) throw new Error('Failed to resend verification');
+        toast.success('Verification email resent successfully');
+      } catch (error) {
+        toast.error(error.message);
+      }
+    };
+  
 
   // Single mutation for credentials login
   const credentialsLoginMutation = useMutation({
@@ -392,6 +475,19 @@ const handleSocialLogin = async (provider) => {
                 {error}
               </Alert>
             )}
+              {error === 'EMAIL_NOT_VERIFIED' && (
+                <Alert severity="warning" sx={{ mb: 3 }} onClose={() => setError(null)}>
+                  Email not verified. Please check your inbox.
+                  <Button 
+                    color="inherit" 
+                    size="small"
+                    onClick={handleResendVerification}
+                    sx={{ ml: 1 }}
+                  >
+                    Resend Verification
+                  </Button>
+                </Alert>
+              )}
 
             {/* Form */}
             <form onSubmit={handleSubmit((data) => credentialsLoginMutation.mutate(data))}>
@@ -504,4 +600,3 @@ const handleSocialLogin = async (provider) => {
     </ThemeProvider>
   );
 }
-

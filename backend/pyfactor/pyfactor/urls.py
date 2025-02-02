@@ -39,7 +39,7 @@ api_patterns = [
     path('messages/', csrf_exempt(message_stream), name='message_stream'),
     
     # Authentication and onboarding
-    path('custom_auth/', include(('custom_auth.urls', 'custom_auth'), namespace='custom_auth')),
+    path('', include('custom_auth.urls')),  # Changed from 'api/' to ''
     path('database/health-check/', async_csrf_exempt(DatabaseHealthCheckView.as_view()), name='database-health-check'),
     path('onboarding/', include('onboarding.urls', namespace='onboarding')),  # Fixed indentation
 ]

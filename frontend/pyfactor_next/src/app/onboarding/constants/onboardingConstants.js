@@ -1,3 +1,4 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/constants/onboardingConstants.js
 import { APP_CONFIG } from '@/config';
 
 export const ONBOARDING_STEPS = {
@@ -26,10 +27,10 @@ export const ERROR_TYPES = {
   SETUP_REQUIRED: 'SETUP_REQUIRED'
 };
 
-export const validatePlanAccess = (stepName, selectedPlan) => {
+export const validatePlanAccess = (stepName, selected_plan) => {
   switch (stepName) {
     case ONBOARDING_STEPS.PAYMENT:
-      if (selectedPlan !== PLANS.PROFESSIONAL) {
+      if (selected_plan !== PLANS.PROFESSIONAL) {
         return {
           valid: false,
           error: ERROR_TYPES.INVALID_PLAN,
@@ -38,7 +39,7 @@ export const validatePlanAccess = (stepName, selectedPlan) => {
       }
       break;
     case ONBOARDING_STEPS.SETUP:
-      if (!selectedPlan) {
+      if (!selected_plan) {
         return {
           valid: false,
           error: ERROR_TYPES.INVALID_PLAN,
@@ -50,20 +51,20 @@ export const validatePlanAccess = (stepName, selectedPlan) => {
   return { valid: true };
 };
 
-export const validateStepTransition = (currentStep, targetStep, formData) => {
+export const validateStepTransition = (current_step, targetStep, formData) => {
   // Allow direct business-info access
   if (targetStep === ONBOARDING_STEPS.BUSINESS_INFO) return true;
 
-  const selectedPlan = formData?.selectedPlan;
+  const selected_plan = formData?.selected_plan;
   
   // Special case for free plan setup access
   if (targetStep === ONBOARDING_STEPS.SETUP && 
-      currentStep === ONBOARDING_STEPS.SUBSCRIPTION && 
-      selectedPlan === PLANS.FREE) {
+      current_step === ONBOARDING_STEPS.SUBSCRIPTION && 
+      selected_plan === PLANS.FREE) {
     return true;
   }
 
-  return canNavigateToStep(targetStep, currentStep, formData);
+  return canNavigateToStep(targetStep, current_step, formData);
 };
 
 export const LEGACY_STEP_MAPPING = {
@@ -97,20 +98,20 @@ export const STEP_VALIDATION = {
   },
 
   'subscription': (data) => (
-    !!data?.selectedPlan &&
-    Object.values(PLANS).includes(data.selectedPlan) &&
+    !!data?.selected_plan &&
+    Object.values(PLANS).includes(data.selected_plan) &&
     !!data?.billingCycle &&
     Object.values(BILLING_CYCLES).includes(data.billingCycle)
   ),
 
   'payment': (data) => (
-    data?.selectedPlan === PLANS.FREE || 
-    (data?.selectedPlan === PLANS.PROFESSIONAL && !!data?.paymentMethod)
+    data?.selected_plan === PLANS.FREE || 
+    (data?.selected_plan === PLANS.PROFESSIONAL && !!data?.paymentMethod)
   ),
 
   'setup': (data) => (
-    data?.selectedPlan === PLANS.FREE ||
-    (data?.selectedPlan === PLANS.PROFESSIONAL && !!data?.paymentMethod)
+    data?.selected_plan === PLANS.FREE ||
+    (data?.selected_plan === PLANS.PROFESSIONAL && !!data?.paymentMethod)
   )
 };
 
@@ -124,37 +125,52 @@ export const STEP_REQUIREMENTS = {
   }
 };
 
-export const getNextStep = (currentStep, formData) => {
+export const getnext_step = (current_step, formData) => {
   const stepOrder = Object.values(ONBOARDING_STEPS);
-  const currentIndex = stepOrder.indexOf(currentStep);
+  const currentIndex = stepOrder.indexOf(current_step);
 
   // Special handling for subscription step
-  if (currentStep === ONBOARDING_STEPS.SUBSCRIPTION) {
-    return formData?.selectedPlan === PLANS.FREE 
+  if (current_step === ONBOARDING_STEPS.SUBSCRIPTION) {
+    return formData?.selected_plan === PLANS.FREE 
       ? ONBOARDING_STEPS.SETUP 
       : ONBOARDING_STEPS.PAYMENT;
   }
 
   // Special handling for payment step
-  if (currentStep === ONBOARDING_STEPS.PAYMENT && 
-      formData?.selectedPlan === PLANS.PROFESSIONAL) {
+  if (current_step === ONBOARDING_STEPS.PAYMENT && 
+      formData?.selected_plan === PLANS.PROFESSIONAL) {
     return ONBOARDING_STEPS.SETUP;
   }
 
   return stepOrder[currentIndex + 1] || ONBOARDING_STEPS.COMPLETE;
 };
 
-export const canNavigateToStep = (targetStep, currentStep, formData) => {
+export const canNavigateToStep = (targetStep, current_step, formData) => {
   // Always allow navigation to business-info
   if (targetStep === ONBOARDING_STEPS.BUSINESS_INFO) return true;
 
-  const selectedPlan = formData?.selectedPlan;
+  const selected_plan = formData?.selected_plan;
+  
+  // Special handling for free plan to setup transition
+  if (targetStep === ONBOARDING_STEPS.SETUP && 
+      current_step === ONBOARDING_STEPS.SUBSCRIPTION && 
+      selected_plan === PLANS.FREE) {
+    return true;
+  }
+
+  // Handle subscription access from business-info
+  if (targetStep === ONBOARDING_STEPS.SUBSCRIPTION && 
+      current_step === ONBOARDING_STEPS.BUSINESS_INFO) {
+    return true;
+  }
+
   const stepRequirements = STEP_REQUIREMENTS[targetStep];
 
   // Handle plan-specific requirements
   if (typeof stepRequirements === 'object') {
-    const planRequirements = stepRequirements[selectedPlan];
+    const planRequirements = stepRequirements[selected_plan];
     if (!planRequirements) return false;
+    
     return planRequirements.every(step => 
       STEP_VALIDATION[step]?.(formData)
     );
@@ -166,13 +182,13 @@ export const canNavigateToStep = (targetStep, currentStep, formData) => {
   ) ?? true;
 };
 
-export const getPreviousStep = (currentStep, formData) => {
+export const getPreviousStep = (current_step, formData) => {
   const stepOrder = Object.values(ONBOARDING_STEPS);
-  const currentIndex = stepOrder.indexOf(currentStep);
+  const currentIndex = stepOrder.indexOf(current_step);
 
   // Special handling for setup step based on plan
-  if (currentStep === ONBOARDING_STEPS.SETUP) {
-    return formData?.selectedPlan === PLANS.FREE 
+  if (current_step === ONBOARDING_STEPS.SETUP) {
+    return formData?.selected_plan === PLANS.FREE 
       ? ONBOARDING_STEPS.SUBSCRIPTION 
       : ONBOARDING_STEPS.PAYMENT;
   }

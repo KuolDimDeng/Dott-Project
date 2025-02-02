@@ -23,16 +23,16 @@ export const useOnboardingProgress = (step, options = {}) => {
   const [lastSaved, setLastSaved] = useState(null);
   const [saving, setSaving] = useState(false);
   const [validationError, setValidationError] = useState(null);
-  const [selectedTier, setSelectedTier] = useState(null);
+  const [selected_plan, setselected_plan] = useState(null);
 
   // Ensure data structure is maintained
   const formData = useMemo(
     () => ({
       ...storeFormData,
       ...localFormData,
-      tier: selectedTier // Include tier
+      tier: selected_plan // Include tier
     }),
-    [storeFormData, localFormData, selectedTier]
+    [storeFormData, localFormData, selected_plan]
   );
 
   // Load saved progress and tier
@@ -47,15 +47,15 @@ export const useOnboardingProgress = (step, options = {}) => {
           setLastSaved(saved.timestamp);
           
           // Set tier if it exists
-          if (saved.data.selectedPlan) {
-            setSelectedTier(saved.data.selectedPlan);
+          if (saved.data.selected_plan) {
+            setselected_plan(saved.data.selected_plan);
           }
         }
 
         // Also check for separate tier data
         const tierData = await persistenceService.getCurrentTier();
         if (tierData) {
-          setSelectedTier(tierData);
+          setselected_plan(tierData);
         }
       } catch (error) {
         logger.error(`Failed to load progress for ${step}:`, error);
@@ -93,18 +93,18 @@ export const useOnboardingProgress = (step, options = {}) => {
         }
 
         // Handle tier selection for subscription step
-        if (step === 'subscription' && data.selectedPlan) {
-          setSelectedTier(data.selectedPlan);
+        if (step === 'subscription' && data.selected_plan) {
+          setselected_plan(data.selected_plan);
           
           // Get next step based on tier
-          const nextStep = RoutingManager.getNextStep('subscription', data.selectedPlan);
-          data.nextStep = nextStep;
+          const next_step = RoutingManager.getnext_step('subscription', data.selected_plan);
+          data.next_step = next_step;
         }
 
         // Save to backend first
         const result = await saveStep(step, {
           ...data,
-          tier: data.selectedPlan || selectedTier
+          tier: data.selected_plan || selected_plan
         });
 
         // Then save locally only if backend succeeds
@@ -113,7 +113,7 @@ export const useOnboardingProgress = (step, options = {}) => {
             timestamp: Date.now(),
             data: {
               ...data,
-              tier: data.selectedPlan || selectedTier
+              tier: data.selected_plan || selected_plan
             },
           });
 
@@ -121,22 +121,22 @@ export const useOnboardingProgress = (step, options = {}) => {
           setLastSaved(Date.now());
 
           // If next step is provided in response, use it
-          if (result.nextStep) {
-            router.push(`/onboarding/${result.nextStep}`);
+          if (result.next_step) {
+            router.push(`/onboarding/${result.next_step}`);
           }
         }
 
         return result;
       } catch (error) {
         logger.error(`Failed to save progress for ${step}:`, error, {
-          tier: selectedTier
+          tier: selected_plan
         });
         throw error;
       } finally {
         setSaving(false);
       }
     },
-    [step, saving, saveStep, session, router, selectedTier]
+    [step, saving, saveStep, session, router, selected_plan]
   );
 
   // Cleanup on unmount
@@ -148,7 +148,7 @@ export const useOnboardingProgress = (step, options = {}) => {
             timestamp: Date.now(),
             data: {
               ...localFormData,
-              tier: selectedTier
+              tier: selected_plan
             },
           })
           .catch((error) => {
@@ -156,7 +156,7 @@ export const useOnboardingProgress = (step, options = {}) => {
           });
       }
     };
-  }, [step, localFormData, saving, selectedTier]);
+  }, [step, localFormData, saving, selected_plan]);
 
   return {
     formData,
@@ -167,7 +167,7 @@ export const useOnboardingProgress = (step, options = {}) => {
     error: storeError || validationError,
     saveProgress,
     validationError,
-    selectedTier,
+    selected_plan,
     ...otherStoreProps,
   };
 };

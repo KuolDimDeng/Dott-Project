@@ -15,7 +15,12 @@ export default function CrispChat({ session }) {
     try {
       // Load Crisp
       window.$crisp = [];
-      window.CRISP_WEBSITE_ID = "82ce1965-8acf-4c6e-b8c0-a543ead8004e";
+      const CRISP_WEBSITE_ID = process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID;
+      if (!CRISP_WEBSITE_ID) {
+        logger.error('CRISP_WEBSITE_ID not found in environment variables');
+        return;
+      }
+      window.CRISP_WEBSITE_ID = CRISP_WEBSITE_ID;
       
       // Create and load script
       const script = document.createElement('script');
@@ -23,21 +28,32 @@ export default function CrispChat({ session }) {
       script.async = true;
       
       // Configure Crisp after script loads
-      script.onload = () => {
-        logger.debug('Crisp script loaded successfully');
-        setMounted(true);
+      const initializeCrisp = () => {
+        try {
+          logger.debug('Initializing Crisp chat');
+          setMounted(true);
 
-        // Initial configuration
-        window.$crisp.push(["safe", true]);
-        window.$crisp.push(["configure", "position:reverse"]);
-        window.$crisp.push(["configure", "hide:on:mobile", false]);
-        window.$crisp.push(["configure", "position:reverse", true]);
-        window.$crisp.push(["do", "chat:show"]);
+          // Initial configuration
+          window.$crisp.push(["safe", true]);
+          window.$crisp.push(["configure", "position:reverse"]);
+          window.$crisp.push(["configure", "hide:on:mobile", false]);
+          window.$crisp.push(["configure", "position:reverse", true]);
+          window.$crisp.push(["do", "chat:show"]);
 
-        if (session?.user) {
-          window.$crisp.push(["set", "user:email", session.user.email]);
-          window.$crisp.push(["set", "user:nickname", session.user.name]);
+          if (session?.user) {
+            window.$crisp.push(["set", "user:email", session.user.email]);
+            window.$crisp.push(["set", "user:nickname", session.user.name]);
+          }
+
+          logger.debug('Crisp chat initialized successfully');
+        } catch (error) {
+          logger.error('Error initializing Crisp:', error);
         }
+      };
+
+      script.onload = initializeCrisp;
+      script.onerror = (error) => {
+        logger.error('Failed to load Crisp script:', error);
       };
 
       // Only append if script doesn't exist

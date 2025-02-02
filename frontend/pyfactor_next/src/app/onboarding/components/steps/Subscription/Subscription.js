@@ -1,78 +1,181 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/components/steps/Subscription/Subscription.js
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/components/steps/Subscription/Subscription.js
 'use client';
 
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import PropTypes from 'prop-types';
+import { useSession } from 'next-auth/react';
 import { Container, Grid, Typography, Button, Card, CardContent, CardActions, Box, CircularProgress } from '@mui/material';
 import Image from 'next/image';
-import { StepHeader } from '@/app/onboarding/components/shared/StepHeader';
-import { StepProgress } from '@/app/onboarding/components/shared/StepProgress'; 
+import { useToast } from '@/components/Toast/ToastProvider';
+import { StepHeader } from '../../shared/StepHeader';
+import { StepProgress } from '../../shared/StepProgress';
 import { useSubscriptionForm } from './useSubscriptionForm';
 import { BillingToggle, tiers } from './Subscription.styles';
 import { useOnboarding } from '@/app/onboarding/contexts/OnboardingContext';
 import { logger } from '@/utils/logger';
+import { onboardingApi } from '@/services/api/onboarding';
+import { persistenceService, STORAGE_KEYS } from '@/services/persistenceService';
+import { generateRequestId } from '@/lib/authUtils';
+import useOnboardingStore from '@/app/onboarding/store/onboardingStore';
 
 const SubscriptionComponent = ({ metadata }) => {
-  const [selectedTier, setSelectedTier] = useState(null);
-  const { canNavigateToStep, currentStep } = useOnboarding();
-
+  const { data: session, update } = useSession();
+  const toast = useToast();
+  const router = useRouter();
+  const { current_step, updateFormData, onboardingManager } = useOnboarding();
+  const [selected_plan, setLocalTier] = useState(null);
+  const store = useOnboardingStore();
+  
   const {
     methods,
     handleChange,
-    handleSubscriptionSelect,
     isLoading,
     isSubmitting,
-    handlePreviousStep,
+    setIsSubmitting,
     requestId
   } = useSubscriptionForm();
 
+  useEffect(() => {
+    logger.debug('Subscription component state:', {
+      selected_plan,
+      current_step,
+      formState: methods.getValues(),
+      isSubmitting,
+      isLoading,
+      requestId
+    });
+  }, [selected_plan, current_step, methods, isSubmitting, isLoading, requestId]);
+
   const handleTierSelect = async (tier) => {
+    const requestId = generateRequestId();
+    
+    logger.debug('Tier selection initiated:', {
+        requestId,
+        tier,
+        tierType: tier.type,
+        currentStatus: session?.user?.onboarding_status
+    });
+    
+    let toastId;
     try {
-        logger.debug('Tier selection initiated:', {
-            tier: tier.type,
-            currentStep: currentStep,
-            selectedTier: selectedTier
-        });
+        // Input validation
+        if (!tier.type || !['free', 'professional'].includes(tier.type)) {
+            throw new Error('Invalid tier type');
+        }
 
-        const nextStep = tier.type === 'free' ? 'setup' : 'payment';
-        const canNavigate = await canNavigateToStep(nextStep);
+        const billingCycle = methods.watch('billing_cycle');
+        if (!billingCycle) {
+            throw new Error('Please select a billing cycle');
+        }
 
-        logger.debug('Navigation check:', {
-            requestedStep: nextStep,
-            canNavigate: canNavigate,
-            tier: tier.type
-        });
+        setIsSubmitting(true);
+        toastId = toast.loading('Processing your selection...');
 
-        if (!canNavigate) {
-            logger.warn('Navigation blocked:', {
-                currentStep: 'subscription',
-                requestedStep: nextStep,
-                reason: 'Invalid step transition'
+        // 1. First save subscription data
+        const subscriptionData = {
+            selected_plan: tier.type,
+            billing_cycle: billingCycle,
+            current_step: 'subscription',
+            request_id: requestId
+        };
+
+        const saveResponse = await onboardingApi.saveSubscriptionPlan(subscriptionData);
+
+        if (!saveResponse?.success) {
+            throw new Error(saveResponse?.error || 'Failed to save subscription plan');
+        }
+
+        // 2. For free tier, first initiate setup
+        if (tier.type === 'free') {
+            // Start setup process
+            const setupResponse = await onboardingApi.startSetup({
+                plan: 'free',
+                requestId
             });
+
+            if (!setupResponse?.success) {
+                throw new Error('Failed to start setup process');
+            }
+
+            // 3. Then update status
+            await onboardingApi.updateStatus({
+                current_step: 'setup',
+                next_step: 'dashboard',
+                selected_plan: 'free',
+                request_id: requestId
+            });
+
+            // 4. Update session
+            await update({
+                ...session,
+                user: {
+                    ...session.user,
+                    selected_plan: 'free',
+                    onboarding_status: 'setup'
+                }
+            });
+
+            if (toastId) {
+                toast.dismiss(toastId);
+                toast.success('Welcome! Your workspace is being prepared.');
+            }
+
+            // 5. Redirect to dashboard
+            router.replace('/dashboard');
             return;
         }
 
-        setSelectedTier(tier.type);
-        
-        logger.debug('About to call handleSubscriptionSelect:', {
-            tier: tier.type,
-            selectedTier: tier.type,
-            isProcessing: isSubmitting
-        });
+        // For professional tier
+        if (tier.type === 'professional') {
+            await onboardingApi.updateStatus({
+                current_step: 'subscription',
+                next_step: 'payment',
+                selected_plan: 'professional',
+                request_id: requestId
+            });
 
-        await handleSubscriptionSelect(tier);
+            if (toastId) {
+                toast.dismiss(toastId);
+                toast.success('Plan selected. Proceeding to payment...');
+            }
+
+            router.replace('/onboarding/payment');
+            return;
+        }
 
     } catch (error) {
-        logger.error('Tier selection failed:', {
-            error: error.message,
-            tier: tier.type,
-            context: {
-                currentStep: currentStep,
-                selectedTier: selectedTier
-            }
+        logger.error('Plan selection failed:', {
+            requestId,
+            error: error.message || 'Unknown error occurred',
+            tierType: tier.type,
+            stack: error.stack
         });
+
+        if (toastId) {
+            toast.dismiss(toastId);
+        }
+        toast.error(`Plan selection failed. Please try again.`);
+        
+        await persistenceService.clearData(STORAGE_KEYS.SUBSCRIPTION_DATA);
+        setLocalTier(null);
+        store.setTier(null);
+        
+    } finally {
+        setIsSubmitting(false);
     }
 };
+
+  const handlePreviousStep = async () => {
+    try {
+      router.push('/onboarding/business-info');
+    } catch (error) {
+      logger.error('Navigation to previous step failed:', {
+        error: error.message,
+        requestId
+      });
+    }
+  };
 
   const steps = [
     { label: 'Business Info', completed: true },
@@ -85,55 +188,52 @@ const SubscriptionComponent = ({ metadata }) => {
     },
     { label: 'Setup', completed: false }
   ].filter(step => 
-    (!step.conditional || (step.conditional && step.showFor.includes(methods.watch('selectedPlan'))))
+    (!step.conditional || (step.conditional && step.showFor.includes(methods.watch('selected_plan'))))
   );
 
-  const getButtonDisabledState = (tier) => {
+  const getButtonDisabledState = () => {
     return isLoading || isSubmitting;
   };
   
   return (
     <Container maxWidth="lg">
-         <Box sx={{ 
-      display: 'flex', 
-      justifyContent: 'center',
-      mt: 4, // margin top
-      mb: 4  // margin bottom
-    }}>
-      <Image
-        src="/static/images/Pyfactor.png"
-        alt="Pyfactor Logo"
-        width={150} // adjust size as needed
-        height={120} // adjust size as needed
-        priority
-      />
-    </Box>
-      <StepProgress 
-        steps={steps} 
-        currentStep={2}
-      />      
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center',
+        mt: 4,
+        mb: 4
+      }}>
+        <Image
+          src="/static/images/Pyfactor.png"
+          alt="Pyfactor Logo"
+          width={150}
+          height={120}
+          priority
+        />
+      </Box>
+
+      <StepProgress steps={steps} current_step={2} />
+      
       <StepHeader 
         title={metadata.title}
         description={metadata.description}
-        currentStep={2}
+        current_step={2}
         totalSteps={steps.length}
         stepName="Subscription"
       />
 
       <Box sx={{ textAlign: 'center', mb: 6 }}>
-  
-
         <BillingToggle>
           <Box
-            className={`MuiBillingToggle-option ${methods.watch('billingCycle') === 'monthly' ? 'active' : ''}`}
-            onClick={() => !isSubmitting && handleChange('billingCycle', 'monthly')}
+            className={`MuiBillingToggle-option ${methods.watch('billing_cycle') === 'monthly' ? 'active' : ''}`}
+            onClick={() => !isSubmitting && handleChange('billing_cycle', 'monthly')}
             sx={{ opacity: isSubmitting ? 0.5 : 1 }}
           >
             Monthly
           </Box>
           <Box
-            className={`MuiBillingToggle-option ${methods.watch('billingCycle') === 'annual' ? 'active' : ''}`}
-            onClick={() => !isSubmitting && handleChange('billingCycle', 'annual')}
+            className={`MuiBillingToggle-option ${methods.watch('billing_cycle') === 'annual' ? 'active' : ''}`}
+            onClick={() => !isSubmitting && handleChange('billing_cycle', 'annual')}
             sx={{ opacity: isSubmitting ? 0.5 : 1 }}
           >
             Annual
@@ -160,9 +260,9 @@ const SubscriptionComponent = ({ metadata }) => {
                   </Typography>
                 )}
                 <Typography variant="h4" component="div" sx={{ mb: 2 }}>
-                  ${tier.price[methods.watch('billingCycle') || 'monthly']}
+                  ${tier.price[methods.watch('billing_cycle') || 'monthly']}
                   <Typography variant="caption" sx={{ verticalAlign: 'super' }}>
-                    /{methods.watch('billingCycle') === 'annual' ? 'year' : 'month'}
+                    /{methods.watch('billing_cycle') === 'annual' ? 'year' : 'month'}
                   </Typography>
                 </Typography>
                 {tier.description.map((line) => (
@@ -182,13 +282,13 @@ const SubscriptionComponent = ({ metadata }) => {
                   fullWidth
                   variant={tier.buttonVariant}
                   onClick={() => handleTierSelect(tier)}
-                  disabled={getButtonDisabledState(tier)}
+                  disabled={getButtonDisabledState()}
                   sx={{
                     position: 'relative',
                     minHeight: 48,
                   }}
                 >
-                  {isLoading || isSubmitting ? (
+                  {(isLoading || isSubmitting) ? (
                     <CircularProgress size={24} />
                   ) : (
                     tier.buttonText
@@ -204,7 +304,7 @@ const SubscriptionComponent = ({ metadata }) => {
         <Button
           variant="outlined"
           onClick={handlePreviousStep}
-          disabled={isLoading || isSubmitting || !canNavigateToStep('business-info')}
+          disabled={getButtonDisabledState()}
         >
           Previous Step
         </Button>
@@ -217,7 +317,7 @@ SubscriptionComponent.propTypes = {
   metadata: PropTypes.shape({
     title: PropTypes.string.isRequired,
     description: PropTypes.string.isRequired,
-    nextStep: PropTypes.string,
+    next_step: PropTypes.string,
     prevStep: PropTypes.string
   }).isRequired
 };

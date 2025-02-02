@@ -1,17 +1,9 @@
-#/Users/kuoldeng/projectx/backend/pyfactor/custom_auth/models.py
-
 from django.db import models
-import re
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from django.db import models, connections
 from django.utils import timezone
-
 import uuid
 
 
-
-
-# Create your models here.
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -21,20 +13,21 @@ class UserManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
-    
+
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
-        if extra_fields.get('is_staff') is not True:
+        if not extra_fields.get('is_staff'):
             raise ValueError('Superuser must have is_staff=True.')
-        if extra_fields.get('is_superuser') is not True:
+        if not extra_fields.get('is_superuser'):
             raise ValueError('Superuser must have is_superuser=True.')
 
         return self.create_user(email, password, **extra_fields)
-    
+
     def get_by_natural_key(self, email):
         return self.get(email=email)
+
 
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -44,34 +37,33 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
-    email_confirmed = models.BooleanField(default=False)
-    confirmation_token = models.UUIDField(default=uuid.uuid4, editable=False)
-    is_onboarded = models.BooleanField(default=False)
-    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True)  # New field
-
-
-
+    email_confirmed = models.BooleanField(default=False)  # For email verification
+    confirmation_token = models.UUIDField(default=uuid.uuid4, editable=False)  # For email verification
+    is_onboarded = models.BooleanField(default=False)  # Tracks onboarding completion
+    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True)  # Optional, for payment integration
 
     USERNAME_FIELD = 'email'
     EMAIL_FIELD = 'email'
     REQUIRED_FIELDS = []
 
     objects = UserManager()
+
     ROLE_CHOICES = [
         ('OWNER', 'Business Owner'),
         ('ADMIN', 'Administrator'),
         ('EMPLOYEE', 'Employee'),
         ('ACCOUNTANT', 'Accountant'),
-        ('HR-ADMIN','HR-Admin'),
+        ('HR-ADMIN', 'HR-Admin'),
         ('PAYROLL-ADMIN', 'Payroll-Admin'),
         ('ACCOUNTS-PAYABLE', 'Accounts-Payable'),
         ('ACCOUNTS-RECEIVABLE', 'Accounts-Receivable'),
-        ('ANALYST','Analyst')
+        ('ANALYST', 'Analyst')
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='EMPLOYEE')
+
     OCCUPATION_CHOICES = [
         ('OWNER', 'Owner'),
-        ('Freelaancer', 'Freelancer'),
+        ('Freelancer', 'Freelancer'),
         ('CEO', 'Chief Executive Officer'),
         ('CFO', 'Chief Financial Officer'),
         ('CTO', 'Chief Technology Officer'),
@@ -102,15 +94,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     ]
     occupation = models.CharField(max_length=50, choices=OCCUPATION_CHOICES, default='OTHER')
 
-
     class Meta:
         db_table = 'users_user'
 
     def __str__(self):
         return self.email
 
-    def get_full_name(self):
-        return f"{self.first_name} {self.last_name}"
+    @property
+    def full_name(self):
+        """Returns the user's full name or email if names are not provided."""
+        if self.first_name or self.last_name:
+            return f"{self.first_name} {self.last_name}".strip()
+        return self.email
 
     def get_short_name(self):
+        """Returns the user's first name."""
         return self.first_name

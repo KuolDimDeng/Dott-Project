@@ -3,7 +3,7 @@ export const businessInfoPropTypes = {
     metadata: {
       title: 'string',
       description: 'string',
-      nextStep: 'string?',
+      next_step: 'string?',
       prevStep: 'string?'
     }
   };

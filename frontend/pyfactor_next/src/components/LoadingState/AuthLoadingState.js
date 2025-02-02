@@ -20,7 +20,7 @@ export function AuthLoadingState() {
       hasSession: !!session,
       pathname: window.location.pathname,
       accessToken: !!session?.user?.accessToken,
-      onboardingStatus: session?.user?.onboardingStatus
+      onboarding_status: session?.user?.onboarding_status
     });
   }, [status, session]);
 
@@ -41,67 +41,70 @@ export function AuthLoadingState() {
   }, [router, status, session]);
 
   useEffect(() => {
-    // Skip if already redirecting or loading
-    if (isRedirecting || status === 'loading') return;
-
-    const checkAuthState = () => {
-      try {
-        logger.debug('Checking auth state:', {
-          status,
-          hasSession: !!session?.user,
-          currentPath: window.location.pathname,
-          onboardingStatus: session?.user?.onboardingStatus
+    if (!isInitialized || status === 'loading') return;
+  
+    // Define checkAuth without parameters since we're using closure variables
+    const checkAuth = async () => {
+      // Check for required values
+      if (!status || !session || !router) {
+        console.error('Missing required authentication parameters', { 
+          status, 
+          hasSession: !!session, 
+          hasRouter: !!router 
         });
-
-        // Handle unauthenticated users
-        if (status === 'unauthenticated') {
-          const currentPath = window.location.pathname;
-          if (currentPath !== RoutingManager.ROUTES.AUTH.SIGNIN) {
-            handleRedirect(`${RoutingManager.ROUTES.AUTH.SIGNIN}?callbackUrl=${encodeURIComponent(currentPath)}`);
+        return;
+      }
+  
+      const requestId = crypto.randomUUID();
+  
+      logger.debug('Running checkAuth', {
+        requestId,
+        status,
+        sessionExists: !!session,
+        accessToken: session?.user?.accessToken || null,
+        pathname: window.location.pathname,
+      });
+  
+      if (status === 'authenticated' && session?.user?.accessToken) {
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboarding/token/verify/`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-Request-ID': crypto.randomUUID()
+            },
+            body: JSON.stringify({
+              token: accessToken
+            }),
+            credentials: 'include'
+          });
+  
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Token verification failed: ${errorText}`);
           }
-          return;
+  
+          logger.info('Token verified successfully', { requestId });
+  
+          if (window.location.pathname === '/auth/signin') {
+            router.replace('/onboarding/business-info');
+            logger.info('Redirecting to onboarding page', { requestId });
+          }
+        } catch (error) {
+          logger.error('Auth check failed', {
+            requestId,
+            error: error.message,
+            stack: error.stack,
+          });
         }
-
-        // Handle authenticated users
-        if (status === 'authenticated' && session?.user) {
-          const currentPath = window.location.pathname;
-
-          // Allow direct access to business-info
-          if (currentPath === RoutingManager.ROUTES.ONBOARDING.BUSINESS_INFO) {
-            return;
-          }
-
-          // Allow subscription access during transition
-          if (currentPath === RoutingManager.ROUTES.ONBOARDING.SUBSCRIPTION &&
-              (session.user.onboardingStatus === 'subscription' || 
-               session.user.onboardingStatus === 'business-info')) {
-            return;
-          }
-
-          // Determine target path
-          const targetPath = RoutingManager.handleInitialRoute(
-            currentPath,
-            session,
-            session.user.selectedPlan
-          );
-
-          if (currentPath !== targetPath) {
-            handleRedirect(targetPath);
-          }
-        }
-      } catch (error) {
-        logger.error('Auth state check failed:', {
-          error: error.message,
-          status,
-          currentPath: window.location.pathname
-        });
-        setError(error.message);
       }
     };
-
-    checkAuthState();
-  }, [status, session, handleRedirect, isRedirecting]);
-
+  
+    checkAuth();
+  }, [isInitialized, status, session, router]);
+  
   // Show loading state during authentication or redirection
   if (status === 'loading' || isRedirecting) {
     return (

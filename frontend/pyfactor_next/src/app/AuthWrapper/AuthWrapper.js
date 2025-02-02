@@ -10,6 +10,17 @@ import { useToast } from '@/components/Toast/ToastProvider';
 import { RoutingManager } from '@/lib/routingManager';
 import PropTypes from 'prop-types';
 import { isPublicRoute } from '@/lib/authUtils';
+import { persistenceService } from '@/services/persistenceService';
+import { useAuth } from '@/hooks/useAuth'; // Ensure correct import path
+import { validateUserState, generateRequestId } from '@/lib/authUtils';  // Add this line
+
+
+
+import { 
+  ONBOARDING_STEPS, 
+  canAccessStep, 
+  getnext_step 
+} from '@/config/steps';
 
 const LoadingState = memo(function LoadingState({ message }) {
   return (
@@ -69,6 +80,8 @@ function AuthWrapper({ children }) {
   const mountedRef = useRef(true);
   const toast = useToast();
 
+
+
   const log = useCallback((message, data) => {
     logger.debug(message, { 
       requestId,
@@ -100,6 +113,82 @@ function AuthWrapper({ children }) {
     return isPublic;
   }, [log]);
 
+  // Special handling for steps
+  const handleStepAccess = useCallback(async (pathname) => {
+    const step = pathname.split('/').pop();
+    const currentStatus = session?.user?.onboarding_status;
+  
+    logger.debug('Detailed onboarding status check:', {
+      requestId,
+      step,
+      currentStatus,
+      sessionData: {
+        onboarding_status: session?.user?.onboarding_status,
+        userId: session?.user?.id,
+        timestamp: new Date().toISOString()
+      }
+    });
+  
+    try {
+      // Business info is always accessible
+      if (step === 'business-info') {
+        logger.debug('Access granted: Business info is always accessible.', { requestId, step });
+        return true;
+      }
+  
+      // Subscription step access logic
+      if (step === 'subscription') {
+        const allowedAccess = currentStatus === 'business-info' || currentStatus === 'subscription';
+  
+        logger.debug('Subscription access check:', {
+          requestId,
+          currentStatus,
+          allowedAccess,
+        });
+  
+        return allowedAccess;
+      }
+  
+      // Setup step access logic
+      if (step === 'setup') {
+        if (currentStatus !== 'setup') {
+          logger.debug('Skipping setup status check; user not in setup step yet.', { requestId, currentStatus });
+          return false;
+        }
+  
+        const subscriptionData = await persistenceService.getData('subscription-data');
+  
+        logger.debug('Setup access check:', {
+          requestId,
+          hasSubscriptionData: !!subscriptionData,
+          selected_plan: subscriptionData?.selected_plan,
+        });
+  
+        return !!subscriptionData?.selected_plan;
+      }
+  
+      // Default validation for other steps
+      const canAccess = canAccessStep(step, { user: session?.user });
+  
+      logger.debug('Default step access validation:', {
+        requestId,
+        step,
+        canAccess,
+      });
+  
+      return canAccess;
+  
+    } catch (error) {
+      logger.error('Step access validation failed:', {
+        requestId,
+        step,
+        error: error.message,
+      });
+      return false;
+    }
+  }, [session, requestId]);
+  
+
   const handleRedirect = useCallback((path, reason = 'unauthorized') => {
     if (!mountedRef.current) return;
 
@@ -108,7 +197,7 @@ function AuthWrapper({ children }) {
       to: '/auth/signin',
       reason,
       sessionStatus: status,
-      currentOnboardingStatus: session?.user?.onboardingStatus
+      currentonboarding_status: session?.user?.onboarding_status
     });
     
     if (validationTimeoutRef.current) {
@@ -125,8 +214,12 @@ function AuthWrapper({ children }) {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'X-Request-ID': crypto.randomUUID()
         },
+        body: JSON.stringify({
+          token: accessToken
+        }),
         credentials: 'include'
       });
   
@@ -138,7 +231,7 @@ function AuthWrapper({ children }) {
       }
   
       const data = await response.json();
-      return data.isValid;
+      return data.is_valid && data.user_id === session?.user?.id; // Add user ID check
   
     } catch (error) {
       log('Token validation error:', {
@@ -147,112 +240,40 @@ function AuthWrapper({ children }) {
       return false;
     }
   };
-  const validateAccess = useCallback(async () => {
-    if (!mountedRef.current) return true;
+    // Update validateAccess to use the simplified handleStepAccess
+    const validateAccess = useCallback(async () => {
+      if (!mountedRef.current) return true;
   
-    log('Starting access validation:', {
-      pathname,
-      sessionStatus: status,
-      hasUser: !!session?.user,
-      hasToken: !!session?.user?.accessToken,
-      onboardingStatus: session?.user?.onboardingStatus
-    });
-  
-    try {
-      // Special handling for business-info page
-      if (pathname === '/onboarding/business-info') {
-        if (!session?.user?.accessToken) {
-          log('No token for business-info access');
-          handleRedirect(pathname, 'no_token');
-          return false;
-        }
-  
-        // Verify token with backend
-        try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboarding/token/verify/`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session.user.accessToken}`,
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            credentials: 'include'
-          });
-  
-          if (!response.ok) {
-            log('Token validation failed for business-info:', {
-              status: response.status
-            });
-            handleRedirect(pathname, 'invalid_token');
-            return false;
-          }
-  
-          log('Token validated for business-info access');
+      try {
+        if (isPublicOrAuthPath(pathname)) {
           return true;
-        } catch (error) {
-          log('Token validation error:', { error: error.message });
-          handleRedirect(pathname, 'token_error');
+        }
+  
+        if (!session?.user?.accessToken) {
+          handleRedirect(pathname, 'no_session');
           return false;
         }
-      }
   
-      // Handle public and special paths
-      if (isPublicOrAuthPath(pathname)) {
-        log('Public path access granted:', { pathname });
+        if (pathname.startsWith('/onboarding/')) {
+          return await handleStepAccess(pathname);
+        }
+  
         return true;
-      }
   
-      // Check session existence
-      if (!session?.user?.accessToken) {
-        log('No valid session found:', { pathname });
-        handleRedirect(pathname, 'no_session');
+      } catch (error) {
+        logger.error('Access validation failed:', {
+          requestId,
+          error: error.message,
+          pathname
+        });
+        setError(error);
         return false;
       }
+    }, [pathname, session, handleStepAccess, handleRedirect, isPublicOrAuthPath]);
   
-      // Ensure onboarding status exists
-      if (!session.user.onboardingStatus) {
-        session.user.onboardingStatus = 'business-info';
-        session.user.currentStep = 1;
-        log('Set default onboarding status:', {
-          status: 'business-info',
-          step: 1
-        });
-      }
+
   
-      // Handle onboarding routes
-      if (pathname.startsWith('/onboarding/')) {
-        const currentStep = pathname.split('/').pop();
-        const currentStatus = session.user.onboardingStatus;
-  
-        // Always allow business-info and subscription access
-        if (currentStep === 'business-info' || currentStep === 'subscription') {
-          return true;
-        }
-  
-        // For other steps, validate against current status
-        if (!currentStatus || (currentStep !== currentStatus && 
-            !['business-info', 'subscription'].includes(currentStep))) {
-          if (mountedRef.current) {
-            router.replace(`/onboarding/${currentStatus || 'business-info'}`);
-          }
-          return false;
-        }
-      }
-  
-      log('Access validation successful');
-      return true;
-  
-    } catch (err) {
-      logger.error('Access validation failed:', { 
-        error: err.message,
-        stack: err.stack,
-        pathname,
-        sessionStatus: status
-      });
-      setError(err);
-      return false;
-    }
-  }, [pathname, session, handleRedirect, router, isPublicOrAuthPath, log, status]);
+
 
  useEffect(() => {
   if (status === 'loading') return;
@@ -263,7 +284,7 @@ function AuthWrapper({ children }) {
       pathname,
       hasSession: !!session,
       hasToken: !!session?.user?.accessToken,
-      onboardingStatus: session?.user?.onboardingStatus
+      onboarding_status: session?.user?.onboarding_status
     });
     
     setIsValidating(true);
@@ -278,7 +299,7 @@ function AuthWrapper({ children }) {
           pathname,
           status,
           hasToken: !!session?.user?.accessToken,
-          onboardingStatus: session?.user?.onboardingStatus
+          onboarding_status: session?.user?.onboarding_status
         });
       }
     }, 100);
@@ -293,24 +314,28 @@ function AuthWrapper({ children }) {
   };
 }, [status, validateAccess, log, pathname, session]);
 
-  useEffect(() => {
-    mountedRef.current = true;
-    setMounted(true);
-    
-    log('Component mounted:', {
+useEffect(() => {
+  mountedRef.current = true;
+  setMounted(true);
+  
+  log('Component mounted:', {
+    pathname,
+    sessionStatus: status
+  });
+  
+  return () => {
+    log('Component unmounting:', {
       pathname,
       sessionStatus: status
     });
-    
-    return () => {
-      log('Component unmounting:', {
-        pathname,
-        sessionStatus: status
-      });
-      mountedRef.current = false;
-      setMounted(false);
-    };
-  }, [log, pathname, status]);
+    mountedRef.current = false;
+    setMounted(false);
+    if (validationTimeoutRef.current) {
+      clearTimeout(validationTimeoutRef.current);
+    }
+  };
+}, [log, pathname, status]);
+
 
 // Update the render conditions
 if (!mounted || status === 'loading' || isValidating) {
@@ -335,32 +360,38 @@ if (error) {
   );
 }
 
-// Special handling for business-info
-if (pathname === '/onboarding/business-info') {
-  if (!session?.user?.accessToken) {
-    log('No token for business-info - redirecting to signin');
-    handleRedirect(pathname, 'no_token_business_info');
-    return <LoadingState message="Redirecting to sign in..." />;
+// Handle onboarding routes
+if (pathname.startsWith('/onboarding/')) {
+  const step = pathname.split('/').pop();
+
+  // Check step access
+  if (!handleStepAccess(pathname)) {
+    log('Step access denied - redirecting:', {
+      step,
+      currentStatus: session?.user?.onboarding_status
+    });
+    return <LoadingState message="Checking access..." />;
   }
-  
-  log('Rendering business-info page:', {
+
+  log('Rendering onboarding step:', {
+    step,
     hasToken: !!session?.user?.accessToken,
-    onboardingStatus: session?.user?.onboardingStatus
+    onboarding_status: session?.user?.onboarding_status
   });
   return children;
 }
 
-// Handle other public routes
+// Handle public routes
 if (isPublicOrAuthPath(pathname)) {
   log('Rendering public route:', { pathname });
   return children;
 }
 
+// Handle authenticated routes
 if (status === 'authenticated' && !isValidating) {
   log('Rendering authenticated route:', {
     pathname,
-    onboardingStatus: session?.user?.onboardingStatus,
-    currentStep: session?.user?.currentStep
+    onboarding_status: session?.user?.onboarding_status
   });
   return children;
 }

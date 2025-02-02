@@ -2,7 +2,7 @@
 import { z } from 'zod';
 
 export const subscriptionSchema = z.object({
-  selectedPlan: z.enum(['free', 'professional']),  // Add selectedPlan validation
+  selected_plan: z.enum(['free', 'professional']),  // Add selected_plan validation
   billingCycle: z.enum(['monthly', 'annually'])
 });
 

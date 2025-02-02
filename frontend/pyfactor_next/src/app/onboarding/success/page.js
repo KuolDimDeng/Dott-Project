@@ -1,5 +1,3 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/success/page.js
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -8,88 +6,126 @@ import { useSession } from 'next-auth/react';
 import { OnboardingErrorBoundary } from '@/components/ErrorBoundary/OnboardingErrorBoundary';
 import { LoadingStateWithProgress } from '@/components/LoadingState';
 import { ErrorStep } from '@/components/ErrorStep';
-import { useOnboarding } from '../hooks/useOnboarding';
-import { axiosInstance } from '@/lib/axiosConfig';
+import { useOnboarding } from '@/app/onboarding/contexts/OnboardingContext';
+import { onboardingApi, makeRequest } from '@/services/api/onboarding';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { logger } from '@/utils/logger';
+import { generateRequestId } from '@/lib/authUtils';
 
 function OnboardingSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { status } = useSession();
-  const {
-    saveStep,
-    loading: storeLoading,
-    error: storeError,
-    initialized,
-    initialize,
-  } = useOnboarding();
+  const { data: session, status } = useSession();
+  const { updateFormData } = useOnboarding();
+  const toast = useToast();
+  const [isVerifying, setIsVerifying] = useState(false);
+  const requestId = generateRequestId();
 
-  const sessionId = searchParams.get('session_id');
-  const [verifying, setVerifying] = useState(false);
+  const session_id = searchParams.get('session_id');
 
-  // Handle payment verification
   useEffect(() => {
-    if (!sessionId || !initialized) return;
-
     const verifyPayment = async () => {
-      try {
-        setVerifying(true);
-        const response = await axiosInstance.get(`/api/checkout/session/${sessionId}`);
+      if (!session_id || !session?.user?.accessToken) return;
 
-        await saveStep('step3', {
-          paymentVerified: true,
-          sessionId: sessionId,
+      try {
+        setIsVerifying(true);
+        logger.debug('Starting payment verification:', {
+          requestId,
+          session_id
+        });
+
+        // Verify payment status
+        const verificationResult = await makeRequest(
+          onboardingApi.updateStep(
+            session.user.accessToken,
+            'payment',
+            {
+              payment_verified: true,
+              session_id,
+              request_id: requestId
+            }
+          )
+        );
+
+        // Update onboarding status
+        await makeRequest(
+          onboardingApi.updateStatus(
+            session.user.accessToken,
+            {
+              current_step: 'payment',
+              next_step: 'setup',
+              form_data: {
+                payment_verified: true,
+                session_id
+              },
+              request_id: requestId
+            }
+          )
+        );
+
+        // Update context data
+        updateFormData({
+          payment_verified: true,
+          session_id
+        });
+
+        logger.debug('Payment verification successful:', {
+          requestId,
+          status: verificationResult.status
         });
 
         toast.success('Payment verified successfully');
-        router.push('/onboarding/step4');
+        await router.replace('/onboarding/setup');
+
       } catch (error) {
-        logger.error('Payment verification failed:', error);
-        toast.error('Failed to verify payment');
-        router.push('/onboarding/step3');
+        logger.error('Payment verification failed:', {
+          requestId,
+          error: error.message,
+          session_id
+        });
+        
+        toast.error('Failed to verify payment. Please try again.');
+        await router.replace('/onboarding/payment');
+
       } finally {
-        setVerifying(false);
+        setIsVerifying(false);
       }
     };
 
     verifyPayment();
-  }, [sessionId, initialized, saveStep, router]);
+  }, [session_id, session, router, toast, updateFormData, requestId]);
 
   // Auth check
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.replace('/auth/signin');
+      logger.debug('Unauthenticated user, redirecting:', {
+        requestId,
+        status
+      });
+      router.replace('/auth/signin?callbackUrl=/onboarding/success');
     }
-  }, [status, router]);
+  }, [status, router, requestId]);
 
-  if (!initialized || storeLoading || verifying) {
+  if (status === 'loading' || isVerifying) {
     return <LoadingStateWithProgress message="Verifying payment..." />;
   }
 
-  if (storeError) {
-    return (
-      <ErrorStep
-        error={storeError}
-        stepNumber={3}
-        onRetry={() => router.push('/onboarding/step3')}
-      />
-    );
-  }
-
+  // Return null as this is just a processing page
   return null;
 }
 
-export default function OnboardingSuccess() {
+function OnboardingSuccess() {
+  const router = useRouter();
+
   return (
     <OnboardingErrorBoundary
       fallback={({ error, resetError }) => (
         <ErrorStep
           error={error}
           stepNumber={3}
-          onRetry={() => {
+          onRetry={async () => {
             resetError();
-            router.push('/onboarding/step3');
+            await router.replace('/onboarding/payment');
           }}
         />
       )}
@@ -98,3 +134,5 @@ export default function OnboardingSuccess() {
     </OnboardingErrorBoundary>
   );
 }
+
+export default OnboardingSuccess;

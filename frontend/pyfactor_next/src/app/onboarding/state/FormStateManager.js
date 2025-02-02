@@ -88,38 +88,44 @@ export class FormStateManager {
     };
   }
 
-  setState(updates, source) {
-    const operationId = generateRequestId();
-    const previousState = { ...this.state };
+// Add to the setState method
+setState(updates, source) {
+  const operationId = generateRequestId();
+  const previousState = { ...this.state };
 
-    try {
+  try {
+      // Handle onboarding-specific updates
+      if (updates.onboarding) {
+          logger.debug('Processing onboarding state update:', {
+              operationId,
+              updates: updates.onboarding
+          });
+      }
+
       this.state = {
-        ...this.state,
-        ...updates
+          ...this.state,
+          ...updates
       };
 
       this.notifySubscribers({
-        type: FORM_EVENTS.STATE_UPDATE,
-        operationId,
-        source,
-        updates,
-        previousState: previousState,
-        currentState: this.getState()
+          type: FORM_EVENTS.STATE_UPDATE,
+          operationId,
+          source,
+          updates,
+          previousState,
+          currentState: this.getState()
       });
 
-    } catch (error) {
+  } catch (error) {
       logger.error('State update failed:', {
-        formId: this.formId,
-        operationId,
-        error: error.message,
-        updates
+          formId: this.formId,
+          operationId,
+          error: error.message
       });
-
-      // Rollback on error
       this.state = previousState;
       throw error;
-    }
   }
+}
 
   // Field Management
   async handleFieldChange(fieldName, value, options = {}) {

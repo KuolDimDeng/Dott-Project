@@ -7,11 +7,26 @@ import { getSession, signOut, getCsrfToken, useSession } from 'next-auth/react';
 import { logger } from '@/utils/logger';
 import APP_CONFIG from '@/config';
 import { useState, useEffect, useCallback } from 'react';
+import { ErrorDisplay } from '@/components/ErrorDisplay';
+import { RoutingManager } from '@/lib/routingManager';
+import { onboardingApi, makeRequest } from '@/services/api/onboarding';
+
+
+
+
 
 // Constants
 const RETRY_COUNT = 3;
 const RETRY_DELAY = 1000;
 const REQUEST_TIMEOUT = 10000;
+const TIMEOUT = 10000; // 10 seconds
+const MAX_REFRESH_ATTEMPTS = 3;
+const REFRESH_COOLDOWN = 1000; // 1 second between refresh attempts
+const NETWORK_RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff delays
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+
+
 
 const DATABASE_ERROR_TYPES = {
   NOT_FOUND: 'not_found',
@@ -26,21 +41,12 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error) => {
-        const requestId = crypto.randomUUID();
-        logger.debug('Query retry evaluation:', {
-          requestId,
-          failureCount,
-          errorStatus: error?.response?.status,
-          shouldRetry: error?.response?.status !== 401 && failureCount < 2
-        });
         if (error?.response?.status === 401) return false;
         return failureCount < 2;
       },
       staleTime: 5 * 60 * 1000,
       cacheTime: 10 * 60 * 1000,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
-      refetchOnMount: true,
+      refetchOnWindowFocus: false
     },
     mutations: {
       retry: (failureCount, error) => {
@@ -58,10 +64,12 @@ export const queryClient = new QueryClient({
   },
 });
 
+
+
 // Axios instance configuration
 export const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
-  timeout: APP_CONFIG.api.timeout || REQUEST_TIMEOUT,
+  baseURL: BASE_URL,
+  timeout: TIMEOUT,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -177,121 +185,97 @@ const createWebSocket = (url, options = {}) => {
   return ws;
 };
 
-// Auth API
-export const authApi = {
-  refreshToken: async (refreshToken) => {
-    const requestId = crypto.randomUUID();
-    logger.debug('Token refresh initiated:', {
-      requestId,
-      hasRefreshToken: !!refreshToken
-    });
-    // Remove the full URL since baseURL is already set
-    return axiosInstance.post('/api/token/refresh/', { 
-      refresh: refreshToken 
-    });
-  }
-};
-
 // Mutation hooks with detailed logging
 const useSaveBusinessInfo = (options = {}) =>
   useMutation({
     mutationFn: async (data) => {
       const requestId = crypto.randomUUID();
-      logger.debug('Saving business info:', {
-        requestId,
-        hasData: !!data,
-        fields: Object.keys(data)
-      });
-
-      const response = await axiosInstance.post(
-        APP_CONFIG.api.endpoints.onboarding.businessInfo,
-        data
-      );
-
-      logger.debug('Business info saved:', {
-        requestId,
-        status: response.status,
-        hasData: !!response.data
-      });
-
-      return response.data;
-    },
-    onSuccess: (data, variables) => {
-      logger.debug('Business info save succeeded:', {
-        requestId: crypto.randomUUID(),
-        dataReceived: !!data
-      });
-      queryClient.invalidateQueries(['onboardingStatus']);
-    },
-    onError: (error, variables, context) => {
-      logger.error('Business info save failed:', {
-        requestId: crypto.randomUUID(),
-        error: error.message,
-        data: variables
-      });
-    },
-    ...options,
-  });
-
-const useSaveSubscription = (options = {}) =>
-  useMutation({
-    mutationFn: async (data) => {
-      const requestId = crypto.randomUUID();
-      const requestData = {
-        ...data,
-        tier: data.selectedPlan
-      };
-
-      logger.debug('Saving subscription:', {
-        requestId,
-        selectedPlan: data.selectedPlan,
-        tier: requestData.tier
-      });
-
-      const response = await axiosInstance.post(
-        APP_CONFIG.api.endpoints.onboarding.subscription,
-        requestData
-      );
-
-      logger.debug('Subscription saved:', {
-        requestId,
-        status: response.status,
-        responseData: response.data
-      });
-
-      return response.data;
-    },
-    onSuccess: (data) => {
-      const requestId = crypto.randomUUID();
-      logger.debug('Subscription save succeeded:', {
-        requestId,
-        tier: data.tier
-      });
-      
-      queryClient.invalidateQueries(['onboardingStatus']);
-      queryClient.setQueryData(['onboardingStatus'], (old) => {
-        const updated = {
-          ...old,
-          tier: data.tier
-        };
-        logger.debug('Updated onboarding cache:', {
+      try {
+        logger.debug('Saving business info:', {
           requestId,
-          previousTier: old?.tier,
-          newTier: updated.tier
+          hasData: !!data,
+          fields: Object.keys(data)
         });
-        return updated;
-      });
+
+        const response = await axiosInstance.post(
+          APP_CONFIG.api.endpoints.onboarding.businessInfo,
+          data
+        );
+
+        logger.debug('Business info saved:', {
+          requestId,
+          status: response.status,
+          hasData: !!response.data
+        });
+
+        return response.data;
+      } catch (error) {
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to save business info';
+        logger.error('Business info save failed:', {
+          requestId,
+          error: errorMessage,
+          data: Object.keys(data)
+        });
+        throw new Error(errorMessage);
+      }
     },
     onError: (error, variables, context) => {
-      const requestId = crypto.randomUUID();
-      logger.error('Subscription save failed:', {
-        requestId,
-        error: error.message,
-        selectedPlan: variables.selectedPlan
-      });
+      if (options.onError) {
+        options.onError(<ErrorDisplay error={error} />);
+      }
     },
     ...options,
   });
+
+  const useSaveSubscription = (options = {}) =>
+    useMutation({
+      mutationFn: async (data) => {
+        const requestId = crypto.randomUUID();
+        try {
+          const requestData = {
+            selected_plan: data.selected_plan,
+            billingCycle: data.billingCycle || 'monthly',
+            tier: data.selected_plan
+          };
+  
+          logger.debug('Saving subscription:', {
+            requestId,
+            ...requestData,
+            endpoint: APP_CONFIG.api.endpoints.onboarding.subscription
+          });
+  
+          const response = await axiosInstance.post(
+            APP_CONFIG.api.endpoints.onboarding.subscription,
+            requestData
+          );
+  
+          const responseData = {
+            ...response.data,
+            selected_plan: response.data.selected_plan || response.data.tier,
+            tier: response.data.tier || response.data.selected_plan
+          };
+  
+          return responseData;
+        } catch (error) {
+          throw new Error(error.message || 'Failed to save subscription');
+
+        }
+      },
+      onSuccess: (data, variables, context) => {
+        queryClient.invalidateQueries(['onboarding_status']);
+        queryClient.setQueryData(['selected_plan'], data.selected_plan);
+        if (options.onSuccess) {
+          options.onSuccess(data, variables, context);
+        }
+      },
+      onError: (error, variables, context) => {
+        queryClient.invalidateQueries(['onboarding_status']);
+        queryClient.invalidateQueries(['selected_plan']);
+        if (options.onError) {
+          options.onError(<ErrorDisplay error={error} />);
+        }
+      }
+    });
 
   const checkDatabaseHealth = async (retryCount = 0) => {
     const requestId = crypto.randomUUID();
@@ -436,220 +420,326 @@ const useSaveSubscription = (options = {}) =>
     }
    };
 
-   const checkSession = async () => {
-    const requestId = crypto.randomUUID();
+  
+  export const parseJwt = (token) => {
     try {
-      logger.debug('Checking session:', { requestId });
-      const session = await getSession();
-      
-      if (!session?.user?.accessToken) {
-        logger.debug('No valid session found:', { requestId });
-        return false;
-      }
-      
-      // Remove full URL
-      const response = await axiosInstance.post(
-        '/api/token/verify/',
-        { token: session.user.accessToken },
-        { skipAuthRefresh: true }
-      );
-  
-      return response.status === 200;
-      
+      const [, payload] = token.split('.');
+      return JSON.parse(atob(payload));
     } catch (error) {
-      logger.error('Session check failed:', {
-        requestId,
-        error: error.message
-      });
-      return false;
-    }
-  };
-  
-  const refreshSession = async () => {
-    const requestId = crypto.randomUUID();
-    logger.debug('Session refresh started:', { requestId });
-  
-    try {
-      const session = await getSession();
-      if (!session?.user?.refreshToken) {
-        throw new Error('No refresh token available');
-      }
-  
-      const response = await authApi.refreshToken(session.user.refreshToken);
-      logger.debug('Token refresh succeeded:', {
-        requestId,
-        hasNewToken: !!response?.access
-      });
-  
-      return response;
-    } catch (error) {
-      logger.error('Session refresh failed:', {
-        requestId,
-        error: error.message
-      });
-      throw error;
+      console.error('Error parsing JWT:', error);
+      return null;
     }
   };
 
-const useOnboardingStatus = (options = {}) => {
+  const checkSession = async () => {
+    const requestId = crypto.randomUUID();
+    
+    try {
+        const session = await getSession();
+        logger.debug('Checking session:', {
+            requestId,
+            hasSession: !!session,
+            hasToken: !!session?.user?.accessToken
+        });
+
+        if (!session?.user?.accessToken) {
+            return false;
+        }
+
+        // Validate token with backend
+        const response = await axiosInstance.post(
+            '/api/token/verify/',
+            { token: session.user.accessToken },
+            { 
+                skipAuthRefresh: true,
+                headers: {
+                    'X-Request-ID': requestId
+                }
+            }
+        );
+
+        return response.status === 200;
+
+    } catch (error) {
+        logger.error('Session check failed:', {
+            requestId,
+            error: error.message,
+            stack: error.stack
+        });
+        return false;
+    }
+};
+
+ 
+
+const useonboarding_status = (options = {}) => {
   const { data: session, status } = useSession();
   const requestId = crypto.randomUUID();
 
   return useQuery({
-    queryKey: ['onboardingStatus'],
+    queryKey: ['onboarding_status'],
     queryFn: async () => {
       logger.debug('Fetching onboarding status:', {
         requestId,
         sessionStatus: status,
-        hasToken: !!session?.user?.accessToken
+        hasToken: !!session?.user?.accessToken,
+        hasSession: !!session
       });
 
+      if (status === 'loading') {
+        logger.debug('Session loading, deferring fetch:', { requestId });
+        return null;
+      }
+
       if (!session?.user?.accessToken) {
-        logger.debug('Onboarding status fetch failed:', {
+        logger.error('Onboarding status fetch failed:', {
           requestId,
-          reason: 'No access token'
+          reason: 'No access token',
+          sessionStatus: status
         });
         throw new Error('Not authenticated');
       }
 
-      const response = await axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status);
-      
-      const responseData = {
-        ...response.data,
-        tier: response.data.tier || response.data.selectedPlan
-      };
+      try {
+        const response = await axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status);
+        
+        const responseData = {
+          ...response.data,
+          tier: response.data.tier || response.data.selected_plan,
+          subscription_status: response.data.subscription_status || 'not_started',
+          onboarding_status: response.data.onboarding_status || 'business-info',
+          current_step: response.data.current_step || response.data.onboarding_status || 'business-info'
+        };
 
-      logger.debug('Onboarding status fetched:', {
+        logger.debug('Onboarding status fetched:', {
+          requestId,
+          status: responseData.status,
+          tier: responseData.tier,
+          subscription_status: responseData.subscription_status,
+          onboarding_status: responseData.onboarding_status,
+          current_step: responseData.current_step
+        });
+
+        return responseData;
+
+      } catch (error) {
+        logger.error('Onboarding status fetch error:', {
+          requestId,
+          error: error.message,
+          status: error.response?.status,
+          data: error.response?.data
+        });
+
+        // Handle specific error cases
+        if (error.response?.status === 401) {
+          throw new Error('Authentication expired');
+        }
+
+        if (error.response?.status === 403) {
+          throw new Error('Access denied');
+        }
+
+        if (error.response?.status === 404) {
+          return {
+            onboarding_status: 'business-info',
+            current_step: 'business-info',
+            subscription_status: 'not_started',
+            tier: null
+          };
+        }
+
+        throw error;
+      }
+    },
+    enabled: status === 'authenticated',
+    staleTime: 30000,
+    retry: (failureCount, error) => {
+      // Don't retry on auth errors
+      if (error.message === 'Not authenticated' || 
+          error.message === 'Authentication expired' ||
+          error.message === 'Access denied') {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    onError: (error) => {
+      logger.error('Onboarding status query error:', {
         requestId,
-        status: responseData.status,
-        tier: responseData.tier,
-        onboardingStatus: responseData.onboardingStatus,
-        currentStep: responseData.currentStep
+        error: error.message
       });
 
-      return responseData;
+      if (error.message === 'Authentication expired') {
+        signOut({ 
+          callbackUrl: `/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`
+        });
+      }
     },
-    enabled: !!session?.user?.accessToken && status === 'authenticated',
-    staleTime: 30000,
     ...options,
   });
 };
 
-// Axios interceptors with enhanced logging
+// Add form validation middleware
+const validateFormData = (data, stepConfig) => {
+  if (!stepConfig?.required_fields) return true;
+  
+  const missingFields = stepConfig.required_fields.filter(
+    field => !data[field]
+  );
+  
+  return missingFields.length === 0;
+};
+
+
+// Updated request interceptor
 axiosInstance.interceptors.request.use(
   async (config) => {
-    const requestId = crypto.randomUUID();
+      const requestId = crypto.randomUUID();
+      
+      try {
+          const session = await getSession();
+          const accessToken = session?.user?.accessToken;
 
-    logger.debug('Request interceptor started:', {
+          logger.debug('Request interceptor:', {
+            requestId,
+            hasToken: !!accessToken,
+            url: config.url,
+            method: config.method,
+            // Add more debugging info
+            tokenType: accessToken ? 'Bearer' : 'None',
+            hasAuthHeader: !!config.headers.Authorization
+        });
+
+
+          if (accessToken && !config.headers.Authorization) {
+            config.headers.Authorization = `Bearer ${accessToken}`;
+          }
+
+          // Ensure content type is set
+          if (!config.headers['Content-Type']) {
+              config.headers['Content-Type'] = 'application/json';
+          }
+
+          // Add request tracking
+          config.headers['X-Request-ID'] = requestId;
+          config.metadata = {
+              startTime: Date.now(),
+              requestId
+          };
+
+          return config;
+
+       } catch (error) {
+          logger.error('Request preparation failed:', {
+              requestId,
+              error: error.message,
+              stack: error.stack,
+              config: {
+                  url: config.url,
+                  method: config.method,
+                  hasAuthHeader: !!config.headers.Authorization
+              }
+          });
+          return Promise.reject(error);
+      }
+  },
+  error => Promise.reject(error)
+);
+
+
+
+// Enhanced response interceptor with token refresh logic
+axiosInstance.interceptors.response.use(
+  // Success handler remains the same
+  response => {
+    const { config } = response;
+    const duration = Date.now() - config.metadata?.startTime;
+    const requestId = config.headers['X-Request-ID'];
+
+    logger.debug('Response received:', {
       requestId,
       url: config.url,
+      status: response.status,
+      duration
     });
 
-    // Skip auth for public routes
-    if (config.skipAuthRefresh || 
-        config.url.includes('/auth/signin') ||
-        config.url.includes('/api/token/') ||
-        config.url.includes('/api/auth/')) {
-      return config;
-    }
-
-    try {
-      const session = await getSession();
-      
-      // Add Django JWT token
-      if (session?.user?.accessToken) {
-        config.headers.Authorization = `Bearer ${session.user.accessToken}`;
-      }
-
-      // Add Django CSRF token
-      const csrfToken = await getCsrfToken();
-      if (csrfToken) {
-        config.headers['X-CSRFToken'] = csrfToken;
-      }
-
-      config.headers['X-Request-ID'] = requestId;
-      
-      return config;
-    } catch (error) {
-      logger.error('Request interceptor failed:', {
-        requestId,
-        error: error.message
-      });
-      return Promise.reject(error);
-    }
+    return response;
   },
-  (error) => Promise.reject(error)
-);
 
+  // Error handler with improved queue processing
+// Error handler with improved session management
+async error => {
+  const originalRequest = error.config;
+  const requestId = originalRequest?.headers?.['X-Request-ID'] || crypto.randomUUID();
 
-axiosInstance.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const { config } = error.config || {};
-    const requestId = config?.metadata?.requestId || crypto.randomUUID();
+  logger.debug('Response error intercepted:', {
+    requestId,
+    url: originalRequest?.url,
+    status: error.response?.status,
+    errorMessage: error.message
+  });
 
-    // Handle Django token expiration (401 errors)
-    if (error.response?.status === 401) {
-      if (config?.skipAuthRefresh || 
-          config?.url.includes('/api/token/') ||
-          config?.url.includes('/api/auth/')) {
-        return Promise.reject(error);
-      }
-
-      try {
-        const session = await getSession();
-        
-        const refreshResponse = await axiosInstance.post(
-          '/api/token/refresh/',  // Remove full URL here too
-          { refresh: session?.user?.refreshToken },
-          { skipAuthRefresh: true }
-        );
-
-        if (refreshResponse.data?.access) {
-          // Need to update NextAuth session properly
-          await fetch('/api/auth/session', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              accessToken: refreshResponse.data.access
-            })
-          });
-
-          // Then retry request
-          return axiosInstance({
-            ...config,
-            headers: {
-              ...config.headers,
-              Authorization: `Bearer ${refreshResponse.data.access}`
-            }
-          });
-        }
-      } catch (refreshError) {
-        logger.error('Token refresh failed:', {
-          requestId,
-          error: refreshError.message
-        });
-        
-        // Redirect to login if refresh fails
-        window.location.href = `/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
-      }
-    }
-
+  // Skip if this is a retry or token verification request
+  if (originalRequest?.skipAuthRefresh || originalRequest?.url?.includes('/api/token/verify')) {
     return Promise.reject(error);
   }
+
+  if (error.response?.status === 401) {
+    try {
+      logger.debug('Attempting session refresh', { requestId });
+      
+      // Clear any stored tokens
+      localStorage.removeItem('token');
+      
+      // Get fresh session from NextAuth
+      const session = await getSession();
+      
+      if (!session?.user?.accessToken) {
+        throw new Error('No valid session found');
+      }
+
+      // Update authorization header with new token
+      originalRequest.headers.Authorization = `Bearer ${session.user.accessToken}`;
+      
+      logger.debug('Session refreshed, retrying request', { 
+        requestId,
+        url: originalRequest.url 
+      });
+
+      // Retry the original request
+      return axiosInstance(originalRequest);
+      
+    } catch (refreshError) {
+      logger.error('Session refresh failed:', {
+        requestId,
+        error: refreshError.message
+      });
+
+      // Clean up and redirect to login
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      await signOut({
+        redirect: true,
+        callbackUrl: `/auth/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`
+      });
+
+      return Promise.reject(new Error('Session expired'));
+    }
+  }
+
+  return Promise.reject(error);
+}
 );
+
 
 // Export everything
 export {
-  useOnboardingStatus,
+  useonboarding_status,
   useWebSocket,
   useSaveBusinessInfo,
   useSaveSubscription,
   checkDatabaseHealth,
   checkSession,
-  refreshSession,
 };
 
 export const api = {
@@ -666,18 +756,18 @@ export const api = {
       const requestId = crypto.randomUUID();
       logger.debug('API saveSubscription called:', {
         requestId,
-        selectedPlan: data.selectedPlan
+        selected_plan: data.selected_plan
       });
       return axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.subscription, {
         ...data,
-        tier: data.selectedPlan
+        tier: data.selected_plan
       });
     }
   }
 };
 
 export const useApi = {
-  useOnboardingStatus,
+  useonboarding_status,
   useWebSocket,
   useSaveBusinessInfo,
   useSaveSubscription,
@@ -688,6 +778,5 @@ export default {
   axiosInstance,
   queryClient,
   useApi,
-  authApi,
   createWebSocket,
 };

@@ -2,10 +2,12 @@
 'use client';
 
 import React, { memo } from 'react';
+import { getSession } from 'next-auth/react';
 import { Box, Typography, Alert, Button, CircularProgress } from '@mui/material';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 import { logger } from '@/utils/logger';
 import PropTypes from 'prop-types';
+
 
 // Shared loading component for consistent UX
 const LoadingState = memo(function LoadingState({ message }) {
@@ -106,39 +108,28 @@ const AuthErrorFallback = memo(function AuthErrorFallback({ error, resetErrorBou
 // Main authentication error boundary wrapper
 export const WithAuthErrorBoundary = memo(function WithAuthErrorBoundary({ children }) {
   // Handle authentication recovery
+
   const handleRecovery = React.useCallback(async () => {
     const recoveryId = crypto.randomUUID();
     logger.info('Starting auth recovery', { recoveryId });
-
+  
     try {
       // Clear stored error states
       localStorage.removeItem('auth_error');
       sessionStorage.removeItem('auth_error');
       
-      // Attempt to refresh session
-      const response = await fetch('/api/auth/session', { 
-        method: 'GET',
-        headers: { 
-          'x-recovery-id': recoveryId,
-          'Cache-Control': 'no-cache'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Session refresh failed');
-      }
-
-      const session = await response.json();
-      
+      // Attempt to refresh session using getSession
+      const session = await getSession();
+  
       if (!session?.user) {
         throw new Error('Invalid session state');
       }
-      
+  
       logger.info('Auth recovery successful', { 
         recoveryId,
         hasUser: !!session.user 
       });
-      
+  
       return true;
     } catch (error) {
       logger.error('Auth recovery failed', {
@@ -148,6 +139,7 @@ export const WithAuthErrorBoundary = memo(function WithAuthErrorBoundary({ child
       return false;
     }
   }, []);
+  
 
   return (
     <ErrorBoundary

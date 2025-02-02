@@ -21,7 +21,7 @@ import {
   handleAuthError,
   isTokenExpired,
   AUTH_ERRORS,
-  makeRequest,
+  makeAuthRequest, // Changed from makeRequest
   generateRequestId,  // Add this
   TIMEOUT            // Add this
 } from '@/lib/authUtils';
@@ -56,11 +56,11 @@ export const useOnboarding = (formMethods) => {
   const [lastSavedAt, setLastSavedAt] = useState(null);
 
   const [progress, setProgress] = useState({
-    currentStep: APP_CONFIG.onboarding.steps.INITIAL,  // Set initial step
+    current_step: APP_CONFIG.onboarding.steps.INITIAL,  // Set initial step
     completedSteps: new Set(),
     lastActiveStep: '',
     stepValidation: {},
-    selectedTier: null
+    selected_plan: null
   });
 
   const [initializationState, setInitializationState] = useState({
@@ -71,8 +71,80 @@ export const useOnboarding = (formMethods) => {
 
   // Get steps once progress is initialized
   const steps = Object.values(APP_CONFIG.onboarding.steps);
-  const currentIndex = steps.indexOf(progress.currentStep);
+  const currentIndex = steps.indexOf(progress.current_step);
 
+  const setselected_plan = useCallback(async (plan) => {
+    logger.debug('Setting selected plan:', {
+      plan,
+      currentState: {
+        current_step: progress.current_step,
+        selected_plan: progress.selected_plan
+      }
+    });
+  
+    try {
+      // Update form manager first
+      await formManager.current.updateField('selected_plan', plan);
+  
+      // Update onboarding manager
+      await onboardingManager.current.updateState({
+        selected_plan: plan,
+        current_step: plan === 'free' ? 'setup' : progress.current_step
+      });
+  
+      // Update progress state
+      setProgress(prev => ({
+        ...prev,
+        selected_plan: plan,
+        current_step: plan === 'free' ? 'setup' : prev.current_step,
+        completedSteps: new Set([...prev.completedSteps, 'subscription'])
+      }));
+  
+      // Update form data
+      setFormData(prev => ({
+        ...prev,
+        selected_plan: plan,
+        tier: plan,
+        subscription: {
+          selected_plan: plan,
+          timestamp: new Date().toISOString()
+        }
+      }));
+
+      // Return the updated state
+      return {
+        selected_plan: plan,
+        current_step: plan === 'free' ? 'setup' : progress.current_step
+      };
+    } catch (error) {
+      logger.error('Failed to set selected plan:', error);
+      throw error;
+    }
+  }, [progress.current_step]);
+
+
+  useEffect(() => {
+    const subscription = formManager.current.subscribe((state) => {
+      if (state.selected_plan !== progress.selected_plan) {
+        setProgress(prev => ({
+          ...prev,
+          selected_plan: state.selected_plan
+        }));
+      }
+    });
+  
+    return () => subscription();
+  }, []);
+
+  // Add the new effect here
+  useEffect(() => {
+    const unsubscribeForm = formManager.current.subscribe((state, event) => {
+      if (event.type === FORM_EVENTS.FIELD_CHANGE && event.fieldName === 'selected_plan') {
+        setselected_plan(event.value);
+      }
+    });
+    return () => unsubscribeForm();
+  }, [setselected_plan]);
 
 
   useEffect(() => {
@@ -139,7 +211,7 @@ export const useOnboarding = (formMethods) => {
   }
 
   const queryResult = useQuery({
-    queryKey: ['onboardingStatus'],
+    queryKey: ['onboarding_status'],
     queryFn: async () => {
       const response = await axiosInstance.get('/api/onboarding/status/');
       return response.data;
@@ -166,7 +238,7 @@ export const useOnboarding = (formMethods) => {
 
       return {
         ...prev,
-        currentStep: step,
+        current_step: step,
         completedSteps,
         lastActiveStep: step,
         stepValidation: {
@@ -178,22 +250,22 @@ export const useOnboarding = (formMethods) => {
   }, []);
 
   const validateStepData = useCallback(async (step, data) => {
+    const selected_plan = data?.selected_plan || formData.selected_plan || progress.selected_plan;
+    
     logger.debug('Starting step data validation:', {
       step,
-      dataType: typeof data,
-      dataPresent: !!data,
-      dataKeys: data ? Object.keys(data) : [],
-      currentStep: progress.currentStep,
-      tier: data?.selectedPlan,
-      requestId
+      selected_plan,
+      currentFormData: data,
+      storedFormData: formData,
+      progressState: progress
     });
   
     try {
       // First check step transition
       const canTransition = canTransitionToStep(
-        progress.currentStep, 
+        progress.current_step, 
         step, 
-        data?.selectedPlan
+        data?.selected_plan
       );
   
       if (!canTransition) {
@@ -201,7 +273,7 @@ export const useOnboarding = (formMethods) => {
       }
   
       // Then validate tier access
-      const tierValidation = validateTierAccess(step, data?.selectedPlan);
+      const tierValidation = validateTierAccess(step, data?.selected_plan);
       if (!tierValidation.valid) {
         throw new Error(tierValidation.message);
       }
@@ -219,10 +291,10 @@ export const useOnboarding = (formMethods) => {
       }
   
       // Update progress with tier if it's subscription step
-      if (step === 'subscription' && data?.selectedPlan) {
+      if (step === 'subscription' && data?.selected_plan) {
         setProgress(prev => ({
           ...prev,
-          selectedTier: data.selectedPlan
+          selected_plan: data.selected_plan
         }));
       }
   
@@ -232,12 +304,12 @@ export const useOnboarding = (formMethods) => {
       logger.error('Step validation failed:', {
         error: errorResult,
         step,
-        tier: data?.selectedPlan, 
+        tier: data?.selected_plan, 
         requestId
       });
       throw error;
     }
-  }, [session, progress.currentStep, requestId]);
+  }, [session, progress.current_step, requestId]);
 
 
   // Update the saveStepMutation to use the new saveStep function
@@ -299,7 +371,7 @@ const saveStepMutation = useMutation({
         completedSteps.add(step);
   
         return {
-          currentStep: step,
+          current_step: step,
           completedSteps,
           lastActiveStep: step,
           stepValidation: {
@@ -419,7 +491,7 @@ const saveStepMutation = useMutation({
   
         // Validate step transition
         const transitionResult = validateOnboardingTransition(
-          progress.currentStep || APP_CONFIG.onboarding.steps.INITIAL,
+          progress.current_step || APP_CONFIG.onboarding.steps.INITIAL,
           step,
           APP_CONFIG.onboarding.transitions
         );
@@ -488,7 +560,7 @@ const saveStepMutation = useMutation({
         throw error;
       }
     },
-    [session, router, progress.currentStep, requestId]
+    [session, router, progress.current_step, requestId]
   );
 
   const cleanupStaleData = useCallback(async () => {
@@ -546,13 +618,13 @@ const saveStepMutation = useMutation({
         status: 'business-info',
         data: {},
         progress: {
-          currentStep: 'business-info',
+          current_step: 'business-info',
           completedSteps: new Set(['business-info']),
           lastActiveStep: 'business-info',
           stepValidation: {
             'business-info': true
           },
-          selectedTier: null
+          selected_plan: null
         }
       };
     }
@@ -608,9 +680,9 @@ const saveStepMutation = useMutation({
         throw new Error(AUTH_ERRORS.VALIDATION_FAILED);
       }
   
-      const currentStep = response.data.status;
+      const current_step = response.data.status;
   
-      if (currentStep === 'complete') {
+      if (current_step === 'complete') {
         logger.info('Onboarding is complete, redirecting to dashboard', { requestId });
         const redirectUrl = response.data?.redirect_url || '/dashboard';
         handleNavigation(redirectUrl);
@@ -624,7 +696,7 @@ const saveStepMutation = useMutation({
 
       // Build step validation state using new validation system
       const stepValidation = steps.reduce((acc, step) => {
-        const canTransition = canTransitionToStep(currentStep, step, response.data?.selectedPlan);
+        const canTransition = canTransitionToStep(current_step, step, response.data?.selected_plan);
         return {
           ...acc,
           [step]: canTransition
@@ -633,9 +705,9 @@ const saveStepMutation = useMutation({
   
       // Set progress state
       const newProgress = {
-        currentStep,
+        current_step,
         completedSteps: new Set(steps.slice(0, currentIndex + 1)),
-        lastActiveStep: currentStep,
+        lastActiveStep: current_step,
         stepValidation,
       };
   
@@ -662,10 +734,10 @@ const saveStepMutation = useMutation({
             if (validationResult.isValid) {
               acc[step] = validationResult.data;
               // Update tier if subscription data is valid
-              if (step === 'subscription' && data.selectedPlan) {
+              if (step === 'subscription' && data.selected_plan) {
                 setProgress(prev => ({
                   ...prev,
-                  selectedTier: data.selectedPlan
+                  selected_plan: data.selected_plan
                 }));
               }
             }
@@ -688,13 +760,13 @@ const saveStepMutation = useMutation({
       logger.info('Initialization completed successfully', {
         requestId,
         userId: session.user.id,
-        currentStep,
+        current_step,
         dataSize: Object.keys(validatedData).length,
         completedSteps: Array.from(newProgress.completedSteps),
       });
   
       return {
-        status: currentStep,
+        status: current_step,
         data: validatedData,
         progress: newProgress,
       };
@@ -754,6 +826,7 @@ const saveStepMutation = useMutation({
     }
   };
 
+
   const resetOnboarding = useCallback(async () => {
     logger.debug('Starting onboarding reset', {
       currentState: { initialized, loading, hasError: !!error },
@@ -767,7 +840,7 @@ const saveStepMutation = useMutation({
       setError(null);
       setInitialized(false);
       setProgress({
-        currentStep: '',
+        current_step: '',
         completedSteps: new Set(),
         lastActiveStep: '',
         stepValidation: {},
@@ -812,12 +885,28 @@ const saveStepMutation = useMutation({
     saveStep,
     resetOnboarding,
     progress,
-    selectedTier: progress.selectedTier,
+    selected_plan: progress.selected_plan,
     saveStatus,
     lastSavedAt,
-    onboardingStatus: queryResult.data?.status,
-    currentStep: queryResult.data?.currentStep,
+    setselected_plan,
+    selected_plan: formData.selected_plan || progress.selected_plan,
+    onboarding_status: queryResult.data?.status,
+    current_step: queryResult.data?.current_step,
     onboardingManager: onboardingManager.current,
+    setselected_plan: async (plan) => {
+      try {
+        await onboardingManager.current.setselected_plan(plan);
+        // Update local state as well
+        setProgress(prev => ({
+          ...prev,
+          selected_plan: plan
+        }));
+        return true;
+      } catch (error) {
+        logger.error('Failed to set plan:', error);
+        return false;
+      }
+    },
     formManager: formManager.current
   };
 };

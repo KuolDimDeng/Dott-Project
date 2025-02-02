@@ -4,140 +4,131 @@ import { logger } from '@/utils/logger';
 export const STORAGE_KEYS = {
   VERSION: '1.0',
   DEFAULT_EXPIRY: 24 * 60 * 60 * 1000, // 24 hours
-  SUBSCRIPTION_DATA: 'subscription_data',
-  SELECTED_PLAN: 'selected_plan',
-  ONBOARDING_DATA: 'onboarding_data',
+  SUBSCRIPTION_DATA: 'subscription-data',  // Changed to match your lookup key
+  SELECTED_PLAN: 'selected-plan',
+  ONBOARDING_DATA: 'onboarding-data',
   BUSINESS_INFO_DRAFT: 'business-info-draft',
-  PAYMENT_DATA: 'payment_data'
+  PAYMENT_DATA: 'payment-data',
 };
+
 
 class PersistenceService {
   async getData(key) {
     try {
-      const savedData = localStorage.getItem(key);
-      logger.debug('Attempting to get data:', {
-        key,
-        hasData: !!savedData,
-        type: 'persistence_get'
-      });
+        const savedData = localStorage.getItem(key);
+        
+        if (!savedData) {
+            logger.debug('No data found for key:', {
+                key,
+                type: 'persistence_miss'
+            });
+            return null;
+        }
 
-      if (!savedData) {
-        logger.debug('No data found for key', { 
-          key,
-          type: 'persistence_miss'
-        });
-        return null;
-      }
+        const parsed = JSON.parse(savedData);
+        
+        // Add specific logging for subscription data
+        if (key === STORAGE_KEYS.SUBSCRIPTION_DATA) {
+            logger.debug('Retrieved subscription data:', {
+                selected_plan: parsed.data?.selected_plan,
+                timestamp: new Date(parsed.timestamp).toISOString()
+            });
+        }
 
-      const parsed = JSON.parse(savedData);
-      
-      logger.debug('Retrieved data details:', {
-        key,
-        version: parsed.version,
-        timestamp: new Date(parsed.timestamp).toISOString(),
-        isExpired: Date.now() - parsed.timestamp > parsed.expiry,
-        hasOnboardingStatus: !!parsed.data?.onboardingStatus,
-        selectedPlan: parsed.data?.selectedPlan,
-        type: 'persistence_data'
-      });
+        if (Date.now() - parsed.timestamp > parsed.expiry) {
+            await this.clearData(key);
+            return null;
+        }
 
-      // Version check
-      if (parsed.version !== STORAGE_KEYS.VERSION) {
-        logger.warn('Version mismatch detected', {
-          key,
-          foundVersion: parsed.version,
-          expectedVersion: STORAGE_KEYS.VERSION,
-          selectedPlan: parsed.data?.selectedPlan
-        });
-        await this.clearData(key);
-        return null;
-      }
+        return parsed.data;
 
-      // Expiry check
-      if (Date.now() - parsed.timestamp > parsed.expiry) {
-        logger.debug('Data expired', {
-          key,
-          timestamp: parsed.timestamp,
-          expiry: parsed.expiry,
-          selectedPlan: parsed.data?.selectedPlan
-        });
-        await this.clearData(key);
-        return null;
-      }
-
-      return parsed.data;
     } catch (error) {
-      logger.error('Data retrieval failed:', {
-        key,
-        error: error.message,
-        type: 'persistence_error'
-      });
-      return null;
+        logger.error('Data retrieval failed:', {
+            key,
+            error: error.message
+        });
+        return null;
     }
+}
+
+
+    // Enhanced validation for subscription data
+    validateSubscriptionData(data) {
+      const errors = [];
+      
+      // Only check for selected_plan for consistency
+      if (!data.selected_plan) {
+          errors.push('selected_plan is required');
+      }
+
+      // Validate plan type
+      if (data.selected_plan && !['free', 'professional'].includes(data.selected_plan)) {
+          errors.push(`Invalid plan type: ${data.selected_plan}`);
+      }
+
+      // Validate billing cycle if present
+      if (data.billing_cycle && !['monthly', 'annual'].includes(data.billing_cycle)) {
+          errors.push(`Invalid billing cycle: ${data.billing_cycle}`);
+      }
+
+      if (errors.length > 0) {
+          throw new Error(errors.join('; '));
+      }
+
+      return true;
   }
 
-  validateSubscriptionData(data) {
-    if (!data.selectedPlan) {
-      throw new Error('Selected plan is required');
-    }
-    
-    if (!['free', 'professional'].includes(data.selectedPlan)) {
-      throw new Error('Invalid plan selected');
-    }
-    
-    if (data.billingCycle && !['monthly', 'annual'].includes(data.billingCycle)) {
-      throw new Error('Invalid billing cycle');
-    }
-    
-    return true;
-  }
-
+  // Improved subscription data saving
   async saveSubscriptionData(data) {
     try {
-      this.validateSubscriptionData(data);
-      
-      return await this.saveData(
-        STORAGE_KEYS.SUBSCRIPTION_DATA,
-        data,
-        {
-          metadata: {
-            lastUpdated: new Date().toISOString()
-          }
-        }
-      );
-    } catch (error) {
-      logger.error('Failed to save subscription data:', {
-        error: error.message,
-        data: data
-      });
-      throw error;
-    }
-  }
+        this.validateSubscriptionData(data);
 
+        // Simplified data structure
+        const normalizedData = {
+            selected_plan: data.selected_plan,
+            billing_cycle: data.billing_cycle || 'monthly',
+            timestamp: Date.now(),
+            metadata: {
+                lastUpdated: new Date().toISOString(),
+                ...data.metadata
+            }
+        };
+
+        const saved = await this.saveData(STORAGE_KEYS.SUBSCRIPTION_DATA, normalizedData);
+
+        logger.debug('Subscription data saved:', {
+            requestId: crypto.randomUUID(),
+            selected_plan: normalizedData.selected_plan,
+            success: saved
+        });
+
+        return saved;
+
+    } catch (error) {
+        logger.error('Failed to save subscription data:', {
+            error: error.message,
+            data
+        });
+        throw error;
+    }
+}
+  // Enhanced general data saving
   async saveData(key, data, options = {}) {
+    const requestId = crypto.randomUUID();
+
     try {
-      logger.debug('Attempting to save data:', {
+      logger.debug('Saving data:', {
+        requestId,
         key,
         hasData: !!data,
         dataType: typeof data,
-        onboardingStatus: data?.onboardingStatus,
-        selectedPlan: data?.selectedPlan,
+        selected_plan: data?.selected_plan,
         type: 'persistence_save'
       });
 
-      // Validation for subscription data
+      // Special handling for subscription data
       if (key === STORAGE_KEYS.SUBSCRIPTION_DATA) {
         this.validateSubscriptionData(data);
-      }
-
-      // Validation for onboarding data
-      if (key === STORAGE_KEYS.ONBOARDING_DATA) {
-        if (!data.onboardingStatus) {
-          throw new Error('Missing onboarding status');
-        }
-        if (data.selectedPlan && !['free', 'professional'].includes(data.selectedPlan)) {
-          throw new Error('Invalid plan in onboarding data');
-        }
       }
 
       const storageData = {
@@ -147,22 +138,26 @@ class PersistenceService {
         data,
         metadata: {
           lastModified: new Date().toISOString(),
+          requestId,
           ...options.metadata
         }
       };
 
       localStorage.setItem(key, JSON.stringify(storageData));
 
-      logger.debug('Data successfully saved:', {
+      logger.debug('Data saved successfully:', {
+        requestId,
         key,
         timestamp: new Date(storageData.timestamp).toISOString(),
-        selectedPlan: data?.selectedPlan,
+        selected_plan: data?.selected_plan,
         type: 'persistence_success'
       });
 
       return true;
+
     } catch (error) {
-      logger.error('Failed to save data:', {
+      logger.error('Save operation failed:', {
+        requestId,
         key,
         error: error.message,
         type: 'persistence_error'
@@ -170,7 +165,6 @@ class PersistenceService {
       return false;
     }
   }
-
   async clearData(key) {
     try {
       localStorage.removeItem(key);
@@ -179,93 +173,28 @@ class PersistenceService {
     } catch (error) {
       logger.error('Failed to clear data:', {
         key,
-        error: error.message
+        error: error.message,
       });
       return false;
     }
   }
 
-  async getSelectedPlan() {
+  async getselected_plan() {
     try {
       const subscriptionData = await this.getData(STORAGE_KEYS.SUBSCRIPTION_DATA);
-      const selectedPlan = subscriptionData?.selectedPlan;
-      
+      const selected_plan = subscriptionData?.selected_plan;
+
       logger.debug('Retrieved selected plan:', {
         hasData: !!subscriptionData,
-        selectedPlan,
-        type: 'plan_get'
+        selected_plan,
+        type: 'plan_get',
       });
-      
-      return selectedPlan;
+
+      return selected_plan;
     } catch (error) {
       logger.error('Failed to get selected plan:', {
         error: error.message,
-        type: 'plan_error'
-      });
-      return null;
-    }
-  }
-
-  async getOnboardingState() {
-    try {
-      const onboardingData = await this.getData(STORAGE_KEYS.ONBOARDING_DATA);
-      
-      logger.debug('Retrieved onboarding state:', {
-        hasData: !!onboardingData,
-        status: onboardingData?.onboardingStatus,
-        selectedPlan: onboardingData?.selectedPlan,
-        type: 'onboarding_get'
-      });
-      
-      return onboardingData;
-    } catch (error) {
-      logger.error('Failed to get onboarding state:', {
-        error: error.message,
-        type: 'onboarding_error'
-      });
-      return null;
-    }
-  }
-
-  async saveOnboardingState(status, selectedPlan = null) {
-    try {
-      logger.debug('Saving onboarding state:', {
-        status,
-        selectedPlan,
-        type: 'onboarding_save'
-      });
-
-      return await this.saveData(STORAGE_KEYS.ONBOARDING_DATA, {
-        onboardingStatus: status,
-        selectedPlan,
-        lastUpdated: new Date().toISOString()
-      });
-    } catch (error) {
-      logger.error('Failed to save onboarding state:', {
-        error: error.message,
-        status,
-        selectedPlan,
-        type: 'onboarding_error'
-      });
-      return false;
-    }
-  }
-
-  async getBusinessInfoDraft() {
-    try {
-      const draftData = await this.getData(STORAGE_KEYS.BUSINESS_INFO_DRAFT);
-      
-      logger.debug('Retrieved business info draft:', {
-        hasDraft: !!draftData,
-        lastModified: draftData?.metadata?.lastModified,
-        type: 'draft_get'
-      });
-      
-      return draftData;
-    } catch (error) {
-      logger.error('Failed to get business info draft:', {
-        error: error.message,
-        type: 'draft_error'
+        type: 'plan_error',
       });
       return null;
     }

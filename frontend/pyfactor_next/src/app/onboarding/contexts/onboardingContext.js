@@ -1,55 +1,84 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, useReducer } from 'react';
+import React, { createContext, useContext, useCallback, useMemo, useRef, useReducer, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { logger } from '@/utils/logger';
 import { useOnboardingQueries } from '@/hooks/useOnboardingQueries';
 import { APP_CONFIG } from '@/config';
 import PropTypes from 'prop-types';
 import { OnboardingErrorBoundary } from '@/components/ErrorBoundary/OnboardingErrorBoundary';
-
-import { 
-  validateAndRouteUser, 
-  AUTH_ERRORS, 
-  generateRequestId 
-} from '@/lib/authUtils';
+import { onboardingApi, makeRequest } from '@/services/api/onboarding';
+import { useStepTransition } from '@/app/onboarding/hooks/useStepTransition';
+import { validateAndRouteUser, generateRequestId } from '@/lib/authUtils';
+import { OnboardingStateManager } from '@/app/onboarding/state/OnboardingStateManager';
 
 const OnboardingContext = createContext(null);
 
-// Initial state for reducer
-const initialState = {
-  currentStep: 'business-info',
-  isValidating: false,
-  error: null,
-  formData: {
-    selectedPlan: null
+// Validation rules for each step
+const STEP_VALIDATION = {
+  'business-info': (data) => (
+    !!data?.business_name && 
+    !!data?.business_type && 
+    !!data?.country && 
+    !!data?.legal_structure && 
+    !!data?.date_founded &&
+    !!data?.first_name &&
+    !!data?.last_name
+  ),
+  'subscription': (data) => {
+    const plan = data.selected_plan || data.selected_plan;
+    return (
+      !!plan &&
+      ['free', 'professional'].includes(plan) &&
+      (plan === 'free' || !!data.billing_cycle)
+    );
   },
-  isLoading: false
+  'setup': (data) => {
+    const plan = data.selected_plan || data.selected_plan;
+    return (
+      !!plan && (
+        plan === 'free' ||
+        (plan === 'professional' && data.payment_completed)
+      )
+    );
+  }
+ };
+// Initial state
+const initialState = {
+  current_step: 'business-info',
+  formData: {
+    business_name: '',
+    business_type: '',
+    country: '',
+    legal_structure: '',
+    date_founded: new Date().toISOString().split('T')[0],
+    first_name: '',
+    last_name: ''
+  },
+  isLoading: false,
+  error: null
 };
 
-
-// Reducer for state management
+// Reducer
 function onboardingReducer(state, action) {
   switch (action.type) {
-    case 'SET_STEP':
-      return { ...state, currentStep: action.payload };
+    case 'SET_FORM_DATA':
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          ...action.payload
+        }
+      };
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
     case 'SET_ERROR':
       return { ...state, error: action.payload };
-    case 'SET_FORM_DATA':
-      return { ...state, formData: { ...state.formData, ...action.payload }};
-    case 'SET_SELECTED_PLAN':
-        return {
-          ...state,
-          formData: {
-            ...state.formData,
-            selectedPlan: action.payload
-          }
-        };
+    case 'SET_STEP':
+      return { ...state, current_step: action.payload };
     case 'RESET':
       return initialState;
     default:
@@ -57,107 +86,34 @@ function onboardingReducer(state, action) {
   }
 }
 
-
-const STEP_VALIDATION = {
-  'business-info': (data) => !!data?.businessName && !!data?.industry,
-  'subscription': (data) => !!data?.selectedPlan,
-  'payment': (data) => data?.selectedPlan === 'free' || !!data?.paymentMethod,
-  'setup': () => true
-};
-
-
-
-
-const STEP_ROUTES = {
-  [APP_CONFIG.onboarding.steps.INITIAL]: APP_CONFIG.routes.onboarding.steps.step1,
-  [APP_CONFIG.onboarding.steps.PLAN]: APP_CONFIG.routes.onboarding.steps.step2,
-  [APP_CONFIG.onboarding.steps.PAYMENT]: APP_CONFIG.routes.onboarding.steps.step3,
-  [APP_CONFIG.onboarding.steps.SETUP]: APP_CONFIG.routes.onboarding.steps.step4,
-  [APP_CONFIG.onboarding.steps.COMPLETE]: '/dashboard',
-};
-
-const TOAST_MESSAGES = {
-  SESSION_EXPIRED: APP_CONFIG.errors.messages.session,
-  NAVIGATION_ERROR: APP_CONFIG.errors.messages.network,
-  PERSIST_ERROR: APP_CONFIG.errors.messages.default,
-  VALIDATION_ERROR: APP_CONFIG.errors.messages.validation_error,
-  RESET_SUCCESS: 'Progress reset successfully',
-  RESET_ERROR: APP_CONFIG.errors.messages.default,
-  API_ERROR: APP_CONFIG.errors.messages.default,
-  LOADING: 'Loading your information...',
-  SUCCESS: 'Changes saved successfully',
-  SESSION_VALIDATION: 'Validating your session...',
-  INVALID_SESSION: 'Your session is no longer valid. Please sign in again.',
-  VALIDATION_ERROR: 'Unable to validate your session. Please try again.',
-};
-
-
 export function OnboardingProvider({ children }) {
   const mountedRef = useRef(false);
-  const validationTimeoutRef = useRef(null);
-  const lastValidationTime = useRef(0);
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: session, status: authStatus } = useSession();
   const toast = useToast();
   const [state, dispatch] = useReducer(onboardingReducer, initialState);
-
-
-
-  const [authState, setAuthState] = useState({
-    isInitialized: false,
-    isValidating: false,
-    error: null,
-    validationType: null,
-    isSaving: false,
-    formData: {},
-    lastValidated: null
-  });
+  const { transition, isTransitioning } = useStepTransition();
+  const onboardingManager = useMemo(() => new OnboardingStateManager('onboarding'), []);
 
   const {
-    status: onboardingStatus,
+    status: onboarding_status,
     mutations,
     isLoading: queriesLoading,
     error: queriesError,
   } = useOnboardingQueries();
 
-  const {
-    data: onboardingData,
-    isLoading: statusLoading,
-    error: statusError,
-    refetch: refetchStatus
-  } = useQuery({
+  // Status query
+  const { data: onboardingData, isLoading: statusLoading } = useQuery({
     queryKey: [APP_CONFIG.onboarding.queryKeys.status, session?.user?.id],
     queryFn: async () => {
-      if (!mutations?.getStatus) {
-        logger.debug('Status query not available yet', {
-          hasSession: !!session,
-          authStatus,
-          isInitialized: authState.isInitialized
-        });
-        return null;
-      }
-      try {
-        const result = await mutations.getStatus();
-        logger.debug('Status query successful', {
-          hasData: !!result,
-          status: result?.status
-        });
-        return result;
-      } catch (error) {
-        logger.error('Status query failed', {
-          error: error.message,
-          code: error.code
-        });
-        throw error;
-      }
+      if (!mutations?.getStatus) return null;
+      return await mutations.getStatus();
     },
     enabled: Boolean(
-      authState.isInitialized &&
       authStatus === 'authenticated' &&
       session?.user?.accessToken &&
-      mutations?.getStatus &&
-      !authState.error
+      mutations?.getStatus
     ),
     staleTime: 30000,
     cacheTime: 5 * 60 * 1000,
@@ -169,439 +125,206 @@ export function OnboardingProvider({ children }) {
     }
   });
 
-  // Move setSelectedPlan inside the component
-  const setSelectedPlan = useCallback((plan) => {
-    logger.debug('Attempting to set selected plan:', {
-        newPlan: plan,
-        currentPlan: state.formData?.selectedPlan,
-        currentStep: state.currentStep
-    });
+// Simplified validateStep
+const validateStep = useCallback((current_step, targetStep, formData) => {
+  if (targetStep === 'business-info') return { isValid: true };
+  
+  const validator = STEP_VALIDATION[targetStep];
+  if (!validator?.(formData)) {
+    return { 
+      isValid: false, 
+      reason: `Missing required data for ${targetStep}` 
+    };
+  }
+  return { isValid: true };
+}, []);
 
-    dispatch({ type: 'SET_SELECTED_PLAN', payload: plan });
 
-    logger.debug('Selected plan updated:', {
-        newState: state.formData?.selectedPlan,
-        plan: plan
-    });
-}, [state]);
+  // Handle navigation
+const handleOnboardingRedirect = useCallback(async (targetStep) => {
+  if (state.isLoading) return;
 
-  // validateStep function
-  const validateStep = useCallback((currentStep, requestedStep, formData) => {
-    try {
-      const selectedPlan = formData?.selectedPlan || state.formData?.selectedPlan;
-      
-      logger.debug('Validating step transition:', {
-        from: currentStep,
-        to: requestedStep,
-        hasFormData: !!formData,
-        selectedPlan,
-        formData: {
-          ...formData,
-          selectedPlan 
-        }
-      });
-
-      // Special case for free plan setup access
-      if (requestedStep === 'setup' && currentStep === 'subscription' && selectedPlan === 'free') {
-        logger.debug('Allowing free plan setup access');
-        return true;
-      }
-  
-      // Allow direct access to business-info
-      if (requestedStep === 'business-info') return true;
-  
-      // Allow subscription access from business-info
-      if (requestedStep === 'subscription' && currentStep === 'business-info') {
-        return true;
-      }
-  
-      // Allow setup access from subscription for free plan
-      if (requestedStep === 'setup' && 
-          currentStep === 'subscription' && 
-          selectedPlan === 'free') {
-        logger.debug('Allowing free plan setup access', {
-          currentStep,
-          requestedStep,
-          selectedPlan
-        });
-        return true;
-      }
-  
-      // Allow payment access from subscription for professional plan
-      if (requestedStep === 'payment' && 
-          currentStep === 'subscription' && 
-          selectedPlan === 'professional') {
-        return true;
-      }
-  
-      // Allow setup access from payment for professional plan
-      if (requestedStep === 'setup' && 
-          currentStep === 'payment' && 
-          selectedPlan === 'professional') {
-        return true;
-      }
-  
-      // Check step order for other cases
-      const steps = ['business-info', 'subscription', 'payment', 'setup'];
-      const currentIdx = steps.indexOf(currentStep);
-      const requestedIdx = steps.indexOf(requestedStep);
-  
-      // Allow backward navigation to immediate previous step
-      if (requestedIdx === currentIdx - 1) return true;
-  
-      // Prevent skipping steps
-      if (requestedIdx > currentIdx + 1) return false;
-  
-      // Validate current step data if needed
-      const validationFn = STEP_VALIDATION[currentStep];
-      if (validationFn && !validationFn(formData)) {
-        return false;
-      }
-  
-      return requestedIdx === currentIdx + 1;
-  
-    } catch (error) {
-      logger.error('Step validation failed:', {
-        error: error.message,
-        currentStep,
-        requestedStep
-      });
-      return false;
+  try {
+    dispatch({ type: 'SET_LOADING', payload: true });
+    
+    const validation = validateStep(state.current_step, targetStep, state.formData);
+    if (!validation.isValid) {
+      toast.error(validation.reason);
+      return;
     }
-  }, [state.formData]);
 
-  // Callback hooks
-  const updateAuthState = useCallback((updates) => {
-    if (!mountedRef.current) return;
-    setAuthState(prev => ({
-      ...prev,
-      ...updates
-    }));
-  }, []);
+    // Special handling for free plan to setup transition
+    if (state.current_step === 'subscription' && 
+        targetStep === 'setup' && 
+        state.formData.selected_plan === 'free') {
+      
+      // Initialize setup for free plan
+      const setupResponse = await makeRequest(
+        onboardingApi.startSetup(
+          session?.user?.accessToken,
+          {
+            tier: 'free',
+            requestId: generateRequestId()
+          }
+        )
+      );
 
+      if (!setupResponse?.success) {
+        throw new Error('Failed to initialize setup');
+      }
+    }
 
+    const success = await transition(state.current_step, targetStep, state.formData);
+    if (success) {
+      dispatch({ type: 'SET_STEP', payload: targetStep });
+      
+      // Update status after successful transition
+      await makeRequest(
+        onboardingApi.updateStatus(
+          session?.user?.accessToken,
+          {
+            current_step: targetStep,
+            form_data: state.formData,
+            requestId: generateRequestId()
+          }
+        )
+      );
+    }
+
+  } catch (error) {
+    logger.error('Navigation failed:', {
+      error: error.message,
+      current_step: state.current_step,
+      targetStep,
+      formData: state.formData
+    });
+    toast.error('Failed to navigate. Please try again.');
+  } finally {
+    dispatch({ type: 'SET_LOADING', payload: false });
+  }
+}, [state, validateStep, transition, toast, session]);
+
+  // Update form data
+// Update form data handling
+const updateFormData = useCallback((newData) => {
+  const normalizedData = {
+    ...newData,
+    selected_plan: newData.selected_plan || newData.selected_plan,
+    selected_plan: newData.selected_plan || newData.selected_plan
+  };
+  dispatch({ type: 'SET_FORM_DATA', payload: normalizedData });
+}, []);
+
+  // Session validation
+  useEffect(() => {
+    const validateSession = async () => {
+      if (authStatus !== 'authenticated' || !session?.user?.accessToken) return;
+
+      try {
+        const validationResult = await validateAndRouteUser(
+          {
+            user: session.user,
+            headers: {},
+            method: 'GET'
+          },
+          {
+            pathname: window.location.pathname,
+            requestId: generateRequestId(),
+            environment: process.env.NODE_ENV,
+            onboarding_status: onboarding_status?.data?.status,
+            subscriptionTier: state.formData?.selected_plan,
+            formState: state.formData
+          }
+        );
+
+        if (!validationResult.isValid && validationResult.redirectTo) {
+          await router.replace(validationResult.redirectTo);
+        }
+
+      } catch (error) {
+        logger.error('Session validation failed:', error);
+        toast.error('Session validation failed');
+      }
+    };
+
+    validateSession();
+  }, [authStatus, session, router, onboarding_status, state.formData, toast]);
+
+  // Cleanup effect
   useEffect(() => {
     mountedRef.current = true;
     
-    return () => {
-      mountedRef.current = false;
-      if (validationTimeoutRef.current) {
-        clearTimeout(validationTimeoutRef.current);
+    // Watch for setup completion
+    const cleanup = async () => {
+      if (onboardingData?.status === 'complete') {
+        // Reset onboarding state
+        dispatch({ type: 'RESET' });
+        
+        // Clear any persisted state
+        await onboardingManager.clearState();
+        
+        // Invalidate queries
+        queryClient.invalidateQueries([APP_CONFIG.onboarding.queryKeys.status]);
       }
     };
-  }, []);
-
-// Session validation effect
-useEffect(() => {
-  if (!mountedRef.current || authStatus !== 'authenticated') {
-    logger.debug('Skipping session validation:', {
-      mounted: mountedRef.current,
-      authStatus,
-      pathname: window?.location?.pathname,
-      hasSession: !!session,
-      hasAccessToken: !!session?.user?.accessToken
-    });
-    return;
-  }
-
-  const validateSession = async () => {
-    const pathname = window.location.pathname;
     
-    logger.debug('Starting session validation:', {
-      pathname,
-      authStatus,
-      hasAccessToken: !!session?.user?.accessToken,
-      onboardingStatus: session?.user?.onboardingStatus,
-      currentStep: state.currentStep
-    });
-
-    try {
-      // Allow direct business-info access without token
-      if (pathname === '/onboarding/business-info') {
-        logger.debug('Direct access allowed:', { pathname });
-        return;
-      }
-
-      // Special handling for subscription transition
-      if (pathname === '/onboarding/subscription') {
-        const status = session?.user?.onboardingStatus;
-        
-        if (status === 'subscription' || status === 'business-info') {
-          logger.debug('Subscription transition allowed:', { status });
-          return;
-        }
-      }
-
-      // Validate current session state
-      const result = await validateAndRouteUser(
-        { user: session?.user },
-        { 
-          currentStep: state.currentStep,
-          formData: state.formData,
-          pathname,
-          requestId: generateRequestId()
-        }
-      );
-
-      if (!mountedRef.current) return;
-
-      if (!result.isValid) {
-        handleInvalidSession(result);
-      }
-
-    } catch (error) {
-      handleValidationError(error, pathname);
-    }
-  };
-
-  validateSession();
-}, [authStatus, session, router, state.currentStep, state.formData]);
-
-  const handleValidationError = useCallback(async (error, validationType) => {
-    if (!mountedRef.current) return;
+    cleanup();
     
-    logger.error(`Validation error [${validationType}]:`, {
-      error,
-      validationType,
-      pathname: window.location.pathname
-    });
-    
-    updateAuthState({
-      error: error.message,
-      validationType,
-      isValidating: false
-    });
-
-    if (error.reason === AUTH_ERRORS.NO_SESSION || error.reason === AUTH_ERRORS.TOKEN_EXPIRED) {
-      await signOut({ redirect: false });
-      await router.replace('/auth/signin');
-      return;
-    }
-
-    toast?.error(TOAST_MESSAGES[validationType] || TOAST_MESSAGES.API_ERROR);
-  }, [updateAuthState, router, toast]);
-
-  const resetOnboardingData = useCallback(async () => {
-    if (!mountedRef.current) return;
-    try {
-      localStorage.removeItem(APP_CONFIG.onboarding.storage.key);
-      updateAuthState({
-        formData: {},
-        error: null,
-        lastValidated: null
-      });
-      await queryClient.invalidateQueries([APP_CONFIG.onboarding.queryKeys.status]);
-      toast?.success(TOAST_MESSAGES.RESET_SUCCESS);
-    } catch (error) {
-      handleValidationError(error, 'reset');
-    }
-  }, [queryClient, toast, handleValidationError, updateAuthState]);
-
-  const handleValidationFailure = useCallback(async (validationResult) => {
-    if (!mountedRef.current) return;
-    
-    const { reason, redirectTo } = validationResult;
-    
-    if (window.location.pathname.includes('/onboarding/') && 
-        reason === AUTH_ERRORS.INCOMPLETE_ONBOARDING) {
-      updateAuthState({ 
-        isValidating: false, 
-        error: null,
-        validationType: null 
-      });
-      return;
-    }
-
-    switch (reason) {
-      case AUTH_ERRORS.NO_SESSION:
-      case AUTH_ERRORS.TOKEN_EXPIRED:
-        await signOut({ redirect: false });
-        await router.replace('/auth/signin');
-        break;
-        
-      default:
-        if (redirectTo) {
-          await router.replace(redirectTo);
-        }
-    }
-
-    updateAuthState({
-      error: reason,
-      validationType: 'session',
-      isValidating: false
-    });
-  }, [router, updateAuthState]);
-
-// Inside OnboardingProvider
-  // Navigation handler
-  const handleOnboardingRedirect = useCallback(async (targetStep) => {
-    if (!mountedRef.current || state.isLoading) return;
-  
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
+    return () => {
+      mountedRef.current = false;
       
-      // Allow direct business-info access
-      if (targetStep === 'business-info') {
-        await router.replace('/onboarding/business-info');
-        return;
+      // Additional cleanup on unmount if setup was complete
+      if (onboardingData?.status === 'complete') {
+        onboardingManager.clearState();
       }
-  
-      const currentFormData = state.formData;
-      const selectedPlan = currentFormData?.selectedPlan;
-  
-      logger.debug('Checking step transition:', {
-        currentStep: state.currentStep,
-        targetStep,
-        selectedPlan,
-        formData: currentFormData
-      });
-  
-      // Special handling for subscription
-      if (targetStep === 'subscription') {
-        const status = session?.user?.onboardingStatus;
-        if (status === 'subscription' || status === 'business-info') {
-          await router.replace('/onboarding/subscription');
-          return;
-        }
-      }
-  
-      // Special handling for setup transition
-      if (targetStep === 'setup') {
-        if (selectedPlan === 'free' && state.currentStep === 'subscription') {
-          await router.replace('/onboarding/setup');
-          return;
-        }
-      }
-  
-      // Validate transition
-      const canNavigate = validateStep(state.currentStep, targetStep, currentFormData);
-      if (!canNavigate) {
-        toast.error('Please complete the current step first');
-        return;
-      }
-  
-      // Update step and navigate
-      dispatch({ type: 'SET_STEP', payload: targetStep });
-      await router.replace(`/onboarding/${targetStep}`);
-  
-    } catch (error) {
-      logger.error('Navigation failed:', {
-        from: state.currentStep,
-        to: targetStep,
-        error: error.message
-      });
-      toast.error('Navigation failed. Please try again.');
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
-  }, [router, state, session, toast, validateStep]);
+    };
+  }, [onboardingData?.status, onboardingManager, queryClient]);
 
-
-
-
-  // Check if navigation to a step is allowed
-  const canNavigateToStep = useCallback((targetStep) => {
-    return validateStep(state.currentStep, targetStep, state.formData);
-  }, [state.currentStep, state.formData, validateStep]);
-
-  // Update form data
-  const updateFormData = useCallback((newData) => {
-    dispatch({ type: 'SET_FORM_DATA', payload: newData });
-  }, []);
-
-
-
-  const validateSession = useCallback(async () => {
-    if (!mountedRef.current || !session?.user || authStatus !== 'authenticated' || authState.isValidating) {
-      return;
-    }
-
-    const currentTime = Date.now();
-    if (currentTime - lastValidationTime.current < APP_CONFIG.auth.validationInterval) {
-      return;
-    }
-
-    try {
-      updateAuthState({ isValidating: true });
-      lastValidationTime.current = currentTime;
-
-      const validationResult = await validateAndRouteUser(
-        {
-          user: session.user,
-          headers: {},
-          method: 'GET',
-          lastValidated: authState.lastValidated
-        },
-        {
-          pathname: window.location.pathname,
-          requestId: generateRequestId(),
-          environment: process.env.NODE_ENV,
-          onboardingStatus: onboardingStatus?.data?.status,
-          subscriptionTier: authState.formData?.selectedPlan, // Add tier
-          formState: authState.formData
-        }
-      );
-
-      if (!mountedRef.current) return;
-
-      if (!validationResult.isValid) {
-        await handleValidationFailure(validationResult);
-        return;
-      }
-
-      updateAuthState({ 
-        isValidating: false,
-        error: null,
-        validationType: null,
-        lastValidated: currentTime
-      });
-
-      if (validationResult.redirectTo && window.location.pathname !== validationResult.redirectTo) {
-        await router.replace(validationResult.redirectTo);
-      }
-
-    } catch (error) {
-      if (mountedRef.current) {
-        await handleValidationError(error, 'session');
-      }
-    }
-  }, [session, authStatus, authState.isValidating, authState.lastValidated, onboardingStatus?.data?.status, router, handleValidationFailure, handleValidationError, updateAuthState]);
-
-
-
-  // Memoized values
-  const loadingState = useMemo(() => ({
-    isLoading: !authState.isInitialized || 
-               authStatus === 'loading' || 
-               statusLoading || 
-               queriesLoading ||
-               authState.isValidating,
-    reason: authState.isValidating ? 'validation' :
-            !authState.isInitialized ? 'initialization' :
-            authStatus === 'loading' ? 'authentication' :
-            statusLoading || queriesLoading ? 'data-fetching' : null
-  }), [authState, authStatus, statusLoading, queriesLoading]);
-
-  //Context value
+  // Context value
   const value = useMemo(() => ({
-    currentStep: state.currentStep,
-    isLoading: state.isLoading,
-    error: state.error,
+    current_step: state.current_step,
+    // Simplify loading state to avoid race conditions
+    isLoading: statusLoading || queriesLoading,
+    error: state.error || queriesError,
     formData: state.formData,
-    selectedPlan: state.formData.selectedPlan,
     handleOnboardingRedirect,
-    canNavigateToStep,
     updateFormData,
-    setSelectedPlan,
-    mutations
+    validateStep,
+    mutations,
+    onboardingData,
+    // Add these to help coordinate initialization
+    isInitialized: Boolean(onboardingData),
+    status: authStatus,
+    onboardingManager
   }), [
     state,
+    statusLoading,
+    queriesLoading,
+    queriesError,
     handleOnboardingRedirect,
-    canNavigateToStep,
     updateFormData,
-    setSelectedPlan,
-    mutations
+    validateStep,
+    mutations,
+    onboardingData,
+    authStatus,
+    onboardingManager
   ]);
+
+  // Add validation for initial form data
+useEffect(() => {
+  if (onboardingData && !state.formData.business_name) {
+    updateFormData({
+      business_name: '',
+      business_type: '',
+      country: '',
+      legal_structure: '',
+      date_founded: new Date().toISOString().split('T')[0],
+      first_name: session?.user?.first_name || '',
+      last_name: session?.user?.last_name || ''
+    });
+  }
+}, [onboardingData, session, updateFormData]);
+  
 
   if (state.error) {
     return (

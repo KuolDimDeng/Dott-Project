@@ -3,7 +3,7 @@ export const paymentPropTypes = {
     metadata: {
       title: 'string',
       description: 'string',
-      nextStep: 'string?',
+      next_step: 'string?',
       prevStep: 'string?'
     },
     tier: 'string'

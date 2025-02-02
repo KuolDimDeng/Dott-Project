@@ -1,5 +1,4 @@
-// src/app/onboarding/layout.js
-// Keep only /onboarding/layout.js
+// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/layout.js
 'use client';
 
 import React from 'react';
@@ -10,6 +9,7 @@ import { LoadingStateWithProgress } from '@/components/LoadingState';
 
 function OnboardingLayout({ children }) {
   const { data: session, status } = useSession();
+  
 
   if (status === 'loading') {
     return <LoadingStateWithProgress message="Loading..." />;

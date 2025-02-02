@@ -1,7 +1,13 @@
 {
   "private": true,
+  "type": "module",
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "start": "pnpm node script.js" 
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.6.1",
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
     "husky": "^9.1.7"
