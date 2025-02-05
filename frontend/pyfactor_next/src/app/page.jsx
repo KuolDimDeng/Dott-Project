@@ -1,38 +1,22 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/page.jsx
 'use client';
 
-import React, { useEffect, useState, memo, useCallback, useRef, lazy, Suspense } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Typography, Button, CircularProgress, Box } from '@mui/material';
-import { useOnboarding } from '@/app/onboarding/hooks/useOnboarding';
-import { AppErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
+import { useSession } from '@/hooks/useSession';
+import { useEffect, memo, useRef, useState, useCallback, Suspense } from 'react';
 import { logger } from '@/utils/logger';
-import { validateAndRouteUser } from '@/lib/authUtils';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import PropTypes from 'prop-types';
+import { Box, Button, Typography, CircularProgress } from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import { useAuth } from '@/hooks/auth';
 
-// Lazy load components
-const AppAppBar = lazy(() => import('./components/AppBar'));
-const Hero = lazy(() => import('./components/Hero'));
-const Features = lazy(() => import('./components/Features'));
-const Highlights = lazy(() => import('./components/Highlights'));
-const Pricing = lazy(() => import('./components/Pricing'));
-const FAQ = lazy(() => import('./components/FAQ'));
-const Footer = lazy(() => import('./components/Footer'));
-
-// Preload critical components
-const preloadCriticalComponents = () => {
-  const promises = [
-    import('./components/AppBar'),
-    import('./components/Hero')
-  ];
-  Promise.all(promises).catch(() => {});
-};
-
-if (typeof window !== 'undefined') {
-  preloadCriticalComponents();
-}
+// Import your components
+import AppBar from '@/app/components/AppBar';
+import Hero from '@/app/components/Hero';
+import Features from '@/app/components/Features';
+import Highlights from '@/app/components/Highlights';
+import Pricing from '@/app/components/Pricing';
+import FAQ from '@/app/components/FAQ';
+import Footer from '@/app/components/Footer';
 
 // Loading component
 const LoadingSpinner = memo(function LoadingSpinner() {
@@ -72,26 +56,11 @@ const ErrorState = memo(function ErrorState({ error, onRetry }) {
 
 // Landing content component
 const LandingContent = memo(function LandingContent() {
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    // Component mounted
-    logger.debug('Landing content mounted');
-    return () => logger.debug('Landing content unmounted');
-  }, []);
-
-  if (error) {
-    return (
-      <ErrorState 
-        error={error} 
-        onRetry={() => setError(null)} 
-      />
-    );
-  }
+  const { signInWithGoogle } = useAuth();
 
   return (
     <Suspense fallback={<LoadingSpinner />}>
-      <AppAppBar />
+      <AppBar />
       <Hero />
       <Suspense fallback={<LoadingSpinner />}>
         <>
@@ -106,13 +75,64 @@ const LandingContent = memo(function LandingContent() {
   );
 });
 
-// Main landing page component
-function LandingPage() {
-  const { data: session, status } = useSession();
+// PropTypes definitions
+const errorPropType = PropTypes.shape({
+  message: PropTypes.string,
+  code: PropTypes.string,
+  response: PropTypes.shape({
+    status: PropTypes.number
+  })
+});
+
+ErrorState.propTypes = {
+  error: errorPropType.isRequired,
+  onRetry: PropTypes.func.isRequired
+};
+
+LoadingSpinner.propTypes = {};
+LandingContent.propTypes = {};
+
+// Performance monitoring HOC
+const withPerformanceMonitoring = (WrappedComponent) => {
+  if (process.env.NODE_ENV !== 'development') {
+    return WrappedComponent;
+  }
+
+  const MonitoredComponent = (props) => {
+    const mountTime = useRef(performance.now());
+
+    useEffect(() => {
+      logger.debug('Component mounted', {
+        component: WrappedComponent.displayName || WrappedComponent.name,
+        timestamp: mountTime.current
+      });
+
+      return () => {
+        const duration = Math.round(performance.now() - mountTime.current);
+        logger.debug('Component unmounted', {
+          component: WrappedComponent.displayName || WrappedComponent.name,
+          duration: `${duration}ms`
+        });
+      };
+    }, []);
+
+    return <WrappedComponent {...props} />;
+  };
+
+  MonitoredComponent.displayName = `withPerformanceMonitoring(${
+    WrappedComponent.displayName || WrappedComponent.name
+  })`;
+
+  return MonitoredComponent;
+};
+
+// Main component
+function Home() {
   const router = useRouter();
+  const { status, data: session } = useSession();
+  const [error, setError] = useState(null);
   const mounted = useRef(false);
   const requestIdRef = useRef(crypto.randomUUID());
-  const [error, setError] = useState(null);
 
   const handleAuthentication = useCallback(async () => {
     if (!session?.user) return;
@@ -121,41 +141,32 @@ function LandingPage() {
       logger.debug('Landing page auth check:', {
         requestId: requestIdRef.current,
         status,
-        onboarding_status: session?.user?.onboarding_status,
+        onboarding: session?.user['custom:onboarding'],
         sessionData: {
-          current_step: session?.user?.current_step,
           userId: session?.user?.id,
           timestamp: new Date().toISOString()
         }
       });
-      const onboarding_status = session.user.onboarding_status;0
+
+      const onboardingStatus = session.user['custom:onboarding'];
       
-      if (onboarding_status && onboarding_status !== 'complete') {
-        await router.replace(`/onboarding/${onboarding_status}`);
-        return;
-      }
-
-      const validationResult = await validateAndRouteUser(
-        { user: session.user },
-        { pathname: '/', requestId: requestIdRef.current }
-      );
-
-      if (validationResult.redirectTo) {
-        await router.replace(validationResult.redirectTo);
-      } else if (onboarding_status === 'complete') {
+      if (onboardingStatus === 'complete') {
+        logger.debug('User onboarding complete, redirecting to dashboard');
         await router.replace('/dashboard');
+      } else {
+        logger.debug('User onboarding incomplete, redirecting to onboarding');
+        await router.replace(`/onboarding/${onboardingStatus || 'business-info'}`);
       }
-
-    } catch (error) {
+    } catch (err) {
       logger.error('Authentication error', {
         requestId: requestIdRef.current,
-        error: error.message
+        error: err.message
       });
 
       if (mounted.current) {
         setError({
-          message: error.message || 'Authentication failed',
-          code: error.code
+          message: err.message || 'Authentication failed',
+          code: err.code
         });
       }
     }
@@ -187,61 +198,13 @@ function LandingPage() {
 
   if (status === 'loading') return <LoadingSpinner />;
   if (status === 'unauthenticated') return <LandingContent />;
-  if (status === 'authenticated') return null;
+  if (status === 'authenticated') return <LoadingSpinner />;
 
   return <LoadingSpinner />;
 }
 
-// PropTypes
-ErrorState.propTypes = {
-  error: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.object
-  ]).isRequired,
-  onRetry: PropTypes.func.isRequired
-};
+// Export enhanced component
+const EnhancedHome = withPerformanceMonitoring(Home);
+EnhancedHome.displayName = 'EnhancedHome';
 
-LoadingSpinner.propTypes = {};
-LandingContent.propTypes = {};
-
-// Performance monitoring in development
-const withPerformanceMonitoring = (WrappedComponent) => {
-  if (process.env.NODE_ENV !== 'development') {
-    return WrappedComponent;
-  }
-
-  return function MonitoredComponent(props) {
-    const mountTime = useRef(performance.now());
-
-    useEffect(() => {
-      logger.debug('Component mounted', {
-        component: WrappedComponent.displayName || WrappedComponent.name,
-        timestamp: mountTime.current
-      });
-
-      return () => {
-        const duration = Math.round(performance.now() - mountTime.current);
-        logger.debug('Component unmounted', {
-          component: WrappedComponent.displayName || WrappedComponent.name,
-          duration: `${duration}ms`
-        });
-      };
-    }, []);
-
-    return <WrappedComponent {...props} />;
-  };
-};
-
-// Create monitored version of landing page
-const MonitoredLandingPage = process.env.NODE_ENV === 'development'
-  ? withPerformanceMonitoring(memo(LandingPage))
-  : memo(LandingPage);
-
-// Export with error boundary
-export default memo(function PageWithErrorBoundary() {
-  return (
-    <AppErrorBoundary>
-      <MonitoredLandingPage />
-    </AppErrorBoundary>
-  );
-});
+export default EnhancedHome;

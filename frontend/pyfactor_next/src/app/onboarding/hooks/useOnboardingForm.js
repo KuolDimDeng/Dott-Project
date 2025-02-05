@@ -1,350 +1,103 @@
-// src/app/onboarding/hooks/useOnboardingForm.js
-import { useEffect, useCallback, useRef, useState, useMemo } from 'react';
-import { useSession, getSession } from 'next-auth/react';
+'use client';
+
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { useFormStatePersistence } from '@/hooks/useFormStatePersistence';
-import { logger } from '@/utils/logger';
+import { useSession } from '@/hooks/useSession';
 import { useToast } from '@/components/Toast/ToastProvider';
-import { OnboardingStateManager } from '/state/OnboardingStateManager';
-import { ValidationManager } from '/validation/ValidationManager';
-import { generateRequestId } from '@/lib/authUtils';
-import { useCleanup } from '@/hooks/useCleanup';
+import { useCallback, useState } from 'react';
+import { logger } from '@/utils/logger';
+import { updateUserAttributes } from '@/config/amplify';
 
-
-import { 
-    validateStep,
-    canTransitionToStep, 
-    validateTierAccess,
-    STEP_PROGRESSION,
-    VALIDATION_DIRECTION 
-  } from '@/app/onboarding/components/registry';
-
-export const useOnboardingForm = (step, options = {}) => {
-  const {
-    onLoadDraft,
-    onSaveDraft,
-    validateBeforeSave = true,
-    autoSaveInterval = 30000,
-    validationConfig = {}
-  } = options;
-
-  // Hooks
-  const { data: session } = useSession();
+export function useOnboardingForm(step) {
   const router = useRouter();
+  const { data: session, update } = useSession();
   const toast = useToast();
-  const { addCleanup } = useCleanup();
-  // Add this state
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Refs for managers and state
-  const managersRef = useRef({
-    state: null,
-    validation: null
-  });
-
-  // Initialize state tracking
-  const [formState, setFormState] = useState({
-    isInitialized: false,
-    isLoading: true,
-    error: null,
-    lastSaved: null
-  });
-
-  // Initialize managers if not already created
-  if (!managersRef.current.state) {
-    managersRef.current.state = new OnboardingStateManager(`onboarding_${step}`);
-    managersRef.current.validation = new ValidationManager();
-    
-    logger.debug('Managers initialized', {
-      step,
-      timestamp: Date.now()
-    });
-  }
-
-  // Form hook configuration
-  const methods = useForm({
-    mode: 'onBlur',
-    reValidateMode: 'onChange',
-    ...options.formConfig
-  });
-
-  // Setup form persistence
-  const {
-    saveDraft: saveFormDraft,
-    loadLatestDraft,
-    formState: persistenceState
-  } = useFormStatePersistence(`onboarding_${step}`, {
-    stateManager: managersRef.current.state,
-    validationManager: managersRef.current.validation,
-    form: methods,
-    onLoadDraft,
-    onSaveDraft,
-    autoSaveInterval
-  });
-
-  // Handle form field changes
   const handleSubmit = useCallback(async (data) => {
-    const requestId = generateRequestId();  // Add this line
-    let toastId;
-    
+    setIsSubmitting(true);
     try {
-      setIsLoading(true);
-      toastId = toast.loading('Saving your information...');
-  
-      logger.debug('Starting form submission:', {
+      // Update user attributes in Cognito
+      const attributes = {
+        ...Object.keys(data).reduce((acc, key) => ({
+          ...acc,
+          [`custom:${key}`]: data[key]
+        }), {}),
+        'custom:onboarding': step
+      };
+
+      await updateUserAttributes(attributes);
+      await update();
+
+      logger.debug('Form submitted successfully:', {
         step,
-        requestId,
-        data
+        timestamp: new Date().toISOString()
       });
-  
-      // Validate step transition
-      const next_step = STEP_PROGRESSION[step]?.next[0];
-      if (!next_step) {
-        throw new Error('Invalid step configuration');
-      }
-  
-      // Step validation
-      const validationResult = validateStep(step, data);
-      if (!validationResult.valid) {
-        throw new Error(validationResult.message);
-      }
-  
-      // Tier validation if needed
-      if (data.selected_plan) {
-        const tierValidation = validateTierAccess(next_step, data.selected_plan);
-        if (!tierValidation.valid) {
-          throw new Error(tierValidation.message);
-        }
-      }
-  
-      // Get current session
-      const currentSession = await getSession();
-      if (!currentSession?.user?.accessToken) {
-        throw new Error('Please sign in again to continue');
-      }
-  
-      // Call the API route
-      const response = await fetch(`/api/onboarding/${step}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentSession.user.accessToken}`
-        },
-        body: JSON.stringify({
-          ...data,
-          requestId
-        })
-      });
-  
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `Failed to save ${step} information`);
-      }
-  
-      const result = await response.json();
-      logger.debug(`${step} info saved successfully:`, {
-        requestId,
-        result
-      });
-  
-      // Clear draft data
-      await saveFormDraft(null); // or similar method from your persistence hook
 
+      toast.success('Information saved successfully');
 
-  
-      toast.update(toastId, {
-        render: 'Information saved successfully',
-        type: 'success',
-        isLoading: false,
-        autoClose: 2000
-      });
-  
-      // Navigate to next step
-      logger.debug(`Navigating to ${next_step}:`, { requestId });
-      await router.push(`/onboarding/${next_step}`);
-  
+      // Get next step based on current step and plan
+      const stepMap = {
+        'business-info': 'subscription',
+        'subscription': (plan) => plan === 'free' ? 'setup' : 'payment',
+        'payment': 'setup',
+        'setup': 'complete'
+      };
+
+      const nextStep = stepMap[step];
+      const nextRoute = typeof nextStep === 'function' 
+        ? nextStep(session?.user?.['custom:selected_plan'])
+        : nextStep;
+
+      if (nextRoute === 'complete') {
+        router.push('/dashboard');
+      } else {
+        router.push(`/onboarding/${nextRoute}`);
+      }
+
     } catch (error) {
-      logger.error('Form submission failed:', { 
-        error: error.message,
+      logger.error('Form submission failed:', {
         step,
-        requestId 
-      });
-  
-      if (error.message.includes('sign in')) {
-        router.push(`/auth/signin?callbackUrl=/onboarding/${step}`);
-        return;
-      }
-  
-      if (toastId) {
-        toast.update(toastId, {
-          render: error.message,
-          type: 'error',
-          isLoading: false,
-          autoClose: 5000
-        });
-      }
-  
-    } finally {
-      setIsLoading(false);
-    }
-}, [router, toast, step, saveFormDraft]);
-
-
-  const handleFieldChange = useCallback(async (name, value) => {
-    try {
-      // Update form field
-      methods.setValue(name, value, {
-        shouldValidate: true,
-        shouldDirty: true
-      });
-  
-      // Important: Update global state for selected_plan
-      if (name === 'selected_plan') {
-        managersRef.current.state.updateState({
-          selected_plan: value,
-          tier: value
-        }, {
-          type: 'FIELD_CHANGE',
-          fieldName: 'selected_plan',
-          value
-        });  // Added event parameter
-        
-        logger.debug('Updated plan selection:', {
-          selected_plan: value,
-          current_step: step,
-          formValues: methods.getValues()
-        });
-      }
-  
-      // Track change in state manager
-      await managersRef.current.state.handleFieldChange(name, value, {
-        source: 'user-input',
-        timestamp: Date.now()
-      });
-  
-      // Save draft after field change
-      await saveFormDraft(methods.getValues());
-  
-    } catch (error) {
-      logger.error('Field change failed:', {
-        step,
-        field: name,
-        value,
         error: error.message
       });
+      toast.error(error.message || 'Failed to save information');
+    } finally {
+      setIsSubmitting(false);
     }
-  }, [methods, step, saveFormDraft]);
+  }, [step, router, update, session, toast]);
 
-  // Load saved data on mount
-useEffect(() => {
-    const loadSavedData = async () => {
-      try {
-        const savedData = await loadLatestDraft();
-        if (savedData) {
-          methods.reset(savedData);
-        }
-        
-        setFormState(prev => ({
-          ...prev,
-          isInitialized: true,
-          isLoading: false,
-          selected_plan: savedData?.selected_plan || null
-        }));
-  
-      } catch (error) {
-        logger.error('Failed to load saved data:', {
-          step,
-          error: error.message
-        });
-        
-        setFormState(prev => ({
-          ...prev,
-          error: error.message,
-          isLoading: false
-        }));
+  const handleBack = useCallback(async () => {
+    try {
+      // Map current step to previous step
+      const stepMap = {
+        'subscription': 'business-info',
+        'payment': 'subscription',
+        'setup': 'subscription'
+      };
+
+      const previousStep = stepMap[step];
+      if (!previousStep) {
+        throw new Error('Cannot determine previous step');
       }
-    };
-  
-    loadSavedData();
-  }, [step, loadLatestDraft, methods]);
 
-  useEffect(() => {
-    const subscription = managersRef.current.state.subscribe((state, event) => {
-      // Handle plan changes
-      if (state.selected_plan !== methods.getValues().selected_plan) {
-        methods.setValue('selected_plan', state.selected_plan);
-      }
-      
-      // Handle other state changes
-      setFormState(prev => ({
-        ...prev,
-        lastSaved: state.onboarding.stepData.get(step)?.timestamp || prev.lastSaved
-      }));
-  
-      if (event.type === 'error') {
-        toast.error(event.error.message);
-      }
-    });
-  
-    return () => subscription();
-  }, [methods, step, toast]);
+      // Update onboarding status
+      await updateUserAttributes({
+        'custom:onboarding': previousStep
+      });
+      await update();
 
+      router.push(`/onboarding/${previousStep}`);
+    } catch (error) {
+      logger.error('Navigation back failed:', error);
+      toast.error('Failed to navigate back');
+    }
+  }, [step, router, update, toast]);
 
-
-  // Cleanup on unmount
-  useEffect(() => {
-    addCleanup(() => {
-      managersRef.current.state?.cleanup();
-      managersRef.current.validation?.cleanup();
-      managersRef.current = null;
-    });
-  }, [addCleanup]);
-
-  // Return memoized API
-  return useMemo(() => ({
-    // Form methods
-    methods,
+  return {
     handleSubmit,
-    handleFieldChange,
-    
-    // State
-    formState: {
-      ...formState,
-      ...persistenceState,
-      isDirty: methods.formState.isDirty,
-      isValid: methods.formState.isValid,
-      errors: methods.formState.errors
-    },
+    handleBack,
+    isSubmitting,
+    currentUser: session?.user
+  };
+}
 
-    // Progress
-    progress: managersRef.current.state.getProgress(),
-    
-    // Data management
-    saveFormData: saveFormDraft,
-    loadFormData: loadLatestDraft,
-    
-    // Validation
-    validateField: managersRef.current.validation.validateField,
-    validateForm: managersRef.current.validation.validateForm,
-    
-    // Utils
-    reset: methods.reset,
-    getValues: methods.getValues,
-    setError: methods.setError,
-    clearErrors: methods.clearErrors,
-    
-    // Managers (for advanced use cases)
-    stateManager: managersRef.current.state,
-    validationManager: managersRef.current.validation
-
-  }), [
-    methods,
-    handleSubmit,
-    handleFieldChange,
-    formState,
-    persistenceState,
-    saveFormDraft,
-    loadLatestDraft
-  ]);
-};
+export default useOnboardingForm;

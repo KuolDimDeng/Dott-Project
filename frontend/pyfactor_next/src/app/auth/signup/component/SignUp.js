@@ -1,377 +1,185 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
+import Link from 'next/link';
 import {
+  Box,
   Button,
   TextField,
-  Grid,
-  Box,
-  Paper,
   Typography,
   CircularProgress,
-  Link,
   Alert,
+  Paper,
 } from '@mui/material';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-import Image from 'next/image';
-import { Controller, useForm } from 'react-hook-form';
-import { valibotResolver } from '@hookform/resolvers/valibot';
-import { object, minLength, string, email } from 'valibot';
+import { useAuth } from '@/hooks/auth';
 import { logger } from '@/utils/logger';
-import { toast } from 'react-toastify';
-
-
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    background: {
-      default: '#f5f5f5',
-      paper: '#ffffff',
-    },
-  },
-});
-
-const schema = object({
-  email: string([minLength(1, 'This field is required'), email('Email is invalid')]),
-  password1: string([
-    minLength(1, 'This field is required'),
-    minLength(8, 'Password must be at least 8 characters long'),
-  ]),
-  password2: string([minLength(1, 'This field is required')]),
-});
-
-// Function to get CSRF token from cookies
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === name + '=') {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
-}
 
 export default function SignUp() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorState, setErrorState] = useState(null);
-  const [isSignupComplete, setIsSignupComplete] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
-  const router = useRouter();
-  const [resendStatus, setResendStatus] = useState({
-    loading: false,
-    error: null,
-    success: false
+  const { signUp, isLoading } = useAuth();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    firstName: '',
+    lastName: '',
   });
+  const [error, setError] = useState('');
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-    watch,
-  } = useForm({
-    resolver: valibotResolver(schema),
-    defaultValues: {
-      email: '',
-      password1: '',
-      password2: '',
-    },
-  });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
 
-  const password1 = watch('password1');
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
 
-  const onSubmit = async (data) => {
-    setIsLoading(true);
+    // Validate password strength
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(formData.password)) {
+      setError(
+        'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+      );
+      return;
+    }
+
     try {
-      logger.debug('Submitting sign-up data:', data);
-
-      const response = await fetch('/api/auth/signup/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password1: data.password1,
-          password2: data.password2,
-        }),
+      await signUp(formData.email, formData.password, {
+        'custom:firstname': formData.firstName,
+        'custom:lastname': formData.lastName,
+        'custom:onboarding': 'business-info'
       });
-
-      logger.debug('Sign-up API response status:', response.status);
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        // Check if it's a duplicate email error
-        if (result.error === 'An account with this email already exists') {
-          setErrorState('An account with this email already exists. Please sign in or use a different email.');
-          return;
-        }
-        throw new Error(result.error || 'An error occurred during signup');
-      }
-
-      logger.debug('Sign-up API response:', result);
-
-      setUserEmail(data.email);
-      setIsSignupComplete(true);
-      logger.info('Sign-up process completed successfully');
+      logger.debug('Sign up successful, redirecting to verify email');
     } catch (error) {
-      logger.error('Error during sign up:', error);
-      setErrorState(error.message || 'Sign up failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+      logger.error('Sign up error:', error);
+      setError(error.message || 'Failed to sign up');
     }
   };
 
-
-  // Add resend handler
-  const handleResendVerification = async () => {
-    setResendStatus({ loading: true, error: null, success: false });
-    try {
-      const response = await fetch('/api/auth/resend-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to resend verification email');
-      }
-
-      setResendStatus(prev => ({ ...prev, loading: false, success: true }));
-      toast.success('Verification email resent successfully!');
-    } catch (error) {
-      setResendStatus({ loading: false, error: error.message, success: false });
-      toast.error(error.message);
-    }
-  };
-
-
-  const renderForm = () => (
+  return (
     <Box
-      component="form"
-      onSubmit={handleSubmit(onSubmit)}
-      noValidate
-      sx={{ mt: 1, width: '100%' }}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        p: 3,
+      }}
     >
-      <Controller
-        name="email"
-        control={control}
-        render={({ field }) => (
+      <Paper
+        elevation={3}
+        sx={{
+          p: 4,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          maxWidth: 400,
+          width: '100%',
+        }}
+      >
+        <Typography component="h1" variant="h5" gutterBottom>
+          Sign Up
+        </Typography>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, width: '100%' }}>
+            {error}
+          </Alert>
+        )}
+
+        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
           <TextField
-            {...field}
+            margin="normal"
+            required
+            fullWidth
+            id="firstName"
+            label="First Name"
+            name="firstName"
+            autoComplete="given-name"
+            value={formData.firstName}
+            onChange={handleChange}
+            disabled={isLoading}
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="lastName"
+            label="Last Name"
+            name="lastName"
+            autoComplete="family-name"
+            value={formData.lastName}
+            onChange={handleChange}
+            disabled={isLoading}
+          />
+          <TextField
             margin="normal"
             required
             fullWidth
             id="email"
             label="Email Address"
+            name="email"
             autoComplete="email"
-            autoFocus
-            error={!!errors.email}
-            helperText={errors?.email?.message}
+            value={formData.email}
+            onChange={handleChange}
+            disabled={isLoading}
           />
-        )}
-      />
-
-      <Controller
-        name="password1"
-        control={control}
-        render={({ field }) => (
           <TextField
-            {...field}
             margin="normal"
             required
             fullWidth
-            name="password1"
+            name="password"
             label="Password"
             type="password"
-            id="password1"
+            id="password"
             autoComplete="new-password"
-            error={!!errors.password1}
-            helperText={errors?.password1?.message}
+            value={formData.password}
+            onChange={handleChange}
+            disabled={isLoading}
           />
-        )}
-      />
-
-      <Controller
-        name="password2"
-        control={control}
-        render={({ field }) => (
           <TextField
-            {...field}
             margin="normal"
             required
             fullWidth
-            name="password2"
+            name="confirmPassword"
             label="Confirm Password"
             type="password"
-            id="password2"
-            error={!!errors.password2 || (password1 && field.value && password1 !== field.value)}
-            helperText={
-              errors?.password2?.message ||
-              (password1 && field.value && password1 !== field.value
-                ? 'Passwords do not match'
-                : '')
-            }
+            id="confirmPassword"
+            autoComplete="new-password"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            disabled={isLoading}
           />
-        )}
-      />
 
-      <Button
-        type="submit"
-        fullWidth
-        variant="contained"
-        disabled={isLoading}
-        sx={{ mt: 3, mb: 2, borderRadius: '20px', textTransform: 'none' }}
-      >
-        {isLoading ? <CircularProgress size={24} /> : 'Sign Up'}
-      </Button>
-
-      {errorState && (
-        <Typography color="error" align="center">
-          {errorState}
-        </Typography>
-      )}
-
-      <Box sx={{ mt: 2, textAlign: 'center' }}>
-        <Link href="/auth/signin">
-          <Typography
-            variant="body2"
-            component="span"
-            sx={{ cursor: 'pointer', color: 'primary.main' }}
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, mb: 2 }}
+            disabled={isLoading}
           >
-            Already have an account? Sign In
-          </Typography>
-        </Link>
-      </Box>
+            {isLoading ? <CircularProgress size={24} /> : 'Sign Up'}
+          </Button>
+
+          <Box sx={{ mt: 2 }}>
+            <Link href="/auth/signin" style={{ textDecoration: 'none' }}>
+              <Typography variant="body2" color="primary" align="center">
+                Already have an account? Sign In
+              </Typography>
+            </Link>
+          </Box>
+        </Box>
+      </Paper>
     </Box>
-  );
-
-    // Update renderConfirmation
-    const renderConfirmation = () => (
-      <Box sx={{ mt: 4, textAlign: 'center' }}>
-        <Alert severity="success" sx={{ mb: 2 }}>
-          Sign up successful!
-        </Alert>
-        <Typography variant="body1" paragraph>
-          A confirmation email has been sent to <strong>{userEmail}</strong>.
-        </Typography>
-        
-        <Button
-          variant="contained"
-          onClick={handleResendVerification}
-          disabled={resendStatus.loading}
-          sx={{ mt: 2, mr: 2 }}
-        >
-          {resendStatus.loading ? <CircularProgress size={24} /> : 'Resend Email'}
-        </Button>
-  
-        <Button
-          variant="outlined"
-          onClick={() => router.push('/auth/signin')}
-          sx={{ mt: 2 }}
-        >
-          Go to Sign In
-        </Button>
-  
-        {resendStatus.error && (
-          <Typography color="error" sx={{ mt: 2 }}>
-            {resendStatus.error}
-          </Typography>
-        )}
-      </Box>
-    );
-  
-
-  return (
-    <ThemeProvider theme={theme}>
-      <Grid container component="main" sx={{ height: '100vh', overflow: 'hidden' }}>
-        <Grid
-          item
-          xs={12}
-          sm={8}
-          md={6}
-          component={Paper}
-          elevation={6}
-          square
-          sx={{ height: '100vh', overflow: 'auto' }}
-        >
-          <Box
-            sx={{
-              my: 8,
-              mx: 4,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
-          >
-            <Box sx={{ mb: 2 }}>
-              <Image
-                src="/static/images/Pyfactor.png"
-                alt="Pyfactor Logo"
-                width={150}
-                height={40}
-                priority
-              />
-            </Box>
-
-            <Typography component="h1" variant="h5">
-              Sign Up
-            </Typography>
-
-            {isSignupComplete ? renderConfirmation() : renderForm()}
-          </Box>
-        </Grid>
-        <Grid
-          item
-          xs={false}
-          sm={4}
-          md={6}
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: '#e3f2fd',
-            p: 4,
-            height: '100vh',
-          }}
-        >
-          <Box sx={{ width: '100%', mb: 4 }}>
-            <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'black', mb: 2 }}>
-              Streamline Your Business
-            </Typography>
-
-            <ul style={{ listStyleType: 'none', padding: 0, color: 'black' }}>
-              <li>
-                ✅ <strong>Effortless invoicing</strong> for freelancers and small businesses.
-              </li>
-              <li>
-                ✅ <strong>Track expenses</strong> and manage your cash flow with ease.
-              </li>
-              <li>
-                ✅ <strong>Generate reports</strong> to gain insights into your business
-                performance.
-              </li>
-            </ul>
-          </Box>
-          <Box sx={{ width: '80%', height: '50%', position: 'relative' }}>
-            <Image
-              src="/static/images/Product-Launch-2--Streamline-Brooklyn.png"
-              alt="Business management illustration"
-              layout="fill"
-              objectFit="contain"
-              priority
-            />
-          </Box>
-        </Grid>
-      </Grid>
-    </ThemeProvider>
   );
 }

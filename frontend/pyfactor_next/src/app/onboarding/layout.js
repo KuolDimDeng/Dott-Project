@@ -1,29 +1,74 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/layout.js
 'use client';
 
 import React from 'react';
-import { OnboardingProvider } from '@/app/onboarding/contexts/OnboardingContext';
-import { Container, Box } from '@mui/material';
-import { useSession } from 'next-auth/react';
-import { LoadingStateWithProgress } from '@/components/LoadingState';
+import { Box, Container, CircularProgress } from '@mui/material';
+import { useSession } from '@/hooks/useSession';
+import { useRouter } from 'next/navigation';
+import { logger } from '@/utils/logger';
 
-function OnboardingLayout({ children }) {
-  const { data: session, status } = useSession();
-  
+export default function OnboardingLayout({ children }) {
+  const router = useRouter();
+  const { status, data: session } = useSession();
+
+  React.useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        if (status === 'unauthenticated') {
+          logger.debug('User not authenticated, redirecting to sign in');
+          router.push('/auth/signin');
+          return;
+        }
+
+        if (status === 'authenticated') {
+          const onboardingStatus = session.user['custom:onboarding'];
+          
+          // If onboarding is complete, redirect to dashboard
+          if (onboardingStatus === 'complete') {
+            logger.debug('Onboarding complete, redirecting to dashboard');
+            router.push('/dashboard');
+            return;
+          }
+
+          logger.debug('Onboarding status:', {
+            status: onboardingStatus,
+            timestamp: new Date().toISOString()
+          });
+        }
+      } catch (error) {
+        logger.error('Error in onboarding layout:', error);
+      }
+    };
+
+    checkAuth();
+  }, [status, session, router]);
 
   if (status === 'loading') {
-    return <LoadingStateWithProgress message="Loading..." />;
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <OnboardingProvider>
-      <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
-        <Container component="main" maxWidth="md" sx={{ py: 4 }}>
-          {children}
-        </Container>
-      </Box>
-    </OnboardingProvider>
+    <Container
+      maxWidth={false}
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: 'background.default',
+        py: 3,
+      }}
+    >
+      {children}
+    </Container>
   );
 }
-
-export default OnboardingLayout;

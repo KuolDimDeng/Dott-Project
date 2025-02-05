@@ -1,178 +1,111 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/components/LoadingState/SetupLoadingState.js
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSession } from '@/hooks/useSession';
 import { useRouter } from 'next/navigation';
-import PropTypes from 'prop-types';
-import { LoadingStateWithProgress } from './LoadingStateWithProgress';
-import { validateUserState } from '@/lib/authUtils';
+import { Box, CircularProgress, Typography, Alert, Button } from '@mui/material';
 import { logger } from '@/utils/logger';
+import { updateUserAttributes } from '@/config/amplify';
 
-
-export function SetupLoadingState({ 
-  isBackground = true, 
-  setupStarted = false,
-  isInitializing = false,
-  isValidating = false 
-}) {
-  const { data: session } = useSession();
+export default function SetupLoadingState() {
   const router = useRouter();
-  const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState('');
+  const { data: session, status, update } = useSession();
+  const [setupStatus, setSetupStatus] = useState('pending');
   const [error, setError] = useState(null);
-  const [isPolling, setIsPolling] = useState(false);
-  const timeoutRef = useRef(null);
-  const pollIntervalRef = useRef(null);
+
+  const checkSetupStatus = useCallback(async () => {
+    if (!session?.user) return;
+
+    try {
+      const status = session.user['custom:setup_status'] || 'pending';
+      setSetupStatus(status);
+
+      if (status === 'complete') {
+        // Update onboarding status to complete
+        await updateUserAttributes({
+          'custom:onboarding': 'complete',
+          'custom:setup_status': 'complete'
+        });
+        await update();
+
+        logger.debug('Setup completed successfully');
+        router.push('/dashboard');
+      } else if (status === 'failed') {
+        setError('Setup failed. Please try again.');
+      }
+    } catch (error) {
+      logger.error('Setup status check failed:', error);
+      setError('Failed to check setup status');
+    }
+  }, [session, router, update]);
 
   useEffect(() => {
-    let mounted = true;
-    const controller = new AbortController();
-    let retryCount = 0;
-    const MAX_RETRIES = 3;
-    const BASE_DELAY = 2000;
+    if (status === 'authenticated') {
+      const interval = setInterval(checkSetupStatus, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [status, checkSetupStatus]);
 
-    const checkStatus = async () => {
-      try {
-        if (!session?.user) return;
+  const handleRetry = async () => {
+    setError(null);
+    try {
+      await updateUserAttributes({
+        'custom:setup_status': 'pending'
+      });
+      await update();
+      setSetupStatus('pending');
+    } catch (error) {
+      logger.error('Setup retry failed:', error);
+      setError('Failed to retry setup');
+    }
+  };
 
-        // Add timeout protection
-        const validationPromise = validateUserState(session);
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Validation timeout')), 5000)
-        );
-
-        const validationResult = await Promise.race([
-          validationPromise,
-          timeoutPromise
-        ]);
-        
-        if (!mounted) return;
-
-        if (validationResult.isValid) {
-          clearInterval(pollIntervalRef.current);
-          router.push(validationResult.redirectTo);
-          return;
-        }
-
-        // Reset retry count on successful response
-        retryCount = 0;
-
-        // Handle specific validation states
-        switch (validationResult.reason) {
-          case 'unhealthy_database':
-            setProgress(validationResult.details?.progress || 0);
-            setStatus(validationResult.details?.status || 'Setting up database...');
-            break;
-            
-          case 'incomplete_onboarding':
-            clearInterval(pollIntervalRef.current);
-            router.push(validationResult.redirectTo);
-            break;
-
-          case 'no_database':
-            if (!setupStarted) {
-              clearInterval(pollIntervalRef.current);
-              router.push('/onboarding/step1');
-            }
-            break;
-
-          default:
-            clearInterval(pollIntervalRef.current);
-            router.push(validationResult.redirectTo);
-        }
-
-      } catch (error) {
-        if (error.name === 'AbortError') {
-          logger.info('Status check aborted');
-          return;
-        }
-
-        logger.error('Setup status check failed:', {
-          error,
-          retryCount,
-          maxRetries: MAX_RETRIES
-        });
-
-        retryCount++;
-        
-        if (retryCount >= MAX_RETRIES) {
-          setError(error.message);
-          clearInterval(pollIntervalRef.current);
-          return;
-        }
-
-        // Exponential backoff
-        const delay = BASE_DELAY * Math.pow(2, retryCount - 1);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    };
-
-    // Add timeout for overall polling
-    timeoutRef.current = setTimeout(() => {
-      if (mounted && isPolling) {
-        setError('Status check timed out');
-        clearInterval(pollIntervalRef.current);
-      }
-    }, 30000);
-
-    setIsPolling(true);
-    pollIntervalRef.current = setInterval(checkStatus, BASE_DELAY);
-    checkStatus();
-
-    return () => {
-      mounted = false;
-      controller.abort();
-      clearTimeout(timeoutRef.current);
-      clearInterval(pollIntervalRef.current);
-      setIsPolling(false);
-    };
-  }, [session, router, setupStarted]);
-
-  const getMessage = useCallback(() => {
-    if (isInitializing) return "Initializing setup...";
-    if (isValidating) return "Validating setup...";
-    if (isPolling && !status) return "Checking status...";
-    return status || "Setting up your workspace...";
-  }, [isInitializing, isValidating, isPolling, status]);
-
-  if (error) {
+  if (status === 'loading' || setupStatus === 'pending' || setupStatus === 'in_progress') {
     return (
-      <LoadingStateWithProgress
-        message="Setup error occurred"
-        showProgress={false}
-        isBackground={isBackground}
-        error={error}
-        onRetry={() => {
-          setError(null);
-          setProgress(0);
-          setStatus('');
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          gap: 2,
         }}
-      />
+      >
+        <CircularProgress />
+        <Typography variant="body1" color="textSecondary">
+          Setting up your account...
+        </Typography>
+      </Box>
     );
   }
 
-  return (
-    <LoadingStateWithProgress
-      message={getMessage()}
-      showProgress={!isValidating && !isInitializing}
-      progress={progress}
-      isBackground={isBackground}
-      isLoading={isPolling || isValidating || isInitializing}
-      image={{
-        src: '/static/images/Pyfactor.png',
-        alt: 'Pyfactor Logo',
-        width: 150,
-        height: 100,
-      }}
-    />
-  );
-}
+  if (error) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          gap: 2,
+          p: 3,
+        }}
+      >
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" onClick={handleRetry}>
+              Retry
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
+      </Box>
+    );
+  }
 
-// Add PropTypes
-SetupLoadingState.propTypes = {
-  isBackground: PropTypes.bool,
-  setupStarted: PropTypes.bool,
-  isInitializing: PropTypes.bool,
-  isValidating: PropTypes.bool
-};
+  return null;
+}

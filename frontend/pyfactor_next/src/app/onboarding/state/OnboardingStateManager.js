@@ -34,7 +34,7 @@ export class OnboardingStateManager extends FormStateManager {
         current_step: 'business-info',  // Changed from empty string
         pathname: '',
         selected_plan: null,
-        onboarding_status: 'business-info',  // Added default
+        onboarding: 'business-info',  // Added default
         steps: new Map(),
         stepData: new Map(), // Added missing stepData initialization
         progress: {
@@ -378,7 +378,7 @@ export class OnboardingStateManager extends FormStateManager {
         logger.debug('Onboarding state updated:', {
             operationId,
             updates,
-            onboarding_status: this.state.onboarding.onboarding_status,
+            onboarding: this.state.onboarding.onboarding,
             selected_plan: this.state.onboarding.selected_plan,
             pathname: this.state.onboarding.pathname
         });
@@ -399,7 +399,7 @@ async setselected_plan(plan) {
   try {
       await this.updateOnboardingState({
           selected_plan: plan,
-          onboarding_status: plan === 'free' ? 'setup' : 'subscription'
+          onboarding: plan === 'free' ? 'setup' : 'subscription'
       });
       
       return {
@@ -421,8 +421,8 @@ async setPathname(pathname) {
     return this.updateOnboardingState({ pathname });
 }
 
-async setonboarding_status(status) {
-    return this.updateOnboardingState({ onboarding_status: status });
+async setonboarding(status) {
+    return this.updateOnboardingState({ onboarding: status });
 }
 
   // Extended Cleanup

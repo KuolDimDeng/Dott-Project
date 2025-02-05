@@ -18,7 +18,7 @@ export const useStepTransition = () => {
         logger.debug('Starting session verification:', {
             requestId,
             expectedStatus,
-            currentStatus: session?.user?.onboarding_status
+            currentStatus: session?.user?.onboarding
         });
 
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -31,11 +31,11 @@ export const useStepTransition = () => {
                     requestId,
                     attempt: i + 1,
                     expectedStatus,
-                    currentStatus: currentSession?.user?.onboarding_status,
-                    matched: currentSession?.user?.onboarding_status === expectedStatus
+                    currentStatus: currentSession?.user?.onboarding,
+                    matched: currentSession?.user?.onboarding === expectedStatus
                 });
 
-                if (currentSession?.user?.onboarding_status === expectedStatus) {
+                if (currentSession?.user?.onboarding === expectedStatus) {
                     return true;
                 }
 
@@ -55,7 +55,7 @@ export const useStepTransition = () => {
         logger.error('Session verification failed:', {
             requestId,
             expectedStatus,
-            finalStatus: finalSession?.user?.onboarding_status
+            finalStatus: finalSession?.user?.onboarding
         });
 
         return false;
@@ -65,14 +65,14 @@ export const useStepTransition = () => {
         logger.debug('Starting session update:', {
             requestId,
             newStatus,
-            currentStatus: session?.user?.onboarding_status,
+            currentStatus: session?.user?.onboarding,
             hasFormData: !!formData
         });
 
         try {
             const result = await signIn('credentials', {
                 redirect: false,
-                onboarding_status: newStatus,
+                onboarding: newStatus,
                 current_step: newStatus,
                 selected_plan: formData?.selected_plan,
                 callbackUrl: `/onboarding/${newStatus}`
@@ -83,13 +83,13 @@ export const useStepTransition = () => {
             }
 
             const updatedSession = await getSession({ force: true });
-            const success = updatedSession?.user?.onboarding_status === newStatus;
+            const success = updatedSession?.user?.onboarding === newStatus;
 
             logger.debug('Session update complete:', {
                 requestId,
                 success,
                 newStatus,
-                currentStatus: updatedSession?.user?.onboarding_status
+                currentStatus: updatedSession?.user?.onboarding
             });
 
             return success;
@@ -105,7 +105,7 @@ export const useStepTransition = () => {
 
     const transition = useCallback(async (fromStep, toStep, formData) => {
         const requestId = crypto.randomUUID();
-        const currentStep = fromStep || session?.user?.onboarding_status;
+        const currentStep = fromStep || session?.user?.onboarding;
         const selectedPlan = formData?.selected_plan?.type || formData?.selected_plan || null;
 
         logger.debug('Step transition initiated:', {

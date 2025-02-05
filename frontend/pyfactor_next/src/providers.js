@@ -1,19 +1,22 @@
 'use client';
 
 import React, { useState, useEffect, memo, useRef } from 'react';
-import dynamic from 'next/dynamic';  // Add this line
-import { QueryClientProvider } from '@tanstack/react-query';
-import { SessionProvider } from 'next-auth/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@mui/material/styles';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { CssBaseline } from '@mui/material';
-import { ToastProvider, useToast } from '@/components/Toast/ToastProvider';
+import { ToastProvider } from '@/components/Toast/ToastProvider';
+import { toast } from 'react-toastify';
 import theme from '@/styles/theme';
-import { queryClient } from '@/lib/axiosConfig';
 import { AppErrorBoundary } from '@/components/ErrorBoundary';
-import { OnboardingProvider } from '@/app/onboarding/contexts/OnboardingContext';
-import { AuthWrapper } from '@/app/AuthWrapper';
+import AuthWrapper from '@/app/AuthWrapper/AuthWrapper';
 import { logger } from '@/utils/logger';
+import { configureAmplify } from '@/config/amplify';
+import dynamic from 'next/dynamic';
+
+const CrispChatWrapper = dynamic(() => import('@/components/CrispChat/CrispChatWrapper').then(mod => mod.default), {
+  ssr: false
+});
 
 const TOAST_MESSAGES = {
   INIT_ERROR: 'Failed to initialize client-side rendering',
@@ -24,42 +27,46 @@ const TOAST_MESSAGES = {
   MOUNT_ERROR: 'Failed to initialize application',
 };
 
-const CrispChatWrapper = dynamic(() => import('@/components/CrispChat/CrispChatWrapper'), {
-  ssr: false
+// Create a new QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 5 * 60 * 1000,
+      cacheTime: 10 * 60 * 1000,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
 });
 
-// Toast-aware component wrapper
 const ToastAware = memo(function ToastAware({ children }) {
-  const toast = useToast();
   const mounted = useRef(false);
 
   useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
-      if (typeof window !== 'undefined' && toast) {
+      if (typeof window !== 'undefined') {
         toast.dismiss();
       }
     };
-  }, [toast]);
+  }, []);
 
   return children;
 });
 
-// Memoize the ClientOnly component
 const ClientOnly = memo(function ClientOnly({ children }) {
   const [mounted, setMounted] = useState(false);
   const mountedRef = useRef(false);
   const initializationTimer = useRef(null);
-  const toast = useToast();
-
   useEffect(() => {
-    // Clear any existing timer
     if (initializationTimer.current) {
       clearTimeout(initializationTimer.current);
     }
 
-    // Set a timeout to prevent rapid mount/unmount
     initializationTimer.current = setTimeout(() => {
       if (typeof window !== 'undefined' && !mountedRef.current) {
         try {
@@ -68,10 +75,10 @@ const ClientOnly = memo(function ClientOnly({ children }) {
           logger.info('Client-side rendering mounted');
         } catch (error) {
           logger.error('Client initialization error:', error);
-          toast?.error(TOAST_MESSAGES.INIT_ERROR);
+          toast.error(TOAST_MESSAGES.INIT_ERROR);
         }
       }
-    }, 100); // Small delay to prevent rapid cycles
+    }, 100);
 
     return () => {
       if (initializationTimer.current) {
@@ -83,49 +90,11 @@ const ClientOnly = memo(function ClientOnly({ children }) {
         logger.info('Client-side rendering unmounted');
       }
     };
-  }, [toast]);
+  }, []);
 
   if (!mounted) return null;
 
   return children;
-});
-
-// Memoize individual providers
-const QueryProvider = memo(function QueryProvider({ children }) {
-  const toast = useToast();
-  const configuredRef = useRef(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !configuredRef.current && toast) {
-      queryClient.setDefaultOptions({
-        queries: {
-          retry: 2,
-          staleTime: 5 * 60 * 1000,
-          cacheTime: 10 * 60 * 1000,
-          refetchOnWindowFocus: false,
-          onError: (error) => {
-            logger.error('Query error:', error);
-            toast.error(error.message || TOAST_MESSAGES.QUERY_ERROR);
-          },
-        },
-        mutations: {
-          retry: 1,
-          onError: (error) => {
-            logger.error('Mutation error:', error);
-            toast.error(error.message || TOAST_MESSAGES.MUTATION_ERROR);
-          },
-        },
-      });
-      configuredRef.current = true;
-    }
-  }, [toast]);
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-      {process.env.NODE_ENV === 'development' && <ReactQueryDevtools position="bottom-right" />}
-    </QueryClientProvider>
-  );
 });
 
 const ThemeWrapper = memo(function ThemeWrapper({ children }) {
@@ -147,13 +116,11 @@ const ThemeWrapper = memo(function ThemeWrapper({ children }) {
 });
 
 const ErrorWrapper = memo(function ErrorWrapper({ children }) {
-  const toast = useToast();
-
   return (
     <AppErrorBoundary
       onError={(error, errorInfo) => {
         logger.error('Global error boundary caught error:', { error, errorInfo });
-        if (typeof window !== 'undefined' && toast) {
+        if (typeof window !== 'undefined') {
           toast.error(TOAST_MESSAGES.GLOBAL_ERROR);
         }
       }}
@@ -164,7 +131,7 @@ const ErrorWrapper = memo(function ErrorWrapper({ children }) {
           <button
             onClick={() => {
               resetError();
-              if (toast) {
+              if (typeof window !== 'undefined') {
                 toast.success(TOAST_MESSAGES.RESET_SUCCESS);
               }
             }}
@@ -180,46 +147,67 @@ const ErrorWrapper = memo(function ErrorWrapper({ children }) {
   );
 });
 
-// Modify your Providers component to handle auth state internally
-const Providers = memo(function Providers({ children }) {
-  const initializationComplete = useRef(false);
-  const [isReady, setIsReady] = useState(false);
-
+const ConfigureQueryClient = memo(function ConfigureQueryClient({ children }) {
   useEffect(() => {
-    if (!initializationComplete.current) {
-      initializationComplete.current = true;
-      setIsReady(true);
-    }
-    return () => {
-      initializationComplete.current = false;
-    };
+    queryClient.setDefaultOptions({
+      queries: {
+        onError: (error) => {
+          logger.error('Query error:', error);
+          if (typeof window !== 'undefined') {
+            toast.error(error.message || TOAST_MESSAGES.QUERY_ERROR);
+          }
+        },
+      },
+      mutations: {
+        onError: (error) => {
+          logger.error('Mutation error:', error);
+          if (typeof window !== 'undefined') {
+            toast.error(error.message || TOAST_MESSAGES.MUTATION_ERROR);
+          }
+        },
+      },
+    });
   }, []);
 
-  if (!isReady) return null;
+  return children;
+});
+
+const Providers = memo(function Providers({ children }) {
+  useEffect(() => {
+    try {
+      configureAmplify();
+      logger.info('Amplify configured successfully');
+    } catch (error) {
+      logger.error('Failed to configure Amplify:', error);
+      if (typeof window !== 'undefined') {
+        toast.error('Failed to initialize authentication');
+      }
+    }
+  }, []);
 
   return (
-    <ToastProvider>
-      <SessionProvider>
-        <QueryProvider>
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>
+        <ConfigureQueryClient>
           <ThemeWrapper>
             <ErrorWrapper>
-              <OnboardingProvider>
-                <AuthWrapper>
+              <AuthWrapper>
+                <ToastAware>
                   <ClientOnly>
                     {children}
                     <CrispChatWrapper />
                   </ClientOnly>
-                </AuthWrapper>
-              </OnboardingProvider>
+                </ToastAware>
+              </AuthWrapper>
             </ErrorWrapper>
           </ThemeWrapper>
-        </QueryProvider>
-      </SessionProvider>
-    </ToastProvider>
+        </ConfigureQueryClient>
+        {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+      </ToastProvider>
+    </QueryClientProvider>
   );
 });
 
-// Add prop-types validation
 if (process.env.NODE_ENV !== 'production') {
   const PropTypes = require('prop-types');
 
@@ -229,11 +217,11 @@ if (process.env.NODE_ENV !== 'production') {
 
   const components = {
     ClientOnly,
-    QueryProvider,
     ThemeWrapper,
     ErrorWrapper,
     Providers,
     ToastAware,
+    ConfigureQueryClient,
   };
 
   Object.entries(components).forEach(([name, Component]) => {

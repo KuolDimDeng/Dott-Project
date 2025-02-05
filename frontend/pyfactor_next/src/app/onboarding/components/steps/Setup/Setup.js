@@ -26,7 +26,7 @@ import {
 const SetupComponent = ({ metadata }) => {
   const router = useRouter();
   const {
-    onboarding_status,
+    onboarding,
     user_profile,
     current_onboarding_step,
     isLoading: contextLoading,
@@ -64,7 +64,7 @@ const SetupComponent = ({ metadata }) => {
         logger.debug('Subscription validation response:', result.data);
 
         // Free plan special case
-        if (selected_plan === 'free' && user_profile?.onboarding_status === 'setup') {
+        if (selected_plan === 'free' && user_profile?.onboarding === 'setup') {
           return;
         }
 
@@ -103,7 +103,7 @@ const SetupComponent = ({ metadata }) => {
     localLoading, 
     contextLoading,
     selected_plan,
-    user_profile?.onboarding_status,
+    user_profile?.onboarding,
     router
   ]);
 
@@ -144,7 +144,7 @@ const SetupComponent = ({ metadata }) => {
     if (user_profile?.role === 'admin') return true;
   
     // Always allow access for free plan during setup
-    if (selected_plan === 'free' && user_profile?.onboarding_status === 'setup') {
+    if (selected_plan === 'free' && user_profile?.onboarding === 'setup') {
       return true;
     }
   
@@ -154,7 +154,7 @@ const SetupComponent = ({ metadata }) => {
     // Consider setup status as valid for subscription
     const hasValidSubscription = 
       subscription_status === 'complete' || 
-      (selected_plan === 'free' && user_profile?.onboarding_status === 'setup');
+      (selected_plan === 'free' && user_profile?.onboarding === 'setup');
   
     const hasValidPayment = selected_plan === 'professional' ? 
       user_profile?.payment_status === 'complete' : true;
@@ -165,7 +165,7 @@ const SetupComponent = ({ metadata }) => {
       subscription_status: subscription_status,
       paymentStatus: user_profile?.payment_status,
       selected_plan: selected_plan,
-      onboarding_status: user_profile?.onboarding_status
+      onboarding: user_profile?.onboarding
     });
   
     return hasValidSubscription && hasValidPayment;
@@ -210,7 +210,7 @@ useEffect(() => {
           
           <Box sx={{ mt: 1, pl: 2 }}>
             {/* Only show for professional plan or non-setup status */}
-            {(selected_plan !== 'free' || user_profile?.onboarding_status !== 'setup') && 
+            {(selected_plan !== 'free' || user_profile?.onboarding !== 'setup') && 
              user_profile?.subscription_status !== 'complete' && (
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2">
@@ -380,10 +380,10 @@ SetupComponent.propTypes = {
     payment_status: PropTypes.string,
     business_info_status: PropTypes.string,
     database_status: PropTypes.string,
-    onboarding_status: PropTypes.string
+    onboarding: PropTypes.string
   }),
   selected_plan: PropTypes.string,
-  onboarding_status: PropTypes.string,
+  onboarding: PropTypes.string,
   current_onboarding_step: PropTypes.string,
   isLoading: PropTypes.bool,
   contextLoading: PropTypes.bool

@@ -1,335 +1,299 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/components/steps/BusinessInfo/BusinessInfo.js
 'use client';
 
-import { useRouter, usePathname } from 'next/navigation';
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-
-import { useSession } from 'next-auth/react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from '@/hooks/useSession';
 import PropTypes from 'prop-types';
 import {
   Container,
   Grid,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  FormHelperText,
+  Typography,
   Box,
+  CircularProgress,
+  Alert,
+  TextField,
+  Button,
+  MenuItem,
 } from '@mui/material';
-import Image from 'next/image';
-
-import { StepHeader } from '@/app/onboarding/components/shared/StepHeader';
-import { StepNavigation } from '@/app/onboarding/components/shared/StepNavigation';
-import { StepProgress } from '@/app/onboarding/components/shared/StepProgress';
-import { useBusinessInfoForm } from './useBusinessInfoForm';
-import { FormContainer } from './BusinessInfo.styles';
-import { businessTypes, legalStructures } from '@/app/utils/businessData';
-import { countries } from '@/app/countryList/page';
+import { useForm, Controller } from 'react-hook-form';
 import { logger } from '@/utils/logger';
-import { useToast } from '@/components/Toast/ToastProvider';
-import { useOnboarding } from '@/app/onboarding/contexts/OnboardingContext';
-import { LoadingStateWithProgress } from '@/components/LoadingState';
-import { persistenceService, STORAGE_KEYS } from '@/services/persistenceService';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useAuth } from '@/hooks/useAuth';
+import { updateUserAttributes } from '@/config/amplify';
 
-const getDefaultDate = () => {
-  const today = new Date();
-  return today.toISOString().split('T')[0];
-};
+const BUSINESS_TYPES = [
+  'Sole Proprietorship',
+  'Partnership',
+  'LLC',
+  'Corporation',
+  'Non-Profit',
+  'Other',
+];
 
-const defaultMetadata = {
-  title: 'Business Information',
-  description: 'Tell us about your business to get started',
-  next_step: 'subscription',
-  prevStep: null,
-  current_step: 'business-info'
-};
+const LEGAL_STRUCTURES = [
+  'Single Member LLC',
+  'Multi-Member LLC',
+  'S Corporation',
+  'C Corporation',
+  'General Partnership',
+  'Limited Partnership',
+  'Sole Proprietorship',
+];
 
-const ErrorFallback = ({ error, resetErrorBoundary }) => (
-  <div className="flex flex-col items-center justify-center min-h-screen p-4">
-    <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-md">
-      <h2 className="text-red-800 font-semibold mb-2">Something went wrong</h2>
-      <p className="text-red-600 mb-4">{error.message}</p>
-      <button
-        onClick={resetErrorBoundary}
-        className="px-4 py-2 bg-red-100 text-red-800 rounded hover:bg-red-200"
-      >
-        Try Again
-      </button>
-    </div>
-  </div>
-);
-
-const BusinessInfo = ({ metadata = defaultMetadata }) => {
-  const { data: session, status } = useSession();
-  const { isLoading: contextLoading, isInitialized: contextInitialized } = useOnboarding();
+export function BusinessInfo({ onNext }) {
   const router = useRouter();
-  const toast = useToast();
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [isReady, setIsReady] = useState(false);  // Add this
-  const requestId = useRef(crypto.randomUUID()).current;
+  const { data: session, status, update } = useSession();
+  const { signOut } = useAuth();
+  const [error, setError] = React.useState(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-
-
-
-  const {
-    methods,
-    handleSubmit,
-    isLoading: formIsLoading,
-    isTransitioning,
-  } = useBusinessInfoForm();
-
-  const steps = [
-    { 
-      id: 'business-info',
-      label: 'Business Info', 
-      current: true, 
-      completed: false 
-    },
-    { 
-      id: 'subscription',
-      label: 'Subscription', 
-      current: false, 
-      completed: false 
-    },
-    { 
-      id: 'setup',
-      label: 'Setup', 
-      current: false, 
-      completed: false 
+  const { control, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: {
+      business_name: '',
+      business_type: '',
+      country: '',
+      legal_structure: '',
+      date_founded: '',
+      first_name: '',
+      last_name: '',
     }
-  ];
-
-
-  useEffect(() => {
-    logger.debug('BusinessInfo component state:', {
-      requestId,
-      sessionStatus: status,
-      isReady,
-      isInitialized,
-      isValid: methods?.formState?.isValid,  // Add optional chaining
-      formState: methods?.formState
-    });
-  }, [status, isReady, isInitialized, methods?.formState, requestId]);
-
-
-    // Modify initialization effect
-    useEffect(() => {
-      const initializeComponent = async () => {
-        if (!status || status === 'loading') {
-          return;
-        }
-    
-        try {
-          if (status === 'authenticated') {
-            // Don't check isInitialized here
-            setIsInitialized(true);
-            setIsReady(true);
-            
-            logger.debug('Component initialized:', {
-              requestId,
-              status,
-              isInitialized: true,
-              isReady: true
-            });
-          }
-        } catch (err) {
-          logger.error('Component initialization failed:', {
-            requestId,
-            error: err.message
-          });
-          toast.error('Failed to initialize form. Please try refreshing the page.');
-        }
-      };
-    
-      initializeComponent();
-    }, [status, requestId, toast]);
-
-// Consolidate loading states
-const isLoading = status === 'loading' || 
-                 (!isReady && !contextInitialized) || 
-                 formIsLoading;
-
-// Fix the spacing and add as separate effect
-useEffect(() => {
-  logger.debug('Loading state updated:', {
-    requestId,
-    status,
-    isReady,
-    contextInitialized,
-    formIsLoading,
-    isLoading
   });
-}, [status, isReady, contextInitialized, formIsLoading, isLoading, requestId]);
 
   useEffect(() => {
-    const checkSession = async () => {
-      if (status === 'unauthenticated' || !session?.user?.accessToken) {
-        logger.debug('Redirecting to signin - no valid session', { requestId });
-        router.replace('/auth/signin');
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+    }
+  }, [status, router]);
+
+  const onSubmit = async (data) => {
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Update user attributes in Cognito
+      await updateUserAttributes({
+        'custom:business_name': data.business_name,
+        'custom:business_type': data.business_type,
+        'custom:country': data.country,
+        'custom:legal_structure': data.legal_structure,
+        'custom:date_founded': data.date_founded,
+        'custom:first_name': data.first_name,
+        'custom:last_name': data.last_name,
+        'custom:onboarding': 'subscription'
+      });
+
+      // Update session to reflect new attributes
+      await update();
+
+      logger.debug('Business info updated successfully');
+      onNext();
+    } catch (error) {
+      logger.error('Failed to update business info:', error);
+      setError(error.message || 'Failed to update business information');
+
+      if (error.code === 'NotAuthorizedException') {
+        await signOut();
+        router.push('/auth/signin');
       }
-    };
-    
-    checkSession();
-  }, [session, status, router, requestId]);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-
-  if (isLoading) {
+  if (status === 'loading') {
     return (
-      <Container maxWidth="md">
-        <LoadingStateWithProgress
-          message="Setting up your business profile..."
-          isLoading={true}
-          image={{
-            src: '/static/images/Pyfactor.png',
-            alt: 'Pyfactor Logo',
-            width: 150,
-            height: 100,
-          }}
-        />
-      </Container>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '60vh',
+        }}
+      >
+        <CircularProgress />
+      </Box>
     );
   }
 
-  const renderTextField = (name, label, options = {}) => (
-    <TextField
-      fullWidth
-      label={label}
-      {...methods.register(name)}
-      error={!!methods.formState.errors[name]}
-      helperText={methods.formState.errors[name]?.message}
-      disabled={isLoading}
-      {...options}
-    />
-  );
-
   return (
     <Container maxWidth="md">
-       <ErrorBoundary 
-            FallbackComponent={ErrorFallback}
-        >
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 4 }}>
-          <Image
-            src="/static/images/Pyfactor.png"
-            alt="Pyfactor Logo"
-            width={150}
-            height={120}
-            priority
-          />
-        </Box>
-        <StepProgress 
-         steps={steps}
-         current_step="business-info"
-       />
-        <StepHeader
-          title={metadata.title}
-          description={metadata.description}
-        />
-        <FormContainer>
-          <form onSubmit={e => e.preventDefault()} noValidate>
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                {renderTextField('business_name', 'Business Name')}
-              </Grid>
-              <Grid item xs={12}>
-                <FormControl fullWidth error={!!methods.formState.errors.business_type}>
-                  <InputLabel id="business-type-label">Business Type</InputLabel>
-                  <Select
-                    labelId="business-type-label"
+      <Box sx={{ mt: 4, mb: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Business Information
+        </Typography>
+        <Typography variant="body1" color="text.secondary" paragraph>
+          Please provide your business details to get started.
+        </Typography>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
+        <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Controller
+                name="business_name"
+                control={control}
+                rules={{ required: 'Business name is required' }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Business Name"
+                    error={!!errors.business_name}
+                    helperText={errors.business_name?.message}
+                    disabled={isSubmitting}
+                  />
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="business_type"
+                control={control}
+                rules={{ required: 'Business type is required' }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    select
+                    fullWidth
                     label="Business Type"
-                    {...methods.register('business_type')}
+                    error={!!errors.business_type}
+                    helperText={errors.business_type?.message}
+                    disabled={isSubmitting}
                   >
-                    {businessTypes.map((type) => (
+                    {BUSINESS_TYPES.map((type) => (
                       <MenuItem key={type} value={type}>
                         {type}
                       </MenuItem>
                     ))}
-                  </Select>
-                  <FormHelperText>
-                    {methods.formState.errors.business_type?.message}
-                  </FormHelperText>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                <FormControl fullWidth error={!!methods.formState.errors.country}>
-                  <InputLabel id="country-label">Country</InputLabel>
-                  <Select
-                    labelId="country-label"
-                    label="Country"
-                    {...methods.register('country')}
-                  >
-                    {countries.map((country) => (
-                      <MenuItem key={country.code} value={country.code}>
-                        {country.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  <FormHelperText>
-                    {methods.formState.errors.country?.message}
-                  </FormHelperText>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                <FormControl fullWidth error={!!methods.formState.errors.legal_structure}>
-                  <InputLabel id="legal-structure-label">Legal Structure</InputLabel>
-                  <Select
-                    labelId="legal-structure-label"
+                  </TextField>
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="legal_structure"
+                control={control}
+                rules={{ required: 'Legal structure is required' }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    select
+                    fullWidth
                     label="Legal Structure"
-                    {...methods.register('legal_structure')}
+                    error={!!errors.legal_structure}
+                    helperText={errors.legal_structure?.message}
+                    disabled={isSubmitting}
                   >
-                    {legalStructures.map((structure) => (
+                    {LEGAL_STRUCTURES.map((structure) => (
                       <MenuItem key={structure} value={structure}>
                         {structure}
                       </MenuItem>
                     ))}
-                  </Select>
-                  <FormHelperText>
-                    {methods.formState.errors.legal_structure?.message}
-                  </FormHelperText>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                {renderTextField('date_founded', 'Date Founded', {
-                  type: 'date',
-                  defaultValue: getDefaultDate(),
-                  InputLabelProps: { shrink: true },
-                  inputProps: {
-                    max: getDefaultDate(),
-                  }
-                })}
-              </Grid>
-              <Grid item xs={6}>
-                {renderTextField('first_name', 'First Name')}
-              </Grid>
-              <Grid item xs={6}>
-                {renderTextField('last_name', 'Last Name')}
-              </Grid>
+                  </TextField>
+                )}
+              />
             </Grid>
-            <StepNavigation
-                onNext={handleSubmit}
-                loading={isTransitioning || formIsLoading}
-                disableNext={!isReady || !methods.formState.isValid || isLoading}
-                current_step="business-info"
-                next_step="subscription"
-                session={session}
-                showSkip={false}
-                // Add transition class for smooth animation
-                className="transition-all duration-300 ease-in-out"
-            />
-          </form>
-        </FormContainer>
-      </ErrorBoundary>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="country"
+                control={control}
+                rules={{ required: 'Country is required' }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Country"
+                    error={!!errors.country}
+                    helperText={errors.country?.message}
+                    disabled={isSubmitting}
+                  />
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="date_founded"
+                control={control}
+                rules={{ required: 'Date founded is required' }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    type="date"
+                    label="Date Founded"
+                    InputLabelProps={{ shrink: true }}
+                    error={!!errors.date_founded}
+                    helperText={errors.date_founded?.message}
+                    disabled={isSubmitting}
+                  />
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="first_name"
+                control={control}
+                rules={{ required: 'First name is required' }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="First Name"
+                    error={!!errors.first_name}
+                    helperText={errors.first_name?.message}
+                    disabled={isSubmitting}
+                  />
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="last_name"
+                control={control}
+                rules={{ required: 'Last name is required' }}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Last Name"
+                    error={!!errors.last_name}
+                    helperText={errors.last_name?.message}
+                    disabled={isSubmitting}
+                  />
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                disabled={isSubmitting}
+                sx={{ mt: 3, mb: 2 }}
+              >
+                {isSubmitting ? <CircularProgress size={24} /> : 'Continue'}
+              </Button>
+            </Grid>
+          </Grid>
+        </Box>
+      </Box>
     </Container>
   );
-};
+}
 
 BusinessInfo.propTypes = {
-  metadata: PropTypes.shape({
-    title: PropTypes.string.isRequired,
-    description: PropTypes.string.isRequired,
-  })
+  onNext: PropTypes.func.isRequired,
 };
 
-export { BusinessInfo };
 export default BusinessInfo;

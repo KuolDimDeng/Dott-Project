@@ -75,8 +75,8 @@ export const ONBOARDING_STEPS = {
       }
     },
     canAccess: (session) => {
-      return session?.user?.onboarding_status === 'business-info' ||
-             session?.user?.onboarding_status === 'subscription';
+      return session?.user?.onboarding === 'business-info' ||
+             session?.user?.onboarding === 'subscription';
     }
   },
   
@@ -101,7 +101,7 @@ export const ONBOARDING_STEPS = {
     },
     canAccess: (session) => {
       return session?.user?.selected_plan === 'professional' &&
-             session?.user?.onboarding_status === 'payment';
+             session?.user?.onboarding === 'payment';
     }
   },
   
@@ -127,15 +127,15 @@ export const ONBOARDING_STEPS = {
     canAccess: (session) => {
       // Allow setup access for free plan right after subscription
       if (session?.user?.selected_plan === 'free') {
-        return session?.user?.onboarding_status === 'subscription' || 
-               session?.user?.onboarding_status === 'setup';
+        return session?.user?.onboarding === 'subscription' || 
+               session?.user?.onboarding === 'setup';
       }
       
       // For professional plan, require payment completion
       if (session?.user?.selected_plan === 'professional') {
         return session?.user?.paymentCompleted && 
-               (session?.user?.onboarding_status === 'payment' || 
-                session?.user?.onboarding_status === 'setup');
+               (session?.user?.onboarding === 'payment' || 
+                session?.user?.onboarding === 'setup');
       }
       
       return false;
@@ -151,7 +151,7 @@ export const ONBOARDING_STEPS = {
     isPublic: false,
     validate: () => ({ isValid: true }),
     canAccess: (session) => {
-      return session?.user?.onboarding_status === 'complete';
+      return session?.user?.onboarding === 'complete';
     }
   }
 };
@@ -198,17 +198,17 @@ export const canAccessStep = (step, context) => {
   
     // Special handling for setup step
     if (step === 'setup') {
-      const { selected_plan, onboarding_status, paymentCompleted } = context.user;
+      const { selected_plan, onboarding, paymentCompleted } = context.user;
       
       // Free plan can access after subscription
       if (selected_plan === 'free') {
-        return onboarding_status === 'subscription' || onboarding_status === 'setup';
+        return onboarding === 'subscription' || onboarding === 'setup';
       }
       
       // Professional plan needs payment completed
       if (selected_plan === 'professional') {
         return paymentCompleted && 
-               (onboarding_status === 'payment' || onboarding_status === 'setup');
+               (onboarding === 'payment' || onboarding === 'setup');
       }
       
       return false;

@@ -41,7 +41,7 @@ export const useSetupForm = () => {
       requestId,
       error: error.message,
       stack: error.stack,
-      currentStep: session?.user?.onboarding_status
+      currentStep: session?.user?.onboarding
     });
 
     toast.dismiss();
@@ -102,7 +102,7 @@ export const useSetupForm = () => {
             ...session,
             user: {
               ...session?.user,
-              onboarding_status: 'complete',
+              onboarding: 'complete',
               setup_completed: true
             }
           });

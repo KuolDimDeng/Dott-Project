@@ -2,7 +2,13 @@
 
 'use client';
 
-import SignUp from '@/app/auth/signup/component/SignUp'; // Adjust the import path as needed
+import dynamic from 'next/dynamic';
+import LoadingSpinner from '@/components/LoadingSpinner'; // Create this if you haven't
+
+// Dynamically import SignUp component
+const SignUp = dynamic(() => import('./component/SignUp'), {
+  loading: () => <LoadingSpinner />
+});
 
 export default function SignUpPage() {
   return <SignUp />;

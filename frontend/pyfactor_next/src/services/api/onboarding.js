@@ -270,7 +270,7 @@ saveBusinessInfo: async (formData) => {
                 refreshToken: responseData.tokens.refresh || currentSession?.user?.refreshToken,
 
                 // Include any other session data you need to update
-                onboarding_status: 'business-info'
+                onboarding: 'business-info'
             });
         }
 
@@ -436,7 +436,7 @@ startSetup: async (data) => {
                 redirect: false,
                 accessToken: jsonData.tokens.access,
                 refreshToken: jsonData.tokens.refresh || session.user.refreshToken,
-                onboarding_status: 'setup'
+                onboarding: 'setup'
             });
         }
 
@@ -484,7 +484,7 @@ completeSetup: async (data) => {
                 redirect: false,
                 accessToken: jsonData.tokens.access,
                 refreshToken: jsonData.tokens.refresh || currentSession?.user?.refreshToken,
-                onboarding_status: 'complete'
+                onboarding: 'complete'
             });
         }
 
@@ -560,7 +560,7 @@ checkStatus: async () => {
         logger.debug('Status check completed:', {
             requestId,
             status: response.status,
-            onboarding_status: jsonData.status
+            onboarding: jsonData.status
         });
 
         return { response, data: jsonData };
@@ -590,7 +590,7 @@ updateStatus: async (statusData) => {
         const statusPayload = {
             current_step: statusData.current_step,
             next_step: statusData.next_step,
-            onboarding_status: statusData.next_step,
+            onboarding: statusData.next_step,
             request_id: requestId,
             selected_plan: selected_plan,
             form_data: statusData.form_data || null
@@ -620,7 +620,7 @@ updateStatus: async (statusData) => {
                 redirect: false,
                 accessToken: responseData.tokens.access,
                 refreshToken: responseData.tokens.refresh || currentSession?.user?.refreshToken,
-                onboarding_status: statusData.next_step
+                onboarding: statusData.next_step
             });
         }
 
@@ -876,7 +876,7 @@ validateSubscriptionAccess: async () => {
         if (data.current_status !== undefined) {
             await signIn('credentials', {
                 redirect: false,
-                onboarding_status: data.current_status,
+                onboarding: data.current_status,
                 callbackUrl: window.location.pathname
             });
         }
@@ -1005,7 +1005,7 @@ saveSubscriptionPlan: async (planData) => {
                 body: JSON.stringify({
                     current_step: 'subscription',
                     next_step: 'setup',
-                    onboarding_status: 'setup',
+                    onboarding: 'setup',
                     selected_plan: planData.selected_plan,
                     request_id: requestId,
                     form_data: {
@@ -1026,13 +1026,13 @@ saveSubscriptionPlan: async (planData) => {
 
             logger.debug('[Subscription] Status updated', {
                 requestId,
-                onboarding_status: 'setup'
+                onboarding: 'setup'
             });
         
             // 3. Update session
             const signInResult = await signIn('credentials', {
                 redirect: false,
-                onboarding_status: 'setup',
+                onboarding: 'setup',
                 current_step: 'setup',
                 selected_plan: planData.selected_plan,
                 setup_id: setupData.setup_id,
@@ -1091,7 +1091,7 @@ saveSubscriptionPlan: async (planData) => {
             body: JSON.stringify({
                 current_step: 'subscription',
                 next_step: nextStep,
-                onboarding_status: 'subscription',
+                onboarding: 'subscription',
                 selected_plan: planData.selected_plan,
                 request_id: requestId,
                 form_data: {
@@ -1111,7 +1111,7 @@ saveSubscriptionPlan: async (planData) => {
 
         const signInResult = await signIn('credentials', {
             redirect: false,
-            onboarding_status: 'subscription',
+            onboarding: 'subscription',
             current_step: 'subscription',
             selected_plan: planData.selected_plan,
             request_id: requestId
@@ -1164,7 +1164,7 @@ saveSubscriptionPlan: async (planData) => {
                 body: JSON.stringify({
                     current_step: 'subscription',
                     next_step: 'subscription',
-                    onboarding_status: 'subscription',
+                    onboarding: 'subscription',
                     selected_plan: planData.selected_plan,
                     request_id: requestId
                 })
@@ -1173,7 +1173,7 @@ saveSubscriptionPlan: async (planData) => {
             // Reset session
             await signIn('credentials', {
                 redirect: false,
-                onboarding_status: 'subscription',
+                onboarding: 'subscription',
                 current_step: 'subscription',
                 selected_plan: planData.selected_plan,
                 request_id: requestId

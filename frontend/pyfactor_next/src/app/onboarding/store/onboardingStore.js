@@ -23,7 +23,7 @@ const VALID_BILLING_CYCLES = ['monthly', 'annual'];
 
 const initialState = {
   current_step: STEPS.BUSINESS_INFO,
-  onboarding_status: STEPS.BUSINESS_INFO,
+  onboarding: STEPS.BUSINESS_INFO,
   formData: {
     selected_plan: null,
     billing_cycle: 'monthly'
@@ -61,7 +61,7 @@ const createOnboardingStore = () => {
             set(state => ({ 
               ...state,
               current_step: step,
-              onboarding_status: step,
+              onboarding: step,
               error: null 
             }));
             return true;
@@ -141,7 +141,7 @@ const createOnboardingStore = () => {
             logger.debug('Starting session synchronization:', {
               requestId,
               current_step: get().current_step,
-              sessionStatus: session?.user?.onboarding_status
+              sessionStatus: session?.user?.onboarding
             });
 
             try {
@@ -157,7 +157,7 @@ const createOnboardingStore = () => {
               set(state => ({
                 ...state,
                 current_step,
-                onboarding_status: current_step,
+                onboarding: current_step,
                 formData: {
                   ...state.formData,
                   selected_plan,
@@ -203,7 +203,7 @@ const createOnboardingStore = () => {
               requestId,
               fromStep,
               toStep,
-              currentStatus: state.onboarding_status,
+              currentStatus: state.onboarding,
               selected_plan: state.formData.selected_plan
             });
 
@@ -260,7 +260,7 @@ const createOnboardingStore = () => {
           getStorage: () => localStorage,
           partialize: (state) => ({
             current_step: state.current_step,
-            onboarding_status: state.onboarding_status,
+            onboarding: state.onboarding,
             formData: state.formData,
             initialized: state.initialized
           })

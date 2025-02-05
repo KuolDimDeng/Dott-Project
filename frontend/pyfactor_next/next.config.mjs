@@ -76,10 +76,10 @@ const nextConfig = {
           value: [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.crisp.chat https://client.crisp.chat https://*.stripe.com",
-            "connect-src 'self' https://*.crisp.chat wss://*.crisp.chat http://127.0.0.1:8000 http://localhost:8000 https://*.stripe.com https://api.stripe.com",
+            "connect-src 'self' https://*.crisp.chat wss://*.crisp.chat http://127.0.0.1:8000 http://localhost:8000 https://*.stripe.com https://api.stripe.com https://cognito-idp.us-east-1.amazonaws.com",
             "img-src 'self' data: https://*.crisp.chat blob: https://*.googleusercontent.com https://*.stripe.com https://q.stripe.com",
             "style-src 'self' 'unsafe-inline' https://*.crisp.chat",
-            "frame-src 'self' https://*.crisp.chat https://www.youtube.com https://youtube.com https://*.stripe.com",
+            "frame-src 'self' https://*.crisp.chat https://*.youtube.com https://youtube.com https://*.stripe.com",
             "child-src 'self' https://*.crisp.chat blob:",
             "font-src 'self' https://client.crisp.chat",
             "manifest-src 'self'",

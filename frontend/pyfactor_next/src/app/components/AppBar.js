@@ -1,11 +1,11 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/components/AppBar.js
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from '@/hooks/useSession';
+import { useAuth } from '@/hooks/auth';
 import {
-  AppBar,
+  AppBar as MuiAppBar,
   Box,
   Toolbar,
   IconButton,
@@ -19,7 +19,6 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { validateUserState, AUTH_ERRORS } from '@/lib/authUtils';
 import { logger } from '@/utils/logger';
 import Image from 'next/image';
 
@@ -37,48 +36,13 @@ const logoStyle = {
   cursor: 'pointer',
 };
 
-function AppAppBar() {
+function AppBar() {
   const router = useRouter();
   const [anchorElNav, setAnchorElNav] = useState(null);
-  const { data: session, status } = useSession();
-  const [userState, setUserState] = useState(null);
-  const [isValidating, setIsValidating] = useState(false);
+  const { status, data: session } = useSession();
+  const { signOut } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [requestId] = useState(() => crypto.randomUUID());
-
-  useEffect(() => {
-    let mounted = true;
-
-    const validateUser = async () => {
-      if (status !== 'authenticated' || !session) return;
-
-      try {
-        setIsValidating(true);
-        const validationResult = await validateUserState(session, requestId);
-
-        if (!mounted) return;
-
-        setUserState({
-          isValid: validationResult.isValid,
-          redirectTo: validationResult.redirectTo,
-          reason: validationResult.reason
-        });
-      } catch (error) {
-        logger.error('User validation failed:', {
-          requestId,
-          error: error.message,
-          status: error.response?.status
-        });
-      } finally {
-        if (mounted) setIsValidating(false);
-      }
-    };
-
-    validateUser();
-
-    return () => {
-      mounted = false;
-    };
-  }, [session, status, requestId]);
 
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
@@ -89,20 +53,15 @@ function AppAppBar() {
   };
 
   const scrollToSection = (sectionId) => {
-    const currentPath = router.pathname;
-
-    if (currentPath === '/' || currentPath === '/#' + sectionId) {
-      const sectionElement = document.getElementById(sectionId);
+    const sectionElement = document.getElementById(sectionId);
+    if (sectionElement) {
       const offset = 128;
-      if (sectionElement) {
-        const targetScroll = sectionElement.offsetTop - offset;
-        sectionElement.scrollIntoView({ behavior: 'smooth' });
-        window.scrollTo({
-          top: targetScroll,
-          behavior: 'smooth',
-        });
-        handleCloseNavMenu();
-      }
+      const targetScroll = sectionElement.offsetTop - offset;
+      window.scrollTo({
+        top: targetScroll,
+        behavior: 'smooth',
+      });
+      handleCloseNavMenu();
     } else {
       router.push(`/?section=${sectionId}`);
       handleCloseNavMenu();
@@ -111,76 +70,93 @@ function AppAppBar() {
 
   const handleLogout = async () => {
     try {
-      await signOut({ redirect: false });
-      router.push('/');
+      setIsLoading(true);
+      await signOut();
+      router.push('/auth/signin');
+      logger.debug('User signed out successfully');
     } catch (error) {
       logger.error('Logout failed:', {
         requestId,
         error: error.message
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleNavigation = (path) => {
     router.push(path);
+    handleCloseNavMenu();
   };
 
   const getButtonProps = () => {
-    if (!userState?.isValid) {
-      return {
-        text: 'Complete Setup',
-        route: userState?.redirectTo || '/onboarding/business-info',
-        icon: <SettingsIcon />
-      };
-    }
-
-    if (userState.reason === AUTH_ERRORS.ALL_VALID) {
+    if (!session?.user) return null;
+  
+    const onboardingStatus = session.user['custom:onboarding'];
+    
+    if (onboardingStatus === 'complete') {
       return {
         text: 'Dashboard',
         route: '/dashboard',
         icon: <DashboardIcon />
       };
     }
-
-    return {
-      text: 'Start Setup',
-      route: '/onboarding/business-info',
-      icon: <SettingsIcon />
-    };
+  
+    // If they started but didn't finish onboarding
+    if (onboardingStatus) {
+      return {
+        text: 'Continue Onboarding',
+        route: `/onboarding/${onboardingStatus}`,
+        icon: <SettingsIcon />
+      };
+    }
+  
+    // For new users or no onboarding status
+    return null;
   };
+  
 
   const renderAuthButtons = () => {
-    if (status === 'loading' || isValidating) {
+    if (status === 'loading' || isLoading) {
       return <CircularProgress size={24} />;
     }
-
+  
     if (status === 'authenticated') {
       const buttonProps = getButtonProps();
-      return (
-        <>
-          <Button 
-            variant="contained"
-            onClick={() => handleNavigation(buttonProps.route)}
-            startIcon={buttonProps.icon}
-          >
-            {buttonProps.text}
-          </Button>
-          <Button variant="text" onClick={handleLogout}>
-            Log Out
-          </Button>
-        </>
-      );
+      if (buttonProps) {
+        return (
+          <>
+            <Button 
+              variant="contained"
+              onClick={() => handleNavigation(buttonProps.route)}
+              startIcon={buttonProps.icon}
+            >
+              {buttonProps.text}
+            </Button>
+            <Button 
+              variant="text" 
+              onClick={handleLogout}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Signing out...' : 'Sign Out'}
+            </Button>
+          </>
+        );
+      }
     }
 
     return (
-      <Button variant="contained" onClick={() => handleNavigation('/auth/signin')}>
-        Sign In / Sign Up
+      <Button 
+        variant="contained" 
+        onClick={() => handleNavigation('/auth/signin')}
+      >
+       Sign In / Sign Up
       </Button>
     );
   };
 
   return (
-    <AppBar position="fixed" sx={{ bgcolor: 'white', boxShadow: 1 }}>
+    <MuiAppBar position="fixed" sx={{ bgcolor: 'white', boxShadow: 1 }}>
       <Container maxWidth="lg">
         <Toolbar
           disableGutters
@@ -199,6 +175,7 @@ function AppAppBar() {
               height={33}
               style={logoStyle}
               onClick={() => handleNavigation('/')}
+              priority
             />
           </Box>
 
@@ -238,12 +215,14 @@ function AppAppBar() {
             )}
           </Box>
 
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>{renderAuthButtons()}</Box>
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
+            {renderAuthButtons()}
+          </Box>
 
           <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
             <IconButton
               size="large"
-              aria-label="account of current user"
+              aria-label="navigation menu"
               aria-controls="menu-appbar"
               aria-haspopup="true"
               onClick={handleOpenNavMenu}
@@ -273,7 +252,6 @@ function AppAppBar() {
                 <MenuItem
                   key={page.label}
                   onClick={() => {
-                    handleCloseNavMenu();
                     if (page.href) {
                       handleNavigation(page.href);
                     } else {
@@ -286,13 +264,15 @@ function AppAppBar() {
                   </Typography>
                 </MenuItem>
               ))}
-              {renderAuthButtons()}
+              <Box sx={{ px: 2, py: 1 }}>
+                {renderAuthButtons()}
+              </Box>
             </Menu>
           </Box>
         </Toolbar>
       </Container>
-    </AppBar>
+    </MuiAppBar>
   );
 }
 
-export default AppAppBar;
+export default AppBar;

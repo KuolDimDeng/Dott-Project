@@ -130,7 +130,7 @@ export const useBusinessInfoForm = () => {
 
         logger.debug('Business info submission - initial state:', {
             operationId,
-            currentStatus: session?.user?.onboarding_status,
+            currentStatus: session?.user?.onboarding,
             formData
         });
 
@@ -161,7 +161,7 @@ export const useBusinessInfoForm = () => {
             ...session,
             user: {
                 ...session?.user,
-                onboarding_status: 'subscription',
+                onboarding: 'subscription',
                 current_step: 'subscription',
                 first_name: formData.first_name,
                 last_name: formData.last_name

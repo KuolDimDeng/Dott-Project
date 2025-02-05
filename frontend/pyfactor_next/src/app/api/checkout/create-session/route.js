@@ -1,32 +1,28 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../auth/[...nextauth]/options';
 import Stripe from 'stripe';
+import { Auth } from 'aws-amplify';
+import { logger } from '@/utils/logger';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const DOMAIN = process.env.NEXT_PUBLIC_APP_URL;
 
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    // Get the current authenticated user from Amplify
+    const session = await Auth.currentSession();
+    const user = await Auth.currentAuthenticatedUser();
+
+    if (!session || !user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: 'Authentication required' },
         { status: 401 }
       );
     }
 
-    const data = await request.json();
-    const { tier } = data;
-
-    // Set price ID based on tier
-    const priceId = tier === 'pro' ? 
-      process.env.STRIPE_PRO_PRICE_ID :
-      process.env.STRIPE_BASIC_PRICE_ID;
+    const { priceId } = await request.json();
 
     // Create Stripe checkout session
     const stripeSession = await stripe.checkout.sessions.create({
-      customer_email: session.user.email,
+      payment_method_types: ['card'],
       line_items: [
         {
           price: priceId,
@@ -34,19 +30,27 @@ export async function POST(request) {
         },
       ],
       mode: 'subscription',
-      success_url: `${DOMAIN}/onboarding/setup`,
-      cancel_url: `${DOMAIN}/onboarding/subscription`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/setup?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/subscription`,
+      customer_email: user.attributes.email,
       metadata: {
-        userId: session.user.id,
-        tier: tier
-      }
+        userId: user.username,
+        plan: 'professional'
+      },
     });
 
-    return NextResponse.json({ url: stripeSession.url });
+    logger.debug('Stripe checkout session created:', {
+      sessionId: stripeSession.id,
+      userId: user.username,
+      timestamp: new Date().toISOString()
+    });
+
+    return NextResponse.json({ sessionId: stripeSession.id });
   } catch (error) {
-    console.error('Stripe checkout session creation failed:', error);
+    logger.error('Failed to create checkout session:', error);
+    
     return NextResponse.json(
-      { error: 'Failed to create checkout session' },
+      { error: error.message || 'Failed to create checkout session' },
       { status: 500 }
     );
   }
