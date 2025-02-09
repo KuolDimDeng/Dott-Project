@@ -1,145 +1,177 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
+import { getCurrentUser } from 'aws-amplify/auth';
+import { configureAmplify } from '@/config/amplify';
+import { logger } from '@/utils/logger';
 
 export async function POST(request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError) throw userError
+    // Ensure Amplify is configured
+    configureAmplify();
+
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
 
     // Get the request body
-    const paymentData = await request.json()
+    const paymentData = await request.json();
 
-    // Get the user's business
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .select('id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (businessError) throw businessError
-
-    // Update subscription status to active
-    const { error: subscriptionError } = await supabase
-      .from('subscriptions')
-      .update({ 
-        status: 'active',
-        current_period_start: new Date().toISOString(),
-        current_period_end: paymentData.periodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // Default to 30 days
+    // Process payment through backend API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      },
+      body: JSON.stringify({
+        ...paymentData,
+        periodEnd: paymentData.periodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // Default to 30 days
       })
-      .eq('business_id', business.id)
+    });
 
-    if (subscriptionError) throw subscriptionError
+    if (!response.ok) {
+      throw new Error(`Backend request failed: ${response.status}`);
+    }
 
     // Update onboarding status
-    const { error: statusError } = await supabase
-      .from('onboarding')
-      .update({
+    const statusResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      },
+      body: JSON.stringify({
         payment_completed: true,
         current_step: 'setup'
       })
-      .eq('user_id', user.id)
+    });
 
-    if (statusError) throw statusError
-
-    // Start background setup tasks (this will be handled by webhooks/background jobs)
-    // Here we just mark the step as completed and move to setup phase
+    if (!statusResponse.ok) {
+      throw new Error(`Failed to update onboarding status: ${statusResponse.status}`);
+    }
 
     return NextResponse.json({ 
       success: true,
       message: 'Payment processed successfully'
-    })
+    });
 
   } catch (error) {
-    console.error('Error processing payment:', error)
+    logger.error('Error processing payment:', {
+      error: error.message,
+      stack: error.stack
+    });
     return NextResponse.json(
       { 
         success: false,
         error: error.message || 'Failed to process payment'
       },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function GET() {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError) throw userError
+    // Ensure Amplify is configured
+    configureAmplify();
 
-    // Get onboarding status
-    const { data: status, error: statusError } = await supabase
-      .from('onboarding')
-      .select('payment_completed')
-      .eq('user_id', user.id)
-      .single()
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
 
-    if (statusError) throw statusError
+    // Get payment status through backend API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`, {
+      headers: {
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend request failed: ${response.status}`);
+    }
+
+    const status = await response.json();
 
     return NextResponse.json({ 
       success: true,
       paymentCompleted: status?.payment_completed || false
-    })
+    });
 
   } catch (error) {
-    console.error('Error checking payment status:', error)
+    logger.error('Error checking payment status:', {
+      error: error.message,
+      stack: error.stack
+    });
     return NextResponse.json(
       { 
         success: false,
         error: error.message || 'Failed to check payment status'
       },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function PUT(request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError) throw userError
+    // Ensure Amplify is configured
+    configureAmplify();
+
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
 
     // Get the request body
-    const updates = await request.json()
+    const updates = await request.json();
 
-    // Get the user's business
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .select('id')
-      .eq('user_id', user.id)
-      .single()
+    // Update payment information through backend API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/current`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      },
+      body: JSON.stringify(updates)
+    });
 
-    if (businessError) throw businessError
-
-    // Update payment-related information
-    const { error: subscriptionError } = await supabase
-      .from('subscriptions')
-      .update(updates)
-      .eq('business_id', business.id)
-
-    if (subscriptionError) throw subscriptionError
+    if (!response.ok) {
+      throw new Error(`Backend request failed: ${response.status}`);
+    }
 
     return NextResponse.json({ 
       success: true,
       message: 'Payment information updated successfully'
-    })
+    });
 
   } catch (error) {
-    console.error('Error updating payment information:', error)
+    logger.error('Error updating payment information:', {
+      error: error.message,
+      stack: error.stack
+    });
     return NextResponse.json(
       { 
         success: false,
         error: error.message || 'Failed to update payment information'
       },
       { status: 500 }
-    )
+    );
   }
 }

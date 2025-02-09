@@ -1,30 +1,35 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
+import { getCurrentUser } from 'aws-amplify/auth';
+import { configureAmplify } from '@/config/amplify';
+import { logger } from '@/utils/logger';
 
 export async function POST(request) {
   try {
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    // Ensure Amplify is configured
+    configureAmplify();
 
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Not authenticated' },
         { status: 401 }
-      )
+      );
     }
 
     // Get onboarding status
-    const { data: onboardingStatus, error: onboardingError } = await supabase
-      .from('onboarding')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .single()
+    const statusResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`, {
+      headers: {
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      }
+    });
 
-    if (onboardingError) {
-      throw onboardingError
+    if (!statusResponse.ok) {
+      throw new Error(`Failed to fetch onboarding status: ${statusResponse.status}`);
     }
+
+    const onboardingStatus = await statusResponse.json();
 
     // Verify all previous steps are completed
     if (!onboardingStatus.business_info_completed ||
@@ -33,51 +38,59 @@ export async function POST(request) {
       return NextResponse.json(
         { error: 'Previous steps must be completed first' },
         { status: 400 }
-      )
+      );
     }
 
     // Get setup tasks
-    const { data: setupTasks, error: tasksError } = await supabase
-      .from('setup_tasks')
-      .select('*')
-      .eq('user_id', session.user.id)
+    const tasksResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/setup/tasks`, {
+      headers: {
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      }
+    });
 
-    if (tasksError) {
-      throw tasksError
+    if (!tasksResponse.ok) {
+      throw new Error(`Failed to fetch setup tasks: ${tasksResponse.status}`);
     }
+
+    const setupTasks = await tasksResponse.json();
 
     // Verify all tasks are completed
     if (!setupTasks?.every(task => task.completed)) {
       return NextResponse.json(
         { error: 'All setup tasks must be completed' },
         { status: 400 }
-      )
+      );
     }
 
-    // Update onboarding status
-    const { error: updateError } = await supabase
-      .from('onboarding')
-      .update({
-        setup_completed: true,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', session.user.id)
+    // Complete setup through backend API
+    const completeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/setup/complete`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      }
+    });
 
-    if (updateError) {
-      throw updateError
+    if (!completeResponse.ok) {
+      throw new Error(`Failed to complete setup: ${completeResponse.status}`);
     }
+
+    const data = await completeResponse.json();
 
     return NextResponse.json({
       message: 'Setup completed successfully',
-      onboardingStatus: {
-        ...onboardingStatus,
-        setup_completed: true
-      }
-    })
+      onboardingStatus: data.onboardingStatus
+    });
+
   } catch (error) {
+    logger.error('Error completing setup:', {
+      error: error.message,
+      stack: error.stack
+    });
     return NextResponse.json(
-      { error: error.message },
+      { error: error.message || 'Failed to complete setup' },
       { status: 500 }
-    )
+    );
   }
 }

@@ -1,156 +1,183 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
+import { getCurrentUser } from 'aws-amplify/auth';
+import { configureAmplify } from '@/config/amplify';
+import { logger } from '@/utils/logger';
 
 export async function POST(request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError) throw userError
+    // Ensure Amplify is configured
+    configureAmplify();
+
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
 
     // Get the request body
-    const subscriptionData = await request.json()
+    const subscriptionData = await request.json();
 
-    // Get the user's business
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .select('id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (businessError) throw businessError
-
-    // Create subscription record
-    const { data: subscription, error: subscriptionError } = await supabase
-      .from('subscriptions')
-      .insert([{
+    // Create subscription through backend API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      },
+      body: JSON.stringify({
         ...subscriptionData,
-        business_id: business.id,
         status: 'pending' // Will be updated to 'active' after payment
-      }])
-      .select()
-      .single()
+      })
+    });
 
-    if (subscriptionError) throw subscriptionError
+    if (!response.ok) {
+      throw new Error(`Backend request failed: ${response.status}`);
+    }
+
+    const subscription = await response.json();
 
     // Update onboarding status
-    const { error: statusError } = await supabase
-      .from('onboarding')
-      .update({
+    const statusResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      },
+      body: JSON.stringify({
         subscription_completed: true,
         current_step: 'payment'
       })
-      .eq('user_id', user.id)
+    });
 
-    if (statusError) throw statusError
+    if (!statusResponse.ok) {
+      throw new Error(`Failed to update onboarding status: ${statusResponse.status}`);
+    }
 
     return NextResponse.json({ 
       success: true,
       subscription,
       message: 'Subscription created successfully'
-    })
+    });
 
   } catch (error) {
-    console.error('Error creating subscription:', error)
+    logger.error('Error creating subscription:', {
+      error: error.message,
+      stack: error.stack
+    });
     return NextResponse.json(
       { 
         success: false,
         error: error.message || 'Failed to create subscription'
       },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function GET() {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError) throw userError
+    // Ensure Amplify is configured
+    configureAmplify();
 
-    // Get the user's business
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .select('id')
-      .eq('user_id', user.id)
-      .single()
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
 
-    if (businessError) throw businessError
+    // Get subscription data through backend API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/current`, {
+      headers: {
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      }
+    });
 
-    // Get subscription data
-    const { data: subscription, error: subscriptionError } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('business_id', business.id)
-      .single()
+    if (!response.ok && response.status !== 404) {
+      throw new Error(`Backend request failed: ${response.status}`);
+    }
 
-    if (subscriptionError && subscriptionError.code !== 'PGRST116') throw subscriptionError
+    const subscription = response.status === 404 ? null : await response.json();
 
     return NextResponse.json({ 
       success: true,
-      subscription: subscription || null
-    })
+      subscription
+    });
 
   } catch (error) {
-    console.error('Error fetching subscription:', error)
+    logger.error('Error fetching subscription:', {
+      error: error.message,
+      stack: error.stack
+    });
     return NextResponse.json(
       { 
         success: false,
         error: error.message || 'Failed to fetch subscription'
       },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function PUT(request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError) throw userError
+    // Ensure Amplify is configured
+    configureAmplify();
 
-    // Get the user's business
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .select('id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (businessError) throw businessError
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
 
     // Get the request body
-    const updates = await request.json()
+    const updates = await request.json();
 
-    // Update subscription record
-    const { data: subscription, error: subscriptionError } = await supabase
-      .from('subscriptions')
-      .update(updates)
-      .eq('business_id', business.id)
-      .select()
-      .single()
+    // Update subscription through backend API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/current`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      },
+      body: JSON.stringify(updates)
+    });
 
-    if (subscriptionError) throw subscriptionError
+    if (!response.ok) {
+      throw new Error(`Backend request failed: ${response.status}`);
+    }
+
+    const subscription = await response.json();
 
     return NextResponse.json({ 
       success: true,
       subscription,
       message: 'Subscription updated successfully'
-    })
+    });
 
   } catch (error) {
-    console.error('Error updating subscription:', error)
+    logger.error('Error updating subscription:', {
+      error: error.message,
+      stack: error.stack
+    });
     return NextResponse.json(
       { 
         success: false,
         error: error.message || 'Failed to update subscription'
       },
       { status: 500 }
-    )
+    );
   }
 }

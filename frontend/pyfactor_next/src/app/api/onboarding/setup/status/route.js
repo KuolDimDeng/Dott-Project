@@ -1,50 +1,49 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
+import { getCurrentUser } from 'aws-amplify/auth';
+import { configureAmplify } from '@/config/amplify';
+import { logger } from '@/utils/logger';
 
 export async function GET(request) {
   try {
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    // Ensure Amplify is configured
+    configureAmplify();
 
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Not authenticated' },
         { status: 401 }
-      )
+      );
     }
 
-    // Get onboarding status
-    const { data: onboardingStatus, error: onboardingError } = await supabase
-      .from('onboarding')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .single()
+    // Get onboarding and setup status through backend API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/setup/status`, {
+      headers: {
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      }
+    });
 
-    if (onboardingError) {
-      throw onboardingError
+    if (!response.ok) {
+      throw new Error(`Backend request failed: ${response.status}`);
     }
 
-    // Get setup tasks
-    const { data: setupTasks, error: tasksError } = await supabase
-      .from('setup_tasks')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: true })
-
-    if (tasksError) {
-      throw tasksError
-    }
+    const data = await response.json();
 
     return NextResponse.json({
-      onboardingStatus,
-      setupTasks: setupTasks || []
-    })
+      onboardingStatus: data.onboardingStatus,
+      setupTasks: data.setupTasks || []
+    });
+
   } catch (error) {
+    logger.error('Error fetching setup status:', {
+      error: error.message,
+      stack: error.stack
+    });
     return NextResponse.json(
-      { error: error.message },
+      { error: error.message || 'Failed to fetch setup status' },
       { status: 500 }
-    )
+    );
   }
 }

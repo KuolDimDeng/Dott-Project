@@ -1,63 +1,151 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { getCurrentUser } from 'aws-amplify/auth';
+import { Amplify } from 'aws-amplify';
+import { logger } from '@/utils/logger';
+import { configureAmplify } from '@/config/amplify';
+
+const CACHE_CONFIG = {
+  STALE_TIME: 10000, // 10 seconds
+  CACHE_CONTROL: 'public, s-maxage=10, stale-while-revalidate=59'
+};
 
 export async function GET(request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    
-    // Get the current session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) {
-      console.error('Session error:', sessionError);
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Ensure Amplify is configured
+    configureAmplify();
 
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No authenticated user' }, { status: 401 });
-    }
-
-    console.log('Checking onboarding status for user:', session.user.id);
-
-    // Get onboarding status
-    const { data: onboardingStatus, error: onboardingError } = await supabase
-      .from('onboarding')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .single();
-
-    console.log('Onboarding status query result:', { status: onboardingStatus, error: onboardingError });
-
-    if (onboardingError && onboardingError.code !== 'PGRST116') {
-      console.error('Error fetching onboarding status:', onboardingError);
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user) {
       return NextResponse.json(
-        { error: 'Failed to fetch onboarding status' },
-        { status: 500 }
+        { error: 'Not authenticated' },
+        { status: 401 }
       );
     }
 
-    // If no onboarding status found, return 404 
-    // (callback route is responsible for initial creation)
-    if (!onboardingStatus) {
-      console.log('No onboarding status found for user:', session.user.id);
-      return NextResponse.json(
-        { error: 'Onboarding status not found' },
-        { status: 404 }
-      );
-    }
+    logger.debug('Checking onboarding status for user:', user.userId);
 
-    console.log('Returning existing onboarding status:', onboardingStatus);
-
-    return NextResponse.json({
-      isComplete: onboardingStatus.setup_completed,
-      currentStep: onboardingStatus.current_step,
-      ...onboardingStatus
+    // Fetch status from backend
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`, {
+      headers: {
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      },
+      next: {
+        revalidate: CACHE_CONFIG.STALE_TIME / 1000 // Convert to seconds
+      }
     });
-    
+
+    if (!response.ok) {
+      throw new Error(`Backend request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Add cache headers
+    const apiResponse = NextResponse.json(data);
+    apiResponse.headers.set('Cache-Control', CACHE_CONFIG.CACHE_CONTROL);
+    return apiResponse;
+
   } catch (error) {
-    console.error('Error handling onboarding status request:', error);
+    logger.error('Onboarding status check failed:', {
+      error: error.message,
+      stack: error.stack
+    });
+
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to check onboarding status' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST() {
+  try {
+    // Ensure Amplify is configured
+    configureAmplify();
+
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    // Force sync with backend
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status/sync`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend sync failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Clear cache by setting max-age=0
+    const apiResponse = NextResponse.json(data);
+    apiResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return apiResponse;
+
+  } catch (error) {
+    logger.error('Onboarding status sync failed:', {
+      error: error.message,
+      stack: error.stack
+    });
+
+    return NextResponse.json(
+      { error: 'Failed to sync onboarding status' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE() {
+  try {
+    // Ensure Amplify is configured
+    configureAmplify();
+
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    // Clear backend cache
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status/cache`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Cache clear failed: ${response.status}`);
+    }
+
+    const apiResponse = NextResponse.json({ status: 'success' });
+    apiResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return apiResponse;
+
+  } catch (error) {
+    logger.error('Cache clear failed:', {
+      error: error.message,
+      stack: error.stack
+    });
+
+    return NextResponse.json(
+      { error: 'Failed to clear cache' },
       { status: 500 }
     );
   }

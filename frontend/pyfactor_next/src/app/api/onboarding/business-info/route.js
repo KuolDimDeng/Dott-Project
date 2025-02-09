@@ -1,128 +1,183 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
+import { getCurrentUser } from 'aws-amplify/auth';
+import { configureAmplify } from '@/config/amplify';
+import { logger } from '@/utils/logger';
 
 export async function POST(request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError) throw userError
+    // Ensure Amplify is configured
+    configureAmplify();
+
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
 
     // Get the request body
-    const businessData = await request.json()
+    const businessData = await request.json();
 
-    // Create/update business record
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .insert([{
+    // Create/update business record through backend API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/businesses`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      },
+      body: JSON.stringify({
         ...businessData,
-        user_id: user.id
-      }])
-      .select()
-      .single()
+        user_id: user.userId
+      })
+    });
 
-    if (businessError) throw businessError
+    if (!response.ok) {
+      throw new Error(`Backend request failed: ${response.status}`);
+    }
+
+    const business = await response.json();
 
     // Update onboarding status
-    const { error: statusError } = await supabase
-      .from('onboarding')
-      .upsert({
-        user_id: user.id,
+    const statusResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      },
+      body: JSON.stringify({
         business_info_completed: true,
         current_step: 'subscription'
       })
+    });
 
-    if (statusError) throw statusError
+    if (!statusResponse.ok) {
+      throw new Error(`Failed to update onboarding status: ${statusResponse.status}`);
+    }
 
     return NextResponse.json({ 
       success: true,
       business,
       message: 'Business information saved successfully'
-    })
+    });
 
   } catch (error) {
-    console.error('Error saving business info:', error)
+    logger.error('Error saving business info:', {
+      error: error.message,
+      stack: error.stack
+    });
     return NextResponse.json(
       { 
         success: false,
         error: error.message || 'Failed to save business information'
       },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function GET() {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError) throw userError
+    // Ensure Amplify is configured
+    configureAmplify();
 
-    // Get business data
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .select('*')
-      .eq('user_id', user.id)
-      .single()
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
 
-    if (businessError && businessError.code !== 'PGRST116') throw businessError
+    // Get business data through backend API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/businesses/current`, {
+      headers: {
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      }
+    });
+
+    if (!response.ok && response.status !== 404) {
+      throw new Error(`Backend request failed: ${response.status}`);
+    }
+
+    const business = response.status === 404 ? null : await response.json();
 
     return NextResponse.json({ 
       success: true,
-      business: business || null
-    })
+      business
+    });
 
   } catch (error) {
-    console.error('Error fetching business info:', error)
+    logger.error('Error fetching business info:', {
+      error: error.message,
+      stack: error.stack
+    });
     return NextResponse.json(
       { 
         success: false,
         error: error.message || 'Failed to fetch business information'
       },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function PUT(request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError) throw userError
+    // Ensure Amplify is configured
+    configureAmplify();
+
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
 
     // Get the request body
-    const updates = await request.json()
+    const updates = await request.json();
 
-    // Update business record
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .update(updates)
-      .eq('user_id', user.id)
-      .select()
-      .single()
+    // Update business record through backend API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/businesses/current`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+        'X-Request-ID': crypto.randomUUID()
+      },
+      body: JSON.stringify(updates)
+    });
 
-    if (businessError) throw businessError
+    if (!response.ok) {
+      throw new Error(`Backend request failed: ${response.status}`);
+    }
+
+    const business = await response.json();
 
     return NextResponse.json({ 
       success: true,
       business,
       message: 'Business information updated successfully'
-    })
+    });
 
   } catch (error) {
-    console.error('Error updating business info:', error)
+    logger.error('Error updating business info:', {
+      error: error.message,
+      stack: error.stack
+    });
     return NextResponse.json(
       { 
         success: false,
         error: error.message || 'Failed to update business information'
       },
       { status: 500 }
-    )
+    );
   }
 }
