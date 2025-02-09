@@ -11,20 +11,20 @@ export async function POST(request) {
     // Get current user
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     // Start setup process through backend API
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/setup/start`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
-        'X-Request-ID': crypto.randomUUID()
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/setup/start`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+          'X-Request-ID': crypto.randomUUID(),
+        },
       }
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`Backend request failed: ${response.status}`);
@@ -33,38 +33,42 @@ export async function POST(request) {
     const data = await response.json();
 
     // Update onboarding status
-    const statusResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
-        'X-Request-ID': crypto.randomUUID()
-      },
-      body: JSON.stringify({
-        setup_started: true,
-        current_step: 'setup'
-      })
-    });
+    const statusResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+          'X-Request-ID': crypto.randomUUID(),
+        },
+        body: JSON.stringify({
+          setup_started: true,
+          current_step: 'setup',
+        }),
+      }
+    );
 
     if (!statusResponse.ok) {
-      throw new Error(`Failed to update onboarding status: ${statusResponse.status}`);
+      throw new Error(
+        `Failed to update onboarding status: ${statusResponse.status}`
+      );
     }
 
     return NextResponse.json({
       success: true,
       message: 'Setup process started successfully',
-      ...data
+      ...data,
     });
-
   } catch (error) {
     logger.error('Error starting setup process:', {
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error.message || 'Failed to start setup process'
+        error: error.message || 'Failed to start setup process',
       },
       { status: 500 }
     );
