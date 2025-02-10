@@ -7,8 +7,13 @@ import { logger } from '@/utils/logger';
  * Configures AWS Amplify with Cognito settings
  */
 export function configureAmplify() {
-  if (!process.env.NEXT_PUBLIC_AWS_USER_POOL_ID || !process.env.NEXT_PUBLIC_AWS_USER_POOL_WEB_CLIENT_ID) {
-    console.error('[Amplify] ERROR: Missing AWS Cognito environment variables!');
+  if (
+    !process.env.NEXT_PUBLIC_AWS_USER_POOL_ID ||
+    !process.env.NEXT_PUBLIC_AWS_USER_POOL_WEB_CLIENT_ID
+  ) {
+    console.error(
+      '[Amplify] ERROR: Missing AWS Cognito environment variables!'
+    );
     return;
   }
 
@@ -27,10 +32,15 @@ export function configureAmplify() {
           username: false,
         },
         oauth: {
-          domain: process.env.NEXT_PUBLIC_AWS_COGNITO_DOMAIN || 'us-east-1jpl8vgfb6.auth.us-east-1.amazoncognito.com',
+          domain:
+            process.env.NEXT_PUBLIC_AWS_COGNITO_DOMAIN ||
+            'us-east-1jpl8vgfb6.auth.us-east-1.amazoncognito.com',
           scope: ['email', 'openid', 'profile'],
-          redirectSignIn: process.env.NEXT_PUBLIC_REDIRECT_SIGNIN || 'http://localhost:3000/auth/callback',
-          redirectSignOut: process.env.NEXT_PUBLIC_REDIRECT_SIGNOUT || 'http://localhost:3000',
+          redirectSignIn:
+            process.env.NEXT_PUBLIC_REDIRECT_SIGNIN ||
+            'http://localhost:3000/auth/callback',
+          redirectSignOut:
+            process.env.NEXT_PUBLIC_REDIRECT_SIGNOUT || 'http://localhost:3000',
           responseType: 'code',
         },
       },
@@ -100,7 +110,9 @@ export function getCognitoErrorMessage(error) {
     CodeDeliveryFailureException: 'Failed to send verification code.',
   };
 
-  return error.code && errorMap[error.code] ? errorMap[error.code] : error.message || 'An unexpected error occurred.';
+  return error.code && errorMap[error.code]
+    ? errorMap[error.code]
+    : error.message || 'An unexpected error occurred.';
 }
 
 /**
@@ -108,8 +120,34 @@ export function getCognitoErrorMessage(error) {
  * @param {Object} attributes - The user attributes to update
  */
 export async function updateUserAttributes(attributes) {
-  const { updateUserAttributes } = await import('aws-amplify/auth');
-  return updateUserAttributes({ userAttributes: attributes });
+  try {
+    const { updateUserAttributes } = await import('aws-amplify/auth');
+    const { getCurrentUser } = await import('aws-amplify/auth');
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error('No user found');
+    }
+
+    logger.debug('[Amplify] Updating user attributes:', attributes);
+
+    // Update attributes one by one to isolate any issues
+    for (const [key, value] of Object.entries(attributes)) {
+      try {
+        await updateUserAttributes(user, { [key]: value });
+        logger.debug(`[Amplify] Successfully updated attribute: ${key}`);
+      } catch (error) {
+        logger.error(`[Amplify] Failed to update attribute ${key}:`, error);
+        throw error;
+      }
+    }
+
+    logger.debug('[Amplify] All user attributes updated successfully');
+    return true;
+  } catch (error) {
+    logger.error('[Amplify] Failed to update user attributes:', error);
+    throw error;
+  }
 }
 
 // ✅ Ensure Amplify is configured when the file is imported

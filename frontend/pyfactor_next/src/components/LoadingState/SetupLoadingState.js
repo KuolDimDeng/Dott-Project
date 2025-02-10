@@ -1,111 +1,49 @@
-'use client';
+import React from 'react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useSession } from '@/hooks/useSession';
-import { useRouter } from 'next/navigation';
-import { Box, CircularProgress, Typography, Alert, Button } from '@mui/material';
-import { logger } from '@/utils/logger';
-import { updateUserAttributes } from '@/config/amplify';
+export function SetupLoadingState({ status }) {
+  const getStatusMessage = () => {
+    if (!status) return 'Initializing setup...';
 
-export default function SetupLoadingState() {
-  const router = useRouter();
-  const { data: session, status, update } = useSession();
-  const [setupStatus, setSetupStatus] = useState('pending');
-  const [error, setError] = useState(null);
-
-  const checkSetupStatus = useCallback(async () => {
-    if (!session?.user) return;
-
-    try {
-      const status = session.user['custom:setup_status'] || 'pending';
-      setSetupStatus(status);
-
-      if (status === 'complete') {
-        // Update onboarding status to complete
-        await updateUserAttributes({
-          'custom:onboarding': 'complete',
-          'custom:setup_status': 'complete'
-        });
-        await update();
-
-        logger.debug('Setup completed successfully');
-        router.push('/dashboard');
-      } else if (status === 'failed') {
-        setError('Setup failed. Please try again.');
-      }
-    } catch (error) {
-      logger.error('Setup status check failed:', error);
-      setError('Failed to check setup status');
-    }
-  }, [session, router, update]);
-
-  useEffect(() => {
-    if (status === 'authenticated') {
-      const interval = setInterval(checkSetupStatus, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [status, checkSetupStatus]);
-
-  const handleRetry = async () => {
-    setError(null);
-    try {
-      await updateUserAttributes({
-        'custom:setup_status': 'pending'
-      });
-      await update();
-      setSetupStatus('pending');
-    } catch (error) {
-      logger.error('Setup retry failed:', error);
-      setError('Failed to retry setup');
+    switch (status.current_step) {
+      case 'initializing':
+        return 'Initializing database setup...';
+      case 'creating_database':
+        return 'Creating your database...';
+      case 'configuring_database':
+        return 'Configuring database settings...';
+      case 'running_migrations':
+        return 'Setting up database structure...';
+      case 'verifying_setup':
+        return 'Verifying database setup...';
+      case 'finalizing':
+        return 'Finalizing setup...';
+      case 'complete':
+        return 'Setup complete!';
+      case 'error':
+        return 'Setup error occurred';
+      default:
+        return 'Processing...';
     }
   };
 
-  if (status === 'loading' || setupStatus === 'pending' || setupStatus === 'in_progress') {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          gap: 2,
-        }}
-      >
-        <CircularProgress />
-        <Typography variant="body1" color="textSecondary">
-          Setting up your account...
-        </Typography>
-      </Box>
-    );
-  }
+  const getProgress = () => {
+    if (!status) return 0;
+    return status.progress || 0;
+  };
 
-  if (error) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          gap: 2,
-          p: 3,
-        }}
-      >
-        <Alert
-          severity="error"
-          action={
-            <Button color="inherit" size="small" onClick={handleRetry}>
-              Retry
-            </Button>
-          }
-        >
-          {error}
-        </Alert>
-      </Box>
-    );
-  }
-
-  return null;
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[200px] p-8">
+      <LoadingSpinner />
+      <div className="mt-4 text-lg font-medium text-gray-700">
+        {getStatusMessage()}
+      </div>
+      <div className="mt-2 text-sm text-gray-500">
+        {getProgress()}% complete
+      </div>
+      {status?.error && (
+        <div className="mt-4 text-sm text-red-600">Error: {status.error}</div>
+      )}
+    </div>
+  );
 }

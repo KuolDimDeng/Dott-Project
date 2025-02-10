@@ -1,3 +1,1 @@
-// index.js
-export { default as Setup } from './Setup';
-
+export { default } from './Setup';

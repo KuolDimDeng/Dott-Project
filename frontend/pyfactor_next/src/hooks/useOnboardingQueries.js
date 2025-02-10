@@ -2,7 +2,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/hooks/useSession';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { APP_CONFIG } from '@/config';
 import { logger } from '@/utils/logger';
@@ -19,7 +19,9 @@ export function useOnboardingQueries() {
       throw new Error('Authentication required');
     }
     try {
-      const response = await axiosInstance.get(APP_CONFIG.api.endpoints.onboarding.status);
+      const response = await axiosInstance.get(
+        APP_CONFIG.api.endpoints.onboarding.status
+      );
       return response.data;
     } catch (error) {
       logger.error('Failed to fetch onboarding status:', error);
@@ -35,7 +37,10 @@ export function useOnboardingQueries() {
         if (!session?.user?.accessToken) {
           throw new Error('Authentication required');
         }
-        const response = await axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.step1, data);
+        const response = await axiosInstance.post(
+          APP_CONFIG.api.endpoints.onboarding.step1,
+          data
+        );
         return response.data;
       },
       onSuccess: (data) => {
@@ -53,7 +58,10 @@ export function useOnboardingQueries() {
         if (!session?.user?.accessToken) {
           throw new Error('Authentication required');
         }
-        const response = await axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.step2, data);
+        const response = await axiosInstance.post(
+          APP_CONFIG.api.endpoints.onboarding.step2,
+          data
+        );
         return response.data;
       },
       onSuccess: (data) => {
@@ -71,7 +79,10 @@ export function useOnboardingQueries() {
         if (!session?.user?.accessToken) {
           throw new Error('Authentication required');
         }
-        const response = await axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.step3, data);
+        const response = await axiosInstance.post(
+          APP_CONFIG.api.endpoints.onboarding.step3,
+          data
+        );
         return response.data;
       },
       onSuccess: (data) => {
@@ -89,7 +100,10 @@ export function useOnboardingQueries() {
         if (!session?.user?.accessToken) {
           throw new Error('Authentication required');
         }
-        const response = await axiosInstance.post(APP_CONFIG.api.endpoints.onboarding.step4, data);
+        const response = await axiosInstance.post(
+          APP_CONFIG.api.endpoints.onboarding.step4,
+          data
+        );
         return response.data;
       },
       onSuccess: (data) => {
@@ -155,6 +169,7 @@ export function useOnboardingQueries() {
     },
     isLoading,
     error,
-    isAuthenticated: authStatus === 'authenticated' && !!session?.user?.accessToken,
+    isAuthenticated:
+      authStatus === 'authenticated' && !!session?.user?.accessToken,
   };
 }

@@ -5,7 +5,7 @@ import { useSession } from '@/hooks/useSession';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { logger } from '@/utils/logger';
 
-export default function AuthLoadingState() {
+export function AuthLoadingState() {
   const router = useRouter();
   const { status, data: session } = useSession();
 
@@ -37,10 +37,10 @@ export default function AuthLoadingState() {
 
   if (status === 'authenticated') {
     const onboardingStatus = session.user['custom:onboarding'];
-    
+
     if (onboardingStatus !== 'complete') {
       logger.debug('Onboarding incomplete, redirecting to onboarding', {
-        status: onboardingStatus
+        status: onboardingStatus,
       });
       router.push(`/onboarding/${onboardingStatus || 'business-info'}`);
       return null;

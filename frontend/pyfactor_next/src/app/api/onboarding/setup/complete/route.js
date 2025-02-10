@@ -14,92 +14,117 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    // Get onboarding status
+    const completionTimestamp = new Date().toISOString();
+
+    // Update user attributes for completion
+    const { updateUserAttributes } = await import('@/utils/userAttributes');
+    const completionAttributes = {
+      'custom:onboarding': 'COMPLETE',
+      'custom:acctstatus': 'active',
+      'custom:lastlogin': completionTimestamp,
+    };
+
+    await updateUserAttributes(completionAttributes);
+
+    // Update onboarding status
     const statusResponse = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`,
       {
+        method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
           'X-Request-ID': crypto.randomUUID(),
         },
+        body: JSON.stringify({
+          status: 'COMPLETE',
+          lastStep: 'SETUP',
+        }),
       }
     );
 
     if (!statusResponse.ok) {
       throw new Error(
-        `Failed to fetch onboarding status: ${statusResponse.status}`
+        `Failed to update onboarding status: ${statusResponse.status}`
       );
     }
 
-    const onboardingStatus = await statusResponse.json();
+    // Verify all required attributes are present
+    const { getCurrentUser: getUser } = await import('aws-amplify/auth');
+    const updatedUser = await getUser();
+    const userAttributes = updatedUser.signInUserSession.idToken.payload;
 
-    // Verify all previous steps are completed
-    if (
-      !onboardingStatus.business_info_completed ||
-      !onboardingStatus.subscription_completed ||
-      !onboardingStatus.payment_completed
-    ) {
-      return NextResponse.json(
-        { error: 'Previous steps must be completed first' },
-        { status: 400 }
-      );
-    }
+    const requiredAttributes = [
+      'custom:onboarding',
+      'custom:businessid',
+      'custom:subplan',
+      'custom:userrole',
+      'custom:acctstatus',
+      'custom:preferences',
+    ];
 
-    // Get setup tasks
-    const tasksResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/setup/tasks`,
-      {
-        headers: {
-          Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
-          'X-Request-ID': crypto.randomUUID(),
-        },
-      }
+    const missingAttributes = requiredAttributes.filter(
+      (attr) => !userAttributes[attr]
     );
 
-    if (!tasksResponse.ok) {
-      throw new Error(`Failed to fetch setup tasks: ${tasksResponse.status}`);
+    if (missingAttributes.length > 0) {
+      logger.error('Missing required attributes after completion:', {
+        missingAttributes,
+        userId: user.userId,
+      });
+      throw new Error('Missing required attributes after completion');
     }
 
-    const setupTasks = await tasksResponse.json();
-
-    // Verify all tasks are completed
-    if (!setupTasks?.every((task) => task.completed)) {
-      return NextResponse.json(
-        { error: 'All setup tasks must be completed' },
-        { status: 400 }
-      );
-    }
-
-    // Complete setup through backend API
-    const completeResponse = await fetch(
+    // Notify backend of completion
+    const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/setup/complete`,
       {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
           'X-Request-ID': crypto.randomUUID(),
         },
+        body: JSON.stringify({
+          attributes: {
+            onboarding: userAttributes['custom:onboarding'],
+            businessId: userAttributes['custom:businessid'],
+            subplan: userAttributes['custom:subplan'],
+            userrole: userAttributes['custom:userrole'],
+            acctstatus: userAttributes['custom:acctstatus'],
+          },
+        }),
       }
     );
 
-    if (!completeResponse.ok) {
-      throw new Error(`Failed to complete setup: ${completeResponse.status}`);
+    if (!response.ok) {
+      throw new Error(`Backend request failed: ${response.status}`);
     }
 
-    const data = await completeResponse.json();
+    logger.info('Onboarding completed successfully', {
+      userId: user.userId,
+      timestamp: completionTimestamp,
+      attributes: {
+        onboarding: userAttributes['custom:onboarding'],
+        businessId: userAttributes['custom:businessid'],
+        subplan: userAttributes['custom:subplan'],
+        userrole: userAttributes['custom:userrole'],
+        acctstatus: userAttributes['custom:acctstatus'],
+      },
+    });
 
     return NextResponse.json({
+      success: true,
       message: 'Setup completed successfully',
-      onboardingStatus: data.onboardingStatus,
     });
   } catch (error) {
-    logger.error('Error completing setup:', {
+    logger.error('Failed to complete setup:', {
       error: error.message,
       stack: error.stack,
     });
     return NextResponse.json(
-      { error: error.message || 'Failed to complete setup' },
-      { status: 500 }
+      { error: 'Failed to complete setup process' },
+      { status: error.response?.status || 500 }
     );
   }
 }

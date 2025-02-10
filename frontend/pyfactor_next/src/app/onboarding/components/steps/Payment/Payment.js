@@ -1,78 +1,94 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/components/steps/Payment/Payment.js
 'use client';
 
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Box, Typography, Container, Button, CircularProgress, Alert } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Container,
+  Button,
+  CircularProgress,
+  Alert,
+} from '@mui/material';
 import Image from 'next/image';
 import { StepHeader } from '@/app/onboarding/components/shared/StepHeader';
 import { StepNavigation } from '@/app/onboarding/components/shared/StepNavigation';
 import { StepProgress } from '@/app/onboarding/components/shared/StepProgress';
 import { usePaymentForm } from './usePaymentForm';
-import { PaymentContainer, LogoContainer, PaymentDetails, PaymentSummary } from './Payment.styles';
-import { useOnboarding } from '@/app/onboarding/contexts/OnboardingContext';
+import {
+  PaymentContainer,
+  LogoContainer,
+  PaymentDetails,
+  PaymentSummary,
+} from './Payment.styles';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import { logger } from '@/utils/logger';
-import { canNavigateToStep } from '@/app/onboarding/constants/onboardingConstants'; // Import directly from constants
 
+// Pricing function
+const getPricing = (billingCycle = 'monthly') => {
+  return billingCycle === 'monthly' ? '29' : '290';
+};
 
 const PaymentComponent = ({ metadata }) => {
-  
-  const {
-    formData,
-    checkoutLoading,
-    checkoutError,
-    handlePayment,
-    handlePreviousStep,
-    isLoading,
-    requestId,
-    selected_plan,
-    billingCycle
-  } = usePaymentForm();
+  const { handlePaymentSuccess, handleBack, isLoading, user } =
+    usePaymentForm();
 
-  // Make steps dynamic based on tier and validation
+  const { currentStep, isStepCompleted } = useOnboarding();
+  const [checkoutError, setCheckoutError] = useState(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const subscriptionPlan = user?.subscriptionPlan;
+  const billingCycle = user?.preferences?.billingCycle || 'monthly';
+
   const steps = [
-    { label: 'Business Info', current: false, completed: true },
-    { label: 'Subscription', current: false, completed: true },
-    ...(selected_plan === 'professional' ? [
-      { label: 'Payment', current: true, completed: false, isAccessible: canNavigateToStep('payment') }
-    ] : []),
-    { 
-      label: 'Setup', 
-      current: false, 
-      completed: false,
-      isAccessible: canNavigateToStep('setup')
-    }
+    {
+      label: 'Business Info',
+      current: false,
+      completed: isStepCompleted('businessinfo'),
+    },
+    {
+      label: 'Subscription',
+      current: false,
+      completed: isStepCompleted('subscription'),
+    },
+    ...(subscriptionPlan === 'professional'
+      ? [
+          {
+            label: 'Payment',
+            current: currentStep === 'payment',
+            completed: isStepCompleted('payment'),
+          },
+        ]
+      : []),
+    {
+      label: 'Setup',
+      current: currentStep === 'setup',
+      completed: isStepCompleted('setup'),
+    },
   ];
 
   const handlePaymentSubmit = async () => {
+    setCheckoutLoading(true);
+    setCheckoutError(null);
     try {
-      if (!canNavigateToStep('setup')) {
-        logger.warn('Payment submission blocked - cannot proceed to setup', {
-          requestId,
-          current_step: 'payment',
-          next_step: 'setup'
-        });
-        return;
-      }
-
-      await handlePayment();
-
+      // Here you would typically integrate with your payment provider (e.g., Stripe)
+      // For now, we'll simulate a successful payment
+      const paymentId = `pay_${Date.now()}`;
+      await handlePaymentSuccess(paymentId);
     } catch (error) {
-      logger.error('Payment submission failed:', {
-        requestId,
-        error: error.message
-      });
+      logger.error('Payment submission failed:', error);
+      setCheckoutError(error.message || 'Failed to process payment');
+    } finally {
+      setCheckoutLoading(false);
     }
   };
 
   // Verify tier and step access
-  if (selected_plan !== 'professional' || !canNavigateToStep('payment')) {
+  if (subscriptionPlan !== 'professional' || currentStep !== 'payment') {
     logger.warn('Invalid payment page access:', {
-      requestId,
-      selected_plan,
-      canAccessPayment: canNavigateToStep('payment')
+      subscriptionPlan,
+      currentStep,
     });
-    
+
     return (
       <Container maxWidth="sm">
         <Alert severity="error" sx={{ mt: 2 }}>
@@ -80,8 +96,8 @@ const PaymentComponent = ({ metadata }) => {
         </Alert>
         <Button
           variant="contained"
-          onClick={handlePreviousStep}
-          disabled={!canNavigateToStep('subscription')}
+          onClick={handleBack}
+          disabled={isLoading || checkoutLoading}
           sx={{ mt: 2 }}
         >
           Back to Plan Selection
@@ -93,7 +109,7 @@ const PaymentComponent = ({ metadata }) => {
   return (
     <Container maxWidth="sm">
       <StepProgress steps={steps} />
-      
+
       <PaymentContainer>
         <LogoContainer>
           <Image
@@ -103,11 +119,11 @@ const PaymentComponent = ({ metadata }) => {
             height={50}
             priority
           />
-          <StepHeader 
+          <StepHeader
             title={metadata.title}
             description={metadata.description}
             current_step={3}
-            totalSteps={selected_plan === 'professional' ? 4 : 3}
+            totalSteps={subscriptionPlan === 'professional' ? 4 : 3}
             stepName="Payment"
           />
         </LogoContainer>
@@ -121,7 +137,8 @@ const PaymentComponent = ({ metadata }) => {
         <PaymentDetails>
           <PaymentSummary>
             <Typography variant="body1" sx={{ mb: 2 }}>
-              Professional Plan - {billingCycle === 'monthly' ? 'Monthly' : 'Annual'} Billing
+              Professional Plan -{' '}
+              {billingCycle === 'monthly' ? 'Monthly' : 'Annual'} Billing
             </Typography>
             <Box sx={{ mb: 2 }}>
               <Typography variant="body2" color="text.secondary">
@@ -138,7 +155,8 @@ const PaymentComponent = ({ metadata }) => {
               </ul>
             </Box>
             <Typography variant="h5" sx={{ mb: 2 }}>
-              Total: ${getPricing()} {billingCycle === 'monthly' ? 'per month' : 'per year'}
+              Total: ${getPricing(billingCycle)}{' '}
+              {billingCycle === 'monthly' ? 'per month' : 'per year'}
             </Typography>
           </PaymentSummary>
         </PaymentDetails>
@@ -148,10 +166,10 @@ const PaymentComponent = ({ metadata }) => {
           color="primary"
           size="large"
           onClick={handlePaymentSubmit}
-          disabled={isLoading || checkoutLoading || !canNavigateToStep('setup')}
+          disabled={isLoading || checkoutLoading}
           sx={{ minWidth: 200 }}
         >
-          {(isLoading || checkoutLoading) ? (
+          {isLoading || checkoutLoading ? (
             <CircularProgress size={24} />
           ) : (
             'Complete Payment'
@@ -160,8 +178,8 @@ const PaymentComponent = ({ metadata }) => {
 
         <Button
           variant="text"
-          onClick={handlePreviousStep}
-          disabled={isLoading || checkoutLoading || !canNavigateToStep('subscription')}
+          onClick={handleBack}
+          disabled={isLoading || checkoutLoading}
           sx={{ mt: 2 }}
         >
           Back to Plan Selection
@@ -176,8 +194,8 @@ PaymentComponent.propTypes = {
     title: PropTypes.string.isRequired,
     description: PropTypes.string.isRequired,
     next_step: PropTypes.string,
-    prevStep: PropTypes.string
-  }).isRequired
+    prevStep: PropTypes.string,
+  }).isRequired,
 };
 
 const Payment = memo(PaymentComponent);

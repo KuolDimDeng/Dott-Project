@@ -21,17 +21,13 @@ from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from celery.schedules import crontab
 
-
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Load environment variables from .env file
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
-
 
 # Accessing Plaid credentials from environment variables
 PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID')
@@ -46,15 +42,20 @@ ENCRYPTION_KEY = Fernet.generate_key()
 print("PLAID_CLIENT_ID: ", PLAID_CLIENT_ID)
 print("PLAID_SECRET: ", PLAID_SECRET)
 
-
-
 # Stripe settings
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_PRICE_ID_MONTHLY = os.getenv('STRIPE_PRICE_ID_MONTHLY')
 STRIPE_PRICE_ID_ANNUAL = os.getenv('STRIPE_PRICE_ID_ANNUAL')
 
+# AWS Settings
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_REGION = os.getenv('AWS_DEFAULT_REGION')
 
+# AWS Cognito Settings
+COGNITO_USER_POOL_ID = os.getenv('AWS_COGNITO_USER_POOL_ID')
+COGNITO_APP_CLIENT_ID = os.getenv('AWS_COGNITO_CLIENT_ID')
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join(PROJECT_ROOT, '.venv/lib/python3.12/site-packages'))
@@ -68,7 +69,6 @@ APP_URL = 'http://127.0.0.1:8000'  # or whatever your app's URL is
 SHOPIFY_API_VERSION = '2023-07'  # or whatever the latest version is
 DEFAULT_USER_ID = 1  # or whatever default value you want to use
 
-
 USE_TZ = True
 SITE_ID = 1
 TIME_ZONE = 'UTC'
@@ -76,6 +76,7 @@ TIME_ZONE = 'UTC'
 USER_DATABASE_OPTIONS = {
     'connect_timeout': 10,
 }
+
 # Email settings for Gmail
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -84,9 +85,6 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
-
-
-
 
 FRONTEND_URL = 'http://localhost:3000'  # Adjust this to your actual frontend URL
 
@@ -108,8 +106,6 @@ DEBUG_TOOLBAR_CONFIG = {
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-
-
 # CORS and CSRF configuration
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
@@ -119,10 +115,7 @@ CORS_ALLOWED_ORIGINS = [
 
 APPEND_SLASH = False  # Add this to disable automatic slash appending
 
-
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all in development
-
-
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -132,6 +125,7 @@ CORS_ALLOW_METHODS = [
     'POST',
     'PUT',
 ]
+
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -173,8 +167,6 @@ SECURE_HSTS_PRELOAD = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
-
-
 # Update CSRF settings
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
@@ -187,7 +179,6 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8000"   # Add this
 ]
 
-
 # Authentication settings for dj-rest-auth and allauth
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
@@ -198,8 +189,6 @@ SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_EMAIL_REQUIRED = False
 SOCIALACCOUNT_QUERY_EMAIL = True
 SOCIALACCOUNT_AUTO_SIGNUP = True
-
-
 
 # Google OAuth2 settings
 SOCIALACCOUNT_PROVIDERS = {
@@ -231,12 +220,9 @@ OAUTH_CALLBACK_URL = f"{FRONTEND_URL}/api/auth/callback/google"
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',  # Add this for social auth
-    'onboarding.auth.WebSocketTokenBackend',
-
 ]
 
 # Celery Configuration
-
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -253,7 +239,6 @@ CELERY_TASK_PUBLISH_RETRY_POLICY = {
 }
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 50
-
 
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
@@ -285,7 +270,6 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 # Task routing
 CELERY_TASK_ROUTES = {
     'onboarding.setup_user_database_task': {'queue': 'setup'},
-    'onboarding.send_websocket_notification': {'queue': 'default'},
     'onboarding.tasks.*': {'queue': 'onboarding'},
     'users.tasks.*': {'queue': 'users'},
 }
@@ -385,7 +369,6 @@ CACHES = {
     }
 }
 
-
 # Add these settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
@@ -402,9 +385,6 @@ if not DEBUG:
     
 DJANGO_ALLOW_ASYNC_UNSAFE = True  # Only for development
 
-
-
-
 # REST framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -418,6 +398,7 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.JSONParser',
     ],
 }
+
 # JWT settings
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
@@ -443,7 +424,6 @@ SIMPLE_JWT = {
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-
     
     'TOKEN_TYPE_CLAIM': 'token_type',
     'JTI_CLAIM': 'jti',
@@ -453,8 +433,6 @@ SIMPLE_JWT = {
         'rest_framework_simplejwt.token_blacklist.check_blacklist',
     ],
 }
-
-
 
 # Logging configuration
 class DeduplicationFilter(logging.Filter):
@@ -537,14 +515,12 @@ LOGGING = {
             'propagate': False,
         },
     },
-
 }
 
 logging.config.dictConfig(LOGGING)
 
 # Application definition
 INSTALLED_APPS = [
-    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -566,7 +542,6 @@ INSTALLED_APPS = [
     'dj_rest_auth',
     'django_cryptography',
     'phonenumber_field',
-    'channels',  # Add this line
     'users.apps.UsersConfig',  # replace 'users' with your actual app name
     'sales',
     'finance',
@@ -587,9 +562,8 @@ INSTALLED_APPS = [
     'hr.apps.HrConfig',
     'business.apps.BusinessConfig',
     'onboarding.apps.OnboardingConfig'
-
-
 ]
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -600,9 +574,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',  # Add this
     'allauth.account.middleware.AccountMiddleware',
-
-
 ]
+
 # Check if we're running in ASGI mode
 IS_ASGI = any(arg in sys.argv for arg in ['daphne', '--async', 'runserver --async'])
 
@@ -616,15 +589,6 @@ if DEBUG and not IS_ASGI:  # Make sure DEBUG is True as well
         "127.0.0.1",
     ]
 
-
-# Add this setting for WebSocket routing
-WEBSOCKET_MIDDLEWARE = [
-    'onboarding.middleware.WebSocketAuthMiddleware',
-]
-
-CHANNEL_ROUTING = "pyfactor.routing.application"
-
-# Add to existing settings
 REQUEST_ID_HEADER = 'HTTP_X_REQUEST_ID'
 GENERATE_REQUEST_ID_IF_ABSENT = True
 
@@ -646,30 +610,15 @@ TEMPLATES = [
     },
 ]
 
-
 INTERNAL_IPS = [
     '127.0.0.1',
 ]
 
+WSGI_APPLICATION = 'pyfactor.wsgi.application'
 ASGI_APPLICATION = 'pyfactor.asgi.application'
 
-# Update the Redis connection settings
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [(REDIS_HOST, REDIS_PORT)],
-            "capacity": 1500,
-            "expiry": 120,
-        }
-    },
-}
-
-WEBSOCKET_TIMEOUT = 60  # Seconds
-WEBSOCKET_HEARTBEAT = 30  # Seconds
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-
 
 DATABASES = {
     'default': {
@@ -704,7 +653,6 @@ DATABASE_RESOURCE_LIMITS = {
 
 USER_DATABASE_TEMPLATE = 'template_db'
 
-
 DATABASE_ROUTERS = ['pyfactor.userDatabaseRouter.UserDatabaseRouter']
 
 # User database settings
@@ -718,7 +666,6 @@ USER_DATABASE_SETTINGS = {
     'MAX_DB_SIZE': 1024 * 1024 * 1024,  # 1GB max size per database
     'BACKUP_RETENTION_DAYS': 30,
 }
-
 
 DB_POOL_OPTIONS = {
     'MIN_CONNS': 5,
@@ -738,19 +685,6 @@ DATABASE_CONNECTION_POOL = {
     'CONN_TIMEOUT': 30,
     'MAX_QUERIES_PER_CONN': 5000,
 }
-
-# WebSocket specific settings
-# WebSocket configuration
-WEBSOCKET_CONFIG = {
-    'TIMEOUT': 60,
-    'HEARTBEAT': 30,
-    'MAX_CONNECTIONS': 1000,
-    'AUTH': {
-        'TIMEOUT': 10,
-        'CACHE_TIMEOUT': 300,
-        'MAX_CONNECTIONS_PER_USER': 5,
-    }
-}  # Add closing brace here
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -789,8 +723,8 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-# https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
+# https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_AUTH_SERIALIZERS = {

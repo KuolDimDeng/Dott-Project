@@ -2,16 +2,15 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession, getSession } from 'next-auth/react'; // Add getSession
+import { useSession } from '@/hooks/useSession';
 import { Subscription } from '../components/steps/Subscription';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LoadingStateWithProgress } from '@/components/LoadingState';
 import { logger } from '@/utils/logger';
-import { useOnboarding } from '@/app/onboarding/contexts/OnboardingContext';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import { onboardingApi, makeRequest } from '@/services/api/onboarding';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { generateRequestId } from '@/lib/authUtils';
-
 
 const ErrorFallback = ({ error, resetErrorBoundary }) => (
   <div className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -26,7 +25,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }) => (
           Try Again
         </button>
         <button
-          onClick={() => window.location.href = '/onboarding/business-info'}
+          onClick={() => (window.location.href = '/onboarding/business-info')}
           className="px-4 py-2 bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
         >
           Back to Business Info
@@ -41,7 +40,7 @@ const handleAccessError = (error, requestId, router, toast) => {
   logger.error('Access validation error:', {
     requestId,
     error: error.message,
-    status: error.response?.status
+    status: error.response?.status,
   });
 
   if (error.response?.status === 401) {
@@ -62,7 +61,6 @@ function SubscriptionPage() {
   const { validateStep } = useOnboarding();
   const requestId = React.useRef(generateRequestId()).current;
 
-
   return (
     <ErrorBoundary
       FallbackComponent={ErrorFallback}
@@ -71,12 +69,13 @@ function SubscriptionPage() {
       }}
     >
       <div className="min-h-screen bg-gray-50">
-        <Subscription 
+        <Subscription
           metadata={{
             title: 'Choose Your Plan',
-            description: 'Select the subscription plan that best fits your needs',
+            description:
+              'Select the subscription plan that best fits your needs',
             next_step: 'payment',
-            prevStep: 'business-info'
+            prevStep: 'business-info',
           }}
         />
       </div>

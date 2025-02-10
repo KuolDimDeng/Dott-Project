@@ -40,6 +40,14 @@ export async function POST(request) {
 
     const business = await response.json();
 
+    // Update user attributes with business info
+    const { updateUserAttributes, getBusinessAttributes } = await import(
+      '@/utils/userAttributes'
+    );
+    const businessAttributes = getBusinessAttributes(business.id);
+
+    await updateUserAttributes(businessAttributes);
+
     // Update onboarding status
     const statusResponse = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`,
@@ -51,8 +59,8 @@ export async function POST(request) {
           'X-Request-ID': crypto.randomUUID(),
         },
         body: JSON.stringify({
-          business_info_completed: true,
-          current_step: 'subscription',
+          status: 'SUBSCRIPTION',
+          lastStep: 'BUSINESS_INFO',
         }),
       }
     );

@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
 import { Hub } from '@aws-amplify/core';
 import { logger } from '@/utils/logger';
+import { validateAttributes, parsePreferences } from '@/utils/userAttributes';
 
 export function useSession() {
   const [session, setSession] = useState(null);
@@ -13,7 +14,7 @@ export function useSession() {
   const checkSession = useCallback(async () => {
     try {
       logger.debug('[useSession] Checking session...');
-      
+
       // ✅ Fetch session and ensure tokens are valid
       const authSession = await fetchAuthSession();
       const idToken = authSession.tokens?.idToken?.toString();
@@ -26,11 +27,33 @@ export function useSession() {
 
       const user = await getCurrentUser();
       if (user) {
-        logger.debug('[useSession] Session found:', user);
+        // Transform and validate user attributes
+        const validatedAttributes = validateAttributes(user.attributes);
+
+        // Parse preferences if they exist
+        const preferences = validatedAttributes['custom:preferences']
+          ? parsePreferences(validatedAttributes['custom:preferences'])
+          : {};
+
+        logger.debug('[useSession] Session found:', {
+          userId: user.userId,
+          attributes: validatedAttributes,
+        });
+
         setSession({
           user: {
-            ...user.attributes,
+            ...validatedAttributes,
             id: user.userId,
+            preferences,
+            // Expose custom attributes with cleaner names
+            onboarding:
+              validatedAttributes['custom:onboarding'] || 'notstarted',
+            businessId: validatedAttributes['custom:businessid'],
+            role: validatedAttributes['custom:userrole'] || 'member',
+            subscriptionPlan: validatedAttributes['custom:subplan'],
+            accountStatus:
+              validatedAttributes['custom:acctstatus'] || 'pending',
+            lastLogin: validatedAttributes['custom:lastlogin'],
           },
           tokens: {
             accessToken: authSession.tokens.accessToken?.toString(),

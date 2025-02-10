@@ -1,26 +1,22 @@
-// src/app/layout.js
-'use client';
-
 import { Inter } from 'next/font/google';
-import { ToastProvider } from '@/components/Toast/ToastProvider';
-import Providers from '@/providers';
+import ClientLayout from './ClientLayout';
 import './globals.css';
-import { configureAmplify } from '@/config/amplify';
 
 const inter = Inter({ subsets: ['latin'] });
 
-// Initialize Amplify
-configureAmplify();
+export const metadata = {
+  title: 'Dott: Small Business Software',
+  description: 'Dott- Business Management Platform',
+  icons: {
+    icon: '/static/images/favicon.png',
+  },
+};
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ToastProvider>
-          <Providers>
-          {children}
-          </Providers>
-        </ToastProvider>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );

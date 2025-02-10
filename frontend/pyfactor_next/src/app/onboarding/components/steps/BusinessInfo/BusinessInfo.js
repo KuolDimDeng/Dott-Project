@@ -17,8 +17,7 @@ import {
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { logger } from '@/utils/logger';
-import { useAuth } from '@/hooks/useAuth';
-import { updateUserAttributes } from '@/config/amplify';
+import { useOnboarding } from '@/hooks/useOnboarding';
 
 const BUSINESS_TYPES = [
   'Sole Proprietorship',
@@ -39,14 +38,19 @@ const LEGAL_STRUCTURES = [
   'Sole Proprietorship',
 ];
 
-export function BusinessInfo({ onNext }) {
+export function BusinessInfo({ metadata }) {
   const router = useRouter();
-  const { data: session, status, update } = useSession();
-  const { signOut } = useAuth();
+  const { data: session, status } = useSession();
+  const { submitBusinessInfo, getNextStep } = useOnboarding();
   const [error, setError] = React.useState(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isRedirecting, setIsRedirecting] = React.useState(false);
 
-  const { control, handleSubmit, formState: { errors } } = useForm({
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
     defaultValues: {
       business_name: '',
       business_type: '',
@@ -55,51 +59,54 @@ export function BusinessInfo({ onNext }) {
       date_founded: '',
       first_name: '',
       last_name: '',
-    }
+    },
   });
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-    }
-  }, [status, router]);
+    let mounted = true;
+
+    const checkAuth = async () => {
+      if (status === 'unauthenticated' && !isRedirecting) {
+        setIsRedirecting(true);
+        if (mounted) {
+          await router.push('/auth/signin');
+        }
+      }
+    };
+
+    checkAuth();
+
+    return () => {
+      mounted = false;
+    };
+  }, [status, router, isRedirecting]);
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Update user attributes in Cognito
-      await updateUserAttributes({
-        'custom:business_name': data.business_name,
-        'custom:business_type': data.business_type,
-        'custom:country': data.country,
-        'custom:legal_structure': data.legal_structure,
-        'custom:date_founded': data.date_founded,
-        'custom:first_name': data.first_name,
-        'custom:last_name': data.last_name,
-        'custom:onboarding': 'subscription'
+      await submitBusinessInfo({
+        businessName: data.business_name,
+        businessType: data.business_type,
+        country: data.country,
+        legalStructure: data.legal_structure,
+        dateFounded: data.date_founded,
+        firstName: data.first_name,
+        lastName: data.last_name,
       });
 
-      // Update session to reflect new attributes
-      await update();
-
-      logger.debug('Business info updated successfully');
-      onNext();
+      logger.debug('Business info submitted successfully');
+      router.push(`/onboarding/${getNextStep('business-info')}`);
     } catch (error) {
-      logger.error('Failed to update business info:', error);
+      logger.error('Failed to submit business info:', error);
       setError(error.message || 'Failed to update business information');
-
-      if (error.code === 'NotAuthorizedException') {
-        await signOut();
-        router.push('/auth/signin');
-      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (status === 'loading') {
+  if (status === 'loading' || isRedirecting) {
     return (
       <Box
         sx={{
@@ -293,7 +300,12 @@ export function BusinessInfo({ onNext }) {
 }
 
 BusinessInfo.propTypes = {
-  onNext: PropTypes.func.isRequired,
+  metadata: PropTypes.shape({
+    title: PropTypes.string,
+    description: PropTypes.string,
+    next_step: PropTypes.string,
+    prevStep: PropTypes.string,
+  }).isRequired,
 };
 
 export default BusinessInfo;

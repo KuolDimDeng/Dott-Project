@@ -1,6 +1,6 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/hooks/useOnboardingProgress.js
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/hooks/useSession';
 import { useRouter } from 'next/navigation';
 import { useOnboarding } from '@/app/onboarding/hooks/useOnboarding';
 import { persistenceService } from '@/services/persistenceService';
@@ -30,7 +30,7 @@ export const useOnboardingProgress = (step, options = {}) => {
     () => ({
       ...storeFormData,
       ...localFormData,
-      tier: selected_plan // Include tier
+      tier: selected_plan, // Include tier
     }),
     [storeFormData, localFormData, selected_plan]
   );
@@ -45,7 +45,7 @@ export const useOnboardingProgress = (step, options = {}) => {
         if (saved?.data) {
           setLocalFormData(saved.data);
           setLastSaved(saved.timestamp);
-          
+
           // Set tier if it exists
           if (saved.data.selected_plan) {
             setselected_plan(saved.data.selected_plan);
@@ -95,16 +95,19 @@ export const useOnboardingProgress = (step, options = {}) => {
         // Handle tier selection for subscription step
         if (step === 'subscription' && data.selected_plan) {
           setselected_plan(data.selected_plan);
-          
+
           // Get next step based on tier
-          const next_step = RoutingManager.getnext_step('subscription', data.selected_plan);
+          const next_step = RoutingManager.getnext_step(
+            'subscription',
+            data.selected_plan
+          );
           data.next_step = next_step;
         }
 
         // Save to backend first
         const result = await saveStep(step, {
           ...data,
-          tier: data.selected_plan || selected_plan
+          tier: data.selected_plan || selected_plan,
         });
 
         // Then save locally only if backend succeeds
@@ -113,7 +116,7 @@ export const useOnboardingProgress = (step, options = {}) => {
             timestamp: Date.now(),
             data: {
               ...data,
-              tier: data.selected_plan || selected_plan
+              tier: data.selected_plan || selected_plan,
             },
           });
 
@@ -129,7 +132,7 @@ export const useOnboardingProgress = (step, options = {}) => {
         return result;
       } catch (error) {
         logger.error(`Failed to save progress for ${step}:`, error, {
-          tier: selected_plan
+          tier: selected_plan,
         });
         throw error;
       } finally {
@@ -148,7 +151,7 @@ export const useOnboardingProgress = (step, options = {}) => {
             timestamp: Date.now(),
             data: {
               ...localFormData,
-              tier: selected_plan
+              tier: selected_plan,
             },
           })
           .catch((error) => {

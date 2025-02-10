@@ -12,8 +12,6 @@ from django.conf import settings
 from django.core.management import call_command
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
 from psycopg2 import OperationalError
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
@@ -125,23 +123,6 @@ def check_database_health(database_name: str) -> Tuple[bool, str]:
     except Exception as e:
         return False, str(e)
 
-@shared_task
-def send_websocket_notification(user_id: str, event_type: str, data: dict):
-    """Send asynchronous WebSocket notifications to the client"""
-    try:
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"user_{user_id}",
-            {
-                "type": "send_message",
-                "event": event_type,
-                "data": data
-            }
-        )
-        logger.info(f"WebSocket notification sent to user {user_id}")
-    except Exception as e:
-        logger.error(f"Failed to send WebSocket notification: {str(e)}")
-
 @shared_task(
     name='setup_user_database_task',
     bind=True,
@@ -179,7 +160,7 @@ def setup_user_database_task(self, user_id: str, business_id: str) -> Dict[str, 
     onboarding_progress = None
     
     def update_state(phase: str, progress: int, status: str = 'in_progress'):
-        """Update task state and send notification"""
+        """Update task state"""
         try: 
             state_data = {
                 'progress': progress,
@@ -189,11 +170,6 @@ def setup_user_database_task(self, user_id: str, business_id: str) -> Dict[str, 
                 'business_id': business_id
             }
             self.update_state(state=status, meta=state_data)
-            send_websocket_notification.delay(
-                user_id=user_id,
-                event_type="database_setup_progress",
-                data=state_data
-            )
             logger.info(f"Setup progress for user {user_id}: {progress}% - {phase}")
         except Exception as e:
             logger.error(f"Failed to update state: {str(e)}")

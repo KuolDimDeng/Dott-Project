@@ -77,7 +77,7 @@ function AppBar() {
     } catch (error) {
       logger.error('Logout failed:', {
         requestId,
-        error: error.message
+        error: error.message,
       });
     } finally {
       setIsLoading(false);
@@ -91,53 +91,48 @@ function AppBar() {
 
   const getButtonProps = () => {
     if (!session?.user) return null;
-  
+
     const onboardingStatus = session.user['custom:onboarding'];
-    
+
     if (onboardingStatus === 'complete') {
       return {
         text: 'Dashboard',
         route: '/dashboard',
-        icon: <DashboardIcon />
+        icon: <DashboardIcon />,
       };
     }
-  
+
     // If they started but didn't finish onboarding
     if (onboardingStatus) {
       return {
         text: 'Continue Onboarding',
         route: `/onboarding/${onboardingStatus}`,
-        icon: <SettingsIcon />
+        icon: <SettingsIcon />,
       };
     }
-  
+
     // For new users or no onboarding status
     return null;
   };
-  
 
   const renderAuthButtons = () => {
     if (status === 'loading' || isLoading) {
       return <CircularProgress size={24} />;
     }
-  
+
     if (status === 'authenticated') {
       const buttonProps = getButtonProps();
       if (buttonProps) {
         return (
           <>
-            <Button 
+            <Button
               variant="contained"
               onClick={() => handleNavigation(buttonProps.route)}
               startIcon={buttonProps.icon}
             >
               {buttonProps.text}
             </Button>
-            <Button 
-              variant="text" 
-              onClick={handleLogout}
-              disabled={isLoading}
-            >
+            <Button variant="text" onClick={handleLogout} disabled={isLoading}>
               {isLoading ? 'Signing out...' : 'Sign Out'}
             </Button>
           </>
@@ -146,17 +141,34 @@ function AppBar() {
     }
 
     return (
-      <Button 
-        variant="contained" 
+      <Button
+        variant="contained"
         onClick={() => handleNavigation('/auth/signin')}
       >
-       Sign In / Sign Up
+        Sign In / Sign Up
       </Button>
     );
   };
 
   return (
-    <MuiAppBar position="fixed" sx={{ bgcolor: 'white', boxShadow: 1 }}>
+    <MuiAppBar
+      position="fixed"
+      sx={{
+        bgcolor: 'rgba(255, 255, 255, 0.98)',
+        backdropFilter: 'blur(8px)',
+        boxShadow: (theme) =>
+          theme.palette.mode === 'light'
+            ? '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)'
+            : '0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.3)',
+        transition: 'all 0.3s ease-in-out',
+        '&:hover': {
+          boxShadow: (theme) =>
+            theme.palette.mode === 'light'
+              ? '0 2px 4px rgba(0,0,0,0.08), 0 2px 3px rgba(0,0,0,0.12)'
+              : '0 2px 4px rgba(0,0,0,0.3), 0 2px 3px rgba(0,0,0,0.4)',
+        },
+      }}
+    >
       <Container maxWidth="lg">
         <Toolbar
           disableGutters
@@ -189,8 +201,24 @@ function AppBar() {
                     mx: 1,
                     color: 'text.primary',
                     fontFamily: 'Inter, sans-serif',
+                    position: 'relative',
                     '&:hover': {
                       color: 'primary.main',
+                      backgroundColor: 'transparent',
+                    },
+                    '&::after': {
+                      content: '""',
+                      position: 'absolute',
+                      width: '0%',
+                      height: '2px',
+                      bottom: 0,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      backgroundColor: 'primary.main',
+                      transition: 'width 0.3s ease-in-out',
+                    },
+                    '&:hover::after': {
+                      width: '80%',
                     },
                   }}
                 >
@@ -204,8 +232,24 @@ function AppBar() {
                     mx: 1,
                     color: 'text.primary',
                     fontFamily: 'Inter, sans-serif',
+                    position: 'relative',
                     '&:hover': {
                       color: 'primary.main',
+                      backgroundColor: 'transparent',
+                    },
+                    '&::after': {
+                      content: '""',
+                      position: 'absolute',
+                      width: '0%',
+                      height: '2px',
+                      bottom: 0,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      backgroundColor: 'primary.main',
+                      transition: 'width 0.3s ease-in-out',
+                    },
+                    '&:hover::after': {
+                      width: '80%',
                     },
                   }}
                 >
@@ -215,7 +259,25 @@ function AppBar() {
             )}
           </Box>
 
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
+          <Box
+            sx={{
+              display: { xs: 'none', md: 'flex' },
+              gap: 1,
+              '& .MuiButton-contained': {
+                boxShadow: 'none',
+                '&:hover': {
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  transform: 'translateY(-1px)',
+                },
+                transition: 'all 0.2s ease-in-out',
+              },
+              '& .MuiButton-text': {
+                '&:hover': {
+                  backgroundColor: 'rgba(0,0,0,0.03)',
+                },
+              },
+            }}
+          >
             {renderAuthButtons()}
           </Box>
 
@@ -264,7 +326,27 @@ function AppBar() {
                   </Typography>
                 </MenuItem>
               ))}
-              <Box sx={{ px: 2, py: 1 }}>
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1,
+                  '& .MuiButton-contained': {
+                    width: '100%',
+                    mb: 1,
+                    boxShadow: 'none',
+                    '&:hover': {
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    },
+                  },
+                  '& .MuiButton-text': {
+                    width: '100%',
+                    justifyContent: 'center',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0,0,0,0.03)',
+                    },
+                  },
+                }}
+              >
                 {renderAuthButtons()}
               </Box>
             </Menu>

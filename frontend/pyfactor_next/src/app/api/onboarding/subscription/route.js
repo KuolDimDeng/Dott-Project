@@ -40,6 +40,16 @@ export async function POST(request) {
 
     const subscription = await response.json();
 
+    // Update user attributes with subscription info
+    const { updateUserAttributes, getSubscriptionAttributes } = await import(
+      '@/utils/userAttributes'
+    );
+    const subscriptionAttributes = getSubscriptionAttributes(
+      subscriptionData.planId
+    );
+
+    await updateUserAttributes(subscriptionAttributes);
+
     // Update onboarding status
     const statusResponse = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`,
@@ -51,8 +61,8 @@ export async function POST(request) {
           'X-Request-ID': crypto.randomUUID(),
         },
         body: JSON.stringify({
-          subscription_completed: true,
-          current_step: 'payment',
+          status: 'PAYMENT',
+          lastStep: 'SUBSCRIPTION',
         }),
       }
     );

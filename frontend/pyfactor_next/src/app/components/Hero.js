@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { alpha, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
+import LandingButton from '@/components/LandingButton';
 import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -12,14 +12,15 @@ import Image from 'next/image';
 export default function Hero() {
   const theme = useTheme();
 
-  const babyBlueMain = '#03a9f4';
-  const babyBlueDark = '#81d4fa';
-
   return (
     <Box
       id="hero"
       sx={{
         width: '100%',
+        backgroundImage:
+          theme.palette.mode === 'light'
+            ? 'linear-gradient(180deg, rgba(25, 118, 210, 0.05) 0%, rgba(25, 118, 210, 0.02) 100%)'
+            : 'linear-gradient(180deg, rgba(100, 181, 246, 0.05) 0%, rgba(100, 181, 246, 0.02) 100%)',
         backgroundRepeat: 'no-repeat',
         color: theme.palette.mode === 'light' ? '#333' : '#FFF',
       }}
@@ -36,19 +37,49 @@ export default function Hero() {
       >
         <Stack spacing={3} sx={{ width: { xs: '100%', sm: '80%' } }}>
           <Typography
+            component="h1"
             variant="h1"
             align="center"
             sx={{
-              fontSize: 'clamp(2rem, 8vw, 3rem)',
+              fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
               color: theme.palette.mode === 'light' ? '#1976d2' : '#64b5f6',
               fontFamily: '"Poppins", sans-serif',
-              fontWeight: 400,
-              letterSpacing: '-0.01em',
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.2,
+              mb: { xs: 3, sm: 4 },
+              background:
+                theme.palette.mode === 'light'
+                  ? 'linear-gradient(45deg, #1976d2, #2196f3)'
+                  : 'linear-gradient(45deg, #64b5f6, #90caf9)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
             }}
           >
             Manage your business like a boss.
           </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 10 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              mb: { xs: 6, sm: 8 },
+              position: 'relative',
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: -20,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '60%',
+                height: '1px',
+                background:
+                  theme.palette.mode === 'light'
+                    ? 'linear-gradient(90deg, transparent, rgba(25, 118, 210, 0.2), transparent)'
+                    : 'linear-gradient(90deg, transparent, rgba(100, 181, 246, 0.2), transparent)',
+              },
+            }}
+          >
             <Image
               src="/static/images/Work-Life-Balance-1--Streamline-Brooklyn.png"
               alt="Business Management Illustration"
@@ -62,49 +93,68 @@ export default function Hero() {
           <Typography
             variant="h5"
             align="center"
-            color="text.secondary"
             sx={{
-              fontWeight: 'normal',
+              color:
+                theme.palette.mode === 'light'
+                  ? alpha(theme.palette.text.primary, 0.7)
+                  : alpha(theme.palette.text.primary, 0.8),
+              fontWeight: 400,
               fontFamily: '"Inter", sans-serif',
               letterSpacing: '0.01em',
-              fontSize: '1.3rem',
-              padding: 2,
+              fontSize: { xs: '1.1rem', sm: '1.3rem' },
+              maxWidth: '800px',
+              mx: 'auto',
+              px: { xs: 2, sm: 4 },
+              mb: { xs: 6, sm: 8 },
+              lineHeight: 1.6,
             }}
           >
-            Simple Accounting, Payroll, HR, Inventory, Reports, Analytics and Mobile Money—all in
-            one intuitive platform.
+            Simple Accounting, Payroll, HR, Inventory, Reports, Analytics and
+            Mobile Money—all in one intuitive platform.
           </Typography>
 
-          <Stack direction="row" spacing={2} justifyContent="center" alignItems="center">
-            <Button
-              variant="contained"
-              size="large"
-              sx={{
-                fontSize: '1rem',
-                px: 4,
-                py: 1.5,
-                backgroundColor: 'primary.main',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                boxShadow: `0 4px 14px ${alpha(babyBlueMain, 0.4)}`,
-                borderRadius: '50px',
-                fontFamily: '"Inter", sans-serif',
-                fontWeight: 600,
-                letterSpacing: '0.02em',
-              }}
-            >
-              Get Started Free
-            </Button>
+          <Stack
+            direction="row"
+            spacing={2}
+            justifyContent="center"
+            alignItems="center"
+            sx={{ mb: { xs: 8, sm: 10 } }}
+          >
+            <LandingButton />
           </Stack>
 
-          <Box sx={{ width: '100%', mt: 2, padding: 4 }}>
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: '1000px',
+              mx: 'auto',
+              px: { xs: 2, sm: 4 },
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                display: 'block',
+                paddingTop: '56.25%', // 16:9 aspect ratio
+              },
+              boxShadow:
+                theme.palette.mode === 'light'
+                  ? '0 4px 20px rgba(0, 0, 0, 0.1)'
+                  : '0 4px 20px rgba(0, 0, 0, 0.3)',
+              borderRadius: '12px',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Replace YOUR_VIDEO_ID with actual video ID */}
             <iframe
-              width="100%"
-              height="480"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                border: 0,
+              }}
               src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
               title="Dott Software Demo"
-              frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             ></iframe>

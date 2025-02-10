@@ -44,7 +44,8 @@ export default function SignUp() {
     }
 
     // Validate password strength
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordRegex.test(formData.password)) {
       setError(
         'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
@@ -53,11 +54,14 @@ export default function SignUp() {
     }
 
     try {
-      await signUp(formData.email, formData.password, {
+      const { getInitialAttributes } = await import('@/utils/userAttributes');
+      const initialAttributes = {
+        ...getInitialAttributes(),
         'custom:firstname': formData.firstName,
         'custom:lastname': formData.lastName,
-        'custom:onboarding': 'business-info'
-      });
+        'custom:onboarding': 'notstarted',
+      };
+      await signUp(formData.email, formData.password, initialAttributes);
       logger.debug('Sign up successful, redirecting to verify email');
     } catch (error) {
       logger.error('Sign up error:', error);

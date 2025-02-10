@@ -62,8 +62,8 @@ urlpatterns = [
     
     # Setup routes
     path('setup/', SaveStep4View.as_view(), name='setup'),
-    path('setup/start/', StartOnboardingView.as_view(), name='start-setup'),
-    path('setup/status/', SetupStatusView.as_view(), name='setup-status'),
+    path('setup/start/', SaveStep4View.as_view(), name='start-setup'),
+    path('setup/status/', SaveStep4View.as_view(), name='setup-status'),
     path('setup/cancel/', SaveStep4View.as_view(), name='cancel-setup'),
     path('setup/complete/', SaveStep4View.as_view(), name='complete-setup'),
     

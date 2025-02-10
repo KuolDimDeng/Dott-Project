@@ -14,49 +14,49 @@ export const ERROR_TYPES = {
   DATA_ERROR: 'DATA_ERROR',
   NETWORK_ERROR: 'NETWORK_ERROR',
   INVALID_TIER: 'INVALID_TIER',
-  PROGRESSION_ERROR: 'PROGRESSION_ERROR'
+  PROGRESSION_ERROR: 'PROGRESSION_ERROR',
 };
 
 export const PLAN_TYPES = {
   FREE: 'free',
-  PROFESSIONAL: 'professional'
+  PROFESSIONAL: 'professional',
 };
 
 export const BILLING_CYCLES = {
   MONTHLY: 'monthly',
-  ANNUAL: 'annual'
+  ANNUAL: 'annual',
 };
 
 export const VALIDATION_DIRECTION = {
   FORWARD: 'forward',
-  BACKWARD: 'backward'
+  BACKWARD: 'backward',
 };
 
 export const STEP_NAMES = {
   BUSINESS_INFO: 'business-info',
   SUBSCRIPTION: 'subscription',
-  PAYMENT: 'payment', 
+  PAYMENT: 'payment',
   SETUP: 'setup',
-  COMPLETE: 'complete'
+  COMPLETE: 'complete',
 };
 
 export const STEP_PROGRESSION = {
   [STEP_NAMES.BUSINESS_INFO]: {
     next: ['subscription'],
-    prev: []
+    prev: [],
   },
   [STEP_NAMES.SUBSCRIPTION]: {
     next: ['payment', 'setup'],
-    prev: ['business-info']
+    prev: ['business-info'],
   },
   [STEP_NAMES.PAYMENT]: {
     next: ['setup'],
-    prev: ['subscription']
+    prev: ['subscription'],
   },
   [STEP_NAMES.SETUP]: {
     next: ['complete'],
-    prev: ['payment', 'subscription']
-  }
+    prev: ['payment', 'subscription'],
+  },
 };
 
 // Updated to match backend field names
@@ -69,9 +69,9 @@ export const STEP_VALIDATION = {
       'legal_structure',
       'date_founded',
       'first_name',
-      'last_name'
+      'last_name',
     ];
-    
+
     // Add check for non-empty strings and valid date
     return requiredFields.every((field) => {
       if (field === 'date_founded') {
@@ -84,18 +84,22 @@ export const STEP_VALIDATION = {
   [STEP_NAMES.SUBSCRIPTION]: (data) => {
     const plan = data?.selected_plan || data?.selected_plan;
     return (
-      !!plan && 
-      Object.values(PLAN_TYPES).includes(plan) && 
+      !!plan &&
+      Object.values(PLAN_TYPES).includes(plan) &&
       (plan === PLAN_TYPES.FREE || !!data?.billing_cycle)
     );
   },
   [STEP_NAMES.PAYMENT]: (data) => {
     if (data?.selected_plan === PLAN_TYPES.FREE) return true;
-    return data?.selected_plan === PLAN_TYPES.PROFESSIONAL && !!data?.payment_method;
+    return (
+      data?.selected_plan === PLAN_TYPES.PROFESSIONAL && !!data?.payment_method
+    );
   },
   [STEP_NAMES.SETUP]: (data) => {
     // Allow setup if plan is selected
-    return !!data?.selected_plan && PLAN_TYPES[data.selected_plan.toUpperCase()];
+    return (
+      !!data?.selected_plan && PLAN_TYPES[data.selected_plan.toUpperCase()]
+    );
   },
 };
 
@@ -113,14 +117,17 @@ export const STEP_METADATA = {
       'legal_structure',
       'date_founded',
       'first_name',
-      'last_name'
+      'last_name',
     ],
     apiEndpoint: '/api/onboarding/business-info',
   },
   [STEP_NAMES.SUBSCRIPTION]: {
     title: 'Choose Your Plan',
     description: 'Select the plan that best fits your needs',
-    next_step: (selected_plan) => selected_plan === PLAN_TYPES.FREE ? '/onboarding/setup' : '/onboarding/payment',
+    next_step: (selected_plan) =>
+      selected_plan === PLAN_TYPES.FREE
+        ? '/onboarding/setup'
+        : '/onboarding/payment',
     prevStep: '/onboarding/business-info',
     stepNumber: 2,
     isRequired: true,
@@ -136,12 +143,15 @@ export const STEP_METADATA = {
     isRequired: false,
     validationRules: ['payment_method'],
     apiEndpoint: '/api/onboarding/payment',
-    requiredPlan: PLAN_TYPES.PROFESSIONAL
+    requiredPlan: PLAN_TYPES.PROFESSIONAL,
   },
   [STEP_NAMES.SETUP]: {
     title: 'Setup Your Workspace',
     description: "We're getting everything ready for you",
-    prevStep: (selected_plan) => selected_plan === PLAN_TYPES.PROFESSIONAL ? '/onboarding/payment' : '/onboarding/subscription',
+    prevStep: (selected_plan) =>
+      selected_plan === PLAN_TYPES.PROFESSIONAL
+        ? '/onboarding/payment'
+        : '/onboarding/subscription',
     stepNumber: 4,
     next_step: '/dashboard',
     isRequired: true,
@@ -151,7 +161,7 @@ export const STEP_METADATA = {
       'Initializing workspace',
       'Setting up basic features',
       'Configuring default settings',
-      'Completing setup'
+      'Completing setup',
     ],
     professionalSteps: [
       'Initializing professional workspace',
@@ -159,23 +169,24 @@ export const STEP_METADATA = {
       'Configuring custom settings',
       'Setting up API access',
       'Configuring analytics',
-      'Completing professional setup'
+      'Completing professional setup',
     ],
-    getSteps: (selected_plan) => selected_plan === PLAN_TYPES.PROFESSIONAL ? 
-      STEP_METADATA[STEP_NAMES.SETUP].professionalSteps : 
-      STEP_METADATA[STEP_NAMES.SETUP].basicSteps
+    getSteps: (selected_plan) =>
+      selected_plan === PLAN_TYPES.PROFESSIONAL
+        ? STEP_METADATA[STEP_NAMES.SETUP].professionalSteps
+        : STEP_METADATA[STEP_NAMES.SETUP].basicSteps,
   },
   [STEP_NAMES.COMPLETE]: {
     title: 'Setup Complete',
     description: 'Your workspace is ready',
-    stepNumber: 5,  // After setup which is 4
+    stepNumber: 5, // After setup which is 4
     isRequired: false,
-    validationRules: [],  // No validation needed for completion
+    validationRules: [], // No validation needed for completion
     apiEndpoint: '/api/onboarding/complete',
     next: [],
     prev: ['setup'],
-    next_step: '/dashboard'
-  }
+    next_step: '/dashboard',
+  },
 };
 
 export const STEP_ROUTES = {
@@ -193,16 +204,16 @@ export const validatePlanAccess = (stepName, selected_plan) => {
         return {
           valid: false,
           error: ERROR_TYPES.INVALID_PLAN,
-          message: 'Payment is only available for Professional plan'
+          message: 'Payment is only available for Professional plan',
         };
       }
       break;
     case STEP_NAMES.SETUP:
       if (!selected_plan) {
         return {
-          valid: false, 
+          valid: false,
           error: ERROR_TYPES.INVALID_PLAN,
-          message: 'No subscription plan selected'
+          message: 'No subscription plan selected',
         };
       }
       break;
@@ -216,7 +227,7 @@ export const canTransitionToStep = (current_step, targetStep, formData) => {
       logger.error('Invalid step transition:', {
         from: current_step,
         to: targetStep,
-        formData
+        formData,
       });
       return false;
     }
@@ -230,18 +241,23 @@ export const canTransitionToStep = (current_step, targetStep, formData) => {
     const progression = STEP_PROGRESSION[current_step];
     if (!progression) return false;
 
-    const direction = STEP_METADATA[targetStep].stepNumber > STEP_METADATA[current_step].stepNumber
-      ? VALIDATION_DIRECTION.FORWARD
-      : VALIDATION_DIRECTION.BACKWARD;
+    const direction =
+      STEP_METADATA[targetStep].stepNumber >
+      STEP_METADATA[current_step].stepNumber
+        ? VALIDATION_DIRECTION.FORWARD
+        : VALIDATION_DIRECTION.BACKWARD;
 
-    const allowedSteps = direction === VALIDATION_DIRECTION.FORWARD
-      ? progression.next
-      : progression.prev;
+    const allowedSteps =
+      direction === VALIDATION_DIRECTION.FORWARD
+        ? progression.next
+        : progression.prev;
 
     // Special handling for subscription to setup transition
-    if (current_step === STEP_NAMES.SUBSCRIPTION && 
-        targetStep === STEP_NAMES.SETUP && 
-        formData?.selected_plan === PLAN_TYPES.FREE) {
+    if (
+      current_step === STEP_NAMES.SUBSCRIPTION &&
+      targetStep === STEP_NAMES.SETUP &&
+      formData?.selected_plan === PLAN_TYPES.FREE
+    ) {
       return true;
     }
 
@@ -252,7 +268,11 @@ export const canTransitionToStep = (current_step, targetStep, formData) => {
   }
 };
 
-export const validateStep = (stepName, formData, direction = VALIDATION_DIRECTION.FORWARD) => {
+export const validateStep = (
+  stepName,
+  formData,
+  direction = VALIDATION_DIRECTION.FORWARD
+) => {
   try {
     const validation = STEP_VALIDATION[stepName];
     if (!validation) {
@@ -260,7 +280,7 @@ export const validateStep = (stepName, formData, direction = VALIDATION_DIRECTIO
       return {
         valid: false,
         error: ERROR_TYPES.INVALID_STEP,
-        message: `Invalid step: ${stepName}`
+        message: `Invalid step: ${stepName}`,
       };
     }
 
@@ -269,13 +289,14 @@ export const validateStep = (stepName, formData, direction = VALIDATION_DIRECTIO
       return {
         valid: false,
         error: ERROR_TYPES.INVALID_STEP,
-        message: `Invalid step progression for: ${stepName}`
+        message: `Invalid step progression for: ${stepName}`,
       };
     }
 
-    const allowedSteps = direction === VALIDATION_DIRECTION.FORWARD 
-      ? progression.next 
-      : progression.prev;
+    const allowedSteps =
+      direction === VALIDATION_DIRECTION.FORWARD
+        ? progression.next
+        : progression.prev;
 
     const isValidTier = validatePlanAccess(stepName, formData?.selected_plan);
     if (!isValidTier.valid) {
@@ -284,11 +305,14 @@ export const validateStep = (stepName, formData, direction = VALIDATION_DIRECTIO
 
     const isValid = validation(formData);
     const metadata = STEP_METADATA[stepName];
-    const missingFields = metadata.validationRules.filter((rule) => !formData?.[rule]);
+    const missingFields = metadata.validationRules.filter(
+      (rule) => !formData?.[rule]
+    );
 
-    const next_step = typeof metadata.next_step === 'function' 
-      ? metadata.next_step(formData?.selected_plan)
-      : metadata.next_step;
+    const next_step =
+      typeof metadata.next_step === 'function'
+        ? metadata.next_step(formData?.selected_plan)
+        : metadata.next_step;
 
     return {
       valid: isValid,
@@ -298,19 +322,18 @@ export const validateStep = (stepName, formData, direction = VALIDATION_DIRECTIO
       allowedSteps,
       stepMetadata: {
         ...metadata,
-        next_step
-      }
+        next_step,
+      },
     };
   } catch (error) {
     logger.error('Validation error:', error);
     return {
       valid: false,
       error: ERROR_TYPES.DATA_ERROR,
-      message: 'An error occurred during validation'
+      message: 'An error occurred during validation',
     };
   }
 };
-
 
 const DynamicLoadingComponent = ({ stepNumber, error, retry }) => {
   if (error) {
@@ -330,7 +353,12 @@ const DynamicLoadingComponent = ({ stepNumber, error, retry }) => {
     );
   }
 
-  return <LoadingStateWithProgress message={`Loading Step ${stepNumber}...`} showSpinner={true} />;
+  return (
+    <LoadingStateWithProgress
+      message={`Loading Step ${stepNumber}...`}
+      showSpinner={true}
+    />
+  );
 };
 
 const withErrorBoundary = (Component, stepNumber) => {
@@ -350,16 +378,21 @@ const withErrorBoundary = (Component, stepNumber) => {
 
 const createDynamicStep = (stepName) => {
   const stepNumber = STEP_METADATA[stepName].stepNumber;
-  
+
   const DynamicComponent = dynamic(
     // Update path to match your folder structure
-    () => import(`@/app/onboarding/components/steps/${stepName}/${stepName}`).catch((error) => {
-      logger.error(`Failed to load ${stepName}:`, error);
-      throw error;
-    }),
+    () =>
+      import(`@/app/onboarding/components/steps/${stepName}`).catch((error) => {
+        logger.error(`Failed to load ${stepName}:`, error);
+        throw error;
+      }),
     {
       loading: ({ error, retry }) => (
-        <DynamicLoadingComponent stepNumber={stepNumber} error={error} retry={retry} />
+        <DynamicLoadingComponent
+          stepNumber={stepNumber}
+          error={error}
+          retry={retry}
+        />
       ),
       ssr: false,
     }
@@ -372,7 +405,7 @@ export const STEP_COMPONENTS = {
   [STEP_NAMES.SUBSCRIPTION]: createDynamicStep(STEP_NAMES.SUBSCRIPTION),
   [STEP_NAMES.PAYMENT]: createDynamicStep(STEP_NAMES.PAYMENT),
   [STEP_NAMES.SETUP]: createDynamicStep(STEP_NAMES.SETUP),
-  [STEP_NAMES.COMPLETE]: createDynamicStep(STEP_NAMES.COMPLETE)
+  [STEP_NAMES.COMPLETE]: createDynamicStep(STEP_NAMES.COMPLETE),
 };
 
 export const getStepComponent = (stepName, formData) => {

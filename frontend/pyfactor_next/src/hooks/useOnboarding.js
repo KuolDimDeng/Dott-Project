@@ -1,154 +1,183 @@
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useUser } from '@supabase/auth-helpers-react'
-import { onboardingService } from '@/services/onboardingService'
+'use client';
+
+import { useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from '@/hooks/useSession';
+import { useAuth } from '@/hooks/auth';
+import { logger } from '@/utils/logger';
+import {
+  validateOnboardingState,
+  getBusinessAttributes,
+  getSubscriptionAttributes,
+  getPaymentAttributes,
+  generateBusinessId,
+} from '@/utils/userAttributes';
 
 export function useOnboarding() {
-  const user = useUser()
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [onboardingStatus, setOnboardingStatus] = useState(null)
-  const [business, setBusiness] = useState(null)
-  const [subscription, setSubscription] = useState(null)
+  const router = useRouter();
+  const { data: session, status, update } = useSession();
+  const { updateAttributes, updateBusinessInfo, updateSubscriptionPlan } =
+    useAuth();
 
-  useEffect(() => {
-    if (user) {
-      loadOnboardingData()
-    }
-  }, [user])
+  const getCurrentStep = useCallback(() => {
+    if (status === 'loading') return 'NOT_STARTED';
+    if (!session?.user) return 'NOT_STARTED';
+    return session.user.onboarding || 'NOT_STARTED';
+  }, [session, status]);
 
-  const loadOnboardingData = async () => {
-    try {
-      setLoading(true)
-      setError(null)
+  const isStepCompleted = useCallback(
+    (step) => {
+      if (status === 'loading' || !session?.user) return false;
+      const currentStep = getCurrentStep();
+      const steps = [
+        'NOT_STARTED',
+        'BUSINESS_INFO',
+        'SUBSCRIPTION',
+        'PAYMENT',
+        'SETUP',
+        'COMPLETE',
+      ];
+      const currentIndex = steps.indexOf(currentStep);
+      const stepIndex = steps.indexOf(step);
+      return currentIndex > stepIndex;
+    },
+    [session, status, getCurrentStep]
+  );
 
-      // Get onboarding status (callback route handles creation)
-      const status = await onboardingService.getOnboardingStatus()
-      setOnboardingStatus(status)
+  const submitBusinessInfo = useCallback(
+    async (businessData) => {
+      try {
+        // Generate a new business ID
+        const businessId = generateBusinessId();
 
-      // Only proceed with additional data loading if we have a status
-      if (status && !status.setup_completed) {
-        // Get business data if it exists
-        const businessData = await onboardingService.getBusiness(user.id)
-        setBusiness(businessData)
+        // Update business info (this internally calls updateAttributes)
+        await updateBusinessInfo(businessId);
 
-        // Get subscription if business exists
-        if (businessData) {
-          const subscriptionData = await onboardingService.getSubscription(businessData.id)
-          setSubscription(subscriptionData)
-        }
+        logger.debug('Business info submitted:', {
+          businessId,
+          businessData,
+        });
+
+        await update();
+        router.push('/onboarding/subscription');
+      } catch (error) {
+        logger.error('Failed to submit business info:', error);
+        throw error;
       }
-    } catch (err) {
-      console.error('Error loading onboarding data:', err)
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+    },
+    [updateBusinessInfo, updateAttributes, update, router]
+  );
 
-  const submitBusinessInfo = async (businessData) => {
+  const submitSubscription = useCallback(
+    async (plan) => {
+      try {
+        // Get subscription attributes with proper state
+        const attributes = getSubscriptionAttributes(plan);
+
+        // Update subscription
+        await updateSubscriptionPlan(plan);
+        await updateAttributes(attributes);
+
+        logger.debug('Subscription submitted:', {
+          plan,
+          attributes,
+          timestamp: new Date().toISOString(),
+        });
+
+        await update();
+
+        // Route based on plan type
+        if (plan === 'free') {
+          router.push('/onboarding/setup');
+        } else {
+          router.push('/onboarding/payment');
+        }
+      } catch (error) {
+        logger.error('Failed to submit subscription:', error);
+        throw error;
+      }
+    },
+    [updateSubscriptionPlan, updateAttributes, update, router]
+  );
+
+  const completePayment = useCallback(
+    async (paymentData) => {
+      try {
+        // Get payment attributes with proper state
+        const attributes = {
+          ...getPaymentAttributes(),
+          'custom:payment_verified': 'true',
+          'custom:payment_id': paymentData.id,
+        };
+
+        await updateAttributes(attributes);
+
+        logger.debug('Payment completed:', {
+          paymentData,
+          attributes,
+          timestamp: new Date().toISOString(),
+        });
+
+        await update();
+        router.push('/onboarding/setup');
+      } catch (error) {
+        logger.error('Failed to complete payment:', error);
+        throw error;
+      }
+    },
+    [updateAttributes, update, router]
+  );
+
+  const completeSetup = useCallback(async () => {
     try {
-      setLoading(true)
-      setError(null)
-      const result = await onboardingService.completeBusinessInfo(user.id, businessData)
-      setBusiness(result)
-      await loadOnboardingData()
-      router.push('/onboarding/subscription')
-    } catch (err) {
-      console.error('Error submitting business info:', err)
-      setError(err.message)
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }
+      await updateAttributes({
+        'custom:onboarding': 'COMPLETE',
+        'custom:setup_completed': 'true',
+        'custom:lastlogin': new Date().toISOString(),
+      });
 
-  const submitSubscription = async (subscriptionData) => {
-    try {
-      setLoading(true)
-      setError(null)
-      const result = await onboardingService.completeSubscription(
-        user.id,
-        business.id,
-        subscriptionData
-      )
-      setSubscription(result)
-      await loadOnboardingData()
-      router.push('/onboarding/payment')
-    } catch (err) {
-      console.error('Error submitting subscription:', err)
-      setError(err.message)
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }
+      logger.debug('Setup completed');
 
-  const completePayment = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      await onboardingService.completePayment(user.id)
-      await loadOnboardingData()
-      router.push('/onboarding/setup')
-    } catch (err) {
-      console.error('Error completing payment:', err)
-      setError(err.message)
-      throw err
-    } finally {
-      setLoading(false)
+      await update();
+      router.push('/dashboard');
+    } catch (error) {
+      logger.error('Failed to complete setup:', error);
+      throw error;
     }
-  }
+  }, [updateAttributes, update, router]);
 
-  const completeSetup = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      await onboardingService.completeSetup(user.id)
-      await loadOnboardingData()
-      router.push('/dashboard')
-    } catch (err) {
-      console.error('Error completing setup:', err)
-      setError(err.message)
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }
+  const getNextStep = useCallback(
+    (currentStep) => {
+      if (status === 'loading') return null;
 
-  const getCurrentStep = () => {
-    if (!onboardingStatus) return 'business-info'
-    return onboardingStatus.current_step
-  }
+      const stepMap = {
+        NOT_STARTED: 'BUSINESS_INFO',
+        BUSINESS_INFO: 'SUBSCRIPTION',
+        SUBSCRIPTION: (plan) => (plan === 'free' ? 'SETUP' : 'PAYMENT'),
+        PAYMENT: 'SETUP',
+        SETUP: 'COMPLETE',
+      };
 
-  const isStepCompleted = (step) => {
-    if (!onboardingStatus) return false
-    switch (step) {
-      case 'business-info':
-        return onboardingStatus.business_info_completed
-      case 'subscription':
-        return onboardingStatus.subscription_completed
-      case 'payment':
-        return onboardingStatus.payment_completed
-      case 'setup':
-        return onboardingStatus.setup_completed
-      default:
-        return false
-    }
-  }
+      const nextStep = stepMap[currentStep];
+      if (typeof nextStep === 'function') {
+        return nextStep(session?.user?.subscriptionPlan || 'free');
+      }
+      return nextStep;
+    },
+    [session, status]
+  );
 
   return {
-    loading,
-    error,
-    onboardingStatus,
-    business,
-    subscription,
-    getCurrentStep,
+    currentStep: getCurrentStep(),
     isStepCompleted,
+    getNextStep,
     submitBusinessInfo,
     submitSubscription,
     completePayment,
     completeSetup,
-  }
+    isLoading: status === 'loading',
+    user: session?.user,
+  };
 }
+
+export default useOnboarding;

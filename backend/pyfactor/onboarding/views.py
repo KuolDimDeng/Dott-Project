@@ -1,6 +1,5 @@
 # /Users/kuoldeng/projectx/backend/pyfactor/onboarding/views.py
 
-# Python standard library imports
 import re
 import json
 import sys

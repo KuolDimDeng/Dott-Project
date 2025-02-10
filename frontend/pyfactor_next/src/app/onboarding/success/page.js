@@ -1,138 +1,52 @@
-'use client';
+import Link from 'next/link';
 
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { OnboardingErrorBoundary } from '@/components/ErrorBoundary/OnboardingErrorBoundary';
-import { LoadingStateWithProgress } from '@/components/LoadingState';
-import { ErrorStep } from '@/components/ErrorStep';
-import { useOnboarding } from '@/app/onboarding/contexts/OnboardingContext';
-import { onboardingApi, makeRequest } from '@/services/api/onboarding';
-import { useToast } from '@/components/Toast/ToastProvider';
-import { logger } from '@/utils/logger';
-import { generateRequestId } from '@/lib/authUtils';
+export const metadata = {
+  title: 'Setup Complete - Onboarding',
+  description: 'Your account has been successfully set up',
+};
 
-function OnboardingSuccessContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { data: session, status } = useSession();
-  const { updateFormData } = useOnboarding();
-  const toast = useToast();
-  const [isVerifying, setIsVerifying] = useState(false);
-  const requestId = generateRequestId();
-
-  const session_id = searchParams.get('session_id');
-
-  useEffect(() => {
-    const verifyPayment = async () => {
-      if (!session_id || !session?.user?.accessToken) return;
-
-      try {
-        setIsVerifying(true);
-        logger.debug('Starting payment verification:', {
-          requestId,
-          session_id
-        });
-
-        // Verify payment status
-        const verificationResult = await makeRequest(
-          onboardingApi.updateStep(
-            session.user.accessToken,
-            'payment',
-            {
-              payment_verified: true,
-              session_id,
-              request_id: requestId
-            }
-          )
-        );
-
-        // Update onboarding status
-        await makeRequest(
-          onboardingApi.updateStatus(
-            session.user.accessToken,
-            {
-              current_step: 'payment',
-              next_step: 'setup',
-              form_data: {
-                payment_verified: true,
-                session_id
-              },
-              request_id: requestId
-            }
-          )
-        );
-
-        // Update context data
-        updateFormData({
-          payment_verified: true,
-          session_id
-        });
-
-        logger.debug('Payment verification successful:', {
-          requestId,
-          status: verificationResult.status
-        });
-
-        toast.success('Payment verified successfully');
-        await router.replace('/onboarding/setup');
-
-      } catch (error) {
-        logger.error('Payment verification failed:', {
-          requestId,
-          error: error.message,
-          session_id
-        });
-        
-        toast.error('Failed to verify payment. Please try again.');
-        await router.replace('/onboarding/payment');
-
-      } finally {
-        setIsVerifying(false);
-      }
-    };
-
-    verifyPayment();
-  }, [session_id, session, router, toast, updateFormData, requestId]);
-
-  // Auth check
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      logger.debug('Unauthenticated user, redirecting:', {
-        requestId,
-        status
-      });
-      router.replace('/auth/signin?callbackUrl=/onboarding/success');
-    }
-  }, [status, router, requestId]);
-
-  if (status === 'loading' || isVerifying) {
-    return <LoadingStateWithProgress message="Verifying payment..." />;
-  }
-
-  // Return null as this is just a processing page
-  return null;
-}
-
-function OnboardingSuccess() {
-  const router = useRouter();
-
+export default function SuccessPage() {
   return (
-    <OnboardingErrorBoundary
-      fallback={({ error, resetError }) => (
-        <ErrorStep
-          error={error}
-          stepNumber={3}
-          onRetry={async () => {
-            resetError();
-            await router.replace('/onboarding/payment');
-          }}
-        />
-      )}
-    >
-      <OnboardingSuccessContent />
-    </OnboardingErrorBoundary>
+    <div className="max-w-2xl mx-auto p-6">
+      <div className="text-center">
+        <div className="mb-6">
+          <svg
+            className="mx-auto h-16 w-16 text-green-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 48 48"
+            aria-hidden="true"
+          >
+            <circle
+              className="opacity-25"
+              cx="24"
+              cy="24"
+              r="20"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="4"
+              d="M14 24l8 8 16-16"
+            />
+          </svg>
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          Setup Complete!
+        </h1>
+        <p className="text-lg text-gray-600 mb-8">
+          Your account has been successfully set up and is ready to use.
+        </p>
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Go to Dashboard
+        </Link>
+      </div>
+    </div>
   );
 }
-
-export default OnboardingSuccess;

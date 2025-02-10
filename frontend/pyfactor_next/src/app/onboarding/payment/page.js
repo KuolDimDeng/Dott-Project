@@ -8,7 +8,7 @@ import { STEP_METADATA } from '../components/registry';
 import { ErrorBoundary } from '../components/shared/ErrorBoundary';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/hooks/useSession';
 import { logger } from '@/utils/logger';
 
 const PaymentFallback = () => (
@@ -26,7 +26,7 @@ const PaymentContent = () => {
       logger.debug('Payment page mounted:', {
         sessionStatus: status,
         hasUser: !!session?.user,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     };
 
@@ -47,9 +47,11 @@ const PaymentContent = () => {
     <ErrorBoundary
       fallback={(error) => (
         <div className="p-4">
-          <h2 className="text-xl font-bold text-red-600">Error Loading Payment</h2>
+          <h2 className="text-xl font-bold text-red-600">
+            Error Loading Payment
+          </h2>
           <p className="text-gray-600">{error.message}</p>
-          <button 
+          <button
             onClick={() => router.refresh()}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >

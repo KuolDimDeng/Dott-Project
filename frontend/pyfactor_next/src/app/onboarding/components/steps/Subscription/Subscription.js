@@ -16,8 +16,7 @@ import {
   Alert,
 } from '@mui/material';
 import { logger } from '@/utils/logger';
-import { useAuth } from '@/hooks/useAuth';
-import { updateUserAttributes } from '@/config/amplify';
+import { useOnboarding } from '@/hooks/useOnboarding';
 
 const PLANS = [
   {
@@ -48,9 +47,8 @@ const PLANS = [
 ];
 
 export function Subscription({ onNext }) {
-  const router = useRouter();
-  const { data: session, status, update } = useSession();
-  const { signOut } = useAuth();
+  const { data: session, status } = useSession();
+  const { submitSubscription } = useOnboarding();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,31 +56,18 @@ export function Subscription({ onNext }) {
   const handlePlanSelect = async (planId) => {
     setIsLoading(true);
     setError(null);
+    setSelectedPlan(planId);
 
     try {
-      // Update user attributes in Cognito
-      await updateUserAttributes({
-        'custom:selected_plan': planId,
-        'custom:onboarding': planId === 'free' ? 'setup' : 'payment'
-      });
-
-      // Update session to reflect new attributes
-      await update();
-
+      await submitSubscription(planId);
       logger.debug('Plan selection updated successfully', {
         plan: planId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-
       onNext();
     } catch (error) {
       logger.error('Failed to update plan selection:', error);
       setError(error.message || 'Failed to select plan');
-
-      if (error.code === 'NotAuthorizedException') {
-        await signOut();
-        router.push('/auth/signin');
-      }
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +94,12 @@ export function Subscription({ onNext }) {
         <Typography variant="h4" component="h1" gutterBottom align="center">
           Choose Your Plan
         </Typography>
-        <Typography variant="body1" color="text.secondary" paragraph align="center">
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          paragraph
+          align="center"
+        >
           Select the plan that best fits your business needs
         </Typography>
 
@@ -164,7 +154,9 @@ export function Subscription({ onNext }) {
                 <CardActions>
                   <Button
                     fullWidth
-                    variant={selectedPlan === plan.id ? 'contained' : 'outlined'}
+                    variant={
+                      selectedPlan === plan.id ? 'contained' : 'outlined'
+                    }
                     onClick={() => handlePlanSelect(plan.id)}
                     disabled={isLoading}
                   >

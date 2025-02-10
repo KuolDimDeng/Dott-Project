@@ -40,6 +40,14 @@ export async function POST(request) {
       throw new Error(`Backend request failed: ${response.status}`);
     }
 
+    // Update user attributes with payment info
+    const { updateUserAttributes, getPaymentAttributes } = await import(
+      '@/utils/userAttributes'
+    );
+    const paymentAttributes = getPaymentAttributes();
+
+    await updateUserAttributes(paymentAttributes);
+
     // Update onboarding status
     const statusResponse = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`,
@@ -51,8 +59,8 @@ export async function POST(request) {
           'X-Request-ID': crypto.randomUUID(),
         },
         body: JSON.stringify({
-          payment_completed: true,
-          current_step: 'setup',
+          status: 'SETUP',
+          lastStep: 'PAYMENT',
         }),
       }
     );

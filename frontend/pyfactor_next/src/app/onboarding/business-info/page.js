@@ -18,44 +18,22 @@ const defaultMetadata = {
 };
 
 const BusinessInfoPage = () => {
-  const {
-    isLoading,
-    error,
-    initialized,
-    initialize,
-    onboardingManager,
-  } = useOnboarding();
+  const { isLoading, error, currentStep, submitBusinessInfo } = useOnboarding();
 
   useEffect(() => {
-    const initPage = async () => {
-      try {
-        const requestId = crypto.randomUUID();
-        logger.debug('Initializing business info page', {
-          requestId,
-          initialized,
-          isLoading
-        });
-
-        if (!initialized) {
-          await initialize();
-          await onboardingManager.setcurrent_step('business-info', {
-            status: 'in_progress',
-            requestId
-          });
-        }
-      } catch (err) {
-        logger.error('Failed to initialize business info page:', {
-          error: err.message,
-          stack: err.stack
-        });
-      }
+    const logPageLoad = () => {
+      const requestId = crypto.randomUUID();
+      logger.debug('Business info page loaded', {
+        requestId,
+        currentStep,
+        isLoading,
+      });
     };
 
-    initPage();
-  }, [initialized, initialize, onboardingManager]);
+    logPageLoad();
+  }, [currentStep, isLoading]);
 
-  // Only show loading state during initial load
-  if (isLoading && !initialized) {
+  if (isLoading) {
     return (
       <OnboardingLayout>
         <LoadingStateWithProgress
@@ -79,7 +57,7 @@ const BusinessInfoPage = () => {
           message="Error loading business profile"
           isLoading={false}
           error={error.message || 'An unexpected error occurred'}
-          onRetry={initialize}
+          onRetry={() => window.location.reload()}
           image={{
             src: '/static/images/Pyfactor.png',
             alt: 'Pyfactor Logo',
@@ -96,6 +74,7 @@ const BusinessInfoPage = () => {
       <OnboardingLayout>
         <BusinessInfo
           metadata={STEP_METADATA.BUSINESS_INFO || defaultMetadata}
+          onSubmit={submitBusinessInfo}
         />
       </OnboardingLayout>
     </ErrorBoundary>

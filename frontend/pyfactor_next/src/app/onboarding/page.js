@@ -2,20 +2,26 @@
 
 import React, { useEffect, useState, memo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/hooks/useSession';
 import { useForm } from 'react-hook-form';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
-import { Box, Typography, Alert, Button, CircularProgress } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Alert,
+  Button,
+  CircularProgress,
+} from '@mui/material';
 import { LoadingStateWithProgress } from '@/components/LoadingState';
 import { useOnboarding } from './hooks/useOnboarding';
 import { logger } from '@/utils/logger';
 import PropTypes from 'prop-types';
 
 // Onboarding-specific error fallback
-const OnboardingErrorFallback = memo(function OnboardingErrorFallback({ 
-  error, 
-  resetErrorBoundary, 
-  stepNumber = 1 
+const OnboardingErrorFallback = memo(function OnboardingErrorFallback({
+  error,
+  resetErrorBoundary,
+  stepNumber = 1,
 }) {
   const [isResetting, setIsResetting] = React.useState(false);
   const errorId = React.useRef(crypto.randomUUID()).current;
@@ -25,7 +31,7 @@ const OnboardingErrorFallback = memo(function OnboardingErrorFallback({
       errorId,
       stepNumber,
       error: error?.message,
-      stack: error?.stack
+      stack: error?.stack,
     });
   }, [error, stepNumber, errorId]);
 
@@ -36,7 +42,7 @@ const OnboardingErrorFallback = memo(function OnboardingErrorFallback({
     } catch (error) {
       logger.error('Onboarding reset failed:', {
         errorId,
-        error: error.message
+        error: error.message,
       });
     } finally {
       setIsResetting(false);
@@ -56,9 +62,9 @@ const OnboardingErrorFallback = memo(function OnboardingErrorFallback({
       <Alert
         severity="error"
         action={
-          <Button 
-            color="inherit" 
-            size="small" 
+          <Button
+            color="inherit"
+            size="small"
             onClick={handleReset}
             disabled={isResetting}
           >
@@ -67,7 +73,8 @@ const OnboardingErrorFallback = memo(function OnboardingErrorFallback({
         }
         sx={{ maxWidth: 500, width: '100%' }}
       >
-        Error in Step {stepNumber}: {error?.message || 'Failed to load onboarding'}
+        Error in Step {stepNumber}:{' '}
+        {error?.message || 'Failed to load onboarding'}
       </Alert>
       <Typography variant="body2" color="text.secondary" align="center">
         Please try again or contact support if the problem persists.
@@ -90,7 +97,7 @@ const OnboardingContent = memo(function OnboardingContent() {
     defaultValues: {
       selected_plan: '',
       billingCycle: 'monthly',
-      tier: '' // Add tier
+      tier: '', // Add tier
     },
   });
 
@@ -112,12 +119,11 @@ const OnboardingContent = memo(function OnboardingContent() {
       if (!initialized && !isInitializing && status === 'authenticated') {
         try {
           setIsInitializing(true);
-          
+
           logger.info('Starting store initialization', {
             requestId: requestIdRef.current,
             attempt: initializationAttempts + 1,
-            tier: selected_plan // Add tier logging
-
+            tier: selected_plan, // Add tier logging
           });
 
           await initialize();
@@ -127,8 +133,7 @@ const OnboardingContent = memo(function OnboardingContent() {
               requestId: requestIdRef.current,
               current_step,
               initialized: true,
-              tier: selected_plan // Add tier logging
-
+              tier: selected_plan, // Add tier logging
             });
           }
         } catch (error) {
@@ -136,15 +141,14 @@ const OnboardingContent = memo(function OnboardingContent() {
             requestId: requestIdRef.current,
             error: error.message,
             attempt: initializationAttempts + 1,
-            tier: selected_plan // Add tier logging
-
+            tier: selected_plan, // Add tier logging
           });
 
           if (initializationAttempts < 3) {
             const delay = Math.pow(2, initializationAttempts) * 1000;
             timeoutId = setTimeout(() => {
               if (mounted) {
-                setInitializationAttempts(prev => prev + 1);
+                setInitializationAttempts((prev) => prev + 1);
               }
             }, delay);
           }
@@ -164,7 +168,15 @@ const OnboardingContent = memo(function OnboardingContent() {
         clearTimeout(timeoutId);
       }
     };
-  }, [initialize, initialized, isInitializing, status, current_step, initializationAttempts, selected_plan]); // Add selected_plan to deps
+  }, [
+    initialize,
+    initialized,
+    isInitializing,
+    status,
+    current_step,
+    initializationAttempts,
+    selected_plan,
+  ]); // Add selected_plan to deps
 
   if (!initialized || storeLoading || isInitializing) {
     const message = isInitializing
@@ -174,7 +186,7 @@ const OnboardingContent = memo(function OnboardingContent() {
         : `${progress?.current_step || 'Preparing'} ${
             selected_plan ? `(${selected_plan} tier)` : ''
           } (${progress?.progress || 0}%)`;
-  
+
     return (
       <LoadingStateWithProgress
         message={message}
@@ -187,7 +199,7 @@ const OnboardingContent = memo(function OnboardingContent() {
 
   if (storeError) {
     throw new Error(storeError.message || 'Failed to initialize onboarding', {
-      cause: storeError
+      cause: storeError,
     });
   }
 
@@ -198,31 +210,31 @@ const OnboardingContent = memo(function OnboardingContent() {
 export default function OnboardingPage() {
   const handleRecovery = async () => {
     const recoveryId = crypto.randomUUID();
-    
-    logger.info('Starting onboarding recovery', { 
+
+    logger.info('Starting onboarding recovery', {
       recoveryId,
-      tier: selected_plan // Add tier logging
+      tier: selected_plan, // Add tier logging
     });
-    
+
     try {
       await fetch('/api/onboarding/reset', {
         method: 'POST',
-        headers: { 
+        headers: {
           'x-recovery-id': recoveryId,
-          'x-subscription-tier': selected_plan // Add tier header
-        }
+          'x-subscription-tier': selected_plan, // Add tier header
+        },
       });
-      
-      logger.info('Onboarding recovery successful', { 
+
+      logger.info('Onboarding recovery successful', {
         recoveryId,
-        tier: selected_plan // Add tier logging
+        tier: selected_plan, // Add tier logging
       });
       return true;
     } catch (error) {
       logger.error('Onboarding recovery failed', {
         recoveryId,
         error: error.message,
-        tier: selected_plan // Add tier logging
+        tier: selected_plan, // Add tier logging
       });
       return false;
     }
@@ -243,10 +255,10 @@ export default function OnboardingPage() {
 OnboardingErrorFallback.propTypes = {
   error: PropTypes.shape({
     message: PropTypes.string,
-    stack: PropTypes.string
+    stack: PropTypes.string,
   }),
   resetErrorBoundary: PropTypes.func.isRequired,
-  stepNumber: PropTypes.number
+  stepNumber: PropTypes.number,
 };
 
 OnboardingContent.propTypes = {};

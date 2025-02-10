@@ -1,4 +1,5 @@
-// src/components/LoadingState/index.js
+'use client';
+
 export { LoadingStateWithProgress } from './LoadingStateWithProgress';
 export { SetupLoadingState } from './SetupLoadingState';
-export {AuthLoadingState } from './AuthLoadingState';
+export { AuthLoadingState } from './AuthLoadingState';

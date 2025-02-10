@@ -1,155 +1,259 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from 'aws-amplify/auth';
-import { Amplify } from 'aws-amplify';
+import { fetchAuthSession } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
-import { configureAmplify } from '@/config/amplify';
 
-const CACHE_CONFIG = {
-  STALE_TIME: 10000, // 10 seconds
-  CACHE_CONTROL: 'public, s-maxage=10, stale-while-revalidate=59',
+/**
+ * GET /api/onboarding/status
+ * Retrieves the current onboarding status from Cognito user attributes
+ */
+const VALID_ONBOARDING_STATES = [
+  'NOT_STARTED',
+  'BUSINESS_INFO',
+  'SUBSCRIPTION',
+  'PAYMENT',
+  'SETUP',
+  'COMPLETE',
+];
+
+/**
+ * Validates onboarding state transition
+ * @param {string} currentState - Current onboarding state
+ * @param {string} newState - Requested new state
+ * @returns {boolean} Whether the transition is valid
+ */
+const isValidStateTransition = (currentState, newState) => {
+  const currentIndex = VALID_ONBOARDING_STATES.indexOf(currentState);
+  const newIndex = VALID_ONBOARDING_STATES.indexOf(newState);
+
+  // Allow moving to any previous step or the next step
+  return newIndex <= currentIndex + 1;
 };
 
-export async function GET(request) {
+/**
+ * GET /api/onboarding/status
+ * Retrieves the current onboarding status from Cognito user attributes
+ */
+export async function GET() {
   try {
-    // Ensure Amplify is configured
-    configureAmplify();
-
-    // Get current user
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    const session = await fetchAuthSession();
+    if (!session?.tokens?.accessToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    logger.debug('Checking onboarding status for user:', user.userId);
+    // Get user attributes from Cognito with retry logic
+    const { accessToken } = session.tokens;
+    let retryCount = 0;
+    let userData = null;
 
-    // Fetch status from backend
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`,
-      {
-        headers: {
-          Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
-          'X-Request-ID': crypto.randomUUID(),
-        },
-        next: {
-          revalidate: CACHE_CONFIG.STALE_TIME / 1000, // Convert to seconds
-        },
+    while (retryCount < 3) {
+      try {
+        const response = await fetch(
+          'https://cognito-idp.us-east-1.amazonaws.com/',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-amz-json-1.1',
+              'X-Amz-Target': 'AWSCognitoIdentityProviderService.GetUser',
+              Authorization: `Bearer ${accessToken.toString()}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch user attributes: ${response.status}`
+          );
+        }
+
+        userData = await response.json();
+        break;
+      } catch (error) {
+        retryCount++;
+        if (retryCount === 3) throw error;
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * Math.pow(2, retryCount))
+        );
       }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Backend request failed: ${response.status}`);
     }
 
-    const data = await response.json();
+    const onboardingStatus =
+      userData.UserAttributes.find((attr) => attr.Name === 'custom:onboarding')
+        ?.Value || 'NOT_STARTED';
 
-    // Add cache headers
-    const apiResponse = NextResponse.json(data);
-    apiResponse.headers.set('Cache-Control', CACHE_CONFIG.CACHE_CONTROL);
-    return apiResponse;
-  } catch (error) {
-    logger.error('Onboarding status check failed:', {
-      error: error.message,
-      stack: error.stack,
+    const lastStep =
+      userData.UserAttributes.find((attr) => attr.Name === 'custom:lastStep')
+        ?.Value || onboardingStatus;
+
+    const completedAt =
+      userData.UserAttributes.find(
+        (attr) => attr.Name === 'custom:onboardingCompletedAt'
+      )?.Value || null;
+
+    // Validate status consistency
+    if (!VALID_ONBOARDING_STATES.includes(onboardingStatus)) {
+      logger.error('Invalid onboarding status detected:', { onboardingStatus });
+      return NextResponse.json(
+        { error: 'Invalid onboarding status' },
+        { status: 500 }
+      );
+    }
+
+    logger.debug('Onboarding status retrieved:', {
+      status: onboardingStatus,
+      lastStep,
+      completedAt,
     });
 
+    return NextResponse.json({
+      status: onboardingStatus,
+      lastStep,
+      completedAt,
+    });
+  } catch (error) {
+    logger.error('Error fetching onboarding status:', error);
     return NextResponse.json(
-      { error: 'Failed to check onboarding status' },
-      { status: 500 }
+      {
+        error: 'Failed to fetch onboarding status',
+        details: error.message,
+      },
+      { status: error.message.includes('Unauthorized') ? 401 : 500 }
     );
   }
 }
 
-export async function POST() {
+/**
+ * POST /api/onboarding/status
+ * Updates the onboarding status in Cognito user attributes
+ */
+/**
+ * POST /api/onboarding/status
+ * Updates the onboarding status in Cognito user attributes with atomic operations
+ */
+export async function POST(request) {
   try {
-    // Ensure Amplify is configured
-    configureAmplify();
-
-    // Get current user
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    const session = await fetchAuthSession();
+    if (!session?.tokens?.accessToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Force sync with backend
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status/sync`,
+    const { status, lastStep } = await request.json();
+    if (!status || !VALID_ONBOARDING_STATES.includes(status)) {
+      return NextResponse.json(
+        { error: 'Invalid status provided' },
+        { status: 400 }
+      );
+    }
+
+    // Get current status first
+    const { accessToken } = session.tokens;
+    const currentUserResponse = await fetch(
+      'https://cognito-idp.us-east-1.amazonaws.com/',
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
-          'X-Request-ID': crypto.randomUUID(),
+          'Content-Type': 'application/x-amz-json-1.1',
+          'X-Amz-Target': 'AWSCognitoIdentityProviderService.GetUser',
+          Authorization: `Bearer ${accessToken.toString()}`,
         },
       }
     );
 
-    if (!response.ok) {
-      throw new Error(`Backend sync failed: ${response.status}`);
+    if (!currentUserResponse.ok) {
+      throw new Error('Failed to fetch current user attributes');
     }
 
-    const data = await response.json();
+    const currentUserData = await currentUserResponse.json();
+    const currentStatus =
+      currentUserData.UserAttributes.find(
+        (attr) => attr.Name === 'custom:onboarding'
+      )?.Value || 'NOT_STARTED';
 
-    // Clear cache by setting max-age=0
-    const apiResponse = NextResponse.json(data);
-    apiResponse.headers.set(
-      'Cache-Control',
-      'no-cache, no-store, must-revalidate'
-    );
-    return apiResponse;
-  } catch (error) {
-    logger.error('Onboarding status sync failed:', {
-      error: error.message,
-      stack: error.stack,
-    });
-
-    return NextResponse.json(
-      { error: 'Failed to sync onboarding status' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE() {
-  try {
-    // Ensure Amplify is configured
-    configureAmplify();
-
-    // Get current user
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    // Validate state transition
+    if (!isValidStateTransition(currentStatus, status)) {
+      logger.warn('Invalid state transition attempted:', {
+        from: currentStatus,
+        to: status,
+      });
+      return NextResponse.json(
+        { error: 'Invalid state transition' },
+        { status: 400 }
+      );
     }
 
-    // Clear backend cache
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status/cache`,
+    // Prepare attributes update
+    const userAttributes = [
       {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
-          'X-Request-ID': crypto.randomUUID(),
-        },
-      }
-    );
+        Name: 'custom:onboarding',
+        Value: status,
+      },
+    ];
 
-    if (!response.ok) {
-      throw new Error(`Cache clear failed: ${response.status}`);
+    if (lastStep && VALID_ONBOARDING_STATES.includes(lastStep)) {
+      userAttributes.push({
+        Name: 'custom:lastStep',
+        Value: lastStep,
+      });
     }
 
-    const apiResponse = NextResponse.json({ status: 'success' });
-    apiResponse.headers.set(
-      'Cache-Control',
-      'no-cache, no-store, must-revalidate'
-    );
-    return apiResponse;
-  } catch (error) {
-    logger.error('Cache clear failed:', {
-      error: error.message,
-      stack: error.stack,
-    });
+    if (status === 'COMPLETE') {
+      userAttributes.push({
+        Name: 'custom:onboardingCompletedAt',
+        Value: new Date().toISOString(),
+      });
+    }
 
+    // Update attributes with retry logic
+    let retryCount = 0;
+    while (retryCount < 3) {
+      try {
+        const updateResponse = await fetch(
+          'https://cognito-idp.us-east-1.amazonaws.com/',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-amz-json-1.1',
+              'X-Amz-Target':
+                'AWSCognitoIdentityProviderService.UpdateUserAttributes',
+              Authorization: `Bearer ${accessToken.toString()}`,
+            },
+            body: JSON.stringify({
+              UserAttributes: userAttributes,
+            }),
+          }
+        );
+
+        if (!updateResponse.ok) {
+          throw new Error('Failed to update user attributes');
+        }
+
+        logger.debug('Onboarding status updated:', {
+          previousStatus: currentStatus,
+          newStatus: status,
+          lastStep: lastStep || status,
+        });
+
+        return NextResponse.json({
+          status,
+          lastStep: lastStep || status,
+          completedAt: status === 'COMPLETE' ? new Date().toISOString() : null,
+          previousStatus: currentStatus,
+        });
+      } catch (error) {
+        retryCount++;
+        if (retryCount === 3) throw error;
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * Math.pow(2, retryCount))
+        );
+      }
+    }
+  } catch (error) {
+    logger.error('Error updating onboarding status:', error);
     return NextResponse.json(
-      { error: 'Failed to clear cache' },
-      { status: 500 }
+      {
+        error: 'Failed to update onboarding status',
+        details: error.message,
+      },
+      { status: error.message.includes('Unauthorized') ? 401 : 500 }
     );
   }
 }

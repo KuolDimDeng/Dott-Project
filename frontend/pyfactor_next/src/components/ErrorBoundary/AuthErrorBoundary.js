@@ -2,17 +2,22 @@
 'use client';
 
 import React, { memo } from 'react';
-import { getSession } from 'next-auth/react';
-import { Box, Typography, Alert, Button, CircularProgress } from '@mui/material';
+import { Auth } from '@aws-amplify/auth';
+import {
+  Box,
+  Typography,
+  Alert,
+  Button,
+  CircularProgress,
+} from '@mui/material';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 import { logger } from '@/utils/logger';
 import PropTypes from 'prop-types';
 
-
 // Shared loading component for consistent UX
 const LoadingState = memo(function LoadingState({ message }) {
   logger.debug('Auth loading state rendered', { message });
-  
+
   return (
     <Box
       display="flex"
@@ -31,7 +36,11 @@ const LoadingState = memo(function LoadingState({ message }) {
 });
 
 // Authentication-specific error fallback
-const AuthErrorFallback = memo(function AuthErrorFallback({ error, resetErrorBoundary, requestId }) {
+const AuthErrorFallback = memo(function AuthErrorFallback({
+  error,
+  resetErrorBoundary,
+  requestId,
+}) {
   const [isResetting, setIsResetting] = React.useState(false);
 
   // Log error details when component mounts
@@ -39,7 +48,7 @@ const AuthErrorFallback = memo(function AuthErrorFallback({ error, resetErrorBou
     logger.error('Auth error boundary triggered', {
       requestId,
       error: error?.message,
-      stack: error?.stack
+      stack: error?.stack,
     });
   }, [error, requestId]);
 
@@ -51,7 +60,7 @@ const AuthErrorFallback = memo(function AuthErrorFallback({ error, resetErrorBou
     } catch (error) {
       logger.error('Auth reset failed', {
         requestId,
-        error: error.message
+        error: error.message,
       });
       // Force reload on reset failure
       window.location.reload();
@@ -73,9 +82,9 @@ const AuthErrorFallback = memo(function AuthErrorFallback({ error, resetErrorBou
       <Alert
         severity="error"
         action={
-          <Button 
-            color="inherit" 
-            size="small" 
+          <Button
+            color="inherit"
+            size="small"
             onClick={handleReset}
             disabled={isResetting}
           >
@@ -86,7 +95,7 @@ const AuthErrorFallback = memo(function AuthErrorFallback({ error, resetErrorBou
       >
         Authentication Error: Session may have expired
       </Alert>
-      
+
       <Typography variant="body2" color="text.secondary" align="center">
         Please sign in again to continue.
         <br />
@@ -97,7 +106,7 @@ const AuthErrorFallback = memo(function AuthErrorFallback({ error, resetErrorBou
         variant="outlined"
         color="primary"
         size="small"
-        onClick={() => window.location.href = '/auth/signin'}
+        onClick={() => (window.location.href = '/auth/signin')}
       >
         Return to Sign In
       </Button>
@@ -106,40 +115,41 @@ const AuthErrorFallback = memo(function AuthErrorFallback({ error, resetErrorBou
 });
 
 // Main authentication error boundary wrapper
-export const WithAuthErrorBoundary = memo(function WithAuthErrorBoundary({ children }) {
+export const WithAuthErrorBoundary = memo(function WithAuthErrorBoundary({
+  children,
+}) {
   // Handle authentication recovery
 
   const handleRecovery = React.useCallback(async () => {
     const recoveryId = crypto.randomUUID();
     logger.info('Starting auth recovery', { recoveryId });
-  
+
     try {
       // Clear stored error states
       localStorage.removeItem('auth_error');
       sessionStorage.removeItem('auth_error');
-      
-      // Attempt to refresh session using getSession
-      const session = await getSession();
-  
-      if (!session?.user) {
+
+      // Attempt to refresh session using Amplify Auth
+      const currentUser = await Auth.currentAuthenticatedUser();
+
+      if (!currentUser) {
         throw new Error('Invalid session state');
       }
-  
-      logger.info('Auth recovery successful', { 
+
+      logger.info('Auth recovery successful', {
         recoveryId,
-        hasUser: !!session.user 
+        hasUser: !!currentUser,
       });
-  
+
       return true;
     } catch (error) {
       logger.error('Auth recovery failed', {
         recoveryId,
-        error: error.message
+        error: error.message,
       });
       return false;
     }
   }, []);
-  
 
   return (
     <ErrorBoundary
@@ -147,9 +157,9 @@ export const WithAuthErrorBoundary = memo(function WithAuthErrorBoundary({ child
       onReset={handleRecovery}
       FallbackComponent={AuthErrorFallback}
       onError={(error, info) => {
-        logger.error('Auth error boundary caught error:', { 
+        logger.error('Auth error boundary caught error:', {
           error: error.message,
-          componentStack: info.componentStack
+          componentStack: info.componentStack,
         });
       }}
     >
@@ -160,23 +170,20 @@ export const WithAuthErrorBoundary = memo(function WithAuthErrorBoundary({ child
 
 // Export components with proper prop types
 LoadingState.propTypes = {
-  message: PropTypes.string.isRequired
+  message: PropTypes.string.isRequired,
 };
 
 AuthErrorFallback.propTypes = {
   error: PropTypes.shape({
     message: PropTypes.string,
-    stack: PropTypes.string
+    stack: PropTypes.string,
   }),
   resetErrorBoundary: PropTypes.func.isRequired,
-  requestId: PropTypes.string.isRequired
+  requestId: PropTypes.string.isRequired,
 };
 
 WithAuthErrorBoundary.propTypes = {
-  children: PropTypes.node.isRequired
+  children: PropTypes.node.isRequired,
 };
 
-export {
-  LoadingState,
-  AuthErrorFallback
-};
+export { LoadingState, AuthErrorFallback };
