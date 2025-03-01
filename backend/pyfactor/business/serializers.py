@@ -67,6 +67,9 @@ class BusinessSerializer(serializers.ModelSerializer):
     subscriptions = SubscriptionSerializer(many=True, read_only=True)
     active_subscription = serializers.SerializerMethodField()
     business_details = serializers.SerializerMethodField()
+    date_founded = serializers.DateField(required=False, allow_null=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    modified_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Business
@@ -82,10 +85,27 @@ class BusinessSerializer(serializers.ModelSerializer):
             'email',
             'phone_number',
             'legal_structure',
+            'date_founded',
+            'created_at',
+            'modified_at',
             'subscriptions',
             'active_subscription',
             'business_details'
         ]
+
+    def to_representation(self, instance):
+        """Convert datetime fields to ISO format strings, handling None values"""
+        ret = super().to_representation(instance)
+        # Handle date_founded field
+        if instance.date_founded:
+            ret['date_founded'] = instance.date_founded.isoformat()
+        # Handle created_at field
+        if instance.created_at:
+            ret['created_at'] = instance.created_at.isoformat()
+        # Handle modified_at field
+        if instance.modified_at:
+            ret['modified_at'] = instance.modified_at.isoformat()
+        return ret
 
     def get_active_subscription(self, obj):
         """Retrieve the currently active subscription for the business"""
@@ -103,8 +123,8 @@ class BusinessSerializer(serializers.ModelSerializer):
         """Provide additional business details including member count"""
         return {
             'member_count': obj.business_memberships.count(),
-            'date_founded': obj.date_founded,
-            'created_at': obj.created_at,
+            'date_founded': obj.date_founded.isoformat() if obj.date_founded else None,
+            'created_at': obj.created_at.isoformat() if obj.created_at else None,
             'database_name': obj.database_name
         }
 

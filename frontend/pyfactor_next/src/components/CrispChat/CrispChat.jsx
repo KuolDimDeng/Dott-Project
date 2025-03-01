@@ -1,11 +1,11 @@
-// src/components/CrispChat/CrispChat.jsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';
 import { getCurrentUser } from 'aws-amplify/auth';
+import CrispErrorBoundary from './CrispErrorBoundary';
 
-export default function CrispChat({ isAuthenticated }) {
+function CrispChat({ isAuthenticated }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -16,22 +16,46 @@ export default function CrispChat({ isAuthenticated }) {
     const initCrispWithUser = async () => {
       try {
         if (!isAuthenticated) {
+          logger.debug('User not authenticated, skipping Crisp user setup');
           return;
         }
+
         const user = await getCurrentUser();
-        if (user) {
-          window.$crisp.push(['set', 'user:email', user.attributes.email]);
-          window.$crisp.push(['set', 'user:nickname', [
-            user.attributes['custom:firstname'] || '',
-            user.attributes['custom:lastname'] || ''
-          ].filter(Boolean).join(' ')]);
-          
-          if (user.attributes['custom:business_name']) {
-            window.$crisp.push(['set', 'user:company', [
-              user.attributes['custom:business_name']
-            ]]);
+        if (!user?.attributes) {
+          logger.warn('User authenticated but attributes not available');
+          return;
+        }
+
+        const { attributes } = user;
+
+        // Set email if available
+        if (attributes.email) {
+          window.$crisp.push(['set', 'user:email', attributes.email]);
+          logger.debug('Set Crisp user email');
+        }
+
+        // Set nickname from first and last name
+        const firstName = attributes['custom:firstname'];
+        const lastName = attributes['custom:lastname'];
+        if (firstName || lastName) {
+          const nickname = [firstName, lastName].filter(Boolean).join(' ');
+          if (nickname) {
+            window.$crisp.push(['set', 'user:nickname', nickname]);
+            logger.debug('Set Crisp user nickname');
           }
         }
+
+        // Set company name if available
+        if (attributes['custom:business_name']) {
+          window.$crisp.push([
+            'set',
+            'user:company',
+            [attributes['custom:business_name']],
+          ]);
+          logger.debug('Set Crisp user company');
+        }
+
+        logger.debug('Crisp user data set successfully');
       } catch (error) {
         logger.error('Error setting Crisp user:', error);
       }
@@ -42,18 +66,26 @@ export default function CrispChat({ isAuthenticated }) {
         logger.debug('Initializing Crisp chat');
         setMounted(true);
 
-        // Wait for Crisp to be ready
-        if (!window.$crisp || !window.$crisp.push) {
-          logger.debug('Waiting for Crisp to be ready...');
-          await new Promise(resolve => setTimeout(resolve, 100));
-          return initializeCrisp();
+        // Wait for Crisp to be ready with timeout
+        let attempts = 0;
+        const maxAttempts = 10;
+        while (!window.$crisp?.push && attempts < maxAttempts) {
+          logger.debug(
+            `Waiting for Crisp to be ready (attempt ${attempts + 1}/${maxAttempts})...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          attempts++;
         }
 
-        window.$crisp.push(["safe", true]);
-        window.$crisp.push(["configure", "position:reverse"]);
-        window.$crisp.push(["configure", "hide:on:mobile", false]);
-        window.$crisp.push(["configure", "position:reverse", true]);
-        window.$crisp.push(["do", "chat:show"]);
+        if (!window.$crisp?.push) {
+          throw new Error('Crisp failed to initialize after maximum attempts');
+        }
+
+        window.$crisp.push(['safe', true]);
+        window.$crisp.push(['configure', 'position:reverse']);
+        window.$crisp.push(['configure', 'hide:on:mobile', false]);
+        window.$crisp.push(['configure', 'position:reverse', true]);
+        window.$crisp.push(['do', 'chat:show']);
 
         await initCrispWithUser();
 
@@ -72,10 +104,12 @@ export default function CrispChat({ isAuthenticated }) {
       }
       window.CRISP_WEBSITE_ID = CRISP_WEBSITE_ID;
 
-      const existingScript = document.querySelector('script[src="https://client.crisp.chat/l.js"]');
+      const existingScript = document.querySelector(
+        'script[src="https://client.crisp.chat/l.js"]'
+      );
       if (!existingScript) {
         const script = document.createElement('script');
-        script.src = "https://client.crisp.chat/l.js";
+        script.src = 'https://client.crisp.chat/l.js';
         script.async = true;
         script.onload = initializeCrisp;
         script.onerror = (error) => {
@@ -86,7 +120,7 @@ export default function CrispChat({ isAuthenticated }) {
       } else {
         logger.debug('Crisp script already exists');
         // Only initialize if Crisp is not already initialized
-        if (!window.$crisp || !window.$crisp.is) {
+        if (!window.$crisp?.is) {
           initializeCrisp();
         }
       }
@@ -96,10 +130,18 @@ export default function CrispChat({ isAuthenticated }) {
 
     return () => {
       if (window.$crisp) {
-        window.$crisp.push(["do", "chat:hide"]);
+        window.$crisp.push(['do', 'chat:hide']);
       }
     };
   }, [isAuthenticated]);
 
   return null;
+}
+
+export default function CrispChatWithErrorBoundary(props) {
+  return (
+    <CrispErrorBoundary>
+      <CrispChat {...props} />
+    </CrispErrorBoundary>
+  );
 }

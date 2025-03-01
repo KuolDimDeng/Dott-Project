@@ -36,10 +36,33 @@ def employee_list(request):
 @permission_classes([IsAuthenticated])
 def create_employee(request):
     logger.info(f"Received employee data: {request.data}")
-    serializer = EmployeeSerializer(data=request.data)
+    
+    # Get sensitive data before passing to serializer
+    security_number = request.data.pop('security_number', None)
+    bank_account_number = request.data.pop('bank_account_number', None)
+    routing_number = request.data.pop('routing_number', None)
+    
+    serializer = EmployeeSerializer(data=request.data, context={'request': request})
     if serializer.is_valid():
         try:
             employee = serializer.save()
+            
+            # Handle sensitive data with Stripe Connect
+            if security_number:
+                try:
+                    employee.save_ssn_to_stripe(security_number)
+                    logger.info(f"SSN stored in Stripe for employee: {employee.id}")
+                except Exception as e:
+                    logger.error(f"Error storing SSN in Stripe: {str(e)}")
+                    # Continue processing - we don't want to fail the entire creation
+            
+            if bank_account_number and routing_number:
+                try:
+                    employee.save_bank_account_to_stripe(bank_account_number, routing_number)
+                    logger.info(f"Bank account stored in Stripe for employee: {employee.id}")
+                except Exception as e:
+                    logger.error(f"Error storing bank account in Stripe: {str(e)}")
+            
             logger.info(f"Employee created successfully: {employee}")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as e:
@@ -58,13 +81,35 @@ def employee_detail(request, pk):
         return Response(serializer.data)
 
     elif request.method == 'PUT':
+        # Get sensitive data before passing to serializer
+        security_number = request.data.pop('security_number', None)
+        bank_account_number = request.data.pop('bank_account_number', None)
+        routing_number = request.data.pop('routing_number', None)
+        
         serializer = EmployeeSerializer(employee, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
+            updated_employee = serializer.save()
+            
+            # Update sensitive data in Stripe if provided
+            if security_number:
+                try:
+                    updated_employee.save_ssn_to_stripe(security_number)
+                    logger.info(f"SSN updated in Stripe for employee: {updated_employee.id}")
+                except Exception as e:
+                    logger.error(f"Error updating SSN in Stripe: {str(e)}")
+            
+            if bank_account_number and routing_number:
+                try:
+                    updated_employee.save_bank_account_to_stripe(bank_account_number, routing_number)
+                    logger.info(f"Bank account updated in Stripe for employee: {updated_employee.id}")
+                except Exception as e:
+                    logger.error(f"Error updating bank account in Stripe: {str(e)}")
+            
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == 'DELETE':
+        # You might want to add code to delete the Stripe person record as well
         employee.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -72,9 +117,31 @@ def employee_detail(request, pk):
 @permission_classes([IsAuthenticated])
 def update_employee(request, pk):
     employee = get_object_or_404(Employee, pk=pk)
+    
+    # Get sensitive data before passing to serializer
+    security_number = request.data.pop('security_number', None)
+    bank_account_number = request.data.pop('bank_account_number', None)
+    routing_number = request.data.pop('routing_number', None)
+    
     serializer = EmployeeSerializer(employee, data=request.data, partial=True)
     if serializer.is_valid():
-        serializer.save()
+        updated_employee = serializer.save()
+        
+        # Update sensitive data in Stripe if provided
+        if security_number:
+            try:
+                updated_employee.save_ssn_to_stripe(security_number)
+                logger.info(f"SSN updated in Stripe for employee: {updated_employee.id}")
+            except Exception as e:
+                logger.error(f"Error updating SSN in Stripe: {str(e)}")
+        
+        if bank_account_number and routing_number:
+            try:
+                updated_employee.save_bank_account_to_stripe(bank_account_number, routing_number)
+                logger.info(f"Bank account updated in Stripe for employee: {updated_employee.id}")
+            except Exception as e:
+                logger.error(f"Error updating bank account in Stripe: {str(e)}")
+        
         logger.info(f"Employee updated successfully. Employee ID: {employee.id}")
         return Response(serializer.data)
     logger.error(f"Employee update failed. Errors: {serializer.errors}")
@@ -84,6 +151,19 @@ def update_employee(request, pk):
 @permission_classes([IsAuthenticated])
 def delete_employee(request, pk):
     employee = get_object_or_404(Employee, pk=pk)
+    
+    # Optionally delete the Stripe person record if it exists
+    if employee.stripe_person_id and employee.stripe_account_id:
+        try:
+            import stripe
+            stripe.Account.delete_person(
+                employee.stripe_account_id,
+                employee.stripe_person_id
+            )
+            logger.info(f"Deleted Stripe person record for employee: {pk}")
+        except Exception as e:
+            logger.error(f"Error deleting Stripe person record: {str(e)}")
+    
     employee.delete()
     logger.info(f"Employee deleted successfully. Employee ID: {pk}")
     return Response(status=status.HTTP_204_NO_CONTENT)

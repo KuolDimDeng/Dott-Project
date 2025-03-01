@@ -12,6 +12,13 @@ def start_celery():
     Starts Celery worker with optimized settings for database operations.
     The settings are tuned for reliability and resource management.
     """
+    # Get the absolute path to the project directory
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Set up environment variables
+    env = os.environ.copy()
+    env['PYTHONPATH'] = project_dir
+    
     celery_command = [
         'celery',
         '-A', 'pyfactor',
@@ -23,7 +30,13 @@ def start_celery():
         '--task-events',                # Enable task event monitoring
         '-Q', 'default,setup,onboarding'  # Specify queues for different task types
     ]
-    return subprocess.Popen(celery_command)
+    
+    # Start Celery in the project directory
+    return subprocess.Popen(
+        celery_command,
+        env=env,
+        cwd=project_dir
+    )
 
 def run_uvicorn():
     """

@@ -28,14 +28,15 @@ class Business(models.Model):
     business_num = models.CharField(max_length=6, unique=True, editable=False)
     business_name = models.CharField(max_length=200)
     business_type = models.CharField(max_length=50, choices=BUSINESS_TYPES)
-    street = models.CharField(max_length=200, blank=True)
-    city = models.CharField(max_length=200, blank=True)
-    state = models.CharField(max_length=200, blank=True)
-    postcode = models.CharField(max_length=20, blank=True)
+    business_subtype_selections = models.JSONField(default=dict, blank=True)
+    street = models.CharField(max_length=200, blank=True, null=True)
+    city = models.CharField(max_length=200, blank=True, null=True)
+    state = models.CharField(max_length=200, blank=True, null=True)
+    postcode = models.CharField(max_length=20, blank=True, null=True)
     country = CountryField(default='US')
     address = models.TextField(null=True, blank=True)  # Make optional if not required immediately
     email = models.EmailField(null=True, blank=True)  # Make optional if not required immediately
-    phone_number = models.CharField(max_length=20, blank=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)  # Make optional if not required immediately
     database_name = models.CharField(max_length=255, unique=True, null=True, blank=True)  # Allow null initially
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)

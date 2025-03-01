@@ -4,8 +4,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 from phonenumber_field.modelfields import PhoneNumberField
-from .custom_fields import EncryptedCharField
-from decimal import Decimal  # Add this import
+from decimal import Decimal
 from django.conf import settings
 
 
@@ -109,10 +108,36 @@ class Employee(models.Model):
     supervisor = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='subordinates')
     onboarded = models.BooleanField(default=False)
 
+    # Replace direct storage with Stripe references
     security_number_type = models.CharField(max_length=10, choices=SECURITY_NUMBER_TYPE_CHOICES, default='SSN')
-    security_number = EncryptedCharField(max_length=255, default=None)
-    bank_account_number = EncryptedCharField(max_length=255, blank=True, null=True)
-    tax_id_number = EncryptedCharField(max_length=255, blank=True, null=True)
+    
+    # Stripe Connect fields for sensitive data
+    stripe_person_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_account_id = models.CharField(max_length=255, blank=True, null=True)
+    
+    # Flags for tracking what data is stored in Stripe
+    ssn_stored_in_stripe = models.BooleanField(default=False)
+    bank_account_stored_in_stripe = models.BooleanField(default=False)
+    tax_id_stored_in_stripe = models.BooleanField(default=False)
+
+    # Add payment-related fields
+    payment_provider = models.CharField(max_length=50, blank=True, null=True)
+
+    # M-Pesa specific fields
+    mpesa_phone_number = models.CharField(max_length=20, blank=True, null=True)
+    # PayPal specific fields
+    paypal_email = models.EmailField(blank=True, null=True)
+    # Bank account fields (for providers that need them)
+    bank_account_last_four = models.CharField(max_length=4, blank=True, null=True)
+    bank_name = models.CharField(max_length=100, blank=True, null=True)
+    # Mobile money fields
+    mobile_wallet_provider = models.CharField(max_length=50, blank=True, null=True)
+    mobile_wallet_id = models.CharField(max_length=100, blank=True, null=True)
+        
+    # Only store last 4 digits for reference/display
+    ssn_last_four = models.CharField(max_length=4, blank=True, null=True)
+    bank_account_last_four = models.CharField(max_length=4, blank=True, null=True)
+    
     tax_filing_status = models.CharField(max_length=1, choices=TAX_STATUS_CHOICES, blank=True, null=True)
     job_title = models.CharField(max_length=100, blank=True, null=True)
     probation = models.BooleanField(default=True)
@@ -146,14 +171,103 @@ class Employee(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.employee_number})"
+        
+    def save_ssn_to_stripe(self, ssn):
+        """Save SSN to Stripe instead of storing it directly"""
+        import stripe
+        
+        if not self.stripe_account_id:
+            # Create or get a Stripe account for this employee's business
+            business_account = self.business.get_or_create_stripe_account()
+            self.stripe_account_id = business_account.id
+            
+        # Create or update a Person object in Stripe
+        if not self.stripe_person_id:
+            # Create new Person
+            person = stripe.Account.create_person(
+                self.stripe_account_id,
+                {
+                    "first_name": self.first_name,
+                    "last_name": self.last_name,
+                    "id_number": ssn,  # Full SSN securely stored in Stripe
+                    "relationship": {
+                        "representative": True,
+                    },
+                }
+            )
+            self.stripe_person_id = person.id
+        else:
+            # Update existing Person
+            stripe.Account.modify_person(
+                self.stripe_account_id,
+                self.stripe_person_id,
+                {
+                    "id_number": ssn,
+                }
+            )
+        
+        # Store only last 4 digits locally
+        self.ssn_last_four = ssn[-4:] if ssn else None
+        self.ssn_stored_in_stripe = True
+        self.save()
+        
+        return True
+        
+    def save_bank_account_to_stripe(self, account_number, routing_number):
+        """Save bank account details to Stripe"""
+        import stripe
+        
+        if not self.stripe_account_id:
+            business_account = self.business.get_or_create_stripe_account()
+            self.stripe_account_id = business_account.id
+            
+        # Create external account (bank account)
+        bank_account = stripe.Account.create_external_account(
+            self.stripe_account_id,
+            {
+                "external_account": {
+                    "object": "bank_account",
+                    "country": "US",
+                    "currency": "usd",
+                    "routing_number": routing_number,
+                    "account_number": account_number,
+                }
+            }
+        )
+        
+        # Store only last 4 digits locally
+        self.bank_account_last_four = account_number[-4:] if account_number else None
+        self.bank_account_stored_in_stripe = True
+        self.save()
+        
+        return True
+
+    # Payment provider preferences
+    def get_payment_provider(self):
+        """Get the appropriate payment provider for this employee"""
+        if self.payment_provider:
+            # Use explicitly set provider
+            from payments.providers import PaymentProviderRegistry
+            return PaymentProviderRegistry.get_provider_by_name(self.payment_provider)
+        else:
+            # Determine provider based on country
+            country_code = self.country or 'US'
+            from payments.providers import PaymentProviderRegistry
+            return PaymentProviderRegistry.get_provider_for_country(country_code)
 
 class Role(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
+    
+    def __str__(self):
+        return self.name
 
 class EmployeeRole(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    
+    def __str__(self):
+        return f"{self.employee} - {self.role}"
 
 class AccessPermission(models.Model):
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
@@ -162,6 +276,10 @@ class AccessPermission(models.Model):
     can_edit = models.BooleanField(default=False)
     can_delete = models.BooleanField(default=False)
     
+    def __str__(self):
+        return f"{self.role} - {self.module} permissions"
+
+
 class PreboardingForm(models.Model):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=100)

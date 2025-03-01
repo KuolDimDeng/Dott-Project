@@ -1,191 +1,466 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from 'aws-amplify/auth';
-import { configureAmplify } from '@/config/amplify';
+import { jwtVerify, decodeJwt } from 'jose';
 import { logger } from '@/utils/logger';
+import { validateBusinessInfo, updateOnboardingStep } from '@/utils/onboardingUtils';
+
+async function verifyToken(accessToken) {
+  try {
+    // For server-side validation, we'll decode and verify basic JWT structure
+    const decoded = decodeJwt(accessToken);
+    
+    // Log token details for debugging
+    logger.debug('[BusinessInfo] Token details:', {
+      iss: decoded.iss,
+      exp: decoded.exp,
+      sub: decoded.sub,
+      username: decoded['cognito:username']
+    });
+
+    // Verify token hasn't expired
+    const now = Math.floor(Date.now() / 1000);
+    if (decoded.exp && decoded.exp < now) {
+      throw new Error('Token expired');
+    }
+
+    // Extract user pool ID from issuer URL
+    // Format: https://cognito-idp.{region}.amazonaws.com/{userPoolId}
+    const issuerUrl = decoded.iss;
+    const userPoolId = issuerUrl.split('/').pop();
+    const region = userPoolId?.split('_')[0];
+
+    logger.debug('[BusinessInfo] Token validation:', {
+      issuerUrl,
+      userPoolId,
+      region
+    });
+
+    if (!userPoolId || !region) {
+      throw new Error('Invalid token format - missing user pool information');
+    }
+
+    return {
+      ...decoded,
+      userPoolId,
+      region
+    };
+  } catch (err) {
+    logger.error('[BusinessInfo] Token verification failed:', err);
+    throw new Error('Invalid token');
+  }
+}
+
+async function updateCognitoAttributes(accessToken, attributes) {
+  try {
+    const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-amz-json-1.1',
+        'X-Amz-Target': 'AWSCognitoIdentityProviderService.UpdateUserAttributes',
+        'Authorization': accessToken
+      },
+      body: JSON.stringify({
+        AccessToken: accessToken,
+        UserAttributes: Object.entries(attributes).map(([key, value]) => ({
+          Name: key.startsWith('custom:') ? key : `custom:${key}`,
+          Value: value.toString()
+        }))
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      logger.error('[BusinessInfo] Cognito API error:', error);
+      throw new Error(error.message || 'Failed to update attributes');
+    }
+
+    const result = await response.json();
+    return { isUpdated: true, result };
+  } catch (error) {
+    logger.error('[BusinessInfo] Update attributes error:', error);
+    throw error;
+  }
+}
+
+function formatResponse(success, data, tenantId, statusCode = 200) {
+  if (success) {
+    return NextResponse.json({
+      success: true,
+      businessId: data.business_id || data.businessId,
+      nextStep: data.next_step || 'SUBSCRIPTION',
+      nextRoute: data.next_route || '/onboarding/subscription',
+      onboardingStatus: data.onboarding_status || 'BUSINESS_INFO',
+      currentStep: data.current_step || 'BUSINESS_INFO',
+      tenant: {
+        id: tenantId,
+        schema_name: data.tenant_schema || `tenant_${tenantId.replace(/-/g, '_')}`,
+        status: data.tenant_status || 'active'
+      }
+    }, { status: statusCode });
+  } else {
+    return NextResponse.json({
+      success: false,
+      error: data.message || data.error || 'Operation failed',
+      code: data.code || 'unknown_error',
+      details: data.details,
+      validation_errors: data.validation_errors,
+      tenant_error: data.tenant_error,
+      tenant_id: tenantId
+    }, { status: statusCode });
+  }
+}
 
 export async function POST(request) {
   try {
-    // Ensure Amplify is configured
-    configureAmplify();
-
-    // Get current user
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    // Get the request body
-    const businessData = await request.json();
-
-    // Create/update business record through backend API
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/businesses`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
-          'X-Request-ID': crypto.randomUUID(),
-        },
-        body: JSON.stringify({
-          ...businessData,
-          user_id: user.userId,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Backend request failed: ${response.status}`);
-    }
-
-    const business = await response.json();
-
-    // Update user attributes with business info
-    const { updateUserAttributes, getBusinessAttributes } = await import(
-      '@/utils/userAttributes'
-    );
-    const businessAttributes = getBusinessAttributes(business.id);
-
-    await updateUserAttributes(businessAttributes);
-
-    // Update onboarding status
-    const statusResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
-          'X-Request-ID': crypto.randomUUID(),
-        },
-        body: JSON.stringify({
-          status: 'SUBSCRIPTION',
-          lastStep: 'BUSINESS_INFO',
-        }),
-      }
-    );
-
-    if (!statusResponse.ok) {
-      throw new Error(
-        `Failed to update onboarding status: ${statusResponse.status}`
+    // Get tokens from request headers
+    const accessToken = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const idToken = request.headers.get('X-Id-Token');
+    
+    if (!accessToken || !idToken) {
+      logger.error('[BusinessInfo] No auth tokens in request headers');
+      return NextResponse.json(
+        { error: 'No valid session' },
+        { status: 401 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      business,
-      message: 'Business information saved successfully',
-    });
-  } catch (error) {
-    logger.error('Error saving business info:', {
-      error: error.message,
-      stack: error.stack,
-    });
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Failed to save business information',
-      },
-      { status: 500 }
-    );
-  }
-}
+    // Store tokens for later use
+    const tokens = {
+      accessToken,
+      idToken
+    };
 
-export async function GET() {
-  try {
-    // Ensure Amplify is configured
-    configureAmplify();
-
-    // Get current user
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    // Verify JWT token and get user info
+    let payload;
+    try {
+      payload = await verifyToken(accessToken);
+    } catch (err) {
+      return NextResponse.json(
+        { error: err.message },
+        { status: 401 }
+      );
     }
 
-    // Get business data through backend API
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/businesses/current`,
-      {
-        headers: {
-          Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
-          'X-Request-ID': crypto.randomUUID(),
-        },
+    // Extract user info from verified token
+    const user = {
+      userId: payload.sub,
+      username: payload['cognito:username'],
+      attributes: payload
+    };
+
+    // Parse and validate request body
+    const data = await request.json();
+
+    // Validate business info first
+    let formattedAttributes;
+    try {
+      formattedAttributes = await validateBusinessInfo(data);
+    } catch (error) {
+      return NextResponse.json({
+        error: 'Validation Failed',
+        code: 'business_info_validation_error',
+        details: error.message,
+        fields: error.fields || []
+      }, { status: 400 });
+    }
+
+    // Validate or generate business ID after validation succeeds
+    const currentBusinessId = user.attributes?.['custom:businessid'];
+    
+    if (data.businessId) {
+      // Verify existing business ID matches user's Cognito attribute
+      if (currentBusinessId && currentBusinessId !== data.businessId) {
+        throw new Error('Business ID mismatch - you can only modify your own business information');
       }
-    );
-
-    if (!response.ok && response.status !== 404) {
-      throw new Error(`Backend request failed: ${response.status}`);
+    } else {
+      // Generate new ID only if no existing ID found
+      data.businessId = currentBusinessId || crypto.randomUUID();
     }
 
-    const business = response.status === 404 ? null : await response.json();
+    // Add onboarding step and timestamp
+    const attributes = {
+      businessid: data.businessId,
+      businessname: formattedAttributes['custom:businessname'],
+      businesstype: formattedAttributes['custom:businesstype'],
+      businesscountry: formattedAttributes['custom:businesscountry'],
+      legalstructure: formattedAttributes['custom:legalstructure'],
+      datefounded: formattedAttributes['custom:datefounded'],
+      onboarding: 'BUSINESS_INFO',
+      updated_at: new Date().toISOString(),
+      acctstatus: 'PENDING',
+      attrversion: '1.0.0',
+      'custom:onboarding': 'BUSINESS_INFO'
+    };
 
-    return NextResponse.json({
-      success: true,
-      business,
+    logger.debug('[BusinessInfo] Updating attributes:', {
+      businessId: data.businessId,
+      attributes: Object.keys(attributes)
     });
-  } catch (error) {
-    logger.error('Error fetching business info:', {
-      error: error.message,
-      stack: error.stack,
+
+    // Forward request to Django SaveStep1View
+    const backendUrl = process.env.BACKEND_API_URL || 'http://127.0.0.1:8000';
+    
+    // Use business ID as tenant ID
+    const tenantId = data.businessId;
+    logger.debug('[BusinessInfo] Using business ID as tenant ID:', {
+      tenantId,
+      userId: user.userId
     });
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Failed to fetch business information',
-      },
-      { status: 500 }
-    );
-  }
-}
 
-export async function PUT(request) {
-  try {
-    // Ensure Amplify is configured
-    configureAmplify();
-
-    // Get current user
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    // Get the request body
-    const updates = await request.json();
-
-    // Update business record through backend API
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/businesses/current`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
-          'X-Request-ID': crypto.randomUUID(),
-        },
-        body: JSON.stringify(updates),
+    // First check if tenant exists
+    const tenantResponse = await fetch(`${backendUrl}/api/tenant/${user.userId}/`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'X-Id-Token': idToken
       }
-    );
+    });
+
+    let existingTenantId;
+    if (tenantResponse.ok) {
+      const tenantInfo = await tenantResponse.json();
+      existingTenantId = tenantInfo.tenant_id;
+      logger.debug('[BusinessInfo] Found existing tenant:', {
+        tenantId: existingTenantId,
+        userId: user.userId
+      });
+    }
+
+    // Use existing tenant ID if available
+    const finalTenantId = existingTenantId || tenantId;
+
+    // Save business info with schema details
+    const response = await fetch(`${backendUrl}/api/onboarding/save-business-info/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'X-Id-Token': idToken,
+        'X-Tenant-ID': tenantId,
+        'X-Schema-Name': `tenant_${tenantId.replace(/-/g, '_')}`
+      },
+      body: JSON.stringify({
+        business_name: data.businessName,
+        business_type: data.businessType,
+        country: data.country,
+        legal_structure: data.legalStructure,
+        date_founded: data.dateFounded,
+        tenant_id: tenantId,
+        owner_id: user.userId,
+        email: user.attributes?.email,
+        setup_status: 'PENDING',
+        onboarding_step: 'BUSINESS_INFO',
+        schema_name: `tenant_${tenantId.replace(/-/g, '_')}`,
+        user_id: user.userId,
+        user_email: user.attributes?.email,
+        user_role: user.attributes?.['custom:userrole'] || 'OWNER',
+        existing_tenant_check: true
+      })
+    });
 
     if (!response.ok) {
-      throw new Error(`Backend request failed: ${response.status}`);
+      let errorMessage = 'Failed to save business information';
+      let errorDetails = {};
+      let statusCode = response.status;
+      
+      try {
+        const error = await response.json();
+        logger.error('[BusinessInfo] Backend API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error,
+          tenantId,
+          userId: user.userId
+        });
+        
+        if (error && typeof error === 'object') {
+          // Log error details
+          const errorText = error.message || error.error || errorMessage;
+          logger.error('[BusinessInfo] Error details:', {
+            error: errorText,
+            status: response.status,
+            statusText: response.statusText,
+            tenantId,
+            userId: user.userId,
+            requestData: {
+              schema_name: `tenant_${tenantId.replace(/-/g, '_')}`,
+              business_name: data.businessName,
+              setup_status: 'PENDING'
+            }
+          });
+
+          if (errorText.includes('duplicate key value') ||
+              errorText.includes('violates unique constraint') ||
+              errorText.includes('owner_id_key')) {
+            // Handle existing tenant case
+            statusCode = 409;
+            errorMessage = 'A business profile already exists for this user';
+            errorDetails = {
+              code: 'duplicate_business',
+              tenant_error: true,
+              suggestion: 'Please use your existing business profile or contact support if you need to create a new one',
+              owner_id: user.userId,
+              schema_name: `tenant_${tenantId.replace(/-/g, '_')}`
+            };
+          } else if (errorText.includes("'NoneType' object is not subscriptable")) {
+            // Handle schema/tenant setup error
+            statusCode = 500;
+            errorMessage = 'Error setting up business environment';
+            errorDetails = {
+              code: 'setup_error',
+              tenant_error: true,
+              suggestion: 'Please try again or contact support if the issue persists',
+              context: {
+                tenant_id: tenantId,
+                schema_name: `tenant_${tenantId.replace(/-/g, '_')}`,
+                setup_status: 'PENDING'
+              }
+            };
+          } else {
+            // Handle unexpected errors
+            statusCode = 500;
+            errorMessage = 'Unexpected error while saving business information';
+            errorDetails = {
+              code: 'unknown_error',
+              tenant_error: true,
+              suggestion: 'Please try again or contact support',
+              error_details: errorText
+            };
+          }
+
+          // Log full error context
+          logger.error('[BusinessInfo] Error response:', {
+            statusCode,
+            errorMessage,
+            errorDetails,
+            originalError: error
+          });
+        }
+      } catch (parseError) {
+        logger.error('[BusinessInfo] Error parsing error response:', {
+          parseError: parseError.message,
+          status: response.status,
+          statusText: response.statusText,
+          tenantId,
+          userId: user.userId
+        });
+      }
+
+      // Return error response using formatResponse helper
+      return formatResponse(false, {
+        message: errorMessage,
+        ...errorDetails
+      }, tenantId, statusCode);
     }
 
-    const business = await response.json();
+    let result;
+    try {
+      result = await response.json();
+      logger.debug('[BusinessInfo] Backend API response:', result);
 
-    return NextResponse.json({
-      success: true,
-      business,
-      message: 'Business information updated successfully',
-    });
+      // Ensure we have a valid response object
+      if (!result || typeof result !== 'object') {
+        throw new Error('Invalid response format from backend');
+      }
+
+      // Update onboarding status in Cognito using current tokens
+      await updateOnboardingStep('BUSINESS_INFO', attributes, {
+        accessToken: tokens.accessToken.toString(),
+        idToken: tokens.idToken.toString()
+      });
+
+      // Return response using formatResponse helper
+      return formatResponse(true, result, tenantId, 200);
+    } catch (parseError) {
+      logger.error('[BusinessInfo] Error parsing success response:', parseError);
+      throw new Error('Failed to parse backend response');
+    }
+
   } catch (error) {
-    logger.error('Error updating business info:', {
+    logger.error('[BusinessInfo] Error processing request:', {
       error: error.message,
-      stack: error.stack,
+      code: error.code,
+      stack: error.stack
     });
+
+    const errorResponse = {
+      message: 'Update Failed',
+      code: error.code || 'business_info_update_error',
+      details: error.message,
+      tenant_error: error.message?.includes('tenant') || error.message?.includes('duplicate key'),
+      suggestion: 'Please try again or contact support if the issue persists'
+    };
+
+    if (process.env.NODE_ENV === 'development') {
+      errorResponse.stack = error.stack;
+    }
+    
+    // Get businessId from request body if possible
+    let businessId;
+    try {
+      const body = await request.json();
+      businessId = body.businessId;
+    } catch (e) {
+      // If we can't parse the body, use undefined
+      businessId = undefined;
+    }
+
+    // Return error response using formatResponse helper
+    return formatResponse(false, errorResponse, businessId, 500);
+  }
+}
+
+export async function GET(request) {
+  try {
+    // Get tokens from request headers
+    const accessToken = request.headers.get('Authorization')?.replace('Bearer ', '');
+    
+    if (!accessToken) {
+      logger.error('[BusinessInfo] No auth token in request headers');
+      return NextResponse.json(
+        { error: 'No valid session' },
+        { status: 401 }
+      );
+    }
+
+    // Verify JWT token and get user info
+    let payload;
+    try {
+      payload = await verifyToken(accessToken);
+    } catch (err) {
+      return NextResponse.json(
+        { error: err.message },
+        { status: 401 }
+      );
+    }
+
+    const attributes = payload || {};
+
+    // Return business info if it exists
+    if (attributes['custom:businessid']) {
+      return NextResponse.json({
+        businessName: attributes['custom:businessname'],
+        businessType: attributes['custom:businesstype'],
+        businessId: attributes['custom:businessid'],
+        country: attributes['custom:businesscountry'],
+        legalStructure: attributes['custom:legalstructure'],
+        dateFounded: attributes['custom:datefounded']
+      });
+    }
+
+    // Return empty response if no business info exists
+    return NextResponse.json({});
+
+  } catch (error) {
+    logger.error('[BusinessInfo] Error fetching business info:', {
+      error: error.message,
+      code: error.code,
+      stack: error.stack
+    });
+    
     return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Failed to update business information',
+      { 
+        error: 'Failed to fetch business information',
+        details: error.message
       },
       { status: 500 }
     );

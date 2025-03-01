@@ -19,7 +19,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { useApi } from '@/lib/axiosConfig';
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 import UnpaidInvoicesList from '../../dashboard/components/lists/UnpaidInvoicesList'; // Adjust the import path as needed
@@ -145,7 +145,7 @@ const AddIncomeForm = ({ onClose }) => {
     }
 
     try {
-      const response = await useApi.post('http://localhost:8000/api/incomes/', formData, {
+      const response = await axiosInstance.post('http://localhost:8000/api/incomes/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

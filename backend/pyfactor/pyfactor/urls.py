@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, register_converter
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.decorators.csrf import csrf_exempt
@@ -7,6 +7,18 @@ from chatbot.views import staff_interface, respond_to_message
 from django.utils.decorators import method_decorator
 from onboarding.views import DatabaseHealthCheckView
 from .views import message_stream  # Import the message_stream view correctly
+from custom_auth.api.views.tenant_views import TenantDetailView
+
+class UUIDConverter:
+    regex = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+
+    def to_python(self, value):
+        return value
+
+    def to_url(self, value):
+        return str(value)
+
+register_converter(UUIDConverter, 'uuid')
 
 # Use method_decorator to handle CSRF exemption properly with async views
 async_csrf_exempt = method_decorator(csrf_exempt, name='dispatch')
@@ -16,6 +28,7 @@ api_patterns = [
     # Financial endpoints with proper async handling
     path('finance/', include(('finance.urls', 'finance'), namespace='finance')),
     path('banking/', include(('banking.urls', 'banking'), namespace='banking')),
+    path('payments/', include(('payments.urls', 'payments'), namespace='payments')),
     path('financial-statements/', include(('finance.urls', 'statements'), namespace='statements')),
     
     # Business operations with proper async handling
@@ -37,6 +50,9 @@ api_patterns = [
     
     # Message stream endpoint - now properly imported
     path('messages/', csrf_exempt(message_stream), name='message_stream'),
+    
+    # Tenant endpoint
+    path('tenant/<uuid:tenant_id>/', csrf_exempt(TenantDetailView.as_view()), name='tenant-detail'),
     
     # Authentication and onboarding
     path('', include('custom_auth.urls')),  # Changed from 'api/' to ''

@@ -14,7 +14,7 @@ import {
   Legend
 } from 'chart.js';
 
-import { useApi } from '@/lib/axiosConfig';
+import { axiosInstance } from '@/lib/axiosConfig';
 
 ChartJS.register(
   CategoryScale,

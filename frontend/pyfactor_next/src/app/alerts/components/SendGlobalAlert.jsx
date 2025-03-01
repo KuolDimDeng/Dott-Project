@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, TextField, Button, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
-import { useApi } from '@/lib/axiosConfig';
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const SendGlobalAlert = () => {
   const [subject, setSubject] = useState('');

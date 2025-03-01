@@ -16,9 +16,9 @@ from django.core.cache import cache
 logger = get_logger()
 
 
-class DatabaseSetupState:
+class SchemaSetupState:
     """
-    Manages persistent state tracking for database setup operations.
+    Manages persistent state tracking for schema setup operations.
     
     This class provides a way to maintain setup progress across task restarts
     or failures, ensuring we can recover and track the setup process reliably.
@@ -34,7 +34,7 @@ class DatabaseSetupState:
         The state includes:
         - current_phase: The setup phase being executed
         - progress: Numerical progress percentage
-        - database_name: Name of database being created
+        - schema_name: Name of schema being created
         - last_updated: Timestamp of last update
         """
         state['last_updated'] = timezone.now().isoformat()
@@ -55,8 +55,8 @@ class DatabaseSetupState:
         await cache.delete(self.cache_key)
         logger.debug(f"Cleared setup state for user {self.user_id}")
 
-def get_database_settings(database_name: str) -> dict:
-    """Creates a comprehensive database configuration."""
+def get_schema_settings(schema_name: str) -> dict:
+    """Creates a comprehensive schema configuration."""
     # Start with a safe copy of essential settings
     base_settings = {
         'ENGINE': settings.DATABASES['default'].get('ENGINE', 'django.db.backends.postgresql'),
@@ -64,7 +64,8 @@ def get_database_settings(database_name: str) -> dict:
         'PASSWORD': settings.DATABASES['default'].get('PASSWORD', ''),
         'HOST': settings.DATABASES['default'].get('HOST', 'localhost'),
         'PORT': settings.DATABASES['default'].get('PORT', '5432'),
-        'NAME': database_name,
+        'NAME': settings.DATABASES['default'].get('NAME', ''),
+        'SCHEMA': schema_name,
         
         # Django-specific settings with safe defaults
         'ATOMIC_REQUESTS': True,
@@ -78,40 +79,36 @@ def get_database_settings(database_name: str) -> dict:
     base_settings['OPTIONS'] = {
         'connect_timeout': 10,
         'client_encoding': 'UTF8',
-        'application_name': f'pyfactor_{database_name}',
+        'application_name': f'pyfactor_{schema_name}',
         'keepalives': 1,
         'keepalives_idle': 30,
         'keepalives_interval': 10,
         'keepalives_count': 5,
+        'options': f'-c search_path={schema_name},public'
     }
     
     return base_settings
     
-def setup_database_parameters(database_name: str, conn) -> None:
+def setup_schema_parameters(schema_name: str, conn) -> None:
     """
-    Configures PostgreSQL runtime parameters for a newly created database. These settings
-    cannot be included in the connection string but are essential for proper operation.
+    Configures PostgreSQL runtime parameters for a newly created schema. These settings
+    ensure proper schema operation and isolation.
     """
     try:
         with conn.cursor() as cursor:
-            # Acquire advisory lock
-            cursor.execute("SELECT pg_advisory_lock(%s::regclass::oid)", [database_name])
-            try:
-                # Execute setup statements
-                statements = [
-                    f"ALTER DATABASE {database_name} SET maintenance_work_mem = '64MB'",
-                    f"ALTER DATABASE {database_name} SET work_mem = '4MB'",
-                    # Add statement timeout to prevent hanging operations
-                    f"ALTER DATABASE {database_name} SET statement_timeout = '30s'",
-                    f"ALTER DATABASE {database_name} SET idle_in_transaction_session_timeout = '60s'"
-                ]
+            # Set search path for the schema
+            cursor.execute(f'SET search_path TO "{schema_name}"')
             
-                for statement in statements:
-                    cursor.execute(statement)
-            finally:
-                    cursor.execute("SELECT pg_advisory_unlock(%s::regclass::oid)", [database_name])
+            # Grant necessary privileges
+            cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {settings.DATABASES["default"]["USER"]}')
+            cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {settings.DATABASES["default"]["USER"]}')
+            cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {settings.DATABASES["default"]["USER"]}')
+            
+            # Set schema-specific parameters
+            cursor.execute(f'ALTER ROLE {settings.DATABASES["default"]["USER"]} SET search_path TO "{schema_name}"')
+            
     except Exception as e:
-        logger.error(f"Database parameter setup failed: {str(e)}")
+        logger.error(f"Schema parameter setup failed: {str(e)}")
         raise
 
 @contextmanager
@@ -136,23 +133,23 @@ def timeout(seconds: int):
         signal.signal(signal.SIGALRM, previous_handler)
 
 @contextmanager
-def get_db_connection(database_name: Optional[str] = None, 
+def get_db_connection(schema_name: Optional[str] = None,
                      autocommit: Optional[bool] = None) -> psycopg2.extensions.connection:
     """
-    Manages database connections with comprehensive error handling and automatic cleanup.
-    Ensures connections are properly closed even if errors occur during operations.
+    Manages database connections with schema support and comprehensive error handling.
+    Ensures connections are properly configured for schema access and cleanup.
     """
     conn = None
     try:
         # Build connection parameters with proper defaults
         conn_params = {
-            'dbname': database_name or settings.DATABASES['default']['NAME'],
+            'dbname': settings.DATABASES['default']['NAME'],
             'user': settings.DATABASES['default']['USER'],
             'password': settings.DATABASES['default']['PASSWORD'],
             'host': settings.DATABASES['default']['HOST'],
             'port': settings.DATABASES['default']['PORT'],
             'connect_timeout': 10,
-            'application_name': f'pyfactor_connection_{database_name or "default"}'
+            'application_name': f'pyfactor_connection_{schema_name or "default"}'
         }
         
         conn = psycopg2.connect(**conn_params)
@@ -165,6 +162,8 @@ def get_db_connection(database_name: Optional[str] = None,
         with conn.cursor() as cursor:
             cursor.execute("SET statement_timeout = '30s'")
             cursor.execute("SET lock_timeout = '5s'")
+            if schema_name:
+                cursor.execute(f'SET search_path TO "{schema_name}"')
         
         yield conn
         
@@ -179,16 +178,27 @@ def get_db_connection(database_name: Optional[str] = None,
             except Exception as e:
                 logger.error(f"Error closing connection: {str(e)}", exc_info=True)
 
-def check_database_health(database_name: str) -> Tuple[bool, str]:
+def check_schema_health(schema_name: str) -> Tuple[bool, str]:
     """
-    Performs a comprehensive health check on the specified database, testing multiple
-    aspects of database functionality to ensure it's properly set up and accessible.
+    Performs a comprehensive health check on the specified schema, testing multiple
+    aspects of schema functionality to ensure it's properly set up and accessible.
     
     Returns a tuple of (is_healthy, message) where message explains any failures.
     """
     try:
-        with transaction.atomic(using=database_name):
-            with connections[database_name].cursor() as cursor:
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                # Set schema context
+                cursor.execute(f'SET search_path TO "{schema_name}"')
+                
+                # Test schema existence
+                cursor.execute("""
+                    SELECT 1 FROM information_schema.schemata
+                    WHERE schema_name = %s
+                """, [schema_name])
+                if not cursor.fetchone():
+                    return False, "Schema does not exist"
+                
                 # Test basic connectivity
                 cursor.execute('SELECT 1')
                 if not cursor.fetchone():

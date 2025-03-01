@@ -18,11 +18,11 @@ class ServiceUnavailableError(OnboardingError):
         super().__init__(message, code='service_unavailable')
         self.service = service
 
-class DatabaseError(OnboardingError):
-    """Raised when database operations fail"""
-    def __init__(self, message, database_name=None):
-        super().__init__(message, code='database_error')
-        self.database_name = database_name
+class SchemaError(OnboardingError):
+    """Raised when schema operations fail"""
+    def __init__(self, message, schema_name=None):
+        super().__init__(message, code='schema_error')
+        self.schema_name = schema_name
 
 class SetupError(OnboardingError):
     """Raised when setup operations fail"""

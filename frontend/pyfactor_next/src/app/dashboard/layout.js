@@ -1,3 +1,5 @@
+'use client';
+
 // In /app/dashboard/layout.js
 import DashboardSetupStatus from '@/components/DashboardSetupStatus';
 

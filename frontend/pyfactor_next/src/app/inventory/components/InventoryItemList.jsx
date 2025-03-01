@@ -21,7 +21,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { useApi } from '@/lib/axiosConfig';
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const InventoryItemList = () => {
   const [items, setItems] = useState([]);
@@ -89,9 +89,9 @@ const InventoryItemList = () => {
   const handleSubmit = async () => {
     try {
       if (isEditing) {
-        await useApi.put(`/api/inventory/items/${currentItem.id}/`, currentItem);
+        await axiosInstance.put(`/api/inventory/items/${currentItem.id}/`, currentItem);
       } else {
-        await useApi.post('/api/inventory/items/', currentItem);
+        await axiosInstance.post('/api/inventory/items/', currentItem);
       }
       fetchItems();
       handleCloseDialog();

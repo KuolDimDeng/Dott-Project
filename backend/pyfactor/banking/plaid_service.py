@@ -18,8 +18,8 @@ class PlaidService:
     def __init__(self):
         try:
             logger.debug("Initializing PlaidService...")
-            logger.debug(f"PLAID_CLIENT_ID: {settings.PLAID_CLIENT_ID}")
-            logger.debug(f"PLAID_SECRET: {settings.PLAID_SECRET}")
+            # Removed sensitive credential logging
+            # Removed sensitive credential logging
             logger.debug(f"PLAID_ENV: {settings.PLAID_ENV}")
             
             configuration = plaid.Configuration(

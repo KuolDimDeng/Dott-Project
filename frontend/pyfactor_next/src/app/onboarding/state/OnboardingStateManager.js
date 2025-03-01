@@ -23,14 +23,14 @@ export const STEP_STATUS = {
   SKIPPED: 'skipped',
 };
 
-// Onboarding states that match Cognito custom:onboarding attribute
+// Onboarding states used consistently across the application
 export const ONBOARDING_STATES = {
-  NOT_STARTED: 'notstarted',
-  BUSINESS_INFO: 'business-info',
-  SUBSCRIPTION: 'subscription',
-  PAYMENT: 'payment',
-  SETUP: 'setup',
-  COMPLETE: 'complete',
+  NOT_STARTED: 'NOT_STARTED',
+  BUSINESS_INFO: 'BUSINESS_INFO',
+  SUBSCRIPTION: 'SUBSCRIPTION',
+  PAYMENT: 'PAYMENT',
+  SETUP: 'SETUP',
+  COMPLETE: 'COMPLETE'
 };
 
 export class OnboardingStateManager extends FormStateManager {
@@ -73,6 +73,7 @@ export class OnboardingStateManager extends FormStateManager {
       [ONBOARDING_STATES.SUBSCRIPTION]: [
         ONBOARDING_STATES.PAYMENT,
         ONBOARDING_STATES.SETUP,
+        ONBOARDING_STATES.COMPLETE
       ],
       [ONBOARDING_STATES.PAYMENT]: [ONBOARDING_STATES.SETUP],
       [ONBOARDING_STATES.SETUP]: [ONBOARDING_STATES.COMPLETE],
@@ -94,6 +95,9 @@ export class OnboardingStateManager extends FormStateManager {
     const currentTier = this.state.tier?.selected;
 
     try {
+      // First update Cognito attributes to match new step
+      await this.updateOnboardingState({ onboarding: step });
+
       // Validate state transition
       const currentState = this.state.onboarding.current_step;
       this.validateStateTransition(currentState, step);
@@ -413,6 +417,7 @@ export class OnboardingStateManager extends FormStateManager {
 
   async updateOnboardingState(updates) {
     const operationId = generateRequestId();
+    const { updateUserAttributes } = await import('aws-amplify/auth');
 
     try {
       const previousState = { ...this.state.onboarding };
@@ -438,6 +443,28 @@ export class OnboardingStateManager extends FormStateManager {
         },
         'onboarding_update'
       );
+
+      // Update Cognito attributes with standardized state
+      const cognitoAttributes = {
+        'custom:onboarding': this.state.onboarding.onboarding || ONBOARDING_STATES.NOT_STARTED,
+        'custom:subplan': this.state.onboarding.selected_plan,
+        'custom:acctstatus': 'PENDING',
+        'custom:updated_at': new Date().toISOString()
+      };
+
+      if (updates.onboarding === ONBOARDING_STATES.COMPLETE) {
+        cognitoAttributes['custom:setupdone'] = 'TRUE';
+        cognitoAttributes['custom:acctstatus'] = 'ACTIVE';
+      }
+
+      logger.debug('Updating Cognito attributes:', {
+        onboardingState: this.state.onboarding.onboarding,
+        operationId
+      });
+
+      await updateUserAttributes({
+        userAttributes: cognitoAttributes
+      });
 
       this.notifySubscribers({
         type: ONBOARDING_EVENTS.STATE_UPDATE,
@@ -468,12 +495,16 @@ export class OnboardingStateManager extends FormStateManager {
     const operationId = generateRequestId();
 
     try {
+      // Stay in subscription state regardless of plan type
+      // Let the subscription component handle the next state transition
       await this.updateOnboardingState({
         selected_plan: plan,
-        onboarding:
-          plan === 'free'
-            ? ONBOARDING_STATES.SETUP
-            : ONBOARDING_STATES.SUBSCRIPTION,
+        onboarding: ONBOARDING_STATES.SUBSCRIPTION
+      });
+      
+      logger.info('[OnboardingStateManager] Plan selected:', {
+        plan,
+        operationId
       });
 
       return {

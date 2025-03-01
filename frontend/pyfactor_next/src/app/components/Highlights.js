@@ -1,98 +1,109 @@
 'use client';
 
-import * as React from 'react';
-import { Container, Grid, Paper, Typography, Box } from '@mui/material';
-import Image from 'next/image';
-import styles from '@/app/components/ImageStyles.modules.css'; // Import your CSS module (or use inline styles)
+import React from 'react';
+import { Box, Container, Grid, Typography, Paper } from '@mui/material';
+import SpeedIcon from '@mui/icons-material/Speed';
+import SecurityIcon from '@mui/icons-material/Security';
+import SupportIcon from '@mui/icons-material/Support';
 
 const highlights = [
   {
-    title: 'Freelancers',
+    icon: <SpeedIcon sx={{ fontSize: 40 }} />,
+    title: 'Fast & Efficient',
     description:
-      'Dott helps freelancers manage their money. Create and send professional invoices in minutes.',
-    imagePath: '/static/images/Freelancer.png',
+      'Our platform is optimized for speed and efficiency, helping you manage your business faster than ever.',
   },
   {
-    title: 'Self-employed Entrepreneurs',
+    icon: <SecurityIcon sx={{ fontSize: 40 }} />,
+    title: 'Secure & Reliable',
     description:
-      'Self-employed entrepreneurs using Dott to manage their money. Pay your staff easily with our payroll features.',
-    imagePath: '/static/images/Self-employed.png',
+      'Bank-level security with regular backups ensures your business data is always safe and accessible.',
   },
   {
-    title: 'Contractors',
+    icon: <SupportIcon sx={{ fontSize: 40 }} />,
+    title: '24/7 Support',
     description:
-      'A contractor using Dott to manage their money. Track your business expenses with our free accounting tools.',
-    imagePath: '/static/images/Contractor.png',
-  },
-  {
-    title: 'Consultants',
-    description:
-      'A consultant using Dott to manage their money. Set up recurring invoices and payments for retainer clients.',
-    imagePath: '/static/images/Consultant2.png',
-  },
-  {
-    title: 'Micro Business Owners',
-    description:
-      'Micro business owners use Dott to manage their finances and accept mobile payments with ease. Track expenses and grow your business effortlessly.',
-    imagePath: '/static/images/MicroBusiness.png', // New category and image for Micro Business
-  },
-
-  {
-    title: 'Non-Profit Leaders', // New Non-Profit Category
-    description:
-      'Small non-profits (NGO) use Dott to manage donations, track expenses, and issue receipts to donors, helping them focus on their mission.',
-    imagePath: '/static/images/NonProfit.png', // Add corresponding image for Non-Profit
+      'Our dedicated support team is available around the clock to help you with any questions or issues.',
   },
 ];
 
 export default function Highlights() {
   return (
-    <Box sx={{ bgcolor: '#ffffff', py: 12 }}>
+    <Box
+      sx={{
+        py: { xs: 8, sm: 12 },
+        bgcolor: 'background.default',
+      }}
+    >
       <Container maxWidth="lg">
-        <Typography
-          variant="h3"
-          align="center"
-          fontFamily="Poppins, sans-serif"
-          fontWeight="bold"
-          mb={8}
-        >
-          Built for the small business owners.
-        </Typography>
+        <Box sx={{ mb: { xs: 6, sm: 8 }, textAlign: 'center' }}>
+          <Typography
+            component="h2"
+            variant="h2"
+            sx={{
+              mb: 2,
+              background: (theme) =>
+                theme.palette.mode === 'light'
+                  ? 'linear-gradient(45deg, #1976d2, #2196f3)'
+                  : 'linear-gradient(45deg, #64b5f6, #90caf9)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            Why Choose Us
+          </Typography>
+          <Typography
+            variant="h5"
+            color="text.secondary"
+            sx={{ maxWidth: 800, mx: 'auto' }}
+          >
+            Experience the difference with our cutting-edge platform
+          </Typography>
+        </Box>
+
         <Grid container spacing={4}>
-          {highlights.map((highlight) => (
-            <Grid item xs={12} sm={6} md={4} key={highlight.title}>
+          {highlights.map((highlight, index) => (
+            <Grid item xs={12} md={4} key={index}>
               <Paper
-                elevation={3}
+                elevation={0}
                 sx={{
                   p: 4,
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  borderRadius: 4,
-                  transition: '0.3s',
-                  '&:hover': { transform: 'translateY(-10px)' },
+                  textAlign: 'center',
+                  borderRadius: 2,
+                  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: (theme) =>
+                      theme.palette.mode === 'light'
+                        ? '0 4px 20px rgba(0,0,0,0.1)'
+                        : '0 4px 20px rgba(0,0,0,0.3)',
+                  },
                 }}
               >
-                <Image
-                  src={highlight.imagePath}
-                  alt={highlight.title}
-                  width={200} // Adjust as necessary
-                  height={200} // Adjust as necessary
-                  className={styles.imageStyle} // Use your CSS class here
-                  style={{ borderRadius: '8px', marginBottom: '16px' }} // Optional styling for the images
-                />
+                <Box
+                  sx={{
+                    mb: 2,
+                    color: 'primary.main',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {highlight.icon}
+                </Box>
                 <Typography
                   variant="h5"
                   component="h3"
-                  align="center"
                   gutterBottom
-                  fontFamily="Poppins, sans-serif"
-                  fontWeight="bold"
+                  sx={{ fontWeight: 600 }}
                 >
                   {highlight.title}
                 </Typography>
-                <Typography align="center" fontFamily="Inter, sans-serif">
+                <Typography variant="body1" color="text.secondary">
                   {highlight.description}
                 </Typography>
               </Paper>

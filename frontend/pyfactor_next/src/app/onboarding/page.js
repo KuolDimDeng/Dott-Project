@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession';
 import { useForm } from 'react-hook-form';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
+import { validateSession } from '@/utils/onboardingUtils';
 import {
   Box,
   Typography,
@@ -97,7 +98,7 @@ const OnboardingContent = memo(function OnboardingContent() {
     defaultValues: {
       selected_plan: '',
       billingCycle: 'monthly',
-      tier: '', // Add tier
+      tier: '',
     },
   });
 
@@ -108,7 +109,7 @@ const OnboardingContent = memo(function OnboardingContent() {
     initialized,
     initialize,
     progress,
-    selected_plan, // Add this
+    selected_plan,
   } = useOnboarding(methods);
 
   useEffect(() => {
@@ -123,7 +124,7 @@ const OnboardingContent = memo(function OnboardingContent() {
           logger.info('Starting store initialization', {
             requestId: requestIdRef.current,
             attempt: initializationAttempts + 1,
-            tier: selected_plan, // Add tier logging
+            tier: selected_plan,
           });
 
           await initialize();
@@ -133,7 +134,7 @@ const OnboardingContent = memo(function OnboardingContent() {
               requestId: requestIdRef.current,
               current_step,
               initialized: true,
-              tier: selected_plan, // Add tier logging
+              tier: selected_plan,
             });
           }
         } catch (error) {
@@ -141,7 +142,7 @@ const OnboardingContent = memo(function OnboardingContent() {
             requestId: requestIdRef.current,
             error: error.message,
             attempt: initializationAttempts + 1,
-            tier: selected_plan, // Add tier logging
+            tier: selected_plan,
           });
 
           if (initializationAttempts < 3) {
@@ -176,7 +177,7 @@ const OnboardingContent = memo(function OnboardingContent() {
     current_step,
     initializationAttempts,
     selected_plan,
-  ]); // Add selected_plan to deps
+  ]);
 
   if (!initialized || storeLoading || isInitializing) {
     const message = isInitializing
@@ -192,7 +193,7 @@ const OnboardingContent = memo(function OnboardingContent() {
         message={message}
         progress={progress?.progress || 0}
         isIndeterminate={!progress?.progress}
-        tier={selected_plan} // Add tier
+        tier={selected_plan}
       />
     );
   }
@@ -213,28 +214,39 @@ export default function OnboardingPage() {
 
     logger.info('Starting onboarding recovery', {
       recoveryId,
-      tier: selected_plan, // Add tier logging
+      tier: selected_plan,
     });
 
     try {
+      // Get auth tokens
+      const { tokens } = await validateSession();
+      if (!tokens?.accessToken || !tokens?.idToken) {
+        throw new Error('No valid session tokens');
+      }
+
+      const accessToken = tokens.accessToken.toString();
+      const idToken = tokens.idToken.toString();
+
       await fetch('/api/onboarding/reset', {
         method: 'POST',
         headers: {
           'x-recovery-id': recoveryId,
-          'x-subscription-tier': selected_plan, // Add tier header
+          'x-subscription-tier': selected_plan,
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Id-Token': idToken
         },
       });
 
       logger.info('Onboarding recovery successful', {
         recoveryId,
-        tier: selected_plan, // Add tier logging
+        tier: selected_plan,
       });
       return true;
     } catch (error) {
       logger.error('Onboarding recovery failed', {
         recoveryId,
         error: error.message,
-        tier: selected_plan, // Add tier logging
+        tier: selected_plan,
       });
       return false;
     }

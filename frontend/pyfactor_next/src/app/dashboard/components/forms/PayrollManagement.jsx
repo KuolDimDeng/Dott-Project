@@ -28,6 +28,10 @@ import {
   RadioGroup,
   Radio,
   useTheme,
+  Alert,
+  List,
+  ListItem,
+  ListItemText,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -56,6 +60,10 @@ const PayrollManagement = () => {
   const [biWeeklyStartDate, setBiWeeklyStartDate] = useState(null);
   const [scheduledPayrolls, setScheduledPayrolls] = useState([]);
   const theme = useTheme();
+  const [country, setCountry] = useState('');
+  const [serviceType, setServiceType] = useState('');
+  const [showUsdComparison, setShowUsdComparison] = useState(false);
+
 
   useEffect(() => {
     fetchPayPeriods();
@@ -63,6 +71,17 @@ const PayrollManagement = () => {
     fetchEmployees();
     fetchScheduledPayrolls();
   }, []);
+
+  useEffect(() => {
+    if (country) {
+      // This is just example logic - replace with your actual service type determination
+      if (['US', 'CA'].includes(country)) {
+        setServiceType('full');
+      } else {
+        setServiceType('self');
+      }
+    }
+  }, [country]);
 
   const fetchScheduledPayrolls = async () => {
     try {
@@ -113,6 +132,18 @@ const PayrollManagement = () => {
       console.error('Error fetching employees:', error);
     }
   };
+
+  // Add function to fetch currency info
+const fetchCurrencyInfo = async (countryCode) => {
+  if (!countryCode) return;
+  
+  try {
+    const response = await axiosInstance.get(`/api/taxes/currency-info/${countryCode}/`);
+    setCurrencyInfo(response.data);
+  } catch (error) {
+    console.error('Error fetching currency info:', error);
+  }
+};
 
   const handleRunPayroll = async () => {
     setLoading(true);
@@ -286,6 +317,58 @@ const PayrollManagement = () => {
           </Box>
         )}
 
+        {/* Add Country Selection */}
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Country</InputLabel>
+          <Select
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            label="Country"
+          >
+            <MenuItem value="US">United States</MenuItem>
+            <MenuItem value="CA">Canada</MenuItem>
+            <MenuItem value="UK">United Kingdom</MenuItem>
+            <MenuItem value="AU">Australia</MenuItem>
+            {/* Add more countries */}
+          </Select>
+        </FormControl>
+
+        {country && country !== 'US' && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={showUsdComparison}
+                  onChange={(e) => setShowUsdComparison(e.target.checked)}
+                />
+              }
+              label="Show USD comparison"
+            />
+          )}
+
+          {currencyInfo && (
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Currency: {currencyInfo.symbol} ({currencyInfo.code})
+              {showUsdComparison && currencyInfo.code !== 'USD' && (
+                <Typography variant="body2" color="text.secondary">
+                  Exchange Rate: 1 USD = {currencyInfo.exchangeRate} {currencyInfo.code}
+                </Typography>
+              )}
+            </Typography>
+          )}
+
+        {/* Add service type display after selecting country */}
+        {country && serviceType && (
+          <Alert 
+            severity={serviceType === 'full' ? "success" : "info"} 
+            sx={{ mb: 2 }}
+          >
+            {serviceType === 'full' 
+              ? "Full-service payroll available - we'll handle tax filing for you" 
+              : "Self-service payroll - we'll provide filing instructions but you'll need to submit taxes manually"
+            }
+          </Alert>
+        )}
+
         {/* Pay Period Selection */}
         <Box mb={3}>
           <Typography variant="h6" gutterBottom>
@@ -423,6 +506,35 @@ const PayrollManagement = () => {
             </Button>
           </DialogActions>
         </Dialog>
+              {/* Add filing instructions for self-service */}
+              {payrollSummary && payrollSummary.service_type === 'self' && (
+                <Paper sx={{ p: 2, mt: 2 }}>
+                  <Typography variant="h6">Filing Instructions</Typography>
+                  <Typography variant="body1">{payrollSummary.filing_instructions}</Typography>
+                  {payrollSummary.tax_authority_links && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="subtitle1">Tax Authority Links:</Typography>
+                      <List>
+                        {Object.entries(payrollSummary.tax_authority_links).map(([name, url]) => (
+                          <ListItem key={name}>
+                            <ListItemText 
+                              primary={name} 
+                              secondary={
+                                <a href={url} target="_blank" rel="noopener noreferrer">
+                                  {url}
+                                </a>
+                              }
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Box>
+                  )}
+                </Paper>
+              )}
+
+
+
       </Box>
     </LocalizationProvider>
   );

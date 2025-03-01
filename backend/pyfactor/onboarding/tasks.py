@@ -15,116 +15,61 @@ from django.contrib.auth import get_user_model
 from psycopg2 import OperationalError
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
-from users.models import UserProfile
-from .models import OnboardingProgress
-from .locks import get_setup_lock, LockAcquisitionError
-from .utils import generate_unique_database_name
-from .task_utils import (
+from custom_auth.models import Tenant
+from onboarding.models import OnboardingProgress
+from onboarding.locks import get_setup_lock, LockAcquisitionError
+from onboarding.utils import (
+    generate_unique_schema_name,
+    create_tenant_schema,
+    validate_schema_creation,
+    tenant_schema_context,
+    cleanup_schema
+)
+from onboarding.task_utils import (
     get_db_connection,
-    get_database_settings,
-    setup_database_parameters,
-    check_database_health,
+    check_schema_health,
     timeout
 )
+
 logger = logging.getLogger('Pyfactor')
 User = get_user_model()
 
 # Task Configuration Constants
 TASK_TIMEOUT = 3600  # 1 hour total timeout
 SOFT_TIMEOUT = 3300  # Soft timeout 5 minutes before hard timeout
-DB_CREATE_TIMEOUT = 30  # 30 seconds for database creation
+SCHEMA_CREATE_TIMEOUT = 30  # 30 seconds for schema creation
 MIGRATION_TIMEOUT = 180  # 3 minutes for migrations
 MAX_RETRY_COUNTDOWN = 300  # 5 minutes between retries
 
 # Status Transition Configuration
 VALID_STATUS_TRANSITIONS = {
-    'not_created': ['pending'],
+    'not_started': ['pending'],
     'pending': ['in_progress', 'error'],
-    'in_progress': ['complete', 'error'],
-    'active': ['pending', 'error'],  # Allow transition from active to pending
+    'in_progress': ['complete', 'error', 'pending'],
     'error': ['pending', 'in_progress'],
+    'failed': ['pending', 'in_progress'],  # Allow retrying from failed state
     'complete': []  # No transitions from complete
 }
 
-class DatabaseSetupError(Exception):
-    """Base class for database setup errors"""
+class SchemaSetupError(Exception):
+    """Base class for schema setup errors"""
     pass
 
-class DatabaseMigrationError(DatabaseSetupError):
-    """Raised when database migrations fail"""
+class SchemaMigrationError(SchemaSetupError):
+    """Raised when schema migrations fail"""
     pass
 
-class DatabaseHealthCheckError(DatabaseSetupError):
-    """Raised when database health check fails"""
+class SchemaHealthCheckError(SchemaSetupError):
+    """Raised when schema health check fails"""
     pass
 
 def validate_status_transition(current_status: str, new_status: str) -> bool:
-    """
-    Validate if a status transition is allowed
-    """
-    allowed_transitions = {
-        'not_created': ['pending'],
-        'pending': ['active', 'error'],
-        'active': ['pending', 'inactive', 'error'],  # Allow transition from active to pending
-        'inactive': ['active', 'error'],
-        'error': ['pending']
-    }
+    """Validate if a status transition is allowed"""
+    allowed_transitions = VALID_STATUS_TRANSITIONS
     return new_status in allowed_transitions.get(current_status, [])
 
-@contextmanager
-def timeout(seconds: int):
-    """Context manager for operations timeout"""
-    def handler(signum, frame):
-        raise TimeoutError(f"Operation timed out after {seconds} seconds")
-    
-    previous_handler = signal.signal(signal.SIGALRM, handler)
-    signal.alarm(seconds)
-    try:
-        yield
-    finally:
-        signal.alarm(0)
-        signal.signal(signal.SIGALRM, previous_handler)
-
-def setup_database_parameters(database_name: str, conn) -> None:
-    """Configure PostgreSQL runtime parameters for the new database"""
-    try:
-        with conn.cursor() as cursor:
-            quoted_name = f'"{database_name}"'
-            statements = [
-                f"ALTER DATABASE {quoted_name} SET maintenance_work_mem = '64MB'",
-                f"ALTER DATABASE {quoted_name} SET work_mem = '4MB'",
-                f"ALTER DATABASE {quoted_name} SET statement_timeout = '30s'",
-                f"ALTER DATABASE {quoted_name} SET idle_in_transaction_session_timeout = '60s'"
-            ]
-            for statement in statements:
-                cursor.execute(statement)
-    except Exception as e:
-        logger.error(f"Error setting database parameters: {str(e)}")
-        raise DatabaseSetupError("Failed to configure database parameters")
-
-def check_database_health(database_name: str) -> Tuple[bool, str]:
-    """Perform comprehensive health check on the database"""
-    try:
-        with connections[database_name].cursor() as cursor:
-            # Basic connectivity test
-            cursor.execute("SELECT 1")
-            
-            # Test transaction support
-            with transaction.atomic(using=database_name):
-                cursor.execute("""
-                    CREATE TEMPORARY TABLE health_check (
-                        id serial PRIMARY KEY,
-                        created_at timestamp DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                cursor.execute("INSERT INTO health_check DEFAULT VALUES")
-                
-            return True, "Database is healthy"
-    except Exception as e:
-        return False, str(e)
-
 @shared_task(
-    name='setup_user_database_task',
+    name='setup_user_schema_task',
     bind=True,
     max_retries=5,
     retry_backoff=True,
@@ -134,29 +79,29 @@ def check_database_health(database_name: str) -> Tuple[bool, str]:
     autoretry_for=(DatabaseError, OperationalError),
     retry_kwargs={'max_retries': 5}
 )
-def setup_user_database_task(self, user_id: str, business_id: str) -> Dict[str, Any]:
+def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, Any]:
     """
-    Sets up a new user database with comprehensive configuration and progress tracking.
+    Sets up a new tenant schema with comprehensive configuration and progress tracking.
     
-    This task handles the complete database setup process including:
-    - Database creation and configuration
+    This task handles the complete schema setup process including:
+    - Schema creation and configuration
     - Schema migration
     - Health verification
     - Status updates and notifications
     
     Args:
-        user_id: The ID of the user requesting database setup
+        user_id: The ID of the user requesting schema setup
         business_id: The ID of the associated business
         
     Returns:
-        Dict containing setup status and database information
+        Dict containing setup status and schema information
         
     Raises:
-        DatabaseSetupError: If any part of the setup process fails
+        SchemaSetupError: If any part of the setup process fails
     """
-    database_name = None
+    schema_name = None
     success = False
-    profile = None
+    tenant = None
     onboarding_progress = None
     
     def update_state(phase: str, progress: int, status: str = 'in_progress'):
@@ -181,152 +126,172 @@ def setup_user_database_task(self, user_id: str, business_id: str) -> Dict[str, 
         # Phase 1: Initial Setup and Validation
         update_state('initial_setup', 0)
         
-        with transaction.atomic(using='default'):
-            user = User.objects.select_related('profile').get(id=user_id)
-            profile = user.profile
+        with transaction.atomic():
+            user = User.objects.select_related('owned_tenant').get(id=user_id)
             
-            # Lock the profile for updates
-            profile = UserProfile.objects.select_for_update().get(id=profile.id)
-            
-            # Get onboarding progress
-            onboarding_progress = OnboardingProgress.objects.select_for_update().get(user=user)
-            
-            # Only check setup_status if onboarding is complete
-            if onboarding_progress.onboarding_status == 'complete':
-                if profile.setup_status == 'complete' and profile.database_name:
+            # Check if tenant already exists
+            if hasattr(user, 'owned_tenant') and user.owned_tenant:
+                tenant = user.owned_tenant
+                if tenant.setup_status == 'complete' and tenant.schema_name:
                     return {
                         "status": "already_complete",
-                        "database_name": profile.database_name,
+                        "schema_name": tenant.schema_name,
                         "business_id": business_id
                     }
             
-            # Reset setup status if needed
-            if profile.setup_status == 'complete':
-                profile.setup_status = 'in_progress'
-                profile.save(update_fields=['setup_status'])
-
-            # Check for pending setup and handle retry logic
-            if profile.database_status == 'pending':
-                # If already pending, check if it's a retry
-                if profile.last_setup_attempt and \
-                   (timezone.now() - profile.last_setup_attempt).total_seconds() < 300:  # 5 minutes
-                    logger.warning(f"Setup already in progress for user {user_id}")
-                    return {
-                        "status": "in_progress",
-                        "message": "Setup already in progress",
-                        "database_name": profile.database_name
-                    }
-                # If it's been a while, allow retry
-                profile.database_status = 'not_created'
-                profile.save(update_fields=['database_status'])
-
-            # Generate database name within the transaction
-            database_name = generate_unique_database_name(user)
+            # Get or create onboarding progress
+            onboarding_progress, created = OnboardingProgress.objects.select_for_update().get_or_create(
+                user=user,
+                defaults={
+                    'onboarding_status': 'business-info',
+                    'current_step': 'business-info',
+                    'next_step': 'subscription'
+                }
+            )
             
-            # Now check the transition
-            if not validate_status_transition(profile.database_status, 'pending'):
-                logger.error(f"Invalid status transition from {profile.database_status} to pending")
-                raise DatabaseSetupError(f"Cannot transition from {profile.database_status} to pending")
+            # Get tenant and schema name
+            tenant = Tenant.objects.select_for_update().get(owner=user)
+            if not tenant or not tenant.schema_name:
+                raise SchemaSetupError("No tenant or schema name found")
+
+            schema_name = tenant.schema_name
+            logger.info(f"Using existing schema: {schema_name}")
             
-            # Update profile with pending status and new database name
-            profile.database_name = database_name
-            profile.database_status = 'pending'
-            profile.setup_status = 'in_progress'
-            profile.last_setup_attempt = timezone.now()
-            profile.database_setup_task_id = self.request.id
-            profile.save(update_fields=[
-                'database_name',
-                'database_status', 
-                'setup_status',
-                'last_setup_attempt',
-                'database_setup_task_id'
-            ])
+            # Update tenant status
+            if not validate_status_transition(tenant.setup_status, 'pending'):
+                raise SchemaSetupError(f"Cannot transition from {tenant.setup_status} to pending")
+            
+            tenant.is_active = False
+            tenant.setup_status = 'in_progress'
+            tenant.last_setup_attempt = timezone.now()
+            tenant.setup_task_id = self.request.id
+            tenant.save(update_fields=['is_active', 'setup_status', 'last_setup_attempt', 'setup_task_id'])
 
-            # Update onboarding progress
-            onboarding_progress = OnboardingProgress.objects.get(user=user)
-            onboarding_progress.current_step = "setup"
-            onboarding_progress.next_step = "complete"
-            onboarding_progress.onboarding_status = "setup"
-            onboarding_progress.save()
+        # Phase 2: Schema Verification/Creation
+        update_state('verifying_schema', 20)
+        logger.info(f"Verifying schema: {schema_name}")
 
-        # Phase 2: Database Creation
-        update_state('creating_database', 20)
-        logger.info(f"Creating database: {database_name}")
-
-        with get_db_connection(autocommit=True) as conn:
+        with get_db_connection() as conn:
             with conn.cursor() as cursor:
-                cursor.execute(
-                    "SELECT 1 FROM pg_database WHERE datname = %s",
-                    [database_name]
-                )
-                if cursor.fetchone():
-                    raise DatabaseSetupError(f"Database {database_name} already exists")
-                
-                with timeout(DB_CREATE_TIMEOUT):
-                    cursor.execute(f'CREATE DATABASE "{database_name}" TEMPLATE template0')
-                    setup_database_parameters(database_name, conn)
+                with timeout(SCHEMA_CREATE_TIMEOUT):
+                    schema_exists = validate_schema_creation(cursor, schema_name)
+                    if not schema_exists:
+                        logger.info(f"Creating schema: {schema_name}")
+                        create_tenant_schema(cursor, schema_name, user.id)
+                        # Validate again after creation
+                        if not validate_schema_creation(cursor, schema_name):
+                            raise SchemaSetupError(f"Schema {schema_name} creation failed verification")
 
-        # Phase 3: Configure Database
-        update_state('configuring_database', 40)
-        db_settings = get_database_settings(database_name)
-        
-        # Register the new database
-        connections.databases[database_name] = db_settings
-        settings.DATABASES[database_name] = db_settings
-
-        # Phase 4: Run Migrations
+        # Phase 3: Run Migrations
         update_state('running_migrations', 60)
         try:
-            connections.close_all()
-            call_command('migrate', database=database_name)
+            logger.info(f"Starting database migration check for schema: {schema_name}")
+            with get_db_connection() as conn:
+                with conn.cursor() as cursor:
+                    with tenant_schema_context(cursor, schema_name):
+                        # The WARNING output is expected when migrations are up-to-date
+                        call_command('migrate')
+            logger.info(f"Migration check complete - database schema is up-to-date")
         except Exception as e:
             logger.error(f"Migration failed: {str(e)}")
-            raise DatabaseMigrationError(f"Failed to apply migrations: {str(e)}")
+            raise SchemaMigrationError(f"Failed to apply migrations: {str(e)}")
 
-        # Phase 5: Verify Setup
+        # Phase 4: Verify Setup
         update_state('verifying_setup', 80)
-        is_healthy, health_message = check_database_health(database_name)
-        if not is_healthy:
-            raise DatabaseHealthCheckError(f"Health check failed: {health_message}")
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                with tenant_schema_context(cursor, schema_name):
+                    cursor.execute("SELECT 1")  # Basic connectivity test
+                    
+                    # Test transaction support
+                    with transaction.atomic():
+                        cursor.execute("""
+                            CREATE TEMPORARY TABLE health_check (
+                                id serial PRIMARY KEY,
+                                created_at timestamp DEFAULT CURRENT_TIMESTAMP
+                            )
+                        """)
+                        cursor.execute("INSERT INTO health_check DEFAULT VALUES")
 
-        # Phase 6: Complete Setup
+        # Phase 5: Complete Setup
         update_state('finalizing', 90)
         
-        connections.close_all()
-        with transaction.atomic(using='default'):
+        with transaction.atomic():
             user = User.objects.select_for_update().get(id=user_id)
-            profile = UserProfile.objects.select_for_update().get(user=user)
+            tenant = Tenant.objects.select_for_update().get(owner=user)
             
+            # Update user and tenant status
             user.is_onboarded = True
             user.save(update_fields=['is_onboarded'])
             
-            profile.database_name = database_name
-            profile.database_status = 'active'
-            profile.setup_status = 'complete'
-            profile.last_health_check = timezone.now()
-            profile.save(update_fields=[
-                'database_name',
-                'database_status',
-                'setup_status',
-                'last_health_check'
-            ])
+            tenant.is_active = True
+            tenant.setup_status = 'complete'
+            tenant.last_health_check = timezone.now()
+            tenant.save(update_fields=['is_active', 'setup_status', 'last_health_check'])
 
+            # Update onboarding progress
             onboarding_progress = OnboardingProgress.objects.get(user=user)
-            onboarding_progress.current_step = "complete"
-            onboarding_progress.next_step = 'dashboard'  # Set explicit next step
-            onboarding_progress.onboarding_status = "complete"
-            onboarding_progress.save(update_fields=[
-                        'current_step',
-                        'next_step',
-                        'onboarding_status'
-                    ])
+            # Follow proper state transition path
+            if onboarding_progress.onboarding_status == 'business-info':
+                onboarding_progress.onboarding_status = 'subscription'
+                onboarding_progress.save()
+                onboarding_progress.refresh_from_db()
+            
+            if onboarding_progress.onboarding_status == 'subscription':
+                onboarding_progress.onboarding_status = 'setup'
+                onboarding_progress.save()
+                onboarding_progress.refresh_from_db()
+            
+            if onboarding_progress.onboarding_status == 'setup':
+                onboarding_progress.onboarding_status = 'complete'
+                onboarding_progress.current_step = 'complete'
+                onboarding_progress.next_step = 'dashboard'
+                onboarding_progress.save()
+
+            # Update Cognito attributes with retry logic
+            from custom_auth.cognito import update_user_attributes_sync
+            import boto3
+            
+            max_retries = 3
+            retry_delay = 1
+            last_error = None
+            
+            for attempt in range(max_retries):
+                try:
+                    # First verify user exists in Cognito
+                    client = boto3.client('cognito-idp')
+                    try:
+                        client.admin_get_user(
+                            UserPoolId=settings.COGNITO_USER_POOL_ID,
+                            Username=str(user.id)
+                        )
+                    except client.exceptions.UserNotFoundException:
+                        logger.warning(f"User {user.id} not found in Cognito, skipping attribute update")
+                        break
+                        
+                    # User exists, update attributes
+                    update_user_attributes_sync(str(user.id), {
+                        'custom:onboarding': 'COMPLETE'
+                    })
+                    logger.info(f"Updated Cognito onboarding status for user {user.id}")
+                    break
+                    
+                except Exception as e:
+                    last_error = e
+                    if attempt < max_retries - 1:
+                        logger.warning(f"Cognito update failed (attempt {attempt + 1}): {str(e)}")
+                        time.sleep(retry_delay * (2 ** attempt))
+                        continue
+                    else:
+                        logger.error(f"Cognito update failed after {max_retries} attempts: {str(e)}")
+                        # Continue with setup even if Cognito update fails
                     
         success = True
         update_state('complete', 100, 'success')
 
         return {
             "status": "success",
-            "database_name": database_name,
+            "schema_name": schema_name,
             "user_id": user_id,
             "business_id": business_id,
             "task_id": self.request.id,
@@ -339,17 +304,24 @@ def setup_user_database_task(self, user_id: str, business_id: str) -> Dict[str, 
         update_state('error', -1, 'failed')
 
         try:
-            if profile:
-                profile.setup_status = 'error'
-                profile.setup_error_message = error_message
-                profile.save(update_fields=['setup_status', 'setup_error_message'])
+            if tenant:
+                tenant.setup_status = 'error'
+                tenant.setup_error_message = error_message
+                tenant.save(update_fields=['setup_status', 'setup_error_message'])
             if onboarding_progress:
-                onboarding_progress.onboarding_status = "error"
-                onboarding_progress.current_step = "setup"
-                onboarding_progress.next_step = "setup"
-                onboarding_progress.save()
+                onboarding_progress.current_step = onboarding_progress.onboarding_status
+                onboarding_progress.next_step = onboarding_progress.onboarding_status
+                onboarding_progress.setup_error = error_message
+                onboarding_progress.save(update_fields=[
+                    'current_step',
+                    'next_step',
+                    'setup_error'
+                ])
         except Exception as update_error:
             logger.error(f"Error status update failed: {str(update_error)}")
+
+        if schema_name:
+            cleanup_schema(schema_name)
 
         raise
 

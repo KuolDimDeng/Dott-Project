@@ -21,11 +21,18 @@ from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from celery.schedules import crontab
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables from .env file
-load_dotenv(os.path.join(BASE_DIR, '.env'))
+# Ensure the path to .env is correct
+dotenv_path = os.path.join(BASE_DIR, ".env")
+
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path)
+    print(f"✅ Loaded environment variables from: {dotenv_path}")
+else:
+    print("❌ Warning: .env file not found!")
+
+
 
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
 
@@ -39,10 +46,8 @@ if not PLAID_CLIENT_ID or not PLAID_SECRET:
 
 ENCRYPTION_KEY = Fernet.generate_key()
 
-print("PLAID_CLIENT_ID: ", PLAID_CLIENT_ID)
-print("PLAID_SECRET: ", PLAID_SECRET)
 
-# Stripe settings
+
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_PRICE_ID_MONTHLY = os.getenv('STRIPE_PRICE_ID_MONTHLY')
@@ -51,11 +56,23 @@ STRIPE_PRICE_ID_ANNUAL = os.getenv('STRIPE_PRICE_ID_ANNUAL')
 # AWS Settings
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
-AWS_REGION = os.getenv('AWS_DEFAULT_REGION')
+AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
 
 # AWS Cognito Settings
 COGNITO_USER_POOL_ID = os.getenv('AWS_COGNITO_USER_POOL_ID')
 COGNITO_APP_CLIENT_ID = os.getenv('AWS_COGNITO_CLIENT_ID')
+COGNITO_DOMAIN = os.getenv('AWS_COGNITO_DOMAIN')
+
+
+
+
+# Stripe settings
+
+if not all([COGNITO_USER_POOL_ID, COGNITO_APP_CLIENT_ID, COGNITO_DOMAIN]):
+    print("Warning: Cognito credentials are not fully configured:")
+    print(f"User Pool ID: {'Set' if COGNITO_USER_POOL_ID else 'Missing'}")
+    print(f"App Client ID: {'Set' if COGNITO_APP_CLIENT_ID else 'Missing'}")
+    print(f"Domain: {'Set' if COGNITO_DOMAIN else 'Missing'}")
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join(PROJECT_ROOT, '.venv/lib/python3.12/site-packages'))
@@ -73,9 +90,6 @@ USE_TZ = True
 SITE_ID = 1
 TIME_ZONE = 'UTC'
 
-USER_DATABASE_OPTIONS = {
-    'connect_timeout': 10,
-}
 
 # Email settings for Gmail
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -94,6 +108,8 @@ FRONTEND_URL = 'http://localhost:3000'  # Adjust this to your actual frontend UR
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
 
+
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 if not DEBUG:
@@ -108,14 +124,14 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # CORS and CSRF configuration
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True  # For development only
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
 
 APPEND_SLASH = False  # Add this to disable automatic slash appending
-
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all in development
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -138,12 +154,20 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
     'x-request-id',
     'cache-control',
-    'pragma',  # Added this to match the frontend configuration
-    'x-onboarding-step',  # Add this line
-    'x-debug-step',  # Add this line
-    'x-current-step',  # Recommended for your flow
-    'x-request-version'  # Optional but useful
+    'pragma',
+    'x-onboarding-step',
+    'x-debug-step',
+    'x-current-step',
+    'x-request-version',
+    'x-id-token',
+    'x-user-id',
+    'access-control-allow-origin',
+    'access-control-allow-headers',
+    'access-control-allow-methods'
 ]
+
+# Add CORS_ORIGIN_ALLOW_ALL for development
+CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_EXPOSE_HEADERS = [
     'access-token',
@@ -178,6 +202,9 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8000",  # Add this
     "http://127.0.0.1:8000"   # Add this
 ]
+
+DJANGO_ALLOWED_HOSTS='localhost,127.0.0.1'
+
 
 # Authentication settings for dj-rest-auth and allauth
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
@@ -220,6 +247,8 @@ OAUTH_CALLBACK_URL = f"{FRONTEND_URL}/api/auth/callback/google"
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',  # Add this for social auth
+    'custom_auth.backends.CognitoBackend',
+
 ]
 
 # Celery Configuration
@@ -240,7 +269,7 @@ CELERY_TASK_PUBLISH_RETRY_POLICY = {
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 50
 
-REDIS_HOST = 'localhost'
+REDIS_HOST = '127.0.0.1'
 REDIS_PORT = 6379
 REDIS_DB = 0
 # Redis configuration (consolidate with existing Redis settings)
@@ -256,8 +285,8 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     }
 }
 
-CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
-CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
 CELERY_SEND_TASK_SENT_EVENT = True
 CELERY_TASK_SEND_SENT_EVENT = True
 CELERY_TASK_REMOTE_TRACEBACKS = True
@@ -269,9 +298,10 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # Task routing
 CELERY_TASK_ROUTES = {
-    'onboarding.setup_user_database_task': {'queue': 'setup'},
-    'onboarding.tasks.*': {'queue': 'onboarding'},
-    'users.tasks.*': {'queue': 'users'},
+    'onboarding.tasks.setup_user_schema_task': {'queue': 'setup'},
+    'onboarding.tasks.*': {'queue': 'onboard'},
+    'custom_auth.tasks.create_tenant_schema': {'queue': 'tenant_ops'},
+    'custom_auth.tasks.migrate_tenant_schema': {'queue': 'tenant_ops'},
 }
 
 # Task default configuration
@@ -300,6 +330,10 @@ CELERY_TASK_ANNOTATIONS = {
     }
 }
 
+CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY', '')
+CLAUDE_API_MODEL = os.getenv('CLAUDE_API_MODEL', 'claude-3-opus-20240229')
+CLAUDE_API_MAX_TOKENS = 1000
+
 CELERY_QUEUES = {
     'default': {
         'exchange': 'default',
@@ -316,13 +350,25 @@ CELERY_QUEUES = {
     'users': {
         'exchange': 'users',
         'routing_key': 'users',
-    }
+    },
+    'tenant_ops': {
+        'exchange': 'tenant_ops',
+        'routing_key': 'tenant_ops',
+}
 }
 
 CELERY_BEAT_SCHEDULE = {
     'cleanup_expired_onboarding': {
         'task': 'onboarding.views.cleanup_expired_onboarding',
         'schedule': crontab(hour='*/2'),  # Every 2 hours
+    },
+    'update_federal_tax_rates': {
+        'task': 'taxes.tasks.update_federal_tax_rates',
+        'schedule': crontab(day_of_week='1', hour='3', minute='0'),  # Every Monday at 3:00 AM
+    },
+    'update_state_tax_rates': {
+        'task': 'taxes.tasks.update_state_tax_rates',
+        'schedule': crontab(day_of_week='1', hour='4', minute='0'),  # Every Monday at 4:00 AM
     },
 }
 
@@ -356,7 +402,7 @@ MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
         'OPTIONS': {
             'db': 1,
             'parser_class': 'redis.connection.DefaultParser',
@@ -364,7 +410,8 @@ CACHES = {
             'socket_timeout': 5,
             'socket_connect_timeout': 5,
             'retry_on_timeout': True,
-            'max_connections': 100
+            'max_connections': 100,
+            'KEY_PREFIX': '{tenant}',  # Add this for tenant-aware caching
         }
     }
 }
@@ -388,51 +435,40 @@ DJANGO_ALLOW_ASYNC_UNSAFE = True  # Only for development
 # REST framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'custom_auth.jwt.CognitoJWTAuthentication',
+        'custom_auth.authentication.CognitoAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'custom_auth.permissions.SetupEndpointPermission',
     ],
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
     ],
+    'EXCEPTION_HANDLER': 'custom_auth.utils.custom_exception_handler',
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '5/minute',
+        'user': '60/minute',
+        'tax_calculation': '100/day',  # Custom rate for tax calculations
+    },
 }
 
-# JWT settings
+# Add these JWT settings
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'UPDATE_LAST_LOGIN': True,
-    
-    # Add these additional settings
-    'AUTH_COOKIE': 'access_token',  # Cookie name for access token
-    'AUTH_COOKIE_REFRESH': 'refresh_token',  # Cookie name for refresh token
-    'AUTH_COOKIE_DOMAIN': None,  # Specify domain if needed
-    'AUTH_COOKIE_SECURE': True,
-    'AUTH_COOKIE_HTTP_ONLY': True,  # Prevent JavaScript access
-    'AUTH_COOKIE_PATH': '/',  # Cookie path
-    'AUTH_COOKIE_SAMESITE': 'None' if DEBUG else 'Lax',
-    
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'VERIFYING_KEY': None,
     'AUTH_HEADER_TYPES': ('Bearer',),
-    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-    
-    'TOKEN_TYPE_CLAIM': 'token_type',
-    'JTI_CLAIM': 'jti',
-    
-    # Add token blacklist settings
-    'BLACKLIST_TOKEN_CHECKS': [
-        'rest_framework_simplejwt.token_blacklist.check_blacklist',
-    ],
+    'USER_ID_CLAIM': 'sub',
 }
+
 
 # Logging configuration
 class DeduplicationFilter(logging.Filter):
@@ -517,6 +553,40 @@ LOGGING = {
     },
 }
 
+LOGGING['loggers']['custom_auth.tenant'] = {
+    'handlers': ['console', 'file'],
+    'level': 'DEBUG',
+    'propagate': False,
+}
+# Then add custom loggers
+LOGGING['loggers']['custom_auth'] = {
+    'handlers': ['console', 'file'],
+    'level': 'DEBUG',
+    'propagate': False,
+}
+
+# Cognito Authentication Settings
+COGNITO_AWS_REGION = AWS_REGION
+COGNITO_USER_POOL = COGNITO_USER_POOL_ID  # Already correct
+COGNITO_APP_CLIENT_ID = COGNITO_APP_CLIENT_ID  # Already correct
+COGNITO_TOKEN_VERIFY = True
+COGNITO_ATTR_MAPPING = {
+    'email': 'email',
+    'given_name': 'first_name',
+    'family_name': 'last_name',
+    'custom:userrole': 'role',
+    'custom:businessid': 'business_id',
+    'custom:businessname': 'business_name',
+    'custom:businesstype': 'business_type',
+    'custom:businesscountry': 'business_country',
+    'custom:legalstructure': 'legal_structure',
+    'custom:datefounded': 'date_founded',
+    'custom:subplan': 'subscription_plan',
+    'custom:subscriptioninterval': 'subscription_interval',
+    'custom:onboarding': 'onboarding_status',
+    'custom:setupdone': 'setup_complete'
+}
+
 logging.config.dictConfig(LOGGING)
 
 # Application definition
@@ -530,23 +600,24 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'django_celery_beat',
     'corsheaders',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',  # Add this for Google auth
     'rest_framework',
-    'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'django_countries',
     'rest_framework.authtoken',
     'dj_rest_auth',
+    'dj_rest_auth.registration',  # Add this line
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     'django_cryptography',
     'phonenumber_field',
-    'users.apps.UsersConfig',  # replace 'users' with your actual app name
+    'users.apps.UsersConfig',
     'sales',
     'finance',
     'reports',
     'banking',
+    'payments',
     'payroll',
     'inventory',
     'analysis',
@@ -558,22 +629,24 @@ INSTALLED_APPS = [
     'purchases',
     'barcode',
     'django_extensions',
-    'custom_auth',  # Add the new auth app
+    'custom_auth',
     'hr.apps.HrConfig',
     'business.apps.BusinessConfig',
     'onboarding.apps.OnboardingConfig'
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'custom_auth.cors.CorsMiddleware',  # Use our new CORS middleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',  # Add this
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'custom_auth.middleware.RequestIDMiddleware',
+    'custom_auth.middleware.TenantMiddleware',
 ]
 
 # Check if we're running in ASGI mode
@@ -620,29 +693,95 @@ ASGI_APPLICATION = 'pyfactor.asgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# Add these settings for tenant apps
+SHARED_APPS = (
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django.contrib.sites',
+    'corsheaders',
+    'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
+    'django_countries',
+    'rest_framework.authtoken',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'django_cryptography',
+    'phonenumber_field',
+    'custom_auth',
+    'onboarding',
+)
+
+TENANT_APPS = (
+    'users',
+    'sales',
+    'finance',
+    'reports',
+    'banking',
+    'payroll',
+    'inventory',
+    'analysis',
+    'chatbot',
+    'chart',
+    'integrations',
+    'alerts',
+    'taxes',
+    'purchases',
+    'barcode',
+    'hr',
+    'business',
+)
+
+INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
+
+# Add database router
+DATABASE_ROUTERS = ['pyfactor.db_routers.TenantSchemaRouter', 'taxes.db_router.TaxDatabaseRouter']
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'postgres'),
+        'NAME': os.getenv('DB_NAME', 'dott_main'),
         'USER': os.getenv('DB_USER', 'postgres'),
         'PASSWORD': os.getenv('DB_PASSWORD', 'postgres'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5432'),
-        'ATOMIC_REQUESTS': False,
         'TIME_ZONE': 'UTC',
         'CONN_MAX_AGE': 60,
         'AUTOCOMMIT': True,
-        'CONN_HEALTH_CHECKS': False,
+        'CONN_HEALTH_CHECKS': True,
         'OPTIONS': {
             'connect_timeout': 10,
             'client_encoding': 'UTF8',
-            'application_name': 'pyfactor'
+            'application_name': 'dott',
+            'sslmode': 'prefer',
+            'options': ''  # Allow router to control schema
+        }
+    },
+
+    'taxes': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('TAX_DB_NAME', 'dott_taxes'),
+        'USER': os.getenv('TAX_DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('TAX_DB_PASSWORD', 'postgres'),
+        'HOST': os.getenv('TAX_DB_HOST', 'localhost'),
+        'PORT': os.getenv('TAX_DB_PORT', '5432'),
+        'OPTIONS': {
+            'connect_timeout': 10,
+            'client_encoding': 'UTF8',
+            'sslmode': 'prefer',
         }
     }
+
 }
 
-# Define template settings separately
-USER_DATABASE_TEMPLATE = 'template0'
+
 
 DATABASE_RESOURCE_LIMITS = {
     'MAX_CONNECTIONS_PER_DB': 50,
@@ -651,22 +790,33 @@ DATABASE_RESOURCE_LIMITS = {
     'LOCK_TIMEOUT': 5000,
 }
 
-USER_DATABASE_TEMPLATE = 'template_db'
-
-DATABASE_ROUTERS = ['pyfactor.userDatabaseRouter.UserDatabaseRouter']
-
-# User database settings
-USER_DATABASE_SETTINGS = {
-    'CONNECTION_LIMIT': 50,  # Max connections per database
-    'POOL_MIN_SIZE': 5,
-    'POOL_MAX_SIZE': 20,
-    'MAX_USER_DATABASES': 10000,  # Maximum number of user databases
-    'TEMPLATE_NAME': 'template_db',  # Template database name
-    'SHARD_COUNT': 10,  # Number of database shards
-    'MAX_DB_SIZE': 1024 * 1024 * 1024,  # 1GB max size per database
-    'BACKUP_RETENTION_DAYS': 30,
+# Add tenant settings
+TENANT_SETTINGS = {
+    'DEFAULT_SCHEMA': 'public',
+    'TENANT_SCHEMA_PREFIX': 'tenant_',
+    'MAX_TENANTS': 100000,
+    'SCHEMA_NAME_MAX_LENGTH': 63,  # PostgreSQL limit
+    'CREATE_SCHEMA_PERMISSIONS': [
+        'CREATE',
+        'USAGE',
+    ],
+    'TENANT_MODEL': 'custom_auth.Tenant',
+    'TENANT_DOMAIN_MODEL': None,
+    'SCHEMA_MIGRATIONS': True,
+    'AUTO_CREATE_SCHEMA': True,
+    'SCHEMA_CACHE_TTL': 300,  # 5 minutes cache for schema names
 }
 
+# Add these settings for schema migrations
+DATABASE_SCHEMA_MIGRATIONS = {
+    'ENABLE_AUTO_MIGRATE': True,  # Auto migrate schemas
+    'MIGRATION_TABLE': 'schema_migrations',
+    'MIGRATION_HISTORY_TABLE': 'schema_migration_history',
+}
+
+
+TENANT_CACHE_KEY_PREFIX = 'tenant_{}'
+TENANT_CACHE_TIMEOUT = 3600  # 1 hour
 DB_POOL_OPTIONS = {
     'MIN_CONNS': 5,
     'MAX_CONNS': 20,
@@ -679,13 +829,13 @@ DB_POOL_OPTIONS = {
 }
 
 DATABASE_CONNECTION_POOL = {
-    'MAX_CONNS': 100,  # Total max connections
+    'MAX_CONNS': 100,
     'MIN_CONNS': 20,
     'CONN_LIFETIME': 300,
     'CONN_TIMEOUT': 30,
     'MAX_QUERIES_PER_CONN': 5000,
+    'SCHEMA_CACHE_TTL': 300,  # 5 minutes cache for schema names
 }
-
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 

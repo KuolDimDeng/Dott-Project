@@ -1,62 +1,44 @@
 'use client';
 
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import PaymentsIcon from '@mui/icons-material/Payments';
-import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
+import React from 'react';
+import { Box, Container, Grid, Typography, Card, CardContent } from '@mui/material';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import ReceiptIcon from '@mui/icons-material/Receipt';
 import PeopleIcon from '@mui/icons-material/People';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
 
-const items = [
+const features = [
   {
-    icon: <ReceiptLongIcon fontSize="large" />,
-    title: 'Invoice Management',
-    description:
-      'Easily create, customize, and send professional invoices. Automate reminders for unpaid invoices, track payments, and stay organized effortlessly.',
+    title: 'Simple Accounting',
+    description: 'Easy-to-use accounting tools for small businesses. Track income, expenses, and cash flow.',
+    icon: <AccountBalanceIcon sx={{ fontSize: 40 }} />,
   },
   {
-    icon: <PaymentsIcon fontSize="large" />,
-    title: 'Payments',
-    description:
-      "Accept payments with ease, whether it's through traditional payment methods like cards or mobile money platforms. Our seamless payment integration speeds up transactions, helping you get paid faster.",
+    title: 'Payroll & HR',
+    description: 'Manage employees, payroll, benefits, and HR documents all in one place.',
+    icon: <PeopleIcon sx={{ fontSize: 40 }} />,
   },
   {
-    icon: <PhoneAndroidIcon fontSize="large" />,
-    title: 'Mobile Money Integration',
-    description:
-      'Take advantage of our mobile money support for instant, secure payments from platforms like MTN, Airtel, and others. Perfect for businesses operating in regions with a high reliance on mobile money services.',
+    title: 'Inventory Management',
+    description: 'Track stock levels, set reorder points, and manage suppliers efficiently.',
+    icon: <InventoryIcon sx={{ fontSize: 40 }} />,
   },
   {
-    icon: <AccountBalanceWalletIcon fontSize="large" />,
-    title: 'Accounting',
-    description:
-      "Manage your finances in real time with Dott's comprehensive accounting features. Track income, expenses, and profitability all in one easy-to-use dashboard, helping you make informed business decisions.",
+    title: 'Reports & Analytics',
+    description: 'Get insights with customizable reports and real-time business analytics.',
+    icon: <AssessmentIcon sx={{ fontSize: 40 }} />,
   },
   {
-    icon: <MonetizationOnIcon fontSize="large" />,
-    title: 'Payroll',
-    description:
-      'Simplify payroll with automated calculations, tax compliance, and easy employee management. Whether you choose full-service or self-service payroll, Dott ensures your team gets paid on time, every time.',
+    title: 'Mobile Money',
+    description: 'Accept payments and manage transactions on the go with mobile integration.',
+    icon: <PhoneAndroidIcon sx={{ fontSize: 40 }} />,
   },
   {
-    icon: <PeopleIcon fontSize="large" />,
-    title: 'HR Management',
-    description:
-      'Streamline your HR processes, from employee onboarding to performance management. Dott helps you manage your workforce more efficiently with integrated HR tools.',
-  },
-  {
-    icon: <InventoryIcon fontSize="large" />,
-    title: 'Inventory',
-    description:
-      "Keep track of your stock in real time, whether you're managing physical products or digital services. Dott's inventory system is built to help you reduce waste and optimize your supply chain.",
+    title: 'Invoicing',
+    description: 'Create and send professional invoices, track payments, and manage receivables.',
+    icon: <ReceiptIcon sx={{ fontSize: 40 }} />,
   },
 ];
 
@@ -65,47 +47,77 @@ export default function Features() {
     <Box
       id="features"
       sx={{
-        py: { xs: 8, sm: 16 },
-        backgroundColor: 'background.paper',
+        py: { xs: 8, sm: 12 },
+        bgcolor: 'background.default',
       }}
     >
       <Container maxWidth="lg">
-        <Typography
-          component="h2"
-          variant="h2"
-          color="text.primary"
-          sx={{ mb: 8, fontWeight: 700, textAlign: 'center' }}
-        >
-          Your All-in-One Solution for Business Management
-        </Typography>
+        <Box sx={{ mb: { xs: 6, sm: 8 }, textAlign: 'center' }}>
+          <Typography
+            component="h2"
+            variant="h2"
+            sx={{
+              mb: 2,
+              background: (theme) =>
+                theme.palette.mode === 'light'
+                  ? 'linear-gradient(45deg, #1976d2, #2196f3)'
+                  : 'linear-gradient(45deg, #64b5f6, #90caf9)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            Features
+          </Typography>
+          <Typography
+            variant="h5"
+            color="text.secondary"
+            sx={{ maxWidth: 800, mx: 'auto' }}
+          >
+            Everything you need to run your business efficiently
+          </Typography>
+        </Box>
+
         <Grid container spacing={4}>
-          {items.map(({ icon, title, description }, index) => (
-            <Grid item xs={12} md={6} key={index}>
+          {features.map((feature) => (
+            <Grid item xs={12} sm={6} md={4} key={feature.title}>
               <Card
                 sx={{
-                  p: 4,
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  transition: 'transform 0.3s, box-shadow 0.3s',
+                  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
                   '&:hover': {
-                    transform: 'translateY(-8px)',
-                    boxShadow: '0 22px 40px 4px rgba(0, 0, 0, 0.1)',
+                    transform: 'translateY(-4px)',
+                    boxShadow: (theme) =>
+                      theme.palette.mode === 'light'
+                        ? '0 4px 20px rgba(0,0,0,0.1)'
+                        : '0 4px 20px rgba(0,0,0,0.3)',
                   },
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  {React.cloneElement(icon, { sx: { fontSize: 40, color: 'primary.main', mr: 2 } })}
-                  <Typography variant="h5" component="h3" sx={{ fontWeight: 600 }}>
-                    {title}
+                <CardContent>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      mb: 2,
+                      color: 'primary.main',
+                    }}
+                  >
+                    {feature.icon}
+                  </Box>
+                  <Typography
+                    variant="h5"
+                    component="h3"
+                    gutterBottom
+                    sx={{ fontWeight: 600 }}
+                  >
+                    {feature.title}
                   </Typography>
-                </Box>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 2, flexGrow: 1 }}>
-                  {description}
-                </Typography>
-                <Button variant="outlined" color="primary">
-                  Learn More
-                </Button>
+                  <Typography variant="body1" color="text.secondary">
+                    {feature.description}
+                  </Typography>
+                </CardContent>
               </Card>
             </Grid>
           ))}

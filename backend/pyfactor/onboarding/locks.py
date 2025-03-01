@@ -159,12 +159,12 @@ def thread_lock(key: str, timeout: Optional[float] = None):
         if acquired:
             lock.release()
 
-class SetupLock:
+class SchemaSetupLock:
     """
-    Manages database setup locking to prevent concurrent setup attempts
+    Manages schema setup locking to prevent concurrent setup attempts
     """
     def __init__(self, user_id: str):
-        self.lock_key = f"database_setup_lock_{user_id}"
+        self.lock_key = f"schema_setup_lock_{user_id}"
         self.user_id = user_id
         self.acquired = False
         
@@ -219,16 +219,16 @@ class SetupLock:
         """Context manager exit"""
         self.release()
 
-def get_setup_lock(user_id: str) -> SetupLock:
-    """Helper function to create setup lock"""
-    return SetupLock(user_id)
+def get_setup_lock(user_id: str) -> SchemaSetupLock:
+    """Helper function to create schema setup lock"""
+    return SchemaSetupLock(user_id)
 
 # Usage example:
 def example_usage():
     # Using SetupLock as context manager
     with get_setup_lock("user123") as acquired:
         if acquired:
-            # Do database setup work
+            # Do schema setup work
             pass
     
     # Using distributed lock

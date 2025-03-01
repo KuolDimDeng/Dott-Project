@@ -13,7 +13,7 @@ import {
   IconButton,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useApi } from '@/lib/axiosConfig';
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const CustomChargeSettings = () => {
@@ -52,7 +52,7 @@ const CustomChargeSettings = () => {
 
   const handleDeletePlan = async (planId) => {
     try {
-      await useApi.delete(`/api/custom-charge-plans/${planId}/`);
+      await axiosInstance.delete(`/api/custom-charge-plans/${planId}/`);
       addMessage('success', 'Custom charge plan deleted successfully');
       fetchCustomPlans();
     } catch (error) {

@@ -1,154 +1,72 @@
 import { Amplify } from 'aws-amplify';
-import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { cognitoUserPoolsTokenProvider } from '@aws-amplify/auth/cognito';
 import { logger } from '@/utils/logger';
+import { env } from './env';
 
-/**
- * Configures AWS Amplify with Cognito settings
- */
-export function configureAmplify() {
-  if (
-    !process.env.NEXT_PUBLIC_AWS_USER_POOL_ID ||
-    !process.env.NEXT_PUBLIC_AWS_USER_POOL_WEB_CLIENT_ID
-  ) {
-    console.error(
-      '[Amplify] ERROR: Missing AWS Cognito environment variables!'
-    );
-    return;
-  }
+let isConfigured = false;
 
-  logger.debug('[Amplify] Configuring AWS Amplify...');
-
-  Amplify.configure({
-    Auth: {
-      Cognito: {
-        userPoolId: process.env.NEXT_PUBLIC_AWS_USER_POOL_ID,
-        userPoolClientId: process.env.NEXT_PUBLIC_AWS_USER_POOL_WEB_CLIENT_ID,
-        region: process.env.NEXT_PUBLIC_AWS_REGION,
-        signUpVerificationMethod: 'code',
-        loginWith: {
-          email: true,
-          phone: false,
-          username: false,
-        },
-        oauth: {
-          domain:
-            process.env.NEXT_PUBLIC_AWS_COGNITO_DOMAIN ||
-            'us-east-1jpl8vgfb6.auth.us-east-1.amazoncognito.com',
-          scope: ['email', 'openid', 'profile'],
-          redirectSignIn:
-            process.env.NEXT_PUBLIC_REDIRECT_SIGNIN ||
-            'http://localhost:3000/auth/callback',
-          redirectSignOut:
-            process.env.NEXT_PUBLIC_REDIRECT_SIGNOUT || 'http://localhost:3000',
-          responseType: 'code',
-        },
-      },
-    },
-  });
-
-  logger.debug('[Amplify] AWS Amplify configured successfully.');
-}
-
-/**
- * Manages token storage in localStorage
- */
-cognitoUserPoolsTokenProvider.setKeyValueStorage({
-  setItem: (key, value) => {
-    try {
-      localStorage.setItem(key, value);
-    } catch (error) {
-      logger.error('[Amplify] Error setting token:', error);
-    }
-  },
-  getItem: (key) => {
-    try {
-      return localStorage.getItem(key);
-    } catch (error) {
-      logger.error('[Amplify] Error getting token:', error);
-      return null;
-    }
-  },
-  removeItem: (key) => {
-    try {
-      localStorage.removeItem(key);
-    } catch (error) {
-      logger.error('[Amplify] Error removing token:', error);
-    }
-  },
-});
-
-/**
- * Fetches latest authentication session & refreshes tokens
- */
-export async function refreshTokens() {
-  try {
-    logger.debug('[Amplify] Fetching latest authentication session...');
-    const session = await fetchAuthSession({ forceRefresh: true });
-    logger.debug('[Amplify] Tokens refreshed successfully:', session.tokens);
-    return session.tokens;
-  } catch (error) {
-    logger.error('[Amplify] Token refresh failed:', error);
-    return null;
-  }
-}
-
-/**
- * Converts Cognito error codes into user-friendly messages
- */
-export function getCognitoErrorMessage(error) {
-  const errorMap = {
-    UserNotFoundException: 'User not found.',
-    NotAuthorizedException: 'Incorrect username or password.',
-    UserNotConfirmedException: 'Please verify your email address.',
-    CodeMismatchException: 'Invalid verification code.',
-    ExpiredCodeException: 'Verification code has expired.',
-    LimitExceededException: 'Too many attempts. Please try again later.',
-    UsernameExistsException: 'An account with this email already exists.',
-    InvalidPasswordException: 'Password does not meet requirements.',
-    InvalidParameterException: 'Invalid input. Please check your entries.',
-    CodeDeliveryFailureException: 'Failed to send verification code.',
-  };
-
-  return error.code && errorMap[error.code]
-    ? errorMap[error.code]
-    : error.message || 'An unexpected error occurred.';
-}
-
-/**
- * Updates user attributes in AWS Cognito
- * @param {Object} attributes - The user attributes to update
- */
-export async function updateUserAttributes(attributes) {
-  try {
-    const { updateUserAttributes } = await import('aws-amplify/auth');
-    const { getCurrentUser } = await import('aws-amplify/auth');
-    const user = await getCurrentUser();
-
-    if (!user) {
-      throw new Error('No user found');
-    }
-
-    logger.debug('[Amplify] Updating user attributes:', attributes);
-
-    // Update attributes one by one to isolate any issues
-    for (const [key, value] of Object.entries(attributes)) {
-      try {
-        await updateUserAttributes(user, { [key]: value });
-        logger.debug(`[Amplify] Successfully updated attribute: ${key}`);
-      } catch (error) {
-        logger.error(`[Amplify] Failed to update attribute ${key}:`, error);
-        throw error;
+const amplifyConfig = {
+  Auth: {
+    Cognito: {
+      userPoolId: env.NEXT_PUBLIC_COGNITO_USER_POOL_ID,
+      userPoolClientId: env.NEXT_PUBLIC_COGNITO_CLIENT_ID,
+      region: env.NEXT_PUBLIC_AWS_REGION,
+      signUpVerificationMethod: 'code',
+      loginWith: {
+        email: true,
+        phone: false,
+        username: false
       }
     }
+  },
+  API: {
+    endpoints: [
+      {
+        name: 'api',
+        endpoint: env.NEXT_PUBLIC_API_URL,
+        region: env.NEXT_PUBLIC_AWS_REGION
+      }
+    ]
+  }
+};
 
-    logger.debug('[Amplify] All user attributes updated successfully');
-    return true;
+export async function configureAmplify() {
+  try {
+    logger.debug('[Amplify] Starting configuration');
+
+    if (isConfigured) {
+      logger.debug('[Amplify] Already configured, skipping');
+      return;
+    }
+
+    // Log configuration (excluding sensitive data)
+    logger.debug('[Amplify] Configuration:', {
+      region: env.NEXT_PUBLIC_AWS_REGION,
+      userPoolId: env.NEXT_PUBLIC_COGNITO_USER_POOL_ID,
+      loginWith: amplifyConfig.Auth.Cognito.loginWith
+    });
+
+    // Configure Amplify
+    Amplify.configure(amplifyConfig);
+
+    isConfigured = true;
+    logger.debug('[Amplify] Configuration verified successfully');
+
   } catch (error) {
-    logger.error('[Amplify] Failed to update user attributes:', error);
+    logger.error('[Amplify] Configuration failed:', {
+      error: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 }
 
-// ✅ Ensure Amplify is configured when the file is imported
-configureAmplify();
+// Helper function to check if Amplify is configured
+export function isAmplifyConfigured() {
+  return isConfigured;
+}
+
+// Export config for server-side usage
+export function getAmplifyConfig() {
+  return amplifyConfig;
+}

@@ -1,3 +1,4 @@
+#Users/kuoldeng/projectx/backend/pyfactor/sales/views.py
 import base64
 from decimal import Decimal
 import decimal
@@ -383,9 +384,21 @@ def create_product(request):
     user = request.user
 
     try:
+        # Get the user profile and database name
         user_profile = UserProfile.objects.using('default').get(user=user)
         database_name = user_profile.database_name
         logger.debug("Database name: %s", database_name)
+
+        # Get user's business to determine business type
+        business = Business.objects.using('default').filter(owner=user).first()
+        if not business:
+            return Response({'error': 'No business found for user'}, status=status.HTTP_400_BAD_REQUEST)
+
+        business_type = business.business_type
+        business_subtype_selections = business.business_subtype_selections if hasattr(business, 'business_subtype_selections') else {}
+        
+        logger.debug(f"Business type: {business_type}")
+        logger.debug(f"Business subtype selections: {business_subtype_selections}")
 
         # Ensure the database exists
         router = UserDatabaseRouter()
@@ -399,7 +412,20 @@ def create_product(request):
             # Extract custom_charge_plans data from request
             custom_charge_plans_data = request.data.pop('custom_charge_plans', [])
             
-            product_serializer = ProductSerializer(data=request.data, context={'database_name': database_name})
+            # Extract business-specific fields from request data
+            standard_fields = ['name', 'description', 'price', 'is_for_sale', 'is_for_rent', 
+                              'salesTax', 'stock_quantity', 'reorder_level', 'height', 'width', 
+                              'height_unit', 'width_unit', 'weight', 'weight_unit', 'charge_period', 
+                              'charge_amount']
+            
+            # Create a copy of request.data for standard fields
+            standard_data = {}
+            for field in standard_fields:
+                if field in request.data:
+                    standard_data[field] = request.data.get(field)
+            
+            # Create the base product
+            product_serializer = ProductSerializer(data=standard_data, context={'database_name': database_name})
             if product_serializer.is_valid():
                 product = product_serializer.save()
                 
@@ -419,6 +445,59 @@ def create_product(request):
                             product.custom_charge_plans.add(plan)
                         else:
                             logger.error(f"Invalid custom charge plan data: {plan_serializer.errors}")
+                
+                # Process business-specific fields
+                # Import the utilities here to avoid circular imports
+                from sales.utils import get_product_fields_for_business, get_submenu_specific_fields
+
+                # Get the list of fields for this business type
+                business_specific_fields = set(get_product_fields_for_business(business))
+                # Also get submenu-specific fields
+                additional_fields = get_submenu_specific_fields(business_type, business_subtype_selections)
+                business_specific_fields.update(additional_fields)
+                
+                # Remove standard fields
+                business_specific_fields = business_specific_fields - set(standard_fields)
+                
+                # Create or update ProductTypeFields
+                type_fields_data = {}
+                extra_fields_data = {}
+                
+                # Classify fields into model fields and extra fields
+                from sales.models import ProductTypeFields
+                product_type_fields_model_fields = [f.name for f in ProductTypeFields._meta.get_fields()]
+                
+                for field_name in business_specific_fields:
+                    if field_name in request.data:
+                        field_value = request.data.get(field_name)
+                        if field_value is not None:  # Only process non-empty fields
+                            if field_name in product_type_fields_model_fields:
+                                type_fields_data[field_name] = field_value
+                            else:
+                                extra_fields_data[field_name] = field_value
+                
+                # Add any JSON-formatted extra fields
+                if 'extra_fields' in request.data and request.data['extra_fields']:
+                    try:
+                        if isinstance(request.data['extra_fields'], str):
+                            import json
+                            additional_extra = json.loads(request.data['extra_fields'])
+                        else:
+                            additional_extra = request.data['extra_fields']
+                        extra_fields_data.update(additional_extra)
+                    except Exception as e:
+                        logger.error(f"Error parsing extra_fields: {e}")
+                
+                # Save the type fields
+                if type_fields_data or extra_fields_data:
+                    type_fields_data['extra_fields'] = extra_fields_data
+                    
+                    # Create or update ProductTypeFields
+                    ProductTypeFields.objects.using(database_name).update_or_create(
+                        product=product,
+                        defaults=type_fields_data
+                    )
+                    logger.debug(f"Saved product type fields: {type_fields_data}")
 
                 # Create corresponding inventory item
                 inventory_data = {
@@ -462,15 +541,38 @@ def create_service(request):
     user = request.user
 
     try:
+        # Get the user profile and database name
         user_profile = UserProfile.objects.using('default').get(user=user)
         database_name = user_profile.database_name
         logger.debug("Database name: %s", database_name)
+
+        # Get user's business to determine business type
+        business = Business.objects.using('default').filter(owner=user).first()
+        if not business:
+            return Response({'error': 'No business found for user'}, status=status.HTTP_400_BAD_REQUEST)
+
+        business_type = business.business_type
+        business_subtype_selections = business.business_subtype_selections if hasattr(business, 'business_subtype_selections') else {}
+        
+        logger.debug(f"Business type: {business_type}")
+        logger.debug(f"Business subtype selections: {business_subtype_selections}")
 
         with transaction.atomic(using=database_name):
             # Extract custom_charge_plans data from request
             custom_charge_plans_data = request.data.pop('custom_charge_plans', [])
             
-            serializer = ServiceSerializer(data=request.data, context={'database_name': database_name})
+            # Extract standard fields from request data
+            standard_fields = ['name', 'description', 'price', 'duration', 'is_recurring', 
+                               'salesTax', 'charge_period', 'charge_amount']
+            
+            # Create a copy of request.data for standard fields
+            standard_data = {}
+            for field in standard_fields:
+                if field in request.data:
+                    standard_data[field] = request.data.get(field)
+            
+            # Create the base service
+            serializer = ServiceSerializer(data=standard_data, context={'database_name': database_name})
             if serializer.is_valid():
                 service = serializer.save()
                 
@@ -490,6 +592,59 @@ def create_service(request):
                             service.custom_charge_plans.add(plan)
                         else:
                             logger.error(f"Invalid custom charge plan data: {plan_serializer.errors}")
+                
+                # Process business-specific fields
+                # Import the utilities here to avoid circular imports
+                from sales.utils import get_service_fields_for_business, get_submenu_specific_fields
+
+                # Get the list of fields for this business type
+                business_specific_fields = set(get_service_fields_for_business(business))
+                # Also get submenu-specific fields
+                additional_fields = get_submenu_specific_fields(business_type, business_subtype_selections)
+                business_specific_fields.update(additional_fields)
+                
+                # Remove standard fields
+                business_specific_fields = business_specific_fields - set(standard_fields)
+                
+                # Create or update ServiceTypeFields
+                type_fields_data = {}
+                extra_fields_data = {}
+                
+                # Classify fields into model fields and extra fields
+                from sales.models import ServiceTypeFields
+                service_type_fields_model_fields = [f.name for f in ServiceTypeFields._meta.get_fields()]
+                
+                for field_name in business_specific_fields:
+                    if field_name in request.data:
+                        field_value = request.data.get(field_name)
+                        if field_value is not None:  # Only process non-empty fields
+                            if field_name in service_type_fields_model_fields:
+                                type_fields_data[field_name] = field_value
+                            else:
+                                extra_fields_data[field_name] = field_value
+                
+                # Add any JSON-formatted extra fields
+                if 'extra_fields' in request.data and request.data['extra_fields']:
+                    try:
+                        if isinstance(request.data['extra_fields'], str):
+                            import json
+                            additional_extra = json.loads(request.data['extra_fields'])
+                        else:
+                            additional_extra = request.data['extra_fields']
+                        extra_fields_data.update(additional_extra)
+                    except Exception as e:
+                        logger.error(f"Error parsing extra_fields: {e}")
+                
+                # Save the type fields
+                if type_fields_data or extra_fields_data:
+                    type_fields_data['extra_fields'] = extra_fields_data
+                    
+                    # Create or update ServiceTypeFields
+                    ServiceTypeFields.objects.using(database_name).update_or_create(
+                        service=service,
+                        defaults=type_fields_data
+                    )
+                    logger.debug(f"Saved service type fields: {type_fields_data}")
 
                 logger.info(f"Service created: {service.id} - {service.name}")
                 return Response(ServiceSerializer(service).data, status=status.HTTP_201_CREATED)
@@ -501,6 +656,154 @@ def create_service(request):
         return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         logger.exception("Error creating service: %s", str(e))
+        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_product(request, pk):
+    logger.debug(f"Update Product: Received request data for product {pk}: %s", request.data)
+    user = request.user
+
+    try:
+        # Get the user profile and database name
+        user_profile = UserProfile.objects.using('default').get(user=user)
+        database_name = user_profile.database_name
+        
+        # Get user's business to determine business type
+        business = Business.objects.using('default').filter(owner=user).first()
+        if not business:
+            return Response({'error': 'No business found for user'}, status=status.HTTP_400_BAD_REQUEST)
+
+        business_type = business.business_type
+        business_subtype_selections = business.business_subtype_selections if hasattr(business, 'business_subtype_selections') else {}
+
+        # Ensure database exists
+        router = UserDatabaseRouter()
+        router.create_dynamic_database(database_name)
+
+        with transaction.atomic(using=database_name):
+            # Get the product
+            try:
+                product = Product.objects.using(database_name).get(pk=pk)
+            except Product.DoesNotExist:
+                return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Extract custom_charge_plans data from request
+            custom_charge_plans_data = request.data.pop('custom_charge_plans', [])
+            
+            # Extract standard fields from request data
+            standard_fields = ['name', 'description', 'price', 'is_for_sale', 'is_for_rent', 
+                              'salesTax', 'stock_quantity', 'reorder_level', 'height', 'width', 
+                              'height_unit', 'width_unit', 'weight', 'weight_unit', 'charge_period', 
+                              'charge_amount']
+            
+            # Create a copy of request.data for standard fields
+            standard_data = {}
+            for field in standard_fields:
+                if field in request.data:
+                    standard_data[field] = request.data.get(field)
+            
+            # Update the base product
+            product_serializer = ProductSerializer(product, data=standard_data, partial=True)
+            if product_serializer.is_valid():
+                product = product_serializer.save()
+                
+                # Handle custom charge plans - clear existing and add new ones
+                product.custom_charge_plans.clear()
+                for plan_data in custom_charge_plans_data:
+                    plan_id = plan_data.get('id')
+                    if plan_id:
+                        try:
+                            plan = CustomChargePlan.objects.using(database_name).get(id=plan_id)
+                            product.custom_charge_plans.add(plan)
+                        except CustomChargePlan.DoesNotExist:
+                            logger.warning(f"Custom charge plan with id {plan_id} does not exist.")
+                    else:
+                        plan_serializer = CustomChargePlanSerializer(data=plan_data)
+                        if plan_serializer.is_valid():
+                            plan = plan_serializer.save()
+                            product.custom_charge_plans.add(plan)
+                        else:
+                            logger.error(f"Invalid custom charge plan data: {plan_serializer.errors}")
+                
+                # Process business-specific fields
+                from sales.utils import get_product_fields_for_business, get_submenu_specific_fields
+
+                # Get the list of fields for this business type
+                business_specific_fields = set(get_product_fields_for_business(business))
+                additional_fields = get_submenu_specific_fields(business_type, business_subtype_selections)
+                business_specific_fields.update(additional_fields)
+                
+                # Remove standard fields
+                business_specific_fields = business_specific_fields - set(standard_fields)
+                
+                # Create or update ProductTypeFields
+                type_fields_data = {}
+                extra_fields_data = {}
+                
+                # Get existing type fields or create new
+                from sales.models import ProductTypeFields
+                type_fields, created = ProductTypeFields.objects.using(database_name).get_or_create(product=product)
+                
+                # If not created, get existing extra fields
+                if not created and type_fields.extra_fields:
+                    extra_fields_data = type_fields.extra_fields
+                
+                # Update with new values
+                product_type_fields_model_fields = [f.name for f in ProductTypeFields._meta.get_fields()]
+                
+                for field_name in business_specific_fields:
+                    if field_name in request.data:
+                        field_value = request.data.get(field_name)
+                        if field_name in product_type_fields_model_fields:
+                            type_fields_data[field_name] = field_value
+                        else:
+                            extra_fields_data[field_name] = field_value
+                
+                # Add any JSON-formatted extra fields
+                if 'extra_fields' in request.data and request.data['extra_fields']:
+                    try:
+                        if isinstance(request.data['extra_fields'], str):
+                            import json
+                            additional_extra = json.loads(request.data['extra_fields'])
+                        else:
+                            additional_extra = request.data['extra_fields']
+                        extra_fields_data.update(additional_extra)
+                    except Exception as e:
+                        logger.error(f"Error parsing extra_fields: {e}")
+                
+                # Save the type fields
+                type_fields_data['extra_fields'] = extra_fields_data
+                
+                # Update ProductTypeFields
+                for key, value in type_fields_data.items():
+                    setattr(type_fields, key, value)
+                type_fields.save(using=database_name)
+                
+                # Update corresponding inventory item if it exists
+                try:
+                    from inventory.models import InventoryItem
+                    inventory_item = InventoryItem.objects.using(database_name).get(sku=product.product_code)
+                    inventory_item.name = product.name
+                    inventory_item.description = product.description
+                    inventory_item.quantity = product.stock_quantity
+                    inventory_item.reorder_level = product.reorder_level
+                    inventory_item.unit_price = product.price
+                    inventory_item.save(using=database_name)
+                    logger.info(f"Inventory item updated: {inventory_item.id} - {inventory_item.name}")
+                except:
+                    logger.warning(f"No inventory item found for product {product.id} - {product.name}")
+
+                logger.info(f"Product updated: {product.id} - {product.name}")
+                return Response(ProductSerializer(product).data)
+            else:
+                logger.error("Validation errors: %s", product_serializer.errors)
+                return Response(product_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except UserProfile.DoesNotExist:
+        logger.error("UserProfile does not exist for user: %s", user)
+        return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.exception("Error updating product: %s", str(e))
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
@@ -1441,3 +1744,6 @@ def refund_detail(request, pk):
     
     serializer = RefundSerializer(refund)
     return Response(serializer.data)
+
+
+

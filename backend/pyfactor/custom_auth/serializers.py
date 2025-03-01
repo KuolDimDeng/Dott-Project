@@ -3,8 +3,28 @@ import uuid
 from allauth.account.adapter import get_adapter
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from rest_framework import serializers
-from .models import User
+from .models import User, Tenant
 from business.models import Subscription
+
+class TenantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tenant
+        fields = (
+            'id',
+            'schema_name',
+            'name',
+            'created_on',
+            'is_active',
+            'database_status',
+            'setup_status',
+            'last_setup_attempt',
+            'setup_error_message',
+            'last_health_check',
+            'database_setup_task_id',
+            'setup_task_id'
+        )
+        read_only_fields = ('id', 'created_on', 'database_setup_task_id', 'setup_task_id')
+
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 from pyfactor.logging_config import get_logger

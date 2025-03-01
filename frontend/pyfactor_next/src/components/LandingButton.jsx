@@ -1,159 +1,165 @@
 'use client';
 
-import {
-  Button,
-  CircularProgress,
-  alpha,
-  useTheme,
-  Tooltip,
-  Box,
-} from '@mui/material';
-import {
-  useLandingPageStatus,
-  BUTTON_STATES,
-} from '@/hooks/useLandingPageStatus';
-import { logger } from '@/utils/logger';
 import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button, CircularProgress, Box } from '@mui/material';
+import { logger } from '@/utils/logger';
+import { useLandingPageStatus } from '@/hooks/useLandingPageStatus';
+import { ONBOARDING_STATES } from '@/utils/userAttributes';
+
+const BUTTON_CONFIGS = {
+  [ONBOARDING_STATES.NOT_STARTED]: {
+    text: 'Get Started',
+    variant: 'contained',
+    color: 'primary',
+    route: '/onboarding/business-info'
+  },
+  [ONBOARDING_STATES.BUSINESS_INFO]: {
+    text: 'Continue Setup',
+    variant: 'contained',
+    color: 'primary',
+    route: '/onboarding/subscription'
+  },
+  [ONBOARDING_STATES.SUBSCRIPTION]: {
+    text: 'Continue Setup',
+    variant: 'contained',
+    color: 'primary',
+    route: '/onboarding/payment'
+  },
+  [ONBOARDING_STATES.PAYMENT]: {
+    text: 'Complete Setup',
+    variant: 'contained',
+    color: 'primary',
+    route: '/onboarding/setup'
+  },
+  [ONBOARDING_STATES.SETUP]: {
+    text: 'Finish Setup',
+    variant: 'contained',
+    color: 'primary',
+    route: '/onboarding/complete'
+  },
+  [ONBOARDING_STATES.COMPLETE]: {
+    text: 'Go to Dashboard',
+    variant: 'contained',
+    color: 'primary',
+    route: '/dashboard'
+  },
+  DEFAULT: {
+    text: 'Sign In',
+    variant: 'contained',
+    color: 'primary',
+    route: '/auth/signin'
+  }
+};
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
 
 export default function LandingButton() {
-  const theme = useTheme();
-  const { buttonConfig, loading, error, retrying, handleButtonClick } =
-    useLandingPageStatus();
-  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const { isLoading, isAuthenticated, needsOnboarding, onboardingStatus, error } = useLandingPageStatus();
 
-  // Enhanced error handling with user feedback
-  const getButtonContent = useCallback(() => {
-    if (loading) {
-      return (
-        <>
-          <CircularProgress
-            size={24}
-            thickness={4}
-            sx={{
-              color: theme.palette.common.white,
-              position: 'absolute',
-              left: '50%',
-              marginLeft: '-12px',
-            }}
-          />
-          <span style={{ visibility: 'hidden' }}>Loading...</span>
-        </>
-      );
+  const getButtonConfig = useCallback(() => {
+    if (isLoading) {
+      return BUTTON_CONFIGS.DEFAULT;
     }
 
-    if (error && buttonConfig?.color === 'error') {
-      return (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <span>{buttonConfig.text}</span>
-          {retrying && (
-            <CircularProgress
-              size={16}
-              thickness={4}
-              sx={{ color: theme.palette.common.white }}
-            />
-          )}
-        </Box>
-      );
+    if (!isAuthenticated) {
+      return BUTTON_CONFIGS.DEFAULT;
     }
 
-    return buttonConfig.text;
-  }, [loading, error, buttonConfig, retrying, theme.palette]);
+    if (needsOnboarding) {
+      return BUTTON_CONFIGS[onboardingStatus] || BUTTON_CONFIGS[ONBOARDING_STATES.NOT_STARTED];
+    }
 
-  // Log critical errors but allow button to remain functional
-  if (error && buttonConfig?.color !== 'error') {
-    logger.error('Landing button error:', error);
-  }
+    return BUTTON_CONFIGS[ONBOARDING_STATES.COMPLETE];
+  }, [isLoading, isAuthenticated, needsOnboarding, onboardingStatus]);
 
-  const buttonStyles = {
-    fontSize: '1.1rem',
-    px: 4,
-    py: 1.5,
-    minWidth: '200px',
-    backgroundColor: theme.palette[buttonConfig?.color || 'primary'].main,
-    '&:hover': {
-      backgroundColor: theme.palette[buttonConfig?.color || 'primary'].dark,
-      transform: 'translateY(-1px)',
-      boxShadow: `0 5px 15px ${alpha(theme.palette[buttonConfig?.color || 'primary'].main, 0.4)}`,
-    },
-    transition: 'all 0.2s ease-in-out',
-    boxShadow: `0 4px 14px ${alpha(theme.palette[buttonConfig?.color || 'primary'].main, 0.3)}`,
-    borderRadius: '50px',
-    fontFamily: '"Inter", sans-serif',
-    fontWeight: 600,
-    letterSpacing: '0.02em',
-    position: 'relative',
-    overflow: 'hidden',
-    '&::after': {
-      content: '""',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      background:
-        'linear-gradient(120deg, transparent, rgba(255,255,255,0.2), transparent)',
-      transform: 'translateX(-100%)',
-    },
-    '&:hover::after': {
-      transform: 'translateX(100%)',
-      transition: 'transform 0.75s ease-in-out',
-    },
-    '&.Mui-disabled': {
-      backgroundColor: alpha(
-        theme.palette[buttonConfig?.color || 'primary'].main,
-        0.7
-      ),
-    },
+  const handleButtonClick = async () => {
+    try {
+      setLoading(true);
+      const config = getButtonConfig();
+      
+      if (!config) {
+        throw new Error('Invalid button configuration');
+      }
+
+      router.push(config.route);
+    } catch (error) {
+      logger.error('[LandingButton] Navigation failed:', error);
+
+      // Implement retry logic
+      if (retryCount < MAX_RETRIES) {
+        setRetrying(true);
+        setRetryCount(prev => prev + 1);
+        
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * Math.pow(2, retryCount)));
+        
+        setRetrying(false);
+        handleButtonClick();
+      } else {
+        // Reset retry state
+        setRetrying(false);
+        setRetryCount(0);
+        
+        // Fallback to sign in
+        router.push('/auth/signin');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Enhanced tooltip content based on error state
-  const getTooltipContent = useCallback(() => {
-    if (!error) return '';
+  // Get current button configuration
+  const buttonConfig = getButtonConfig();
 
-    if (buttonConfig?.color === 'error') {
-      return `Error: ${error.message || 'Unknown error'}. Click to retry.`;
-    }
+  if (isLoading) {
+    return (
+      <Button
+        disabled
+        variant="contained"
+        color="primary"
+        size="large"
+        sx={{ minWidth: 200 }}
+      >
+        <CircularProgress size={24} color="inherit" />
+      </Button>
+    );
+  }
 
-    return error.message || 'An error occurred';
-  }, [error, buttonConfig]);
-
-  const handleTooltipClose = useCallback(() => {
-    setTooltipOpen(false);
-  }, []);
-
-  const handleTooltipOpen = useCallback(() => {
-    if (error) {
-      setTooltipOpen(true);
-    }
-  }, [error]);
-
-  const button = (
+  return (
     <Button
       disabled={loading && !retrying} // Allow clicks during retry
       variant={buttonConfig.variant}
       color={buttonConfig.color}
       onClick={handleButtonClick}
       size="large"
-      sx={{
-        ...buttonStyles,
-        opacity: retrying ? 0.9 : 1, // Subtle visual feedback during retry
+      sx={{ 
+        minWidth: 200,
+        position: 'relative'
       }}
     >
-      {getButtonContent()}
+      {loading ? (
+        <>
+          {retrying ? 'Retrying...' : 'Loading...'}
+          <CircularProgress
+            size={24}
+            color="inherit"
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              marginTop: '-12px',
+              marginLeft: '-12px',
+            }}
+          />
+        </>
+      ) : (
+        buttonConfig.text
+      )}
     </Button>
-  );
-
-  // Always wrap in tooltip for consistent hover behavior
-  return (
-    <Tooltip
-      open={tooltipOpen}
-      onClose={handleTooltipClose}
-      onOpen={handleTooltipOpen}
-      title={getTooltipContent()}
-      arrow
-      placement="top"
-    >
-      <span style={{ display: 'inline-block' }}>{button}</span>
-    </Tooltip>
   );
 }

@@ -8,10 +8,13 @@ import { CssBaseline } from '@mui/material';
 import { ToastProvider } from '@/components/Toast/ToastProvider';
 import { toast } from 'react-toastify';
 import theme from '@/styles/theme';
-import { AppErrorBoundary } from '@/components/ErrorBoundary';
+import { AppErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 import AuthWrapper from '@/app/AuthWrapper/AuthWrapper';
 import { logger } from '@/utils/logger';
-import { configureAmplify } from '@/config/amplify';
+import { usePathname } from 'next/navigation';
+import { isPublicRoute } from '@/lib/authUtils';
+import AmplifyProvider from '@/providers/AmplifyProvider';
+import { AuthProvider } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 
 const CrispChatWrapper = dynamic(() => import('@/components/CrispChat/CrispChatWrapper').then(mod => mod.default), {
@@ -58,58 +61,20 @@ const ToastAware = memo(function ToastAware({ children }) {
   return children;
 });
 
-const ClientOnly = memo(function ClientOnly({ children }) {
-  const [mounted, setMounted] = useState(false);
-  const mountedRef = useRef(false);
-  const initializationTimer = useRef(null);
-  useEffect(() => {
-    if (initializationTimer.current) {
-      clearTimeout(initializationTimer.current);
-    }
-
-    initializationTimer.current = setTimeout(() => {
-      if (typeof window !== 'undefined' && !mountedRef.current) {
-        try {
-          setMounted(true);
-          mountedRef.current = true;
-          logger.info('Client-side rendering mounted');
-        } catch (error) {
-          logger.error('Client initialization error:', error);
-          toast.error(TOAST_MESSAGES.INIT_ERROR);
-        }
-      }
-    }, 100);
-
-    return () => {
-      if (initializationTimer.current) {
-        clearTimeout(initializationTimer.current);
-      }
-      if (mountedRef.current) {
-        mountedRef.current = false;
-        setMounted(false);
-        logger.info('Client-side rendering unmounted');
-      }
-    };
-  }, []);
-
-  if (!mounted) return null;
-
-  return children;
-});
+import { ClientOnly } from '@/components/ClientOnly';
 
 const ThemeWrapper = memo(function ThemeWrapper({ children }) {
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const jssStyles = document.querySelector('#jss-server-side');
-      if (jssStyles) {
-        jssStyles.parentElement.removeChild(jssStyles);
-      }
+    // Remove server-side injected CSS
+    const jssStyles = document.querySelector('#jss-server-side');
+    if (jssStyles) {
+      jssStyles.parentElement.removeChild(jssStyles);
     }
   }, []);
 
   return (
     <ThemeProvider theme={theme}>
-      <CssBaseline enableColorScheme />
+      <CssBaseline />
       {children}
     </ThemeProvider>
   );
@@ -119,7 +84,7 @@ const ErrorWrapper = memo(function ErrorWrapper({ children }) {
   return (
     <AppErrorBoundary
       onError={(error, errorInfo) => {
-        logger.error('Global error boundary caught error:', { error, errorInfo });
+        logger.error('[Providers] Global error boundary caught error:', { error, errorInfo });
         if (typeof window !== 'undefined') {
           toast.error(TOAST_MESSAGES.GLOBAL_ERROR);
         }
@@ -152,7 +117,7 @@ const ConfigureQueryClient = memo(function ConfigureQueryClient({ children }) {
     queryClient.setDefaultOptions({
       queries: {
         onError: (error) => {
-          logger.error('Query error:', error);
+          logger.error('[Providers] Query error:', error);
           if (typeof window !== 'undefined') {
             toast.error(error.message || TOAST_MESSAGES.QUERY_ERROR);
           }
@@ -160,7 +125,7 @@ const ConfigureQueryClient = memo(function ConfigureQueryClient({ children }) {
       },
       mutations: {
         onError: (error) => {
-          logger.error('Mutation error:', error);
+          logger.error('[Providers] Mutation error:', error);
           if (typeof window !== 'undefined') {
             toast.error(error.message || TOAST_MESSAGES.MUTATION_ERROR);
           }
@@ -173,17 +138,17 @@ const ConfigureQueryClient = memo(function ConfigureQueryClient({ children }) {
 });
 
 const Providers = memo(function Providers({ children }) {
-  useEffect(() => {
-    try {
-      configureAmplify();
-      logger.info('Amplify configured successfully');
-    } catch (error) {
-      logger.error('Failed to configure Amplify:', error);
-      if (typeof window !== 'undefined') {
-        toast.error('Failed to initialize authentication');
-      }
-    }
-  }, []);
+  const pathname = usePathname();
+  const isPublic = isPublicRoute(pathname);
+
+  const needsAmplify = !isPublic || pathname.startsWith('/auth/');
+  const wrappedContent = needsAmplify ? (
+    <AmplifyProvider>
+      {isPublic ? children : <AuthWrapper>{children}</AuthWrapper>}
+    </AmplifyProvider>
+  ) : (
+    children
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -191,14 +156,14 @@ const Providers = memo(function Providers({ children }) {
         <ConfigureQueryClient>
           <ThemeWrapper>
             <ErrorWrapper>
-              <AuthWrapper>
-                <ToastAware>
-                  <ClientOnly>
-                    {children}
-                    <CrispChatWrapper />
-                  </ClientOnly>
-                </ToastAware>
-              </AuthWrapper>
+              <ToastAware>
+                <ClientOnly>
+                  <AuthProvider>
+                    {({ loading }) => !loading && wrappedContent}
+                  </AuthProvider>
+                </ClientOnly>
+                <CrispChatWrapper />
+              </ToastAware>
             </ErrorWrapper>
           </ThemeWrapper>
         </ConfigureQueryClient>

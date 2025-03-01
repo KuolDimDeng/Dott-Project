@@ -11,5 +11,11 @@
   },
   "devDependencies": {
     "husky": "^9.1.7"
+  },
+  "resolutions": {
+    "@aws-amplify/auth": "^6.10.0",
+    "@aws-amplify/core": "^6.10.0",
+    "@aws-amplify/adapter-nextjs": "^1.5.0",
+    "aws-amplify": "^6.10.0"
   }
 }

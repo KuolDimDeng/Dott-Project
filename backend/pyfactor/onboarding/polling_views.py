@@ -7,8 +7,8 @@ from celery.result import AsyncResult
 from django.utils import timezone
 
 from .models import OnboardingProgress, UserProfile
-from .tasks import setup_user_database_task
-from .utils import generate_unique_database_name
+from .tasks import setup_tenant_schema_task
+from .utils import generate_unique_schema_name
 from .locks import get_setup_lock, LockAcquisitionError
 
 import logging
@@ -19,7 +19,7 @@ logger = logging.getLogger('Pyfactor')
 def get_setup_progress(request):
     """
     Get the current setup progress for the authenticated user.
-    This endpoint is polled by the frontend to track database setup progress.
+    This endpoint is polled by the frontend to track schema setup progress.
     """
     try:
         user = request.user
@@ -27,8 +27,8 @@ def get_setup_progress(request):
         onboarding_progress = get_object_or_404(OnboardingProgress, user=user)
 
         # If there's an active setup task, get its progress
-        if profile.database_setup_task_id:
-            task_result = AsyncResult(profile.database_setup_task_id)
+        if profile.setup_task_id:
+            task_result = AsyncResult(profile.setup_task_id)
             if task_result.state == 'PENDING':
                 progress = 0
                 current_step = 'initializing'
@@ -49,7 +49,7 @@ def get_setup_progress(request):
                 'current_step': current_step,
                 'status': task_result.state.lower(),
                 'error': str(task_result.result) if task_result.failed() else None,
-                'database_name': profile.database_name,
+                'schema_name': profile.schema_name,
                 'setup_status': profile.setup_status,
                 'onboarding_status': onboarding_progress.onboarding_status
             })
@@ -59,7 +59,7 @@ def get_setup_progress(request):
             'progress': 100 if profile.setup_status == 'complete' else 0,
             'current_step': profile.setup_status,
             'status': profile.setup_status,
-            'database_name': profile.database_name,
+            'schema_name': profile.schema_name,
             'setup_status': profile.setup_status,
             'onboarding_status': onboarding_progress.onboarding_status
         })
@@ -75,7 +75,7 @@ def get_setup_progress(request):
 @permission_classes([IsAuthenticated])
 def start_setup(request):
     """
-    Start the database setup process for the authenticated user.
+    Start the schema setup process for the authenticated user.
     """
     try:
         user = request.user
@@ -83,21 +83,21 @@ def start_setup(request):
         onboarding_progress = get_object_or_404(OnboardingProgress, user=user)
 
         # Check if setup is already complete
-        if profile.setup_status == 'complete' and profile.database_name:
+        if profile.setup_status == 'complete' and profile.schema_name:
             return Response({
                 'status': 'already_complete',
-                'database_name': profile.database_name
+                'schema_name': profile.schema_name
             })
 
         # Start setup task
-        task = setup_user_database_task.delay(
+        task = setup_tenant_schema_task.delay(
             user_id=str(user.id),
             business_id=str(profile.business_id)
         )
 
         # Update profile with task ID
-        profile.database_setup_task_id = task.id
-        profile.save(update_fields=['database_setup_task_id'])
+        profile.setup_task_id = task.id
+        profile.save(update_fields=['setup_task_id'])
 
         return Response({
             'status': 'started',

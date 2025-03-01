@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.exceptions import ValidationError
-from rest_framework_simplejwt.authentication import JWTAuthentication  # Change this import
+from custom_auth.jwt import CognitoJWTAuthentication
 from business.models import Business
 from .models import UserProfile, User
 from .serializers import UserProfileSerializer
@@ -24,7 +24,7 @@ class ProfileView(APIView):
     handling, efficient database queries, and detailed response formatting.
     """
     permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]  # Use standard JWT authentication
+    authentication_classes = [CognitoJWTAuthentication]  # Use Cognito JWT authentication
 
     def get_user_profile(self, user):
         """
@@ -35,19 +35,20 @@ class ProfileView(APIView):
         """
         try:
             with transaction.atomic():
-                # Use select_related to optimize database queries
-                profile = UserProfile.objects.select_related(
+                # Use select_related to optimize database queries with explicit default database
+                profile = UserProfile.objects.using('default').select_related(
                     'user',
-                    'business'
+                    'business',
+                    'tenant'  # Include tenant relationship
                 ).filter(user=user).first()
 
                 # Log the result for debugging purposes
                 if profile:
                     logger.info(f"Profile details for {user.email}:", {
-                        'database_name': profile.database_name,
-                        'database_status': profile.database_status,
+                        'schema_name': profile.tenant.schema_name if profile.tenant else None,
                         'has_business': bool(profile.business),
-                        'business_name': profile.business.business_name if profile.business else None
+                        'business_name': profile.business.business_name if profile.business else None,
+                        'is_business_owner': profile.is_business_owner
                     })
                 else:
                     logger.warning(f"No profile found for user {user.email}")
@@ -166,11 +167,22 @@ class ProfileView(APIView):
             
             user_profile = self.get_user_profile(request.user)
             if not user_profile:
-                logger.error(f"No profile found for user {request.user.email}")
-                return Response({
-                    "error": "User profile not found",
-                    "code": "profile_not_found"
-                }, status=status.HTTP_404_NOT_FOUND)
+                logger.warning(f"No profile found for user {request.user.email}, creating one")
+                try:
+                    with transaction.atomic():
+                        user_profile = UserProfile.objects.using('default').create(
+                            user=request.user,
+                            is_business_owner=True  # Set as business owner since this is initial profile
+                        )
+                        logger.info(f"Successfully created profile for user: {request.user.email}")
+                except Exception as e:
+                    logger.error(f"Failed to create profile for user {request.user.email}: {str(e)}",
+                               exc_info=True)
+                    return Response({
+                        "error": "Failed to create user profile",
+                        "code": "profile_creation_failed",
+                        "message": str(e) if settings.DEBUG else "Internal server error"
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # Create the base profile data structure
             profile_data = {
@@ -187,19 +199,21 @@ class ProfileView(APIView):
                     'country': str(user_profile.country) if user_profile.country else None,
                     'country_name': user_profile.country.name if user_profile.country else None,
                     'phone_number': user_profile.phone_number,
-                    'database_status': user_profile.database_status,
-                    'setup_status': user_profile.setup_status,
-                    'last_setup_attempt': user_profile.last_setup_attempt.isoformat() if user_profile.last_setup_attempt else None
+                    'is_business_owner': user_profile.is_business_owner,
+                    'tenant_name': user_profile.tenant.name if user_profile.tenant else None,
+                    'database_status': user_profile.tenant.database_status if user_profile.tenant else 'not_created',
+                    'setup_status': user_profile.tenant.setup_status if user_profile.tenant else 'pending',
+                    'last_setup_attempt': user_profile.tenant.last_setup_attempt.isoformat() if user_profile.tenant and user_profile.tenant.last_setup_attempt else None
                 }
             }
 
-            # Conditionally add database_name if appropriate
+            # Add schema information if tenant exists
             try:
-                if user_profile.database_status in ['active', 'pending']:
-                    profile_data['profile']['database_name'] = user_profile.database_name
+                if user_profile.tenant and user_profile.tenant.schema_name:
+                    profile_data['profile']['schema_name'] = user_profile.tenant.schema_name
             except Exception as e:
-                logger.error(f"Error adding database name: {str(e)}")
-                # Continue without adding database_name
+                logger.error(f"Error adding schema name: {str(e)}")
+                # Continue without adding schema_name
 
             # Add computed fields
             completion_info = self.calculate_profile_completion(user_profile)

@@ -9,7 +9,7 @@ import {
   Tab,
   Paper,
 } from '@mui/material';
-import { useApi } from '@/lib/axiosConfig';
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useUserMessageContext } from '@/contexts/UserMessageContext';
 
 const PLATFORMS = [

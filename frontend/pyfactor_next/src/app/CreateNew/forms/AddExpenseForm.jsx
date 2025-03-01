@@ -12,7 +12,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { useApi } from '@/lib/axiosConfig';
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 
 const AddExpenseForm = ({ onClose }) => {
@@ -92,7 +92,7 @@ const AddExpenseForm = ({ onClose }) => {
     logger.log('Form data:', formData);
 
     try {
-      const response = await useApi.post('http://localhost:8000/api/expenses/', formData, {
+      const response = await axiosInstance.post('http://localhost:8000/api/expenses/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

@@ -11,10 +11,9 @@ from django.core.management import call_command
 from .task_utils import (
     timeout,
     get_db_connection,
-    cleanup_connections,
-    check_database_health
+    check_schema_health
 )
-from .utils import generate_unique_database_name
+from .utils import generate_unique_schema_name
 
 logger = get_logger()
 
@@ -89,13 +88,13 @@ def send_websocket_notification(user_id, event_type, data):
     time_limit=3600,
     soft_time_limit=3300
 )
-def setup_user_database_task(self, user_id, business_id):
+def setup_tenant_schema_task(self, user_id, business_id):
     """
-    Sets up a new user database with comprehensive error handling and progress tracking.
+    Sets up a new tenant schema with comprehensive error handling and progress tracking.
     
-    This task manages the full database setup lifecycle:
+    This task manages the full schema setup lifecycle:
     - User profile initialization
-    - Database creation and configuration
+    - Schema creation and configuration
     - Progress updates via WebSocket
     - Error handling and cleanup
     
@@ -106,8 +105,8 @@ def setup_user_database_task(self, user_id, business_id):
     Returns:
         dict: Status information including setup result
     """
-    logger.info(f"Starting database setup task {self.request.id} for user {user_id}")
-    database_name = None
+    logger.info(f"Starting schema setup task {self.request.id} for user {user_id}")
+    schema_name = None
     
     # Get models only when needed to prevent app registry issues
     User, UserProfile = get_models()
@@ -124,7 +123,7 @@ def setup_user_database_task(self, user_id, business_id):
             
         send_websocket_notification.delay(
             user_id=user_id,
-            event_type="database_setup_progress",
+            event_type="schema_setup_progress",
             data=data
         )
         
@@ -138,76 +137,84 @@ def setup_user_database_task(self, user_id, business_id):
             user_profile.setup_status = 'in_progress'
             user_profile.save()
 
-        send_progress(0, 'Starting setup', 'Initializing database creation')
+        send_progress(0, 'Starting setup', 'Initializing schema creation')
             
-        # Phase 2: Database Creation
-        database_name = generate_unique_database_name(user)
-        logger.info(f"Generated database name: {database_name}")
+        # Phase 2: Schema Creation
+        schema_name = generate_unique_schema_name(user)
+        logger.info(f"Generated schema name: {schema_name}")
         
-        with timeout(30):  # 30-second timeout for database creation
-            logger.info(f"Creating database: {database_name}")
-            send_progress(20, 'Creating Database')
+        with timeout(30):  # 30-second timeout for schema creation
+            logger.info(f"Creating schema: {schema_name}")
+            send_progress(20, 'Creating Schema')
             
-            # We use a separate connection for database creation
+            # Use proper connection management
             with get_db_connection() as conn:
-                conn.autocommit = True  # Required for database creation
+                conn.autocommit = True
                 with conn.cursor() as cursor:
-                    cursor.execute(
-                        "SELECT 1 FROM pg_database WHERE datname = %s",
-                        [database_name]
-                    )
-                    if not cursor.fetchone():
-                        cursor.execute(f'CREATE DATABASE "{database_name}" TEMPLATE template0')
+                    # Save current search path
+                    cursor.execute('SHOW search_path')
+                    original_search_path = cursor.fetchone()[0]
+                    
+                    try:
+                        # Create schema
+                        cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
+                        
+                        # Set up permissions
+                        cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {settings.DATABASES["default"]["USER"]}')
+                        cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {settings.DATABASES["default"]["USER"]}')
+                        cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {settings.DATABASES["default"]["USER"]}')
 
-        # Phase 3: Database Configuration
-        send_progress(40, 'Configuring Database')
-        connections.databases[database_name] = {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': database_name,
-            'USER': settings.DATABASES['default']['USER'],
-            'PASSWORD': settings.DATABASES['default']['PASSWORD'],
-            'HOST': settings.DATABASES['default']['HOST'],
-            'PORT': settings.DATABASES['default']['PORT'],
-            'TIME_ZONE': settings.TIME_ZONE,
-            'ATOMIC_REQUESTS': True,
-            'CONN_MAX_AGE': 0,
-            'AUTOCOMMIT': True,
-            'CONN_HEALTH_CHECKS': False,
-            'OPTIONS': {
-                'connect_timeout': 10,
-                'client_encoding': 'UTF8'
-            }
-        }
+                        # Phase 3: Schema Configuration
+                        send_progress(40, 'Configuring Schema')
+                        cursor.execute(f'SET search_path TO "{schema_name}"')
 
-        # Phase 4: Schema Migration
-        with timeout(180):  # 3-minute timeout for migrations
-            logger.info(f"Running migrations for {database_name}")
-            send_progress(60, 'Running Migrations')
-            call_command('migrate', database=database_name, verbosity=2)
-            logger.info(f"Completed migrations for database {database_name}")
-            
-        # Phase 5: Health Verification
-        logger.info(f"Verifying database health for {database_name}")
-        send_progress(80, 'Verifying Setup')
-        if not check_database_health(database_name):
-            raise Exception("Database health check failed")
+                        # Phase 4: Schema Migration
+                        with timeout(180):  # 3-minute timeout for migrations
+                            logger.info(f"Running migrations for schema {schema_name}")
+                            send_progress(60, 'Running Migrations')
+                            call_command('migrate', schema=schema_name, verbosity=2)
+                            logger.info(f"Completed migrations for schema {schema_name}")
+                            
+                        # Phase 5: Health Verification
+                        logger.info(f"Verifying schema health for {schema_name}")
+                        send_progress(80, 'Verifying Setup')
+                        cursor.execute('SELECT COUNT(*) FROM information_schema.tables')
+                        if cursor.fetchone()[0] == 0:
+                            raise Exception("Schema health check failed - no tables found")
+
+                    finally:
+                        # Restore original search path
+                        if original_search_path:
+                            cursor.execute(f'SET search_path TO {original_search_path}')
+                            logger.debug(f"Restored search path to: {original_search_path}")
         
         # Phase 6: Completion
-        logger.info(f"Finalizing database setup for {database_name}")
+        logger.info(f"Finalizing schema setup for {schema_name}")
         send_progress(90, 'Finalizing Setup')
         with transaction.atomic():
             user_profile = UserProfile.objects.select_for_update().get(user=user)
-            user_profile.database_name = database_name
-            user_profile.database_status = 'active'
+            # Update tenant information
+            tenant = user.tenant
+            if not tenant:
+                tenant = user.tenant.create(
+                    schema_name=schema_name,
+                    is_active=True
+                )
+            else:
+                tenant.schema_name = schema_name
+                tenant.is_active = True
+                tenant.save()
+
+            # Update profile status
             user_profile.setup_status = 'complete'
             user_profile.save()
 
-        logger.info(f"Database setup completed successfully for user {user_id}")
+        logger.info(f"Schema setup completed successfully for user {user_id}")
         return {
             "status": "SUCCESS",
             "user_id": user_id,
             "business_id": business_id,
-            "database_name": database_name,
+            "schema_name": schema_name,
             "task_id": self.request.id,
             "progress": 100,
             "step": 'Complete'
@@ -219,7 +226,7 @@ def setup_user_database_task(self, user_id, business_id):
         raise self.retry(exc=e, countdown=5)
 
     except Exception as e:
-        logger.error(f"Database setup failed: {str(e)}", exc_info=True)
+        logger.error(f"Schema setup failed: {str(e)}", exc_info=True)
         send_progress(-1, 'Error', str(e))
         
         try:
@@ -232,13 +239,28 @@ def setup_user_database_task(self, user_id, business_id):
             logger.error(f"Failed to update profile status: {str(profile_error)}")
 
         # Cleanup on failure
-        if database_name:
+        if schema_name:
             try:
-                from users.utils import sync_cleanup_database
-                sync_cleanup_database(database_name)
+                with get_db_connection() as conn:
+                    conn.autocommit = True
+                    with conn.cursor() as cursor:
+                        # Save current search path
+                        cursor.execute('SHOW search_path')
+                        original_search_path = cursor.fetchone()[0]
+                        
+                        try:
+                            # Drop schema and all objects within it
+                            cursor.execute(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE')
+                            logger.info(f"Successfully cleaned up schema: {schema_name}")
+                        finally:
+                            # Restore original search path
+                            if original_search_path:
+                                cursor.execute(f'SET search_path TO {original_search_path}')
+                                logger.debug(f"Restored search path to: {original_search_path}")
             except Exception as cleanup_error:
-                logger.error(f"Error during cleanup: {str(cleanup_error)}")
+                logger.error(f"Error during schema cleanup: {str(cleanup_error)}")
         raise
 
     finally:
-        cleanup_connections(database_name)
+        # No need for additional search path reset since we handle it in the connection context
+        pass

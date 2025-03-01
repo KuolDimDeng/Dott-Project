@@ -473,13 +473,13 @@ const EstimateManagement = () => {
                 label="Date"
                 value={newEstimate.date}
                 onChange={(date) => handleDateChange(date, 'date')}
-                renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+                slotProps={{ textField: { fullWidth: true, margin: "normal" } }}
               />
               <DatePicker
                 label="Valid Until"
                 value={newEstimate.valid_until}
                 onChange={(date) => handleDateChange(date, 'valid_until')}
-                renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+                slotProps={{ textField: { fullWidth: true, margin: "normal" } }}
               />
 
               <Typography variant="h6" gutterBottom>

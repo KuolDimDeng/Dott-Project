@@ -3,11 +3,11 @@
 import * as React from 'react';
 import { alpha, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
-import LandingButton from '@/components/LandingButton';
 import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Image from 'next/image';
+import AuthButton from '@/components/AuthButton';
 
 export default function Hero() {
   const theme = useTheme();
@@ -120,7 +120,7 @@ export default function Hero() {
             alignItems="center"
             sx={{ mb: { xs: 8, sm: 10 } }}
           >
-            <LandingButton />
+            <AuthButton size="large" />
           </Stack>
 
           <Box

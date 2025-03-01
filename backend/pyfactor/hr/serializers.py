@@ -10,21 +10,64 @@ class EmployeeSerializer(serializers.ModelSerializer):
     supervisor_name = serializers.CharField(source='supervisor.get_full_name', read_only=True)
     dob = serializers.DateField(input_formats=['%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%d'])
     date_joined = serializers.DateField(input_formats=['%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%d'])
-
+    
+    # Add masked fields for SSN and bank account display
+    masked_ssn = serializers.SerializerMethodField()
+    masked_bank_account = serializers.SerializerMethodField()
+    
     class Meta:
         model = Employee
-        fields = '__all__'
-        read_only_fields = ['id', 'employee_number']
-        extra_kwargs = {
-            'security_number': {'write_only': True},
-            'bank_account_number': {'write_only': True},
-            'tax_id_number': {'write_only': True},
-        }
+        fields = [
+            'id', 'employee_number', 'first_name', 'middle_name', 'last_name',
+            'dob', 'gender', 'marital_status', 'nationality', 'street',
+            'postcode', 'city', 'country', 'date_joined', 'last_work_date',
+            'active', 'role', 'site_access_privileges', 'email', 'phone_number',
+            'department', 'salary', 'emergency_contact_name', 'emergency_contact_phone',
+            'skills', 'documents', 'wage_per_hour', 'hours_per_day', 'overtime_rate',
+            'days_per_week', 'employment_type', 'supervisor', 'supervisor_name',
+            'onboarded', 'security_number_type', 'tax_filing_status', 'job_title',
+            'probation', 'probation_end_date', 'health_insurance_enrollment',
+            'pension_enrollment', 'termination_date', 'reason_for_leaving',
+            'business', 'masked_ssn', 'masked_bank_account',
+            # New Stripe fields
+            'stripe_person_id', 'ssn_stored_in_stripe', 'bank_account_stored_in_stripe',
+            'tax_id_stored_in_stripe', 'ssn_last_four', 'bank_account_last_four'
+        ]
+        read_only_fields = [
+            'id', 'employee_number', 'stripe_person_id', 'ssn_stored_in_stripe',
+            'bank_account_stored_in_stripe', 'tax_id_stored_in_stripe',
+            'ssn_last_four', 'bank_account_last_four', 'masked_ssn', 'masked_bank_account'
+        ]
+        
+    def get_masked_ssn(self, obj):
+        """Return a masked version of the SSN for display"""
+        if obj.ssn_last_four:
+            return f"XXX-XX-{obj.ssn_last_four}"
+        return None
+        
+    def get_masked_bank_account(self, obj):
+        """Return a masked version of the bank account for display"""
+        if obj.bank_account_last_four:
+            return f"XXXXXXXXXXXX{obj.bank_account_last_four}"
+        return None
         
     def create(self, validated_data):
+        # Create the employee without sensitive data first
         employee = Employee.objects.create(**validated_data)
+        
+        # If SSN was provided in the request context, store it in Stripe
+        request = self.context.get('request')
+        if request and request.data.get('security_number'):
+            employee.save_ssn_to_stripe(request.data.get('security_number'))
+            
+        # If bank account details were provided, store them in Stripe
+        if request and request.data.get('bank_account_number') and request.data.get('routing_number'):
+            employee.save_bank_account_to_stripe(
+                request.data.get('bank_account_number'),
+                request.data.get('routing_number')
+            )
+            
         return employee
-
 
     def to_internal_value(self, data):
         # Convert salary and wage_rate to Decimal if they're strings

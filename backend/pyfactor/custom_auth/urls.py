@@ -7,11 +7,12 @@ This module defines the URL patterns for all authentication-related functionalit
 - Password reset flow
 - Social authentication
 - Session management
+- Tenant management
 
 All URLs are prefixed with 'api/' from the main URLs configuration.
 """
 
-from django.urls import path, re_path, include
+from django.urls import path, re_path, include, register_converter
 from django.contrib.auth import views as auth_views
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.decorators import api_view, permission_classes
@@ -21,7 +22,6 @@ from django.utils.decorators import method_decorator
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-
 from .views import (
     RegisterView,
     CustomTokenObtainPairView,
@@ -39,8 +39,20 @@ from .views import (
     AuthErrorView,
     async_csrf_exempt,  # Import the decorator from views
     SessionView,
-
+    SignupAPIView,
 )
+from .api.views.tenant_views import TenantDetailView
+
+class UUIDConverter:
+    regex = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+
+    def to_python(self, value):
+        return value
+
+    def to_url(self, value):
+        return str(value)
+
+register_converter(UUIDConverter, 'uuid')
 
 
 
@@ -109,5 +121,7 @@ urlpatterns = [
         name='verify_email'
     ),
     path('health-check/', health_check.as_view(), name='health-check'),
-
+    
+    # User Signup API
+    path('api/auth/signup/', SignupAPIView.as_view(), name='signup_api'),
 ]

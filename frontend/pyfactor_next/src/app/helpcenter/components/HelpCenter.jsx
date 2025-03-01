@@ -21,7 +21,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SearchIcon from '@mui/icons-material/Search';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import EmailIcon from '@mui/icons-material/Email';
-import { useApi } from '@/lib/axiosConfig';
+import { axiosInstance } from '@/lib/axiosConfig';
 import Image from 'next/image';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import HelpIcon from '@mui/icons-material/Help'; // Import the Help icon

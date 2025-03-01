@@ -1,201 +1,128 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/hooks/useStepTransition.js
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from '@/hooks/useSession';
-import { useToast } from '@/components/Toast/ToastProvider';
+import useOnboardingStore from '../store/onboardingStore';
+import { ONBOARDING_STATES, STEP_ROUTES, STEP_ORDER } from '@/utils/userAttributes';
 import { logger } from '@/utils/logger';
-import { onboardingApi } from '@/services/api/onboarding';
 
-export const useStepTransition = () => {
+export function useStepTransition() {
   const router = useRouter();
-  const { data: session } = useSession();
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const toast = useToast();
+  const currentStep = useOnboardingStore((state) => state.currentStep);
+  const lastCompletedStep = useOnboardingStore((state) => state.lastCompletedStep);
+  const setCurrentStep = useOnboardingStore((state) => state.setCurrentStep);
+  const setLastCompletedStep = useOnboardingStore((state) => state.setLastCompletedStep);
 
-  const verifySessionUpdate = async (
-    expectedStatus,
-    requestId,
-    maxRetries = 5
-  ) => {
-    logger.debug('Starting session verification:', {
-      requestId,
-      expectedStatus,
-      currentStatus: session?.user?.onboarding,
-    });
+  const canProceed = useCallback(() => {
+    const currentIndex = STEP_ORDER.indexOf(currentStep);
+    const lastCompletedIndex = STEP_ORDER.indexOf(lastCompletedStep);
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Can proceed if current step is completed
+    return currentStep && currentIndex <= lastCompletedIndex;
+  }, [currentStep, lastCompletedStep]);
 
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        await session.update();
-
-        logger.debug('Session verification attempt:', {
-          requestId,
-          attempt: i + 1,
-          expectedStatus,
-          currentStatus: session?.user?.onboarding,
-          matched: session?.user?.onboarding === expectedStatus,
-        });
-
-        if (session?.user?.onboarding === expectedStatus) {
-          return true;
-        }
-
-        await new Promise((resolve) =>
-          setTimeout(resolve, Math.min(1000 * Math.pow(2, i), 5000))
-        );
-      } catch (error) {
-        logger.error('Session verification attempt failed:', {
-          requestId,
-          attempt: i + 1,
-          error: error.message,
-        });
-      }
-    }
-
-    logger.error('Session verification failed:', {
-      requestId,
-      expectedStatus,
-      finalStatus: session?.user?.onboarding,
-    });
-
-    return false;
-  };
-
-  const updateSession = async (newStatus, formData, requestId) => {
-    logger.debug('Starting session update:', {
-      requestId,
-      newStatus,
-      currentStatus: session?.user?.onboarding,
-      hasFormData: !!formData,
-    });
-
+  const validateStep = useCallback((targetStep) => {
     try {
-      await session.update();
-      const success = session?.user?.onboarding === newStatus;
+      const currentIndex = STEP_ORDER.indexOf(currentStep);
+      const targetIndex = STEP_ORDER.indexOf(targetStep);
+      const lastCompletedIndex = STEP_ORDER.indexOf(lastCompletedStep);
 
-      logger.debug('Session update complete:', {
-        requestId,
-        success,
-        newStatus,
-        currentStatus: session?.user?.onboarding,
-      });
+      // Validate step exists
+      if (targetIndex === -1) {
+        throw new Error('Invalid step');
+      }
 
-      return success;
+      // Allow moving backward
+      if (targetIndex < currentIndex) {
+        return true;
+      }
+
+      // Allow moving to next step only if current is completed
+      if (targetIndex === currentIndex + 1 && currentIndex <= lastCompletedIndex) {
+        return true;
+      }
+
+      // Don't allow skipping steps
+      return false;
     } catch (error) {
-      logger.error('Session update failed:', {
-        requestId,
-        error: error.message,
-        newStatus,
-      });
+      logger.error('[useStepTransition] Step validation failed:', error);
       return false;
     }
-  };
+  }, [currentStep, lastCompletedStep]);
 
-  const transition = useCallback(
-    async (fromStep, toStep, formData) => {
-      const requestId = crypto.randomUUID();
-      const currentStep = fromStep || session?.user?.onboarding;
-      const selectedPlan =
-        formData?.selected_plan?.type || formData?.selected_plan || null;
+  const goToStep = useCallback(async (step) => {
+    try {
+      if (!validateStep(step)) {
+        logger.warn('[useStepTransition] Invalid step transition:', {
+          from: currentStep,
+          to: step
+        });
+        return false;
+      }
 
-      logger.debug('Step transition initiated:', {
-        requestId,
-        fromStep: currentStep,
-        toStep,
-        selected_plan,
-        hasFormData: !!formData,
+      const targetRoute = STEP_ROUTES[step];
+      if (!targetRoute) {
+        throw new Error('Invalid step route');
+      }
+
+      logger.debug('[useStepTransition] Transitioning to step:', {
+        step,
+        route: targetRoute
       });
 
-      if (!currentStep || !toStep) {
-        logger.error('Invalid transition parameters:', {
-          requestId,
-          currentStep,
-          toStep,
-        });
+      setCurrentStep(step);
+      router.push(targetRoute);
+      return true;
+    } catch (error) {
+      logger.error('[useStepTransition] Failed to transition:', error);
+      return false;
+    }
+  }, [currentStep, validateStep, setCurrentStep, router]);
+
+  const goToNext = useCallback(async () => {
+    try {
+      const currentIndex = STEP_ORDER.indexOf(currentStep);
+      if (currentIndex === -1) {
+        throw new Error('Invalid current step');
+      }
+
+      const nextStep = STEP_ORDER[currentIndex + 1];
+      if (!nextStep) {
+        logger.warn('[useStepTransition] No next step available');
         return false;
       }
 
-      if (isTransitioning) {
-        logger.warn('Transition already in progress:', {
-          requestId,
-          currentStep,
-          toStep,
-        });
-        return false;
+      return await goToStep(nextStep);
+    } catch (error) {
+      logger.error('[useStepTransition] Failed to go to next step:', error);
+      return false;
+    }
+  }, [currentStep, goToStep]);
+
+  const completeStep = useCallback(async (step = currentStep) => {
+    try {
+      const stepIndex = STEP_ORDER.indexOf(step);
+      if (stepIndex === -1) {
+        throw new Error('Invalid step to complete');
       }
 
-      let toastId;
-      try {
-        setIsTransitioning(true);
-        toastId = toast.loading('Saving your progress...');
-
-        // Update backend status
-        const statusResponse = await onboardingApi.updateStatus({
-          current_step: currentStep,
-          next_step: toStep,
-          selected_plan: selected_plan,
-          request_id: requestId,
-          form_data: formData,
-        });
-
-        if (!statusResponse?.success) {
-          throw new Error(statusResponse?.error || 'Failed to update status');
-        }
-
-        // Update session state
-        const sessionUpdated = await updateSession(toStep, formData, requestId);
-        if (!sessionUpdated) {
-          throw new Error('Failed to update session state');
-        }
-
-        // Verify the update
-        const verified = await verifySessionUpdate(toStep, requestId);
-        if (!verified) {
-          throw new Error('Failed to verify session update');
-        }
-
-        if (toastId) {
-          toast.dismiss(toastId);
-          toast.success('Progress saved successfully');
-        }
-
-        logger.debug('Navigation starting:', {
-          requestId,
-          destination: `/onboarding/${toStep}`,
-        });
-
-        await router.replace(`/onboarding/${toStep}`);
-        return true;
-      } catch (error) {
-        logger.error('Transition failed:', {
-          requestId,
-          error: error.message,
-          currentStep,
-          toStep,
-        });
-
-        if (toastId) {
-          toast.dismiss(toastId);
-          toast.error(error.message || 'Failed to proceed');
-        }
-        return false;
-      } finally {
-        setIsTransitioning(false);
-      }
-    },
-    [session, router, toast, isTransitioning]
-  );
-
-  const getStepUrl = useCallback((step) => {
-    return `/onboarding/${step}`;
-  }, []);
+      logger.debug('[useStepTransition] Completing step:', step);
+      setLastCompletedStep(step);
+      return true;
+    } catch (error) {
+      logger.error('[useStepTransition] Failed to complete step:', error);
+      return false;
+    }
+  }, [currentStep, setLastCompletedStep]);
 
   return {
-    transition,
-    isTransitioning,
-    getStepUrl,
+    currentStep,
+    lastCompletedStep,
+    canProceed,
+    goToStep,
+    goToNext,
+    completeStep,
+    validateStep,
   };
-};
+}

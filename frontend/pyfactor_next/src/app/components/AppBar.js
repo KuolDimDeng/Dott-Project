@@ -1,360 +1,88 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession } from '@/hooks/useSession';
-import { useAuth } from '@/hooks/auth';
-import {
-  AppBar as MuiAppBar,
-  Box,
-  Toolbar,
-  IconButton,
-  Typography,
-  Menu,
-  Container,
-  Button,
-  MenuItem,
-  CircularProgress,
-} from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import SettingsIcon from '@mui/icons-material/Settings';
-import { logger } from '@/utils/logger';
 import Image from 'next/image';
+import { Box, Button, Stack } from '@mui/material';
+import AuthButton from '@/components/AuthButton';
+import { useRouter } from 'next/navigation';
 
-const pages = [
-  { label: 'About', href: '/about' },
-  { label: 'Features', sectionId: 'features' },
-  { label: 'Pricing', sectionId: 'pricing' },
-  { label: 'FAQ', sectionId: 'faq' },
-  { label: 'Contact', sectionId: 'contact' },
-];
-
-const logoStyle = {
-  width: '100px',
-  height: 'auto',
-  cursor: 'pointer',
-};
-
-function AppBar() {
+export default function AppBar() {
   const router = useRouter();
-  const [anchorElNav, setAnchorElNav] = useState(null);
-  const { status, data: session } = useSession();
-  const { signOut } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [requestId] = useState(() => crypto.randomUUID());
-
-  const handleOpenNavMenu = (event) => {
-    setAnchorElNav(event.currentTarget);
-  };
-
-  const handleCloseNavMenu = () => {
-    setAnchorElNav(null);
-  };
-
-  const scrollToSection = (sectionId) => {
-    const sectionElement = document.getElementById(sectionId);
-    if (sectionElement) {
-      const offset = 128;
-      const targetScroll = sectionElement.offsetTop - offset;
-      window.scrollTo({
-        top: targetScroll,
-        behavior: 'smooth',
-      });
-      handleCloseNavMenu();
-    } else {
-      router.push(`/?section=${sectionId}`);
-      handleCloseNavMenu();
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      setIsLoading(true);
-      await signOut();
-      router.push('/auth/signin');
-      logger.debug('User signed out successfully');
-    } catch (error) {
-      logger.error('Logout failed:', {
-        requestId,
-        error: error.message,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleNavigation = (path) => {
-    router.push(path);
-    handleCloseNavMenu();
-  };
-
-  const getButtonProps = () => {
-    if (!session?.user) return null;
-
-    const onboardingStatus = session.user['custom:onboarding'];
-
-    if (onboardingStatus === 'complete') {
-      return {
-        text: 'Dashboard',
-        route: '/dashboard',
-        icon: <DashboardIcon />,
-      };
-    }
-
-    // If they started but didn't finish onboarding
-    if (onboardingStatus) {
-      return {
-        text: 'Continue Onboarding',
-        route: `/onboarding/${onboardingStatus}`,
-        icon: <SettingsIcon />,
-      };
-    }
-
-    // For new users or no onboarding status
-    return null;
-  };
-
-  const renderAuthButtons = () => {
-    if (status === 'loading' || isLoading) {
-      return <CircularProgress size={24} />;
-    }
-
-    if (status === 'authenticated') {
-      const buttonProps = getButtonProps();
-      if (buttonProps) {
-        return (
-          <>
-            <Button
-              variant="contained"
-              onClick={() => handleNavigation(buttonProps.route)}
-              startIcon={buttonProps.icon}
-            >
-              {buttonProps.text}
-            </Button>
-            <Button variant="text" onClick={handleLogout} disabled={isLoading}>
-              {isLoading ? 'Signing out...' : 'Sign Out'}
-            </Button>
-          </>
-        );
-      }
-    }
-
-    return (
-      <Button
-        variant="contained"
-        onClick={() => handleNavigation('/auth/signin')}
-      >
-        Sign In / Sign Up
-      </Button>
-    );
-  };
 
   return (
-    <MuiAppBar
-      position="fixed"
+    <Box
+      component="nav"
       sx={{
-        bgcolor: 'rgba(255, 255, 255, 0.98)',
-        backdropFilter: 'blur(8px)',
-        boxShadow: (theme) =>
-          theme.palette.mode === 'light'
-            ? '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)'
-            : '0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.3)',
-        transition: 'all 0.3s ease-in-out',
-        '&:hover': {
-          boxShadow: (theme) =>
-            theme.palette.mode === 'light'
-              ? '0 2px 4px rgba(0,0,0,0.08), 0 2px 3px rgba(0,0,0,0.12)'
-              : '0 2px 4px rgba(0,0,0,0.3), 0 2px 3px rgba(0,0,0,0.4)',
-        },
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        px: { xs: 2, sm: 4 },
+        py: 1,
+        backgroundColor: 'background.paper',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1100,
       }}
     >
-      <Container maxWidth="lg">
-        <Toolbar
-          disableGutters
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            height: 80,
-          }}
+      {/* Logo */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          cursor: 'pointer',
+        }}
+        onClick={() => router.push('/')}
+      >
+        <Image
+          src="/static/images/Pyfactor.png"
+          alt="Pyfactor Logo"
+          width={140}
+          height={100}
+          priority
+        />
+      </Box>
+
+      {/* Navigation Links */}
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{
+          display: { xs: 'none', md: 'flex' },
+          alignItems: 'center',
+          mx: 4,
+        }}
+      >
+        <Button
+          color="inherit"
+          onClick={() => router.push('/#about')}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Image
-              src="/static/images/Pyfactor.png"
-              alt="Pyfactor logo"
-              width={100}
-              height={33}
-              style={logoStyle}
-              onClick={() => handleNavigation('/')}
-              priority
-            />
-          </Box>
+          About
+        </Button>
+        <Button
+          color="inherit"
+          onClick={() => router.push('/#features')}
+        >
+          Features
+        </Button>
+        <Button
+          color="inherit"
+          onClick={() => router.push('/#pricing')}
+        >
+          Pricing
+        </Button>
+        <Button
+          color="inherit"
+          onClick={() => router.push('/#contact')}
+        >
+          Contact
+        </Button>
+      </Stack>
 
-          <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-            {pages.map((page) =>
-              page.href ? (
-                <Button
-                  key={page.label}
-                  onClick={() => handleNavigation(page.href)}
-                  sx={{
-                    mx: 1,
-                    color: 'text.primary',
-                    fontFamily: 'Inter, sans-serif',
-                    position: 'relative',
-                    '&:hover': {
-                      color: 'primary.main',
-                      backgroundColor: 'transparent',
-                    },
-                    '&::after': {
-                      content: '""',
-                      position: 'absolute',
-                      width: '0%',
-                      height: '2px',
-                      bottom: 0,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      backgroundColor: 'primary.main',
-                      transition: 'width 0.3s ease-in-out',
-                    },
-                    '&:hover::after': {
-                      width: '80%',
-                    },
-                  }}
-                >
-                  {page.label}
-                </Button>
-              ) : (
-                <Button
-                  key={page.label}
-                  onClick={() => scrollToSection(page.sectionId)}
-                  sx={{
-                    mx: 1,
-                    color: 'text.primary',
-                    fontFamily: 'Inter, sans-serif',
-                    position: 'relative',
-                    '&:hover': {
-                      color: 'primary.main',
-                      backgroundColor: 'transparent',
-                    },
-                    '&::after': {
-                      content: '""',
-                      position: 'absolute',
-                      width: '0%',
-                      height: '2px',
-                      bottom: 0,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      backgroundColor: 'primary.main',
-                      transition: 'width 0.3s ease-in-out',
-                    },
-                    '&:hover::after': {
-                      width: '80%',
-                    },
-                  }}
-                >
-                  {page.label}
-                </Button>
-              )
-            )}
-          </Box>
-
-          <Box
-            sx={{
-              display: { xs: 'none', md: 'flex' },
-              gap: 1,
-              '& .MuiButton-contained': {
-                boxShadow: 'none',
-                '&:hover': {
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  transform: 'translateY(-1px)',
-                },
-                transition: 'all 0.2s ease-in-out',
-              },
-              '& .MuiButton-text': {
-                '&:hover': {
-                  backgroundColor: 'rgba(0,0,0,0.03)',
-                },
-              },
-            }}
-          >
-            {renderAuthButtons()}
-          </Box>
-
-          <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-            <IconButton
-              size="large"
-              aria-label="navigation menu"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleOpenNavMenu}
-              color="primary"
-            >
-              <MenuIcon />
-            </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorElNav}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={Boolean(anchorElNav)}
-              onClose={handleCloseNavMenu}
-              sx={{
-                display: { xs: 'block', md: 'none' },
-              }}
-            >
-              {pages.map((page) => (
-                <MenuItem
-                  key={page.label}
-                  onClick={() => {
-                    if (page.href) {
-                      handleNavigation(page.href);
-                    } else {
-                      scrollToSection(page.sectionId);
-                    }
-                  }}
-                >
-                  <Typography textAlign="center" fontFamily="Inter, sans-serif">
-                    {page.label}
-                  </Typography>
-                </MenuItem>
-              ))}
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1,
-                  '& .MuiButton-contained': {
-                    width: '100%',
-                    mb: 1,
-                    boxShadow: 'none',
-                    '&:hover': {
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                    },
-                  },
-                  '& .MuiButton-text': {
-                    width: '100%',
-                    justifyContent: 'center',
-                    '&:hover': {
-                      backgroundColor: 'rgba(0,0,0,0.03)',
-                    },
-                  },
-                }}
-              >
-                {renderAuthButtons()}
-              </Box>
-            </Menu>
-          </Box>
-        </Toolbar>
-      </Container>
-    </MuiAppBar>
+      {/* Auth Button */}
+      <AuthButton />
+    </Box>
   );
 }
-
-export default AppBar;

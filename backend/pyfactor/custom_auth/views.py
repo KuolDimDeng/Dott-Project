@@ -1,4 +1,3 @@
-#/Users/kuoldeng/projectx/backend/pyfactor/custom_auth/views.py
 import uuid
 from django.db import connections, transaction, DatabaseError, IntegrityError
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -13,8 +12,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from users.models import UserProfile  # Adjust the import path as necessary
+from users.models import UserProfile
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.authtoken.views import ObtainAuthToken
 from django.contrib.auth import authenticate
@@ -27,15 +27,13 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.cache import cache
 from django.utils.decorators import method_decorator
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
+from django.utils import timezone
+from django.core.signing import TimestampSigner
 
 from asgiref.sync import sync_to_async
-
-
-
 import requests
 
 from users.models import UserProfile
-
 from .models import User
 from .serializers import (
     CustomRegisterSerializer, 
@@ -47,7 +45,6 @@ from users.utils import initial_user_registration
 from pyfactor.logging_config import get_logger
 from django.urls import path, re_path
 
-
 logger = get_logger()
 
 ONBOARDING_STATUS_CHOICES = [
@@ -58,219 +55,6 @@ ONBOARDING_STATUS_CHOICES = [
     ('complete', 'Complete'),
 ]
 
-class SessionView(APIView):
-    permission_classes = [AllowAny]  # Changed from IsAuthenticated to AllowAny
-
-    def get(self, request):
-        if not request.user.is_authenticated:
-            return Response({
-                'isLoggedIn': False,
-                'user': None
-            }, status=status.HTTP_200_OK)  # Return 200 instead of 401
-
-        return Response({
-            'isLoggedIn': True,
-            'user': {
-                'id': str(request.user.id),
-                'email': request.user.email,
-                'onboarding_status': getattr(request.user, 'onboarding_status', 'business-info'),
-                'currentStep': getattr(request.user, 'current_step', 'business-info'),
-                'nextStep': getattr(request.user, 'next_step', 'subscription'),
-                'selected_plan': getattr(request.user, 'selected_plan', None),
-                'databaseStatus': getattr(request.user, 'database_status', None),
-                'setupStatus': getattr(request.user, 'setup_status', None),
-                'lastUpdated': timezone.now().isoformat()
-            }
-        })
-
-    def validate_status(self, status_value):
-        return status_value in dict(ONBOARDING_STATUS_CHOICES)
-
-    def post(self, request):
-        request_id = str(uuid.uuid4())
-        try:
-            if not request.user.is_authenticated:
-                return Response({
-                    'isLoggedIn': False,
-                    'user': None
-                }, status=status.HTTP_200_OK)
-
-            access_token = request.data.get('accessToken')
-            refresh_token = request.data.get('refreshToken')
-            update = request.data.get('update', {})
-             # Only validate token if we're updating data
-            if update and not access_token:
-                return Response({
-                    'success': False,
-                    'message': 'No access token provided',
-                    'requestId': request_id
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-            # Update user session data with validation
-            user = request.user
-            
-            # Validate and update onboarding status
-            new_onboarding_status = update.get('onboarding_status')
-            if new_onboarding_status and self.validate_status(new_onboarding_status):
-                user.onboarding_status = new_onboarding_status
-
-            # Validate and update current step
-            new_current_step = update.get('currentStep')
-            if new_current_step and self.validate_status(new_current_step):
-                user.current_step = new_current_step
-
-            # Validate and update next step
-            new_next_step = update.get('nextStep')
-            if new_next_step and self.validate_status(new_next_step):
-                user.next_step = new_next_step
-
-            # Update other fields
-            if hasattr(user, 'selected_plan'):
-                user.selected_plan = update.get('selected_plan', user.selected_plan)
-            if hasattr(user, 'database_status'):
-                user.database_status = update.get('databaseStatus', user.database_status)
-            if hasattr(user, 'setup_status'):
-                user.setup_status = update.get('setupStatus', user.setup_status)
-
-            user.last_login = timezone.now()
-            user.save()
-
-            # Prepare response with updated session data
-            return Response({
-                'success': True,
-                'session': {
-                    'user': {
-                        'id': str(user.id),
-                        'email': user.email,
-                        'onboarding_status': user.onboarding_status,
-                        'currentStep': user.current_step,
-                        'nextStep': user.next_step,
-                        'selected_plan': getattr(user, 'selected_plan', None),
-                        'databaseStatus': getattr(user, 'database_status', None),
-                        'setupStatus': getattr(user, 'setup_status', None),
-                        'lastUpdated': timezone.now().isoformat(),
-                        'accessToken': access_token,
-                        'refreshToken': refresh_token
-                    }
-                },
-                'requestId': request_id
-            })
-
-        except Exception as e:
-            logger.error('Session update failed', extra={
-                'request_id': request_id,
-                'user_id': getattr(request.user, 'id', None),
-                'error': str(e)
-            })
-            return Response({
-                'success': False,
-                'message': 'Session update failed',
-                'error': str(e),
-                'requestId': request_id
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-def async_csrf_exempt(view_func):
-    """
-    Decorator that wraps the given view with CSRF exemption for async views.
-    """
-    return method_decorator(csrf_exempt)(view_func)
-
-
-@method_decorator(csrf_exempt, name='dispatch')
-class AsyncAPIView(APIView):
-    async def dispatch(self, request, *args, **kwargs):
-        """
-        Handle async dispatch with proper authentication
-        """
-        try:
-            response = await super().dispatch(request, *args, **kwargs)
-            return response
-        except Exception as exc:
-            return self.handle_exception(exc)
-
-    async def initial(self, request, *args, **kwargs):
-        """
-        Runs anything that needs to occur prior to calling the method handler.
-        """
-        await self.perform_authentication(request)
-        self.check_permissions(request)
-        self.check_throttles(request)
-
-    async def perform_authentication(self, request):
-        """
-        Perform authentication on the incoming request.
-        """
-        authenticator = self.get_authenticators()[0]
-        try:
-            user_auth_tuple = await authenticator.authenticate(request)
-            if user_auth_tuple is not None:
-                self.request.user, self.request.auth = user_auth_tuple
-        except Exception as e:
-            self.request.user = None
-            self.request.auth = None
-            raise
-
-def handle_authentication_error(self, error, context=None):
-    logger.error(f"Authentication error: {str(error)}", extra={
-        'context': context,
-        'error_type': type(error).__name__
-    })
-    return Response(
-        {"error": "Authentication failed"},
-        status=status.HTTP_401_UNAUTHORIZED
-    )
-
-def validate_token(self, token, token_type):
-    try:
-        # Add token validation logic
-        decoded_token = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=["HS256"]
-        )
-        
-        # Check token fingerprint
-        if not self.verify_token_fingerprint(decoded_token):
-            raise TokenError("Invalid token fingerprint")
-            
-        return decoded_token
-    except jwt.ExpiredSignatureError:
-        raise TokenError("Token has expired")
-
-def check_rate_limit(self, key, limit, period):
-    cache_key = f"rate_limit_{key}"
-    current = cache.get(cache_key, 0)
-    
-    if current >= limit:
-        raise RateLimitExceeded(f"Rate limit exceeded. Try again in {period} seconds")
-        
-    cache.set(cache_key, current + 1, period)
-
-class TokenService:
-    @staticmethod
-    def set_token_cookie(response, token_type, token_value):
-        """Set token cookie with appropriate settings"""
-        cookie_name = f'{token_type}_token'
-        max_age = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds() if token_type == 'refresh' else \
-                 settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
-        
-        response.set_cookie(
-            cookie_name,
-            token_value,
-            max_age=max_age,
-            httponly=True,
-            secure=settings.SIMPLE_JWT.get('AUTH_COOKIE_SECURE', True),
-            samesite=settings.SIMPLE_JWT.get('AUTH_COOKIE_SAMESITE', 'Lax'),
-            domain=settings.SIMPLE_JWT.get('AUTH_COOKIE_DOMAIN'),
-            path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/')
-        )
-
-
-# Create your views here.
-# Register a new user with an email confirmation.
-@method_decorator(csrf_exempt, name='dispatch')
 class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = CustomRegisterSerializer
@@ -315,22 +99,164 @@ class RegisterView(generics.CreateAPIView):
                 "errors": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
 
-# Activate user account via email confirmation.
-class ActivateAccountView(APIView):
-    def get(self, request, uidb64, token):
-        try:
-            uid = force_str(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            user = None
+class SessionView(APIView):
+    permission_classes = [AllowAny]
 
-        if user is not None and default_token_generator.check_token(user, token):
-            user.is_active = True
+    def get(self, request):
+        if not request.user.is_authenticated:
+            return Response({
+                'isLoggedIn': False,
+                'user': None
+            }, status=status.HTTP_200_OK)
+
+        return Response({
+            'isLoggedIn': True,
+            'user': {
+                'id': str(request.user.id),
+                'email': request.user.email,
+                'onboarding_status': getattr(request.user, 'onboarding_status', 'business-info'),
+                'currentStep': getattr(request.user, 'current_step', 'business-info'),
+                'nextStep': getattr(request.user, 'next_step', 'subscription'),
+                'selected_plan': getattr(request.user, 'selected_plan', None),
+                'databaseStatus': getattr(request.user, 'database_status', None),
+                'setupStatus': getattr(request.user, 'setup_status', None),
+                'lastUpdated': timezone.now().isoformat()
+            }
+        })
+
+    def validate_status(self, status_value):
+        return status_value in dict(ONBOARDING_STATUS_CHOICES)
+
+    def post(self, request):
+        request_id = str(uuid.uuid4())
+        try:
+            if not request.user.is_authenticated:
+                return Response({
+                    'isLoggedIn': False,
+                    'user': None
+                }, status=status.HTTP_200_OK)
+
+            access_token = request.data.get('accessToken')
+            refresh_token = request.data.get('refreshToken')
+            update = request.data.get('update', {})
+
+            if update and not access_token:
+                return Response({
+                    'success': False,
+                    'message': 'No access token provided',
+                    'requestId': request_id
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            user = request.user
+            
+            new_onboarding_status = update.get('onboarding_status')
+            if new_onboarding_status and self.validate_status(new_onboarding_status):
+                user.onboarding_status = new_onboarding_status
+
+            new_current_step = update.get('currentStep')
+            if new_current_step and self.validate_status(new_current_step):
+                user.current_step = new_current_step
+
+            new_next_step = update.get('nextStep')
+            if new_next_step and self.validate_status(new_next_step):
+                user.next_step = new_next_step
+
+            if hasattr(user, 'selected_plan'):
+                user.selected_plan = update.get('selected_plan', user.selected_plan)
+            if hasattr(user, 'database_status'):
+                user.database_status = update.get('databaseStatus', user.database_status)
+            if hasattr(user, 'setup_status'):
+                user.setup_status = update.get('setupStatus', user.setup_status)
+
+            user.last_login = timezone.now()
             user.save()
-            return Response({"message": "Account activated successfully."}, status=status.HTTP_200_OK)
-        else:
-            return Response({"message": "Invalid activation link."}, status=status.HTTP_400_BAD_REQUEST)
-        
+
+            return Response({
+                'success': True,
+                'session': {
+                    'user': {
+                        'id': str(user.id),
+                        'email': user.email,
+                        'onboarding_status': user.onboarding_status,
+                        'currentStep': user.current_step,
+                        'nextStep': user.next_step,
+                        'selected_plan': getattr(user, 'selected_plan', None),
+                        'databaseStatus': getattr(user, 'database_status', None),
+                        'setupStatus': getattr(user, 'setup_status', None),
+                        'lastUpdated': timezone.now().isoformat(),
+                        'accessToken': access_token,
+                        'refreshToken': refresh_token
+                    }
+                },
+                'requestId': request_id
+            })
+
+        except Exception as e:
+            logger.error('Session update failed', extra={
+                'request_id': request_id,
+                'user_id': getattr(request.user, 'id', None),
+                'error': str(e)
+            })
+            return Response({
+                'success': False,
+                'message': 'Session update failed',
+                'error': str(e),
+                'requestId': request_id
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            refresh_token = response.data.get('refresh')
+            if refresh_token:
+                response.set_cookie(
+                    'refresh_token',
+                    refresh_token,
+                    max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
+                    httponly=True,
+                    secure=settings.SIMPLE_JWT.get('AUTH_COOKIE_SECURE', True),
+                    samesite=settings.SIMPLE_JWT.get('AUTH_COOKIE_SAMESITE', 'Lax'),
+                    domain=settings.SIMPLE_JWT.get('AUTH_COOKIE_DOMAIN'),
+                    path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/')
+                )
+        return response
+
+class CustomAuthToken(ObtainAuthToken):
+    serializer_class = CustomAuthTokenSerializer
+
+    def post(self, request, *args, **kwargs):
+        try:
+            serializer = self.serializer_class(data=request.data, context={'request': request})
+            serializer.is_valid(raise_exception=True)
+            user = serializer.validated_data['user']
+
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+
+            response_data = {
+                'access': access_token,
+                'refresh': str(refresh),
+                'user_id': str(user.id),
+                'email': user.email,
+                'is_onboarded': user.is_onboarded
+            }
+
+            response = Response(response_data)
+            
+            # Set tokens in cookies
+            TokenService.set_token_cookie(response, 'access', access_token)
+            TokenService.set_token_cookie(response, 'refresh', str(refresh))
+
+            return response
+
+        except Exception as e:
+            logger.error(f"Authentication error: {str(e)}")
+            return Response(
+                {"error": "Authentication failed"}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
 class SocialLoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -408,8 +334,7 @@ class SocialLoginView(APIView):
             logger.info(f"New user created: {email}")
 
         return user
-    
-    
+
 class SignUpView(APIView):
     permission_classes = [AllowAny]
 
@@ -441,7 +366,6 @@ class SignUpView(APIView):
             return False
 
     def make_activation_token(self, user):
-        from django.core.signing import TimestampSigner
         signer = TimestampSigner()
         return signer.sign_object({
             'user_id': str(user.pk),
@@ -536,7 +460,6 @@ class SignUpView(APIView):
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class ForgotPasswordView(APIView):
     def post(self, request):
         email = request.data.get('email')
@@ -560,7 +483,7 @@ class ForgotPasswordView(APIView):
             return Response({"message": "Password reset email sent"}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"message": "User with this email does not exist"}, status=status.HTTP_404_NOT_FOUND)
-        
+
 class CustomPasswordResetView(PasswordResetView):
     email_template_name = 'registration/password_reset_email.html'
     html_email_template_name = 'registration/password_reset_email.html'  # Use the same template for HTML emails
@@ -568,165 +491,21 @@ class CustomPasswordResetView(PasswordResetView):
 
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     success_url = reverse_lazy('password_reset_complete')
-    
 
-# Obtain JWT tokens.
-class CustomTokenObtainPairView(TokenObtainPairView):
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == 200:
-            refresh_token = response.data.get('refresh')
-            if refresh_token:
-                response.set_cookie(
-                    'refresh_token',
-                    refresh_token,
-                    max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
-                    httponly=True,
-                    secure=settings.SIMPLE_JWT.get('AUTH_COOKIE_SECURE', True),
-                    samesite=settings.SIMPLE_JWT.get('AUTH_COOKIE_SAMESITE', 'Lax'),
-                    domain=settings.SIMPLE_JWT.get('AUTH_COOKIE_DOMAIN'),
-                    path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/')
-                )
-        return response
-    
-# Authenticate user with email and password.
-class CustomAuthToken(ObtainAuthToken):
-    serializer_class = CustomAuthTokenSerializer
-
-    def post(self, request, *args, **kwargs):
+class ActivateAccountView(APIView):
+    def get(self, request, uidb64, token):
         try:
-            serializer = self.serializer_class(data=request.data, context={'request': request})
-            serializer.is_valid(raise_exception=True)
-            user = serializer.validated_data['user']
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
 
-            refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
-
-            response_data = {
-                'access': access_token,
-                'refresh': str(refresh),
-                'user_id': str(user.id),
-                'email': user.email,
-                'is_onboarded': user.is_onboarded
-            }
-
-            response = Response(response_data)
-            
-            # Set tokens in cookies
-            TokenService.set_token_cookie(response, 'access', access_token)
-            TokenService.set_token_cookie(response, 'refresh', str(refresh))
-
-            return response
-
-        except Exception as e:
-            logger.error(f"Authentication error: {str(e)}")
-            return Response(
-                {"error": "Authentication failed"}, 
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-# Authenticate user with email and password.
-class AuthTokenView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        user = authenticate(email=request.data.get('email'), password=request.data.get('password'))
-        if user and user.is_active:
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'user_id': str(user.id),
-                'email': user.email,
-                'is_onboarded': user.is_onboarded,
-                'token': str(refresh.access_token)
-            })
-        return Response({'error': 'Invalid credentials or user is inactive'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-        
-class CustomTokenRefreshView(TokenRefreshView):
-    def post(self, request, *args, **kwargs):
-        logger.debug("Processing token refresh request")
-        
-        try:
-            # Get refresh token from cookie or request body
-            refresh_token = request.COOKIES.get('refresh_token') or request.data.get('refresh')
-            
-            if not refresh_token:
-                logger.warning("No refresh token provided")
-                return Response(
-                    {"error": "No valid refresh token found"}, 
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-
-            try:
-                # Validate refresh token
-                refresh = RefreshToken(refresh_token)
-                
-                # Check if token is blacklisted
-                if getattr(refresh, 'blacklisted', False):
-                    logger.warning("Attempted to use blacklisted token")
-                    return Response(
-                        {"error": "Token has been blacklisted"}, 
-                        status=status.HTTP_401_UNAUTHORIZED
-                    )
-
-                # Generate new tokens
-                access_token = str(refresh.access_token)
-                new_refresh_token = str(RefreshToken.for_user(refresh.get('user_id')))
-
-                response_data = {
-                    'access': access_token,
-                    'refresh': new_refresh_token
-                }
-
-                response = Response(response_data, status=status.HTTP_200_OK)
-
-                # Set cookies
-                TokenService.set_token_cookie(response, 'access', access_token)
-                TokenService.set_token_cookie(response, 'refresh', new_refresh_token)
-
-                # Blacklist old refresh token
-                try:
-                    refresh.blacklist()
-                except AttributeError:
-                    logger.warning("Token blacklisting not configured")
-
-                return response
-
-            except TokenError as e:
-                logger.warning(f"Token validation failed: {str(e)}")
-                return Response(
-                    {"error": "Token is invalid or expired"}, 
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-
-        except Exception as e:
-            logger.error(f"Unexpected error in token refresh: {str(e)}")
-            return Response(
-                {"error": "An unexpected error occurred"}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-    
-@method_decorator(csrf_exempt, name='dispatch')  # Use only if CSRF is not needed
-class UpdateSessionView(APIView):
-    permission_classes = [IsAuthenticated]  # Ensures only logged-in users can access this view
-
-    @transaction.atomic
-    def post(self, request, *args, **kwargs):
-        user = request.user
-        try:
-            # Update session data
-            request.session['user_email'] = user.email
-            request.session['user_role'] = user.role  # Assuming a role field in User model
-            request.session['last_login'] = str(user.last_login)
-
-            # Mark the session as modified to save the changes
-            request.session.modified = True
-
-            return Response({"status": "success", "message": "Session updated successfully."}, status=status.HTTP_200_OK)
-        
-        except Exception as e:
-            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if user is not None and default_token_generator.check_token(user, token):
+            user.is_active = True
+            user.save()
+            return Response({"message": "Account activated successfully."}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "Invalid activation link."}, status=status.HTTP_400_BAD_REQUEST)
 
 class ResendActivationEmailView(APIView):
     permission_classes = [AllowAny]
@@ -757,7 +536,6 @@ class ResendActivationEmailView(APIView):
                 'message': 'No account found with this email'
             }, status=status.HTTP_404_NOT_FOUND)
 
-# Email Verification View
 class VerifyEmailView(APIView):
     permission_classes = [AllowAny]
 
@@ -784,10 +562,9 @@ class health_check(APIView):
     def get(self, request):
         return Response({"status": "healthy"}, status=status.HTTP_200_OK)
 
-@method_decorator(csrf_exempt, name='dispatch')
 class AuthErrorView(APIView):
     permission_classes = [AllowAny]
-    parser_classes = (JSONParser, FormParser, MultiPartParser)  # Add this line
+    parser_classes = (JSONParser, FormParser, MultiPartParser)
 
     def post(self, request, *args, **kwargs):
         try:
@@ -820,3 +597,190 @@ class AuthErrorView(APIView):
             "message": "Error logging endpoint is available",
             "supported_methods": ["POST"]
         }, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def setup_user(request):
+    """
+    Setup a new user's account by creating necessary database records
+    """
+    try:
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response(
+                {'error': 'User ID is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        with transaction.atomic():
+            # Create user profile if it doesn't exist
+            user_profile, created = UserProfile.objects.get_or_create(
+                user_id=user_id,
+                defaults={
+                    'setup_complete': False,
+                    'onboarding_status': 'SETUP'
+                }
+            )
+
+            # Create business record if it doesn't exist
+            business = Business.objects.create(
+                user_profile=user_profile,
+                name=request.data.get('business_name', 'My Business'),
+                business_type=request.data.get('business_type', 'Other'),
+                country=request.data.get('country', 'US')
+            )
+
+            # Create default accounts
+            Account.objects.create(
+                business=business,
+                name='Cash',
+                account_type='CASH',
+                currency='USD'
+            )
+            Account.objects.create(
+                business=business,
+                name='Bank',
+                account_type='BANK',
+                currency='USD'
+            )
+
+            # Mark setup as complete
+            user_profile.setup_complete = True
+            user_profile.save()
+
+            logger.info(f'User setup completed successfully for user {user_id}')
+            
+            return Response({
+                'message': 'Setup completed successfully',
+                'user_profile': UserProfileSerializer(user_profile).data
+            })
+
+    except Exception as e:
+        logger.error(f'Setup failed for user {user_id}: {str(e)}')
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+def async_csrf_exempt(view_func):
+    """
+    Decorator that wraps the given view with CSRF exemption for async views.
+    """
+    return method_decorator(csrf_exempt)(view_func)
+
+class TokenService:
+    @staticmethod
+    def set_token_cookie(response, token_type, token_value):
+        """Set token cookie with appropriate settings"""
+        cookie_name = f'{token_type}_token'
+        max_age = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds() if token_type == 'refresh' else \
+                 settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
+        
+        response.set_cookie(
+            cookie_name,
+            token_value,
+            max_age=max_age,
+            httponly=True,
+            secure=settings.SIMPLE_JWT.get('AUTH_COOKIE_SECURE', True),
+            samesite=settings.SIMPLE_JWT.get('AUTH_COOKIE_SAMESITE', 'Lax'),
+            domain=settings.SIMPLE_JWT.get('AUTH_COOKIE_DOMAIN'),
+            path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/')
+        )
+
+class SignupAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        """
+        Handle user signup after Cognito confirmation
+        """
+        logger.debug("Received signup request: %s", request.data)
+        try:
+            # Validate required fields
+            email = request.data.get('email')
+            cognito_id = request.data.get('cognitoId')
+            user_role = request.data.get('userRole', 'OWNER')
+
+            if not email or not cognito_id:
+                logger.error("Missing required fields in signup request")
+                return Response(
+                    {"error": "Missing required fields"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            with transaction.atomic():
+                # Create or update user
+                user, created = User.objects.get_or_create(
+                    email=email,
+                    defaults={
+                        'cognito_sub': cognito_id,
+                        'is_active': True,
+                        'email_verified': True,
+                        'role': user_role
+                    }
+                )
+
+                if not created:
+                    # Update existing user
+                    user.cognito_sub = cognito_id
+                    user.is_active = True
+                    user.email_verified = True
+                    user.role = user_role
+                    user.save(update_fields=['cognito_sub', 'is_active', 'email_verified', 'role'])
+
+                # Create user profile
+                profile, _ = UserProfile.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'setup_complete': False,
+                        'is_active': False,
+                        'setup_status': 'not_started',
+                        'created_at': timezone.now()
+                    }
+                )
+
+                # Create onboarding progress
+                progress, _ = OnboardingProgress.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'onboarding_status': 'business-info',
+                        'current_step': 'business-info',
+                        'next_step': 'subscription',
+                        'created_at': timezone.now()
+                    }
+                )
+
+                logger.info(f"User signup completed for {email}")
+                return Response({
+                    "status": "success",
+                    "userId": str(user.id),
+                    "email": user.email,
+                    "isOnboarded": user.is_onboarded
+                })
+
+        except Exception as e:
+            logger.error("Error processing signup: %s", str(e))
+            return Response(
+                {"error": "Internal server error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class UpdateSessionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        try:
+            # Update session data
+            request.session['user_email'] = user.email
+            request.session['user_role'] = user.role  # Assuming a role field in User model
+            request.session['last_login'] = str(user.last_login)
+
+            # Mark the session as modified to save the changes
+            request.session.modified = True
+
+            return Response({"status": "success", "message": "Session updated successfully."}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

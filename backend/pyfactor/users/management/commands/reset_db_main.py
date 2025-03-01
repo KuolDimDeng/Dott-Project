@@ -314,11 +314,10 @@ class Command(BaseCommand):
                 cursor.execute("DROP SCHEMA IF EXISTS public CASCADE;")
                 cursor.execute("CREATE SCHEMA public;")
                 
-                # Set proper ownership and permissions for RDS
+                # Set proper ownership and permissions for RDS using current user
                 cursor.execute(f"ALTER SCHEMA public OWNER TO {current_user};")
-                cursor.execute("GRANT ALL ON SCHEMA public TO postgres;")
-                cursor.execute("GRANT ALL ON SCHEMA public TO public;")
                 cursor.execute(f"GRANT ALL ON SCHEMA public TO {current_user};")
+                cursor.execute("GRANT ALL ON SCHEMA public TO PUBLIC;")
                 
                 # Set search path
                 cursor.execute(f"ALTER DATABASE {settings.DATABASES['default']['NAME']} SET search_path TO public;")
@@ -327,12 +326,12 @@ class Command(BaseCommand):
                 return  # Success - exit the retry loop
                 
             except Exception as e:
-                logger.error(f"Attempt {attempt + 1} to reset public schema failed: {e}")
+                logger.error(f"Attempt {attempt + 1} to reset public schema failed: {str(e)}")
                 if attempt < max_retries - 1:
                     import time
                     time.sleep(retry_delay)
                 else:
-                    raise Exception(f"Failed to reset public schema after {max_retries} attempts: {e}")
+                    raise Exception(f"Failed to reset public schema after {max_retries} attempts: {str(e)}")
 
     def clear_user_data(self, cursor):
         try:
@@ -575,6 +574,24 @@ class Command(BaseCommand):
                         """
                         CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
                         """,
+                        # Tenant table
+                        """
+                        CREATE TABLE IF NOT EXISTS auth_tenant (
+                            id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                            schema_name VARCHAR(63) UNIQUE NOT NULL,
+                            name VARCHAR(100) NOT NULL,
+                            owner_id UUID NOT NULL,
+                            created_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            is_active BOOLEAN DEFAULT TRUE,
+                            database_status VARCHAR(50) DEFAULT 'not_created',
+                            setup_status VARCHAR(20) DEFAULT 'not_started',
+                            last_setup_attempt TIMESTAMP,
+                            setup_error_message TEXT,
+                            last_health_check TIMESTAMP,
+                            database_setup_task_id VARCHAR(255)
+                        );
+                        """,
+                        # User table
                         """
                         CREATE TABLE IF NOT EXISTS users_user (
                             id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -584,7 +601,7 @@ class Command(BaseCommand):
                             is_active BOOLEAN DEFAULT TRUE,
                             occupation VARCHAR(50) DEFAULT 'OTHER',
                             role VARCHAR(20) DEFAULT 'EMPLOYEE',
-                            is_business_owner BOOLEAN DEFAULT FALSE,
+                            tenant_id UUID REFERENCES auth_tenant(id),
                             is_staff BOOLEAN DEFAULT FALSE,
                             date_joined TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                             email_confirmed BOOLEAN DEFAULT FALSE,
@@ -594,8 +611,9 @@ class Command(BaseCommand):
                             password VARCHAR(128),
                             is_superuser BOOLEAN DEFAULT FALSE,
                             last_login TIMESTAMP
-                        )
+                        );
                         """,
+                        # Account table for OAuth
                         """
                         CREATE TABLE IF NOT EXISTS users_account (
                             id SERIAL PRIMARY KEY,
@@ -611,18 +629,21 @@ class Command(BaseCommand):
                             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                             UNIQUE(provider, provider_account_id)
-                        )
+                        );
                         """,
+                        # Session table
                         """
                         CREATE TABLE IF NOT EXISTS users_session (
                             id SERIAL PRIMARY KEY,
                             user_id UUID NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
                             expires TIMESTAMP NOT NULL,
                             session_token VARCHAR(255) UNIQUE NOT NULL,
+                            access_token TEXT,
                             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                        )
+                        );
                         """,
+                        # Verification token table
                         """
                         CREATE TABLE IF NOT EXISTS users_verification_token (
                             identifier VARCHAR(255) NOT NULL,
@@ -631,20 +652,33 @@ class Command(BaseCommand):
                             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                             PRIMARY KEY (identifier, token)
-                        )
+                        );
+                        """,
+                        # Add indexes
+                        """
+                        CREATE INDEX IF NOT EXISTS idx_tenant_schema_name ON auth_tenant(schema_name);
+                        CREATE INDEX IF NOT EXISTS idx_user_email ON users_user(email);
+                        CREATE INDEX IF NOT EXISTS idx_user_tenant ON users_user(tenant_id);
+                        CREATE INDEX IF NOT EXISTS idx_account_user ON users_account(user_id);
+                        CREATE INDEX IF NOT EXISTS idx_session_user ON users_session(user_id);
                         """
                     )
 
                     for i, command in enumerate(commands, 1):
-                        logger.info(f"Executing NextAuth.js table creation command {i} of {len(commands)}")
-                        cur.execute(command)
-                        logger.info(f"NextAuth.js table creation command {i} executed successfully")
+                        try:
+                            logger.info(f"Executing table creation command {i} of {len(commands)}")
+                            cur.execute(command)
+                            logger.info(f"Table creation command {i} executed successfully")
+                        except Exception as e:
+                            logger.error(f"Error executing command {i}: {str(e)}")
+                            raise
 
-            logger.info("NextAuth.js tables created successfully.")
-            self.stdout.write(self.style.SUCCESS("NextAuth.js tables created successfully."))
+                logger.info("All tables created successfully.")
+                self.stdout.write(self.style.SUCCESS("All tables created successfully."))
+                
         except Exception as e:
-            logger.error(f"An error occurred while creating NextAuth.js tables: {e}")
-            self.stdout.write(self.style.ERROR(f"Failed to create NextAuth.js tables: {e}"))
+            logger.error(f"An error occurred while creating tables: {e}")
+            self.stdout.write(self.style.ERROR(f"Failed to create tables: {e}"))
 
     def print_summary(self, table_status, database_status):
         self.stdout.write("\nOperation Summary:")

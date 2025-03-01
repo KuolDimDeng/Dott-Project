@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { fetchAuthSession } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 
 /**
@@ -33,15 +32,18 @@ const isValidStateTransition = (currentState, newState) => {
  * GET /api/onboarding/status
  * Retrieves the current onboarding status from Cognito user attributes
  */
-export async function GET() {
+export async function GET(request) {
   try {
-    const session = await fetchAuthSession();
-    if (!session?.tokens?.accessToken) {
+    // Get auth tokens from request headers
+    const accessToken = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const idToken = request.headers.get('X-Id-Token');
+    
+    if (!accessToken || !idToken) {
+      logger.error('[OnboardingStatus] No auth tokens in request headers');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user attributes from Cognito with retry logic
-    const { accessToken } = session.tokens;
     let retryCount = 0;
     let userData = null;
 
@@ -54,7 +56,8 @@ export async function GET() {
             headers: {
               'Content-Type': 'application/x-amz-json-1.1',
               'X-Amz-Target': 'AWSCognitoIdentityProviderService.GetUser',
-              Authorization: `Bearer ${accessToken.toString()}`,
+              'Authorization': `Bearer ${accessToken}`,
+              'X-Session-ID': idToken
             },
           }
         );
@@ -131,8 +134,12 @@ export async function GET() {
  */
 export async function POST(request) {
   try {
-    const session = await fetchAuthSession();
-    if (!session?.tokens?.accessToken) {
+    // Get auth tokens from request headers
+    const accessToken = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const idToken = request.headers.get('X-Id-Token');
+    
+    if (!accessToken || !idToken) {
+      logger.error('[OnboardingStatus] No auth tokens in request headers');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -145,7 +152,6 @@ export async function POST(request) {
     }
 
     // Get current status first
-    const { accessToken } = session.tokens;
     const currentUserResponse = await fetch(
       'https://cognito-idp.us-east-1.amazonaws.com/',
       {
@@ -153,7 +159,8 @@ export async function POST(request) {
         headers: {
           'Content-Type': 'application/x-amz-json-1.1',
           'X-Amz-Target': 'AWSCognitoIdentityProviderService.GetUser',
-          Authorization: `Bearer ${accessToken.toString()}`,
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Session-ID': idToken
         },
       }
     );
@@ -214,10 +221,12 @@ export async function POST(request) {
               'Content-Type': 'application/x-amz-json-1.1',
               'X-Amz-Target':
                 'AWSCognitoIdentityProviderService.UpdateUserAttributes',
-              Authorization: `Bearer ${accessToken.toString()}`,
+              'Authorization': `Bearer ${accessToken}`,
+              'X-Session-ID': idToken
             },
             body: JSON.stringify({
               UserAttributes: userAttributes,
+              SessionId: idToken
             }),
           }
         );

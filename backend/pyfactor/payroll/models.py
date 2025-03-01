@@ -70,8 +70,36 @@ class PayrollRun(models.Model):
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled')
     ], default='draft')
+
+       # Add global support fields
+    country_code = models.CharField(max_length=2, default='US')
+    is_international = models.BooleanField(default=False)
+    service_type = models.CharField(max_length=10, choices=[
+        ('full', 'Full-Service'),
+        ('self', 'Self-Service'),
+    ], default='full')
+    
+    # For international self-service
+    filing_instructions = models.TextField(blank=True, null=True)
+    tax_authority_links = models.JSONField(default=dict, blank=True, null=True)
+    
     created_at = models.DateTimeField(default=default_due_datetime)
     updated_at = models.DateTimeField(default=default_due_datetime)
+    tax_filings_created = models.BooleanField(default=False)
+    tax_filings_status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('not_applicable', 'Not Applicable'),  # For self-service
+
+    ], default='pending')
+
+    # Add currency fields
+    currency_code = models.CharField(max_length=3, default='USD')  # ISO 4217 currency code
+    currency_symbol = models.CharField(max_length=5, default='$')
+    exchange_rate_to_usd = models.DecimalField(max_digits=10, decimal_places=6, default=1.0)
+    show_usd_comparison = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if not self.payroll_number:
@@ -97,9 +125,17 @@ class PayrollTransaction(models.Model):
     gross_pay = models.DecimalField(max_digits=10, decimal_places=2)
     net_pay = models.DecimalField(max_digits=10, decimal_places=2)
     taxes = models.DecimalField(max_digits=10, decimal_places=2)
+    federal_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    state_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    state_code = models.CharField(max_length=2, blank=True, null=True)
+    medicare_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    social_security_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    additional_withholdings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
 
 class TaxForm(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     form_type = models.CharField(max_length=20)
     tax_year = models.IntegerField()
     file = models.FileField(upload_to='tax_forms/')
+

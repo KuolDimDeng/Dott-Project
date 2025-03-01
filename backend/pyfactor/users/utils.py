@@ -22,7 +22,7 @@ from business.models import Business
 from .exceptions import DatabaseError, ValidationError, ServiceUnavailableError
 from onboarding.models import OnboardingProgress
 from .models import UserProfile
-from onboarding.utils import generate_unique_database_name
+from onboarding.utils import generate_unique_schema_name
 
 logger = get_logger()
 
@@ -45,7 +45,7 @@ def return_connection(conn):
 # Add the missing function
 async def check_database_exists(database_name: str, user_profile=None) -> bool:
     try:
-        pool = await DatabasePool.get_instance().get_pool('default')
+        pool = await SchemaPool.get_instance().get_pool()
         async with pool.acquire() as conn:
             result = await conn.fetchrow(
                 "SELECT 1 FROM pg_database WHERE datname = $1",
@@ -69,14 +69,13 @@ async def check_database_exists(database_name: str, user_profile=None) -> bool:
         return False
 
 # Fix DatabasePool class indentation
-class DatabasePool:
-    """Singleton connection pool manager"""
+class SchemaPool:
+    """Singleton connection pool manager for schema operations"""
     _instance = None
     _instance_lock = threading.Lock()
     
     def __init__(self):
-        self.pools: Dict[str, asyncpg.Pool] = {}
-        self.metrics: Dict[str, Dict] = {}
+        self.pool: Optional[asyncpg.Pool] = None
         self._lock = asyncio.Lock()
         atexit.register(self.cleanup)
 
@@ -87,7 +86,6 @@ class DatabasePool:
                 cls._instance = cls()
             return cls._instance
 
-
     @classmethod
     def initialize(cls):
         if cls._instance is None:
@@ -95,27 +93,25 @@ class DatabasePool:
         return cls._instance
 
     def cleanup(self):
-        """Clean up pools on shutdown"""
-        for pool in self.pools.values():
-            pool.close()
-        self.pools.clear()
+        """Clean up pool on shutdown"""
+        if self.pool:
+            self.pool.close()
+            self.pool = None
 
-    async def get_pool(self, database_name: str) -> asyncpg.Pool:
-        """Get or create connection pool for database"""
+    async def get_pool(self, schema_name: Optional[str] = None) -> asyncpg.Pool:
+        """Get or create connection pool for default database"""
         async with self._lock:
-            if database_name not in self.pools:
-                self.pools[database_name] = await self.create_pool(database_name)
-            return self.pools[database_name]
-
-    async def close_pool(self, database_name: str):
-        """Close specific pool"""
-        if database_name in self.pools:
-            await self.pools[database_name].close()
-            del self.pools[database_name]
+            if not self.pool:
+                self.pool = await self.create_pool()
             
-    async def create_pool(self, database_name: str) -> asyncpg.Pool:
-        """Create new connection pool"""
-        db_settings = settings.DATABASES[database_name]
+            if schema_name:
+                # Create a proxy pool that sets the search path
+                return SchemaPoolProxy(self.pool, schema_name)
+            return self.pool
+
+    async def create_pool(self) -> asyncpg.Pool:
+        """Create new connection pool for default database"""
+        db_settings = settings.DATABASES['default']
         return await asyncpg.create_pool(
             min_size=settings.DB_POOL_OPTIONS['MIN_CONNS'],
             max_size=settings.DB_POOL_OPTIONS['MAX_CONNS'],
@@ -123,7 +119,7 @@ class DatabasePool:
             port=db_settings['PORT'],
             user=db_settings['USER'],
             password=db_settings['PASSWORD'],
-            database=database_name,
+            database=db_settings['NAME'],
             command_timeout=settings.DB_POOL_OPTIONS.get('COMMAND_TIMEOUT', 60.0),
             max_queries=settings.DB_POOL_OPTIONS.get('MAX_QUERIES', 50000),
             max_inactive_connection_lifetime=settings.DB_POOL_OPTIONS.get('MAX_IDLE_TIME', 300.0),
@@ -131,11 +127,26 @@ class DatabasePool:
         )
 
     async def close_all(self):
-        """Close all connection pools"""
+        """Close the connection pool"""
         async with self._lock:
-            for pool in self.pools.values():
-                await pool.close()
-            self.pools.clear()
+            if self.pool:
+                await self.pool.close()
+                self.pool = None
+
+class SchemaPoolProxy:
+    """Proxy class that automatically sets schema context for connections"""
+    def __init__(self, pool: asyncpg.Pool, schema_name: str):
+        self.pool = pool
+        self.schema_name = schema_name
+
+    @asynccontextmanager
+    async def acquire(self, *args, **kwargs):
+        async with self.pool.acquire(*args, **kwargs) as conn:
+            await conn.execute(f'SET search_path TO "{self.schema_name}"')
+            try:
+                yield conn
+            finally:
+                await conn.execute('SET search_path TO public')
 
 
 def cleanup_connections(database_name=None):
@@ -147,64 +158,57 @@ def cleanup_connections(database_name=None):
         logger.error(f"Error cleaning up connections: {str(e)}")
 
 @sync_to_async
-def create_user_database(user_id: str, business_id: str) -> str:
-    logger.debug(f"Starting database creation for user {user_id}")
-    database_name = None
+def create_user_schema(user_id: str, business_id: str) -> str:
+    logger.debug(f"Starting schema creation for user {user_id}")
+    schema_name = None
     max_retries = 3
     
     try:
         user = get_user_model().objects.get(id=user_id)
         user_profile = user.profile
 
-        # Return existing database if already set up
-        if user_profile.database_name and user_profile.database_status == 'active':
-            return user_profile.database_name
+        # Return existing schema if already set up
+        if user_profile.schema_name and user_profile.database_status == 'active':
+            return user_profile.schema_name
 
-        database_name = generate_unique_database_name(user)
+        schema_name = generate_unique_schema_name(user)
 
         with get_connection() as conn:
             conn.autocommit = True
             with conn.cursor() as cursor:
-                # Validate template exists
-                cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", [settings.USER_DATABASE_TEMPLATE])
-                if not cursor.fetchone():
-                    raise DatabaseError(f"Template database {settings.USER_DATABASE_TEMPLATE} does not exist")
-
-                # Create database from template with retries
+                # Create schema with retries
                 for attempt in range(max_retries):
                     try:
-                        cursor.execute(f'CREATE DATABASE "{database_name}" TEMPLATE {settings.USER_DATABASE_TEMPLATE}')
-                        cursor.execute(f"""
-                            ALTER DATABASE "{database_name}" 
-                            SET maintenance_work_mem = '64MB'
-                            SET work_mem = '4MB'
-                            SET temp_file_limit = '1GB'
-                            CONNECTION LIMIT {settings.DATABASE_RESOURCE_LIMITS['MAX_CONNECTIONS_PER_DB']}
-                        """)
+                        # Create schema
+                        cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
+                        
+                        # Set up permissions
+                        cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {settings.DATABASES["default"]["USER"]}')
+                        cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {settings.DATABASES["default"]["USER"]}')
+                        cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {settings.DATABASES["default"]["USER"]}')
+                        
+                        # Set search path for this connection
+                        cursor.execute(f'SET search_path TO "{schema_name}"')
                         break
                     except OperationalError as e:
                         if attempt == max_retries - 1:
                             raise
                         time.sleep(1 * (2 ** attempt))
 
-                # Register database in Django
-                settings.DATABASES[database_name] = get_database_config(database_name)
-                connections.databases[database_name] = settings.DATABASES[database_name]
-
                 # Update user profile
                 with transaction.atomic():
-                    user_profile.database_name = database_name
+                    user_profile.schema_name = schema_name
                     user_profile.database_status = 'active'
                     user_profile.setup_status = 'pending'
-                    user_profile.save(update_fields=['database_name', 'database_status', 'setup_status'])
+                    user_profile.save(update_fields=['schema_name', 'database_status', 'setup_status'])
 
-                logger.info(f"Database {database_name} created successfully")
-                return database_name
+                logger.info(f"Schema {schema_name} created successfully")
+                return schema_name
 
     except Exception as e:
-        logger.error(f"Error creating database: {str(e)}")
-        if database_name:
-            sync_cleanup_database(database_name)
+        logger.error(f"Error creating schema: {str(e)}")
+        if schema_name:
+            sync_cleanup_schema(schema_name)
         raise
 
 def get_database_config(database_name: str) -> dict:
@@ -253,11 +257,14 @@ def get_database_config(database_name: str) -> dict:
     return base_settings
 
 
-async def populate_initial_data(database_name: str):
-    """Populate initial data in new database"""
+async def populate_initial_data(schema_name: str):
+    """Populate initial data in new schema"""
     try:
-        pool = await DatabasePool.get_instance().get_pool(database_name)
+        pool = await SchemaPool.get_instance().get_pool(schema_name)
         async with pool.acquire() as conn:
+            # Set search path to the schema
+            await conn.execute(f'SET search_path TO "{schema_name}"')
+            
             # Add your initial data population logic here
             await conn.execute("""
                 -- Add your initial data SQL here
@@ -267,26 +274,43 @@ async def populate_initial_data(database_name: str):
     except Exception as e:
         logger.error(f"Error populating initial data: {str(e)}")
         raise
+    finally:
+        # Reset search path
+        if pool:
+            async with pool.acquire() as conn:
+                await conn.execute('SET search_path TO public')
 
-async def get_user_database(user):
-    """Get user's database information with proper error handling"""
+async def get_user_schema(user):
+    """Get user's schema information with proper error handling"""
     try:
         profile = await sync_to_async(
             UserProfile.objects.select_related('user').get
         )(user=user)
         
-        if not profile.database_name:
-            logger.error(f"No database configured for user {user.email}")
+        if not profile.schema_name:
+            logger.error(f"No schema configured for user {user.email}")
             profile.setup_status = 'step1'
             await sync_to_async(profile.save)(update_fields=['setup_status'])
-            raise DatabaseError("Database not configured, reset to step1")
+            raise DatabaseError("Schema not configured, reset to step1")
             
-        # Pass the profile to check_database_exists
-        if not await check_database_exists(profile.database_name, profile):
-            logger.error(f"Database {profile.database_name} does not exist")
-            raise DatabaseError("Database does not exist, profile reset to step1")
+        # Check if schema exists
+        pool = await SchemaPool.get_instance().get_pool(schema_name)
+        async with pool.acquire() as conn:
+            result = await conn.fetchrow(
+                "SELECT 1 FROM information_schema.schemata WHERE schema_name = $1",
+                profile.schema_name
+            )
+            if not result:
+                logger.error(f"Schema {profile.schema_name} does not exist")
+                profile.setup_status = 'step1'
+                profile.schema_name = None
+                profile.database_status = 'inactive'
+                await sync_to_async(profile.save)(
+                    update_fields=['setup_status', 'schema_name', 'database_status']
+                )
+                raise DatabaseError("Schema does not exist, profile reset to step1")
             
-        return profile.database_name
+        return profile.schema_name
         
     except UserProfile.DoesNotExist:
         logger.error(f"Profile not found for user {user.email}")
@@ -295,29 +319,33 @@ async def get_user_database(user):
         logger.error(f"Error retrieving user database: {str(e)}")
         raise DatabaseError(str(e))
 
-async def setup_user_database(database_name: str, user: Any, business: Any) -> bool:
-    """Setup user database with migrations and initial data"""
+async def setup_user_schema(schema_name: str, user: Any, business: Any) -> bool:
+    """Setup user schema with migrations and initial data"""
     try:
         # Update setup status
         if user and hasattr(user, 'profile'):
             user.profile.setup_status = 'in_progress'
             await sync_to_async(user.profile.save)(update_fields=['setup_status'])
 
-        # Verify database exists and is accessible
-        pool = await DatabasePool.get_instance().get_pool(database_name)
+        # Get default database connection
+        pool = await SchemaPool.get_instance().get_pool(schema_name)
         async with pool.acquire() as conn:
+            # Set search path to the schema
+            await conn.execute(f'SET search_path TO "{schema_name}"')
+            
+            # Verify schema is accessible
             await conn.execute('SELECT 1')
 
-        logger.info(f"Running migrations for database: {database_name}")
-        await sync_to_async(call_command)('migrate', database=database_name)
+        logger.info(f"Running migrations for schema: {schema_name}")
+        await sync_to_async(call_command)('migrate', schema=schema_name)
 
-        logger.info(f"Running initial data population for: {database_name}")
-        await populate_initial_data(database_name)
+        logger.info(f"Running initial data population for: {schema_name}")
+        await populate_initial_data(schema_name)
 
-        # Verify database setup
-        tables_valid = await check_database_setup(database_name)
+        # Verify schema setup
+        tables_valid = await check_schema_setup(schema_name)
         if not tables_valid:
-            raise DatabaseError(f"Database {database_name} setup validation failed")
+            raise DatabaseError(f"Schema {schema_name} setup validation failed")
 
         # Update setup status on success
         if user and hasattr(user, 'profile'):
@@ -327,69 +355,79 @@ async def setup_user_database(database_name: str, user: Any, business: Any) -> b
                 update_fields=['setup_status', 'database_status']
             )
 
-        logger.info(f"Database setup completed successfully for: {database_name}")
+        logger.info(f"Schema setup completed successfully for: {schema_name}")
         return True
 
     except Exception as e:
-        logger.error(f"Error setting up database {database_name}: {str(e)}")
+        logger.error(f"Error setting up schema {schema_name}: {str(e)}")
         if user and hasattr(user, 'profile'):
             user.profile.setup_status = 'error'
             await sync_to_async(user.profile.save)(update_fields=['setup_status'])
-        await cleanup_database(database_name, user.profile if user else None)
+        await cleanup_schema(schema_name, user.profile if user else None)
         raise
-
-async def check_database_setup(database_name: str) -> bool:
-    """Check if required tables exist in database"""
-    try:
-        pool = await DatabasePool.get_instance().get_pool(database_name)
+    finally:
+        # Reset search path
+        pool = await SchemaPool.get_instance().get_pool()
         async with pool.acquire() as conn:
+            await conn.execute('SET search_path TO public')
+
+async def check_schema_setup(schema_name: str) -> bool:
+    """Check if required tables exist in schema"""
+    try:
+        pool = await SchemaPool.get_instance().get_pool(schema_name)
+        async with pool.acquire() as conn:
+            # Set search path to the schema
+            await conn.execute(f'SET search_path TO "{schema_name}"')
+            
             # Check for crucial tables
             tables = await conn.fetch("""
-                SELECT tablename FROM pg_tables 
-                WHERE schemaname = 'public'
-            """)
+                SELECT tablename FROM pg_tables
+                WHERE schemaname = $1
+            """, schema_name)
             required_tables = {'django_migrations', 'auth_user', 'django_content_type'}
             existing_tables = {table['tablename'] for table in tables}
             return required_tables.issubset(existing_tables)
     except Exception as e:
-        logger.error(f"Error checking database setup: {str(e)}")
+        logger.error(f"Error checking schema setup: {str(e)}")
         return False
+    finally:
+        # Reset search path
+        if pool:
+            async with pool.acquire() as conn:
+                await conn.execute('SET search_path TO public')
 
-async def check_database_health(database_name: str) -> tuple[bool, dict]:
+async def check_schema_health(schema_name: str) -> tuple[bool, dict]:
     """
-    Check database health status with comprehensive checks
+    Check schema health status with comprehensive checks
     Returns tuple of (is_healthy, details)
     """
     try:
-        pool = await DatabasePool.get_instance().get_pool(database_name)
-        async with pool.acquire(timeout=5.0) as conn:  
+        pool = await SchemaPool.get_instance().get_pool(schema_name)
+        async with pool.acquire(timeout=5.0) as conn:
+            # Set search path to the schema
+            await conn.execute(f'SET search_path TO "{schema_name}"')
+            
             # Basic connectivity check
             await conn.execute('SELECT 1')
             
             # Check required tables exist
-            tables_valid = await check_database_setup(database_name)
+            tables_valid = await check_schema_setup(schema_name)
             
-            # Check database size and connections
+            # Check schema size and object count
             size_query = """
-                SELECT pg_database_size($1) as db_size,
-                       (SELECT count(*) FROM pg_stat_activity 
-                        WHERE datname = $1) as connections
+                SELECT pg_total_relation_size(quote_ident($1) || '.' || quote_ident(tablename)) as schema_size,
+                       count(*) as table_count
+                FROM pg_tables
+                WHERE schemaname = $1
+                GROUP BY schemaname
             """
-            result = await conn.fetchrow(size_query, database_name)
-            
-            pool_stats = {
-                "min_size": pool.get_min_size(),
-                "max_size": pool.get_max_size(),
-                "current_size": pool.get_size(),
-                "free_size": pool.get_free_size()
-            }
+            result = await conn.fetchrow(size_query, schema_name)
             
             health_status = {
                 "status": "healthy" if tables_valid else "unhealthy",
-                "database": database_name,
-                "size_bytes": result['db_size'],
-                "active_connections": result['connections'],
-                "pool_stats": pool_stats,
+                "schema": schema_name,
+                "size_bytes": result['schema_size'] if result else 0,
+                "table_count": result['table_count'] if result else 0,
                 "tables_valid": tables_valid,
                 "last_checked": timezone.now().isoformat()
             }
@@ -397,72 +435,68 @@ async def check_database_health(database_name: str) -> tuple[bool, dict]:
             return tables_valid, health_status
 
     except asyncpg.exceptions.CannotConnectNowError:
-        logger.error(f"Cannot connect to database {database_name}")
+        logger.error(f"Cannot connect to schema {schema_name}")
         return False, {
             "status": "unavailable",
-            "database": database_name,
-            "error": "Database temporarily unavailable",
+            "schema": schema_name,
+            "error": "Schema temporarily unavailable",
             "last_checked": timezone.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"Health check failed for {database_name}: {str(e)}")
+        logger.error(f"Health check failed for schema {schema_name}: {str(e)}")
         return False, {
             "status": "error",
-            "database": database_name,
+            "schema": schema_name,
             "error": str(e),
             "last_checked": timezone.now().isoformat()
         }
+    finally:
+        # Reset search path
+        if pool:
+            async with pool.acquire() as conn:
+                await conn.execute('SET search_path TO public')
 
-async def monitor_database_metrics(database_name: str):
-    """Collect and store database metrics"""
+async def monitor_schema_metrics(schema_name: str):
+    """Collect and store schema metrics"""
     try:
-        pool = await DatabasePool.get_instance().get_pool(database_name)
+        pool = await SchemaPool.get_instance().get_pool(schema_name)
         async with pool.acquire() as conn:
             metrics = await conn.fetch("""
-                SELECT * FROM pg_stat_database 
-                WHERE datname = $1
-            """, database_name)
+                SELECT schemaname, n_tables, n_live_tup, n_dead_tup,
+                       last_vacuum, last_autovacuum, last_analyze, last_autoanalyze
+                FROM pg_stat_user_tables
+                WHERE schemaname = $1
+            """, schema_name)
             
-            DatabasePool.get_instance().metrics[database_name] = {
-                'timestamp': timezone.now(),
-                'metrics': metrics
+            # Store metrics in memory (you might want to store these in a more permanent storage)
+            return {
+                'timestamp': timezone.now().isoformat(),
+                'schema': schema_name,
+                'metrics': [dict(m) for m in metrics]
             }
             
     except Exception as e:
-        logger.error(f"Monitoring failed for {database_name}: {str(e)}")
+        logger.error(f"Schema monitoring failed for {schema_name}: {str(e)}")
+        return None
 
-async def cleanup_database(database_name: str, user_profile=None, max_retries: int = 3):
-    """Clean up database and all connections"""
+async def cleanup_schema(schema_name: str, user_profile=None, max_retries: int = 3):
+    """Clean up schema and reset search path"""
     for attempt in range(max_retries):
-
         try:
-            pool = await DatabasePool.get_instance().get_pool('default')
+            pool = await SchemaPool.get_instance().get_pool()
             async with pool.acquire() as conn:
-                await conn.execute("""
-                    SELECT pg_terminate_backend(pid)
-                    FROM pg_stat_activity 
-                    WHERE datname = $1
-                """, database_name)
+                # Reset search path to public
+                await conn.execute('SET search_path TO public')
                 
-                await conn.execute(f'DROP DATABASE IF EXISTS "{database_name}"')
-            
-            if database_name in DatabasePool.get_instance().pools:
-                pool = DatabasePool.get_instance().pools[database_name]
-                await pool.close()
-                del DatabasePool.get_instance().pools[database_name]
-
-            if database_name in connections.databases:
-                del connections.databases[database_name]
-            if database_name in settings.DATABASES:
-                del settings.DATABASES[database_name]
+                # Drop the schema and all objects within it
+                await conn.execute(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE')
 
             if user_profile:
                 user_profile.database_status = 'inactive'
-                user_profile.database_name = None
-                await sync_to_async(user_profile.save)(update_fields=['database_status', 'database_name'])
+                user_profile.schema_name = None
+                await sync_to_async(user_profile.save)(update_fields=['database_status', 'schema_name'])
             
-                
-            logger.info(f"Database {database_name} cleaned up successfully")
+            logger.info(f"Schema {schema_name} cleaned up successfully")
             return
         except Exception as e:
             if attempt == max_retries - 1:
@@ -472,38 +506,50 @@ async def cleanup_database(database_name: str, user_profile=None, max_retries: i
             await asyncio.sleep(1 * (2 ** attempt))  # Exponential backoff
 
 
-def sync_cleanup_database(database_name):
-    """Synchronous cleanup that can run DROP DATABASE"""
+def sync_cleanup_schema(schema_name):
+    """Synchronous cleanup that can drop schema"""
     try:
-        with get_connection() as conn:  # using the defined get_connection function
-            conn.autocommit = True  # Important: Must be in autocommit mode
+        with get_connection() as conn:
+            conn.autocommit = True
             with conn.cursor() as cursor:
-                # Terminate existing connections
-                cursor.execute("""
-                    SELECT pg_terminate_backend(pid)
-                    FROM pg_stat_activity 
-                    WHERE datname = %s
-                """, [database_name])
+                # Reset search path to public
+                cursor.execute('SET search_path TO public')
                 
-                # Drop the database
-                cursor.execute(f'DROP DATABASE IF EXISTS "{database_name}"')
+                # Drop the schema and all objects within it
+                cursor.execute(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE')
                 
     except Exception as e:
         logger.error(f"Error in sync cleanup: {str(e)}")
         raise
-    finally:
-        cleanup_connections(database_name)
 
 @shared_task
-def cleanup_stale_databases():
-    """Periodic task to clean up stale databases"""
+def cleanup_stale_schemas():
+    """Periodic task to clean up stale schemas"""
     try:
-        pool = DatabasePool.get_instance()
-        for database_name, metrics in pool.metrics.items():
-            if (timezone.now() - metrics['timestamp']).days > settings.DATABASE_CLEANUP['MAX_IDLE_DAYS']:
-                asyncio.run(cleanup_database(database_name))
+        # Get all schemas with tenant_ prefix
+        with get_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT schema_name, schema_owner
+                    FROM information_schema.schemata
+                    WHERE schema_name LIKE 'tenant_%'
+                """)
+                schemas = cursor.fetchall()
+
+                for schema_name, schema_owner in schemas:
+                    # Check if schema is still in use
+                    try:
+                        profile = UserProfile.objects.filter(schema_name=schema_name).first()
+                        if not profile:
+                            # No profile using this schema, clean it up
+                            logger.info(f"Cleaning up unused schema: {schema_name}")
+                            asyncio.run(cleanup_schema(schema_name))
+                    except Exception as e:
+                        logger.error(f"Error checking schema {schema_name}: {str(e)}")
+                        continue
+
     except Exception as e:
-        logger.error(f"Stale database cleanup failed: {str(e)}")
+        logger.error(f"Stale schema cleanup failed: {str(e)}")
 
 @transaction.atomic
 def initial_user_registration(validated_data):
@@ -542,20 +588,20 @@ def validate_user_state(user):
         profile = UserProfile.objects.select_related('user', 'business').get(user=user)
         progress = OnboardingProgress.objects.get(user=user)
         
-        if not profile.database_name or profile.database_status != 'active':
+        if not profile.schema_name or profile.database_status != 'active':
             return {
                 'isValid': False,
                 'redirectTo': '/onboarding/step1',
-                'reason': 'no_database'
+                'reason': 'no_schema'
             }
             
         # Check health synchronously
-        is_healthy, health_details = check_database_health(profile.database_name)
+        is_healthy, health_details = check_schema_health(profile.schema_name)
         if not is_healthy:
             return {
                 'isValid': False,
                 'redirectTo': '/onboarding/step4/setup',
-                'reason': 'unhealthy_database',
+                'reason': 'unhealthy_schema',
                 'details': health_details
             }
             
@@ -570,8 +616,8 @@ def validate_user_state(user):
             'isValid': True,
             'redirectTo': '/dashboard',
             'reason': 'all_valid',
-            'database': {
-                'name': profile.database_name,
+            'schema': {
+                'name': profile.schema_name,
                 'status': profile.database_status,
                 'health': health_details
             }

@@ -1,76 +1,100 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/AuthWrapper/AuthWrapper.js
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { CircularProgress, Box } from '@mui/material';
-import { useSession } from '@/hooks/useSession';
-import { isPublicRoute } from '@/lib/authUtils';
+import { getCurrentUser } from 'aws-amplify/auth';
+import { isPublicRoute, refreshSession } from '@/lib/authUtils';
+import { configureAmplify, isAmplifyConfigured } from '@/config/amplify';
 import { logger } from '@/utils/logger';
+
+const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 export default function AuthWrapper({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { data: session, status } = useSession();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const handleAuth = async () => {
+    // Initialize Amplify if needed
+    const init = async () => {
       try {
-        if (isPublicRoute(pathname)) {
-          return;
+        if (!isAmplifyConfigured()) {
+          logger.debug('[AuthWrapper] Initializing Amplify');
+          configureAmplify();
         }
+      } catch (error) {
+        logger.error('[AuthWrapper] Failed to initialize Amplify:', error);
+      }
+    };
 
-        if (status === 'unauthenticated') {
-          logger.debug('No session found, redirecting to sign in');
+    init();
+  }, []);
+
+  // Handle authentication
+  useEffect(() => {
+    let refreshTimer;
+
+    const checkAuth = async () => {
+      // Skip auth check for public routes
+      if (isPublicRoute(pathname)) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const user = await getCurrentUser();
+        if (!user) {
+          logger.debug('[AuthWrapper] No authenticated user found');
           router.push(`/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`);
           return;
         }
 
-        if (status === 'authenticated') {
-          logger.debug('Session found:', session);
+        logger.debug('[AuthWrapper] User authenticated:', {
+          username: user.username,
+          path: pathname
+        });
 
-          // If onboarding is incomplete, redirect to onboarding
-          if (!session?.user?.['custom:onboarding'] || session?.user?.['custom:onboarding'] !== 'complete') {
-            if (!pathname.startsWith('/onboarding')) {
-              logger.debug('Onboarding not completed, redirecting to onboarding');
-              router.push('/onboarding/business-info');
-            }
-            return;
-          }
-
-          // If user is already onboarded but on an onboarding page, redirect to dashboard
-          if (pathname.startsWith('/onboarding') && session?.user?.['custom:onboarding'] === 'complete') {
-            logger.debug('Onboarding already completed, redirecting to dashboard');
-            router.push('/dashboard');
-            return;
-          }
-        }
+        setIsLoading(false);
       } catch (error) {
-        logger.error('Auth check failed:', error);
+        logger.error('[AuthWrapper] Auth check failed:', error);
+        router.push(`/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`);
       }
     };
 
-    handleAuth();
-  }, [pathname, router, session, status]);
+    // Set up session refresh
+    const startRefreshTimer = () => {
+      clearInterval(refreshTimer);
+      refreshTimer = setInterval(async () => {
+        try {
+          if (!isPublicRoute(pathname)) {
+            logger.debug('[AuthWrapper] Attempting session refresh');
+            const refreshed = await refreshSession();
+            if (!refreshed) {
+              logger.warn('[AuthWrapper] Session refresh failed');
+              router.push(`/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`);
+            }
+          }
+        } catch (error) {
+          logger.error('[AuthWrapper] Session refresh error:', error);
+        }
+      }, REFRESH_INTERVAL);
+    };
 
-  if (status === 'loading') {
+    checkAuth();
+    startRefreshTimer();
+
+    return () => {
+      clearInterval(refreshTimer);
+    };
+  }, [pathname, router]);
+
+  if (isLoading && !isPublicRoute(pathname)) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-        }}
-      >
-        <CircularProgress />
-      </Box>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
     );
   }
 
-  if (isPublicRoute(pathname) || status === 'authenticated') {
-    return children;
-  }
-
-  return null;
+  return children;
 }

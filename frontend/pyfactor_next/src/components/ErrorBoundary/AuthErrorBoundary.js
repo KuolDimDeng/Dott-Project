@@ -1,189 +1,133 @@
-// src/app/AuthWrapper/AuthErrorBoundary.js
 'use client';
 
-import React, { memo } from 'react';
-import { Auth } from '@aws-amplify/auth';
-import {
-  Box,
-  Typography,
-  Alert,
-  Button,
-  CircularProgress,
-} from '@mui/material';
-import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
+import React from 'react';
+import { Box, Typography, Button } from '@mui/material';
 import { logger } from '@/utils/logger';
-import PropTypes from 'prop-types';
+import { signOut } from 'aws-amplify/auth';
+import { useRouter } from 'next/navigation';
 
-// Shared loading component for consistent UX
-const LoadingState = memo(function LoadingState({ message }) {
-  logger.debug('Auth loading state rendered', { message });
+class AuthErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { 
+      hasError: false,
+      error: null,
+      errorInfo: null
+    };
+  }
 
-  return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="100vh"
-      gap={2}
-    >
-      <CircularProgress />
-      <Typography variant="body2" color="textSecondary">
-        {message}
-      </Typography>
-    </Box>
-  );
-});
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
 
-// Authentication-specific error fallback
-const AuthErrorFallback = memo(function AuthErrorFallback({
-  error,
-  resetErrorBoundary,
-  requestId,
-}) {
-  const [isResetting, setIsResetting] = React.useState(false);
-
-  // Log error details when component mounts
-  React.useEffect(() => {
-    logger.error('Auth error boundary triggered', {
-      requestId,
-      error: error?.message,
-      stack: error?.stack,
+  componentDidCatch(error, errorInfo) {
+    this.setState({
+      error: error,
+      errorInfo: errorInfo
     });
-  }, [error, requestId]);
 
-  // Handle reset with loading state
-  const handleReset = async () => {
+    logger.error('[AuthErrorBoundary] Error caught:', {
+      error: error.message,
+      name: error.name,
+      code: error.code,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack
+    });
+  }
+
+  handleSignOut = async () => {
     try {
-      setIsResetting(true);
-      await resetErrorBoundary();
+      logger.debug('[AuthErrorBoundary] Attempting to sign out after error');
+      await signOut({ global: true });
+      logger.debug('[AuthErrorBoundary] Sign out successful');
+      window.location.href = '/auth/signin';
     } catch (error) {
-      logger.error('Auth reset failed', {
-        requestId,
-        error: error.message,
-      });
-      // Force reload on reset failure
-      window.location.reload();
-    } finally {
-      setIsResetting(false);
+      logger.error('[AuthErrorBoundary] Sign out failed:', error);
+      // Force redirect even if sign out fails
+      window.location.href = '/auth/signin';
     }
   };
 
-  return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="100vh"
-      p={3}
-      gap={2}
-    >
-      <Alert
-        severity="error"
-        action={
-          <Button
-            color="inherit"
-            size="small"
-            onClick={handleReset}
-            disabled={isResetting}
-          >
-            {isResetting ? <CircularProgress size={20} /> : 'Try Again'}
-          </Button>
-        }
-        sx={{ maxWidth: 500, width: '100%' }}
-      >
-        Authentication Error: Session may have expired
-      </Alert>
+  handleRetry = () => {
+    logger.debug('[AuthErrorBoundary] Retrying after error');
+    this.setState({ 
+      hasError: false,
+      error: null,
+      errorInfo: null
+    });
+    window.location.reload();
+  };
 
-      <Typography variant="body2" color="text.secondary" align="center">
-        Please sign in again to continue.
-        <br />
-        Error Reference: {requestId}
-      </Typography>
-
-      <Button
-        variant="outlined"
-        color="primary"
-        size="small"
-        onClick={() => (window.location.href = '/auth/signin')}
-      >
-        Return to Sign In
-      </Button>
-    </Box>
-  );
-});
-
-// Main authentication error boundary wrapper
-export const WithAuthErrorBoundary = memo(function WithAuthErrorBoundary({
-  children,
-}) {
-  // Handle authentication recovery
-
-  const handleRecovery = React.useCallback(async () => {
-    const recoveryId = crypto.randomUUID();
-    logger.info('Starting auth recovery', { recoveryId });
-
-    try {
-      // Clear stored error states
-      localStorage.removeItem('auth_error');
-      sessionStorage.removeItem('auth_error');
-
-      // Attempt to refresh session using Amplify Auth
-      const currentUser = await Auth.currentAuthenticatedUser();
-
-      if (!currentUser) {
-        throw new Error('Invalid session state');
-      }
-
-      logger.info('Auth recovery successful', {
-        recoveryId,
-        hasUser: !!currentUser,
+  render() {
+    if (this.state.hasError) {
+      logger.debug('[AuthErrorBoundary] Rendering error state:', {
+        error: this.state.error?.message,
+        name: this.state.error?.name,
+        code: this.state.error?.code
       });
 
-      return true;
-    } catch (error) {
-      logger.error('Auth recovery failed', {
-        recoveryId,
-        error: error.message,
-      });
-      return false;
+      return (
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100vh',
+            p: 3,
+            textAlign: 'center',
+            gap: 2
+          }}
+        >
+          <Typography variant="h5" color="error" gutterBottom>
+            Authentication Error
+          </Typography>
+          
+          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, mb: 3 }}>
+            We encountered an error with the authentication system. This could be due to an expired session or network issues.
+          </Typography>
+
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={this.handleSignOut}
+            >
+              Sign Out
+            </Button>
+            
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={this.handleRetry}
+            >
+              Retry
+            </Button>
+          </Box>
+
+          {process.env.NODE_ENV === 'development' && this.state.error && (
+            <Box sx={{ mt: 4, textAlign: 'left', width: '100%', maxWidth: 800 }}>
+              <Typography variant="subtitle2" color="error" sx={{ mb: 1 }}>
+                Error Details:
+              </Typography>
+              <Typography variant="body2" component="pre" sx={{ 
+                p: 2,
+                bgcolor: 'grey.100',
+                borderRadius: 1,
+                overflow: 'auto'
+              }}>
+                {this.state.error.toString()}
+                {this.state.errorInfo?.componentStack}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      );
     }
-  }, []);
 
-  return (
-    <ErrorBoundary
-      componentName="Authentication"
-      onReset={handleRecovery}
-      FallbackComponent={AuthErrorFallback}
-      onError={(error, info) => {
-        logger.error('Auth error boundary caught error:', {
-          error: error.message,
-          componentStack: info.componentStack,
-        });
-      }}
-    >
-      {children}
-    </ErrorBoundary>
-  );
-});
+    logger.debug('[AuthErrorBoundary] Rendering children (no error)');
+    return this.props.children;
+  }
+}
 
-// Export components with proper prop types
-LoadingState.propTypes = {
-  message: PropTypes.string.isRequired,
-};
-
-AuthErrorFallback.propTypes = {
-  error: PropTypes.shape({
-    message: PropTypes.string,
-    stack: PropTypes.string,
-  }),
-  resetErrorBoundary: PropTypes.func.isRequired,
-  requestId: PropTypes.string.isRequired,
-};
-
-WithAuthErrorBoundary.propTypes = {
-  children: PropTypes.node.isRequired,
-};
-
-export { LoadingState, AuthErrorFallback };
+export default AuthErrorBoundary;

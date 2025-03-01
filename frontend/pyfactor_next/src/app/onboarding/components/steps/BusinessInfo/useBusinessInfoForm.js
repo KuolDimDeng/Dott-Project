@@ -23,6 +23,8 @@ const validationSchema = z.object({
     .max(200, 'Business name cannot exceed 200 characters'),
   business_type: z.string().min(1, 'Business type is required'),
   country: z.string().min(1, 'Country is required'),
+  // Add the new businessState field
+  business_state: z.string().min(1, 'State/Region is required'),
   legal_structure: z.string().min(1, 'Legal structure is required'),
   date_founded: z
     .string()
@@ -41,6 +43,8 @@ const validationSchema = z.object({
     .max(100, 'Last name cannot exceed 100 characters'),
 });
 
+
+
 export const useBusinessInfoForm = () => {
   const router = useRouter();
   const { data: session, update } = useSession(); // Add update here
@@ -57,6 +61,7 @@ export const useBusinessInfoForm = () => {
       business_name: '',
       business_type: '',
       country: '',
+      business_state: '', // Added this field
       legal_structure: '',
       date_founded: new Date().toISOString().split('T')[0],
       first_name: '',
@@ -65,6 +70,8 @@ export const useBusinessInfoForm = () => {
     mode: 'onChange',
     reValidateMode: 'onChange',
   });
+
+
 
   useEffect(() => {
     const initializeForm = async () => {

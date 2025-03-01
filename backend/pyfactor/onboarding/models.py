@@ -15,7 +15,7 @@ class OnboardingProgress(models.Model):
 
     # Onboarding status choices matching Cognito custom:onboarding attribute
     ONBOARDING_STATUS_CHOICES = [
-        ('notstarted', 'Not Started'),
+        ('not_started', 'Not Started'),
         ('business-info', 'Business Info'),
         ('subscription', 'Subscription'),
         ('payment', 'Payment'),
@@ -32,7 +32,8 @@ class OnboardingProgress(models.Model):
     # User role choices matching Cognito custom:userrole attribute (4-6 chars)
     USER_ROLE_CHOICES = [
         ('owner', 'Owner'),
-        ('admin', 'Admin')
+        ('admin', 'Admin'),
+        ('employee', 'Employee')    
     ]
 
     # Plan choices matching Cognito custom:subplan attribute (4-12 chars)
@@ -68,7 +69,7 @@ class OnboardingProgress(models.Model):
         validators=[MinLengthValidator(6)]  # Matches Cognito constraint
     )
     user_role = models.CharField(
-        max_length=6,  # Matches Cognito constraint
+        max_length=10,  # Matches Cognito constraint
         choices=USER_ROLE_CHOICES,
         default='owner',
         validators=[MinLengthValidator(4)]  # Matches Cognito constraint
@@ -118,6 +119,21 @@ class OnboardingProgress(models.Model):
         help_text='User preferences stored as JSON'
     )
 
+    # Error tracking
+    setup_error = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Last setup error message'
+    )
+
+    # Plan selection
+    selected_plan = models.CharField(
+        max_length=12,  # Matches Cognito constraint
+        choices=PLAN_CHOICES,
+        default='free',
+        validators=[MinLengthValidator(4)]  # Matches Cognito constraint
+    )
+
     class Meta:
         verbose_name = 'Onboarding Progress'
         verbose_name_plural = 'Onboarding Progress Records'
@@ -126,33 +142,36 @@ class OnboardingProgress(models.Model):
     def __str__(self):
         return f"{self.user.email} - {self.onboarding_status}"
 
-    def save(self, *args, **kwargs):
+    def save(self, force_insert=False, *args, **kwargs):
         # Ensure preferences JSON string meets Cognito constraints
         if self.preferences:
             prefs_str = str(self.preferences)
             if len(prefs_str) < 2 or len(prefs_str) > 2048:
                 raise ValueError('Preferences must be between 2 and 2048 characters')
 
-        # Validate state transitions
-        if self.pk:  # Only check on updates
-            old_instance = OnboardingProgress.objects.get(pk=self.pk)
-            valid_transitions = {
-                'notstarted': ['business-info'],
-                'business-info': ['subscription'],
-                'subscription': ['payment', 'setup'],
-                'payment': ['setup'],
-                'setup': ['complete'],
-                'complete': []
-            }
+        # Validate state transitions only for updates, not for new records
+        if not force_insert and self.pk:
+            try:
+                old_instance = OnboardingProgress.objects.get(pk=self.pk)
+                valid_transitions = {
+                    'not_started': ['business-info'],
+                    'business-info': ['subscription'],
+                    'subscription': ['payment', 'setup'],
+                    'payment': ['setup'],
+                    'setup': ['complete'],
+                    'complete': []
+                }
 
-            if (self.onboarding_status != old_instance.onboarding_status and
-                self.onboarding_status not in valid_transitions.get(old_instance.onboarding_status, [])):
-                raise ValueError(
-                    f'Invalid state transition from {old_instance.onboarding_status} '
-                    f'to {self.onboarding_status}'
-                )
+                if (self.onboarding_status != old_instance.onboarding_status and
+                    self.onboarding_status not in valid_transitions.get(old_instance.onboarding_status, [])):
+                    raise ValueError(
+                        f'Invalid state transition from {old_instance.onboarding_status} '
+                        f'to {self.onboarding_status}'
+                    )
+            except OnboardingProgress.DoesNotExist:
+                pass  # Skip validation for new records
 
-        super().save(*args, **kwargs)
+        super().save(force_insert=force_insert, *args, **kwargs)
 
     def get_next_step(self):
         """Determine the next step based on current status"""

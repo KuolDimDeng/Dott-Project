@@ -1,104 +1,11 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/hooks/useSession.js
-'use client';
+import { useAuth } from '../context/AuthContext';
 
-import { useState, useEffect, useCallback } from 'react';
-import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
-import { Hub } from '@aws-amplify/core';
-import { logger } from '@/utils/logger';
-import { validateAttributes, parsePreferences } from '@/utils/userAttributes';
+export const useSession = () => {
+  const context = useAuth();
+  
+  if (!context) {
+    throw new Error('useSession must be used within an AuthProvider');
+  }
 
-export function useSession() {
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const checkSession = useCallback(async () => {
-    try {
-      logger.debug('[useSession] Checking session...');
-
-      // ✅ Fetch session and ensure tokens are valid
-      const authSession = await fetchAuthSession();
-      const idToken = authSession.tokens?.idToken?.toString();
-
-      if (!idToken) {
-        logger.warn('[useSession] No valid session token found.');
-        setSession(null);
-        return false;
-      }
-
-      const user = await getCurrentUser();
-      if (user) {
-        // Transform and validate user attributes
-        const validatedAttributes = validateAttributes(user.attributes);
-
-        // Parse preferences if they exist
-        const preferences = validatedAttributes['custom:preferences']
-          ? parsePreferences(validatedAttributes['custom:preferences'])
-          : {};
-
-        logger.debug('[useSession] Session found:', {
-          userId: user.userId,
-          attributes: validatedAttributes,
-        });
-
-        setSession({
-          user: {
-            ...validatedAttributes,
-            id: user.userId,
-            preferences,
-            // Expose custom attributes with cleaner names
-            onboarding:
-              validatedAttributes['custom:onboarding'] || 'notstarted',
-            businessId: validatedAttributes['custom:businessid'],
-            role: validatedAttributes['custom:userrole'] || 'member',
-            subscriptionPlan: validatedAttributes['custom:subplan'],
-            accountStatus:
-              validatedAttributes['custom:acctstatus'] || 'pending',
-            lastLogin: validatedAttributes['custom:lastlogin'],
-          },
-          tokens: {
-            accessToken: authSession.tokens.accessToken?.toString(),
-            idToken: idToken,
-          },
-        });
-
-        // ✅ Store session token in localStorage to sync with middleware
-        localStorage.setItem('idToken', idToken);
-
-        return true;
-      } else {
-        logger.warn('[useSession] No user data found.');
-        setSession(null);
-        return false;
-      }
-    } catch (error) {
-      logger.warn('[useSession] No active session:', error);
-      setSession(null);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // ✅ Initial session check
-    checkSession();
-
-    // ✅ Listen for authentication events
-    const unsubscribe = Hub.listen('auth', async (data) => {
-      const { event } = data.payload;
-      if (['signedIn', 'tokenRefresh'].includes(event)) {
-        await checkSession();
-      } else if (event === 'signedOut') {
-        setSession(null);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [checkSession]);
-
-  return {
-    data: session,
-    status: loading ? 'loading' : session ? 'authenticated' : 'unauthenticated',
-    update: checkSession,
-  };
-}
+  return context;
+};

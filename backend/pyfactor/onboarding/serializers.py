@@ -41,16 +41,13 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
     country = serializers.CharField(max_length=2)
     legal_structure = serializers.CharField(max_length=50)
     date_founded = serializers.DateField()
-    first_name = serializers.CharField(max_length=100)
-    last_name = serializers.CharField(max_length=100)
     cognito_attributes = CognitoAttributeSerializer(write_only=True, required=False)
 
     class Meta:
         model = OnboardingProgress
         fields = [
             'business_name', 'business_type', 'country',
-            'legal_structure', 'date_founded', 'first_name', 'last_name',
-            'cognito_attributes'
+            'legal_structure', 'date_founded', 'cognito_attributes'
         ]
 
     def to_representation(self, instance):
@@ -72,7 +69,7 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
                 
     def validate(self, data):
         """Validate all required fields are present"""
-        for field in ['business_name', 'business_type', 'country', 'legal_structure', 'date_founded', 'first_name', 'last_name']:
+        for field in ['business_name', 'business_type', 'country', 'legal_structure', 'date_founded']:
             if not data.get(field):
                 raise serializers.ValidationError({field: f"{field} is required"})
 
@@ -102,10 +99,21 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
                 }
             )
 
-            # Update user
-            user.first_name = validated_data['first_name']
-            user.last_name = validated_data['last_name']
-            user.save()
+            # Create tenant
+            from custom_auth.models import Tenant
+            from onboarding.utils import generate_unique_schema_name
+            
+            schema_name = generate_unique_schema_name(user)
+            tenant = Tenant.objects.create(
+                owner=user,
+                name=validated_data['business_name'],
+                schema_name=schema_name,
+                is_active=True
+            )
+
+            # Link tenant to user
+            user.tenant = tenant
+            user.save(update_fields=['tenant'])
 
             # Update onboarding progress
             progress, _ = OnboardingProgress.objects.update_or_create(
@@ -120,6 +128,14 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
                     'attribute_version': cognito_data.get('attr_version', '1.0.0')
                 }
             )
+
+            # Create schema
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
+                cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {connection.settings_dict["USER"]}')
+                cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {connection.settings_dict["USER"]}')
+                cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {connection.settings_dict["USER"]}')
 
             return progress
 
@@ -146,10 +162,33 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
                 )
                 instance.business = business
 
-            # Update user
-            instance.user.first_name = validated_data.get('first_name', instance.user.first_name)
-            instance.user.last_name = validated_data.get('last_name', instance.user.last_name)
-            instance.user.save()
+            # Update or create tenant
+            from custom_auth.models import Tenant
+            if instance.user.tenant:
+                # Update existing tenant
+                tenant = instance.user.tenant
+                tenant.name = validated_data.get('business_name', tenant.name)
+                tenant.save()
+            else:
+                # Create new tenant
+                from onboarding.utils import generate_unique_schema_name
+                schema_name = generate_unique_schema_name(instance.user)
+                tenant = Tenant.objects.create(
+                    owner=instance.user,
+                    name=validated_data['business_name'],
+                    schema_name=schema_name,
+                    is_active=True
+                )
+                instance.user.tenant = tenant
+                instance.user.save(update_fields=['tenant'])
+
+                # Create schema
+                from django.db import connection
+                with connection.cursor() as cursor:
+                    cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
+                    cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {connection.settings_dict["USER"]}')
+                    cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {connection.settings_dict["USER"]}')
+                    cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {connection.settings_dict["USER"]}')
 
             # Update progress with Cognito attributes if provided
             if cognito_data:

@@ -166,6 +166,73 @@ class Service(Item):
         instance._state.db = db
         return instance
 
+class ProductTypeFields(models.Model):
+    """Store dynamic fields for products based on business type"""
+    product = models.OneToOneField('Product', on_delete=models.CASCADE, related_name='type_fields')
+    
+    # Common fields many businesses might use
+    category = models.CharField(max_length=100, blank=True, null=True)
+    subcategory = models.CharField(max_length=100, blank=True, null=True)
+    
+    # Fields for various business types
+    # E-commerce fields
+    material = models.CharField(max_length=100, blank=True, null=True)
+    brand = models.CharField(max_length=100, blank=True, null=True)
+    condition = models.CharField(max_length=50, blank=True, null=True)
+    
+    # Food/beverage fields
+    ingredients = models.TextField(blank=True, null=True)
+    allergens = models.TextField(blank=True, null=True)
+    nutritional_info = models.TextField(blank=True, null=True)
+    
+    # Apparel fields
+    size = models.CharField(max_length=20, blank=True, null=True)
+    color = models.CharField(max_length=50, blank=True, null=True)
+    gender = models.CharField(max_length=20, blank=True, null=True)
+    
+    # Trucking/vehicle fields
+    vehicle_type = models.CharField(max_length=100, blank=True, null=True)
+    load_capacity = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    
+    # Store additional fields that don't fit the predefined ones
+    extra_fields = models.JSONField(default=dict, blank=True)
+    
+    class Meta:
+        verbose_name = "Product Type Field"
+        verbose_name_plural = "Product Type Fields"
+
+class ServiceTypeFields(models.Model):
+    """Store dynamic fields for services based on business type"""
+    service = models.OneToOneField('Service', on_delete=models.CASCADE, related_name='type_fields')
+    
+    # Common fields
+    category = models.CharField(max_length=100, blank=True, null=True)
+    subcategory = models.CharField(max_length=100, blank=True, null=True)
+    
+    # Professional service fields
+    skill_level = models.CharField(max_length=50, blank=True, null=True)
+    certification = models.CharField(max_length=100, blank=True, null=True)
+    experience_years = models.PositiveIntegerField(null=True, blank=True)
+    
+    # Appointment-based fields
+    min_booking_notice = models.DurationField(null=True, blank=True)
+    buffer_time = models.DurationField(null=True, blank=True)
+    
+    # Event/venue fields
+    max_capacity = models.PositiveIntegerField(null=True, blank=True)
+    amenities = models.TextField(blank=True, null=True)
+    
+    # Transportation fields
+    service_area = models.CharField(max_length=100, blank=True, null=True)
+    vehicle_requirements = models.TextField(blank=True, null=True)
+    
+    # Store additional fields
+    extra_fields = models.JSONField(default=dict, blank=True)
+    
+    class Meta:
+        verbose_name = "Service Type Field"
+        verbose_name_plural = "Service Type Fields"
+
 class Customer(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customerName = models.CharField(max_length=255, blank=True, null=True)

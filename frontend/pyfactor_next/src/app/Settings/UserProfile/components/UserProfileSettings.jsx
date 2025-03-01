@@ -13,7 +13,7 @@ import {
   Tabs,
   Tab,
 } from '@mui/material';
-import { useApi } from '@/lib/axiosConfig';
+import { axiosInstance } from '@/lib/axiosConfig';
 
 const UserProfileSettings = ({ userData, onUpdate }) => {
   const [activeTab, setActiveTab] = useState(0);
@@ -49,7 +49,7 @@ const UserProfileSettings = ({ userData, onUpdate }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      const response = await useApi.put('/api/profile/update/', formData);
+      const response = await axiosInstance.put('/api/profile/update/', formData);
       if (response.status === 200) {
         onUpdate(response.data);
       }

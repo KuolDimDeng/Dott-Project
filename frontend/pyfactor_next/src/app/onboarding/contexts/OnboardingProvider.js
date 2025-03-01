@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { logger } from '@/utils/logger';
+import { validateSession } from '@/utils/onboardingUtils';
 
 const OnboardingContext = createContext();
 
@@ -16,10 +17,27 @@ export function OnboardingProvider({ children }) {
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       try {
-        const response = await fetch('/api/onboarding/setup/status');
+        // Get auth tokens
+        const { tokens } = await validateSession();
+        if (!tokens?.accessToken || !tokens?.idToken) {
+          throw new Error('No valid session tokens');
+        }
+
+        const accessToken = tokens.accessToken.toString();
+        const idToken = tokens.idToken.toString();
+
+        // Make API request with auth tokens
+        const response = await fetch('/api/onboarding/setup/status', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'X-Id-Token': idToken
+          }
+        });
+
         if (!response.ok) {
           throw new Error('Failed to fetch onboarding status');
         }
+
         const data = await response.json();
         
         logger.debug('Onboarding status:', { data });

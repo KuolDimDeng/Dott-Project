@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from . import views
 from .views import (
     StartOnboardingView,
-    CompleteOnboardingView, 
+    CompleteOnboardingView,
     CleanupOnboardingView,
     CheckOnboardingStatusView,
     GoogleTokenExchangeView,
@@ -18,7 +18,6 @@ from .views import (
     SaveStep4View,
     UpdateOnboardingView,
     OnboardingSuccessView,
-    SetupStatusView,
     get_task_status,
     cancel_task,
     ValidateSubscriptionAccessView,
@@ -26,6 +25,7 @@ from .views import (
     UpdateOnboardingStatusView,
     SubscriptionStatusView,
 )
+from .views.setup import SetupStatusView, InitializeSetupView
 from .api.views.webhook_views import stripe_webhook  # Update this import path
 
 
@@ -61,11 +61,11 @@ urlpatterns = [
     path('subscription/status/', SubscriptionStatusView.as_view(), name='subscription-status'),
     
     # Setup routes
-    path('setup/', SaveStep4View.as_view(), name='setup'),
-    path('setup/start/', SaveStep4View.as_view(), name='start-setup'),
-    path('setup/status/', SaveStep4View.as_view(), name='setup-status'),
-    path('setup/cancel/', SaveStep4View.as_view(), name='cancel-setup'),
-    path('setup/complete/', SaveStep4View.as_view(), name='complete-setup'),
+    path('setup/', InitializeSetupView.as_view(), name='initialize-setup'),
+    path('setup/status/', SetupStatusView.as_view(), name='setup-status'),
+    path('setup/start/', StartOnboardingView.as_view(), name='start-setup'),
+    path('setup/cancel/', StartOnboardingView.as_view(), name='cancel-setup'),
+    path('setup/complete/', CompleteOnboardingView.as_view(), name='complete-setup'),
     
     # Database routes 
     path('database/health/', DatabaseHealthCheckView.as_view(), name='database-health'),

@@ -1,18 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from 'aws-amplify/auth';
-import { configureAmplify } from '@/config/amplify';
 import { logger } from '@/utils/logger';
+import { validateServerSession } from '@/utils/serverUtils';
 
 export async function POST(request) {
   try {
-    // Ensure Amplify is configured
-    configureAmplify();
+    // Validate session using server utils
+    const { tokens, user } = await validateServerSession();
 
-    // Get current user
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const accessToken = tokens.accessToken.toString();
+    const idToken = tokens.idToken.toString();
+    const userId = user.userId;
+
+    // Get user attributes
+    const attributes = user.attributes || {};
+    const onboardingStatus = attributes['custom:onboarding'] || 'NOT_STARTED';
 
     // Get the request body
     const paymentData = await request.json();
@@ -24,8 +25,11 @@ export async function POST(request) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Id-Token': idToken,
+          'X-User-ID': userId,
           'X-Request-ID': crypto.randomUUID(),
+          'X-Onboarding-Status': onboardingStatus
         },
         body: JSON.stringify({
           ...paymentData,
@@ -40,14 +44,6 @@ export async function POST(request) {
       throw new Error(`Backend request failed: ${response.status}`);
     }
 
-    // Update user attributes with payment info
-    const { updateUserAttributes, getPaymentAttributes } = await import(
-      '@/utils/userAttributes'
-    );
-    const paymentAttributes = getPaymentAttributes();
-
-    await updateUserAttributes(paymentAttributes);
-
     // Update onboarding status
     const statusResponse = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`,
@@ -55,12 +51,22 @@ export async function POST(request) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Id-Token': idToken,
+          'X-User-ID': userId,
           'X-Request-ID': crypto.randomUUID(),
+          'X-Onboarding-Status': onboardingStatus
         },
         body: JSON.stringify({
-          status: 'SETUP',
+          current_status: onboardingStatus,
+          next_status: 'SETUP',
           lastStep: 'PAYMENT',
+          userId: userId,
+          attributes: {
+            'custom:onboarding': 'SETUP',
+            'custom:payment_status': 'COMPLETED',
+            'custom:updated_at': new Date().toISOString()
+          }
         }),
       }
     );
@@ -74,6 +80,7 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
       message: 'Payment processed successfully',
+      nextStep: 'SETUP'
     });
   } catch (error) {
     logger.error('Error processing payment:', {
@@ -90,24 +97,29 @@ export async function POST(request) {
   }
 }
 
-export async function GET() {
+export async function GET(request) {
   try {
-    // Ensure Amplify is configured
-    configureAmplify();
+    // Validate session using server utils
+    const { tokens, user } = await validateServerSession();
 
-    // Get current user
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const accessToken = tokens.accessToken.toString();
+    const idToken = tokens.idToken.toString();
+    const userId = user.userId;
+
+    // Get user attributes
+    const attributes = user.attributes || {};
+    const onboardingStatus = attributes['custom:onboarding'] || 'NOT_STARTED';
 
     // Get payment status through backend API
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`,
       {
         headers: {
-          Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Id-Token': idToken,
+          'X-User-ID': userId,
           'X-Request-ID': crypto.randomUUID(),
+          'X-Onboarding-Status': onboardingStatus
         },
       }
     );
@@ -121,6 +133,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       paymentCompleted: status?.payment_completed || false,
+      currentStatus: onboardingStatus
     });
   } catch (error) {
     logger.error('Error checking payment status:', {
@@ -139,14 +152,16 @@ export async function GET() {
 
 export async function PUT(request) {
   try {
-    // Ensure Amplify is configured
-    configureAmplify();
+    // Validate session using server utils
+    const { tokens, user } = await validateServerSession();
 
-    // Get current user
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const accessToken = tokens.accessToken.toString();
+    const idToken = tokens.idToken.toString();
+    const userId = user.userId;
+
+    // Get user attributes
+    const attributes = user.attributes || {};
+    const onboardingStatus = attributes['custom:onboarding'] || 'NOT_STARTED';
 
     // Get the request body
     const updates = await request.json();
@@ -158,10 +173,16 @@ export async function PUT(request) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.signInUserSession.accessToken.jwtToken}`,
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Id-Token': idToken,
+          'X-User-ID': userId,
           'X-Request-ID': crypto.randomUUID(),
+          'X-Onboarding-Status': onboardingStatus
         },
-        body: JSON.stringify(updates),
+        body: JSON.stringify({
+          ...updates,
+          userId: userId
+        }),
       }
     );
 

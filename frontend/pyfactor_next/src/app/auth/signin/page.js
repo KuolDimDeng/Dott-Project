@@ -1,160 +1,79 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/auth/signin/page.js
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  CircularProgress,
-  Alert,
-  Paper,
-  Divider,
-} from '@mui/material';
-import { Google as GoogleIcon } from '@mui/icons-material';
-import { useAuth } from '@/hooks/auth';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
-import { getCognitoErrorMessage } from '@/config/amplify';
+import SignInForm from '@/components/auth/SignInForm';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { getCurrentUser } from '@aws-amplify/auth';
 
-const SignInPage = () => {
+export default function SignInPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { signIn, signInWithGoogle, isLoading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const { hasSession, user } = useAuthContext();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-  
-    try {
-      logger.debug('Attempting sign in with:', email);
-      await signIn({ username: email, password });
-  
-      // Get the callback URL (where to redirect after login)
-      const callbackUrl = searchParams.get('callbackUrl') || '/onboarding/business-info';
-  
-      logger.debug('Sign in successful, redirecting to:', callbackUrl);
-      router.push(callbackUrl);
-    } catch (error) {
-      logger.error('Sign in error:', error);
-      setError(getCognitoErrorMessage(error));
-    }
-  };
-  
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      if (!hasSession) return;
 
-  const handleGoogleSignIn = async () => {
-    try {
-      await signInWithGoogle();
-    } catch (error) {
-      logger.error('Google sign in error:', error);
-      setError(error.message || 'Failed to sign in with Google');
-    }
-  };
+      try {
+        logger.debug('[SignInPage] Checking user status');
+        const currentUser = await getCurrentUser();
+        const onboardingStatus = currentUser.attributes['custom:onboarding'];
+
+        logger.debug('[SignInPage] User status:', {
+          onboardingStatus,
+          attributes: currentUser.attributes
+        });
+
+        // Handle different onboarding statuses
+        switch (onboardingStatus) {
+          case 'NOT_STARTED':
+          case 'IN_PROGRESS':
+          case 'BUSINESS_INFO':
+            logger.debug(`[SignInPage] Redirecting to business info for ${onboardingStatus} status`);
+            router.push('/onboarding/business-info');
+            break;
+          case 'SUBSCRIPTION':
+            logger.debug('[SignInPage] Redirecting to subscription page');
+            router.push('/onboarding/subscription');
+            break;
+          case 'PAYMENT':
+            logger.debug('[SignInPage] Redirecting to payment page');
+            router.push('/onboarding/payment');
+            break;
+          case 'SETUP':
+            logger.debug('[SignInPage] Redirecting to setup page');
+            router.push('/onboarding/setup');
+            break;
+          case 'COMPLETE':
+            logger.debug('[SignInPage] User onboarded, redirecting to dashboard');
+            router.push('/dashboard');
+            break;
+          default:
+            logger.warn('[SignInPage] Unknown onboarding status:', onboardingStatus);
+            router.push('/onboarding/business-info');
+        }
+      } catch (error) {
+        logger.error('[SignInPage] Error checking user status:', error);
+      }
+    };
+
+    checkUserStatus();
+  }, [hasSession, router]);
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        p: 3,
-      }}
-    >
-      <Paper
-        elevation={3}
-        sx={{
-          p: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          maxWidth: 400,
-          width: '100%',
-        }}
-      >
-        <Typography component="h1" variant="h5" gutterBottom>
-          Sign In
-        </Typography>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Sign in to your account
+        </h2>
+      </div>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 2, width: '100%' }}>
-            {error}
-          </Alert>
-        )}
-
-        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="Email Address"
-            name="email"
-            autoComplete="email"
-            autoFocus
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={isLoading}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Password"
-            type="password"
-            id="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={isLoading}
-          />
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-            disabled={isLoading}
-          >
-            {isLoading ? <CircularProgress size={24} /> : 'Sign In'}
-          </Button>
-
-          <Divider sx={{ my: 2 }}>or</Divider>
-
-          <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<GoogleIcon />}
-            onClick={handleGoogleSignIn}
-            disabled={isLoading}
-            sx={{ mb: 2 }}
-          >
-            Sign in with Google
-          </Button>
-
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
-            <Link href="/auth/forgot-password" style={{ textDecoration: 'none' }}>
-              <Typography variant="body2" color="primary">
-                Forgot password?
-              </Typography>
-            </Link>
-            <Link href="/auth/signup" style={{ textDecoration: 'none' }}>
-              <Typography variant="body2" color="primary">
-                Don&apos;t have an account? Sign Up
-              </Typography>
-            </Link>
-          </Box>
-        </Box>
-      </Paper>
-    </Box>
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <SignInForm />
+        </div>
+      </div>
+    </div>
   );
-};
-
-export default SignInPage;
+}

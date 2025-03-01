@@ -1,9 +1,23 @@
-from django.urls import path
-from . import views
+# taxes/urls.py
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import (
+    StateViewSet, IncomeTaxRateViewSet, 
+    PayrollTaxFilingViewSet, TaxFilingInstructionViewSet,
+    TaxCalculationView, TaxFormViewSet, GlobalComplianceViewSet, currency_info
+)
+
+router = DefaultRouter()
+router.register(r'states', StateViewSet)
+router.register(r'tax-rates', IncomeTaxRateViewSet)
+router.register(r'tax-filings', PayrollTaxFilingViewSet)
+router.register(r'filing-instructions', TaxFilingInstructionViewSet)
+router.register(r'tax-forms', TaxFormViewSet)
+router.register(r'global', GlobalComplianceViewSet, basename='global')
 
 urlpatterns = [
-    path('update/', views.update_tax_info, name='update_tax_info'),
-    path('federal/', views.get_federal_taxes, name='get_federal_taxes'),
-    path('state/<str:state>/', views.get_state_taxes, name='get_state_taxes'),
-    path('economic/<str:series_id>/', views.get_economic_data, name='get_economic_data'),
+    path('', include(router.urls)),
+    path('calculate/', TaxCalculationView.as_view(), name='tax-calculate'),
+    path('global-compliance/<str:country_code>/', GlobalComplianceViewSet.as_view({'get': 'global_compliance'}), name='global-compliance'),
+    path('currency-info/<str:country_code>/', currency_info, name='currency-info'),
 ]
