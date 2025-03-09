@@ -3,9 +3,16 @@ import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { getCurrentUser } from 'aws-amplify/auth';
 
-const POLLING_INTERVAL = 3000; // 3 seconds
-const MAX_POLLING_TIME = 5 * 60 * 1000; // 5 minutes
-const MAX_RETRIES = 3;
+// Increase initial polling interval and add exponential backoff
+const BASE_POLLING_INTERVAL = 5000; // 5 seconds
+const MAX_POLLING_INTERVAL = 60000; // 60 seconds (1 minute)
+const MAX_POLLING_TIME = 10 * 60 * 1000; // 10 minutes
+const MAX_RETRIES = 5;
+
+// Calculate polling interval with exponential backoff
+const getPollingInterval = (retryCount) => {
+  return Math.min(BASE_POLLING_INTERVAL * Math.pow(2, retryCount), MAX_POLLING_INTERVAL);
+};
 
 export function useSetupPolling() {
   const [status, setStatus] = useState(null);
@@ -99,6 +106,7 @@ export function useSetupPolling() {
 
   useEffect(() => {
     let timeoutId;
+    let currentRetryCount = 0;
 
     const pollStatus = async () => {
       if (!isPolling) return;
@@ -109,20 +117,41 @@ export function useSetupPolling() {
         );
         const newStatus = response.data;
         setStatus(newStatus);
+        
+        // Reset retry count on success
+        currentRetryCount = 0;
 
         if (newStatus.status === 'complete') {
           setIsPolling(false);
         } else {
-          timeoutId = setTimeout(pollStatus, POLLING_INTERVAL);
+          // Use exponential backoff for polling interval
+          timeoutId = setTimeout(pollStatus, getPollingInterval(currentRetryCount));
         }
       } catch (error) {
         logger.error('[SetupPolling] Failed to fetch setup status:', error);
+        
+        // Increase retry count for backoff
+        currentRetryCount = Math.min(currentRetryCount + 1, MAX_RETRIES);
+        
+        // If we get a 429 (Too Many Requests), increase the backoff more aggressively
+        if (error.response?.status === 429) {
+          currentRetryCount = Math.min(currentRetryCount + 2, MAX_RETRIES);
+          logger.warn('[SetupPolling] Rate limited (429), increasing backoff', {
+            retryCount: currentRetryCount,
+            nextDelay: getPollingInterval(currentRetryCount)
+          });
+        }
+        
         if (error.response?.status === 401) {
           setError('Authentication failed. Please try signing in again.');
+          setIsPolling(false);
+        } else if (currentRetryCount >= MAX_RETRIES) {
+          setError('Failed to fetch setup status after multiple attempts. Please try again later.');
+          setIsPolling(false);
         } else {
-          setError('Failed to fetch setup status. Please try again.');
+          // Continue polling with increased interval
+          timeoutId = setTimeout(pollStatus, getPollingInterval(currentRetryCount));
         }
-        setIsPolling(false);
       }
     };
 

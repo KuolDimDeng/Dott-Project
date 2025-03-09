@@ -1,13 +1,21 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchAuthSession, getCurrentUser, signOut, fetchUserAttributes } from '@aws-amplify/auth';
-import { Hub } from '@aws-amplify/core';
 import { logger } from '@/utils/logger';
 import { isPublicRoute, isOnboardingRoute } from '@/lib/authUtils';
+import { appendLanguageParam } from '@/utils/languageUtils';
+import {
+  fetchAuthSession,
+  getCurrentUser,
+  fetchUserAttributes,
+  signOut,
+  isAmplifyConfigured,
+  Hub
+} from '@/config/amplifyUnified';
+import { createSafeContext, useSafeContext } from '@/utils/ContextFix';
 
-const AuthContext = createContext({
+const AuthContext = createSafeContext({
   isLoading: true,
   hasSession: false,
   hasError: false,
@@ -45,53 +53,136 @@ export function AuthProvider({ children }) {
       });
 
       // Get current session
-      const { tokens } = await fetchAuthSession();
-      
-      logger.debug('[AuthContext] Session tokens found:', {
-        hasIdToken: !!tokens?.idToken,
-        hasAccessToken: !!tokens?.accessToken,
-        hasRefreshToken: !!tokens?.refreshToken,
-        attempt
-      });
+      try {
+        const { tokens } = await fetchAuthSession();
+        
+        logger.debug('[AuthContext] Session tokens found:', {
+          hasIdToken: !!tokens?.idToken,
+          hasAccessToken: !!tokens?.accessToken,
+          hasRefreshToken: !!tokens?.refreshToken,
+          attempt
+        });
 
-      if (!tokens?.idToken) {
-        throw new Error('No valid session');
+        if (!tokens?.idToken) {
+          logger.debug('[AuthContext] No valid session token found');
+          setState(prev => ({
+            ...prev,
+            isLoading: false,
+            hasSession: false,
+            hasError: false,
+            user: null,
+            session: null,
+          }));
+          return;
+        }
+      } catch (sessionError) {
+        logger.debug('[AuthContext] Error fetching auth session:', {
+          error: sessionError.message,
+          code: sessionError.code,
+          attempt
+        });
+        
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          hasSession: false,
+          hasError: false,
+          user: null,
+          session: null,
+        }));
+        return;
       }
 
       // Wait a moment to ensure session is fully established
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Get current user
-      const user = await getCurrentUser();
-      if (!user) {
-        throw new Error('No current user found');
-      }
+      try {
+        const user = await getCurrentUser();
+        if (!user) {
+          logger.debug('[AuthContext] No current user found');
+          setState(prev => ({
+            ...prev,
+            isLoading: false,
+            hasSession: false,
+            hasError: false,
+            user: null,
+            session: null,
+          }));
+          return;
+        }
 
-      // Fetch user attributes directly
-      const attributes = await fetchUserAttributes();
-      const onboardingStatus = attributes['custom:onboarding'];
+        // Fetch user attributes directly
+        try {
+          const attributes = await fetchUserAttributes();
+          const onboardingStatus = attributes['custom:onboarding'];
 
-      logger.debug('[AuthContext] Current user fetched:', {
-        username: user.username,
-        attributes,
-        onboardingStatus
-      });
+          logger.debug('[AuthContext] Current user fetched:', {
+            username: user.username,
+            attributes,
+            onboardingStatus
+          });
 
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        hasSession: true,
-        hasError: false,
-        user: { ...user, attributes },
-        session: { tokens },
-      }));
+          // Get tokens again to ensure they're fresh
+          const { tokens } = await fetchAuthSession();
 
-      // Handle onboarding redirect if needed
-      const currentPath = window.location.pathname;
+          setState(prev => ({
+            ...prev,
+            isLoading: false,
+            hasSession: true,
+            hasError: false,
+            user: { ...user, attributes },
+            session: { tokens },
+          }));
 
-      if (onboardingStatus === 'NOT_STARTED' && currentPath !== '/onboarding/business-info') {
-        logger.debug('[AuthContext] Redirecting to business info for NOT_STARTED status');
-        router.push('/onboarding/business-info');
+          // Handle onboarding redirect if needed
+          const currentPath = window.location.pathname;
+
+          if (onboardingStatus === 'NOT_STARTED' && !currentPath.includes('/onboarding/business-info')) {
+            logger.debug('[AuthContext] Redirecting to business info for NOT_STARTED status');
+            
+            // Use the language utility to get the redirect path with language parameter
+            const redirectPath = appendLanguageParam('/onboarding/business-info');
+            
+            logger.debug('[AuthContext] Redirect path with language parameter:', {
+              redirectPath
+            });
+            
+            router.push(redirectPath);
+          }
+        } catch (attributesError) {
+          logger.debug('[AuthContext] Error fetching user attributes:', {
+            error: attributesError.message,
+            code: attributesError.code,
+            attempt
+          });
+          
+          setState(prev => ({
+            ...prev,
+            isLoading: false,
+            hasSession: false,
+            hasError: false,
+            user: null,
+            session: null,
+          }));
+          return;
+        }
+      } catch (userError) {
+        logger.debug('[AuthContext] Error fetching current user:', {
+          error: userError.message,
+          code: userError.code,
+          attempt
+        });
+        
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          hasSession: false,
+          hasError: false,
+          user: null,
+          session: null,
+        }));
+        return;
       }
 
     } catch (error) {
@@ -121,9 +212,11 @@ export function AuthProvider({ children }) {
 
       // Sign out on session error
       try {
+        logger.debug('[AuthContext] Attempting to sign out');
         await signOut();
-      } catch (signOutError) {
-        logger.error('[AuthContext] Error signing out:', signOutError);
+        logger.debug('[AuthContext] Sign out completed');
+      } catch (error) {
+        logger.error('[AuthContext] Error in sign out process:', error);
       }
 
       const pathname = window.location.pathname;
@@ -179,9 +272,11 @@ export function AuthProvider({ children }) {
           }));
           
           try {
+            logger.debug('[AuthContext] Attempting to sign out after token refresh failure');
             await signOut();
+            logger.debug('[AuthContext] Sign out completed after token refresh failure');
           } catch (error) {
-            logger.error('[AuthContext] Error signing out:', error);
+            logger.error('[AuthContext] Error in sign out process after token refresh failure:', error);
           }
 
           const pathname = window.location.pathname;
@@ -241,12 +336,15 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuthContext() {
-  const context = useContext(AuthContext);
+  const context = useSafeContext(AuthContext);
   if (!context) {
     logger.error('[AuthContext] useAuthContext called outside of provider');
     throw new Error('useAuthContext must be used within an AuthProvider');
   }
   return context;
 }
+
+// Add useAuth as an alias for useAuthContext for compatibility
+export const useAuth = useAuthContext;
 
 export default AuthContext;

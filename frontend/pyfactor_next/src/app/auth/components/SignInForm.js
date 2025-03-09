@@ -6,6 +6,7 @@ import { Box, Button, TextField, Typography, Link, Alert, CircularProgress } fro
 import { useAuth } from '@/hooks/auth';
 import { logger } from '@/utils/logger';
 import { useSession } from '@/hooks/useSession';
+import ConfigureAmplify from '@/components/ConfigureAmplify';
 
 const REDIRECT_DELAY = 2000; // Increased delay to ensure session is properly established
 
@@ -84,7 +85,7 @@ export default function SignInForm() {
     setIsRedirecting(false);
     setSessionAttempts(0);
 
-    logger.debug('[SignInForm] Form submission started:', { 
+    logger.debug('[SignInForm] Form submission started:', {
       username: formData.username,
       hasPassword: !!formData.password,
       formComplete: !!(formData.username && formData.password)
@@ -99,24 +100,61 @@ export default function SignInForm() {
         throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
       }
 
-      logger.debug('[SignInForm] Starting sign in process');
+      logger.debug('[SignInForm] Starting sign in process with enhanced logging');
 
-      // Attempt sign in
-      const signInResult = await signIn(formData.username, formData.password);
+      // Add more detailed logging before sign in attempt
+      logger.debug('[SignInForm] Auth state before sign in:', {
+        isAuthLoading,
+        isAuthenticated,
+        username: formData.username
+      });
 
-      if (!signInResult.success) {
-        if (signInResult.nextStep?.signInStep === 'CONFIRM_SIGN_UP') {
-          logger.debug('[SignInForm] User needs to confirm signup, redirecting to verification');
-          router.push(`/auth/verify-email?email=${encodeURIComponent(formData.username)}`);
-          return;
+      // Attempt sign in with enhanced error handling
+      try {
+        const signInResult = await signIn({
+          username: formData.username,
+          password: formData.password,
+          options: {
+            authFlowType: 'USER_PASSWORD_AUTH'
+          }
+        });
+        
+        logger.debug('[SignInForm] Sign in result received:', {
+          success: signInResult.success,
+          hasError: !!signInResult.error,
+          hasNextStep: !!signInResult.nextStep,
+          nextStep: signInResult.nextStep?.signInStep,
+          hasUser: !!signInResult.user
+        });
+
+        if (!signInResult.success) {
+          if (signInResult.nextStep?.signInStep === 'CONFIRM_SIGN_UP') {
+            logger.debug('[SignInForm] User needs to confirm signup, redirecting to verification');
+            router.push(`/auth/verify-email?email=${encodeURIComponent(formData.username)}`);
+            return;
+          }
+          throw new Error(signInResult.error || 'Sign in failed');
         }
-        throw new Error(signInResult.error || 'Sign in failed');
+      } catch (signInError) {
+        logger.error('[SignInForm] Detailed sign in error:', {
+          message: signInError.message,
+          name: signInError.name,
+          code: signInError.code,
+          stack: signInError.stack
+        });
+        throw signInError;
       }
 
       logger.debug('[SignInForm] Sign in successful, verifying session establishment');
 
       // Verify session is properly established
-      await verifySession(maxSessionAttempts);
+      try {
+        await verifySession(maxSessionAttempts);
+        logger.debug('[SignInForm] Session verified successfully');
+      } catch (sessionError) {
+        logger.error('[SignInForm] Session verification failed:', sessionError);
+        throw new Error('Failed to establish session. Please try again.');
+      }
 
       logger.debug('[SignInForm] Session verified successfully, preparing redirect');
 
@@ -139,6 +177,7 @@ export default function SignInForm() {
     } catch (error) {
       logger.error('[SignInForm] Sign in error:', {
         error: error.message,
+        name: error.name,
         username: formData.username,
         code: error.code,
         stack: error.stack,
@@ -148,7 +187,7 @@ export default function SignInForm() {
           hasPassword: !!formData.password
         }
       });
-      setError(error.message);
+      setError(error.message || 'An error occurred during sign in. Please try again.');
       setIsRedirecting(false);
     }
   };
@@ -168,19 +207,21 @@ export default function SignInForm() {
   });
 
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit}
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-        width: '100%',
-        maxWidth: 400,
-        mx: 'auto',
-        p: 3,
-      }}
-    >
+    <>
+      <ConfigureAmplify />
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          width: '100%',
+          maxWidth: 400,
+          mx: 'auto',
+          p: 3,
+        }}
+      >
       <Typography variant="h5" component="h1" gutterBottom align="center">
         Sign In
       </Typography>
@@ -259,5 +300,6 @@ export default function SignInForm() {
         </Typography>
       </Box>
     </Box>
+    </>
   );
 }

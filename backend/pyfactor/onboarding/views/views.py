@@ -1601,9 +1601,9 @@ class SaveStep1View(APIView):
                             INSERT INTO business_business (
                                 id, owner_id, business_num, business_name,
                                 business_type, country, legal_structure, date_founded,
-                                created_at, modified_at
+                                created_at, modified_at, business_subtype_selections
                             ) VALUES (
-                                %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW()
+                                %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), %s
                             ) RETURNING id
                         """, [
                             str(uuid.uuid4()), str(request.user.id), business_num,
@@ -1611,7 +1611,8 @@ class SaveStep1View(APIView):
                             serializer.validated_data['business_type'],
                             serializer.validated_data['country'],
                             serializer.validated_data['legal_structure'],
-                            serializer.validated_data['date_founded']
+                            serializer.validated_data['date_founded'],
+                            '{}'  # Empty JSON object for business_subtype_selections
                         ])
                         business_id = cursor.fetchone()[0]
                             
@@ -1672,17 +1673,17 @@ class SaveStep1View(APIView):
                                 id, user_id, onboarding_status, current_step, next_step,
                                 created_at, updated_at, account_status, user_role,
                                 subscription_plan, attribute_version, preferences,
-                                completed_steps, selected_plan
+                                completed_steps, selected_plan, business_id
                             )
                             VALUES (
                                 %s, %s, %s, %s, %s, NOW(), NOW(),
                                 'pending', 'owner', 'free', '1.0.0', '{}'::jsonb,
-                                '[]'::jsonb, 'free'
+                                '[]'::jsonb, 'free', %s
                             )
                             ON CONFLICT (user_id) DO UPDATE
                             SET (onboarding_status, current_step, next_step, updated_at,
                                 account_status, user_role, subscription_plan, attribute_version,
-                                preferences, completed_steps, selected_plan) =
+                                preferences, completed_steps, selected_plan, business_id) =
                                 (EXCLUDED.onboarding_status, EXCLUDED.current_step, EXCLUDED.next_step, NOW(),
                                 COALESCE(onboarding_onboardingprogress.account_status, 'pending'),
                                 COALESCE(onboarding_onboardingprogress.user_role, 'owner'),
@@ -1690,11 +1691,12 @@ class SaveStep1View(APIView):
                                 COALESCE(onboarding_onboardingprogress.attribute_version, '1.0.0'),
                                 COALESCE(onboarding_onboardingprogress.preferences, '{}'::jsonb),
                                 COALESCE(onboarding_onboardingprogress.completed_steps, '[]'::jsonb),
-                                COALESCE(onboarding_onboardingprogress.selected_plan, 'free'))
+                                COALESCE(onboarding_onboardingprogress.selected_plan, 'free'),
+                                EXCLUDED.business_id)
                             RETURNING id
                         """, [
                             str(uuid.uuid4()), str(request.user.id), 'business-info', 'business-info',
-                            'subscription'
+                            'subscription', business_id
                         ])
                         progress_id = cursor.fetchone()[0]
 
@@ -1782,7 +1784,8 @@ class SaveStep1View(APIView):
                         "onboarding": {
                             "status": progress.onboarding_status,
                             "currentStep": progress.current_step,
-                            "nextStep": progress.next_step
+                            "nextStep": progress.next_step,
+                            "redirectTo": "/onboarding/subscription"  # Explicitly tell frontend where to go next
                         },
                        "tenant": {
                             "database_status": tenant.database_status if tenant else None,

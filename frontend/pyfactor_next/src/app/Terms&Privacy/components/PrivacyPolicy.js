@@ -1,3 +1,4 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/Terms&Privacy/components/PrivacyPolicy.jsx
 import React from 'react';
 import {
   Typography,

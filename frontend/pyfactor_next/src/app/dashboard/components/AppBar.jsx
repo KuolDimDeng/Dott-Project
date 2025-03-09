@@ -25,6 +25,7 @@ import SettingsMenu from './components/SettingsMenu';
 import HomeIcon from '@mui/icons-material/Home';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import DashboardLanguageSelector from './LanguageSelector';
 
 const menuBackgroundColor = '#e3f2fd'; // Light grey background
 
@@ -208,6 +209,10 @@ const AppBar = ({
             </IconButton>
           </Tooltip>
 
+          <Box sx={{ mr: 1 }}>
+            <DashboardLanguageSelector />
+          </Box>
+          
           <Tooltip title="Help">
             <IconButton
               sx={{ display: 'flex', alignItems: 'center', height: '100%', color: textAppColor }}

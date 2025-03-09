@@ -1,11 +1,12 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/providers/AmplifyProvider.js
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import { Hub } from 'aws-amplify/utils';
+import React, { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';
-import { configureAmplify } from '@/config/amplify';
+import { Hub } from '@/config/amplifyUnified';
+import { createSafeContext, useSafeContext } from '@/utils/ContextFix';
 
-const AmplifyContext = createContext({
+const AmplifyContext = createSafeContext({
   isInitializing: true,
   isConfigured: false,
   error: null,
@@ -20,15 +21,13 @@ export function AmplifyProvider({ children }) {
     attempts: 0
   });
 
+  // This function is simplified since Amplify is now configured in src/config/amplifyUnified.js
   const initializeAmplify = async (attempt = 1, maxAttempts = 3) => {
     try {
-      logger.debug('[AmplifyProvider] Starting Amplify initialization:', {
-        attempt,
-        maxAttempts
-      });
-
-      await configureAmplify();
-
+      // Log the current configuration for debugging
+      logger.debug('[AmplifyProvider] Amplify is already configured in amplifyUnified.js');
+      
+      // Just update the state to reflect that Amplify is configured
       setState(prev => ({
         ...prev,
         isInitializing: false,
@@ -43,61 +42,45 @@ export function AmplifyProvider({ children }) {
       });
 
     } catch (error) {
-      logger.error('[AmplifyProvider] Initialization failed:', {
+      logger.error('[AmplifyProvider] Error checking Amplify configuration:', {
         error: error.message,
         code: error.code,
-        attempt,
         stack: error.stack
       });
 
-      // Check if error is related to missing environment variables
-      const isMissingEnvVars = error.message.includes('Missing required environment variables');
-      
-      if (isMissingEnvVars) {
-        setState(prev => ({
-          ...prev,
-          isInitializing: false,
-          isConfigured: false,
-          error: 'Authentication configuration is incomplete. Please check your environment variables.',
-          attempts: attempt
-        }));
+      setState(prev => ({
+        ...prev,
+        isInitializing: false,
+        isConfigured: false,
+        error: 'Failed to initialize authentication. Please try again later.',
+        attempts: attempt
+      }));
 
-        // Emit configuration error event
-        Hub.dispatch('auth', {
-          event: 'configurationError',
-          data: error
-        });
-        return;
-      }
-
-      // If under max attempts and not a configuration error, retry with exponential backoff
-      if (attempt < maxAttempts) {
-        const delay = Math.pow(2, attempt) * 1000;
-        logger.debug(`[AmplifyProvider] Retrying initialization after ${delay}ms (attempt ${attempt + 1}/${maxAttempts})`);
-        setTimeout(() => {
-          initializeAmplify(attempt + 1, maxAttempts);
-        }, delay);
-      } else {
-        setState(prev => ({
-          ...prev,
-          isInitializing: false,
-          isConfigured: false,
-          error: 'Failed to initialize authentication. Please try again later.',
-          attempts: attempt
-        }));
-
-        // Emit configuration error event
-        Hub.dispatch('auth', {
-          event: 'configurationError',
-          data: error
-        });
-      }
+      // Emit configuration error event
+      Hub.dispatch('auth', {
+        event: 'configurationError',
+        data: error
+      });
     }
   };
 
   useEffect(() => {
     logger.debug('[AmplifyProvider] Component mounted, starting initialization');
-    initializeAmplify();
+    
+    // Since Amplify is already configured in src/config/amplifyUnified.js, we just need to
+    // update the state to reflect that it's configured
+    setState(prev => ({
+      ...prev,
+      isInitializing: false,
+      isConfigured: true,
+      error: null,
+      attempts: 1
+    }));
+    
+    // Emit configured event
+    Hub.dispatch('auth', {
+      event: 'configured'
+    });
 
     return () => {
       logger.debug('[AmplifyProvider] Component unmounting');
@@ -147,7 +130,7 @@ export function AmplifyProvider({ children }) {
 }
 
 export function useAmplifyContext() {
-  const context = useContext(AmplifyContext);
+  const context = useSafeContext(AmplifyContext);
   if (!context) {
     logger.error('[AmplifyProvider] useAmplifyContext called outside of provider');
     throw new Error('useAmplifyContext must be used within an AmplifyProvider');

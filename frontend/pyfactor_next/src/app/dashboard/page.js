@@ -1,13 +1,28 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { useSession } from '@/hooks/useSession';
 import DashboardContent from './DashboardContent';
-import DashboardSetupStatus from '@/components/DashboardSetupStatus';
+import { completeOnboarding } from '@/utils/completeOnboarding';
+import { logger } from '@/utils/logger';
 
 export default function DashboardPage() {
   const { user, loading } = useSession();
+
+  // Check if user is in SETUP status and update to COMPLETE
+  useEffect(() => {
+    const updateOnboardingIfNeeded = async () => {
+      if (user?.attributes?.['custom:onboarding'] === 'SETUP') {
+        logger.debug('[DashboardPage] User in SETUP status, updating to COMPLETE');
+        await completeOnboarding();
+      }
+    };
+
+    if (user) {
+      updateOnboardingIfNeeded();
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -24,23 +39,10 @@ export default function DashboardPage() {
     );
   }
 
-  const isSetup = user?.attributes?.['custom:onboarding'] === 'SETUP';
-
+  // Always show dashboard content
   return (
     <>
-      {isSetup ? (
-        <Box sx={{ p: 4 }}>
-          <Typography variant="h4" gutterBottom>
-            Welcome to Your Dashboard
-          </Typography>
-          <Typography variant="body1" color="text.secondary" gutterBottom>
-            Setting up your account... This may take a few minutes.
-          </Typography>
-          <DashboardSetupStatus />
-        </Box>
-      ) : (
-        <DashboardContent />
-      )}
+      <DashboardContent />
     </>
   );
 }

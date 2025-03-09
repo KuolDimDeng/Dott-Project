@@ -1,65 +1,106 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import SignInForm from '@/components/auth/SignInForm';
-import { useAuthContext } from '@/contexts/AuthContext';
 import { getCurrentUser } from '@aws-amplify/auth';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function SignInPage() {
   const router = useRouter();
-  const { hasSession, user } = useAuthContext();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const checkUserStatus = async () => {
-      if (!hasSession) return;
-
       try {
-        logger.debug('[SignInPage] Checking user status');
+        // Check if user is already signed in
         const currentUser = await getCurrentUser();
-        const onboardingStatus = currentUser.attributes['custom:onboarding'];
-
-        logger.debug('[SignInPage] User status:', {
-          onboardingStatus,
-          attributes: currentUser.attributes
-        });
-
-        // Handle different onboarding statuses
-        switch (onboardingStatus) {
-          case 'NOT_STARTED':
-          case 'IN_PROGRESS':
-          case 'BUSINESS_INFO':
-            logger.debug(`[SignInPage] Redirecting to business info for ${onboardingStatus} status`);
-            router.push('/onboarding/business-info');
-            break;
-          case 'SUBSCRIPTION':
-            logger.debug('[SignInPage] Redirecting to subscription page');
-            router.push('/onboarding/subscription');
-            break;
-          case 'PAYMENT':
-            logger.debug('[SignInPage] Redirecting to payment page');
-            router.push('/onboarding/payment');
-            break;
-          case 'SETUP':
-            logger.debug('[SignInPage] Redirecting to setup page');
-            router.push('/onboarding/setup');
-            break;
-          case 'COMPLETE':
-            logger.debug('[SignInPage] User onboarded, redirecting to dashboard');
-            router.push('/dashboard');
-            break;
-          default:
-            logger.warn('[SignInPage] Unknown onboarding status:', onboardingStatus);
-            router.push('/onboarding/business-info');
+        
+        if (currentUser) {
+          logger.debug('[SignInPage] User already signed in, checking status');
+          
+          try {
+            const onboardingStatus = currentUser.attributes?.['custom:onboarding'];
+            
+            logger.debug('[SignInPage] User status:', {
+              onboardingStatus,
+              attributes: currentUser.attributes
+            });
+            
+            // Handle different onboarding statuses
+            switch (onboardingStatus) {
+              case 'NOT_STARTED':
+              case 'IN_PROGRESS':
+              case 'BUSINESS_INFO':
+                logger.debug(`[SignInPage] Redirecting to business info for ${onboardingStatus} status`);
+                router.push('/onboarding/business-info');
+                return;
+              case 'SUBSCRIPTION':
+                logger.debug('[SignInPage] Redirecting to subscription page');
+                router.push('/onboarding/subscription');
+                return;
+              case 'PAYMENT':
+                logger.debug('[SignInPage] Redirecting to payment page');
+                router.push('/onboarding/payment');
+                return;
+              case 'SETUP':
+                logger.debug('[SignInPage] Redirecting to setup page');
+                router.push('/onboarding/setup');
+                return;
+              case 'COMPLETE':
+                logger.debug('[SignInPage] User onboarded, redirecting to dashboard');
+                router.push('/dashboard');
+                return;
+              default:
+                logger.debug('[SignInPage] Unknown onboarding status, showing sign in form');
+                break;
+            }
+          } catch (attributeError) {
+            logger.error('[SignInPage] Error getting user attributes:', attributeError);
+            // Continue to show sign in form
+          }
         }
       } catch (error) {
-        logger.error('[SignInPage] Error checking user status:', error);
+        logger.debug('[SignInPage] No active session, showing sign in form');
+        // Not signed in, show the sign in form
+      } finally {
+        setIsLoading(false);
       }
     };
 
     checkUserStatus();
-  }, [hasSession, router]);
+  }, [router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            <div className="rounded-md bg-red-50 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>Please try again later or contact support if the problem persists.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">

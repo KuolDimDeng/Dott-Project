@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
-import { Amplify } from 'aws-amplify';
-import { getAmplifyConfig } from '../../../config/amplify';
+import { getAmplifyConfig } from '@/config/amplifyServer';
 
 // Helper to get token from cookie string
 function getTokenFromCookie(cookieString, tokenName) {
@@ -49,16 +48,7 @@ export async function POST(request) {
       );
     }
 
-    // Configure Amplify in server context
-    try {
-      Amplify.configure(getAmplifyConfig());
-    } catch (configError) {
-      logger.error('[SetupAPI] Amplify configuration failed:', configError);
-      return NextResponse.json(
-        { error: 'Failed to configure authentication' },
-        { status: 500 }
-      );
-    }
+    // No need to configure Amplify here as it's already configured in amplifyUnified.js
 
     // Get the session token from request headers or cookies
     const cookieHeader = request.headers.get('cookie');

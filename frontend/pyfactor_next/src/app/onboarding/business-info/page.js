@@ -4,16 +4,40 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, Container, Paper, Typography, TextField, Button, Alert, CircularProgress, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
 import useOnboardingStore from '@/store/onboardingStore';
-import { businessTypes, legalStructures } from '@/app/utils/businessData';
+import {
+  businessTypes,
+  legalStructures
+} from '@/app/utils/businessData';
 import { logger } from '@/utils/logger';
 import { validateSession } from '@/utils/onboardingUtils';
-import { useToast } from '@/components/Toast/ToastProvider';
 import countryList from 'react-select-country-list';
 import { ONBOARDING_STATES } from '../state/OnboardingStateManager';
+import { appendLanguageParam, getLanguageQueryString } from '@/utils/languageUtils';
+
+// Business state functionality removed as requested
+
+// Create a safe version of useToast that doesn't throw if ToastProvider is not available
+const useSafeToast = () => {
+  try {
+    // Try to import and use the real useToast
+    const { useToast } = require('@/components/Toast/ToastProvider');
+    return useToast();
+  } catch (error) {
+    // Return a dummy implementation if ToastProvider is not available
+    return {
+      success: (message) => console.log('[Toast Success]', message),
+      error: (message) => console.error('[Toast Error]', message),
+      info: (message) => console.info('[Toast Info]', message),
+      warning: (message) => console.warn('[Toast Warning]', message),
+    };
+  }
+};
+
+// Business subtypes functionality removed as requested
 
 export default function BusinessInfoPage() {
   const router = useRouter();
-  const toast = useToast();
+  const toast = useSafeToast();
   const { businessInfo, setBusinessInfo, isLoading, error } = useOnboardingStore();
   const countries = useMemo(() => countryList().getData(), []);
   
@@ -45,6 +69,7 @@ export default function BusinessInfoPage() {
       ...prev,
       [name]: value
     }));
+    
     if (formError) setFormError('');
   };
 
@@ -102,11 +127,6 @@ export default function BusinessInfoPage() {
         throw new Error(errorData.message || 'Failed to update business information');
       }
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update business information');
-      }
-
       const data = await response.json();
       
       // Update store
@@ -116,20 +136,61 @@ export default function BusinessInfoPage() {
         throw new Error('Failed to update business information');
       }
 
-      logger.debug('[BusinessInfo] Successfully updated business info');
-      toast.success('Business information saved successfully');
+      logger.debug('[BusinessInfo] Successfully updated business info:', data);
       
-      // Set cookie with the next step
-      const nextStep = data.nextStep || ONBOARDING_STATES.SUBSCRIPTION;
-      document.cookie = `onboardingStep=${nextStep.toLowerCase().replace('_', '-')}; path=/`;
-      
-      // Navigate to next step using the route from API response
-      if (data.nextRoute) {
-        router.push(data.nextRoute);
+      // Check if there's a warning message
+      if (data.warning) {
+        logger.warn('[BusinessInfo] Warning from API:', data.warning);
+        toast.warning(`Business information saved with warning: ${data.warning}`);
       } else {
-        logger.error('[BusinessInfo] No next route provided in API response');
+        toast.success('Business information saved successfully');
+      }
+      
+      // Get the language query string using our utility
+      const langQueryString = getLanguageQueryString();
+      
+      // Check for redirectTo in the API response
+      if (data.data?.onboarding?.redirectTo) {
+        const nextRoute = `${data.data.onboarding.redirectTo}${langQueryString}`;
+        logger.debug('[BusinessInfo] Navigating to next route from API response:', {
+          nextRoute
+        });
+        
+        // Set cookie with the next step
+        const nextStep = data.data.onboarding.nextStep || 'subscription';
+        document.cookie = `onboardingStep=${nextStep.toLowerCase().replace('_', '-')}; path=/`;
+        
+        // Also update onboardedStatus to match if status is provided
+        if (data.data.onboarding.status) {
+          document.cookie = `onboardedStatus=${data.data.onboarding.status}; path=/`;
+        }
+        
+        router.push(nextRoute);
+      } else if (data.nextRoute) {
+        // Legacy support
+        const nextRoute = `${data.nextRoute}${langQueryString}`;
+        logger.debug('[BusinessInfo] Navigating to legacy next route:', {
+          nextRoute
+        });
+        
+        // Set onboardingStep and onboardedStatus for legacy routes too
+        const stepMatch = data.nextRoute.match(/\/onboarding\/([^\/\?]+)/);
+        if (stepMatch && stepMatch[1]) {
+          document.cookie = `onboardingStep=${stepMatch[1]}; path=/`;
+          document.cookie = `onboardedStatus=IN_PROGRESS; path=/`;
+        }
+        
+        router.push(nextRoute);
+      } else {
+        logger.debug('[BusinessInfo] No explicit route provided, using default subscription route');
+        // Set cookie with the next step
+        document.cookie = `onboardingStep=subscription; path=/`;
+        
+        // Also update onboardedStatus if we're setting a step
+        document.cookie = `onboardedStatus=IN_PROGRESS; path=/`;
+        
         // Fallback to default route
-        router.push('/onboarding/subscription');
+        router.push(`/onboarding/subscription${langQueryString}`);
       }
 
     } catch (error) {
@@ -227,6 +288,8 @@ export default function BusinessInfoPage() {
               </Select>
             </FormControl>
 
+            {/* Business Subtypes field removed as requested */}
+
             <FormControl fullWidth required>
               <InputLabel id="country-label">Country</InputLabel>
               <Select
@@ -245,6 +308,8 @@ export default function BusinessInfoPage() {
                 ))}
               </Select>
             </FormControl>
+
+            {/* Business State field removed as requested */}
 
             <FormControl fullWidth required>
               <InputLabel id="legalStructure-label">Legal Structure</InputLabel>

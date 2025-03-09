@@ -131,7 +131,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
-APPEND_SLASH = False  # Add this to disable automatic slash appending
+APPEND_SLASH = True  # Enable automatic slash appending to fix URL routing issues
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -161,6 +161,8 @@ CORS_ALLOW_HEADERS = [
     'x-request-version',
     'x-id-token',
     'x-user-id',
+    'x-tenant-id',  # Add tenant ID header
+    'x-schema-name',  # Add schema name header
     'access-control-allow-origin',
     'access-control-allow-headers',
     'access-control-allow-methods'
@@ -177,8 +179,10 @@ CORS_EXPOSE_HEADERS = [
     'cache-control',
     'last-modified',
     'etag',
-    'x-debug-step',  # Add this
-    'x-current-step'  # Add this
+    'x-debug-step',
+    'x-current-step',
+    'x-tenant-id',  # Add tenant ID header
+    'x-schema-name'  # Add schema name header
 ]
 
 # Add this new setting for preflight caching
@@ -411,8 +415,8 @@ CACHES = {
             'socket_connect_timeout': 5,
             'retry_on_timeout': True,
             'max_connections': 100,
-            'KEY_PREFIX': '{tenant}',  # Add this for tenant-aware caching
-        }
+        },
+        'KEY_PREFIX': '{tenant}',  # Moved outside OPTIONS to the correct location
     }
 }
 
@@ -471,24 +475,12 @@ SIMPLE_JWT = {
 
 
 # Logging configuration
-class DeduplicationFilter(logging.Filter):
-    def __init__(self, name="", capacity=100):
-        super().__init__(name)
-        self.capacity = capacity
-        self.seen = set()
-
-    def filter(self, record):
-        log_entry = (record.name, record.levelno, record.pathname, record.lineno, record.msg)
-        if log_entry in self.seen:
-            return False
-        if len(self.seen) >= self.capacity:
-            self.seen.pop()
-        self.seen.add(log_entry)
-        return True
-
 LOGGING_CONFIG = None
 
 LOGLEVEL = os.getenv('DJANGO_LOGLEVEL', 'DEBUG').upper()
+
+# Import custom logging filters
+from pyfactor.log_filters import DeduplicationFilter
 
 LOGGING = {
     'version': 1,
@@ -504,19 +496,47 @@ LOGGING = {
         'colored': {
             'format': '\033[1;34m%(levelname)s\033[0m %(asctime)s \033[1;33m%(name)s\033[0m %(message)s',
         },
+        'sql': {
+            'format': '\033[1;36mSQL\033[0m %(asctime)s [%(duration).3f] %(message)s',
+        },
+    },
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'deduplication_filter': {
+            '()': 'pyfactor.log_filters.DeduplicationFilter',
+            'capacity': 200,
+        },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'formatter': 'colored',  # Better readability for console logs
+            'formatter': 'colored',
         },
         'file': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(os.getcwd(), 'debug.log'),  # Adjust to use BASE_DIR if available
+            'filename': os.path.join(os.getcwd(), 'debug.log'),
             'formatter': 'verbose',
             'maxBytes': 1024 * 1024 * 5,  # 5 MB
             'backupCount': 5,
+        },
+        'sql_file': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(os.getcwd(), 'sql.log'),
+            'formatter': 'sql',
+            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'backupCount': 3,
+        },
+        'tenant_file': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(os.getcwd(), 'tenant.log'),
+            'formatter': 'verbose',
+            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'backupCount': 3,
         },
     },
     'loggers': {
@@ -530,12 +550,28 @@ LOGGING = {
             'level': LOGLEVEL,
             'propagate': False,
         },
-        'django.db.backends': {  # Reduce verbosity for database logs
-            'handlers': ['console', 'file'],
-            'level': 'INFO',  # Change DEBUG to INFO to suppress detailed SQL logs
+        'django.db.backends': {  # Database query logging
+            'handlers': ['console', 'sql_file'],
+            'level': 'DEBUG',  # Set to DEBUG to see all SQL queries
             'propagate': False,
+            'filters': ['deduplication_filter'],  # Avoid duplicate logs
         },
         'pyfactor': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'pyfactor.db_routers': {  # Router-specific logging
+            'handlers': ['console', 'tenant_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'custom_auth.middleware': {  # Tenant middleware logging
+            'handlers': ['console', 'tenant_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'inventory': {  # Inventory app logging
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': False,
@@ -646,7 +682,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
     'custom_auth.middleware.RequestIDMiddleware',
-    'custom_auth.middleware.TenantMiddleware',
+    'custom_auth.tenant_middleware.EnhancedTenantMiddleware',  # Use our enhanced tenant middleware
+    'custom_auth.middleware.TenantMiddleware',  # Keep the original for backward compatibility
 ]
 
 # Check if we're running in ASGI mode
@@ -753,7 +790,7 @@ DATABASES = {
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5432'),
         'TIME_ZONE': 'UTC',
-        'CONN_MAX_AGE': 60,
+        'CONN_MAX_AGE': 300,  # Increased to 5 minutes for better connection reuse
         'AUTOCOMMIT': True,
         'CONN_HEALTH_CHECKS': True,
         'OPTIONS': {
@@ -761,7 +798,7 @@ DATABASES = {
             'client_encoding': 'UTF8',
             'application_name': 'dott',
             'sslmode': 'prefer',
-            'options': ''  # Allow router to control schema
+            'options': '',  # Allow router to control schema
         }
     },
 
@@ -772,14 +809,24 @@ DATABASES = {
         'PASSWORD': os.getenv('TAX_DB_PASSWORD', 'postgres'),
         'HOST': os.getenv('TAX_DB_HOST', 'localhost'),
         'PORT': os.getenv('TAX_DB_PORT', '5432'),
+        'CONN_MAX_AGE': 300,  # 5 minutes
         'OPTIONS': {
             'connect_timeout': 10,
             'client_encoding': 'UTF8',
             'sslmode': 'prefer',
         }
     }
-
 }
+
+# Database performance settings to be applied after connection
+DATABASE_PERFORMANCE_SETTINGS = {
+    'statement_timeout': 30000,  # 30 seconds timeout for queries
+    'idle_in_transaction_session_timeout': 60000,  # 1 minute timeout for idle transactions
+    'work_mem': '4MB',  # Memory for sorting operations
+}
+
+# Initialize the connection pool
+# We'll initialize the connection pool in apps.py to avoid circular imports
 
 
 

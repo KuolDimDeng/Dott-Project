@@ -168,21 +168,27 @@ def create_tenant_schema(cursor, schema_name, user_id):
 def tenant_schema_context(cursor, schema_name):
     """Context manager for schema operations"""
     from django.db import connections
+    from pyfactor.db_routers import TenantSchemaRouter, local
+    
     previous_schema = None
+    start_time = time.time()
+    
     try:
         # Get current schema
         cursor.execute('SHOW search_path')
         previous_schema = cursor.fetchone()[0]
         logger.debug(f"Saving previous schema: {previous_schema}")
         
-        # Set new schema
-        set_tenant_schema(cursor, schema_name)
-        logger.debug(f"Successfully set schema to: {schema_name}")
+        # Clear connection cache to ensure clean state
+        TenantSchemaRouter.clear_connection_cache()
         
-        # Set schema for default connection if different cursor
-        if cursor != connections['default'].cursor():
-            with connections['default'].cursor() as default_cursor:
-                set_tenant_schema(default_cursor, schema_name)
+        # Set new schema using optimized connection
+        connection = TenantSchemaRouter.get_connection_for_schema(schema_name)
+        logger.debug(f"Successfully set schema to: {schema_name} in {time.time() - start_time:.4f}s")
+        
+        # Store the current schema in thread local storage for the router
+        setattr(local, 'tenant_schema', schema_name)
+        logger.debug(f"Set thread local tenant_schema to: {schema_name}")
         
         yield
     except Exception as e:
@@ -190,42 +196,53 @@ def tenant_schema_context(cursor, schema_name):
         raise
     finally:
         try:
-            # Restore previous schema
+            # Restore previous schema using optimized connection
             if previous_schema:
                 logger.debug(f"Restoring previous schema: {previous_schema}")
-                cursor.execute(f'SET search_path TO {previous_schema}')
-                # Restore schema for default connection if different cursor
-                if cursor != connections['default'].cursor():
-                    with connections['default'].cursor() as default_cursor:
-                        default_cursor.execute(f'SET search_path TO {previous_schema}')
+                TenantSchemaRouter.clear_connection_cache()
+                TenantSchemaRouter.get_connection_for_schema(previous_schema)
+                
+                # Update thread local storage with previous schema
+                setattr(local, 'tenant_schema', previous_schema)
+                logger.debug(f"Restored thread local tenant_schema to: {previous_schema}")
             else:
                 logger.debug("Falling back to public schema")
-                cursor.execute('SET search_path TO public')
-                # Fallback for default connection if different cursor
-                if cursor != connections['default'].cursor():
-                    with connections['default'].cursor() as default_cursor:
-                        default_cursor.execute('SET search_path TO public')
+                TenantSchemaRouter.clear_connection_cache()
+                TenantSchemaRouter.get_connection_for_schema('public')
+                
+                # Reset thread local storage to public
+                setattr(local, 'tenant_schema', 'public')
+                logger.debug("Reset thread local tenant_schema to: public")
+                
+            logger.debug(f"Schema context operation completed in {time.time() - start_time:.4f}s")
         except Exception as e:
             logger.error(f"Error resetting schema: {str(e)}")
+            
             # Ensure we at least try to set public schema
-            cursor.execute('SET search_path TO public')
-            if cursor != connections['default'].cursor():
-                with connections['default'].cursor() as default_cursor:
-                    default_cursor.execute('SET search_path TO public')
+            try:
+                TenantSchemaRouter.clear_connection_cache()
+                TenantSchemaRouter.get_connection_for_schema('public')
+                
+                # Reset thread local storage to public in case of error
+                setattr(local, 'tenant_schema', 'public')
+                logger.debug("Reset thread local tenant_schema to public after error")
+            except Exception as thread_error:
+                logger.error(f"Error resetting thread local schema: {str(thread_error)}")
 
 def set_tenant_schema(cursor, schema_name):
     """Set search_path to tenant schema"""
     from django.db import connections
+    from pyfactor.db_routers import TenantSchemaRouter
+    
+    start_time = time.time()
     try:
         logger.debug(f"Setting schema to: {schema_name}")
+        
         if schema_name == 'public':
-            # Set search path on both cursors
-            cursor.execute('SET search_path TO public')
-            if cursor != connections['default'].cursor():
-                with connections['default'].cursor() as default_cursor:
-                    default_cursor.execute('SET search_path TO public')
+            # Use optimized connection for public schema
+            TenantSchemaRouter.get_connection_for_schema('public')
         else:
-            # First verify schema exists using Django's default connection
+            # First verify schema exists
             with connections['default'].cursor() as default_cursor:
                 default_cursor.execute("""
                     SELECT 1 FROM information_schema.schemata
@@ -235,20 +252,20 @@ def set_tenant_schema(cursor, schema_name):
                     logger.error(f"Schema {schema_name} does not exist")
                     raise Exception(f"Schema {schema_name} does not exist")
             
-            # Set search path on both cursors
-            search_path = f'"{schema_name}",public'
-            cursor.execute(f'SET search_path TO {search_path}')
-            if cursor != connections['default'].cursor():
-                with connections['default'].cursor() as default_cursor:
-                    default_cursor.execute(f'SET search_path TO {search_path}')
+            # Use optimized connection for tenant schema
+            TenantSchemaRouter.get_connection_for_schema(schema_name)
             
             # Verify search path was set
             cursor.execute('SHOW search_path')
             current_path = cursor.fetchone()[0]
-            logger.debug(f"Current search_path: {current_path}")
+            logger.debug(f"Current search_path: {current_path} (set in {time.time() - start_time:.4f}s)")
             
             if schema_name not in current_path:
                 raise Exception(f"Failed to set search_path to {schema_name}")
+                
+        # Update thread local storage
+        from pyfactor.db_routers import local
+        setattr(local, 'tenant_schema', schema_name)
     except Exception as e:
         logger.error(f"Error setting schema {schema_name}: {str(e)}")
         raise

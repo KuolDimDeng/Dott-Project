@@ -27,7 +27,7 @@ import APIIntegrations from './components/APIIntegrations';
 import AlertsPage from '../alerts/components/AlertsPage';
 import SendGlobalAlert from '../alerts/components/SendGlobalAlert';
 import AlertsComponent from '../alerts/components/AlertsComponents';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
 import { last } from 'lodash';
 

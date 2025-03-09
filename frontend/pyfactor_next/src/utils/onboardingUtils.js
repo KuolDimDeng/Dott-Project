@@ -214,7 +214,9 @@ export async function validateBusinessInfo(data) {
   const formattedAttributes = {
     'custom:businessname': String(data.businessName),
     'custom:businesstype': String(data.businessType),
+    'custom:businesssubtypes': String(data.businessSubtypes || ''),
     'custom:businesscountry': String(data.country),
+    'custom:businessstate': String(data.businessState || ''),
     'custom:legalstructure': String(data.legalStructure),
     'custom:datefounded': data.dateFounded.split('T')[0] // Format as YYYY-MM-DD
   };
@@ -223,15 +225,15 @@ export async function validateBusinessInfo(data) {
 }
 
 export async function validateSubscription(data) {
-  const validPlans = ['FREE', 'PROFESSIONAL'];
+  const validPlans = ['FREE', 'PROFESSIONAL', 'ENTERPRISE'];
   const validIntervals = ['MONTHLY', 'YEARLY'];
 
   logger.debug('[Subscription] Values before validation:', {
-    rawPlan: body.plan,
-    rawInterval: body.interval,
-    convertedPlan: body.plan?.toUpperCase(),
-    convertedInterval: body.interval?.toUpperCase(),
-    validPlans: ['FREE', 'PROFESSIONAL'],
+    rawPlan: data.plan,
+    rawInterval: data.interval,
+    convertedPlan: data.plan?.toUpperCase(),
+    convertedInterval: data.interval?.toUpperCase(),
+    validPlans: ['FREE', 'PROFESSIONAL', 'ENTERPRISE'],
     validIntervals: ['MONTHLY', 'YEARLY']
   });
 

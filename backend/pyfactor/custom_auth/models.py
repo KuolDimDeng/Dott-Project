@@ -69,6 +69,25 @@ class Tenant(models.Model):
     last_health_check = models.DateTimeField(null=True, blank=True)
     database_setup_task_id = models.CharField(max_length=255, null=True, blank=True)
     setup_task_id = models.CharField(max_length=255, null=True, blank=True)
+    storage_quota_bytes = models.BigIntegerField(default=2 * 1024 * 1024 * 1024)  # Default 2GB in bytes
+     # Add archive tracking fields
+    last_archive_date = models.DateTimeField(null=True, blank=True)
+    archive_retention_days = models.IntegerField(default=2555)  # 7 years default
+    
+    # Add archive notification and decision fields
+    archive_expiry_notification_sent = models.BooleanField(default=False)
+    archive_expiry_notification_date = models.DateTimeField(null=True, blank=True)
+    archive_user_decision = models.CharField(
+        max_length=20, 
+        choices=[
+            ('pending', 'Pending Decision'),
+            ('export', 'Export and Delete'),
+            ('delete', 'Delete Without Export'),
+            ('extend', 'Extend Retention'),
+        ],
+        default='pending'
+    )
+
 
 
     class Meta:
@@ -76,6 +95,15 @@ class Tenant(models.Model):
 
     def __str__(self):
         return self.name
+
+      # Helper methods for quota management
+    @property
+    def storage_quota_gb(self):
+        return self.storage_quota_bytes / (1024 * 1024 * 1024)
+    
+    @storage_quota_gb.setter
+    def storage_quota_gb(self, gb_value):
+        self.storage_quota_bytes = int(gb_value * 1024 * 1024 * 1024)
 
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -22,7 +22,9 @@ function SubscriptionPage() {
     }
 
     // Only redirect if we're not in business-info or subscription step
-    if (currentStep !== ONBOARDING_STATES.BUSINESS_INFO && currentStep !== ONBOARDING_STATES.SUBSCRIPTION) {
+    // Normalize currentStep to uppercase for comparison with ONBOARDING_STATES constants
+    const normalizedCurrentStep = currentStep?.toUpperCase();
+    if (normalizedCurrentStep !== ONBOARDING_STATES.BUSINESS_INFO && normalizedCurrentStep !== ONBOARDING_STATES.SUBSCRIPTION) {
       if (currentStep === ONBOARDING_STATES.COMPLETE) {
         router.push('/onboarding/complete');
       } else if (!currentStep || currentStep === ONBOARDING_STATES.NOT_STARTED) {

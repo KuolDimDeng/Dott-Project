@@ -1,0 +1,63 @@
+{
+  "businessInfo": {
+    "title": "ビジネス情報を入力",
+    "subtitle": "あなたの会社について教えてください",
+    "nameLabel": "会社名",
+    "addressLabel": "会社住所",
+    "phoneLabel": "会社電話番号",
+    "emailLabel": "会社メールアドレス",
+    "websiteLabel": "ウェブサイト（任意）",
+    "industryLabel": "業種",
+    "nextButton": "サブスクリプションに進む",
+    "errors": {
+      "nameRequired": "会社名は必須です",
+      "addressRequired": "会社住所は必須です",
+      "phoneRequired": "会社電話番号は必須です",
+      "emailRequired": "会社メールアドレスは必須です",
+      "emailInvalid": "有効なメールアドレスを入力してください"
+    }
+  },
+  "subscription": {
+    "title": "サブスクリプションプランの選択",
+    "subtitle": "あなたのビジネスニーズに合ったプランを選択してください",
+    "basic": "ベーシック",
+    "professional": "プロフェッショナル",
+    "premium": "プレミアム",
+    "perMonth": "月額",
+    "selectPlan": "プランを選択",
+    "currentPlan": "現在のプラン",
+    "features": {
+      "accounting": "会計と簿記",
+      "invoicing": "請求書と課金",
+      "expenses": "経費追跡",
+      "payroll": "給与計算",
+      "inventory": "在庫管理",
+      "support": "24時間年中無休のカスタマーサポート"
+    }
+  },
+  "payment": {
+    "title": "支払い詳細",
+    "subtitle": "安全な支払い方法を設定",
+    "cardName": "カード名義",
+    "cardNumber": "カード番号",
+    "expiry": "有効期限",
+    "cvv": "セキュリティコード",
+    "saveCard": "将来の請求のためにカードを保存",
+    "confirmPayment": "支払いを確認",
+    "errors": {
+      "nameRequired": "カード名義は必須です",
+      "cardRequired": "カード番号は必須です",
+      "expiryRequired": "有効期限は必須です",
+      "cvvRequired": "セキュリティコードは必須です"
+    }
+  },
+  "setup": {
+    "title": "Dottアカウントのセットアップ",
+    "subtitle": "あなたのビジネスについて知っておく必要がある最後の詳細",
+    "industryLabel": "業種",
+    "employeesLabel": "従業員数",
+    "revenueLabel": "推定年間売上",
+    "finishSetup": "セットアップを完了",
+    "goToDashboard": "ダッシュボードへ"
+  }
+}

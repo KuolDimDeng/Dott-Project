@@ -29,24 +29,64 @@ export async function POST(request) {
 
     // Forward request to backend to start schema setup
     const backendApiUrl = process.env.BACKEND_API_URL || 'http://127.0.0.1:8000';
+    
+    // Log user information for debugging
+    logger.debug('[SetupStart] User information:', {
+      userId,
+      hasAttributes: !!user.attributes,
+      businessId: user.attributes?.['custom:businessid'],
+      onboarding: user.attributes?.['custom:onboarding']
+    });
+    
+    // Get request body
+    const requestBody = await request.text();
+    const parsedBody = JSON.parse(requestBody);
+    
+    // Ensure the request body includes the user ID
+    const enhancedBody = {
+      ...parsedBody,
+      userId: userId,
+      cognitoUserId: userId
+    };
+    
+    // Add business ID if available
+    if (user.attributes?.['custom:businessid']) {
+      enhancedBody.businessId = user.attributes['custom:businessid'];
+    }
+    
     const response = await fetch(`${backendApiUrl}/api/onboarding/setup/start/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`,
         'X-Id-Token': idToken,
-        'X-User-ID': userId
+        'X-User-ID': userId,
+        'X-Cognito-Sub': userId,
+        'X-Business-ID': user.attributes?.['custom:businessid'] || ''
       },
-      body: await request.text()
+      body: JSON.stringify(enhancedBody)
     });
 
     if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        // If response is not valid JSON, use text instead
+        errorData = { error: await response.text() };
+      }
+      
       logger.error('[SetupStart] Backend request failed:', {
         status: response.status,
-        error: await response.json()
+        error: errorData
       });
+      
       return NextResponse.json(
-        { error: 'Failed to start setup process' },
+        {
+          error: 'Failed to start setup process',
+          details: errorData.error || 'Unknown error',
+          code: errorData.code || 'unknown_error'
+        },
         { status: response.status }
       );
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -17,11 +17,18 @@ import {
   Typography,
   Box,
   useTheme,
+  CircularProgress,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { axiosInstance } from '@/lib/axiosConfig';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import { inventoryService } from '@/services/inventoryService';
+import { logger } from '@/utils/logger';
+
+// Component for displaying and managing inventory items
 
 const InventoryItemList = () => {
   const [items, setItems] = useState([]);
@@ -35,20 +42,110 @@ const InventoryItemList = () => {
     unit_price: 0,
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('info');
+  const [useMockData, setUseMockData] = useState(false);
+  const [apiUnavailable, setApiUnavailable] = useState(false);
+  const [skipInitialApiCall, setSkipInitialApiCall] = useState(false);
   const theme = useTheme();
 
+  const showSnackbar = (message, severity = 'info') => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
+
+  // No longer need fetchWithRetry as we're using the service layer
+
+  const fetchItems = useCallback(async (forceMock = false) => {
+    setLoading(true);
+    setError(null);
+    
+    // If mock data is enabled or forced, use mock data
+    if (useMockData || forceMock) {
+      setTimeout(() => {
+        logger.info('Using mock inventory data');
+        const mockProducts = inventoryService.getMockProducts();
+        const mappedMockData = mockProducts.map(product => ({
+          ...product,
+          sku: product.product_code || '',
+          unit_price: product.price || 0,
+          quantity: product.stock_quantity || 0,
+          reorder_level: product.reorder_level || 0
+        }));
+        setItems(mappedMockData);
+        showSnackbar('Using demo data (API unavailable or slow to respond)', 'info');
+        setLoading(false);
+      }, 500); // Simulate network delay
+      return;
+    }
+    
+    try {
+      // Try to fetch products first
+      try {
+        logger.debug('Fetching products from inventory service');
+        const products = await inventoryService.getProducts();
+        
+        // If we have products, use them
+        if (products && Array.isArray(products)) {
+          const mappedProducts = products.map(product => ({
+            ...product,
+            // Map product fields to inventory item fields if needed
+            sku: product.product_code || '',
+            unit_price: product.price || 0,
+            quantity: product.stock_quantity || 0,
+            reorder_level: product.reorder_level || 0
+          }));
+          setItems(mappedProducts);
+          showSnackbar('Products loaded successfully', 'success');
+          setLoading(false);
+          return;
+        }
+      } catch (productError) {
+        logger.warn('Product fetch failed, trying inventory items:', productError);
+      }
+      
+      // Fallback to inventory items if products endpoint fails
+      try {
+        logger.debug('Fetching inventory items from inventory service');
+        const items = await inventoryService.getInventoryItems();
+        
+        if (items && Array.isArray(items)) {
+          setItems(items);
+          showSnackbar('Inventory items loaded successfully', 'success');
+        } else {
+          // If no data or not an array, fall back to mock data
+          logger.warn('No data from API, falling back to mock data');
+          setApiUnavailable(true);
+          fetchItems(true); // Call again with forceMock=true
+          return;
+        }
+      } catch (itemsError) {
+        logger.error('Both endpoints failed:', itemsError);
+        // Fall back to mock data
+        setApiUnavailable(true); // Mark API as unavailable
+        fetchItems(true); // Call again with forceMock=true
+        return;
+      }
+    } catch (error) {
+      logger.error('Error fetching inventory items:', error);
+      // Fall back to mock data
+      setApiUnavailable(true);
+      fetchItems(true); // Call again with forceMock=true
+    }
+  }, [useMockData, showSnackbar, setApiUnavailable]);
+
+  // Effect to fetch items on component mount
   useEffect(() => {
     fetchItems();
-  }, []);
-
-  const fetchItems = async () => {
-    try {
-      const response = await useApi.get('/api/inventory/items/');
-      setItems(response.data);
-    } catch (error) {
-      console.error('Error fetching inventory items:', error);
-    }
-  };
+  }, [fetchItems]);
 
   const handleOpenDialog = (item = null) => {
     if (item) {
@@ -88,25 +185,108 @@ const InventoryItemList = () => {
 
   const handleSubmit = async () => {
     try {
-      if (isEditing) {
-        await axiosInstance.put(`/api/inventory/items/${currentItem.id}/`, currentItem);
-      } else {
-        await axiosInstance.post('/api/inventory/items/', currentItem);
+      // Validate required fields
+      if (!currentItem.name) {
+        showSnackbar('Name is required', 'error');
+        return;
       }
-      fetchItems();
+      
+      // Convert the item to a product format
+      const productData = {
+        name: currentItem.name,
+        description: currentItem.description || '',
+        price: parseFloat(currentItem.unit_price) || 0,
+        product_code: currentItem.sku || undefined, // Only include if not empty
+        stock_quantity: parseInt(currentItem.quantity, 10) || 0,
+        reorder_level: parseInt(currentItem.reorder_level, 10) || 0,
+        is_for_sale: true
+      };
+      
+      logger.info('Submitting product data:', productData);
+      setLoading(true);
+      
+      if (isEditing) {
+        try {
+          // Try to update as a product first
+          await inventoryService.updateProduct(currentItem.id, productData);
+          logger.info('Product updated successfully');
+          showSnackbar('Product updated successfully', 'success');
+        } catch (productError) {
+          logger.warn('Product update failed, trying as inventory item', productError);
+          // If product update fails, try as an inventory item
+          try {
+            await inventoryService.updateInventoryItem(currentItem.id, currentItem);
+            showSnackbar('Inventory item updated successfully', 'success');
+          } catch (itemError) {
+            logger.error('Both update attempts failed:', itemError);
+            showSnackbar('Failed to update item. Please try again.', 'error');
+            setLoading(false);
+            return;
+          }
+        }
+      } else {
+        try {
+          // Try to create as a product first
+          await inventoryService.createProduct(productData);
+          logger.info('Product created successfully');
+          showSnackbar('Product created successfully', 'success');
+        } catch (productError) {
+          logger.warn('Product creation failed, trying as inventory item', productError);
+          // If product creation fails, try as an inventory item
+          try {
+            await inventoryService.createInventoryItem(currentItem);
+            showSnackbar('Inventory item created successfully', 'success');
+          } catch (itemError) {
+            logger.error('Both creation attempts failed:', itemError);
+            showSnackbar('Failed to create item. Please try again.', 'error');
+            setLoading(false);
+            return;
+          }
+        }
+      }
+      
+      // Refresh the list and close the dialog
+      await fetchItems();
       handleCloseDialog();
     } catch (error) {
-      console.error('Error saving inventory item:', error);
+      logger.error('Error saving item:', error);
+      showSnackbar('Failed to save item. Please try again later.', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this item?')) {
       try {
-        await useApi.delete(`/api/inventory/items/${id}/`);
-        fetchItems();
+        setLoading(true);
+        
+        // Try to delete as a product first
+        try {
+          await inventoryService.deleteProduct(id);
+          logger.info('Product deleted successfully');
+          showSnackbar('Product deleted successfully', 'success');
+        } catch (productError) {
+          // If product deletion fails, try as an inventory item
+          logger.warn('Product deletion failed, trying as inventory item');
+          try {
+            await inventoryService.deleteInventoryItem(id);
+            showSnackbar('Inventory item deleted successfully', 'success');
+          } catch (itemError) {
+            logger.error('Both deletion attempts failed:', itemError);
+            showSnackbar('Failed to delete item. Please try again.', 'error');
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // Refresh the list after deletion
+        await fetchItems();
       } catch (error) {
-        console.error('Error deleting inventory item:', error);
+        logger.error('Error deleting item:', error);
+        showSnackbar('Failed to delete item. Please try again later.', 'error');
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -115,55 +295,134 @@ const InventoryItemList = () => {
     <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4">Inventory Items</Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-        >
-          Add New Item
-        </Button>
+        <Box>
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<RefreshIcon />}
+            onClick={() => {
+              setApiUnavailable(false); // Reset API unavailable state
+              fetchItems(false);
+            }}
+            sx={{ mr: 1 }}
+            disabled={loading}
+          >
+            Refresh
+          </Button>
+          <Button
+            variant={useMockData ? "contained" : "outlined"}
+            color={useMockData ? "secondary" : "primary"}
+            onClick={() => {
+              setUseMockData(!useMockData);
+              fetchItems(!useMockData);
+            }}
+            sx={{ mr: 1 }}
+            disabled={loading}
+          >
+            {useMockData ? "Using Demo Data" : "Use Demo Data"}
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenDialog()}
+            disabled={loading}
+          >
+            Add New Item
+          </Button>
+        </Box>
       </Box>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>SKU</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Quantity</TableCell>
-              <TableCell>Reorder Level</TableCell>
-              <TableCell>Unit Price</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>{item.name}</TableCell>
-                <TableCell>{item.sku}</TableCell>
-                <TableCell>{item.description}</TableCell>
-                <TableCell>{item.quantity}</TableCell>
-                <TableCell>{item.reorder_level}</TableCell>
-                <TableCell>
-                  $
-                  {typeof item.unit_price === 'number'
-                    ? item.unit_price.toFixed(2)
-                    : parseFloat(item.unit_price).toFixed(2) || '0.00'}
-                </TableCell>
-                <TableCell>
-                  <IconButton onClick={() => handleOpenDialog(item)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton onClick={() => handleDelete(item.id)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
+      
+      {(useMockData || apiUnavailable) && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          <Typography variant="body1" fontWeight="bold">
+            Using Demo Data
+          </Typography>
+          <Typography variant="body2">
+            {apiUnavailable
+              ? "The inventory API is currently unavailable. All data shown is demo data and changes will not be saved."
+              : "You are viewing demo data. Changes will not be persisted to the database."}
+          </Typography>
+        </Alert>
+      )}
+      
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+      
+      {loading ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, backgroundColor: 'white', borderRadius: 1 }}>
+          <CircularProgress />
+          <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
+            Loading inventory data... This may take a moment.
+          </Typography>
+        </Box>
+      ) : items.length === 0 ? (
+        <Box sx={{ textAlign: 'center', p: 4, backgroundColor: 'white', borderRadius: 1 }}>
+          <Typography variant="h6" color="text.secondary">
+            No inventory items found
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Click "Add New Item" to create your first inventory item
+          </Typography>
+        </Box>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>SKU</TableCell>
+                <TableCell>Description</TableCell>
+                <TableCell>Quantity</TableCell>
+                <TableCell>Reorder Level</TableCell>
+                <TableCell>Unit Price</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>{item.name}</TableCell>
+                  <TableCell>{item.sku || item.product_code || 'N/A'}</TableCell>
+                  <TableCell>{item.description || 'No description'}</TableCell>
+                  <TableCell>{item.quantity || item.stock_quantity || 0}</TableCell>
+                  <TableCell>{item.reorder_level || 0}</TableCell>
+                  <TableCell>
+                    $
+                    {typeof item.unit_price === 'number'
+                      ? item.unit_price.toFixed(2)
+                      : typeof item.price === 'number'
+                      ? item.price.toFixed(2)
+                      : parseFloat(item.unit_price || item.price || 0).toFixed(2)}
+                  </TableCell>
+                  <TableCell>
+                    <IconButton onClick={() => handleOpenDialog(item)}>
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton onClick={() => handleDelete(item.id)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+      
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
 
       <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogTitle>{isEditing ? 'Edit Item' : 'Add New Item'}</DialogTitle>

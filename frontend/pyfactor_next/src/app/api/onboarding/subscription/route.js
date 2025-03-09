@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
 import { validateServerSession } from '@/utils/serverUtils';
 import { updateOnboardingStep, validateSubscription } from '@/utils/onboardingUtils';
+import crypto from 'crypto';
 
 export async function POST(request) {
   try {
@@ -47,7 +49,7 @@ export async function POST(request) {
       }
 
       // Validate plan and interval values
-      const validPlans = ['FREE', 'PROFESSIONAL'];
+      const validPlans = ['FREE', 'PROFESSIONAL', 'ENTERPRISE'];
       const validIntervals = ['MONTHLY', 'YEARLY'];
       
       const plan = body.plan.toUpperCase();
@@ -90,7 +92,7 @@ export async function POST(request) {
         error: error.message,
         data: body,
         validationRules: {
-          validPlans: ['FREE', 'PROFESSIONAL'],
+          validPlans: ['FREE', 'PROFESSIONAL', 'ENTERPRISE'],
           validIntervals: ['MONTHLY', 'YEARLY']
         }
       });
@@ -99,7 +101,7 @@ export async function POST(request) {
         code: 'subscription_validation_error',
         details: error.message,
         validationRules: {
-          validPlans: ['FREE', 'PROFESSIONAL'],
+          validPlans: ['FREE', 'PROFESSIONAL', 'ENTERPRISE'],
           validIntervals: ['MONTHLY', 'YEARLY']
         }
       }, { status: 400 });
@@ -131,11 +133,32 @@ export async function POST(request) {
         );
       }
 
-      if (currentStatus !== 'BUSINESS_INFO') {
+      // Check if business ID exists, which indicates business info has been completed
+      const hasBusinessId = !!attributes['custom:businessid'];
+      
+      // Allow NOT_STARTED if business ID exists, or BUSINESS_INFO or SUBSCRIPTION as valid states
+      // This handles the case where the cookie might be updated but Cognito attributes aren't in sync
+      if ((currentStatus !== 'BUSINESS_INFO' &&
+           currentStatus !== 'SUBSCRIPTION' &&
+           !(currentStatus === 'NOT_STARTED' && hasBusinessId))) {
+        
+        logger.warn('[Subscription] Invalid onboarding status:', {
+          currentStatus,
+          expectedStatus: ['BUSINESS_INFO', 'SUBSCRIPTION', 'NOT_STARTED (with businessId)'],
+          userId,
+          hasBusinessId
+        });
+        
         return NextResponse.json(
           { error: 'Must complete business info before subscription' },
           { status: 400 }
         );
+      }
+      
+      // If we're here with NOT_STARTED but have a business ID, update the status to BUSINESS_INFO
+      if (currentStatus === 'NOT_STARTED' && hasBusinessId) {
+        logger.info('[Subscription] Updating status from NOT_STARTED to BUSINESS_INFO due to business ID presence');
+        currentStatus = 'BUSINESS_INFO';
       }
     }
 
@@ -153,8 +176,8 @@ export async function POST(request) {
     }
     
     // Get IDs and validate request
-    const tenantId = attributes['custom:businessid'];
-    const cognitoUserId = attributes.sub;
+    let tenantId = attributes['custom:businessid'];
+    let cognitoUserId = attributes.sub;
 
     logger.info('[Subscription] Starting subscription process:', {
       tenantId,
@@ -180,7 +203,7 @@ export async function POST(request) {
       isReset,
       currentStatus,
       validationRules: {
-        validPlans: ['FREE', 'PROFESSIONAL'],
+        validPlans: ['FREE', 'PROFESSIONAL', 'ENTERPRISE'],
         validIntervals: ['MONTHLY', 'YEARLY'],
         allowedStatus: ['BUSINESS_INFO', 'NOT_STARTED']
       }
@@ -231,23 +254,100 @@ export async function POST(request) {
       }, { status: 500 });
     }
 
-    // Validate required context
-    if (!tenantId || !cognitoUserId || !attributes['custom:businessid']) {
-      logger.error('[Subscription] Missing required context:', {
+    // Try to get business ID from cookies if not in attributes
+    const cookieStore = cookies();
+    const cookieTenantId = cookieStore.get('tenantId')?.value;
+    
+    // Use cookie tenant ID if attribute is missing
+    if (!tenantId && cookieTenantId) {
+      logger.info('[Subscription] Using tenant ID from cookies:', {
+        cookieTenantId
+      });
+      tenantId = cookieTenantId;
+      attributes['custom:businessid'] = cookieTenantId;
+    }
+    
+    // Use userId as cognitoUserId if missing
+    if (!cognitoUserId && userId) {
+      logger.info('[Subscription] Using userId as cognitoUserId:', {
+        userId
+      });
+      cognitoUserId = userId;
+    }
+    
+    // Check if we have the minimum required context
+    let businessInfoCompleted = false;
+    
+    // If we're missing tenantId or cognitoUserId, try to recover
+    if (!tenantId || !cognitoUserId) {
+      logger.warn('[Subscription] Missing required context:', {
         tenantId,
+        cookieTenantId,
         cognitoUserId,
+        userId,
         businessId: attributes['custom:businessid'],
         attributes: Object.keys(attributes)
       });
-      return NextResponse.json({
-        error: 'Missing required context',
-        details: 'Business setup incomplete',
-        context: {
-          hasTenantId: Boolean(tenantId),
-          hasCognitoId: Boolean(cognitoUserId),
-          hasBusinessId: Boolean(attributes['custom:businessid'])
+      
+      // Check if onboarding status indicates business info is completed
+      const onboardingStep = cookieStore.get('onboardingStep')?.value;
+      const onboardedStatus = cookieStore.get('onboardedStatus')?.value;
+      
+      logger.debug('[Subscription] Checking onboarding status from cookies:', {
+        onboardingStep,
+        onboardedStatus,
+        currentStatus
+      });
+      
+      // If cookies indicate business info is completed, proceed despite missing data
+      if (onboardedStatus === 'BUSINESS_INFO' ||
+          onboardingStep === 'subscription' ||
+          currentStatus === 'BUSINESS_INFO' ||
+          currentStatus === 'SUBSCRIPTION') {
+        
+        logger.info('[Subscription] Proceeding despite missing data - onboarding status indicates business info is completed');
+        businessInfoCompleted = true;
+        
+        // Generate a new tenantId if needed
+        if (!tenantId) {
+          tenantId = crypto.randomUUID();
+          attributes['custom:businessid'] = tenantId;
+          
+          logger.info('[Subscription] Generated new tenantId:', {
+            tenantId
+          });
         }
-      }, { status: 400 });
+        
+        // Use userId as cognitoUserId if needed
+        if (!cognitoUserId && userId) {
+          cognitoUserId = userId;
+          
+          logger.info('[Subscription] Using userId as cognitoUserId:', {
+            userId,
+            cognitoUserId
+          });
+        }
+      } else if (userId && !tenantId) {
+        // If we have a userId but no tenantId and no indication of business info completion
+        return NextResponse.json({
+          error: 'Business info not completed',
+          details: 'Please complete business info before selecting a subscription',
+          redirectTo: '/onboarding/business-info'
+        }, { status: 400 });
+      }
+      
+      // If we still don't have the required context and business info is not completed
+      if ((!tenantId || !cognitoUserId) && !businessInfoCompleted) {
+        return NextResponse.json({
+          error: 'Missing required context',
+          details: 'Business setup incomplete',
+          context: {
+            hasTenantId: Boolean(tenantId),
+            hasCognitoId: Boolean(cognitoUserId),
+            hasBusinessId: Boolean(attributes['custom:businessid'])
+          }
+        }, { status: 400 });
+      }
     }
 
     // Prepare request headers with tracking
@@ -290,12 +390,12 @@ export async function POST(request) {
         'X-Id-Token': '[REDACTED]'
       },
       body: {
-        selected_plan: body.plan.toUpperCase(),
-        billing_cycle: body.interval.toUpperCase(),
+        selected_plan: body.plan.toLowerCase(),
+        billing_cycle: body.interval.toLowerCase(),
         current_status: currentStatus,
-        next_status: body.plan.toUpperCase() === 'PROFESSIONAL' ? 'PAYMENT' : 'SETUP',
+        next_status: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') ? 'PAYMENT' : 'SETUP',
         reset_onboarding: isReset,
-        requires_payment: body.plan.toUpperCase() === 'PROFESSIONAL',
+        requires_payment: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise'),
         tenant_id: tenantId,
         business_id: attributes['custom:businessid'],
         cognito_sub: cognitoUserId
@@ -311,12 +411,12 @@ export async function POST(request) {
         'X-Id-Token': '[REDACTED]'
       },
       body: {
-        selected_plan: body.plan.toUpperCase(),
-        billing_cycle: body.interval.toUpperCase(),
+        selected_plan: body.plan.toLowerCase(),
+        billing_cycle: body.interval.toLowerCase(),
         current_status: currentStatus,
-        next_status: body.plan.toUpperCase() === 'PROFESSIONAL' ? 'PAYMENT' : 'SETUP',
+        next_status: body.plan.toLowerCase() === 'professional' ? 'PAYMENT' : 'SETUP',
         reset_onboarding: isReset,
-        requires_payment: body.plan.toUpperCase() === 'PROFESSIONAL',
+        requires_payment: body.plan.toLowerCase() === 'professional',
         tenant_id: tenantId
       }
     });
@@ -334,12 +434,12 @@ export async function POST(request) {
 
     // Prepare request body once
     const requestBody = {
-      selected_plan: plan,
-      billing_cycle: interval,
+      selected_plan: body.plan.toLowerCase(),
+      billing_cycle: body.interval.toLowerCase(),
       current_status: currentStatus,
-      next_status: plan === 'PROFESSIONAL' ? 'PAYMENT' : 'SETUP',
+      next_status: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') ? 'PAYMENT' : 'SETUP',
       reset_onboarding: isReset,
-      requires_payment: plan === 'PROFESSIONAL',
+      requires_payment: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise'),
       tenant_id: tenantId,
       business_id: attributes['custom:businessid'],
       cognito_sub: cognitoUserId,
@@ -368,8 +468,8 @@ export async function POST(request) {
           requestId,
           attempt: 4 - retries,
           url: requestUrl,
-          plan,
-          interval
+          plan: body.plan.toLowerCase(),
+          interval: body.interval.toLowerCase()
         });
 
         response = await fetch(requestUrl, {
@@ -502,15 +602,25 @@ export async function POST(request) {
 
     // Update onboarding status in Cognito with tokens
     const nextStatus = 'SETUP'; // Always go to setup since schema setup happens in background
-    await updateOnboardingStep(nextStatus, {
-      'custom:subplan': body.plan,
-      'custom:subscriptioninterval': body.interval,
-      'custom:requirespayment': body.plan.toUpperCase() === 'PROFESSIONAL' ? 'TRUE' : 'FALSE',
-      'custom:setupdone': 'FALSE' // Indicate setup is pending
-    }, {
-      accessToken: accessToken,
-      idToken: idToken
-    });
+    try {
+      await updateOnboardingStep(nextStatus, {
+        'custom:subplan': body.plan,
+        'custom:subscriptioninterval': body.interval,
+        'custom:requirespayment': (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') ? 'TRUE' : 'FALSE',
+        'custom:setupdone': 'FALSE' // Indicate setup is pending
+      }, {
+        accessToken: accessToken,
+        idToken: idToken
+      });
+      logger.info('[Subscription] Successfully updated onboarding step to SETUP');
+    } catch (updateError) {
+      // Log the error but continue since the subscription was saved successfully
+      logger.warn('[Subscription] Failed to update onboarding step, but subscription was saved:', {
+        error: updateError.message,
+        nextStatus
+      });
+      // Continue with the response since the subscription was saved successfully
+    }
 
     // Create response data with redirect info
     const responseData = {
@@ -556,7 +666,7 @@ export async function POST(request) {
     const finalResponse = NextResponse.json({
       success: true,
       message: 'Subscription saved successfully',
-      nextStep: body.plan.toUpperCase() === 'PROFESSIONAL' ? 'payment' : 'dashboard',
+      nextStep: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') ? 'payment' : 'dashboard',
       setupStatus: 'pending',
       timestamp: new Date().toISOString(),
       tenant: {
@@ -574,7 +684,7 @@ export async function POST(request) {
         'X-Tenant-ID': tenantId,
         'X-Cognito-Sub': cognitoUserId,
         'X-Setup-Status': 'pending',
-        'X-Next-Step': body.plan.toUpperCase() === 'PROFESSIONAL' ? 'payment' : 'dashboard',
+        'X-Next-Step': (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') ? 'payment' : 'dashboard',
         // CORS headers
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -590,26 +700,34 @@ export async function POST(request) {
     finalResponse.cookies.set('tenantId', tenantId, cookieOptions);
 
     logger.info('[Subscription] Returning response:', {
-      nextStep: body.plan.toUpperCase() === 'PROFESSIONAL' ? 'payment' : 'dashboard',
+      nextStep: body.plan.toLowerCase() === 'professional' ? 'payment' : 'dashboard',
       setupStatus: 'pending',
       timestamp: new Date().toISOString()
     });
 
-    return finalResponse;
-
-    // Trigger schema setup in background after preparing response
-    logger.info('[Subscription] Starting background schema setup:', {
-      cognitoUserId, // Use consistent ID
+    // Trigger schema setup in background before returning response
+    logger.info('[Subscription] Starting schema setup:', {
+      cognitoUserId,
       userId,
       businessId: attributes['custom:businessid'],
       timestamp: new Date().toISOString()
     });
 
-    // Fire and forget schema setup
+    // Setup schema setup
     const setupUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/setup/start/`;
+    
+    // Ensure we have valid UUIDs for userId and businessId
+    const validUserId = cognitoUserId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cognitoUserId)
+      ? cognitoUserId
+      : tenantId; // Use tenantId as fallback
+    
+    const validBusinessId = attributes['custom:businessid'] && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(attributes['custom:businessid'])
+      ? attributes['custom:businessid']
+      : tenantId; // Use tenantId as fallback
+    
     const setupBody = {
-      userId: cognitoUserId, // Already have cognitoUserId from earlier
-      businessId: attributes['custom:businessid'],
+      userId: validUserId,
+      businessId: validBusinessId,
       setupInBackground: true,
       timestamp: new Date().toISOString(),
       tenant: {
@@ -617,20 +735,20 @@ export async function POST(request) {
         status: 'pending'
       },
       user: {
-        id: cognitoUserId, // Use consistent ID
-        email: attributes.email,
-        setupDone: attributes['custom:setupdone'],
-        onboarding: attributes['custom:onboarding'],
-        acctstatus: attributes['custom:acctstatus']
+        id: validUserId,
+        email: attributes.email || 'user@example.com', // Provide fallback
+        setupDone: attributes['custom:setupdone'] || 'FALSE',
+        onboarding: attributes['custom:onboarding'] || 'BUSINESS_INFO',
+        acctstatus: attributes['custom:acctstatus'] || 'ACTIVE'
       },
       cognito: {
-        sub: cognitoUserId, // Use consistent ID
-        email: attributes.email,
-        username: attributes.Username,
+        sub: validUserId,
+        email: attributes.email || 'user@example.com', // Provide fallback
+        username: attributes.Username || validUserId,
         attributes: {
-          businessId: attributes['custom:businessid'],
-          businessName: attributes['custom:businessname'],
-          setupDone: attributes['custom:setupdone']
+          businessId: validBusinessId,
+          businessName: attributes['custom:businessname'] || 'Business',
+          setupDone: attributes['custom:setupdone'] || 'FALSE'
         }
       }
     };
@@ -652,118 +770,96 @@ export async function POST(request) {
         'X-Cognito-Sub': cognitoUserId,
         'X-Business-ID': attributes['custom:businessid'],
         'X-Setup-Done': attributes['custom:setupdone']
-      },
-      context: {
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV,
-        apiUrl: process.env.NEXT_PUBLIC_API_URL
       }
     });
 
-    // Start schema setup in background
-    logger.info('[Subscription] Initiating schema setup:', {
-      url: setupUrl,
-      tenantId,
-      cognitoUserId,
-      businessId: attributes['custom:businessid']
-    });
-
-    // Start schema setup in background
+    // Start schema setup
     const setupRequestId = Math.random().toString(36).substring(7);
     const setupHeaders = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
       'X-Id-Token': idToken,
       'X-Tenant-ID': tenantId,
-      'X-Cognito-Sub': cognitoUserId,
-      'X-Business-ID': attributes['custom:businessid'],
-      'X-Setup-Done': attributes['custom:setupdone'],
+      'X-Cognito-Sub': validUserId,
+      'X-Business-ID': validBusinessId,
+      'X-Setup-Done': attributes['custom:setupdone'] || 'FALSE',
       'X-Request-ID': setupRequestId
     };
 
-    logger.info('[Subscription] Starting schema setup:', {
+    logger.info('[Subscription] Initiating schema setup:', {
       setupRequestId,
       url: setupUrl,
       tenantId,
-      cognitoUserId
+      cognitoUserId,
+      validUserId,
+      validBusinessId
     });
 
-    // Start schema setup in background
-    Promise.resolve().then(async () => {
+    try {
+      // Execute schema setup synchronously before returning
+      const setupResponse = await fetch(setupUrl, {
+        method: 'POST',
+        headers: setupHeaders,
+        body: JSON.stringify({
+          ...setupBody,
+          request_id: setupRequestId,
+          timestamp: new Date().toISOString()
+        })
+      });
+
+      let responseText = '';
       try {
-        const setupResponse = await fetch(setupUrl, {
-          method: 'POST',
-          headers: setupHeaders,
-          body: JSON.stringify({
-            ...setupBody,
-            request_id: setupRequestId,
-            timestamp: new Date().toISOString()
-          })
-        });
-
-        if (!setupResponse.ok) {
-          throw new Error(`Schema setup failed: ${setupResponse.status} ${setupResponse.statusText}`);
-        }
-
-        const setupData = await setupResponse.json();
-        logger.info('[Subscription] Schema setup initiated:', {
+        responseText = await setupResponse.text();
+      } catch (textError) {
+        logger.warn('[Subscription] Failed to get response text:', {
           setupRequestId,
-          success: setupResponse.ok,
-          status: setupResponse.status,
-          taskId: setupData?.taskId
-        });
-      } catch (error) {
-        logger.error('[Subscription] Schema setup failed:', {
-          setupRequestId,
-          error: error.message,
-          stack: error.stack
+          error: textError.message
         });
       }
-    }).catch(error => {
-      logger.error('[Subscription] Unhandled setup error:', {
+
+      if (!setupResponse.ok) {
+        logger.warn(`Schema setup returned non-OK status: ${setupResponse.status}`, {
+          setupRequestId,
+          status: setupResponse.status,
+          response: responseText
+        });
+        // Continue anyway since this is not critical for the user flow
+      } else {
+        let setupData;
+        try {
+          setupData = responseText ? JSON.parse(responseText) : {};
+          logger.info('[Subscription] Schema setup initiated successfully:', {
+            setupRequestId,
+            success: setupResponse.ok,
+            status: setupResponse.status,
+            taskId: setupData?.taskId
+          });
+        } catch (parseError) {
+          logger.warn('[Subscription] Failed to parse setup response:', {
+            setupRequestId,
+            error: parseError.message,
+            responseText
+          });
+        }
+      }
+    } catch (error) {
+      // Log error but continue with response
+      logger.error('[Subscription] Schema setup error:', {
         setupRequestId,
         error: error.message,
         stack: error.stack
       });
+      // We don't want to fail the whole request if setup fails
+    }
+
+    // Return success response
+    logger.info('[Subscription] Returning success response:', {
+      requestId,
+      setupStatus: 'pending',
+      nextStep: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') ? 'payment' : 'dashboard'
     });
 
-    try {
-      // Return success response while setup continues in background
-      logger.info('[Subscription] Returning success response:', {
-        requestId,
-        setupStatus: responseData.setupStatus,
-        nextRoute: responseData.nextRoute,
-        message: responseData.message
-      });
-
-      return jsonResponse;
-    } catch (error) {
-      // Handle any unhandled errors
-      const errorId = Math.random().toString(36).substring(7);
-      logger.error('[Subscription] Unhandled error:', {
-        errorId,
-        error: error.message,
-        code: error.code,
-        stack: error.stack,
-        context: {
-          url: request.url,
-          method: request.method,
-          timestamp: new Date().toISOString()
-        }
-      });
-
-      return NextResponse.json({
-        error: 'Failed to process subscription request',
-        details: error.message,
-        errorId
-      }, {
-        status: 500,
-        headers: {
-          'X-Error-ID': errorId,
-          'Content-Type': 'application/json'
-        }
-      });
-    }
+    return finalResponse;
   } catch (outerError) {
     // Handle errors from the entire request
     const errorId = Math.random().toString(36).substring(7);

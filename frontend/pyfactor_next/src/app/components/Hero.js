@@ -8,9 +8,26 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Image from 'next/image';
 import AuthButton from '@/components/AuthButton';
+import { useTranslation } from 'react-i18next';
+import i18nInstance from '../../i18n'; // Import i18n instance
 
 export default function Hero() {
   const theme = useTheme();
+  const { t } = useTranslation();
+  
+  // Force re-render when language changes
+  const [, setRenderKey] = React.useState(0);
+  
+  React.useEffect(() => {
+    const handleLanguageChange = () => {
+      setRenderKey(prev => prev + 1); // Force re-render
+    };
+    
+    window.addEventListener('languageChange', handleLanguageChange);
+    return () => {
+      window.removeEventListener('languageChange', handleLanguageChange);
+    };
+  }, []);
 
   return (
     <Box
@@ -56,7 +73,7 @@ export default function Hero() {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            Manage your business like a boss.
+            {t('heroTitle', 'Manage your business like a boss.')}
           </Typography>
           <Box
             sx={{
@@ -82,7 +99,7 @@ export default function Hero() {
           >
             <Image
               src="/static/images/Work-Life-Balance-1--Streamline-Brooklyn.png"
-              alt="Business Management Illustration"
+              alt={t('heroImageAlt', 'Business Management Illustration')}
               width={250}
               height={180}
               priority
@@ -109,8 +126,7 @@ export default function Hero() {
               lineHeight: 1.6,
             }}
           >
-            Simple Accounting, Payroll, HR, Inventory, Reports, Analytics and
-            Mobile Money—all in one intuitive platform.
+            {t('heroDescription', 'Global business management with advanced inventory, barcode scanning, and regional payment solutions—all in one intuitive platform for businesses worldwide.')}
           </Typography>
 
           <Stack
@@ -153,8 +169,8 @@ export default function Hero() {
                 height: '100%',
                 border: 0,
               }}
-              src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
-              title="Dott Software Demo"
+              src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+              title={t('heroVideoTitle', 'Dott Software Demo')}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             ></iframe>

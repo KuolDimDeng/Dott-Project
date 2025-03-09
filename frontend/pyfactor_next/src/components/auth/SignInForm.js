@@ -3,11 +3,19 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signIn, signOut, fetchAuthSession, getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
-import { useAuthContext } from '@/contexts/AuthContext';
+import {
+  signIn,
+  fetchAuthSession,
+  getCurrentUser,
+  fetchUserAttributes,
+  signOut,
+  isAmplifyConfigured
+} from '@/config/amplifyUnified';
 import { getOnboardingStatus } from '@/utils/onboardingUtils';
 import { ONBOARDING_STATES } from '@/utils/userAttributes';
+import { appendLanguageParam, getLanguageQueryString } from '@/utils/languageUtils';
+import { useTenantInitialization } from '@/hooks/useTenantInitialization';
 
 export default function SignInForm() {
   const [email, setEmail] = useState('');
@@ -16,6 +24,7 @@ export default function SignInForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const router = useRouter();
+  const { login, initializeTenantId } = useTenantInitialization();
 
   const handleRedirect = async () => {
     try {
@@ -31,9 +40,6 @@ export default function SignInForm() {
         username: currentUser.username
       });
 
-      // Wait a moment to ensure session is fully established
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
       // Fetch user attributes directly
       const attributes = await fetchUserAttributes();
       const onboardingStatus = attributes['custom:onboarding'];
@@ -42,46 +48,97 @@ export default function SignInForm() {
         attributes,
         onboardingStatus
       });
+      
+      // Initialize tenant ID from user attributes
+      try {
+        const tenantId = await initializeTenantId(currentUser);
+        logger.debug(`[SignInForm] Initialized tenant ID: ${tenantId}`);
+      } catch (tenantError) {
+        // Log but don't fail the login process
+        logger.error('[SignInForm] Error initializing tenant ID:', tenantError);
+      }
 
       // Get full onboarding status
       const { currentStep, setupDone } = await getOnboardingStatus();
       logger.debug('[SignInForm] Full onboarding status:', { currentStep, setupDone });
       
-      if (setupDone && currentStep === ONBOARDING_STATES.COMPLETE) {
-        router.push('/dashboard');
-        return;
+      // Set cookies using our API route
+      try {
+        logger.debug('[SignInForm] Setting cookies via API');
+        const response = await fetch('/api/auth/set-cookies', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            idToken: tokens.idToken.toString(),
+            accessToken: tokens.accessToken.toString(),
+            refreshToken: tokens.refreshToken ? tokens.refreshToken.toString() : undefined,
+            onboardingStep: currentStep,
+            onboardedStatus: onboardingStatus
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Failed to set cookies via API: ${errorData.error || response.statusText}`);
+        }
+        
+        logger.debug('[SignInForm] Cookies set successfully via API');
+      } catch (cookieError) {
+        logger.error('[SignInForm] Failed to set cookies via API:', cookieError);
+        throw cookieError;
       }
 
-      // Handle different onboarding statuses
-      switch (onboardingStatus) {
-        case 'NOT_STARTED':
-        case 'IN_PROGRESS':
-        case 'BUSINESS_INFO':
-          logger.debug(`[SignInForm] Redirecting to business info for ${onboardingStatus} status`);
-          router.push('/onboarding/business-info');
-          break;
-        case 'SUBSCRIPTION':
-          logger.debug('[SignInForm] Redirecting to subscription page');
-          router.push('/onboarding/subscription');
-          break;
-        case 'PAYMENT':
-          logger.debug('[SignInForm] Redirecting to payment page');
-          router.push('/onboarding/payment');
-          break;
-        case 'SETUP':
-          logger.debug('[SignInForm] Redirecting to setup page');
-          router.push('/onboarding/setup');
-          break;
-        default:
-          logger.warn('[SignInForm] Unknown onboarding status:', onboardingStatus);
-          router.push('/onboarding/business-info');
+      // Get the language query string using our utility
+      const langQueryString = getLanguageQueryString();
+      
+      // Determine redirect URL
+      let redirectUrl;
+      
+      if (setupDone && currentStep === ONBOARDING_STATES.COMPLETE) {
+        redirectUrl = '/dashboard';
+      } else {
+        // Handle different onboarding statuses
+        switch (onboardingStatus) {
+          case 'NOT_STARTED':
+          case 'IN_PROGRESS':
+          case 'BUSINESS_INFO':
+            logger.debug(`[SignInForm] Redirecting to business info for ${onboardingStatus} status`);
+            redirectUrl = `/onboarding/business-info${langQueryString}`;
+            break;
+          case 'SUBSCRIPTION':
+            logger.debug('[SignInForm] Redirecting to subscription page');
+            redirectUrl = `/onboarding/subscription${langQueryString}`;
+            break;
+          case 'PAYMENT':
+            logger.debug('[SignInForm] Redirecting to payment page');
+            redirectUrl = `/onboarding/payment${langQueryString}`;
+            break;
+          case 'SETUP':
+            logger.debug('[SignInForm] Redirecting to setup page');
+            redirectUrl = `/onboarding/setup${langQueryString}`;
+            break;
+          default:
+            logger.warn('[SignInForm] Unknown onboarding status:', onboardingStatus);
+            redirectUrl = `/onboarding/business-info${langQueryString}`;
+        }
       }
+      
+      // Use window.location for a full page reload instead of client-side navigation
+      // This ensures the server sees the cookies we just set
+      logger.debug(`[SignInForm] Redirecting to: ${redirectUrl}`);
+      window.location.href = redirectUrl;
     } catch (error) {
       logger.error('[SignInForm] Failed to handle redirect:', error);
       setError('Failed to determine redirect path. Please try again.');
       // Sign out on error to ensure clean state
       try {
-        await signOut();
+        if (isAmplifyConfigured()) {
+          await signOut();
+        } else {
+          logger.debug('[SignInForm] Skipping sign out, Amplify not configured');
+        }
       } catch (signOutError) {
         logger.error('[SignInForm] Error signing out:', signOutError);
       }
@@ -96,17 +153,14 @@ export default function SignInForm() {
     try {
       logger.debug('[SignInForm] Attempting sign in:', { email });
 
-      const signInResult = await signIn({
-        username: email,
-        password,
-        options: {
-          authFlowType: process.env.NEXT_PUBLIC_AUTH_FLOW_TYPE
-        }
-      });
+      // Use the tenant-aware login function
+      const result = await login(email, password);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Login failed');
+      }
 
-      logger.debug('[SignInForm] Sign in successful:', {
-        isSignedIn: !!signInResult
-      });
+      logger.debug('[SignInForm] Sign in successful with tenant initialization');
 
       // Wait a moment for the session to be established
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -242,6 +296,15 @@ export default function SignInForm() {
               </div>
             </div>
           )}
+
+          <div className="text-center mt-4">
+            <p className="text-sm text-gray-600">
+              Already signed up but need to verify your email?{' '}
+              <Link href="/auth/verify-email" className="font-medium text-indigo-600 hover:text-indigo-500">
+                Enter verification code
+              </Link>
+            </p>
+          </div>
 
           <button
             type="submit"

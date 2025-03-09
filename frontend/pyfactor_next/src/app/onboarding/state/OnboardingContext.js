@@ -1,6 +1,7 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/state/OnboardingContext.js
 'use client';
 
-import { createContext, useContext, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useMemo, useEffect } from 'react';
 import { FormStateManager } from './FormStateManager';
 
 export const OnboardingContext = createContext();

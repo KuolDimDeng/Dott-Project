@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { useAuth } from '@/hooks/auth';
 import { logger } from '@/utils/logger';
-import { signIn } from 'aws-amplify/auth';
+import { signIn } from '@/config/amplifyUnified';
 
 export default function SignUp() {
   const { signUp, isLoading } = useAuth();
@@ -101,27 +101,74 @@ export default function SignUp() {
         
       };
 
-      logger.debug('Signing up with attributes:', initialAttributes);
+      logger.debug('Signing up with attributes:', {
+        ...initialAttributes,
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        // Don't log the password
+      });
+      
+      logger.debug('Calling signUp function with user data');
       const result = await signUp({
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName
       });
+      
+      logger.debug('SignUp function returned result:', {
+        success: result.success,
+        hasError: !!result.error,
+        errorMessage: result.error,
+        errorCode: result.code
+      });
 
       if (result.success) {
         // Always redirect to verify-email after signup
         setError('');
-        setSuccess('Account created successfully! Check your email for verification code.');
+        setSuccess('Account created successfully! Check your email for verification code. You will be redirected to the verification page in 10 seconds...');
         setTimeout(() => {
           router.push('/auth/verify-email?email=' + encodeURIComponent(formData.email));
-        }, 2000);
+        }, 10000); // Increased to 10 seconds to give user more time
       } else {
         throw new Error(result.error || 'Failed to sign up');
       }
     } catch (error) {
-      logger.error('Sign up error:', error);
-      setError(error.message || 'Failed to sign up');
+      logger.error('Sign up error:', {
+        message: error.message,
+        code: error.code,
+        name: error.name,
+        stack: error.stack
+      });
+      
+      // Display a more user-friendly error message
+      if (error.code) {
+        logger.debug('Sign up error code:', error.code);
+      }
+      
+      // Check for specific error types
+      let errorMessage = 'Failed to sign up. Please try again or contact support if the problem persists.';
+      
+      if (error.code === 'UsernameExistsException' || error.message?.includes('already exists')) {
+        errorMessage = 'An account with this email already exists. Please try signing in instead.';
+      } else if (error.code === 'InvalidParameterException' && error.message?.includes('password')) {
+        errorMessage = 'Password does not meet requirements. Please ensure it has at least 8 characters including uppercase, lowercase, numbers, and special characters.';
+      } else if (error.code === 'InvalidParameterException') {
+        errorMessage = 'One or more fields contain invalid values. Please check your information and try again.';
+      } else if (error.code === 'LimitExceededException') {
+        errorMessage = 'Too many attempts. Please try again later.';
+      } else if (error.message?.includes('network') || error.code === 'NetworkError') {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (error.message) {
+        // Use the original error message if available
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
+      
+      // Log the user-friendly error message
+      logger.debug('Displaying error to user:', errorMessage);
     }
   };
 

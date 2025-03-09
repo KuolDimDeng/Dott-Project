@@ -26,10 +26,13 @@ import {
   Snackbar,
   Alert,
   Container,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import { useUserMessageContext } from '@/contexts/UserMessageContext';
 import PrintIcon from '@mui/icons-material/Print';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -52,11 +55,11 @@ const ProductForm = () => {
     weight: '',
     weight_unit: 'kg',
   });
-  const { addMessage } = useUserMessageContext();
   const [error, setError] = useState('');
   const [openPrintDialog, setOpenPrintDialog] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -94,9 +97,10 @@ const ProductForm = () => {
     }
 
     try {
-      logger.info('Product data:', product);
-      const response = await axiosInstance.post('/api/products/create/', product);
-      logger.info('Product created successfully', response.data);
+    logger.info('Product data:', product);
+    // Using the new API endpoint from the inventory module
+    const response = await axiosInstance.post('/api/inventory/products/create/', product);
+    logger.info('Product created successfully', response.data);
 
       // Set the success message
       setSnackbarMessage(`Product "${response.data.name}" created successfully`);
@@ -128,7 +132,8 @@ const ProductForm = () => {
         return;
       }
 
-      const response = await axiosInstance.get(`/api/products/${product.id}/print-barcode/`, {
+      // Using the new API endpoint from the inventory module
+      const response = await axiosInstance.get(`/api/inventory/products/${product.id}/print-barcode/`, {
         responseType: 'blob',
       });
 
@@ -139,12 +144,16 @@ const ProductForm = () => {
       link.download = `barcode_${product.product_code}.png`;
       link.click();
 
-      addMessage('success', 'Barcode generated successfully');
+      setSnackbarSeverity('success');
+      setSnackbarMessage('Barcode generated successfully');
+      setOpenSnackbar(true);
       setOpenPrintDialog(false);
       resetForm(); // Reset the form after successful barcode generation
     } catch (error) {
       console.error('Error printing barcode:', error);
-      addMessage('error', 'Error generating barcode');
+      setSnackbarSeverity('error');
+      setSnackbarMessage('Error generating barcode');
+      setOpenSnackbar(true);
     }
   };
 
@@ -252,65 +261,80 @@ const ProductForm = () => {
               />
             </Grid>
           )}
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Height"
-              name="height"
-              type="number"
-              value={product.height}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel>Height Unit</InputLabel>
-              <Select name="height_unit" value={product.height_unit} onChange={handleChange}>
-                <MenuItem value="cm">Centimeter</MenuItem>
-                <MenuItem value="m">Meter</MenuItem>
-                <MenuItem value="in">Inch</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Width"
-              name="width"
-              type="number"
-              value={product.width}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel>Width Unit</InputLabel>
-              <Select name="width_unit" value={product.width_unit} onChange={handleChange}>
-                <MenuItem value="cm">Centimeter</MenuItem>
-                <MenuItem value="m">Meter</MenuItem>
-                <MenuItem value="in">Inch</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Weight"
-              name="weight"
-              type="number"
-              value={product.weight}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel>Weight Unit</InputLabel>
-              <Select name="weight_unit" value={product.weight_unit} onChange={handleChange}>
-                <MenuItem value="kg">Kilogram</MenuItem>
-                <MenuItem value="lb">Pound</MenuItem>
-                <MenuItem value="g">Gram</MenuItem>
-              </Select>
-            </FormControl>
+          <Grid item xs={12}>
+            <Accordion>
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                aria-controls="additional-info-content"
+                id="additional-info-header"
+              >
+                <Typography>Additional Information (Height, Width, Weight)</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Height"
+                      name="height"
+                      type="number"
+                      value={product.height}
+                      onChange={handleChange}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Height Unit</InputLabel>
+                      <Select name="height_unit" value={product.height_unit} onChange={handleChange}>
+                        <MenuItem value="cm">Centimeter</MenuItem>
+                        <MenuItem value="m">Meter</MenuItem>
+                        <MenuItem value="in">Inch</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Width"
+                      name="width"
+                      type="number"
+                      value={product.width}
+                      onChange={handleChange}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Width Unit</InputLabel>
+                      <Select name="width_unit" value={product.width_unit} onChange={handleChange}>
+                        <MenuItem value="cm">Centimeter</MenuItem>
+                        <MenuItem value="m">Meter</MenuItem>
+                        <MenuItem value="in">Inch</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Weight"
+                      name="weight"
+                      type="number"
+                      value={product.weight}
+                      onChange={handleChange}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Weight Unit</InputLabel>
+                      <Select name="weight_unit" value={product.weight_unit} onChange={handleChange}>
+                        <MenuItem value="kg">Kilogram</MenuItem>
+                        <MenuItem value="lb">Pound</MenuItem>
+                        <MenuItem value="g">Gram</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
           </Grid>
           <Grid item xs={12}>
             <Box
@@ -367,7 +391,7 @@ const ProductForm = () => {
       </Dialog>
 
       <Snackbar open={openSnackbar} autoHideDuration={3000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
           {snackbarMessage}
         </Alert>
       </Snackbar>

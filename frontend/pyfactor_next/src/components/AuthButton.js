@@ -4,15 +4,17 @@ import { useSession } from '@/hooks/useSession';
 import { useRouter } from 'next/navigation';
 import { Button } from '@mui/material';
 import { logger } from '@/utils/logger';
+import { useTranslation } from 'react-i18next';
 
 export default function AuthButton({ variant = 'contained', size = 'medium', fullWidth = false }) {
   const { user, loading } = useSession();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const getButtonConfig = () => {
     if (!user || loading) {
       return {
-        text: 'SIGN IN / SIGN UP',
+        text: t('button_get_started_for_free', 'GET STARTED FOR FREE'),
         action: () => router.push('/auth/signin')
       };
     }
@@ -21,7 +23,7 @@ export default function AuthButton({ variant = 'contained', size = 'medium', ful
     
     if (['BUSINESS_INFO', 'SUBSCRIPTION', 'PAYMENT', 'SETUP'].includes(onboardingStatus)) {
       return {
-        text: 'COMPLETE ONBOARDING',
+        text: t('complete_onboarding', 'COMPLETE ONBOARDING'),
         action: () => {
           // Redirect to the appropriate step based on onboarding status
           switch(onboardingStatus) {
@@ -46,14 +48,14 @@ export default function AuthButton({ variant = 'contained', size = 'medium', ful
 
     if (onboardingStatus === 'COMPLETE') {
       return {
-        text: 'YOUR DASHBOARD',
+        text: t('your_dashboard', 'YOUR DASHBOARD'),
         action: () => router.push('/dashboard')
       };
     }
 
     // Default fallback
     return {
-      text: 'SIGN IN / SIGN UP',
+      text: t('button_get_started_for_free', 'GET STARTED FOR FREE'),
       action: () => router.push('/auth/signin')
     };
   };
@@ -67,7 +69,7 @@ export default function AuthButton({ variant = 'contained', size = 'medium', ful
   });
 
   return (
-    <Button 
+    <Button
       variant={variant}
       size={size}
       onClick={action}

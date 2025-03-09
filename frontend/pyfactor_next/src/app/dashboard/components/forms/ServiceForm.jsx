@@ -19,10 +19,11 @@ import {
   useTheme,
   useMediaQuery,
   Link,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import { useUserMessageContext } from '@/contexts/UserMessageContext';
 import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
@@ -41,7 +42,9 @@ const ServiceForm = () => {
     charge_amount: '',
   });
   const [errors, setErrors] = useState({});
-  const { addMessage } = useUserMessageContext();
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
   const handleChange = (event) => {
     const { name, value, checked, type } = event.target;
@@ -69,9 +72,12 @@ const ServiceForm = () => {
     }
 
     try {
-      const response = await axiosInstance.post('/api/services/create/', service);
+      // Using the new API endpoint from the inventory module
+      const response = await axiosInstance.post('/api/inventory/services/create/', service);
       console.log('Service created successfully', response.data);
-      addMessage('success', 'Service created successfully');
+      setSnackbarSeverity('success');
+      setSnackbarMessage('Service created successfully');
+      setOpenSnackbar(true);
       setService({
         name: '',
         description: '',
@@ -85,11 +91,17 @@ const ServiceForm = () => {
       });
     } catch (error) {
       logger.error('Error creating service', error);
-      addMessage(
-        'error',
-        'Error creating service: ' + (error.response?.data?.message || error.message)
-      );
+      setSnackbarSeverity('error');
+      setSnackbarMessage('Error creating service: ' + (error.response?.data?.message || error.message));
+      setOpenSnackbar(true);
     }
+  };
+
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setOpenSnackbar(false);
   };
 
   return (
@@ -239,6 +251,12 @@ const ServiceForm = () => {
           </Typography>
         </Box>
       )}
+
+      <Snackbar open={openSnackbar} autoHideDuration={3000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

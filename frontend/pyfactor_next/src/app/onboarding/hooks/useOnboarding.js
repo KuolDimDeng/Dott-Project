@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession';
 import { logger } from '@/utils/logger';
 import { useCallback, useEffect, useState } from 'react';
-import { updateUserAttributes } from '@/lib/authUtils';
+import { updateUserAttributes } from 'aws-amplify/auth';
 import { ONBOARDING_STATES } from '../state/OnboardingStateManager';
 
 export function useOnboarding() {
@@ -16,21 +16,26 @@ export function useOnboarding() {
   const getCurrentStep = useCallback(() => {
     if (!user) return ONBOARDING_STATES.NOT_STARTED;
     // Check onboardingStatus first (from backend) then fallback to custom:onboarding (from Cognito)
-    return user.onboardingStatus || user['custom:onboarding'] || ONBOARDING_STATES.NOT_STARTED;
+    // Ensure we return the step in uppercase to match ONBOARDING_STATES constants
+    const step = user.onboardingStatus || user['custom:onboarding'] || ONBOARDING_STATES.NOT_STARTED;
+    return typeof step === 'string' ? step.toUpperCase() : step;
   }, [user]);
   
   const getNextStep = useCallback((currentStep) => {
+    // Normalize currentStep to uppercase for consistent comparison
+    const normalizedStep = typeof currentStep === 'string' ? currentStep.toUpperCase() : currentStep;
+    
     const stepMap = {
       [ONBOARDING_STATES.NOT_STARTED]: ONBOARDING_STATES.BUSINESS_INFO,
       [ONBOARDING_STATES.BUSINESS_INFO]: ONBOARDING_STATES.SUBSCRIPTION,
-      [ONBOARDING_STATES.SUBSCRIPTION]: (plan) => 
+      [ONBOARDING_STATES.SUBSCRIPTION]: (plan) =>
         plan === 'free' ? ONBOARDING_STATES.SETUP : ONBOARDING_STATES.PAYMENT,
       [ONBOARDING_STATES.PAYMENT]: ONBOARDING_STATES.SETUP,
       [ONBOARDING_STATES.SETUP]: ONBOARDING_STATES.COMPLETE,
       [ONBOARDING_STATES.COMPLETE]: 'dashboard'
     };
     
-    const nextStep = stepMap[currentStep];
+    const nextStep = stepMap[normalizedStep];
     return typeof nextStep === 'function'
       ? nextStep(user?.['custom:subplan'])
       : nextStep;
@@ -43,16 +48,16 @@ export function useOnboarding() {
 
     setIsUpdating(true);
     try {
-      // Update Cognito attributes
+      // Update Cognito attributes using Amplify v6 format
       await updateUserAttributes({
-        'custom:onboarding': newStatus,
-        'custom:lastUpdated': Date.now().toString()
+        userAttributes: {
+          'custom:onboarding': newStatus
+          // Removed 'custom:lastUpdated' as it doesn't exist in the schema
+        }
       });
 
-      // Update local auth state
-      updateAttributes({
-        'custom:onboarding': newStatus
-      });
+      // No need to update local auth state - it will be updated on next auth refresh
+      // Removed updateAttributes call as it doesn't exist
 
       logger.debug('Onboarding status updated:', {
         newStatus,
@@ -65,7 +70,7 @@ export function useOnboarding() {
     } finally {
       setIsUpdating(false);
     }
-  }, [user, updateAttributes]);
+  }, [user]);
 
   const navigateToStep = useCallback((step) => {
     router.push(`/onboarding/${step.toLowerCase()}`);

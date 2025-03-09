@@ -204,7 +204,43 @@ const OnboardingContent = memo(function OnboardingContent() {
     });
   }
 
-  return null;
+  // Instead of returning null, redirect to the appropriate step
+  const currentStepLower = current_step?.toLowerCase().replace('_', '-');
+  
+  // If we're on the main onboarding page, redirect to the appropriate step
+  useEffect(() => {
+    if (currentStepLower && router) {
+      // Check if we're already on the correct page to avoid redirect loops
+      const currentPath = window.location.pathname;
+      const targetPath = `/onboarding/${currentStepLower}`;
+      
+      // Only redirect if we're actually on the /onboarding page and not already on the target page
+      if (currentPath === '/onboarding' && currentPath !== targetPath) {
+        logger.info(`[Onboarding] Redirecting from ${currentPath} to step: ${targetPath}`);
+        router.push(targetPath);
+      } else {
+        logger.debug(`[Onboarding] No redirect needed: current=${currentPath}, target=${targetPath}`);
+      }
+    }
+  }, [currentStepLower, router]);
+  
+  // Show loading while redirecting
+  return (
+    <Box
+      display="flex"
+      flexDirection="column"
+      justifyContent="center"
+      alignItems="center"
+      minHeight="100vh"
+      p={3}
+      gap={2}
+    >
+      <Typography variant="h6" align="center" gutterBottom>
+        Redirecting to {currentStepLower || 'your next step'}...
+      </Typography>
+      <CircularProgress />
+    </Box>
+  );
 });
 
 // Main page component with error boundary

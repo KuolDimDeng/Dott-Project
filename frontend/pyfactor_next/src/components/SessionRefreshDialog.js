@@ -39,7 +39,13 @@ export function SessionRefreshDialog({ open, onClose, onComplete }) {
   const handleSignIn = async () => {
     try {
       setIsLoading(true);
-      await auth.signIn({ username: email, password });
+      await auth.signIn({
+        username: email,
+        password,
+        options: {
+          authFlowType: 'USER_SRP_AUTH'
+        }
+      });
       toast.success('Session refreshed successfully');
       if (onComplete) {
         await onComplete();

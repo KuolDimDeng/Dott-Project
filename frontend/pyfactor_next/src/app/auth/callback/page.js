@@ -27,13 +27,70 @@ export default function Callback() {
           
           logger.debug('Onboarding status:', onboardingStatus);
           
-          if (onboardingStatus === 'complete') {
-            logger.debug('Onboarding complete, redirecting to dashboard');
-            router.push('/dashboard');
-          } else {
-            const redirectPath = `/onboarding/${onboardingStatus || 'business-info'}`;
-            logger.debug('Incomplete onboarding, redirecting to:', redirectPath);
-            router.push(redirectPath);
+          // First check if user has completed onboarding in the backend
+          try {
+            // Get user ID from Cognito
+            const userId = user.userId || user.attributes?.sub;
+            
+            // Make API call to check onboarding status in the backend
+            const response = await fetch('/api/onboarding/status', {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${tokens.accessToken.toString()}`,
+                'X-Id-Token': tokens.idToken.toString()
+              }
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              logger.debug('Backend onboarding status:', data);
+              
+              // If backend indicates onboarding is complete, set setupCompleted cookie and redirect to dashboard
+              if (data.setup_completed || data.status === 'COMPLETE') {
+                logger.debug('Backend confirms onboarding complete, setting setupCompleted cookie');
+                
+                // Set setupCompleted cookie via API
+                await fetch('/api/auth/set-cookies', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    idToken: tokens.idToken.toString(),
+                    accessToken: tokens.accessToken.toString(),
+                    setupCompleted: true,
+                    onboardingStep: 'complete',
+                    onboardedStatus: 'COMPLETE'
+                  })
+                });
+                
+                logger.debug('SetupCompleted cookie set, redirecting to dashboard');
+                router.push('/dashboard');
+                return;
+              }
+            }
+            
+            // Fall back to Cognito attribute if backend check fails
+            if (onboardingStatus === 'complete' || onboardingStatus === 'COMPLETE') {
+              logger.debug('Cognito attribute indicates onboarding complete, redirecting to dashboard');
+              router.push('/dashboard');
+            } else {
+              const redirectPath = `/onboarding/${onboardingStatus || 'business-info'}`;
+              logger.debug('Incomplete onboarding, redirecting to:', redirectPath);
+              router.push(redirectPath);
+            }
+          } catch (error) {
+            logger.error('Error checking backend onboarding status:', error);
+            
+            // Fall back to Cognito attribute if backend check fails
+            if (onboardingStatus === 'complete' || onboardingStatus === 'COMPLETE') {
+              logger.debug('Cognito attribute indicates onboarding complete, redirecting to dashboard');
+              router.push('/dashboard');
+            } else {
+              const redirectPath = `/onboarding/${onboardingStatus || 'business-info'}`;
+              logger.debug('Incomplete onboarding, redirecting to:', redirectPath);
+              router.push(redirectPath);
+            }
           }
         } else {
           throw new Error('No tokens received from OAuth callback');

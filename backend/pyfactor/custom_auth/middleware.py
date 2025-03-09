@@ -1,5 +1,6 @@
 import logging
 import uuid
+import time
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.urls import resolve
@@ -391,8 +392,10 @@ class TenantMiddleware:
                 
                 # For onboarding endpoints, always use public schema
                 if request.path.startswith('/api/onboarding/'):
-                    with connection.cursor() as cursor:
-                        cursor.execute('SET search_path TO public')
+                    from pyfactor.db_routers import TenantSchemaRouter
+                    # Use optimized connection for public schema
+                    TenantSchemaRouter.get_connection_for_schema('public')
+                    logger.debug("Set schema to public for onboarding endpoint")
                     return self.get_response(request)
                 
                 # Fallback to user's tenant if header-based lookup failed
@@ -420,15 +423,27 @@ class TenantMiddleware:
                         
                         # Use schema context for this request
                         try:
-                            with connection.cursor() as cursor:
-                                with tenant_schema_context(cursor, tenant.schema_name):
-                                    response = self.get_response(request)
-                                    return response
+                            # Use optimized connection handling
+                            from pyfactor.db_routers import TenantSchemaRouter
+                            start_time = time.time()
+                            
+                            # Get optimized connection for tenant schema
+                            TenantSchemaRouter.get_connection_for_schema(tenant.schema_name)
+                            logger.debug(f"Set schema to {tenant.schema_name} in {time.time() - start_time:.4f}s")
+                            
+                            # Process the request with tenant schema
+                            response = self.get_response(request)
+                            
+                            # Reset to public schema after request
+                            TenantSchemaRouter.get_connection_for_schema('public')
+                            logger.debug(f"Request with tenant schema completed in {time.time() - start_time:.4f}s")
+                            
+                            return response
                         except Exception as e:
                             logger.error(f"Error using schema context: {str(e)}")
                             # Fall back to default schema
-                            with connection.cursor() as cursor:
-                                cursor.execute('SET search_path TO public')
+                            from pyfactor.db_routers import TenantSchemaRouter
+                            TenantSchemaRouter.get_connection_for_schema('public')
                             return self.get_response(request)
                     else:
                         logger.warning(

@@ -8,7 +8,7 @@ import { generateRequestId } from '@/lib/authUtils';
 import useOnboardingStore from '@/app/onboarding/store/onboardingStore';
 
 const validationSchema = z.object({
-    selected_plan: z.enum(['free', 'professional'], {
+    selected_plan: z.enum(['free', 'professional', 'enterprise'], {
         required_error: 'Please select a plan',
         invalid_type_error: 'Invalid plan selected',
     }),
@@ -17,12 +17,12 @@ const validationSchema = z.object({
         invalid_type_error: 'Invalid billing cycle selected',
     }),
 }).refine(data => {
-    if (data.selected_plan === 'professional' && !data.billing_cycle) {
+    if ((data.selected_plan === 'professional' || data.selected_plan === 'enterprise') && !data.billing_cycle) {
         return false;
     }
     return true;
 }, {
-    message: 'Billing cycle is required for professional plan',
+    message: 'Billing cycle is required for paid plans',
     path: ['billing_cycle'],
 });
 

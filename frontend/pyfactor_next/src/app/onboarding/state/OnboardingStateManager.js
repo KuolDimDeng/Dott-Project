@@ -173,11 +173,11 @@ export class OnboardingStateManager extends FormStateManager {
     try {
       // Validate step completion against tier requirements
       if (
-        currentTier === 'professional' &&
+        (currentTier === 'professional' || currentTier === 'enterprise') &&
         step === ONBOARDING_STATES.PAYMENT &&
         !data.paymentMethod
       ) {
-        throw new Error('Payment required for professional tier');
+        throw new Error(`Payment required for ${currentTier} tier`);
       }
 
       // Update step completion state

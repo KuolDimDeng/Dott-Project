@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, Suspense } from 'react';
+import { memo } from 'react';
 import { Box, CircularProgress, Typography, Button } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PropTypes from 'prop-types';
@@ -69,19 +69,15 @@ ErrorState.propTypes = {
 // Landing content component
 const LandingContent = memo(function LandingContent() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <>
       <AppBar />
       <Hero />
-      <Suspense fallback={<LoadingSpinner />}>
-        <>
-          <Features />
-          <Highlights />
-          <Pricing />
-          <FAQ />
-          <Footer />
-        </>
-      </Suspense>
-    </Suspense>
+      <Features />
+      <Highlights />
+      <Pricing />
+      <FAQ />
+      <Footer />
+    </>
   );
 });
 

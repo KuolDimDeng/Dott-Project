@@ -26,11 +26,23 @@ const DashboardSetupStatus = () => {
 
     useEffect(() => {
         let mounted = true;
-        const pollInterval = setInterval(async () => {
+        let retryCount = 0;
+        let timeoutId = null;
+        
+        // Exponential backoff for polling
+        const getPollingDelay = (retry) => {
+            // Start with 5 seconds, then increase exponentially (5s, 10s, 20s, etc.)
+            return Math.min(5000 * Math.pow(2, retry), 60000); // Max 60 seconds
+        };
+        
+        const pollStatus = async () => {
             try {
                 const response = await axiosInstance.get('/api/onboarding/setup/status/');
                 if (!mounted) return;
 
+                // Reset retry count on success
+                retryCount = 0;
+                
                 const { database_status, progress, stage, message } = response.data;
 
                 const newStage = database_status === 'ready' || database_status === 'active'
@@ -50,7 +62,7 @@ const DashboardSetupStatus = () => {
                 }));
 
                 if (newStage === 'ready' || newStage === 'failed') {
-                    clearInterval(pollInterval);
+                    return; // Stop polling
                 }
 
                 logger.debug('Setup status updated:', {
@@ -59,14 +71,34 @@ const DashboardSetupStatus = () => {
                     stage,
                     message
                 });
+                
+                // Schedule next poll with current delay
+                timeoutId = setTimeout(pollStatus, getPollingDelay(retryCount));
+                
             } catch (error) {
                 logger.error('Setup status check failed:', error);
+                
+                // Increase retry count for backoff
+                retryCount++;
+                
+                // If we get a 429 (Too Many Requests), increase the backoff more aggressively
+                if (error.response?.status === 429) {
+                    retryCount = Math.min(retryCount + 2, 10); // Add extra backoff but cap it
+                }
+                
+                // Schedule next poll with increased delay
+                timeoutId = setTimeout(pollStatus, getPollingDelay(retryCount));
             }
-        }, 3000);
+        };
+
+        // Start polling
+        pollStatus();
 
         return () => {
             mounted = false;
-            clearInterval(pollInterval);
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
         };
     }, []);
 

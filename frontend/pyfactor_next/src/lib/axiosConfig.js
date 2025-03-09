@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
+import { getTenantId, getSchemaName, getTenantFromResponse } from '@/utils/tenantUtils';
 
 // Queue for requests during token refresh
 let isRefreshing = false;
@@ -17,8 +18,9 @@ const processQueue = (error, tokens = null) => {
   failedQueue = [];
 };
 
-// Ensure we're using the correct backend URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+// For frontend requests, we'll use relative URLs to avoid CORS issues
+// This will route requests through Next.js API routes
+const API_URL = '';  // Remove '/api' to avoid duplicate in the path
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
@@ -54,11 +56,25 @@ axiosInstance.interceptors.request.use(
       config.headers['X-Id-Token'] = idToken;
       config.headers['X-User-ID'] = userSub;
       
+      // Add tenant headers
+      const tenantId = getTenantId();
+      if (tenantId) {
+        config.headers['X-Tenant-ID'] = tenantId;
+        
+        // Add schema name if needed
+        const schemaName = getSchemaName();
+        if (schemaName) {
+          config.headers['X-Schema-Name'] = schemaName;
+        }
+      }
+      
       logger.debug('[AxiosConfig] Request configured:', {
         url: config.url,
         method: config.method,
         hasToken: true,
-        baseURL: config.baseURL
+        baseURL: config.baseURL,
+        tenantId: config.headers['X-Tenant-ID'] || 'none',
+        schemaName: config.headers['X-Schema-Name'] || 'none'
       });
 
       return config;
@@ -81,6 +97,13 @@ axiosInstance.interceptors.response.use(
       status: response.status,
       headers: response.headers
     });
+    
+    // Check for tenant information in the response
+    const tenantId = getTenantFromResponse(response);
+    if (tenantId) {
+      logger.debug(`[AxiosConfig] Extracted tenant ID from response: ${tenantId}`);
+    }
+    
     return response;
   },
   async (error) => {

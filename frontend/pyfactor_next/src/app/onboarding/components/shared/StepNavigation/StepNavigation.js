@@ -7,7 +7,7 @@ import PropTypes from 'prop-types';
 import { Button, CircularProgress, Box } from '@mui/material';
 import { NavigationContainer } from './StepNavigation.styles';
 import { logger } from '@/utils/logger';
-import { updateUserAttributes } from '@/config/amplify';
+import { updateUserAttributes } from '@/config/amplifyUnified';
 
 const StepNavigation = memo(({ onNext, onBack, nextLabel = 'Next', backLabel = 'Back', loading = false }) => {
   const router = useRouter();

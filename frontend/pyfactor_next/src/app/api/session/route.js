@@ -1,12 +1,9 @@
 import { NextResponse } from 'next/server';
 import { jwtDecode } from 'jwt-decode';
-import { getCurrentUser } from 'aws-amplify/auth';
-import { Amplify } from 'aws-amplify';
 import { logger } from '@/utils/logger';
-import { getAmplifyConfig } from '@/config/amplify';
+import { getCurrentUser, fetchAuthSession, validateToken } from '@/config/amplifyServer';
 
-// Configure Amplify for server-side operations
-Amplify.configure(getAmplifyConfig());
+// No need to configure Amplify here as it's already configured in amplifyUnified.js
 
 /**
  * Handle session token storage
@@ -21,17 +18,14 @@ export async function POST(request) {
       return new Response('No token provided', { status: 400 });
     }
 
-    // Verify token format and expiration
-    try {
-      const decoded = jwtDecode(token);
-      const now = Date.now() / 1000;
-      if (!decoded.exp || decoded.exp < now) {
-        return new Response('Token expired', { status: 401 });
-      }
-    } catch (error) {
-      logger.error('[Session] Token validation failed:', error);
-      return new Response('Invalid token', { status: 401 });
+    // Validate token
+    const validation = validateToken(token);
+    if (!validation.valid) {
+      logger.error('[Session] Token validation failed:', validation.reason);
+      return new Response(validation.reason, { status: 401 });
     }
+    
+    const decoded = validation.decoded;
 
     // Set session cookies with secure options
     const response = NextResponse.json({ success: true });
@@ -69,14 +63,72 @@ export async function GET(request) {
       return new Response('No valid session', { status: 401 });
     }
 
-    // Get current user
-    const currentUser = await getCurrentUser();
-    if (!currentUser) {
-      return new Response('User not found', { status: 401 });
+    // Validate token, but be more lenient in development
+    const validation = validateToken(idToken);
+    if (!validation.valid && process.env.NODE_ENV === 'production') {
+      return new Response(validation.reason, { status: 401 });
+    }
+    
+    // If we're in development and the token is invalid, log a warning but continue
+    if (!validation.valid && process.env.NODE_ENV !== 'production') {
+      logger.warn('[Session] Token validation failed in development mode, continuing anyway:', validation.reason);
+      // Try to decode the token anyway
+      try {
+        var decoded = jwtDecode(idToken);
+      } catch (decodeError) {
+        logger.error('[Session] Failed to decode token even in lenient mode:', decodeError);
+        return new Response('Invalid token format', { status: 401 });
+      }
+    } else {
+      var decoded = validation.decoded;
+    }
+    
+    // Try to get current user from token
+    let user;
+    try {
+      // Get current authenticated user from token
+      const currentUser = await getCurrentUser(idToken);
+      // Get session info
+      const session = await fetchAuthSession(idToken);
+      
+      user = {
+        username: currentUser.username,
+        userId: currentUser.userId,
+        email: decoded.email,
+        attributes: {
+          email: decoded.email,
+          email_verified: decoded.email_verified,
+          // Extract any custom attributes
+          ...Object.keys(decoded)
+            .filter(key => key.startsWith('custom:'))
+            .reduce((obj, key) => {
+              obj[key] = decoded[key];
+              return obj;
+            }, {})
+        }
+      };
+    } catch (userError) {
+      logger.error('[Session] Failed to get current user:', userError);
+      // Fallback to token data if getCurrentUser fails
+      user = {
+        username: decoded['cognito:username'] || decoded.sub,
+        email: decoded.email,
+        attributes: {
+          email: decoded.email,
+          email_verified: decoded.email_verified,
+          // Extract any custom attributes
+          ...Object.keys(decoded)
+            .filter(key => key.startsWith('custom:'))
+            .reduce((obj, key) => {
+              obj[key] = decoded[key];
+              return obj;
+            }, {})
+        }
+      };
     }
 
     // Set refreshed session cookies
-    const response = NextResponse.json({ success: true, user: currentUser });
+    const response = NextResponse.json({ success: true, user });
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

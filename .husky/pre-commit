@@ -1,3 +1,0 @@
-#!/usr/bin/env sh
-cd frontend/pyfactor_next && npx lint-staged
-

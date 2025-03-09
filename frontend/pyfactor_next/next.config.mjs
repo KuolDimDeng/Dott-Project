@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
+import i18nConfig from './next-i18next.config.mjs';
 
 const nextConfig = {
+  // i18n is handled by middleware.js and i18n.js for App Router
   experimental: {
     serverActions: {
       allowedOrigins: ['localhost:3000', 'localhost:3001'],
@@ -26,6 +28,10 @@ const nextConfig = {
       tls: false,
       crypto: false,
     };
+    
+    // Exclude canvas from being processed by webpack
+    config.externals = [...(config.externals || []), { canvas: 'commonjs canvas' }];
+    
     return config;
   },
   // Add cross-origin isolation headers
@@ -70,7 +76,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*'
+        destination: 'http://127.0.0.1:8000/api/:path*'
       }
     ];
   }

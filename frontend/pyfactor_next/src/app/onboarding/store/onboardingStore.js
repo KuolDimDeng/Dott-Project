@@ -65,8 +65,10 @@ const useOnboardingStore = create((set, get) => ({
         userAttributes: {
           'custom:businessname': info.businessName,
           'custom:businesstype': info.businessType,
+          'custom:businesssubtypes': info.businessSubtypes || '',
           'custom:businessid': info.businessId,
           'custom:businesscountry': info.country,
+          'custom:businessstate': info.businessState,
           'custom:legalstructure': info.legalStructure,
           'custom:datefounded': info.dateFounded,
           'custom:onboarding': ONBOARDING_STATES.SUBSCRIPTION,
@@ -225,8 +227,10 @@ const useOnboardingStore = create((set, get) => ({
         businessInfo: attributes['custom:businessname'] ? {
           businessName: attributes['custom:businessname'],
           businessType: attributes['custom:businesstype'],
+          businessSubtypes: attributes['custom:businesssubtypes'] || '',
           businessId: attributes['custom:businessid'],
           country: attributes['custom:businesscountry'],
+          businessState: attributes['custom:businessstate'] || '',
           legalStructure: attributes['custom:legalstructure'],
           dateFounded: attributes['custom:datefounded']
         } : null,

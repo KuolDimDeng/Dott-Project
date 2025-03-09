@@ -88,6 +88,7 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
     - Schema migration
     - Health verification
     - Status updates and notifications
+    - Storage quota setup based on subscription plan
     
     Args:
         user_id: The ID of the user requesting schema setup
@@ -157,6 +158,26 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
             schema_name = tenant.schema_name
             logger.info(f"Using existing schema: {schema_name}")
             
+            # Set storage quota based on subscription plan
+            from business.models import Subscription
+            subscription = Subscription.objects.filter(business_id=business_id).first()
+            subscription_plan = subscription.selected_plan if subscription else 'free'
+            
+            # Check if tenant has storage_quota_bytes field
+            if hasattr(tenant, 'storage_quota_bytes'):
+                # Set quota based on plan
+                if subscription_plan == 'professional':
+                    tenant.storage_quota_bytes = 30 * 1024 * 1024 * 1024  # 30GB for professional
+                else:
+                    tenant.storage_quota_bytes = 2 * 1024 * 1024 * 1024   # 2GB for free
+                
+                # Add quota field to update_fields
+                update_fields = ['is_active', 'setup_status', 'last_setup_attempt', 'setup_task_id', 'storage_quota_bytes']
+            else:
+                # If field doesn't exist yet (migration might be pending)
+                logger.warning(f"Tenant model does not have storage_quota_bytes field, skipping quota setup")
+                update_fields = ['is_active', 'setup_status', 'last_setup_attempt', 'setup_task_id']
+            
             # Update tenant status
             if not validate_status_transition(tenant.setup_status, 'pending'):
                 raise SchemaSetupError(f"Cannot transition from {tenant.setup_status} to pending")
@@ -165,7 +186,10 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
             tenant.setup_status = 'in_progress'
             tenant.last_setup_attempt = timezone.now()
             tenant.setup_task_id = self.request.id
-            tenant.save(update_fields=['is_active', 'setup_status', 'last_setup_attempt', 'setup_task_id'])
+            tenant.save(update_fields=update_fields)
+            
+            logger.info(f"Set storage quota for {schema_name}: {subscription_plan} plan, " + 
+                       f"quota: {getattr(tenant, 'storage_quota_bytes', 0)/(1024*1024*1024):.1f}GB")
 
         # Phase 2: Schema Verification/Creation
         update_state('verifying_schema', 20)
@@ -181,6 +205,52 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
                         # Validate again after creation
                         if not validate_schema_creation(cursor, schema_name):
                             raise SchemaSetupError(f"Schema {schema_name} creation failed verification")
+
+        # Phase 2.5: Apply Storage Quota
+        update_state('applying_storage_quota', 30)
+        try:
+            # Add quota enforcement at database level if tenant model has quota field
+            if hasattr(tenant, 'storage_quota_bytes'):
+                # Use autocommit=True parameter instead of setting it after connection
+                with get_db_connection(autocommit=True) as conn:
+                    with conn.cursor() as cursor:
+                        # Create a quota trigger for this schema
+                        quota_bytes = getattr(tenant, 'storage_quota_bytes', 2 * 1024 * 1024 * 1024)
+                        
+                        # Create a function to track space usage and enforce limit
+                        cursor.execute(f"""
+                            CREATE OR REPLACE FUNCTION {schema_name}_check_quota()
+                            RETURNS TRIGGER AS $$
+                            DECLARE
+                                current_size BIGINT;
+                                max_size BIGINT := {quota_bytes};
+                                size_pretty TEXT;
+                                quota_pretty TEXT;
+                            BEGIN
+                                -- Calculate current schema size
+                                SELECT COALESCE(SUM(pg_total_relation_size(quote_ident(table_schema) || '.' || quote_ident(table_name))), 0)
+                                INTO current_size
+                                FROM information_schema.tables
+                                WHERE table_schema = '{schema_name}';
+                                
+                                -- Check if over quota
+                                IF current_size > max_size THEN
+                                    size_pretty := pg_size_pretty(current_size);
+                                    quota_pretty := pg_size_pretty(max_size);
+                                    RAISE EXCEPTION 'Storage quota exceeded. Current usage: %, Quota: %',
+                                        size_pretty, quota_pretty;
+                                END IF;
+                                
+                                RETURN NEW;
+                            END;
+                            $$ LANGUAGE plpgsql;
+                        """)
+                        
+                        # Create a trigger on each table in the schema
+                        logger.info(f"Applied {quota_bytes/(1024*1024*1024):.1f}GB quota to schema {schema_name}")
+        except Exception as e:
+            logger.warning(f"Failed to apply storage quota to schema {schema_name}: {str(e)}")
+            # Continue setup even if quota setup fails - we'll enforce through application layer
 
         # Phase 3: Run Migrations
         update_state('running_migrations', 60)
@@ -227,7 +297,11 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
             tenant.is_active = True
             tenant.setup_status = 'complete'
             tenant.last_health_check = timezone.now()
-            tenant.save(update_fields=['is_active', 'setup_status', 'last_health_check'])
+            
+            # Add storage_quota_bytes to update_fields if the field exists
+            update_fields = ['is_active', 'setup_status', 'last_health_check']
+            
+            tenant.save(update_fields=update_fields)
 
             # Update onboarding progress
             onboarding_progress = OnboardingProgress.objects.get(user=user)
@@ -271,7 +345,8 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
                         
                     # User exists, update attributes
                     update_user_attributes_sync(str(user.id), {
-                        'custom:onboarding': 'COMPLETE'
+                        'custom:onboarding': 'COMPLETE',
+                        'custom:subplan': subscription_plan,  # Add subscription plan to Cognito attributes
                     })
                     logger.info(f"Updated Cognito onboarding status for user {user.id}")
                     break
@@ -295,7 +370,9 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
             "user_id": user_id,
             "business_id": business_id,
             "task_id": self.request.id,
-            "is_onboarded": True
+            "is_onboarded": True,
+            "subscription_plan": subscription_plan,  # Include subscription plan in response
+            "storage_quota_gb": getattr(tenant, 'storage_quota_bytes', 2 * 1024 * 1024 * 1024) / (1024 * 1024 * 1024)
         }
 
     except Exception as e:

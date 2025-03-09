@@ -2,11 +2,24 @@ import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 
-export async function validateServerSession() {
+export async function validateServerSession(providedTokens) {
   try {
+    let accessToken, idToken;
+    
+    // Always initialize cookieStore to avoid reference errors
     const cookieStore = cookies();
-    const accessToken = cookieStore.get('accessToken')?.value;
-    const idToken = cookieStore.get('idToken')?.value;
+    
+    if (providedTokens?.accessToken && providedTokens?.idToken) {
+      // Use provided tokens if available
+      accessToken = providedTokens.accessToken;
+      idToken = providedTokens.idToken;
+      logger.debug('[ServerUtils] Using provided tokens');
+    } else {
+      // Fall back to cookies if no tokens provided
+      accessToken = cookieStore.get('accessToken')?.value;
+      idToken = cookieStore.get('idToken')?.value;
+      logger.debug('[ServerUtils] Using tokens from cookies');
+    }
 
     if (!accessToken || !idToken) {
       throw new Error('No valid session tokens');
@@ -22,14 +35,47 @@ export async function validateServerSession() {
     // Verify access token
     const payload = await verifier.verify(accessToken);
 
-    // Create user object from token payload
+    // Get onboarding status and business ID from cookies if not in token
+    const onboardingStep = cookieStore.get('onboardingStep')?.value;
+    const onboardedStatus = cookieStore.get('onboardedStatus')?.value;
+    const tenantId = cookieStore.get('tenantId')?.value;
+    
+    // Extract all custom attributes from the token payload
+    const customAttributes = {};
+    Object.keys(payload).forEach(key => {
+      if (key.startsWith('custom:')) {
+        customAttributes[key] = payload[key];
+      }
+    });
+    
+    // Create user object from token payload and cookies
     const user = {
       userId: payload.sub,
       username: payload.username,
       attributes: {
-        'custom:onboarding': payload['custom:onboarding'] || 'NOT_STARTED'
+        ...customAttributes,
+        sub: payload.sub,
+        email: payload.email,
+        'custom:onboarding': payload['custom:onboarding'] || onboardedStatus || 'NOT_STARTED',
+        'custom:businessid': payload['custom:businessid'] || tenantId
       }
     };
+    
+    // Log the user attributes for debugging
+    logger.debug('[ServerUtils] User attributes:', {
+      fromToken: {
+        onboarding: payload['custom:onboarding'],
+        businessId: payload['custom:businessid']
+      },
+      fromCookies: {
+        onboardedStatus,
+        tenantId
+      },
+      final: {
+        onboarding: user.attributes['custom:onboarding'],
+        businessId: user.attributes['custom:businessid']
+      }
+    });
 
     const tokens = {
       accessToken: { toString: () => accessToken },

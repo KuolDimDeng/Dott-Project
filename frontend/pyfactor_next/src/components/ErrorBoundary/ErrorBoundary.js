@@ -7,10 +7,12 @@ export class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false };
+    // Bind the resetError method to the component instance
+    this.resetError = this.resetError.bind(this);
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
@@ -26,13 +28,18 @@ export class ErrorBoundary extends Component {
     }
   }
 
+  // Method to reset the error state
+  resetError() {
+    this.setState({ hasError: false, error: null });
+  }
+
   render() {
     if (this.state.hasError) {
       // Use custom fallback if provided
       if (this.props.fallback) {
         return this.props.fallback({
           error: this.state.error || new Error("An unexpected error occurred"),
-          resetError: () => this.setState({ hasError: false, error: null })
+          resetError: this.resetError
         });
       }
       
@@ -45,6 +52,7 @@ export class ErrorBoundary extends Component {
       );
     }
 
+    // Simply return children without SafeWrapper to avoid Context.Consumer issues
     return this.props.children;
   }
 }

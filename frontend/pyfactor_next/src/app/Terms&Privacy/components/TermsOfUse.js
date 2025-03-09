@@ -1,3 +1,4 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/Terms&Privacy/components/TermsOfUse.jsx
 import React from 'react';
 import { Typography, Box, Container, Paper, Divider, useTheme, useMediaQuery } from '@mui/material';
 

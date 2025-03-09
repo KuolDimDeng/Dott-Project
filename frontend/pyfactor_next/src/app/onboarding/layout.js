@@ -5,6 +5,8 @@ import { Box, Container, CircularProgress } from '@mui/material';
 import { useSession } from '@/hooks/useSession';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
+import { appendLanguageParam } from '@/utils/languageUtils';
+import { ToastProvider } from '@/components/Toast/ToastProvider';
 
 export default function OnboardingLayout({ children }) {
   const router = useRouter();
@@ -25,7 +27,7 @@ export default function OnboardingLayout({ children }) {
           // If onboarding is complete, redirect to dashboard
           if (onboardingStatus === 'complete') {
             logger.debug('Onboarding complete, redirecting to dashboard');
-            router.push('/dashboard');
+            router.push(appendLanguageParam('/dashboard'));
             return;
           }
 
@@ -58,17 +60,19 @@ export default function OnboardingLayout({ children }) {
   }
 
   return (
-    <Container
-      maxWidth={false}
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        bgcolor: 'background.default',
-        py: 3,
-      }}
-    >
-      {children}
-    </Container>
+    <ToastProvider>
+      <Container
+        maxWidth={false}
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          bgcolor: 'background.default',
+          py: 3,
+        }}
+      >
+        {children}
+      </Container>
+    </ToastProvider>
   );
 }

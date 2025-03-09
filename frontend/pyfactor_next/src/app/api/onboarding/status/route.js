@@ -107,10 +107,33 @@ export async function GET(request) {
       completedAt,
     });
 
+    // Check if user has completed onboarding
+    const setupDone = userData.UserAttributes.find(
+      (attr) => attr.Name === 'custom:setupdone'
+    )?.Value === 'TRUE';
+    
+    const businessId = userData.UserAttributes.find(
+      (attr) => attr.Name === 'custom:businessid'
+    )?.Value;
+    
+    // Consider onboarding complete if:
+    // 1. Status is COMPLETE
+    // 2. completedAt is set
+    // 3. setupDone is TRUE
+    // 4. businessId exists (indicating business info was completed)
+    const setup_completed =
+      onboardingStatus === 'COMPLETE' ||
+      completedAt !== null ||
+      setupDone ||
+      (businessId && onboardingStatus !== 'NOT_STARTED');
+    
     return NextResponse.json({
       status: onboardingStatus,
       lastStep,
       completedAt,
+      setup_completed,
+      businessId,
+      setupDone
     });
   } catch (error) {
     logger.error('Error fetching onboarding status:', error);

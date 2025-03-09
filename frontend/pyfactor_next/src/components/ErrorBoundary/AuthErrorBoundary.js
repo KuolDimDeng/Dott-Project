@@ -3,7 +3,7 @@
 import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import { logger } from '@/utils/logger';
-import { signOut } from 'aws-amplify/auth';
+import { signOut } from '@/config/amplifyUnified';
 import { useRouter } from 'next/navigation';
 
 class AuthErrorBoundary extends React.Component {
@@ -38,8 +38,12 @@ class AuthErrorBoundary extends React.Component {
   handleSignOut = async () => {
     try {
       logger.debug('[AuthErrorBoundary] Attempting to sign out after error');
-      await signOut({ global: true });
-      logger.debug('[AuthErrorBoundary] Sign out successful');
+      const signOutResult = await signOut();
+      if (signOutResult.success) {
+        logger.debug('[AuthErrorBoundary] Sign out successful');
+      } else {
+        logger.debug('[AuthErrorBoundary] Sign out failed:', signOutResult.error);
+      }
       window.location.href = '/auth/signin';
     } catch (error) {
       logger.error('[AuthErrorBoundary] Sign out failed:', error);
@@ -110,7 +114,7 @@ class AuthErrorBoundary extends React.Component {
               <Typography variant="subtitle2" color="error" sx={{ mb: 1 }}>
                 Error Details:
               </Typography>
-              <Typography variant="body2" component="pre" sx={{ 
+              <Typography variant="body2" component="pre" sx={{
                 p: 2,
                 bgcolor: 'grey.100',
                 borderRadius: 1,
@@ -125,7 +129,7 @@ class AuthErrorBoundary extends React.Component {
       );
     }
 
-    logger.debug('[AuthErrorBoundary] Rendering children (no error)');
+    // Simply return children without SafeWrapper to avoid Context.Consumer issues
     return this.props.children;
   }
 }

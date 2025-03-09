@@ -96,6 +96,17 @@ function CrispChat({ isAuthenticated }) {
     };
 
     try {
+      // Add minimal CSS to ensure cookie banner is above Crisp
+      const style = document.createElement('style');
+      style.textContent = `
+        /* Ensure the cookie banner is above everything */
+        .MuiPaper-root[style*="position: fixed"] {
+          z-index: 99999 !important;
+        }
+      `;
+      document.head.appendChild(style);
+      logger.debug('Added custom CSS to control Crisp z-index');
+
       window.$crisp = [];
       const CRISP_WEBSITE_ID = process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID;
       if (!CRISP_WEBSITE_ID) {

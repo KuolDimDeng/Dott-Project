@@ -1,4 +1,3 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/components/steps/Payment/Payment.styles.js
 import { createTheme } from '@mui/material/styles';
 import { styled } from '@mui/material/styles';
 import { Box } from '@mui/material';
@@ -16,7 +15,8 @@ export const theme = createTheme({
     },
     tier: {
       free: '#4caf50',
-      professional: '#1976d2'
+      professional: '#1976d2',
+      enterprise: '#673ab7'  // Added enterprise color
     }
   },
   shape: {
@@ -33,6 +33,8 @@ export const PaymentContainer = styled(Box)(({ theme, tier }) => ({
   padding: theme.spacing(3),
   backgroundColor: tier === 'professional' ? 
     theme.palette.background.default : 
+    tier === 'enterprise' ?
+    theme.palette.background.default :
     theme.palette.background.paper
 }));
 
@@ -47,7 +49,7 @@ export const PaymentDetails = styled(Box)(({ theme, tier }) => ({
   marginBottom: theme.spacing(4),
   backgroundColor: theme.palette.background.paper,
   borderRadius: theme.shape.borderRadius,
-  boxShadow: tier === 'professional' ? 
+  boxShadow: tier === 'professional' || tier === 'enterprise' ? 
     theme.shadows[2] : 
     theme.shadows[1]
 }));
@@ -59,6 +61,10 @@ export const PaymentSummary = styled(Box)(({ theme, tier }) => ({
   marginBottom: theme.spacing(3),
   backgroundColor: theme.palette.background.paper,
   boxShadow: theme.shadows[1],
+  ...(tier === 'enterprise' && {
+    borderTop: '4px solid',
+    borderTopColor: theme.palette.tier.enterprise,
+  }),
   '& ul': {
     paddingLeft: theme.spacing(2),
     marginBottom: theme.spacing(2),
@@ -71,9 +77,11 @@ export const PaymentSummary = styled(Box)(({ theme, tier }) => ({
 
 export const PricingBox = styled(Box)(({ theme, tier }) => ({
   backgroundColor: tier === 'professional' ? 
-    theme.palette.primary.main : 
+    theme.palette.tier.professional : 
+    tier === 'enterprise' ?
+    theme.palette.tier.enterprise :
     theme.palette.background.paper,
-  color: tier === 'professional' ? 
+  color: (tier === 'professional' || tier === 'enterprise') ? 
     theme.palette.primary.contrastText : 
     theme.palette.text.primary,
   padding: theme.spacing(2),

@@ -1,3 +1,4 @@
+#/Users/kuoldeng/projectx/backend/pyfactor/business/models.py
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -134,3 +135,22 @@ class BusinessMember(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.business.business_name} - {self.get_role_display()}"
+
+class ArchiveExport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tenant_id = models.UUIDField()
+    schema_name = models.CharField(max_length=63)
+    table_name = models.CharField(max_length=63)
+    export_batch_id = models.UUIDField()
+    s3_path = models.CharField(max_length=255)
+    export_date = models.DateTimeField()
+    expiry_date = models.DateTimeField()
+    downloaded = models.BooleanField(default=False)
+    download_date = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant_id']),
+            models.Index(fields=['export_date']),
+            models.Index(fields=['expiry_date']),
+        ]

@@ -60,7 +60,7 @@ const EstimateManagement = () => {
   const [editedEstimate, setEditedEstimate] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [exportAnchorEl, setExportAnchorEl] = useState(null);
-  const [userDatabase, setUserDatabase] = useState('');
+  const [userSchema, setUserSchema] = useState('');
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
@@ -75,13 +75,24 @@ const EstimateManagement = () => {
   const fetchUserProfile = async () => {
     try {
       const response = await axiosInstance.get('/api/profile/');
-      setUserDatabase(response.data.database_name);
       console.log('User profile:', response.data);
-      console.log('User database:', response.data.database_name);
+      
+      // Check if schema_name exists, use a fallback if not
+      const schemaName = response.data.schema_name || 'default_schema';
+      setUserSchema(schemaName);
+      console.log('User schema:', schemaName);
+      
+      // If we got a fallback or mock profile, log it but don't show error to user
+      if (response.data._error) {
+        logger.warn('Using fallback profile data:', response.data._error);
+      }
     } catch (error) {
       console.error('Error fetching user profile:', error);
       logger.error('Error fetching user profile:', error);
-      addMessage('error', 'Failed to fetch user profile');
+      
+      // Set a default schema name to prevent further errors
+      setUserSchema('default_schema');
+      addMessage('warning', 'Using default profile settings');
     }
   };
 
@@ -109,29 +120,45 @@ const EstimateManagement = () => {
   }, []);
 
   useEffect(() => {
-    if (userDatabase) {
-      console.log('Fetching data for database:', userDatabase);
-      fetchEstimates(userDatabase);
-      fetchCustomers(userDatabase);
-      fetchProducts(userDatabase);
-      fetchServices(userDatabase);
+    if (userSchema) {
+      console.log('Fetching data for schema:', userSchema);
+      fetchEstimates(userSchema);
+      fetchCustomers(userSchema);
+      fetchProducts(userSchema);
+      fetchServices(userSchema);
     }
-  }, [userDatabase]);
+  }, [userSchema]);
 
   const fetchCustomers = async () => {
     try {
       setCustomersLoading(true);
       setCustomersError(null);
-      console.log('Fetching customers from database:', userDatabase);
+      
+      // Validate schema name
+      if (!userSchema) {
+        logger.warn('Missing userSchema for fetchCustomers, using default');
+      }
+      
+      console.log('Fetching customers from schema:', userSchema || 'default_schema');
       const response = await axiosInstance.get('/api/customers/', {
-        params: { database: userDatabase },
+        params: { schema: userSchema || 'default_schema' },
       });
+      
+      // Handle empty or invalid response
+      if (!response.data || !Array.isArray(response.data)) {
+        logger.warn('Invalid customers data format:', response.data);
+        setCustomers([]);
+        return;
+      }
+      
       console.log('Fetched customers:', response.data);
       setCustomers(response.data);
     } catch (error) {
       console.error('Error fetching customers:', error);
-      setCustomersError(`Failed to load customers. ${error.message}`);
-      addMessage('error', `Failed to fetch customers: ${error.message}`);
+      logger.error('Error fetching customers:', error);
+      setCustomersError(`Unable to load customers. Please try again later.`);
+      setCustomers([]); // Set empty array to prevent rendering errors
+      addMessage('warning', `Unable to load customers. Please try again later.`);
     } finally {
       setCustomersLoading(false);
     }
@@ -146,15 +173,28 @@ const EstimateManagement = () => {
     }));
   };
 
-  const fetchEstimates = async (database_name) => {
+  const fetchEstimates = async (schema_name) => {
     try {
-      console.log('Fetching estimates from database:', database_name);
+      // Validate schema_name to prevent API errors
+      if (!schema_name) {
+        logger.warn('Missing schema_name for fetchEstimates, using default');
+        schema_name = 'default_schema';
+      }
+      
+      console.log('Fetching estimates from schema:', schema_name);
 
       const response = await axiosInstance.get('/api/estimates/', {
-        params: { database: database_name },
+        params: { schema: schema_name },
       });
 
       console.log('Raw API response for estimates:', response.data);
+
+      // Handle empty response
+      if (!response.data || !Array.isArray(response.data)) {
+        logger.warn('Invalid estimates data format:', response.data);
+        setEstimates([]);
+        return;
+      }
 
       // Use the transformEstimates function
       const transformedEstimates = transformEstimates(response.data);
@@ -163,27 +203,35 @@ const EstimateManagement = () => {
       setEstimates(transformedEstimates);
     } catch (error) {
       console.error('Error fetching estimates', error);
-      addMessage('error', 'Error fetching estimates');
+      logger.error('Error fetching estimates:', error);
+      setEstimates([]); // Set empty array to prevent rendering errors
+      addMessage('warning', 'Unable to load estimates. Please try again later.');
     }
   };
 
   const fetchProducts = async () => {
     try {
-      const response = await axiosInstance.get('/api/products/');
-      setProducts(response.data);
+      const response = await axiosInstance.get('/api/products/', {
+        params: { schema: userSchema || 'default_schema' },
+      });
+      setProducts(response.data || []);
     } catch (error) {
       logger.error('Error fetching products', error);
-      addMessage('error', 'Error fetching products');
+      setProducts([]); // Set empty array to prevent rendering errors
+      addMessage('warning', 'Unable to load products. Please try again later.');
     }
   };
 
   const fetchServices = async () => {
     try {
-      const response = await axiosInstance.get('/api/services/');
-      setServices(response.data);
+      const response = await axiosInstance.get('/api/services/', {
+        params: { schema: userSchema || 'default_schema' },
+      });
+      setServices(response.data || []);
     } catch (error) {
       logger.error('Error fetching services', error);
-      addMessage('error', 'Error fetching services');
+      setServices([]); // Set empty array to prevent rendering errors
+      addMessage('warning', 'Unable to load services. Please try again later.');
     }
   };
 
@@ -298,6 +346,7 @@ const EstimateManagement = () => {
         items: transformedItems,
         discount: parseFloat(newEstimate.discount),
         totalAmount: newEstimate.totalAmount, // Make sure this is included
+        schema: userSchema || 'default_schema', // Add schema parameter
       };
 
       console.log('Estimate data being sent to create:', estimateData);
@@ -320,7 +369,7 @@ const EstimateManagement = () => {
         totalAmount: 0,
       });
 
-      fetchEstimates();
+      fetchEstimates(userSchema);
     } catch (error) {
       console.error('Error creating estimate', error);
       if (error.response && error.response.data) {
@@ -350,13 +399,19 @@ const EstimateManagement = () => {
 
   const handleSaveEdit = async () => {
     try {
+      // Add schema to the edited estimate data
+      const estimateWithSchema = {
+        ...editedEstimate,
+        schema: userSchema || 'default_schema'
+      };
+      
       const response = await axiosInstance.put(
         `/api/estimates/${selectedEstimate.id}/`,
-        editedEstimate
+        estimateWithSchema
       );
       setSelectedEstimate(response.data);
       setIsEditing(false);
-      fetchEstimates();
+      fetchEstimates(userSchema);
       addMessage('success', 'Estimate updated successfully');
     } catch (error) {
       logger.error('Error updating estimate', error);
@@ -370,11 +425,14 @@ const EstimateManagement = () => {
 
   const handleConfirmDelete = async () => {
     try {
-      await axiosInstance.delete(`/api/estimates/${selectedEstimate.id}/`);
+      // Include schema as a query parameter
+      await axiosInstance.delete(`/api/estimates/${selectedEstimate.id}/`, {
+        params: { schema: userSchema || 'default_schema' }
+      });
       addMessage('success', 'Estimate deleted successfully');
       setDeleteDialogOpen(false);
       setSelectedEstimate(null);
-      fetchEstimates();
+      fetchEstimates(userSchema);
       setActiveTab(2);
     } catch (error) {
       logger.error('Error deleting estimate', error);

@@ -1,5 +1,9 @@
 from rest_framework import serializers
-from .models import InventoryItem, Category, Supplier, Location, InventoryTransaction
+from .models import (
+    InventoryItem, Category, Supplier, Location, InventoryTransaction,
+    Product, Service, ProductTypeFields, ServiceTypeFields, Department,
+    CustomChargePlan
+)
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,3 +35,40 @@ class InventoryTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = InventoryTransaction
         fields = '__all__'
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Department
+        fields = '__all__'
+
+class CustomChargePlanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomChargePlan
+        fields = '__all__'
+
+class ProductTypeFieldsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductTypeFields
+        fields = '__all__'
+
+class ServiceTypeFieldsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceTypeFields
+        fields = '__all__'
+
+class ProductSerializer(serializers.ModelSerializer):
+    department_name = serializers.ReadOnlyField(source='department.dept_name', allow_null=True)
+    type_fields = ProductTypeFieldsSerializer(read_only=True)
+
+    class Meta:
+        model = Product
+        fields = '__all__'
+        read_only_fields = ('product_code',)
+
+class ServiceSerializer(serializers.ModelSerializer):
+    type_fields = ServiceTypeFieldsSerializer(read_only=True)
+
+    class Meta:
+        model = Service
+        fields = '__all__'
+        read_only_fields = ('service_code',)

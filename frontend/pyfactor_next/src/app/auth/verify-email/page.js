@@ -38,7 +38,7 @@ export default function VerifyEmail() {
     setError('');
     setSuccess('');
     setResendDisabled(true);
-    setCountdown(60);
+    setCountdown(30); // Reduced from 60 to 30 seconds
 
     try {
       logger.debug('Resending verification code to:', email);
@@ -63,6 +63,9 @@ export default function VerifyEmail() {
         handleResendCode();
         setInitialCodeSent(true);
       }
+    } else {
+      // If no email parameter, log for debugging
+      logger.debug('No email parameter in URL, user will need to enter email manually');
     }
   }, [searchParams, resendDisabled, countdown, handleResendCode, initialCodeSent]);
 
@@ -88,9 +91,9 @@ export default function VerifyEmail() {
     try {
       logger.debug('Attempting to verify email:', email);
       await confirmSignUp(email, code);
-      setSuccess('Email verified successfully! Redirecting to sign in...');
+      setSuccess('Email verified successfully! You will be redirected to sign in in 5 seconds...');
       logger.debug('Email verification successful');
-      setTimeout(() => router.push('/auth/signin'), 2000);
+      setTimeout(() => router.push('/auth/signin'), 5000); // Increased from 2 to 5 seconds
     } catch (error) {
       logger.error('Email verification failed:', error);
       setError(error.message || 'Failed to verify email');
@@ -133,10 +136,18 @@ export default function VerifyEmail() {
             Verify Your Email
           </Typography>
 
-          <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 3 }}>
-            We've sent a verification code to:<br />
-            <strong>{email}</strong>
-          </Typography>
+          {email ? (
+            <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 3 }}>
+              We've sent a verification code to:<br />
+              <strong>{email}</strong>
+            </Typography>
+          ) : (
+            <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 3 }}>
+              Please enter the email address you used to sign up and the verification code you received.
+              <br />
+              <strong>If you were redirected here from sign-in, you may need to check your email for the verification code.</strong>
+            </Typography>
+          )}
 
           {error && (
             <Alert severity="error" sx={{ mb: 2, width: '100%' }}>
@@ -162,6 +173,9 @@ export default function VerifyEmail() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading || !!searchParams.get('email')}
+              placeholder="Enter the email you signed up with"
+              helperText={!searchParams.get('email') ? "Enter the email address you used to sign up" : ""}
+              autoFocus={!searchParams.get('email')}
             />
             
             <TextField
@@ -193,27 +207,43 @@ export default function VerifyEmail() {
               {isLoading ? <CircularProgress size={24} /> : 'Verify Email'}
             </Button>
 
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={handleResendCode}
-              disabled={resendDisabled || isLoading || !email}
-              sx={{ mb: 2 }}
-            >
-              {countdown > 0
-                ? `Resend Code (${countdown}s)`
-                : 'Resend Verification Code'}
-            </Button>
+            <Box sx={{ mt: 3, mb: 3, p: 2, bgcolor: 'rgba(0, 0, 0, 0.03)', borderRadius: 1 }}>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Didn't receive the verification code?
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                1. Check your spam/junk folder
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                2. Make sure the email address above is correct
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                3. Click the button below to request a new code
+              </Typography>
+              
+              <Button
+                fullWidth
+                variant="contained"
+                color="secondary"
+                onClick={handleResendCode}
+                disabled={resendDisabled || isLoading || !email}
+                sx={{ mt: 2 }}
+              >
+                {countdown > 0
+                  ? `Resend Code (${countdown}s)`
+                  : 'Resend Verification Code'}
+              </Button>
+            </Box>
 
             <Box sx={{ mt: 2, textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary">
-                Didn't receive the email? Check your spam folder or{' '}
+                Need to use a different email?{' '}
                 <Link
                   href="/auth/signin"
                   sx={{ cursor: 'pointer' }}
                   underline="hover"
                 >
-                  try another email address
+                  Return to sign in
                 </Link>
               </Typography>
             </Box>

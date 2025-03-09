@@ -24,7 +24,11 @@ export default function CrispChatWrapper() {
           logger.debug('Valid user with attributes found for Crisp chat');
         }
       } catch (error) {
-        logger.error('Error checking auth status for Crisp chat:', error);
+        if (error.name === 'UserUnAuthenticatedException') {
+          logger.debug('User not authenticated for Crisp chat');
+        } else {
+          logger.error('Error checking auth status for Crisp chat:', error);
+        }
         setIsAuthenticated(false);
       } finally {
         setIsLoaded(true);
@@ -34,12 +38,8 @@ export default function CrispChatWrapper() {
 
     checkAuth();
 
-    // Re-check auth status periodically in case attributes become available
-    const interval = setInterval(checkAuth, 30000);
-
-    return () => {
-      clearInterval(interval);
-    };
+    // No longer polling for auth status changes
+    return () => {};
   }, []);
 
   if (!isLoaded) {

@@ -5,7 +5,7 @@ import { useSession } from '@/hooks/useSession';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { useCallback, useState } from 'react';
 import { logger } from '@/utils/logger';
-import { updateUserAttributes } from '@/config/amplify';
+import { updateUserAttributes } from '@/config/amplifyUnified';
 
 export function useOnboardingForm(step) {
   const router = useRouter();

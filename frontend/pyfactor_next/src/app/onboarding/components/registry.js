@@ -20,6 +20,7 @@ export const ERROR_TYPES = {
 export const PLAN_TYPES = {
   FREE: 'free',
   PROFESSIONAL: 'professional',
+  ENTERPRISE: 'enterprise'
 };
 
 export const BILLING_CYCLES = {
@@ -92,7 +93,9 @@ export const STEP_VALIDATION = {
   [STEP_NAMES.PAYMENT]: (data) => {
     if (data?.selected_plan === PLAN_TYPES.FREE) return true;
     return (
-      data?.selected_plan === PLAN_TYPES.PROFESSIONAL && !!data?.payment_method
+      (data?.selected_plan === PLAN_TYPES.PROFESSIONAL || 
+       data?.selected_plan === PLAN_TYPES.ENTERPRISE) && 
+      !!data?.payment_method
     );
   },
   [STEP_NAMES.SETUP]: (data) => {
@@ -143,15 +146,15 @@ export const STEP_METADATA = {
     isRequired: false,
     validationRules: ['payment_method'],
     apiEndpoint: '/api/onboarding/payment',
-    requiredPlan: PLAN_TYPES.PROFESSIONAL,
+    requiredPlan: [PLAN_TYPES.PROFESSIONAL, PLAN_TYPES.ENTERPRISE],
   },
   [STEP_NAMES.SETUP]: {
     title: 'Setup Your Workspace',
     description: "We're getting everything ready for you",
     prevStep: (selected_plan) =>
-      selected_plan === PLAN_TYPES.PROFESSIONAL
-        ? '/onboarding/payment'
-        : '/onboarding/subscription',
+      selected_plan === PLAN_TYPES.FREE
+        ? '/onboarding/subscription'
+        : '/onboarding/payment',
     stepNumber: 4,
     next_step: '/dashboard',
     isRequired: true,
@@ -171,10 +174,24 @@ export const STEP_METADATA = {
       'Configuring analytics',
       'Completing professional setup',
     ],
-    getSteps: (selected_plan) =>
-      selected_plan === PLAN_TYPES.PROFESSIONAL
-        ? STEP_METADATA[STEP_NAMES.SETUP].professionalSteps
-        : STEP_METADATA[STEP_NAMES.SETUP].basicSteps,
+    enterpriseSteps: [
+      'Initializing enterprise workspace',
+      'Setting up advanced security features',
+      'Configuring custom roles and permissions',
+      'Setting up enhanced API access',
+      'Configuring advanced analytics',
+      'Setting up dedicated support',
+      'Completing enterprise setup',
+    ],
+    getSteps: (selected_plan) => {
+      if (selected_plan === PLAN_TYPES.PROFESSIONAL) {
+        return STEP_METADATA[STEP_NAMES.SETUP].professionalSteps;
+      } else if (selected_plan === PLAN_TYPES.ENTERPRISE) {
+        return STEP_METADATA[STEP_NAMES.SETUP].enterpriseSteps;
+      } else {
+        return STEP_METADATA[STEP_NAMES.SETUP].basicSteps;
+      }
+    },
   },
   [STEP_NAMES.COMPLETE]: {
     title: 'Setup Complete',
@@ -197,14 +214,29 @@ export const STEP_ROUTES = {
   [STEP_NAMES.COMPLETE]: '/dashboard',
 };
 
+export const PLAN_CONFIG = {
+  [PLAN_TYPES.FREE]: {
+    next_step: 'setup',
+    requiresPayment: false
+  },
+  [PLAN_TYPES.PROFESSIONAL]: {
+    next_step: 'payment',
+    requiresPayment: true
+  },
+  [PLAN_TYPES.ENTERPRISE]: {
+    next_step: 'payment',
+    requiresPayment: true
+  }
+};
+
 export const validatePlanAccess = (stepName, selected_plan) => {
   switch (stepName) {
     case STEP_NAMES.PAYMENT:
-      if (selected_plan !== PLAN_TYPES.PROFESSIONAL) {
+      if (selected_plan !== PLAN_TYPES.PROFESSIONAL && selected_plan !== PLAN_TYPES.ENTERPRISE) {
         return {
           valid: false,
           error: ERROR_TYPES.INVALID_PLAN,
-          message: 'Payment is only available for Professional plan',
+          message: 'Payment is only available for Professional and Enterprise plans',
         };
       }
       break;

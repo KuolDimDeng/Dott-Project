@@ -109,29 +109,64 @@ export async function refreshUserSession(retryCount = 0) {
       attributes: Object.keys(user.attributes)
     });
 
-    // Set cookies with proper durations
-    const cookiesSet = [
-      setCookie('idToken', tokens.idToken.toString(), { maxAge: 3600 }), // 1 hour
-      setCookie('accessToken', tokens.accessToken.toString(), { maxAge: 3600 }), // 1 hour
-    ];
-
-    if (tokens.refreshToken) {
-      cookiesSet.push(
-        setCookie('refreshToken', tokens.refreshToken.toString(), { maxAge: 86400 }) // 24 hours
-      );
-      logger.debug('[Session] Refresh token cookie set');
+    // Extract onboarding status from user attributes if available
+    let onboardingStep;
+    let onboardedStatus;
+    
+    try {
+      const userAttributes = await user.fetchUserAttributes();
+      logger.debug('[Session] User attributes fetched:', {
+        attributeKeys: Object.keys(userAttributes)
+      });
+      
+      // Check for onboarding attributes
+      if (userAttributes['custom:onboarding_step']) {
+        onboardingStep = userAttributes['custom:onboarding_step'];
+      }
+      
+      if (userAttributes['custom:onboarding_status']) {
+        onboardedStatus = userAttributes['custom:onboarding_status'];
+      }
+    } catch (attrError) {
+      logger.warn('[Session] Failed to fetch user attributes:', {
+        error: attrError.message
+      });
     }
+    
+    // Set cookies using the API route
+    try {
+      const response = await fetch('/api/auth/set-cookies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idToken: tokens.idToken.toString(),
+          accessToken: tokens.accessToken.toString(),
+          refreshToken: tokens.refreshToken ? tokens.refreshToken.toString() : undefined,
+          onboardingStep,
+          onboardedStatus
+        })
+      });
 
-    // Check if all cookies were set successfully
-    if (!cookiesSet.every(Boolean)) {
-      throw new Error('Failed to set one or more cookies');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to set cookies via API: ${errorData.error || response.statusText}`);
+      }
+
+      logger.debug('[Session] Session refresh completed successfully:', {
+        username: user.username,
+        hasRefreshToken: !!tokens.refreshToken,
+        onboardingStep,
+        onboardedStatus
+      });
+    } catch (cookieError) {
+      logger.error('[Session] Failed to set cookies via API:', {
+        error: cookieError.message,
+        stack: cookieError.stack
+      });
+      throw cookieError;
     }
-
-    logger.debug('[Session] Session refresh completed successfully:', {
-      username: user.username,
-      cookiesSet: cookiesSet.length,
-      hasRefreshToken: !!tokens.refreshToken
-    });
 
     return true;
   } catch (error) {
@@ -164,20 +199,41 @@ export async function clearUserSession() {
   try {
     logger.debug('[Session] Starting session cleanup');
 
-    // Clear cookies
-    const cookiesCleared = [
-      clearCookie('idToken'),
-      clearCookie('accessToken'),
-      clearCookie('refreshToken')
-    ];
+    // Clear cookies using the API route
+    try {
+      const response = await fetch('/api/auth/clear-cookies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
 
-    // Check if all cookies were cleared successfully
-    if (!cookiesCleared.every(Boolean)) {
-      throw new Error('Failed to clear one or more cookies');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to clear cookies via API: ${errorData.error || response.statusText}`);
+      }
+
+      logger.debug('[Session] Session cleared successfully');
+      return true;
+    } catch (cookieError) {
+      // Fallback to client-side cookie clearing if API fails
+      logger.warn('[Session] Failed to clear cookies via API, falling back to client-side:', {
+        error: cookieError.message
+      });
+      
+      const cookiesCleared = [
+        clearCookie('idToken'),
+        clearCookie('accessToken'),
+        clearCookie('refreshToken')
+      ];
+
+      if (!cookiesCleared.every(Boolean)) {
+        throw new Error('Failed to clear one or more cookies');
+      }
+      
+      logger.debug('[Session] Session cleared successfully (client-side fallback)');
+      return true;
     }
-
-    logger.debug('[Session] Session cleared successfully');
-    return true;
   } catch (error) {
     logger.error('[Session] Failed to clear session:', {
       error: error.message,

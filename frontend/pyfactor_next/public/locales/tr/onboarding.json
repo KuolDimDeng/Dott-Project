@@ -1,0 +1,63 @@
+{
+  "businessInfo": {
+    "title": "İşletme bilgilerinizi girin",
+    "subtitle": "Bize şirketiniz hakkında bilgi verin",
+    "nameLabel": "İşletme adı",
+    "addressLabel": "İşletme adresi",
+    "phoneLabel": "İşletme telefonu",
+    "emailLabel": "İşletme e-postası",
+    "websiteLabel": "Web sitesi (isteğe bağlı)",
+    "industryLabel": "Sektör",
+    "nextButton": "Aboneliğe devam et",
+    "errors": {
+      "nameRequired": "İşletme adı gereklidir",
+      "addressRequired": "İşletme adresi gereklidir",
+      "phoneRequired": "İşletme telefonu gereklidir",
+      "emailRequired": "İşletme e-postası gereklidir",
+      "emailInvalid": "Lütfen geçerli bir e-posta adresi girin"
+    }
+  },
+  "subscription": {
+    "title": "Abonelik planınızı seçin",
+    "subtitle": "İşletme ihtiyaçlarınıza uygun bir plan seçin",
+    "basic": "Temel",
+    "professional": "Profesyonel",
+    "premium": "Premium",
+    "perMonth": "aylık",
+    "selectPlan": "Plan Seç",
+    "currentPlan": "Mevcut Plan",
+    "features": {
+      "accounting": "Muhasebe ve Defter Tutma",
+      "invoicing": "Faturalama ve Faturalandırma",
+      "expenses": "Gider Takibi",
+      "payroll": "Bordro İşlemleri",
+      "inventory": "Envanter Yönetimi",
+      "support": "7/24 Müşteri Desteği"
+    }
+  },
+  "payment": {
+    "title": "Ödeme Detayları",
+    "subtitle": "Güvenli ödeme yöntemi ayarlayın",
+    "cardName": "Kart üzerindeki isim",
+    "cardNumber": "Kart numarası",
+    "expiry": "Son kullanma tarihi",
+    "cvv": "CVV",
+    "saveCard": "Gelecekteki faturalar için kartı kaydet",
+    "confirmPayment": "Ödemeyi Onayla",
+    "errors": {
+      "nameRequired": "Kart üzerindeki isim gereklidir",
+      "cardRequired": "Kart numarası gereklidir",
+      "expiryRequired": "Son kullanma tarihi gereklidir",
+      "cvvRequired": "CVV gereklidir"
+    }
+  },
+  "setup": {
+    "title": "Dott hesabınızı kurun",
+    "subtitle": "İşletmeniz hakkında bilmemiz gereken birkaç son detay",
+    "industryLabel": "Sektör türü",
+    "employeesLabel": "Çalışan sayısı",
+    "revenueLabel": "Tahmini yıllık gelir",
+    "finishSetup": "Kurulumu Tamamla",
+    "goToDashboard": "Kontrol Paneline Git"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "businessInfo": {
+    "title": "Enter your business information",
+    "subtitle": "Tell us about your company",
+    "nameLabel": "Business name",
+    "addressLabel": "Business address",
+    "phoneLabel": "Business phone",
+    "emailLabel": "Business email",
+    "websiteLabel": "Website (optional)",
+    "industryLabel": "Industry",
+    "nextButton": "Continue to subscription",
+    "errors": {
+      "nameRequired": "Business name is required",
+      "addressRequired": "Business address is required",
+      "phoneRequired": "Business phone is required",
+      "emailRequired": "Business email is required",
+      "emailInvalid": "Please enter a valid email address"
+    }
+  },
+  "subscription": {
+    "title": "Choose your subscription plan",
+    "subtitle": "Select a plan that matches your business needs",
+    "basic": "Basic",
+    "professional": "Professional",
+    "premium": "Premium",
+    "perMonth": "per month",
+    "selectPlan": "Select Plan",
+    "currentPlan": "Current Plan",
+    "features": {
+      "accounting": "Accounting and Bookkeeping",
+      "invoicing": "Invoicing and Billing",
+      "expenses": "Expense Tracking",
+      "payroll": "Payroll Processing",
+      "inventory": "Inventory Management",
+      "support": "24/7 Customer Support"
+    }
+  },
+  "payment": {
+    "title": "Payment Details",
+    "subtitle": "Set up secure payment method",
+    "cardName": "Name on card",
+    "cardNumber": "Card number",
+    "expiry": "Expiration date",
+    "cvv": "CVV",
+    "saveCard": "Save card for future billing",
+    "confirmPayment": "Confirm Payment",
+    "errors": {
+      "nameRequired": "Name on card is required",
+      "cardRequired": "Card number is required",
+      "expiryRequired": "Expiration date is required",
+      "cvvRequired": "CVV is required"
+    }
+  },
+  "setup": {
+    "title": "Set up your Dott account",
+    "subtitle": "A few final details we need to know about your business",
+    "industryLabel": "Industry type",
+    "employeesLabel": "Number of employees",
+    "revenueLabel": "Estimated annual revenue",
+    "finishSetup": "Complete Setup",
+    "goToDashboard": "Go to Dashboard"
+  }
+}

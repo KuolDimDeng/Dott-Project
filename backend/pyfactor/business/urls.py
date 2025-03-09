@@ -24,5 +24,6 @@ urlpatterns = [
     path('add-member/', AddBusinessMemberView.as_view(), name='add-business-member'),
     path('checkout/create-session/', create_checkout_session, name='create_checkout_session'),
 
-
+    path('update-subscription/', views.update_subscription_plan, name='update_subscription_plan'),
+    path('webhook/stripe/', views.stripe_webhook, name='stripe_webhook'),
 ]

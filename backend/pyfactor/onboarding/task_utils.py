@@ -154,9 +154,14 @@ def get_db_connection(schema_name: Optional[str] = None,
         
         conn = psycopg2.connect(**conn_params)
         
-        # Configure connection properties
+        # Configure connection properties immediately after connection
+        # This must be done before any transaction begins
         if autocommit is not None:
-            conn.autocommit = autocommit
+            # Set isolation level directly to avoid transaction issues
+            if autocommit:
+                conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+            else:
+                conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
             
         # Set session parameters for better reliability
         with conn.cursor() as cursor:
