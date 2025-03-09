@@ -336,8 +336,11 @@ const PrivacyPolicy = () => {
           <Typography variant="body2" component="address" sx={{ fontStyle: 'normal' }}>
             <strong>Dott LLC</strong>
             <br />
-            [Enter Address Here]
-            <br />
+            800 N King Street
+            Suite 304 #2797
+            Wilmington, DE 19801
+            United States            
+          <br />
             Email: support@dottapps.com
             <br />
             Website: www.dottapps.com
