@@ -100,6 +100,19 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
     Raises:
         SchemaSetupError: If any part of the setup process fails
     """
+    # Validate input parameters
+    try:
+        # Ensure user_id is a valid UUID
+        uuid_obj = uuid.UUID(user_id)
+        user_id = str(uuid_obj)
+        
+        # Ensure business_id is a valid UUID
+        uuid_obj = uuid.UUID(business_id)
+        business_id = str(uuid_obj)
+    except ValueError as e:
+        logger.error(f"Invalid UUID format: {str(e)}")
+        raise SchemaSetupError(f"Invalid UUID format: {str(e)}")
+    
     schema_name = None
     success = False
     tenant = None

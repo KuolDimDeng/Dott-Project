@@ -880,7 +880,7 @@ class StartOnboardingView(APIView):
     permission_classes = [SetupEndpointPermission]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
-    authentication_classes = []  # Remove authentication requirement
+    authentication_classes = [CognitoAuthentication]  # Add proper authentication
 
     def dispatch(self, request, *args, **kwargs):
         """Handle preflight requests and add CORS headers"""
@@ -1014,14 +1014,24 @@ class StartOnboardingView(APIView):
                 ])
 
                 # Update tenant status
-                cursor.execute("""
-                    UPDATE auth_tenant
-                    SET database_status = 'pending',
-                        setup_status = 'in_progress',
-                        last_setup_attempt = NOW()
-                    WHERE owner_id = %s
-                    RETURNING id
-                """, [str(request.user.id)])
+                # First check if user is authenticated
+                if not request.user.is_authenticated:
+                    logger.error(f"[{request_id}] User not authenticated for tenant update")
+                    return Response({
+                        'error': 'Authentication required',
+                        'code': 'auth_required'
+                    }, status=status.HTTP_401_UNAUTHORIZED)
+                
+                # Now safely use the user ID
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE auth_tenant
+                        SET database_status = 'pending',
+                            setup_status = 'in_progress',
+                            last_setup_attempt = NOW()
+                        WHERE owner_id = %s
+                        RETURNING id
+                    """, [str(request.user.id)])
 
                 # Queue setup task with error handling
                 try:

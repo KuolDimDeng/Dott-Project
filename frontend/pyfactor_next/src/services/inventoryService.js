@@ -27,7 +27,7 @@ export const inventoryService = {
       
       // If not in cache or useCache is false, fetch from API
       const response = await axiosInstance.get('/api/inventory/products/', {
-        timeout: 15000 // 15 second timeout
+        timeout: 30000 // 30 second timeout
       });
       
       // Cache the response data

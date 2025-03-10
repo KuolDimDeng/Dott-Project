@@ -94,6 +94,14 @@ def create_tenant_schema(cursor, schema_name, user_id):
         # Validate schema name
         if not re.match(r'^tenant_[a-z0-9_]+$', schema_name):
             raise ValueError(f"Invalid schema name format: {schema_name}")
+        
+        # Validate user_id is a valid UUID
+        try:
+            uuid_obj = uuid.UUID(user_id)
+            user_id = str(uuid_obj)
+        except ValueError:
+            logger.error(f"Invalid user_id format: {user_id}")
+            raise ValueError(f"Invalid user_id format: {user_id}")
             
         # Save current search path
         cursor.execute('SHOW search_path')
@@ -127,6 +135,18 @@ def create_tenant_schema(cursor, schema_name, user_id):
             for cmd in permission_commands:
                 cursor.execute(cmd)
                 logger.debug(f"Executed permission command: {cmd}")
+            
+            # Set search path to new schema for migrations
+            cursor.execute(f'SET search_path TO "{schema_name}",public')
+            
+            # Run migrations directly
+            try:
+                from django.core.management import call_command
+                call_command('migrate', verbosity=0)
+                logger.debug(f"Migrations applied to schema {schema_name}")
+            except Exception as migrate_error:
+                logger.error(f"Error applying migrations to schema {schema_name}: {str(migrate_error)}")
+                # Continue even if migrations fail - we'll handle this separately
             
             # Verify schema exists and is accessible using context manager
             with tenant_schema_context(cursor, schema_name):

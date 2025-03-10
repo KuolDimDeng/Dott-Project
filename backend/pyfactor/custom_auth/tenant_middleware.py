@@ -101,11 +101,15 @@ class EnhancedTenantMiddleware:
                             cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {db_user}')
                             cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {db_user}')
                             cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {db_user}')
-                            
                             # Run migrations if needed
-                            from django.core.management import call_command
-                            call_command('migrate', schema=schema_name, verbosity=0)
+                            # Set search path before running migrations
+                            cursor.execute(f'SET search_path TO "{schema_name}",public')
                             
+                            # Run migrations without schema parameter (not supported by Django)
+                            from django.core.management import call_command
+                            call_command('migrate', verbosity=0)
+                            
+                            logger.info(f"Successfully created and configured schema: {schema_name}")
                             logger.info(f"Successfully created and configured schema: {schema_name}")
                     except Exception as e:
                         logger.error(f"Failed to create schema {schema_name}: {str(e)}")

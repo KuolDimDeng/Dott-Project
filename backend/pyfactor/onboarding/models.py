@@ -159,7 +159,7 @@ class OnboardingProgress(models.Model):
                     'subscription': ['payment', 'setup'],
                     'payment': ['setup'],
                     'setup': ['complete'],
-                    'complete': []
+                    'complete': ['business-info', 'subscription']  # Allow updating business info and subscription after completion
                 }
 
                 if (self.onboarding_status != old_instance.onboarding_status and
