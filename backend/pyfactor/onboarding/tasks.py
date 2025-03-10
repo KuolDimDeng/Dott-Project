@@ -2,6 +2,7 @@
 import time
 import signal
 import logging
+import uuid
 from typing import Dict, Any, Tuple
 from contextlib import contextmanager
 from functools import wraps
@@ -102,16 +103,27 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
     """
     # Validate input parameters
     try:
-        # Ensure user_id is a valid UUID
-        uuid_obj = uuid.UUID(user_id)
-        user_id = str(uuid_obj)
+        # Ensure user_id is a valid UUID and convert to string
+        user_id_str = str(user_id)  # Convert to string first in case it's already a UUID object
+        try:
+            uuid_obj = uuid.UUID(user_id_str)
+            user_id = str(uuid_obj)
+        except ValueError as e:
+            logger.error(f"Invalid user_id UUID format: {str(e)}")
+            raise SchemaSetupError(f"Invalid user_id UUID format: {str(e)}")
         
-        # Ensure business_id is a valid UUID
-        uuid_obj = uuid.UUID(business_id)
-        business_id = str(uuid_obj)
-    except ValueError as e:
-        logger.error(f"Invalid UUID format: {str(e)}")
-        raise SchemaSetupError(f"Invalid UUID format: {str(e)}")
+        # Ensure business_id is a valid UUID and convert to string
+        business_id_str = str(business_id)  # Convert to string first in case it's already a UUID object
+        try:
+            uuid_obj = uuid.UUID(business_id_str)
+            business_id = str(uuid_obj)
+        except ValueError:
+            # If business_id is not a valid UUID, just use it as is
+            logger.warning(f"Business ID is not a valid UUID: {business_id_str}, using as is")
+            business_id = business_id_str
+    except Exception as e:
+        logger.error(f"Error validating input parameters: {str(e)}")
+        raise SchemaSetupError(f"Error validating input parameters: {str(e)}")
     
     schema_name = None
     success = False
@@ -173,8 +185,17 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
             
             # Set storage quota based on subscription plan
             from business.models import Subscription
-            subscription = Subscription.objects.filter(business_id=business_id).first()
-            subscription_plan = subscription.selected_plan if subscription else 'free'
+            subscription_plan = 'free'  # Default to free plan
+            
+            # Only try to get subscription if business_id is not None
+            if business_id and business_id != 'None':
+                try:
+                    subscription = Subscription.objects.filter(business_id=business_id).first()
+                    if subscription and subscription.selected_plan:
+                        subscription_plan = subscription.selected_plan
+                except Exception as e:
+                    logger.warning(f"Error getting subscription for business_id {business_id}: {str(e)}")
+                    # Continue with default free plan
             
             # Check if tenant has storage_quota_bytes field
             if hasattr(tenant, 'storage_quota_bytes'):
@@ -192,14 +213,15 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
                 update_fields = ['is_active', 'setup_status', 'last_setup_attempt', 'setup_task_id']
             
             # Update tenant status
-            if not validate_status_transition(tenant.setup_status, 'pending'):
-                raise SchemaSetupError(f"Cannot transition from {tenant.setup_status} to pending")
-            
-            tenant.is_active = False
-            tenant.setup_status = 'in_progress'
-            tenant.last_setup_attempt = timezone.now()
-            tenant.setup_task_id = self.request.id
-            tenant.save(update_fields=update_fields)
+            # Allow transition from 'pending' or 'in_progress' to 'in_progress' directly
+            if tenant.setup_status in ['pending', 'in_progress', 'error', 'failed'] or validate_status_transition(tenant.setup_status, 'in_progress'):
+                tenant.is_active = False
+                tenant.setup_status = 'in_progress'
+                tenant.last_setup_attempt = timezone.now()
+                tenant.setup_task_id = self.request.id
+                tenant.save(update_fields=update_fields)
+            else:
+                raise SchemaSetupError(f"Cannot transition from {tenant.setup_status} to in_progress")
             
             logger.info(f"Set storage quota for {schema_name}: {subscription_plan} plan, " + 
                        f"quota: {getattr(tenant, 'storage_quota_bytes', 0)/(1024*1024*1024):.1f}GB")

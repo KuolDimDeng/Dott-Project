@@ -3,6 +3,7 @@ from django.db import connections, transaction, DatabaseError, IntegrityError
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
+from .utils import create_tenant_schema_for_user
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.contrib.sites.shortcuts import get_current_site
@@ -231,9 +232,22 @@ class CustomAuthToken(ObtainAuthToken):
             serializer.is_valid(raise_exception=True)
             user = serializer.validated_data['user']
 
+            # Create tenant schema if user doesn't have one
+            if not hasattr(user, 'tenant') or user.tenant is None:
+                logger.info(f"Creating tenant schema for user {user.email} during authentication")
+                try:
+                    # Create tenant schema
+                    tenant = create_tenant_schema_for_user(user)
+                    logger.info(f"Tenant schema created successfully: {tenant.schema_name}")
+                except Exception as e:
+                    logger.error(f"Failed to create tenant schema: {str(e)}")
+                    # Continue with authentication even if tenant creation fails
+                    # We'll retry on subsequent requests
+
             refresh = RefreshToken.for_user(user)
             access_token = str(refresh.access_token)
 
+            # Add tenant information to response if available
             response_data = {
                 'access': access_token,
                 'refresh': str(refresh),
@@ -241,6 +255,10 @@ class CustomAuthToken(ObtainAuthToken):
                 'email': user.email,
                 'is_onboarded': user.is_onboarded
             }
+            
+            if hasattr(user, 'tenant') and user.tenant:
+                response_data['tenant_id'] = str(user.tenant.id)
+                response_data['schema_name'] = user.tenant.schema_name
 
             response = Response(response_data)
             
@@ -279,6 +297,18 @@ class SocialLoginView(APIView):
                     user = self.get_or_create_user(user_info)
                     logger.debug(f"User created or retrieved: {user}")
                     if user:
+                        # Create tenant schema if user doesn't have one
+                        if not hasattr(user, 'tenant') or user.tenant is None:
+                            logger.info(f"Creating tenant schema for user {user.email} during social login")
+                            try:
+                                # Create tenant schema
+                                tenant = create_tenant_schema_for_user(user)
+                                logger.info(f"Tenant schema created successfully: {tenant.schema_name}")
+                            except Exception as e:
+                                logger.error(f"Failed to create tenant schema: {str(e)}")
+                                # Continue with authentication even if tenant creation fails
+                                # We'll retry on subsequent requests
+
                         refresh = RefreshToken.for_user(user)
                         response_data = {
                             'refresh': str(refresh),
@@ -287,6 +317,12 @@ class SocialLoginView(APIView):
                             'email': user.email,
                             'is_onboarded': user.is_onboarded
                         }
+                        
+                        # Add tenant information to response if available
+                        if hasattr(user, 'tenant') and user.tenant:
+                            response_data['tenant_id'] = str(user.tenant.id)
+                            response_data['schema_name'] = user.tenant.schema_name
+                            
                         logger.info(f"Social login successful for user: {user.email}")
                         return Response(response_data)
                     else:
@@ -503,7 +539,27 @@ class ActivateAccountView(APIView):
         if user is not None and default_token_generator.check_token(user, token):
             user.is_active = True
             user.save()
-            return Response({"message": "Account activated successfully."}, status=status.HTTP_200_OK)
+            
+            # Create tenant schema if user doesn't have one
+            tenant = None
+            if not hasattr(user, 'tenant') or user.tenant is None:
+                logger.info(f"Creating tenant schema for user {user.email} during account activation")
+                try:
+                    # Create tenant schema
+                    tenant = create_tenant_schema_for_user(user)
+                    logger.info(f"Tenant schema created successfully: {tenant.schema_name}")
+                except Exception as e:
+                    logger.error(f"Failed to create tenant schema during activation: {str(e)}")
+                    # Continue with activation even if tenant creation fails
+            
+            response_data = {"message": "Account activated successfully."}
+            
+            # Add tenant information to response if available
+            if tenant:
+                response_data["tenant_id"] = str(tenant.id)
+                response_data["schema_name"] = tenant.schema_name
+                
+            return Response(response_data, status=status.HTTP_200_OK)
         else:
             return Response({"message": "Invalid activation link."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -749,14 +805,31 @@ class SignupAPIView(APIView):
                         'created_at': timezone.now()
                     }
                 )
+                
+                # Create tenant schema immediately
+                tenant = None
+                try:
+                    tenant = create_tenant_schema_for_user(user)
+                    logger.info(f"Tenant schema created successfully during signup: {tenant.schema_name}")
+                except Exception as e:
+                    logger.error(f"Failed to create tenant schema during signup: {str(e)}")
+                    # Continue with signup even if tenant creation fails
+                    # We'll retry on subsequent requests
 
-                logger.info(f"User signup completed for {email}")
-                return Response({
+                response_data = {
                     "status": "success",
                     "userId": str(user.id),
                     "email": user.email,
                     "isOnboarded": user.is_onboarded
-                })
+                }
+                
+                # Add tenant information to response if available
+                if tenant:
+                    response_data["tenantId"] = str(tenant.id)
+                    response_data["schemaName"] = tenant.schema_name
+
+                logger.info(f"User signup completed for {email}")
+                return Response(response_data)
 
         except Exception as e:
             logger.error("Error processing signup: %s", str(e))

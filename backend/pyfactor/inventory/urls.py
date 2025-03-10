@@ -3,6 +3,8 @@ from rest_framework.routers import DefaultRouter
 from . import views
 from . import api_views
 from . import service_api_views
+from .optimized_service_views import optimized_create_service
+from . import service_api_views
 
 # Create a router for standard views
 router = DefaultRouter()
@@ -45,7 +47,8 @@ urlpatterns = [
     
     # Existing function-based views
     path('products/create/', views.create_product, name='create-product'),
-    path('services/create/', views.create_service, name='create-service'),
+    path('services/create/', optimized_create_service, name='create-service'),
+    path('services/create', optimized_create_service, name='create-service-no-slash'),  # Add URL pattern without trailing slash
     path('products-list/', views.product_list, name='product-list'),
     path('services-list/', views.service_list, name='service-list'),
     path('products/<uuid:pk>/', views.product_detail, name='product-detail'),

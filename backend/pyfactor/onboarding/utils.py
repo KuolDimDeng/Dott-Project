@@ -24,13 +24,15 @@ def generate_unique_schema_name(user):
 
     try:
         # Generate tenant ID and convert hyphens to underscores
-        tenant_id = str(uuid.uuid4()).replace('-', '_').lower()
+        # Ensure we're working with a string representation of the UUID
+        tenant_id = str(uuid.uuid4()).replace('-', '_')
         
         # Combine with tenant_ prefix
         schema_name = f"tenant_{tenant_id}"
         
-        # Validate format
-        if not re.match(r'^tenant_[a-z0-9_]+$', schema_name):
+        # Validate format - allow hyphens in schema names for backward compatibility
+        # but we prefer underscores for new schema names
+        if not re.match(r'^tenant_[a-zA-Z0-9_\-]+$', schema_name):
             logger.warning(f"Generated invalid schema name format: {schema_name}")
             return None
             
@@ -55,8 +57,8 @@ def validate_schema_creation(cursor, schema_name):
         Exception: If schema can't be accessed
     """
     try:
-        # Validate schema name format first
-        if not re.match(r'^tenant_[a-z0-9_]+$', schema_name):
+        # Validate schema name format first - allow hyphens in schema names
+        if not re.match(r'^tenant_[a-zA-Z0-9_\-]+$', schema_name):
             raise ValueError(f"Invalid schema name format: {schema_name}")
 
         # Check schema existence
@@ -71,12 +73,31 @@ def validate_schema_creation(cursor, schema_name):
             with tenant_schema_context(cursor, schema_name):
                 cursor.execute('SHOW search_path')
                 current_path = cursor.fetchone()[0]
+                # Check if schema_name is in the current path
+                # Sometimes the schema might exist but not be in the search path
+                # In that case, we'll try to add it to the search path
                 if schema_name in current_path:
                     logger.info(f"Successfully validated schema: {schema_name}")
                     return True
                 else:
-                    logger.error(f"Schema {schema_name} exists but is not in search path")
-                    raise Exception(f"Schema {schema_name} exists but is not accessible")
+                    logger.warning(f"Schema {schema_name} exists but is not in search path, attempting to add it")
+                    try:
+                        # Try to add the schema to the search path
+                        cursor.execute(f'SET search_path TO "{schema_name}",public')
+                        cursor.execute('SHOW search_path')
+                        updated_path = cursor.fetchone()[0]
+                        
+                        if schema_name in updated_path:
+                            logger.info(f"Successfully added schema {schema_name} to search path")
+                            return True
+                        else:
+                            logger.error(f"Failed to add schema {schema_name} to search path")
+                            # Instead of raising an exception, return False to trigger schema recreation
+                            return False
+                    except Exception as e:
+                        logger.error(f"Error adding schema {schema_name} to search path: {str(e)}")
+                        # Return False to trigger schema recreation
+                        return False
         
         # Schema doesn't exist, create it
         logger.info(f"Schema {schema_name} does not exist, will be created")
@@ -91,13 +112,15 @@ def create_tenant_schema(cursor, schema_name, user_id):
     try:
         logger.debug(f"Starting schema creation for {schema_name}")
         
-        # Validate schema name
-        if not re.match(r'^tenant_[a-z0-9_]+$', schema_name):
+        # Validate schema name - allow hyphens in schema names
+        if not re.match(r'^tenant_[a-zA-Z0-9_\-]+$', schema_name):
             raise ValueError(f"Invalid schema name format: {schema_name}")
         
-        # Validate user_id is a valid UUID
+        # Validate user_id is a valid UUID and ensure it's a string
         try:
-            uuid_obj = uuid.UUID(user_id)
+            # Convert to string first in case it's already a UUID object
+            user_id_str = str(user_id)
+            uuid_obj = uuid.UUID(user_id_str)
             user_id = str(uuid_obj)
         except ValueError:
             logger.error(f"Invalid user_id format: {user_id}")
@@ -219,12 +242,23 @@ def tenant_schema_context(cursor, schema_name):
             # Restore previous schema using optimized connection
             if previous_schema:
                 logger.debug(f"Restoring previous schema: {previous_schema}")
+                # Clean up the previous_schema to ensure it's a valid schema name
+                # Remove any special characters or quotes that might cause SQL errors
+                clean_schema = previous_schema.replace('"', '').replace('$', '')
+                if ',' in clean_schema:
+                    # If there are multiple schemas in the path, just use the first one
+                    clean_schema = clean_schema.split(',')[0].strip()
+                
+                # If the schema is empty after cleaning, use 'public'
+                if not clean_schema or clean_schema.isspace():
+                    clean_schema = 'public'
+                    
                 TenantSchemaRouter.clear_connection_cache()
-                TenantSchemaRouter.get_connection_for_schema(previous_schema)
+                TenantSchemaRouter.get_connection_for_schema(clean_schema)
                 
                 # Update thread local storage with previous schema
-                setattr(local, 'tenant_schema', previous_schema)
-                logger.debug(f"Restored thread local tenant_schema to: {previous_schema}")
+                setattr(local, 'tenant_schema', clean_schema)
+                logger.debug(f"Restored thread local tenant_schema to: {clean_schema}")
             else:
                 logger.debug("Falling back to public schema")
                 TenantSchemaRouter.clear_connection_cache()

@@ -24,7 +24,7 @@ const API_URL = '';  // Remove '/api' to avoid duplicate in the path
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
-  timeout: 8000, // Reduced from 10000 to 8000 ms
+  timeout: 15000, // Increased from 8000 to 15000 ms to handle service creation
   headers: {
     'Content-Type': 'application/json',
   }

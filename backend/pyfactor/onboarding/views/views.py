@@ -1513,8 +1513,10 @@ class SaveStep1View(APIView):
             if not tenant_id:
                 raise ValidationError("X-Tenant-ID header is required")
                 
-            # Create schema name from tenant ID
-            schema_name = f"tenant_{tenant_id.replace('-', '_').lower()}"
+            # Create schema name from tenant ID - ensure tenant_id is a string
+            # Convert tenant_id to string and replace hyphens with underscores
+            tenant_id_str = str(tenant_id).replace('-', '_')
+            schema_name = f"tenant_{tenant_id_str}"
             logger.debug(f"Setting up tenant with schema: {schema_name}")
 
             # Get or update tenant with proper transaction management
@@ -1558,7 +1560,8 @@ class SaveStep1View(APIView):
                     
                     # Create new schema
                     from onboarding.utils import create_tenant_schema, validate_schema_creation
-                    create_tenant_schema(cursor, schema_name, request.user.id)
+                    # Ensure user ID is passed as a string
+                    create_tenant_schema(cursor, schema_name, str(request.user.id))
                     
                     # Verify schema was created
                     if not validate_schema_creation(cursor, schema_name):

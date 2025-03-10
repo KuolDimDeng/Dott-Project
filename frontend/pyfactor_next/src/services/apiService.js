@@ -28,6 +28,11 @@ export const handleApiError = (error, options = {}) => {
     tenantContext: getTenantContext()
   };
   
+  // Add response data for more detailed debugging
+  if (error.response?.data) {
+    requestDetails.responseData = error.response.data;
+  }
+  
   // Log detailed error information
   logger.error('[ApiService] Request failed:', requestDetails);
   
