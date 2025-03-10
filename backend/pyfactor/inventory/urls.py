@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
 from . import api_views
+from . import service_api_views
 
 # Create a router for standard views
 router = DefaultRouter()
@@ -15,9 +16,13 @@ router.register(r'services', views.ServiceViewSet, basename='service')
 router.register(r'departments', views.DepartmentViewSet)
 router.register(r'charge-plans', views.CustomChargePlanViewSet)
 
-# Create a router for optimized views
+# Create routers for optimized views
 optimized_router = DefaultRouter()
 optimized_router.register(r'products', api_views.OptimizedProductViewSet, basename='optimized-product')
+
+# Create router for optimized service views
+optimized_service_router = DefaultRouter()
+optimized_service_router.register(r'services', service_api_views.OptimizedServiceViewSet, basename='optimized-service')
 
 urlpatterns = [
     # Standard API endpoints
@@ -25,12 +30,18 @@ urlpatterns = [
     
     # Optimized API endpoints
     path('optimized/', include(optimized_router.urls)),
+    path('optimized/', include(optimized_service_router.urls)),
     
-    # Ultra-optimized endpoints
+    # Ultra-optimized product endpoints
     path('ultra/products/', api_views.ultra_fast_products, name='ultra-fast-products'),
     path('ultra/products/with-department/', api_views.products_with_department, name='products-with-department'),
     path('ultra/products/stats/', api_views.product_stats, name='product-stats'),
     path('ultra/products/code/<str:code>/', api_views.product_by_code, name='product-by-code'),
+    
+    # Ultra-optimized service endpoints
+    path('ultra/services/', service_api_views.ultra_fast_services, name='ultra-fast-services'),
+    path('ultra/services/stats/', service_api_views.service_stats, name='service-stats'),
+    path('ultra/services/code/<str:code>/', service_api_views.service_by_code, name='service-by-code'),
     
     # Existing function-based views
     path('products/create/', views.create_product, name='create-product'),

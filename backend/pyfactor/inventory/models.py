@@ -141,23 +141,22 @@ class Item(models.Model):
 
     @classmethod
     def generate_unique_code(cls, name, field):
-        from django.db import connections
+        import time
+        import random
+        import string
+        from django.utils.text import slugify
         
+        # Create a base from the name
         base = slugify(name)[:20]
-        while True:
-            code = f"{base}_{''.join(random.choices(string.ascii_uppercase + string.digits, k=5))}"
-            
-            # Use raw SQL query with the default connection to check if code exists
-            with connections['default'].cursor() as cursor:
-                cursor.execute(f"SELECT 1 FROM inventory_product WHERE {field} = %s LIMIT 1", [code])
-                if not cursor.fetchone():
-                    return code
-            
-            code = f"{base}_{''.join(random.choices(string.ascii_uppercase + string.digits, k=8))}"
-            with connections['default'].cursor() as cursor:
-                cursor.execute(f"SELECT 1 FROM inventory_product WHERE {field} = %s LIMIT 1", [code])
-                if not cursor.fetchone():
-                    return code
+        
+        # Add timestamp for uniqueness
+        timestamp = int(time.time())
+        
+        # Add random string
+        random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        
+        # Combine to create a unique code
+        return f"{base}_{timestamp}_{random_str}"
 
 class Product(Item):
     product_code = models.CharField(max_length=50, unique=True, editable=False, db_index=True)
@@ -231,42 +230,82 @@ class Product(Item):
         return rv.getvalue()
 
 class Service(Item):
-    service_code = models.CharField(max_length=50, unique=True, editable=False)
+    service_code = models.CharField(max_length=50, unique=True, editable=False, db_index=True)
     duration = models.DurationField(null=True, blank=True)
-    is_recurring = models.BooleanField(default=False)
+    is_recurring = models.BooleanField(default=False, db_index=True)
+    
+    # Use the default manager for backwards compatibility
     objects = models.Manager()
+    
+    # Add the optimized manager
+    from .service_managers import OptimizedServiceManager
+    optimized = OptimizedServiceManager()
 
     class Meta:
         indexes = [
             models.Index(fields=['name']),
             models.Index(fields=['service_code']),
+            models.Index(fields=['is_recurring']),
+            models.Index(fields=['is_for_sale', 'price']),
+            models.Index(fields=['created_at']),
+            # Add index for common filter combinations
+            models.Index(fields=['is_for_sale', 'is_recurring']),
         ]
         app_label = 'inventory'
 
     def save(self, *args, **kwargs):
+        import logging
+        import time
+        logger = logging.getLogger(__name__)
+        
+        start_time = time.time()
+        
+        # Log the current database connection and schema
+        from django.db import connection
+        from pyfactor.db_routers import TenantSchemaRouter
+        
+        # Get optimized connection for the current schema
+        with connection.cursor() as cursor:
+            cursor.execute('SHOW search_path')
+            current_schema = cursor.fetchone()[0]
+            logger.debug(f"Saving service in schema: {current_schema}, using connection: {connection.alias}")
+        
+        # Generate service code if needed
         if not self.service_code:
             self.service_code = self.generate_unique_code(self.name, 'service_code')
-        super().save(*args, **kwargs)
+        
+        try:
+            # Ensure we're using the default connection with optimized schema handling
+            kwargs['using'] = 'default'
+            
+            # Use a transaction for atomicity
+            from django.db import transaction
+            with transaction.atomic(using='default'):
+                super().save(*args, **kwargs)
+                
+            logger.debug(f"Successfully saved service {self.name} with ID {self.id} in {time.time() - start_time:.4f}s")
+        except Exception as e:
+            logger.error(f"Error saving service: {str(e)}", exc_info=True)
+            raise
         
     @classmethod
     def generate_unique_code(cls, name, field):
-        from django.db import connections
+        import time
+        import random
+        import string
+        from django.utils.text import slugify
         
+        # Create a base from the name
         base = slugify(name)[:20]
-        while True:
-            code = f"{base}_{''.join(random.choices(string.ascii_uppercase + string.digits, k=5))}"
-            
-            # Use raw SQL query with the default connection to check if code exists
-            with connections['default'].cursor() as cursor:
-                cursor.execute(f"SELECT 1 FROM inventory_service WHERE {field} = %s LIMIT 1", [code])
-                if not cursor.fetchone():
-                    return code
-            
-            code = f"{base}_{''.join(random.choices(string.ascii_uppercase + string.digits, k=8))}"
-            with connections['default'].cursor() as cursor:
-                cursor.execute(f"SELECT 1 FROM inventory_service WHERE {field} = %s LIMIT 1", [code])
-                if not cursor.fetchone():
-                    return code
+        
+        # Add timestamp for uniqueness
+        timestamp = int(time.time())
+        
+        # Add random string
+        random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        
+        # Combine to create a unique code
+        return f"{base}_{timestamp}_{random_str}"
         
     @classmethod
     def from_db(cls, db, field_names, values):
