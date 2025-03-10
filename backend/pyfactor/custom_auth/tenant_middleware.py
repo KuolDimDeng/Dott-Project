@@ -4,6 +4,7 @@ from django.db import connection
 from django.http import JsonResponse
 from onboarding.utils import create_tenant_schema
 from custom_auth.models import Tenant
+from custom_auth.connection_utils import get_connection_for_schema, set_current_schema, get_current_schema
 
 logger = logging.getLogger(__name__)
 
@@ -120,8 +121,9 @@ class EnhancedTenantMiddleware:
                 
                 # Set search path for this request
                 try:
-                    with connection.cursor() as cursor:
-                        cursor.execute(f'SET search_path TO "{schema_name}",public')
+                    # Use optimized connection management
+                    set_current_schema(schema_name)
+                    get_connection_for_schema(schema_name)
                     
                     # Store schema info in request for views to use
                     request.schema_name = schema_name
@@ -130,8 +132,7 @@ class EnhancedTenantMiddleware:
                     response = self.get_response(request)
                     
                     # Reset to public schema after request
-                    with connection.cursor() as cursor:
-                        cursor.execute('SET search_path TO public')
+                    set_current_schema('public')
                     
                     # Log performance metrics
                     elapsed_time = time.time() - start_time
@@ -160,16 +161,15 @@ class EnhancedTenantMiddleware:
                     request.tenant = tenant
                     request.schema_name = tenant.schema_name
                     
-                    # Set search path for this request
-                    with connection.cursor() as cursor:
-                        cursor.execute(f'SET search_path TO "{tenant.schema_name}",public')
+                    # Set search path for this request using optimized connection management
+                    set_current_schema(tenant.schema_name)
+                    get_connection_for_schema(tenant.schema_name)
                     
                     # Process the request with tenant schema
                     response = self.get_response(request)
                     
                     # Reset to public schema after request
-                    with connection.cursor() as cursor:
-                        cursor.execute('SET search_path TO public')
+                    set_current_schema('public')
                     
                     # Log performance metrics
                     elapsed_time = time.time() - start_time
@@ -185,8 +185,8 @@ class EnhancedTenantMiddleware:
                     return response
             
             # Default to public schema if no tenant found
-            with connection.cursor() as cursor:
-                cursor.execute('SET search_path TO public')
+            set_current_schema('public')
+            get_connection_for_schema('public')
             
             logger.debug("Using public schema (no tenant found)")
             return self.get_response(request)
@@ -202,6 +202,6 @@ class EnhancedTenantMiddleware:
                 }
             )
             # Ensure we fall back to public schema
-            with connection.cursor() as cursor:
-                cursor.execute('SET search_path TO public')
+            set_current_schema('public')
+            get_connection_for_schema('public')
             return self.get_response(request)

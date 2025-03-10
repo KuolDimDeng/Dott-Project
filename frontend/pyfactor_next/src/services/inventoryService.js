@@ -1,273 +1,477 @@
-import { axiosInstance } from '@/lib/axiosConfig';
+import { apiService } from './apiService';
 import { logger } from '@/utils/logger';
-import { inventoryCache } from '@/utils/cacheUtils';
-import { getTenantId } from '@/utils/tenantUtils';
+import { inventoryCache } from '@/utils/enhancedCache';
 
 /**
- * Service for inventory-related API calls
+ * InventoryService - Consolidated service for inventory-related operations
+ * This service replaces the previous inventoryService and ultraOptimizedInventoryService
+ * with a single, consistent interface for all inventory operations.
  */
-export const inventoryService = {
-  /**
-   * Get all products
-   * @param {boolean} useCache - Whether to use cached data if available
-   * @returns {Promise<Array>} List of products
-   */
-  async getProducts(useCache = true) {
-    const cacheKey = 'products';
+
+// Cache TTL configuration
+const CACHE_CONFIG = {
+  LIST_TTL: 3 * 60 * 1000,       // 3 minutes for list endpoints
+  DETAIL_TTL: 5 * 60 * 1000,     // 5 minutes for detail endpoints
+  STATS_TTL: 5 * 60 * 1000,      // 5 minutes for stats
+};
+
+// Mock data for offline/demo mode
+const MOCK_PRODUCTS = [
+  {
+    id: '1',
+    name: 'Sample Product 1',
+    product_code: 'SP001',
+    description: 'This is a sample product for development',
+    stock_quantity: 25,
+    reorder_level: 5,
+    price: 19.99,
+    is_for_sale: true
+  },
+  {
+    id: '2',
+    name: 'Sample Product 2',
+    product_code: 'SP002',
+    description: 'Another sample product for testing',
+    stock_quantity: 10,
+    reorder_level: 3,
+    price: 29.99,
+    is_for_sale: true
+  },
+  {
+    id: '3',
+    name: 'Office Supplies',
+    product_code: 'OS003',
+    description: 'Various office supplies including pens, paper, and staplers',
+    stock_quantity: 150,
+    reorder_level: 30,
+    price: 12.50,
+    is_for_sale: true
+  },
+  {
+    id: '4',
+    name: 'Desk Chair',
+    product_code: 'DC004',
+    description: 'Ergonomic office chair with adjustable height',
+    stock_quantity: 8,
+    reorder_level: 2,
+    price: 199.99,
+    is_for_sale: true
+  },
+  {
+    id: '5',
+    name: 'Laptop Stand',
+    product_code: 'LS005',
+    description: 'Adjustable laptop stand for better ergonomics',
+    stock_quantity: 15,
+    reorder_level: 5,
+    price: 49.99,
+    is_for_sale: true
+  }
+];
+
+/**
+ * Get mock products for testing and fallback
+ * @returns {Array} List of mock products
+ */
+export const getMockProducts = () => {
+  return [...MOCK_PRODUCTS];
+};
+
+/**
+ * Get products with optional filtering
+ * @param {Object} options - Query options
+ * @param {Object} fetchOptions - Fetch options
+ * @returns {Promise<Object>} Paginated list of products
+ */
+export const getProducts = async (options = {}, fetchOptions = {}) => {
+  const {
+    page = 1,
+    is_for_sale,
+    min_stock,
+    search,
+    department,
+    view_mode = 'standard'
+  } = options;
+  
+  // Build query parameters
+  const params = { page };
+  if (is_for_sale !== undefined) params.is_for_sale = is_for_sale;
+  if (min_stock !== undefined) params.min_stock = min_stock;
+  if (search) params.search = search;
+  if (department) params.department = department;
+  
+  // Determine endpoint based on view mode
+  let endpoint;
+  let cacheTTL = CACHE_CONFIG.LIST_TTL;
+  
+  switch (view_mode) {
+    case 'ultra':
+      endpoint = '/api/inventory/ultra/products/';
+      break;
+    case 'detailed':
+      endpoint = '/api/inventory/products/';
+      cacheTTL = CACHE_CONFIG.DETAIL_TTL; // Longer TTL for detailed data
+      break;
+    case 'with_department':
+      endpoint = '/api/inventory/ultra/products/with-department/';
+      break;
+    default:
+      endpoint = '/api/inventory/products/'; // Default to standard endpoint
+  }
+  
+  // Set up fetch options
+  const defaultFetchOptions = {
+    useCache: true,
+    cacheTTL,
+    fallbackData: { results: [], count: 0 },
+    ...fetchOptions
+  };
+  
+  try {
+    // Fetch data using the centralized API service
+    const response = await apiService.fetch(endpoint, {
+      params,
+      ...defaultFetchOptions
+    });
     
-    try {
-      // Try to get from cache first if useCache is true
-      if (useCache) {
-        const cachedData = inventoryCache.get(cacheKey);
-        if (cachedData) {
-          logger.debug('Using cached products data');
-          return cachedData;
-        }
-      }
-      
-      // If not in cache or useCache is false, fetch from API
-      const response = await axiosInstance.get('/api/inventory/products/', {
-        timeout: 30000 // 30 second timeout
-      });
-      
-      // Cache the response data
-      if (response.data) {
-        inventoryCache.set(cacheKey, response.data);
-      }
-      
-      return response.data;
-    } catch (error) {
-      logger.error('Error fetching products:', error);
-      throw error;
+    // Store for offline use if successful
+    if (response && response.results && response.results.length > 0) {
+      storeProductsOffline(response.results);
     }
-  },
-
-  /**
-   * Get all inventory items
-   * @param {boolean} useCache - Whether to use cached data if available
-   * @returns {Promise<Array>} List of inventory items
-   */
-  async getInventoryItems(useCache = true) {
-    const cacheKey = 'inventory_items';
     
-    try {
-      // Try to get from cache first if useCache is true
-      if (useCache) {
-        const cachedData = inventoryCache.get(cacheKey);
-        if (cachedData) {
-          logger.debug('Using cached inventory items data');
-          return cachedData;
-        }
-      }
-      
-      // If not in cache or useCache is false, fetch from API
-      const response = await axiosInstance.get('/api/inventory/items/', {
-        timeout: 15000 // 15 second timeout
-      });
-      
-      // Cache the response data
-      if (response.data) {
-        inventoryCache.set(cacheKey, response.data);
-      }
-      
-      return response.data;
-    } catch (error) {
-      logger.error('Error fetching inventory items:', error);
-      throw error;
+    return response;
+  } catch (error) {
+    logger.error('Error fetching products:', error);
+    
+    // Try to get offline data
+    const offlineProducts = getOfflineProducts();
+    if (offlineProducts.length > 0) {
+      logger.info('Using offline product data');
+      return {
+        results: offlineProducts,
+        count: offlineProducts.length
+      };
     }
-  },
-
-  /**
-   * Create a new product
-   * @param {Object} productData - The product data
-   * @returns {Promise<Object>} The created product
-   */
-  async createProduct(productData) {
-    try {
-      const response = await axiosInstance.post('/api/inventory/products/create/', productData, {
-        timeout: 15000 // 15 second timeout
-      });
-      
-      // Clear cache after creating a product
-      inventoryCache.delete('products');
-      
-      return response.data;
-    } catch (error) {
-      logger.error('Error creating product:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Create a new inventory item
-   * @param {Object} itemData - The inventory item data
-   * @returns {Promise<Object>} The created inventory item
-   */
-  async createInventoryItem(itemData) {
-    try {
-      const response = await axiosInstance.post('/api/inventory/items/', itemData, {
-        timeout: 15000 // 15 second timeout
-      });
-      
-      // Clear cache after creating an inventory item
-      inventoryCache.delete('inventory_items');
-      
-      return response.data;
-    } catch (error) {
-      logger.error('Error creating inventory item:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Update a product
-   * @param {string} id - The product ID
-   * @param {Object} productData - The updated product data
-   * @returns {Promise<Object>} The updated product
-   */
-  async updateProduct(id, productData) {
-    try {
-      const response = await axiosInstance.put(`/api/inventory/products/${id}/`, productData, {
-        timeout: 15000 // 15 second timeout
-      });
-      
-      // Clear cache after updating a product
-      inventoryCache.delete('products');
-      
-      return response.data;
-    } catch (error) {
-      logger.error(`Error updating product ${id}:`, error);
-      throw error;
-    }
-  },
-
-  /**
-   * Update an inventory item
-   * @param {string} id - The inventory item ID
-   * @param {Object} itemData - The updated inventory item data
-   * @returns {Promise<Object>} The updated inventory item
-   */
-  async updateInventoryItem(id, itemData) {
-    try {
-      const response = await axiosInstance.put(`/api/inventory/items/${id}/`, itemData, {
-        timeout: 15000 // 15 second timeout
-      });
-      
-      // Clear cache after updating an inventory item
-      inventoryCache.delete('inventory_items');
-      
-      return response.data;
-    } catch (error) {
-      logger.error(`Error updating inventory item ${id}:`, error);
-      throw error;
-    }
-  },
-
-  /**
-   * Delete a product
-   * @param {string} id - The product ID
-   * @returns {Promise<void>}
-   */
-  async deleteProduct(id) {
-    try {
-      await axiosInstance.delete(`/api/inventory/products/${id}/`, {
-        timeout: 15000 // 15 second timeout
-      });
-      
-      // Clear cache after deleting a product
-      inventoryCache.delete('products');
-      
-    } catch (error) {
-      logger.error(`Error deleting product ${id}:`, error);
-      throw error;
-    }
-  },
-
-  /**
-   * Delete an inventory item
-   * @param {string} id - The inventory item ID
-   * @returns {Promise<void>}
-   */
-  async deleteInventoryItem(id) {
-    try {
-      await axiosInstance.delete(`/api/inventory/items/${id}/`, {
-        timeout: 15000 // 15 second timeout
-      });
-      
-      // Clear cache after deleting an inventory item
-      inventoryCache.delete('inventory_items');
-      
-    } catch (error) {
-      logger.error(`Error deleting inventory item ${id}:`, error);
-      throw error;
-    }
-  },
-
-  /**
-   * Clear inventory cache
-   * This should be called after any create, update, or delete operation
-   */
-  clearCache() {
-    logger.debug('Clearing inventory cache');
-    inventoryCache.clearTenant();
-  },
-
-  /**
-   * Get mock products for fallback
-   * @returns {Array} List of mock products
-   */
-  getMockProducts() {
-    return [
-      {
-        id: '1',
-        name: 'Sample Product 1',
-        product_code: 'SP001',
-        description: 'This is a sample product for development',
-        stock_quantity: 25,
-        reorder_level: 5,
-        price: 19.99,
-        is_for_sale: true
-      },
-      {
-        id: '2',
-        name: 'Sample Product 2',
-        product_code: 'SP002',
-        description: 'Another sample product for testing',
-        stock_quantity: 10,
-        reorder_level: 3,
-        price: 29.99,
-        is_for_sale: true
-      },
-      {
-        id: '3',
-        name: 'Office Supplies',
-        product_code: 'OS003',
-        description: 'Various office supplies including pens, paper, and staplers',
-        stock_quantity: 150,
-        reorder_level: 30,
-        price: 12.50,
-        is_for_sale: true
-      },
-      {
-        id: '4',
-        name: 'Desk Chair',
-        product_code: 'DC004',
-        description: 'Ergonomic office chair with adjustable height',
-        stock_quantity: 8,
-        reorder_level: 2,
-        price: 199.99,
-        is_for_sale: true
-      },
-      {
-        id: '5',
-        name: 'Laptop Stand',
-        product_code: 'LS005',
-        description: 'Adjustable laptop stand for better ergonomics',
-        stock_quantity: 15,
-        reorder_level: 5,
-        price: 49.99,
-        is_for_sale: true
-      }
-    ];
+    
+    // Fall back to mock data
+    logger.info('Using mock product data');
+    return {
+      results: MOCK_PRODUCTS,
+      count: MOCK_PRODUCTS.length
+    };
   }
 };
+
+/**
+ * Get product statistics
+ * @param {Object} options - Fetch options
+ * @returns {Promise<Object>} Product statistics
+ */
+export const getProductStats = async (options = {}) => {
+  const defaultOptions = {
+    useCache: true,
+    cacheTTL: CACHE_CONFIG.STATS_TTL,
+    fallbackData: {
+      total_products: 0,
+      low_stock_count: 0,
+      total_value: 0,
+      avg_price: 0
+    },
+    ...options
+  };
+  
+  try {
+    return await apiService.fetch('/api/inventory/ultra/products/stats/', defaultOptions);
+  } catch (error) {
+    logger.error('Error fetching product stats:', error);
+    
+    // Generate stats from offline data if available
+    const offlineProducts = getOfflineProducts();
+    if (offlineProducts.length > 0) {
+      return generateStatsFromProducts(offlineProducts);
+    }
+    
+    // Fall back to mock stats
+    return generateStatsFromProducts(MOCK_PRODUCTS);
+  }
+};
+
+/**
+ * Get product by ID
+ * @param {string} id - Product ID
+ * @param {Object} options - Fetch options
+ * @returns {Promise<Object>} Product details
+ */
+export const getProductById = async (id, options = {}) => {
+  if (!id) {
+    logger.error('Product ID is required');
+    return null;
+  }
+  
+  const defaultOptions = {
+    useCache: true,
+    cacheTTL: CACHE_CONFIG.DETAIL_TTL,
+    ...options
+  };
+  
+  try {
+    return await apiService.fetch(`/api/inventory/products/${id}/`, defaultOptions);
+  } catch (error) {
+    logger.error(`Error fetching product ${id}:`, error);
+    
+    // Try to find in offline data
+    const offlineProducts = getOfflineProducts();
+    const offlineProduct = offlineProducts.find(p => p.id === id);
+    
+    if (offlineProduct) {
+      return offlineProduct;
+    }
+    
+    // Try to find in mock data
+    const mockProduct = MOCK_PRODUCTS.find(p => p.id === id);
+    
+    return mockProduct || null;
+  }
+};
+
+/**
+ * Get product by code (e.g., for barcode scanning)
+ * @param {string} code - Product code
+ * @param {Object} options - Fetch options
+ * @returns {Promise<Object>} Product details
+ */
+export const getProductByCode = async (code, options = {}) => {
+  if (!code) {
+    logger.error('Product code is required');
+    return null;
+  }
+  
+  const defaultOptions = {
+    useCache: true,
+    cacheTTL: CACHE_CONFIG.DETAIL_TTL,
+    ...options
+  };
+  
+  try {
+    return await apiService.fetch(`/api/inventory/ultra/products/code/${code}/`, defaultOptions);
+  } catch (error) {
+    logger.error(`Error fetching product by code ${code}:`, error);
+    
+    // Try to find in offline data
+    const offlineProducts = getOfflineProducts();
+    const offlineProduct = offlineProducts.find(p => p.product_code === code);
+    
+    if (offlineProduct) {
+      return offlineProduct;
+    }
+    
+    // Try to find in mock data
+    const mockProduct = MOCK_PRODUCTS.find(p => p.product_code === code);
+    
+    return mockProduct || null;
+  }
+};
+
+/**
+ * Create a new product
+ * @param {Object} productData - Product data
+ * @returns {Promise<Object>} Created product
+ */
+export const createProduct = async (productData) => {
+  try {
+    const result = await apiService.post('/api/inventory/products/create/', productData, {
+      invalidateCache: ['products', 'ultra/products', 'stats']
+    });
+    
+    logger.info('Product created successfully');
+    return result;
+  } catch (error) {
+    logger.error('Error creating product:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a product
+ * @param {string} id - Product ID
+ * @param {Object} productData - Updated product data
+ * @returns {Promise<Object>} Updated product
+ */
+export const updateProduct = async (id, productData) => {
+  try {
+    const result = await apiService.put(`/api/inventory/products/${id}/`, productData, {
+      invalidateCache: ['products', 'ultra/products', 'stats']
+    });
+    
+    logger.info(`Product ${id} updated successfully`);
+    return result;
+  } catch (error) {
+    logger.error(`Error updating product ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a product
+ * @param {string} id - Product ID
+ * @returns {Promise<void>}
+ */
+export const deleteProduct = async (id) => {
+  try {
+    await apiService.delete(`/api/inventory/products/${id}/`, {
+      invalidateCache: ['products', 'ultra/products', 'stats']
+    });
+    
+    logger.info(`Product ${id} deleted successfully`);
+  } catch (error) {
+    logger.error(`Error deleting product ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Prefetch essential inventory data
+ * This can be called during app initialization
+ */
+export const prefetchEssentialData = async () => {
+  logger.debug('Prefetching essential inventory data');
+  
+  try {
+    // Fetch first page of products
+    getProducts({ page: 1, view_mode: 'ultra' }).catch(err => {
+      logger.warn('Failed to prefetch products:', err);
+    });
+    
+    // Fetch product stats
+    getProductStats().catch(err => {
+      logger.warn('Failed to prefetch product stats:', err);
+    });
+    
+    // Schedule additional prefetching when browser is idle
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      window.requestIdleCallback(() => {
+        logger.debug('Prefetching additional inventory data during browser idle time');
+        
+        // Prefetch products with department during idle time
+        getProducts({ page: 1, view_mode: 'with_department' }).catch(err => {
+          logger.warn('Failed to prefetch products with department:', err);
+        });
+      }, { timeout: 5000 });
+    }
+  } catch (error) {
+    logger.error('Error prefetching essential inventory data:', error);
+  }
+};
+
+/**
+ * Store products in localStorage for offline access
+ * @param {Array} products - Products to store
+ */
+export const storeProductsOffline = (products) => {
+  if (!Array.isArray(products) || products.length === 0) {
+    return;
+  }
+  
+  try {
+    const offlineData = {
+      timestamp: Date.now(),
+      products: products
+    };
+    
+    localStorage.setItem('offline_products', JSON.stringify(offlineData));
+    logger.debug(`Stored ${products.length} products for offline use`);
+  } catch (error) {
+    logger.error('Error storing products offline:', error);
+  }
+};
+
+/**
+ * Get products from offline storage
+ * @returns {Array} Products from offline storage
+ */
+export const getOfflineProducts = () => {
+  try {
+    const offlineDataStr = localStorage.getItem('offline_products');
+    if (!offlineDataStr) {
+      return [];
+    }
+    
+    const offlineData = JSON.parse(offlineDataStr);
+    
+    // Check if data is stale (older than 24 hours)
+    const isStale = Date.now() - offlineData.timestamp > 24 * 60 * 60 * 1000;
+    if (isStale) {
+      logger.warn('Offline product data is stale (>24h old)');
+    }
+    
+    return offlineData.products || [];
+  } catch (error) {
+    logger.error('Error retrieving offline products:', error);
+    return [];
+  }
+};
+
+/**
+ * Clear inventory cache
+ */
+export const clearInventoryCache = () => {
+  logger.debug('Clearing inventory cache');
+  inventoryCache.clearTenant();
+};
+
+/**
+ * Generate statistics from a list of products
+ * @param {Array} products - List of products
+ * @returns {Object} Product statistics
+ */
+export const generateStatsFromProducts = (products) => {
+  if (!Array.isArray(products) || products.length === 0) {
+    return {
+      total_products: 0,
+      low_stock_count: 0,
+      total_value: 0,
+      avg_price: 0
+    };
+  }
+  
+  const total_products = products.length;
+  
+  const low_stock_count = products.filter(
+    p => p.stock_quantity < p.reorder_level
+  ).length;
+  
+  const total_value = products.reduce(
+    (sum, p) => sum + (p.price || 0) * (p.stock_quantity || 0),
+    0
+  );
+  
+  const avg_price = products.reduce(
+    (sum, p) => sum + (p.price || 0),
+    0
+  ) / total_products;
+  
+  return {
+    total_products,
+    low_stock_count,
+    total_value,
+    avg_price
+  };
+};
+
+// Export a default object with all methods
+export const inventoryService = {
+  getProducts,
+  getProductStats,
+  getProductById,
+  getProductByCode,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  prefetchEssentialData,
+  clearInventoryCache,
+  storeProductsOffline,
+  getOfflineProducts,
+  getMockProducts
+};
+
+export default inventoryService;

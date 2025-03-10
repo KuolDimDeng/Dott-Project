@@ -26,6 +26,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { inventoryService } from '@/services/inventoryService';
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 
 // Component for displaying and managing inventory items
@@ -88,10 +89,18 @@ const InventoryItemList = () => {
     }
     
     try {
-      // Try to fetch products first
+      // Try to fetch products through the service layer with a timeout
       try {
         logger.debug('Fetching products from inventory service');
-        const products = await inventoryService.getProducts();
+        
+        // Set a timeout for the product fetch
+        const productPromise = inventoryService.getProducts();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Product fetch timed out')), 7000)
+        );
+        
+        // Race the product fetch against the timeout
+        const products = await Promise.race([productPromise, timeoutPromise]);
         
         // If we have products, use them
         if (products && Array.isArray(products)) {
@@ -109,17 +118,34 @@ const InventoryItemList = () => {
           return;
         }
       } catch (productError) {
-        logger.warn('Product fetch failed, trying inventory items:', productError);
+        const errorMessage = productError.message || 'Unknown error';
+        const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('timed out');
+        
+        logger.warn(`Product fetch failed (${isTimeout ? 'timeout' : 'error'}):`, productError);
+        
+        if (isTimeout) {
+          showSnackbar('Product fetch timed out. Trying inventory items...', 'warning');
+        }
       }
       
       // Fallback to inventory items if products endpoint fails
       try {
         logger.debug('Fetching inventory items from inventory service');
-        const items = await inventoryService.getInventoryItems();
         
-        if (items && Array.isArray(items)) {
-          setItems(items);
+        // Set a timeout for the inventory items fetch
+        // Use getProducts instead of getInventoryItems which doesn't exist
+        const itemsPromise = inventoryService.getProducts();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Inventory items fetch timed out')), 7000)
+        );
+        
+        // Race the inventory items fetch against the timeout
+        const items = await Promise.race([itemsPromise, timeoutPromise]);
+        
+        if (items && items.results && Array.isArray(items.results)) {
+          setItems(items.results);
           showSnackbar('Inventory items loaded successfully', 'success');
+          setLoading(false);
         } else {
           // If no data or not an array, fall back to mock data
           logger.warn('No data from API, falling back to mock data');
@@ -128,14 +154,32 @@ const InventoryItemList = () => {
           return;
         }
       } catch (itemsError) {
-        logger.error('Both endpoints failed:', itemsError);
+        const errorMessage = itemsError.message || 'Unknown error';
+        const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('timed out');
+        
+        logger.error(`All endpoints failed (${isTimeout ? 'timeout' : 'error'}):`, itemsError);
+        
+        // Show a more specific error message
+        if (isTimeout) {
+          setError('Connection to inventory service timed out. Using demo data instead.');
+        } else if (itemsError.response?.status === 404) {
+          setError('Inventory service endpoints not found (404). Using demo data instead.');
+        } else {
+          setError(`Error connecting to inventory service: ${errorMessage}. Using demo data instead.`);
+        }
+        
         // Fall back to mock data
         setApiUnavailable(true); // Mark API as unavailable
         fetchItems(true); // Call again with forceMock=true
         return;
       }
     } catch (error) {
+      const errorMessage = error.message || 'Unknown error';
       logger.error('Error fetching inventory items:', error);
+      
+      // Set a more descriptive error message
+      setError(`Failed to load inventory data: ${errorMessage}. Using demo data instead.`);
+      
       // Fall back to mock data
       setApiUnavailable(true);
       fetchItems(true); // Call again with forceMock=true
@@ -215,7 +259,8 @@ const InventoryItemList = () => {
           logger.warn('Product update failed, trying as inventory item', productError);
           // If product update fails, try as an inventory item
           try {
-            await inventoryService.updateInventoryItem(currentItem.id, currentItem);
+            // Use updateProduct instead of updateInventoryItem
+            await inventoryService.updateProduct(currentItem.id, currentItem);
             showSnackbar('Inventory item updated successfully', 'success');
           } catch (itemError) {
             logger.error('Both update attempts failed:', itemError);
@@ -234,7 +279,8 @@ const InventoryItemList = () => {
           logger.warn('Product creation failed, trying as inventory item', productError);
           // If product creation fails, try as an inventory item
           try {
-            await inventoryService.createInventoryItem(currentItem);
+            // Use createProduct instead of createInventoryItem
+            await inventoryService.createProduct(currentItem);
             showSnackbar('Inventory item created successfully', 'success');
           } catch (itemError) {
             logger.error('Both creation attempts failed:', itemError);
@@ -270,7 +316,8 @@ const InventoryItemList = () => {
           // If product deletion fails, try as an inventory item
           logger.warn('Product deletion failed, trying as inventory item');
           try {
-            await inventoryService.deleteInventoryItem(id);
+            // Use deleteProduct instead of deleteInventoryItem
+            await inventoryService.deleteProduct(id);
             showSnackbar('Inventory item deleted successfully', 'success');
           } catch (itemError) {
             logger.error('Both deletion attempts failed:', itemError);

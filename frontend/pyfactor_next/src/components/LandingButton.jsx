@@ -6,6 +6,7 @@ import { Button, CircularProgress, Box } from '@mui/material';
 import { logger } from '@/utils/logger';
 import { useLandingPageStatus } from '@/hooks/useLandingPageStatus';
 import { ONBOARDING_STATES } from '@/utils/userAttributes';
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 const BUTTON_CONFIGS = {
   [ONBOARDING_STATES.NOT_STARTED]: {
@@ -62,6 +63,37 @@ export default function LandingButton() {
   const [retryCount, setRetryCount] = useState(0);
   const { isLoading, isAuthenticated, needsOnboarding, onboardingStatus, error } = useLandingPageStatus();
 
+  // Helper function to update cookies
+  const updateCookies = async (onboardingStep, onboardedStatus, setupCompleted = false) => {
+    try {
+      const { tokens } = await fetchAuthSession();
+      
+      if (tokens?.idToken) {
+        logger.debug('[LandingButton] Updating cookies before navigation');
+        
+        await fetch('/api/auth/set-cookies', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            idToken: tokens.idToken.toString(),
+            accessToken: tokens.accessToken.toString(),
+            refreshToken: tokens.refreshToken?.toString(),
+            onboardingStep,
+            onboardedStatus,
+            setupCompleted
+          }),
+        });
+        
+        logger.debug('[LandingButton] Successfully updated cookies');
+      }
+    } catch (error) {
+      logger.error('[LandingButton] Failed to update cookies:', error);
+      // Continue with navigation even if cookie update fails
+    }
+  };
+
   const getButtonConfig = useCallback(() => {
     if (isLoading) {
       return BUTTON_CONFIGS.DEFAULT;
@@ -85,6 +117,21 @@ export default function LandingButton() {
       
       if (!config) {
         throw new Error('Invalid button configuration');
+      }
+
+      // If going to dashboard and onboarding is complete, update cookies first
+      if (config.route === '/dashboard' && onboardingStatus === 'COMPLETE') {
+        logger.debug('[LandingButton] Going to dashboard with COMPLETE status, updating cookies');
+        await updateCookies('complete', 'COMPLETE', true);
+      } else if (config.route === '/dashboard') {
+        // For any other case going to dashboard, ensure we have the right cookies
+        logger.debug('[LandingButton] Going to dashboard, ensuring cookies are set');
+        await updateCookies('complete', onboardingStatus || 'COMPLETE', true);
+      } else if (config.route.startsWith('/onboarding/')) {
+        // Update cookies for onboarding routes
+        const step = config.route.replace('/onboarding/', '');
+        const status = step.toUpperCase().replace('-', '_');
+        await updateCookies(step, status);
       }
 
       router.push(config.route);

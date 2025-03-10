@@ -9,6 +9,7 @@ import string
 from io import BytesIO
 from barcode import Code128
 from barcode.writer import ImageWriter
+from .managers import OptimizedProductManager
 
 class InventoryItem(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -163,7 +164,12 @@ class Product(Item):
     department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, related_name='products')
     stock_quantity = models.IntegerField(default=0, db_index=True)
     reorder_level = models.IntegerField(default=0)
+    
+    # Use the default manager for backwards compatibility
     objects = models.Manager()
+    
+    # Add the optimized manager
+    optimized = OptimizedProductManager()
 
     class Meta:
         indexes = [
@@ -172,6 +178,9 @@ class Product(Item):
             models.Index(fields=['stock_quantity', 'reorder_level']),
             models.Index(fields=['is_for_sale', 'price']),
             models.Index(fields=['created_at']),
+            # Add index for common filter combinations
+            models.Index(fields=['is_for_sale', 'stock_quantity']),
+            models.Index(fields=['department', 'stock_quantity']),
         ]
         app_label = 'inventory'
 

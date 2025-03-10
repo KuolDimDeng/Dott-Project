@@ -161,8 +161,16 @@ if (!idToken || !accessToken) {
   return NextResponse.redirect(signinUrl);
 }
 
+// Check if user has completed onboarding - if so, redirect to dashboard
+// This needs to be checked BEFORE the onboardingStep check
+if (onboardedStatus === 'COMPLETE' && !pathname.startsWith('/api/') && pathname !== '/dashboard') {
+  console.log(`[Middleware] User has COMPLETE onboarding status, redirecting to dashboard`);
+  return NextResponse.redirect(new URL('/dashboard', request.url));
+}
+
 // Check if user needs to be redirected to onboarding
-if (!onboardingStep && !pathname.startsWith('/onboarding/') && !pathname.startsWith('/api/')) {
+// Only redirect if onboardedStatus is not COMPLETE
+if (!onboardingStep && !pathname.startsWith('/onboarding/') && !pathname.startsWith('/api/') && onboardedStatus !== 'COMPLETE') {
   console.log(`[Middleware] Authenticated user without onboarding step, redirecting to onboarding`);
   const redirectUrl = new URL('/onboarding/business-info', request.url);
   redirectUrl.searchParams.set('lng', lng);
@@ -178,11 +186,7 @@ if (!onboardingStep && !pathname.startsWith('/onboarding/') && !pathname.startsW
     return response;
   }
 
-  // Check if user has completed onboarding - if so, redirect to dashboard
-  if (onboardedStatus === 'COMPLETE' && !pathname.startsWith('/api/') && pathname !== '/dashboard') {
-    console.log(`[Middleware] User has COMPLETE onboarding status, redirecting to dashboard`);
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
+  // Check for onboarding status is now handled earlier in the middleware
   
   // Handle onboarding routes
   if (pathname.startsWith('/onboarding/')) {

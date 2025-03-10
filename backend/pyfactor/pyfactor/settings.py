@@ -374,6 +374,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'taxes.tasks.update_state_tax_rates',
         'schedule': crontab(day_of_week='1', hour='4', minute='0'),  # Every Monday at 4:00 AM
     },
+    'monitor_database_connections': {
+        'task': 'custom_auth.tasks.monitor_database_connections',
+        'schedule': crontab(minute='*/5'),  # Every 5 minutes
+    },
 }
 
 # Session and authentication settings
@@ -516,27 +520,24 @@ LOGGING = {
         },
         'file': {
             'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(os.getcwd(), 'debug.log'),
+            'class': 'logging.FileHandler',
+            'filename': '/Users/kuoldeng/projectx/backend/pyfactor/debug.log',
             'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 5,  # 5 MB
-            'backupCount': 5,
+            'mode': 'w',  # 'w' mode overwrites the file on each run
         },
         'sql_file': {
             'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(os.getcwd(), 'sql.log'),
+            'class': 'logging.FileHandler',
+            'filename': '/Users/kuoldeng/projectx/backend/pyfactor/debug.log',
             'formatter': 'sql',
-            'maxBytes': 1024 * 1024 * 5,  # 5 MB
-            'backupCount': 3,
+            'mode': 'a',  # 'a' mode appends to the file
         },
         'tenant_file': {
             'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(os.getcwd(), 'tenant.log'),
+            'class': 'logging.FileHandler',
+            'filename': '/Users/kuoldeng/projectx/backend/pyfactor/debug.log',
             'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 5,  # 5 MB
-            'backupCount': 3,
+            'mode': 'a',  # 'a' mode appends to the file
         },
     },
     'loggers': {
@@ -672,6 +673,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'custom_auth.connection_limiter.ConnectionLimiterMiddleware',  # Connection limiter for emergency situations
+    'custom_auth.connection_pool.ConnectionPoolMiddleware',  # Efficient connection pooling
+    'custom_auth.tenant_metrics.QueryMetricsMiddleware',  # Collect tenant usage metrics
     'django.middleware.security.SecurityMiddleware',
     'custom_auth.cors.CorsMiddleware',  # Use our new CORS middleware
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -685,6 +689,27 @@ MIDDLEWARE = [
     'custom_auth.tenant_middleware.EnhancedTenantMiddleware',  # Use our enhanced tenant middleware
     'custom_auth.middleware.TenantMiddleware',  # Keep the original for backward compatibility
 ]
+
+# Maximum number of database connections allowed
+MAX_DB_CONNECTIONS = 50
+
+# Connection pool configuration
+CONNECTION_POOL_CONFIG = {
+    'max_connections': 50,
+    'min_connections': 5,
+    'connection_lifetime': 300,  # 5 minutes
+    'idle_timeout': 60,  # 1 minute
+}
+
+# Tenant metrics configuration
+TENANT_METRICS_CONFIG = {
+    'enable_metrics': True,
+    'metrics_cache_timeout': 86400,  # 24 hours
+    'problematic_tenant_threshold': 0.8,  # 80% of resources
+}
+
+# Redis configuration for tenant metadata
+REDIS_TENANT_DB = 2  # Use a separate Redis database for tenant metadata
 
 # Check if we're running in ASGI mode
 IS_ASGI = any(arg in sys.argv for arg in ['daphne', '--async', 'runserver --async'])
@@ -778,19 +803,22 @@ TENANT_APPS = (
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
 
-# Add database router
-DATABASE_ROUTERS = ['pyfactor.db_routers.TenantSchemaRouter', 'taxes.db_router.TaxDatabaseRouter']
+# Add database routers
+DATABASE_ROUTERS = [
+    'pyfactor.db_routers.TenantSchemaRouter',   # Schema-based tenant router
+    'taxes.db_router.TaxDatabaseRouter'         # Tax database router
+]
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'dj_db_conn_pool.backends.postgresql',
         'NAME': os.getenv('DB_NAME', 'dott_main'),
         'USER': os.getenv('DB_USER', 'postgres'),
         'PASSWORD': os.getenv('DB_PASSWORD', 'postgres'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5432'),
         'TIME_ZONE': 'UTC',
-        'CONN_MAX_AGE': 300,  # Increased to 5 minutes for better connection reuse
+        'CONN_MAX_AGE': 0,  # Set to 0 to let the pool manage connection lifetime
         'AUTOCOMMIT': True,
         'CONN_HEALTH_CHECKS': True,
         'OPTIONS': {
@@ -799,21 +827,46 @@ DATABASES = {
             'application_name': 'dott',
             'sslmode': 'prefer',
             'options': '',  # Allow router to control schema
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5,
+        },
+        'POOL_OPTIONS': {
+            'POOL_SIZE': 20,
+            'MAX_OVERFLOW': 10,
+            'RECYCLE': 300,  # Connection lifetime in seconds
+            'TIMEOUT': 30,   # Connection timeout in seconds
+            'RETRY': 3,      # Number of retries if connection fails
+            'RECONNECT': True,
+            'DISABLE_POOLING': False,
         }
     },
 
     'taxes': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'dj_db_conn_pool.backends.postgresql',
         'NAME': os.getenv('TAX_DB_NAME', 'dott_taxes'),
         'USER': os.getenv('TAX_DB_USER', 'postgres'),
         'PASSWORD': os.getenv('TAX_DB_PASSWORD', 'postgres'),
         'HOST': os.getenv('TAX_DB_HOST', 'localhost'),
         'PORT': os.getenv('TAX_DB_PORT', '5432'),
-        'CONN_MAX_AGE': 300,  # 5 minutes
+        'CONN_MAX_AGE': 0,  # Set to 0 to let the pool manage connection lifetime
         'OPTIONS': {
             'connect_timeout': 10,
             'client_encoding': 'UTF8',
             'sslmode': 'prefer',
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5,
+        },
+        'POOL_OPTIONS': {
+            'POOL_SIZE': 10,
+            'MAX_OVERFLOW': 5,
+            'RECYCLE': 300,
+            'TIMEOUT': 30,
+            'RETRY': 3,
+            'RECONNECT': True,
         }
     }
 }
@@ -876,11 +929,11 @@ DB_POOL_OPTIONS = {
 }
 
 DATABASE_CONNECTION_POOL = {
-    'MAX_CONNS': 100,
-    'MIN_CONNS': 20,
-    'CONN_LIFETIME': 300,
-    'CONN_TIMEOUT': 30,
-    'MAX_QUERIES_PER_CONN': 5000,
+    'MAX_CONNS': 50,          # Reduced to prevent connection exhaustion
+    'MIN_CONNS': 10,          # Reduced to match MAX_CONNS reduction
+    'CONN_LIFETIME': 120,     # Reduced to 2 minutes to recycle connections more frequently
+    'CONN_TIMEOUT': 20,       # Reduced timeout
+    'MAX_QUERIES_PER_CONN': 1000,
     'SCHEMA_CACHE_TTL': 300,  # 5 minutes cache for schema names
 }
 # Password validation

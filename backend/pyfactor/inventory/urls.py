@@ -1,46 +1,44 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import (
-    InventoryItemViewSet, CategoryViewSet, SupplierViewSet,
-    LocationViewSet, InventoryTransactionViewSet, ProductViewSet,
-    ServiceViewSet, DepartmentViewSet, CustomChargePlanViewSet,
-    create_product, create_service, product_list, service_list,
-    product_detail, service_detail, product_by_barcode, print_barcode
-)
+from . import views
+from . import api_views
 
-# Create a router for viewsets
+# Create a router for standard views
 router = DefaultRouter()
-router.register(r'items', InventoryItemViewSet, basename='inventoryitem')
-router.register(r'categories', CategoryViewSet, basename='category')
-router.register(r'suppliers', SupplierViewSet, basename='supplier')
-router.register(r'locations', LocationViewSet, basename='location')
-router.register(r'transactions', InventoryTransactionViewSet, basename='inventorytransaction')
-router.register(r'products-viewset', ProductViewSet, basename='productviewset')
-router.register(r'services-viewset', ServiceViewSet, basename='serviceviewset')
-router.register(r'departments', DepartmentViewSet, basename='department')
-router.register(r'custom-charge-plans', CustomChargePlanViewSet, basename='customchargeplan')
+router.register(r'items', views.InventoryItemViewSet, basename='inventory-item')
+router.register(r'categories', views.CategoryViewSet)
+router.register(r'suppliers', views.SupplierViewSet)
+router.register(r'locations', views.LocationViewSet)
+router.register(r'transactions', views.InventoryTransactionViewSet)
+router.register(r'products', views.ProductViewSet, basename='product')
+router.register(r'services', views.ServiceViewSet, basename='service')
+router.register(r'departments', views.DepartmentViewSet)
+router.register(r'charge-plans', views.CustomChargePlanViewSet)
 
-# Define URL patterns
+# Create a router for optimized views
+optimized_router = DefaultRouter()
+optimized_router.register(r'products', api_views.OptimizedProductViewSet, basename='optimized-product')
+
 urlpatterns = [
-    # Include router URLs
+    # Standard API endpoints
     path('', include(router.urls)),
     
-    # Product and service management endpoints
-    # Create endpoints with and without trailing slash
-    path('products/create/', create_product, name='create_product'),
-    path('products/create', create_product, name='create_product_no_slash'),
-    path('services/create/', create_service, name='create_service'),
-    path('services/create', create_service, name='create_service_no_slash'),
+    # Optimized API endpoints
+    path('optimized/', include(optimized_router.urls)),
     
-    # List endpoints
-    path('products/', product_list, name='product_list'),
-    path('services/', service_list, name='service_list'),
+    # Ultra-optimized endpoints
+    path('ultra/products/', api_views.ultra_fast_products, name='ultra-fast-products'),
+    path('ultra/products/with-department/', api_views.products_with_department, name='products-with-department'),
+    path('ultra/products/stats/', api_views.product_stats, name='product-stats'),
+    path('ultra/products/code/<str:code>/', api_views.product_by_code, name='product-by-code'),
     
-    # Detail endpoints
-    path('products/<uuid:pk>/', product_detail, name='product-detail'),
-    path('services/<uuid:pk>/', service_detail, name='service-detail'),
-    
-    # Special product endpoints
-    path('products/barcode/<str:barcode>/', product_by_barcode, name='product-by-barcode'),
-    path('products/<uuid:product_id>/print-barcode/', print_barcode, name='print-barcode'),
+    # Existing function-based views
+    path('products/create/', views.create_product, name='create-product'),
+    path('services/create/', views.create_service, name='create-service'),
+    path('products-list/', views.product_list, name='product-list'),
+    path('services-list/', views.service_list, name='service-list'),
+    path('products/<uuid:pk>/', views.product_detail, name='product-detail'),
+    path('services/<uuid:pk>/', views.service_detail, name='service-detail'),
+    path('products/barcode/<str:barcode>/', views.product_by_barcode, name='product-by-barcode'),
+    path('products/<uuid:product_id>/print-barcode/', views.print_barcode, name='print-barcode'),
 ]

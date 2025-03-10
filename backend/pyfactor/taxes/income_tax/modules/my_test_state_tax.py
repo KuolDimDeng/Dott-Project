@@ -35,10 +35,9 @@ import time
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+# Don't create a file handler here, as the main settings.py will handle logging to the file
 
 # Define paths
 # Define paths
@@ -2930,11 +2929,10 @@ def main():
     
     log_file_path = os.path.join(output_dir, 'output.txt')
 
-    # Set up logging to write to both console and file
+    # Set up logging to write to console only, file logging is handled by settings.py
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s',
                         handlers=[
-                            logging.FileHandler(log_file_path),
                             logging.StreamHandler(sys.stdout)
                         ])
 
