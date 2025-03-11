@@ -134,10 +134,17 @@ def timeout(seconds: int):
 
 @contextmanager
 def get_db_connection(schema_name: Optional[str] = None,
-                     autocommit: Optional[bool] = None) -> psycopg2.extensions.connection:
+                     autocommit: Optional[bool] = None,
+                     for_migrations: bool = False) -> psycopg2.extensions.connection:
     """
     Manages database connections with schema support and comprehensive error handling.
     Ensures connections are properly configured for schema access and cleanup.
+    
+    Args:
+        schema_name: Optional schema name to set in search_path
+        autocommit: Whether to set autocommit mode
+        for_migrations: Set to True when connection will be used for migrations,
+                       which increases the statement timeout to 3 minutes
     """
     conn = None
     try:
@@ -165,7 +172,12 @@ def get_db_connection(schema_name: Optional[str] = None,
             
         # Set session parameters for better reliability
         with conn.cursor() as cursor:
-            cursor.execute("SET statement_timeout = '30s'")
+            # Use longer timeout for migrations
+            if for_migrations:
+                cursor.execute("SET statement_timeout = '180s'")  # 3 minutes for migrations
+            else:
+                cursor.execute("SET statement_timeout = '30s'")   # 30 seconds for regular operations
+                
             cursor.execute("SET lock_timeout = '5s'")
             if schema_name:
                 cursor.execute(f'SET search_path TO "{schema_name}"')

@@ -20,10 +20,9 @@ class TenantSerializer(serializers.ModelSerializer):
             'last_setup_attempt',
             'setup_error_message',
             'last_health_check',
-            'database_setup_task_id',
             'setup_task_id'
         )
-        read_only_fields = ('id', 'created_on', 'database_setup_task_id', 'setup_task_id')
+        read_only_fields = ('id', 'created_on', 'setup_task_id')
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate

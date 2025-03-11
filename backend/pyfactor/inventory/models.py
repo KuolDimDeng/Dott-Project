@@ -205,12 +205,12 @@ class Product(Item):
             self.product_code = self.generate_unique_code(self.name, 'product_code')
         
         try:
-            # Ensure we're using the default connection with optimized schema handling
-            kwargs['using'] = 'default'
+            # Use the current connection with optimized schema handling
+            # Remove explicit 'default' connection to use the tenant's connection
             
             # Use a transaction for atomicity
             from django.db import transaction
-            with transaction.atomic(using='default'):
+            with transaction.atomic():
                 super().save(*args, **kwargs)
                 
             logger.debug(f"Successfully saved product {self.name} with ID {self.id} in {time.time() - start_time:.4f}s")
@@ -275,12 +275,12 @@ class Service(Item):
             self.service_code = self.generate_unique_code(self.name, 'service_code')
         
         try:
-            # Ensure we're using the default connection with optimized schema handling
-            kwargs['using'] = 'default'
+            # Use the current connection with optimized schema handling
+            # Remove explicit 'default' connection to use the tenant's connection
             
             # Use a transaction for atomicity
             from django.db import transaction
-            with transaction.atomic(using='default'):
+            with transaction.atomic():
                 super().save(*args, **kwargs)
                 
             logger.debug(f"Successfully saved service {self.name} with ID {self.id} in {time.time() - start_time:.4f}s")

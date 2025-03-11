@@ -67,7 +67,6 @@ class Tenant(models.Model):
     last_setup_attempt = models.DateTimeField(null=True, blank=True)
     setup_error_message = models.TextField(null=True, blank=True)
     last_health_check = models.DateTimeField(null=True, blank=True)
-    database_setup_task_id = models.CharField(max_length=255, null=True, blank=True)
     setup_task_id = models.CharField(max_length=255, null=True, blank=True)
     storage_quota_bytes = models.BigIntegerField(default=2 * 1024 * 1024 * 1024)  # Default 2GB in bytes
      # Add archive tracking fields

@@ -143,19 +143,15 @@ class ProductViewSet(viewsets.ModelViewSet):
             else:
                 logger.debug("No tenant found in request")
             
-            # Get optimized connection for the current schema
-            from django.db import connection
-            from pyfactor.db_routers import TenantSchemaRouter
-            
-            # Clear connection cache to ensure clean state
-            TenantSchemaRouter.clear_connection_cache()
-            
-            # Get optimized connection for tenant schema
+            # Use the optimized manager to get products for this tenant
             if tenant:
-                TenantSchemaRouter.get_connection_for_schema(tenant.schema_name)
-            
-            # Use select_related to optimize queries
-            queryset = Product.objects.select_related('department').all()
+                # Use the optimized manager's for_tenant method
+                queryset = Product.optimized.for_tenant(tenant.schema_name)
+                logger.debug(f"Using optimized manager for tenant: {tenant.schema_name}")
+            else:
+                # Fall back to regular queryset
+                queryset = Product.objects.select_related('department').all()
+                logger.debug("Using regular queryset (no tenant)")
             
             # Apply any filters from query parameters
             if self.request.query_params.get('is_for_sale'):
@@ -177,9 +173,6 @@ class ProductViewSet(viewsets.ModelViewSet):
             logger.error(f"Error getting product queryset: {str(e)}", exc_info=True)
             # Return empty queryset on error
             return Product.objects.none()
-        finally:
-            # Reset connection cache
-            TenantSchemaRouter.clear_connection_cache()
     
     def list(self, request, *args, **kwargs):
         """Override list method to add better error handling"""
@@ -328,7 +321,7 @@ def create_product(request):
         if serializer.is_valid():
             # Use a transaction to ensure atomicity
             from django.db import transaction
-            with transaction.atomic(using='default'):
+            with transaction.atomic():
                 # Set timeout for the transaction
                 with connection.cursor() as cursor:
                     cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds
@@ -396,7 +389,7 @@ def create_service(request):
         if serializer.is_valid():
             # Use a transaction to ensure atomicity
             from django.db import transaction
-            with transaction.atomic(using='default'):
+            with transaction.atomic():
                 # Set timeout for the transaction
                 with connection.cursor() as cursor:
                     cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds
@@ -433,37 +426,26 @@ def product_list(request):
     
     start_time = time.time()
     
-    # Log the current database connection and schema
-    from django.db import connection
-    from pyfactor.db_routers import TenantSchemaRouter
-    
     try:
-        # Get optimized connection for the current schema
-        with connection.cursor() as cursor:
-            cursor.execute('SHOW search_path')
-            current_schema = cursor.fetchone()[0]
-            logger.debug(f"Fetching products from schema: {current_schema}, using connection: {connection.alias}")
-        
-        # Ensure we're in the correct schema context
-        TenantSchemaRouter.clear_connection_cache()
-        
         # Get tenant information if available
         tenant = getattr(request, 'tenant', None)
         if tenant:
             logger.debug(f"Request has tenant: {tenant.schema_name} (Status: {tenant.database_status})")
-            TenantSchemaRouter.get_connection_for_schema(tenant.schema_name)
+            
+            # Use the optimized manager's for_tenant method
+            products = Product.optimized.for_tenant(tenant.schema_name)
+            logger.debug(f"Using optimized manager for tenant: {tenant.schema_name}")
         else:
             logger.debug("No tenant found in request, using current schema")
+            # Fall back to regular queryset
+            products = Product.objects.select_related('department').all()
         
         # Use a transaction with a timeout to prevent long-running queries
-        from django.db import transaction
-        with transaction.atomic(using='default'):
+        from django.db import transaction, connection
+        with transaction.atomic():
             # Set timeout for the transaction
             with connection.cursor() as cursor:
-                cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds
-            
-            # Use select_related to reduce database queries for foreign keys
-            products = Product.objects.select_related('department').all()
+                cursor.execute('SET LOCAL statement_timeout = 15000')  # 15 seconds (increased from 10)
             
             # Apply any filters from query parameters
             if request.query_params.get('is_for_sale'):
@@ -542,7 +524,7 @@ def service_list(request):
         
         # Use a transaction with a timeout to prevent long-running queries
         from django.db import transaction
-        with transaction.atomic(using='default'):
+        with transaction.atomic():
             # Set timeout for the transaction
             with connection.cursor() as cursor:
                 cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds

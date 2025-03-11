@@ -154,12 +154,12 @@ class OnboardingProgress(models.Model):
             try:
                 old_instance = OnboardingProgress.objects.get(pk=self.pk)
                 valid_transitions = {
-                    'not_started': ['business-info'],
-                    'business-info': ['subscription'],
-                    'subscription': ['payment', 'setup'],
-                    'payment': ['setup'],
-                    'setup': ['complete'],
-                    'complete': ['business-info', 'subscription']  # Allow updating business info and subscription after completion
+                    'not_started': ['business-info', 'setup'],
+                    'business-info': ['subscription', 'setup', 'complete'],  # Allow direct transition to setup or complete
+                    'subscription': ['payment', 'setup', 'complete'],  # Allow direct transition to setup or complete
+                    'payment': ['setup', 'complete'],  # Allow direct transition to complete
+                    'setup': ['complete', 'business-info', 'subscription'],  # Allow going back to previous steps
+                    'complete': ['business-info', 'subscription', 'setup']  # Allow updating after completion or restarting setup
                 }
 
                 if (self.onboarding_status != old_instance.onboarding_status and
@@ -178,11 +178,16 @@ class OnboardingProgress(models.Model):
         step_sequence = {
             'notstarted': 'business-info',
             'business-info': 'subscription',
-            'subscription': 'payment',
-            'payment': 'setup',
+            'subscription': 'payment',  # Default path, but can go to complete for free plan
+            'payment': 'setup',  # Default path, but can go to complete
             'setup': 'complete',
             'complete': None
         }
+        
+        # Special case for free plan - go directly to complete
+        if self.onboarding_status == 'subscription' and self.selected_plan == 'free':
+            return 'complete'
+            
         return step_sequence.get(self.onboarding_status)
 
     def validate_attribute_lengths(self):

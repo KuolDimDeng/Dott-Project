@@ -31,14 +31,35 @@ class OptimizedProductManager(models.Manager):
             logger.warning("No schema name provided, using default schema")
             return self.get_queryset()
         
-        # Use a single transaction for better performance
-        with transaction.atomic():
-            # Set search path once
-            with connection.cursor() as cursor:
-                cursor.execute(f'SET LOCAL search_path TO "{schema_name}",public')
+        # Set search path directly without transaction
+        # This ensures the search path is maintained for the entire connection
+        with connection.cursor() as cursor:
+            # First verify schema exists
+            cursor.execute("""
+                SELECT 1 FROM information_schema.schemata
+                WHERE schema_name = %s
+            """, [schema_name])
             
-            # Return optimized queryset
-            return self.get_queryset()
+            if not cursor.fetchone():
+                logger.error(f"Schema {schema_name} does not exist")
+                # Return empty queryset if schema doesn't exist
+                return self.get_queryset().none()
+            
+            # Set search path globally for this connection
+            cursor.execute(f'SET search_path TO "{schema_name}",public')
+            
+            # Verify search path was set
+            cursor.execute('SHOW search_path')
+            current_path = cursor.fetchone()[0]
+            logger.debug(f"Set search path to: {current_path}")
+            
+            if schema_name not in current_path:
+                logger.error(f"Failed to set search_path to {schema_name}")
+                # Return empty queryset if search path couldn't be set
+                return self.get_queryset().none()
+        
+        # Return optimized queryset
+        return self.get_queryset()
     
     def with_inventory_stats(self):
         """

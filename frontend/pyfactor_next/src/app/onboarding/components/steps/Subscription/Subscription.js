@@ -180,14 +180,14 @@ export function Subscription() {
         // Handle redirection based on plan type and API response
         if (planId === 'free') {
           try {
-            // For free plan, update to SETUP and redirect to dashboard
+            // For free plan, update to COMPLETE and redirect to dashboard
             // The setup process will occur in the background
-            logger.debug('[Subscription] Updating onboarding status to SETUP for free plan');
-            await updateOnboardingStatus(ONBOARDING_STATES.SETUP);
+            logger.debug('[Subscription] Updating onboarding status to COMPLETE for free plan');
+            await updateOnboardingStatus(ONBOARDING_STATES.COMPLETE);
             logger.info('[Subscription] Free plan selected, redirecting to dashboard');
           } catch (statusError) {
             // Log the error but continue with the flow
-            logger.error('[Subscription] Error updating status to SETUP, continuing anyway:', {
+            logger.error('[Subscription] Error updating status to COMPLETE, continuing anyway:', {
               error: statusError.message,
               plan: planId
             });

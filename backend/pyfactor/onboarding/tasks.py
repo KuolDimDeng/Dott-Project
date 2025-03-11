@@ -3,6 +3,7 @@ import time
 import signal
 import logging
 import uuid
+import asyncio
 from typing import Dict, Any, Tuple
 from contextlib import contextmanager
 from functools import wraps
@@ -49,7 +50,10 @@ VALID_STATUS_TRANSITIONS = {
     'in_progress': ['complete', 'error', 'pending'],
     'error': ['pending', 'in_progress'],
     'failed': ['pending', 'in_progress'],  # Allow retrying from failed state
-    'complete': []  # No transitions from complete
+    'complete': [],  # No transitions from complete
+    'business-info': ['subscription'],
+    'subscription': ['complete', 'payment'],  # Allow direct transition to complete
+    'payment': ['complete']  # Allow direct transition to complete
 }
 
 class SchemaSetupError(Exception):
@@ -67,6 +71,13 @@ class SchemaHealthCheckError(SchemaSetupError):
 def validate_status_transition(current_status: str, new_status: str) -> bool:
     """Validate if a status transition is allowed"""
     allowed_transitions = VALID_STATUS_TRANSITIONS
+    
+    # If current_status is not in the dictionary, allow any transition
+    # This is to handle onboarding-specific statuses that might not be in the dictionary
+    if current_status not in allowed_transitions:
+        logger.warning(f"Unknown status transition from {current_status} to {new_status}, allowing it")
+        return True
+        
     return new_status in allowed_transitions.get(current_status, [])
 
 @shared_task(
@@ -106,7 +117,13 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
         # Ensure user_id is a valid UUID and convert to string
         user_id_str = str(user_id)  # Convert to string first in case it's already a UUID object
         try:
-            uuid_obj = uuid.UUID(user_id_str)
+            # If user_id contains underscores, replace them with hyphens for UUID validation
+            uuid_validation_str = user_id_str.replace('_', '-')
+            
+            # Validate as UUID
+            uuid_obj = uuid.UUID(uuid_validation_str)
+            
+            # Keep the original format for consistency with the rest of the code
             user_id = str(uuid_obj)
         except ValueError as e:
             logger.error(f"Invalid user_id UUID format: {str(e)}")
@@ -251,10 +268,12 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
                     with conn.cursor() as cursor:
                         # Create a quota trigger for this schema
                         quota_bytes = getattr(tenant, 'storage_quota_bytes', 2 * 1024 * 1024 * 1024)
-                        
                         # Create a function to track space usage and enforce limit
+                        # Ensure function name has no hyphens by replacing them with underscores
+                        function_name = schema_name.replace('-', '_')
+                        schema_name_sql = schema_name.replace('-', '_')
                         cursor.execute(f"""
-                            CREATE OR REPLACE FUNCTION {schema_name}_check_quota()
+                            CREATE OR REPLACE FUNCTION {function_name}_check_quota()
                             RETURNS TRIGGER AS $$
                             DECLARE
                                 current_size BIGINT;
@@ -266,7 +285,7 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
                                 SELECT COALESCE(SUM(pg_total_relation_size(quote_ident(table_schema) || '.' || quote_ident(table_name))), 0)
                                 INTO current_size
                                 FROM information_schema.tables
-                                WHERE table_schema = '{schema_name}';
+                                WHERE table_schema = '{schema_name_sql}';
                                 
                                 -- Check if over quota
                                 IF current_size > max_size THEN
@@ -291,12 +310,18 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
         update_state('running_migrations', 60)
         try:
             logger.info(f"Starting database migration check for schema: {schema_name}")
-            with get_db_connection() as conn:
+            # Use connection with longer timeout for migrations
+            with get_db_connection(for_migrations=True) as conn:
                 with conn.cursor() as cursor:
                     with tenant_schema_context(cursor, schema_name):
-                        # The WARNING output is expected when migrations are up-to-date
-                        call_command('migrate')
+                        # Use the MIGRATION_TIMEOUT constant for the timeout
+                        with timeout(MIGRATION_TIMEOUT):
+                            # The WARNING output is expected when migrations are up-to-date
+                            call_command('migrate')
             logger.info(f"Migration check complete - database schema is up-to-date")
+        except asyncio.TimeoutError as e:
+            logger.error(f"Migration timed out after {MIGRATION_TIMEOUT} seconds")
+            raise SchemaMigrationError(f"Migration timed out after {MIGRATION_TIMEOUT} seconds")
         except Exception as e:
             logger.error(f"Migration failed: {str(e)}")
             raise SchemaMigrationError(f"Failed to apply migrations: {str(e)}")
@@ -347,11 +372,6 @@ def setup_user_schema_task(self, user_id: str, business_id: str) -> Dict[str, An
                 onboarding_progress.refresh_from_db()
             
             if onboarding_progress.onboarding_status == 'subscription':
-                onboarding_progress.onboarding_status = 'setup'
-                onboarding_progress.save()
-                onboarding_progress.refresh_from_db()
-            
-            if onboarding_progress.onboarding_status == 'setup':
                 onboarding_progress.onboarding_status = 'complete'
                 onboarding_progress.current_step = 'complete'
                 onboarding_progress.next_step = 'dashboard'

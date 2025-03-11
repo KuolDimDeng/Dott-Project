@@ -52,8 +52,8 @@ class OnboardingStateManager:
     # Define allowed transitions between states
     VALID_TRANSITIONS = {
         'step1': ['step2'],
-        'step2': ['step3', 'step4'],  # Allow both step3 and step4 from step2
-        'step3': ['step4'],
+        'step2': ['step3', 'step4', 'complete'],  # Allow step3, step4, or direct to complete from step2
+        'step3': ['step4', 'complete'],  # Allow direct transition to complete from step3 (payment)
         'step4': ['complete'],
         'complete': []
     }
@@ -126,12 +126,19 @@ class OnboardingStateManager:
             if next_state not in self.STATES.values():
                 raise ValidationError(f"Invalid next state: {next_state}")
             
-            # Handle special case for Basic plan
-            if self.current_state == 'step2' and next_state == 'step4':
-                if plan_type != 'Basic':
+            # Handle special cases for plan types
+            if self.current_state == 'step2':
+                if next_state == 'step4' and plan_type != 'Basic':
                     raise ValidationError(
                         "Direct transition to step4 is only allowed for Basic plan"
                     )
+                elif next_state == 'complete' and plan_type != 'free':
+                    raise ValidationError(
+                        "Direct transition to complete is only allowed for free plan"
+                    )
+            # Allow direct transition from payment to complete for all plan types
+            elif self.current_state == 'step3' and next_state == 'complete':
+                logger.info(f"Allowing direct transition from payment to complete for plan: {plan_type}")
 
             # Validate transition is allowed
             valid_transitions = self.VALID_TRANSITIONS[self.current_state]

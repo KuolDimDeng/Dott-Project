@@ -47,6 +47,7 @@ urlpatterns = [
     
     # Existing function-based views
     path('products/create/', views.create_product, name='create-product'),
+    path('products/create', views.create_product, name='create-product-no-slash'),  # Add URL pattern without trailing slash
     path('services/create/', optimized_create_service, name='create-service'),
     path('services/create', optimized_create_service, name='create-service-no-slash'),  # Add URL pattern without trailing slash
     path('products-list/', views.product_list, name='product-list'),

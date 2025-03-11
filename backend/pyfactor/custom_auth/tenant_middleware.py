@@ -106,11 +106,35 @@ class EnhancedTenantMiddleware:
                             # Set search path before running migrations
                             cursor.execute(f'SET search_path TO "{schema_name}",public')
                             
-                            # Run migrations without schema parameter (not supported by Django)
+                            # Run migrations for all tenant apps
                             from django.core.management import call_command
-                            call_command('migrate', verbosity=0)
+                            from django.conf import settings
+                            import asyncio
                             
-                            logger.info(f"Successfully created and configured schema: {schema_name}")
+                            # Import timeout context manager
+                            from onboarding.task_utils import timeout
+                            
+                            # First run the general migrate command with longer timeout
+                            with timeout(180):  # 3 minutes timeout for migrations
+                                call_command('migrate', verbosity=0)
+                            
+                            # Then run migrations for each TENANT_APP specifically
+                            tenant_apps = settings.TENANT_APPS
+                            logger.info(f"Running migrations for {len(tenant_apps)} tenant apps")
+                            
+                            for app in tenant_apps:
+                                logger.info(f"Running migrations for app: {app}")
+                                try:
+                                    # Use a longer timeout for each app's migrations
+                                    with timeout(180):  # 3 minutes timeout for migrations
+                                        call_command('migrate', app, verbosity=0)
+                                except asyncio.TimeoutError:
+                                    logger.error(f"Migration timed out for app {app} after 180 seconds")
+                                    # Continue with other apps even if one times out
+                                except Exception as app_error:
+                                    logger.error(f"Error running migrations for app {app}: {str(app_error)}")
+                                    # Continue with other apps even if one fails
+                            
                             logger.info(f"Successfully created and configured schema: {schema_name}")
                     except Exception as e:
                         logger.error(f"Failed to create schema {schema_name}: {str(e)}")

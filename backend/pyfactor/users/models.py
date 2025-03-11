@@ -94,10 +94,7 @@ class UserProfile(models.Model):
                     str(self.business.id if self.business else None)
                 )
     
-                # Update tenant with task ID
-                tenant.database_setup_task_id = task.id
-                tenant.save(update_fields=['database_setup_task_id'])
-    
+                # Store task ID in session or log it
                 logger.info(f"Triggered schema setup task {task.id} for user {self.user.email}")
             self.tenant = tenant
         

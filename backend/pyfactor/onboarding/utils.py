@@ -1,6 +1,7 @@
 import re
 import time
 import uuid
+import asyncio
 import psycopg2
 from django.conf import settings
 from django.db import connections, OperationalError
@@ -30,12 +31,20 @@ def generate_unique_schema_name(user):
         # Combine with tenant_ prefix
         schema_name = f"tenant_{tenant_id}"
         
-        # Validate format - allow hyphens in schema names for backward compatibility
-        # but we prefer underscores for new schema names
-        if not re.match(r'^tenant_[a-zA-Z0-9_\-]+$', schema_name):
+        logger.debug(f"Generated schema name: {schema_name} for user: {user.email}")
+        
+        # Validate format - ONLY allow underscores, not hyphens
+        if not re.match(r'^tenant_[a-zA-Z0-9_]+$', schema_name):
             logger.warning(f"Generated invalid schema name format: {schema_name}")
-            return None
+            # Try to fix it by replacing any remaining special characters
+            schema_name = re.sub(r'[^a-zA-Z0-9_]', '_', schema_name)
+            logger.debug(f"Fixed schema name to: {schema_name}")
             
+            # Check again after fixing
+            if not re.match(r'^tenant_[a-zA-Z0-9_]+$', schema_name):
+                logger.error(f"Could not fix schema name format: {schema_name}")
+                return None
+        
         logger.debug(f"Generated schema name: {schema_name} for user: {user.email}")
         return schema_name
 
@@ -57,9 +66,22 @@ def validate_schema_creation(cursor, schema_name):
         Exception: If schema can't be accessed
     """
     try:
-        # Validate schema name format first - allow hyphens in schema names
-        if not re.match(r'^tenant_[a-zA-Z0-9_\-]+$', schema_name):
-            raise ValueError(f"Invalid schema name format: {schema_name}")
+        # Always convert hyphens to underscores in schema names
+        if '-' in schema_name:
+            fixed_schema_name = schema_name.replace('-', '_')
+            logger.debug(f"Fixed schema name from {schema_name} to {fixed_schema_name}")
+            schema_name = fixed_schema_name
+        
+        # Validate schema name format - ONLY allow underscores, not hyphens
+        if not re.match(r'^tenant_[a-zA-Z0-9_]+$', schema_name):
+            # Try to fix it by replacing any remaining special characters
+            fixed_schema_name = re.sub(r'[^a-zA-Z0-9_]', '_', schema_name)
+            logger.debug(f"Fixed schema name to: {fixed_schema_name}")
+            schema_name = fixed_schema_name
+            
+            # Check again after fixing
+            if not re.match(r'^tenant_[a-zA-Z0-9_]+$', schema_name):
+                raise ValueError(f"Invalid schema name format: {schema_name}")
 
         # Check schema existence
         cursor.execute("""
@@ -112,16 +134,37 @@ def create_tenant_schema(cursor, schema_name, user_id):
     try:
         logger.debug(f"Starting schema creation for {schema_name}")
         
-        # Validate schema name - allow hyphens in schema names
-        if not re.match(r'^tenant_[a-zA-Z0-9_\-]+$', schema_name):
-            raise ValueError(f"Invalid schema name format: {schema_name}")
+        # Always convert hyphens to underscores in schema names
+        if '-' in schema_name:
+            fixed_schema_name = schema_name.replace('-', '_')
+            logger.debug(f"Fixed schema name from {schema_name} to {fixed_schema_name}")
+            schema_name = fixed_schema_name
+        
+        # Validate schema name format - ONLY allow underscores, not hyphens
+        if not re.match(r'^tenant_[a-zA-Z0-9_]+$', schema_name):
+            # Try to fix it by replacing any remaining special characters
+            fixed_schema_name = re.sub(r'[^a-zA-Z0-9_]', '_', schema_name)
+            logger.debug(f"Fixed schema name to: {fixed_schema_name}")
+            schema_name = fixed_schema_name
+            
+            # Check again after fixing
+            if not re.match(r'^tenant_[a-zA-Z0-9_]+$', schema_name):
+                raise ValueError(f"Invalid schema name format: {schema_name}")
         
         # Validate user_id is a valid UUID and ensure it's a string
         try:
             # Convert to string first in case it's already a UUID object
             user_id_str = str(user_id)
-            uuid_obj = uuid.UUID(user_id_str)
-            user_id = str(uuid_obj)
+            
+            # If user_id contains underscores, replace them with hyphens for UUID validation
+            uuid_validation_str = user_id_str.replace('_', '-')
+            
+            # Validate as UUID
+            uuid_obj = uuid.UUID(uuid_validation_str)
+            
+            # Use the original user_id_str which may contain underscores
+            user_id = user_id_str
+            logger.debug(f"Validated and formatted user_id: {user_id}")
         except ValueError:
             logger.error(f"Invalid user_id format: {user_id}")
             raise ValueError(f"Invalid user_id format: {user_id}")
@@ -141,8 +184,9 @@ def create_tenant_schema(cursor, schema_name, user_id):
                 logger.debug(f"Schema {schema_name} already exists")
                 return True
                 
-            # Create schema
-            cursor.execute(f'CREATE SCHEMA "{schema_name}"')
+            # Create schema - ensure schema name is properly quoted
+            schema_name_sql = schema_name
+            cursor.execute(f'CREATE SCHEMA "{schema_name_sql}"')
             logger.debug(f"Created schema {schema_name}")
             
             # Set up permissions with detailed logging
@@ -150,9 +194,9 @@ def create_tenant_schema(cursor, schema_name, user_id):
             logger.debug(f"Setting up permissions for user {db_user}")
             
             permission_commands = [
-                f'GRANT USAGE ON SCHEMA "{schema_name}" TO {db_user}',
-                f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {db_user}',
-                f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {db_user}'
+                f'GRANT USAGE ON SCHEMA "{schema_name_sql}" TO {db_user}',
+                f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name_sql}" TO {db_user}',
+                f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name_sql}" GRANT ALL ON TABLES TO {db_user}'
             ]
             
             for cmd in permission_commands:
@@ -160,22 +204,109 @@ def create_tenant_schema(cursor, schema_name, user_id):
                 logger.debug(f"Executed permission command: {cmd}")
             
             # Set search path to new schema for migrations
-            cursor.execute(f'SET search_path TO "{schema_name}",public')
+            cursor.execute(f'SET search_path TO "{schema_name_sql}",public')
             
-            # Run migrations directly
+            # Run migrations directly and FAIL if they don't succeed
             try:
+                # Create essential tables directly with SQL instead of relying on migrations
+                # This ensures we have the basic tables needed for the tenant
+                essential_tables_sql = [
+                    """
+                    CREATE TABLE IF NOT EXISTS inventory_product (
+                        id UUID PRIMARY KEY,
+                        name VARCHAR(255) NOT NULL,
+                        description TEXT,
+                        price DECIMAL(10, 2) NOT NULL,
+                        is_for_sale BOOLEAN DEFAULT TRUE,
+                        is_for_rent BOOLEAN DEFAULT FALSE,
+                        salesTax DECIMAL(10, 2),
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        height DECIMAL(10, 2),
+                        width DECIMAL(10, 2),
+                        height_unit VARCHAR(10) DEFAULT 'cm',
+                        width_unit VARCHAR(10) DEFAULT 'cm',
+                        weight DECIMAL(10, 2),
+                        weight_unit VARCHAR(10) DEFAULT 'kg',
+                        charge_period VARCHAR(50) DEFAULT 'day',
+                        charge_amount DECIMAL(10, 2) DEFAULT 0.00,
+                        product_code VARCHAR(255),
+                        stock_quantity INTEGER DEFAULT 0,
+                        reorder_level INTEGER DEFAULT 0,
+                        department_id UUID
+                    )
+                    """,
+                    """
+                    CREATE TABLE IF NOT EXISTS inventory_category (
+                        id UUID PRIMARY KEY,
+                        name VARCHAR(255) NOT NULL,
+                        description TEXT,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                    )
+                    """,
+                    """
+                    CREATE TABLE IF NOT EXISTS inventory_product_category (
+                        id UUID PRIMARY KEY,
+                        product_id UUID REFERENCES inventory_product(id) ON DELETE CASCADE,
+                        category_id UUID REFERENCES inventory_category(id) ON DELETE CASCADE,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                    )
+                    """
+                ]
+                
+                # Execute the SQL to create essential tables
+                for sql in essential_tables_sql:
+                    cursor.execute(sql)
+                
+                # Now run migrations to create any additional tables
                 from django.core.management import call_command
-                call_command('migrate', verbosity=0)
-                logger.debug(f"Migrations applied to schema {schema_name}")
+                # Using the global settings import instead of re-importing
+                
+                # First run the general migrate command
+                call_command('migrate', verbosity=1)
+                
+                # Then run migrations for each TENANT_APP specifically
+                tenant_apps = settings.TENANT_APPS
+                logger.info(f"Running migrations for {len(tenant_apps)} tenant apps")
+                
+                for app in tenant_apps:
+                    logger.info(f"Running migrations for app: {app}")
+                    try:
+                        # Use a longer timeout for migrations
+                        from onboarding.task_utils import timeout
+                        with timeout(180):  # 3 minutes timeout for migrations
+                            call_command('migrate', app, verbosity=1)
+                    except asyncio.TimeoutError:
+                        logger.error(f"Migration timed out for app {app} after 180 seconds")
+                        # Continue with other apps even if one times out
+                    except Exception as app_error:
+                        logger.error(f"Error running migrations for app {app}: {str(app_error)}")
+                        # Continue with other apps even if one fails
+                
+                logger.info(f"Migrations successfully applied to schema {schema_name}")
+                
+                # Check if tables were created
+                cursor.execute("""
+                    SELECT table_name FROM information_schema.tables
+                    WHERE table_schema = %s
+                """, [schema_name])
+                tables = [row[0] for row in cursor.fetchall()]
+                logger.info(f"Tables created in schema {schema_name}: {len(tables)} tables")
+                
+                if not tables:
+                    raise Exception(f"No tables were created in schema {schema_name} after migrations")
             except Exception as migrate_error:
                 logger.error(f"Error applying migrations to schema {schema_name}: {str(migrate_error)}")
-                # Continue even if migrations fail - we'll handle this separately
+                # Don't continue - raise the exception to fail schema creation
+                cursor.connection.rollback()
+                raise migrate_error
             
             # Verify schema exists and is accessible using context manager
             with tenant_schema_context(cursor, schema_name):
                 cursor.execute('SHOW search_path')
                 current_path = cursor.fetchone()[0]
-                if schema_name not in current_path:
+                if schema_name_sql not in current_path:
                     raise Exception(f"Schema {schema_name} is not accessible")
             
             # Commit the transaction to ensure schema is persisted
@@ -226,12 +357,31 @@ def tenant_schema_context(cursor, schema_name):
         TenantSchemaRouter.clear_connection_cache()
         
         # Set new schema using optimized connection
+        # Always ensure schema name uses underscores, not hyphens
+        if '-' in schema_name:
+            schema_name = schema_name.replace('-', '_')
+            logger.debug(f"Converted schema name to use underscores: {schema_name}")
+        
+        # Ensure schema name is properly formatted for SQL identifiers
+        schema_name = re.sub(r'[^a-zA-Z0-9_]', '_', schema_name)
+        
+        # Set the schema directly on the cursor first to ensure it's immediately available
+        cursor.execute(f'SET search_path TO "{schema_name}",public')
+        
+        # Then use the router to ensure all connections use this schema
         connection = TenantSchemaRouter.get_connection_for_schema(schema_name)
         logger.debug(f"Successfully set schema to: {schema_name} in {time.time() - start_time:.4f}s")
         
         # Store the current schema in thread local storage for the router
         setattr(local, 'tenant_schema', schema_name)
         logger.debug(f"Set thread local tenant_schema to: {schema_name}")
+        
+        # Verify the schema is set correctly
+        cursor.execute('SHOW search_path')
+        current_path = cursor.fetchone()[0]
+        if schema_name not in current_path:
+            logger.warning(f"Schema {schema_name} not in search path: {current_path}, attempting to fix")
+            cursor.execute(f'SET search_path TO "{schema_name}",public')
         
         yield
     except Exception as e:
@@ -292,7 +442,20 @@ def set_tenant_schema(cursor, schema_name):
     try:
         logger.debug(f"Setting schema to: {schema_name}")
         
+        # Always convert hyphens to underscores in schema names
+        if schema_name != 'public' and '-' in schema_name:
+            fixed_schema_name = schema_name.replace('-', '_')
+            logger.debug(f"Fixed schema name from {schema_name} to {fixed_schema_name}")
+            schema_name = fixed_schema_name
+        
+        # Ensure schema name is properly formatted for SQL identifiers
+        if schema_name != 'public':
+            schema_name = re.sub(r'[^a-zA-Z0-9_]', '_', schema_name)
+        
         if schema_name == 'public':
+            # Set the schema directly on the cursor first
+            cursor.execute('SET search_path TO public')
+            
             # Use optimized connection for public schema
             TenantSchemaRouter.get_connection_for_schema('public')
         else:
@@ -306,7 +469,10 @@ def set_tenant_schema(cursor, schema_name):
                     logger.error(f"Schema {schema_name} does not exist")
                     raise Exception(f"Schema {schema_name} does not exist")
             
-            # Use optimized connection for tenant schema
+            # Set the schema directly on the cursor first
+            cursor.execute(f'SET search_path TO "{schema_name}",public')
+            
+            # Then use the router to ensure all connections use this schema
             TenantSchemaRouter.get_connection_for_schema(schema_name)
             
             # Verify search path was set
@@ -315,7 +481,14 @@ def set_tenant_schema(cursor, schema_name):
             logger.debug(f"Current search_path: {current_path} (set in {time.time() - start_time:.4f}s)")
             
             if schema_name not in current_path:
-                raise Exception(f"Failed to set search_path to {schema_name}")
+                logger.warning(f"Schema {schema_name} not in search path: {current_path}, attempting to fix")
+                cursor.execute(f'SET search_path TO "{schema_name}",public')
+                
+                # Check again
+                cursor.execute('SHOW search_path')
+                current_path = cursor.fetchone()[0]
+                if schema_name not in current_path:
+                    raise Exception(f"Failed to set search_path to {schema_name}")
                 
         # Update thread local storage
         from pyfactor.db_routers import local
@@ -336,6 +509,15 @@ def reset_schema(cursor):
 def cleanup_schema(schema_name):
     """Clean up schema if setup fails"""
     try:
+        # Always convert hyphens to underscores in schema names
+        if '-' in schema_name:
+            fixed_schema_name = schema_name.replace('-', '_')
+            logger.debug(f"Fixed schema name from {schema_name} to {fixed_schema_name}")
+            schema_name = fixed_schema_name
+        
+        # Ensure schema name is properly formatted for SQL identifiers
+        schema_name = re.sub(r'[^a-zA-Z0-9_]', '_', schema_name)
+        
         with get_connection() as conn:
             conn.autocommit = True
             with conn.cursor() as cursor:

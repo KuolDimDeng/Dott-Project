@@ -25,6 +25,8 @@ def create_tenant_schema_for_user(user, business_name=None):
     tenant_id_str = str(tenant_id).replace('-', '_')
     schema_name = f"tenant_{tenant_id_str}"
     
+    logger.debug(f"Generated schema name: {schema_name} for user: {user.email}")
+    
     # Use a descriptive name if business name not provided
     tenant_name = business_name or f"{user.full_name}'s Workspace"
     

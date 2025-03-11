@@ -201,12 +201,12 @@ def check_setup_status(request):
                 })
             elif task.state == 'SUCCESS':
                 # Update progress status if needed
-                if progress.database_provisioning_status != 'complete':
-                    progress.database_provisioning_status = 'complete'
-                    progress.technical_setup_status = 'complete'
+                if progress.onboarding_status != 'complete':
+                    progress.onboarding_status = 'complete'
+                    progress.current_step = 'complete'
                     progress.save(update_fields=[
-                        'database_provisioning_status',
-                        'technical_setup_status'
+                        'onboarding_status',
+                        'current_step'
                     ])
                 
                 response = Response({
@@ -220,13 +220,11 @@ def check_setup_status(request):
                 logger.error(f"Setup task failed: {error_msg}")
                 
                 # Update progress status
-                progress.database_provisioning_status = 'error'
-                progress.technical_setup_status = 'failed'
-                progress.last_error = error_msg
+                progress.onboarding_status = 'error'
+                progress.setup_error = error_msg
                 progress.save(update_fields=[
-                    'database_provisioning_status',
-                    'technical_setup_status',
-                    'last_error'
+                    'onboarding_status',
+                    'setup_error'
                 ])
                 
                 response = Response({
@@ -876,7 +874,7 @@ class GoogleTokenExchangeView(APIView):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class StartOnboardingView(APIView):
+class StartOnboardingView(BaseOnboardingView):
     permission_classes = [SetupEndpointPermission]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
@@ -901,71 +899,160 @@ class StartOnboardingView(APIView):
             return response
         except Exception as e:
             # Handle errors with proper CORS headers
-            error_response = Response(
+            error_response = self.initialize_response(
                 {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status.HTTP_500_INTERNAL_SERVER_ERROR
             )
             error_response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
             error_response["Access-Control-Allow-Credentials"] = "true"
             return error_response
 
     def get_or_create_onboarding(self, user):
-        """Get or create onboarding progress"""
-        with transaction.atomic():
+        """Get or create onboarding progress with deadlock handling"""
+        # Maximum number of retry attempts
+        max_retries = 3
+        retry_delay = 0.5  # Initial delay in seconds
+        
+        for attempt in range(max_retries):
             try:
-                onboarding = OnboardingProgress.objects.select_for_update(nowait=True).get(user=user)
-                # Update status if needed
-                if onboarding.onboarding_status == "notstarted":
-                    onboarding.onboarding_status = "setup"
-                    onboarding.current_step = "setup"
-                    onboarding.next_step = "complete"
-                    onboarding.save(update_fields=['onboarding_status', 'current_step', 'next_step'])
-            except OnboardingProgress.DoesNotExist:
-                onboarding = OnboardingProgress.objects.create(
-                    user=user,
-                    onboarding_status="setup",
-                    current_step="setup",
-                    next_step="complete"
-                )
-            return onboarding, False
+                # First try to get without locking to reduce contention
+                try:
+                    onboarding = OnboardingProgress.objects.get(user=user)
+                    
+                    # If found, update with a separate query to avoid deadlocks
+                    if onboarding.onboarding_status == "notstarted":
+                        # Use direct SQL update instead of ORM to reduce deadlock risk
+                        with connection.cursor() as cursor:
+                            cursor.execute("""
+                                UPDATE onboarding_onboardingprogress
+                                SET onboarding_status = 'setup',
+                                    current_step = 'setup',
+                                    next_step = 'complete',
+                                    updated_at = NOW()
+                                WHERE user_id = %s
+                            """, [str(user.id)])
+                            
+                        # Refresh from database
+                        onboarding.refresh_from_db()
+                    
+                    return onboarding, False
+                    
+                except OnboardingProgress.DoesNotExist:
+                    # Try to create with a shorter transaction
+                    try:
+                        with transaction.atomic():
+                            onboarding = OnboardingProgress.objects.create(
+                                user=user,
+                                onboarding_status="setup",
+                                current_step="setup",
+                                next_step="complete"
+                            )
+                            return onboarding, True
+                    except IntegrityError:
+                        # Another process created it first, try to get it again
+                        onboarding = OnboardingProgress.objects.get(user=user)
+                        return onboarding, False
+                        
+            except OperationalError as e:
+                # Handle deadlocks with retries
+                if "deadlock detected" in str(e).lower() and attempt < max_retries - 1:
+                    wait_time = retry_delay * (2 ** attempt)
+                    logger.warning(f"Deadlock detected in get_or_create_onboarding (attempt {attempt+1}), retrying in {wait_time}s")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    logger.error(f"Failed to get or create onboarding progress after {attempt+1} attempts: {str(e)}")
+                    raise
+                    
+            except Exception as e:
+                logger.error(f"Error in get_or_create_onboarding: {str(e)}")
+                raise
+                
+        # If we get here, we've exhausted all retries
+        raise Exception(f"Failed to get or create onboarding progress after {max_retries} attempts")
 
     def get_business_id(self, user):
-        """Get business ID from user profile"""
-        try:
-            with transaction.atomic():
-                profile = UserProfile.objects.select_for_update().select_related('business').get(user=user)
-                if not profile.business:
-                    # Create a default business if none exists
-                    from business.models import Business
+        """Get business ID from user profile with deadlock handling"""
+        # Maximum number of retry attempts
+        max_retries = 3
+        retry_delay = 0.5  # Initial delay in seconds
+        
+        for attempt in range(max_retries):
+            try:
+                # First check if profile exists and has a business without locking
+                profile = UserProfile.objects.select_related('business').get(user=user)
+                
+                # If business already exists, return its ID
+                if profile.business:
+                    return str(profile.business.id)
+                    
+                # If no business exists, create it with a separate transaction
+                # to avoid deadlocks with other processes
+                from business.models import Business
+                
+                # Use a transaction
+                with transaction.atomic():
+                    # Create a default business first
                     business = Business.objects.create(
                         owner=user,
                         business_name=f"{user.first_name}'s Business",
                         business_type='default'
                     )
-                    profile.business = business
-                    profile.is_business_owner = True
-                    profile.save(update_fields=['business', 'is_business_owner'])
+                    
+                    # Now update the profile in a separate operation
+                    # This reduces the chance of deadlocks
+                    UserProfile.objects.filter(user=user).update(
+                        business=business,
+                        is_business_owner=True
+                    )
+                    
                     return str(business.id)
-                return str(profile.business.id)
-        except UserProfile.DoesNotExist:
-            logger.warning(f"No user profile found for user {user.id}")
-            # Create profile and business
-            from business.models import Business
-            with transaction.atomic():
-                business = Business.objects.create(
-                    owner=user,
-                    business_name=f"{user.first_name}'s Business",
-                    business_type='default'
-                )
-                profile = UserProfile.objects.create(
-                    user=user,
-                    business=business,
-                    is_business_owner=True
-                )
-                return str(business.id)
+                    
+            except UserProfile.DoesNotExist:
+                logger.warning(f"No user profile found for user {user.id}")
+                # Create profile and business
+                from business.models import Business
+                
+                try:
+                    with transaction.atomic():
+                        business = Business.objects.create(
+                            owner=user,
+                            business_name=f"{user.first_name}'s Business",
+                            business_type='default'
+                        )
+                        profile = UserProfile.objects.create(
+                            user=user,
+                            business=business,
+                            is_business_owner=True
+                        )
+                        return str(business.id)
+                except Exception as e:
+                    logger.error(f"Error creating profile and business: {str(e)}")
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay * (2 ** attempt))
+                        continue
+                    raise
+                    
+            except Exception as e:
+                # Handle deadlocks and other database errors with retries
+                logger.warning(f"Database error in get_business_id (attempt {attempt+1}): {str(e)}")
+                
+                if "deadlock detected" in str(e).lower() and attempt < max_retries - 1:
+                    # Exponential backoff for retries
+                    wait_time = retry_delay * (2 ** attempt)
+                    logger.info(f"Deadlock detected, retrying in {wait_time} seconds")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    # If we've exhausted retries or it's not a deadlock, re-raise
+                    logger.error(f"Failed to get business ID after {attempt+1} attempts: {str(e)}")
+                    raise
+        
+        # If we get here, we've exhausted all retries
+        raise Exception(f"Failed to get business ID after {max_retries} attempts")
 
     def options(self, request, *args, **kwargs):
-        response = Response()
+        response = self.initialize_response({}, status.HTTP_200_OK)
         response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
         response["Access-Control-Allow-Methods"] = "POST, OPTIONS"
         response["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Request-Id"
@@ -973,151 +1060,180 @@ class StartOnboardingView(APIView):
         return response
 
     def post(self, request):
-        """Handle POST requests"""
+        """Handle POST requests with improved deadlock handling"""
         request_id = request.headers.get('X-Request-ID', str(uuid.uuid4()))
         logger.info(f"Starting onboarding process - Request ID: {request_id}")
+        
+        # Maximum number of retry attempts for the entire operation
+        max_retries = 3
+        retry_delay = 0.5  # Initial delay in seconds
+        
+        for attempt in range(max_retries):
+            try:
+                # Validate authorization header
+                auth_header = request.headers.get('Authorization')
+                if not auth_header or not auth_header.startswith('Bearer '):
+                    logger.error(f"[{request_id}] Missing or invalid authorization header")
+                    return self.initialize_response({
+                        'error': 'Missing or invalid authorization header',
+                        'code': 'invalid_auth'
+                    }, status.HTTP_401_UNAUTHORIZED)
+    
+                # Handle specific exceptions that might occur during the process
+                try:
+                    # Split operations into smaller transactions to reduce deadlock risk
+                    
+                    # 1. Get or create onboarding progress
+                    try:
+                        onboarding, created = self.get_or_create_onboarding(request.user)
+                    except Exception as e:
+                        logger.error(f"[{request_id}] Failed to get/create onboarding: {str(e)}")
+                        if "deadlock detected" in str(e).lower() and attempt < max_retries - 1:
+                            wait_time = retry_delay * (2 ** attempt)
+                            logger.info(f"Deadlock detected in onboarding creation, retrying in {wait_time} seconds")
+                            time.sleep(wait_time)
+                            continue
+                        raise
+        
+                    # 2. Get business ID in a separate operation
+                    try:
+                        business_id = self.get_business_id(request.user)
+                        if not business_id:
+                            logger.error(f"[{request_id}] Failed to get or create business")
+                            return self.initialize_response({
+                                'error': 'Failed to get or create business',
+                                'code': 'business_error'
+                            }, status.HTTP_400_BAD_REQUEST)
+                    except Exception as e:
+                        logger.error(f"[{request_id}] Error getting business ID: {str(e)}")
+                        if "deadlock detected" in str(e).lower() and attempt < max_retries - 1:
+                            wait_time = retry_delay * (2 ** attempt)
+                            logger.info(f"Deadlock detected in business ID retrieval, retrying in {wait_time} seconds")
+                            time.sleep(wait_time)
+                            continue
+                        raise
+                        
+                except AuthenticationFailed as e:
+                    logger.error(f"[{request_id}] Authentication failed: {str(e)}")
+                    return self.initialize_response({
+                        'error': str(e),
+                        'code': 'auth_failed'
+                    }, status.HTTP_401_UNAUTHORIZED)
+                except ValidationError as e:
+                    logger.error(f"[{request_id}] Validation error: {str(e)}")
+                    return self.initialize_response({
+                        'error': str(e),
+                        'code': 'validation_error'
+                    }, status.HTTP_400_BAD_REQUEST)
+    
+                    # 3. Update onboarding status with direct SQL to avoid ORM deadlocks
+                    try:
+                        with connection.cursor() as cursor:
+                            # Set a statement timeout to prevent long-running queries
+                            cursor.execute("SET LOCAL statement_timeout = 10000")  # 10 seconds
+                            
+                            # Update onboarding progress
+                            cursor.execute("""
+                                UPDATE onboarding_onboardingprogress
+                                SET onboarding_status = 'setup',
+                                    current_step = 'setup',
+                                    next_step = 'complete',
+                                    setup_error = NULL,
+                                    updated_at = NOW()
+                                WHERE user_id = %s
+                            """, [str(request.user.id)])
+                            
+                            # Update tenant status if it exists
+                            cursor.execute("""
+                                UPDATE auth_tenant
+                                SET database_status = 'pending',
+                                    setup_status = 'in_progress',
+                                    last_setup_attempt = NOW()
+                                WHERE owner_id = %s
+                            """, [str(request.user.id)])
+                    except Exception as e:
+                        logger.error(f"[{request_id}] Database update error: {str(e)}")
+                        if "deadlock detected" in str(e).lower() and attempt < max_retries - 1:
+                            wait_time = retry_delay * (2 ** attempt)
+                            logger.info(f"Deadlock detected in database update, retrying in {wait_time} seconds")
+                            time.sleep(wait_time)
+                            continue
+                        raise
+                    
+                    # Refresh from database to get updated values
+                    onboarding.refresh_from_db()
 
-        try:
-            # Validate authorization header
-            auth_header = request.headers.get('Authorization')
-            if not auth_header or not auth_header.startswith('Bearer '):
-                logger.error(f"[{request_id}] Missing or invalid authorization header")
-                return Response({
-                    'error': 'Missing or invalid authorization header',
-                    'code': 'invalid_auth'
-                }, status=status.HTTP_401_UNAUTHORIZED)
+                    # 4. Queue setup task with error handling
+                    try:
+                        task = setup_user_schema_task.apply_async(
+                            args=[str(request.user.id), business_id],
+                            queue='setup',
+                            retry=True,
+                            retry_policy={
+                                'max_retries': 3,
+                                'interval_start': 5,
+                                'interval_step': 30,
+                                'interval_max': 300
+                            }
+                        )
+                        # Store task ID in session instead of model
+                        request.session['setup_task_id'] = task.id
+                        
+                        logger.info(f"Setup task {task.id} queued successfully")
+                        
+                    except (CeleryOperationalError, KombuOperationalError) as e:
+                        logger.critical(f"Failed to queue setup task: {str(e)}")
+                        # Update error status with direct SQL to avoid ORM deadlocks
+                        with connection.cursor() as cursor:
+                            cursor.execute("""
+                                UPDATE onboarding_onboardingprogress
+                                SET setup_error = %s,
+                                    updated_at = NOW()
+                                WHERE user_id = %s
+                            """, [f"Queue error: {str(e)}", str(request.user.id)])
+                        
+                        return self.initialize_response({
+                            "error": "System busy - failed to queue setup task",
+                            "code": "queue_error"
+                        }, status.HTTP_503_SERVICE_UNAVAILABLE)
 
-            # Get or create onboarding progress with transaction
-            with transaction.atomic():
-                onboarding, created = self.get_or_create_onboarding(request.user)
+                    response_data = {
+                        "status": "success",
+                        "setup_id": task.id,
+                        "message": "Setup initiated successfully",
+                        "onboarding_id": str(onboarding.id),
+                        "onboarding_status": onboarding.onboarding_status,
+                        "current_step": onboarding.current_step
+                    }
 
-                # Get business ID
-                business_id = self.get_business_id(request.user)
-                if not business_id:
-                    logger.error(f"[{request_id}] Failed to get or create business")
-                    return Response({
-                        'error': 'Failed to get or create business',
-                        'code': 'business_error'
-                    }, status=status.HTTP_400_BAD_REQUEST)
+                    logger.info(f"[{request_id}] Setup initiated successfully", extra={
+                        'user_id': str(request.user.id),
+                        'task_id': task.id,
+                        'business_id': business_id
+                    })
 
-                # Update onboarding status
-                # Update onboarding progress
-                onboarding.onboarding_status = 'setup'
-                onboarding.current_step = 'setup'
-                onboarding.next_step = 'complete'
-                onboarding.setup_error = None
-                onboarding.save(update_fields=[
-                    'onboarding_status',
-                    'current_step',
-                    'next_step',
-                    'setup_error'
-                ])
-
-                # Update tenant status
-                # First check if user is authenticated
-                if not request.user.is_authenticated:
-                    logger.error(f"[{request_id}] User not authenticated for tenant update")
-                    return Response({
-                        'error': 'Authentication required',
-                        'code': 'auth_required'
-                    }, status=status.HTTP_401_UNAUTHORIZED)
+                    response = self.initialize_response(response_data, status.HTTP_200_OK)
+                    response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
+                    response["Access-Control-Allow-Credentials"] = "true"
+                    return response
+                                
+            except Exception as e:
+                # Handle any other errors that might occur
+                logger.error(f"[{request_id}] Error in attempt {attempt+1}: {str(e)}")
                 
-                # Now safely use the user ID
-                with connection.cursor() as cursor:
-                    cursor.execute("""
-                        UPDATE auth_tenant
-                        SET database_status = 'pending',
-                            setup_status = 'in_progress',
-                            last_setup_attempt = NOW()
-                        WHERE owner_id = %s
-                        RETURNING id
-                    """, [str(request.user.id)])
-
-                # Queue setup task with error handling
-                try:
-                    task = setup_user_schema_task.apply_async(
-                        args=[str(request.user.id), business_id],
-                        queue='setup',
-                        retry=True,
-                        retry_policy={
-                            'max_retries': 3,
-                            'interval_start': 5,
-                            'interval_step': 30,
-                            'interval_max': 300
-                        }
-                    )
-                    # Update task ID
-                    onboarding.database_setup_task_id = task.id
-                    onboarding.save(update_fields=['database_setup_task_id'])
-                    
-                    logger.info(f"Setup task {task.id} queued successfully")
-                    
-                except (CeleryOperationalError, KombuOperationalError) as e:
-                    logger.critical(f"Failed to queue setup task: {str(e)}")
-                    onboarding.technical_setup_status = 'failed'
-                    onboarding.last_error = f"Queue error: {str(e)}"
-                    onboarding.save(update_fields=['technical_setup_status', 'last_error'])
-                    
-                    return Response({
-                        "error": "System busy - failed to queue setup task",
-                        "code": "queue_error"
-                    }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-
-                response_data = {
-                    "status": "success",
-                    "setup_id": task.id,
-                    "message": "Setup initiated successfully",
-                    "onboarding_id": str(onboarding.id),
-                    "provisioning_status": onboarding.database_provisioning_status,
-                    "technical_status": onboarding.technical_setup_status
-                }
-
-                logger.info(f"[{request_id}] Setup initiated successfully", extra={
-                    'user_id': str(request.user.id),
-                    'task_id': task.id,
-                    'business_id': business_id
-                })
-
-                response = Response(response_data, status=status.HTTP_200_OK)
-                response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
-                response["Access-Control-Allow-Credentials"] = "true"
-                return response
-
-        except AuthenticationFailed as e:
-            logger.error(f"[{request_id}] Authentication failed: {str(e)}")
-            return Response({
-                'error': str(e),
-                'code': 'auth_failed'
-            }, status=status.HTTP_401_UNAUTHORIZED)
-
-        except ValidationError as e:
-            logger.error(f"[{request_id}] Validation error: {str(e)}")
-            return Response({
-                'error': str(e),
-                'code': 'validation_error'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        except Exception as e:
-            logger.error(f"[{request_id}] Error in setup: {str(e)}", exc_info=True)
-            if 'onboarding' in locals():
-                try:
-                    onboarding.database_provisioning_status = 'error'
-                    onboarding.technical_setup_status = 'failed'
-                    onboarding.last_error = str(e)
-                    onboarding.save(update_fields=[
-                        'database_provisioning_status',
-                        'technical_setup_status',
-                        'last_error'
-                    ])
-                except Exception as update_error:
-                    logger.error(f"[{request_id}] Failed to update error status: {str(update_error)}")
-
-            return Response({
-                'error': 'Setup failed',
-                'detail': str(e),
-                'code': 'setup_error'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+                if attempt < max_retries - 1:
+                    wait_time = retry_delay * (2 ** attempt)
+                    logger.info(f"Retrying operation in {wait_time} seconds")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    # We've exhausted all retries, return an error
+                    return self.initialize_response({
+                        "error": f"Setup failed after {max_retries} attempts: {str(e)}",
+                        "code": "setup_error"
+                    }, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # End of post method
 class UpdateOnboardingView(BaseOnboardingView):
     @sync_to_async
     def get_user(self, request):
@@ -1248,7 +1364,7 @@ class CleanupOnboardingView(BaseOnboardingView):
 
         for attempt in range(max_retries):
             try:
-                with transaction.atomic(durable=True):
+                with transaction.atomic():
                     progress = OnboardingProgress.objects.select_for_update(
                         nowait=True,
                         skip_locked=True
@@ -1517,6 +1633,7 @@ class SaveStep1View(APIView):
             # Convert tenant_id to string and replace hyphens with underscores
             tenant_id_str = str(tenant_id).replace('-', '_')
             schema_name = f"tenant_{tenant_id_str}"
+            logger.debug(f"Created schema name: {schema_name} from tenant ID: {tenant_id}")
             logger.debug(f"Setting up tenant with schema: {schema_name}")
 
             # Get or update tenant with proper transaction management
@@ -1560,8 +1677,10 @@ class SaveStep1View(APIView):
                     
                     # Create new schema
                     from onboarding.utils import create_tenant_schema, validate_schema_creation
-                    # Ensure user ID is passed as a string
-                    create_tenant_schema(cursor, schema_name, str(request.user.id))
+                    # Ensure user ID is passed as a string with hyphens replaced by underscores
+                    user_id_str = str(request.user.id).replace('-', '_')
+                    create_tenant_schema(cursor, schema_name, user_id_str)
+                    logger.debug(f"Called create_tenant_schema with schema_name: {schema_name}, user_id: {user_id_str}")
                     
                     # Verify schema was created
                     if not validate_schema_creation(cursor, schema_name):
@@ -1878,7 +1997,7 @@ class SaveStep2View(APIView):
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
 
-    VALID_PLANS = ['free', 'professional']
+    VALID_PLANS = ['free', 'professional', 'enterprise']
     VALID_BILLING_CYCLES = ['monthly', 'annual']
 
     def validate_subscription_data(self, data):
@@ -1904,20 +2023,27 @@ class SaveStep2View(APIView):
     def get_business(self, request):
         """Retrieve business with explicit default database connection"""
         try:
-            # Access UserProfile using default DB connection
-            profile = UserProfile.objects.using('default').select_related('business').get(user=request.user)
-            if business := profile.business:
-                return business
+            # First try to get the profile and business without locking
+            profile = UserProfile.objects.select_related('business').get(user=request.user)
+            if profile.business:
+                return profile.business
 
             # Check session using default DB
             if business_id := request.session.get('business_id'):
-                business = Business.objects.using('default').get(id=business_id)
-                profile.business = business
-                profile.save(update_fields=['business'])
-                return business
+                try:
+                    business = Business.objects.get(id=business_id)
+                    # Update profile with business in a separate transaction
+                    with transaction.atomic():
+                        profile_to_update = UserProfile.objects.select_for_update().get(id=profile.id)
+                        profile_to_update.business = business
+                        profile_to_update.save(update_fields=['business'])
+                    return business
+                except Business.DoesNotExist:
+                    # Continue to next method if business not found
+                    pass
 
             # Check onboarding progress using default DB
-            progress = OnboardingProgress.objects.using('default').get(user=request.user)
+            progress = OnboardingProgress.objects.get(user=request.user)
             if progress.business:
                 return progress.business
 
@@ -1933,9 +2059,9 @@ class SaveStep2View(APIView):
 
     def handle_subscription_creation(self, request, business, data):
         """Core subscription handling with explicit DB connections"""
-        with transaction.atomic(using='default'):
+        with transaction.atomic():
             # Create/update subscription in default DB
-            subscription = Subscription.objects.using('default').update_or_create(
+            subscription = Subscription.objects.update_or_create(
                 business=business,
                 defaults={
                     'selected_plan': data['selected_plan'],
@@ -1946,15 +2072,39 @@ class SaveStep2View(APIView):
             )[0]
 
             # Update onboarding progress in default DB
-            progress = OnboardingProgress.objects.using('default').select_for_update().get(user=request.user)
+            progress = OnboardingProgress.objects.select_for_update().get(user=request.user)
             progress.onboarding_status = 'subscription'
             progress.current_step = 'subscription'
-            progress.next_step = 'setup' if data['selected_plan'] == 'free' else 'payment'
+            progress.next_step = 'complete' if data['selected_plan'] == 'free' else 'payment'
             progress.selected_plan = data['selected_plan']
             progress.save(update_fields=[
-                'onboarding_status', 'current_step', 
+                'onboarding_status', 'current_step',
                 'next_step', 'selected_plan'
             ])
+            
+            # Update Cognito attributes
+            try:
+                from custom_auth.cognito import update_user_attributes_sync
+                
+                # Create attributes dictionary with valid values
+                cognito_attributes = {}
+                
+                # Only add non-empty values
+                if data['selected_plan']:
+                    cognito_attributes['custom:subplan'] = data['selected_plan']
+                
+                # Always set onboarding status to a valid string value
+                cognito_attributes['custom:onboarding'] = 'SUBSCRIPTION'
+                
+                # Only update if we have attributes to update
+                if cognito_attributes:
+                    update_user_attributes_sync(str(request.user.id), cognito_attributes)
+                    logger.info(f"Updated Cognito attributes for user {request.user.id}: {cognito_attributes}")
+                else:
+                    logger.warning(f"No valid Cognito attributes to update for user {request.user.id}")
+            except Exception as e:
+                logger.error(f"Failed to update Cognito attributes: {str(e)}")
+                # Continue even if Cognito update fails
 
         return subscription
 
@@ -1979,13 +2129,21 @@ class SaveStep2View(APIView):
                 'success': True,
                 'selected_plan': subscription.selected_plan,
                 'billing_cycle': subscription.billing_cycle,
-                'next_step': 'setup' if subscription.is_active else 'payment',
+                'next_step': 'complete' if subscription.is_active else 'payment',
                 'onboarding_status': 'subscription'
             }, status=status.HTTP_200_OK)
 
         except ValidationError as e:
-            logger.warning(f"Validation error: {str(e.detail)}", extra={'request_id': request_id})
-            return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
+            # Django ValidationError doesn't have a 'detail' attribute, but DRF ValidationError does
+            # Handle both types of ValidationError
+            if hasattr(e, 'detail'):
+                error_detail = e.detail
+            else:
+                # For Django ValidationError, the error dict is stored directly in the exception
+                error_detail = e.message_dict if hasattr(e, 'message_dict') else e.messages
+            
+            logger.warning(f"Validation error: {str(error_detail)}", extra={'request_id': request_id})
+            return Response(error_detail, status=status.HTTP_400_BAD_REQUEST)
             
         except Exception as e:
             logger.error(f"Subscription error: {str(e)}", exc_info=True, extra={'request_id': request_id})
@@ -2009,8 +2167,8 @@ class SaveStep3View(BaseOnboardingView):
                 progress = OnboardingProgress.objects.select_for_update().get(user=user)
 
                 # Validate plan type
-                if progress.selected_plan != 'professional':
-                    raise ValidationError("Payment is only required for the Professional plan.")
+                if progress.selected_plan not in ['professional', 'enterprise']:
+                    raise ValidationError("Payment is only required for the Professional and Enterprise plans.")
 
                 # Update payment status
                 progress.payment_completed = payment_completed
@@ -2086,21 +2244,21 @@ class SaveStep3View(BaseOnboardingView):
             progress = await self.save_payment_status(user, payment_completed, data)
 
             # Attempt state transition
-            if await state_manager.transition_to('step4'):
+            if await state_manager.transition_to('complete'):
                 # Notify via WebSocket
                 await self.notify_websocket(
                     user.id,
                     'step3_completed',
                     {
                         "payment_status": "completed" if payment_completed else "pending",
-                        "next_step": "step4"
+                        "next_step": "complete"
                     }
                 )
 
                 return Response({
                     "message": "Step 3 completed successfully",
                     "payment_status": "completed" if payment_completed else "pending",
-                    "next_step": "step4"
+                    "next_step": "complete"
                 }, status=status.HTTP_200_OK)
 
             logger.warning(f"Failed to transition state for user {user.email}")
@@ -2472,20 +2630,32 @@ class SaveStep4View(BaseOnboardingView):
         """
         for attempt in range(self.MAX_RETRIES):
             try:
-                with transaction.atomic():
-                    progress = (OnboardingProgress.objects
-                        .select_for_update(nowait=True)
-                        .select_related('user', 'business')
-                        .get(user=user))
-
-                    logger.debug("Retrieved locked onboarding progress:", {
+                # First check if progress exists without locking
+                progress_exists = OnboardingProgress.objects.filter(user=user).exists()
+                
+                if progress_exists:
+                    # If it exists, lock it without using select_related to avoid the nullable join issue
+                    with transaction.atomic():
+                        progress = OnboardingProgress.objects.select_for_update(nowait=True).get(user=user)
+                        
+                        # After locking, fetch related objects separately if needed
+                        if hasattr(progress, 'business_id') and progress.business_id:
+                            progress.business = Business.objects.get(id=progress.business_id)
+                            
+                        logger.debug("Retrieved locked onboarding progress:", {
+                            'request_id': request_id,
+                            'progress_id': progress.id,
+                            'current_step': progress.current_step,
+                            'status': progress.onboarding_status,
+                            'attempt': attempt + 1
+                        })
+                        return progress
+                else:
+                    logger.error("Onboarding progress not found:", {
                         'request_id': request_id,
-                        'progress_id': progress.id,
-                        'current_step': progress.current_step,
-                        'status': progress.onboarding_status,
-                        'attempt': attempt + 1
+                        'user_email': user.email
                     })
-                    return progress
+                    raise OnboardingProgress.DoesNotExist("Progress not found for user")
 
             except OperationalError as e:
                 # Handle lock acquisition failure
@@ -2581,19 +2751,17 @@ class SaveStep4View(BaseOnboardingView):
     def _update_progress_state(self, progress, task_id):
         """Updates progress record with new task information"""
         progress.database_setup_task_id = task_id
-        progress.database_provisioning_status = 'provisioning'
-        progress.technical_setup_status = 'in_progress'
+        progress.onboarding_status = 'provisioning'
         progress.setup_started_at = timezone.now()
         progress.setup_retries += 1
-        progress.last_error = None
+        progress.setup_error = None
         
         progress.save(update_fields=[
             'database_setup_task_id',
-            'database_provisioning_status',
-            'technical_setup_status',
+            'onboarding_status',
             'setup_started_at',
             'setup_retries',
-            'last_error'
+            'setup_error'
         ])
 
     def handle_cancel(self, user):
@@ -2640,15 +2808,13 @@ class SaveStep4View(BaseOnboardingView):
 
                     # Update progress record to reflect cancellation
                     progress.database_setup_task_id = None
-                    progress.database_provisioning_status = 'cancelled'
-                    progress.technical_setup_status = 'cancelled'
+                    progress.onboarding_status = 'cancelled'
                     progress.cancellation_reason = 'user_requested'
                     progress.cancelled_at = timezone.now()
                     
                     progress.save(update_fields=[
                         'database_setup_task_id',
-                        'database_provisioning_status',
-                        'technical_setup_status',
+                        'onboarding_status',
                         'cancellation_reason',
                         'cancelled_at'
                     ])
@@ -2724,8 +2890,8 @@ class SaveStep4View(BaseOnboardingView):
                     'request_id': request_id,
                     'timestamp': timezone.now().isoformat(),
                     'user_email': request.user.email,
-                    'provisioning_status': progress.database_provisioning_status,
-                    'technical_status': progress.technical_setup_status
+                    'provisioning_status': progress.onboarding_status,
+                    'setup_error': progress.setup_error
                 }
             except OnboardingProgress.DoesNotExist:
                 logger.warning(f"No progress found for user {request.user.id}")
@@ -2841,11 +3007,19 @@ class OnboardingSuccessView(BaseOnboardingView):
                     'payment_completed', 'onboarding_status', 'current_step'
                 ])
 
+                # Get plan from session metadata or default to professional
+                selected_plan = 'professional'  # Default
+                if hasattr(session, 'metadata') and session.metadata and 'plan' in session.metadata:
+                    selected_plan = session.metadata['plan']
+                    # Validate plan
+                    if selected_plan not in ['free', 'professional', 'enterprise']:
+                        selected_plan = 'professional'  # Fallback to professional if invalid
+                
                 # Update or create subscription
                 subscription, _ = Subscription.objects.update_or_create(
                     business=user.userprofile.business,
                     defaults={
-                        'selected_plan': 'professional',
+                        'selected_plan': selected_plan,
                         'start_date': datetime.now().date(),
                         'is_active': True,
                         'billing_cycle': 'monthly' if session.subscription else 'annual'
@@ -3001,7 +3175,7 @@ class CheckOnboardingStatusView(APIView):
             response_data = {
                 'status': str(progress.onboarding_status or 'unknown'),
                 'currentStep': str(progress.current_step or 'unknown'),
-                'setup_complete': bool(progress.database_provisioning_status == 'complete'),
+                'setup_complete': bool(progress.onboarding_status == 'complete'),
                 'hasBusinessInfo': bool(has_business_info),
             }
 
@@ -3119,8 +3293,8 @@ class DatabaseHealthCheckView(BaseOnboardingView):
             logger.error(f"Health check error: {str(e)}", exc_info=True)
             return Response({
                 "status": "error",
-                "database_provisioning_status": 'error',
-                "technical_setup_status": 'failed',
+                "onboarding_status": 'error',
+                "setup_error": 'failed',
                 "message": str(e),
                 "timestamp": timezone.now().isoformat()
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -3484,7 +3658,7 @@ class SetupStatusView(BaseOnboardingView):
             response_data = {
                 "request_id": request_id,
                 "timestamp": timezone.now().isoformat(),
-                "status": progress.database_provisioning_status or 'not_started',
+                "status": progress.onboarding_status or 'not_started',
                 "selected_plan": progress.selected_plan,
                 "progress": progress.setup_progress or 0,
                 "current_step": progress.current_step,
@@ -3850,11 +4024,19 @@ def stripe_webhook(request):
                 profile = UserProfile.objects.select_for_update().get(user=user)
                 progress = OnboardingProgress.objects.select_for_update().get(user=user)
                 
+                # Get plan from session metadata or default to professional
+                selected_plan = 'professional'  # Default
+                if session.metadata and 'plan' in session.metadata:
+                    selected_plan = session.metadata['plan']
+                    # Validate plan
+                    if selected_plan not in ['free', 'professional', 'enterprise']:
+                        selected_plan = 'professional'  # Fallback to professional if invalid
+                
                 # Update subscription
                 subscription = Subscription.objects.update_or_create(
                     business=profile.business,
                     defaults={
-                        'selected_plan': 'professional',
+                        'selected_plan': selected_plan,
                         'start_date': timezone.now().date(),
                         'is_active': True,
                         'billing_cycle': 'monthly' if session.subscription else 'annual'
@@ -3863,9 +4045,26 @@ def stripe_webhook(request):
                 
                 # Update progress
                 progress.payment_completed = True
-                progress.onboarding_status = 'setup'
-                progress.current_step = 'setup'
+                progress.onboarding_status = 'complete'
+                progress.current_step = 'complete'
                 progress.save()
+                
+                # Update Cognito attributes
+                try:
+                    from custom_auth.cognito import update_user_attributes_sync
+                    
+                    # Create attributes dictionary with valid values
+                    cognito_attributes = {
+                        'custom:onboarding': 'COMPLETE',  # Always set a valid string value
+                        'custom:subplan': 'professional'   # Always set a valid string value
+                    }
+                    
+                    # Update Cognito attributes
+                    update_user_attributes_sync(str(user.id), cognito_attributes)
+                    logger.info(f"Updated Cognito attributes for user {user.id}: {cognito_attributes}")
+                except Exception as e:
+                    logger.error(f"Failed to update Cognito attributes: {str(e)}")
+                    # Continue even if Cognito update fails
                 
                 logger.info(f"Subscription activated for user {user.id}")
                 
@@ -3921,3 +4120,4 @@ class SubscriptionStatusView(BaseOnboardingView):
             return Response({
                 'error': f'Failed to get subscription status: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

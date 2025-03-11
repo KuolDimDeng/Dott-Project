@@ -109,7 +109,7 @@ export const getProducts = async (options = {}, fetchOptions = {}) => {
       endpoint = '/api/inventory/ultra/products/';
       break;
     case 'detailed':
-      endpoint = '/api/inventory/products/';
+      endpoint = '/api/inventory/products/';  // Ensure trailing slash is present
       cacheTTL = CACHE_CONFIG.DETAIL_TTL; // Longer TTL for detailed data
       break;
     case 'with_department':

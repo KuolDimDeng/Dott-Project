@@ -79,8 +79,38 @@ def list_all_tenants():
         if conn:
             conn.close()
 
+def drop_all_tenant_schemas():
+    """Drop all tenant schemas from the database"""
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Execute a PL/pgSQL block to drop all tenant schemas
+            cursor.execute("""
+            DO $$
+            DECLARE
+                schema_rec RECORD;
+            BEGIN
+                FOR schema_rec IN
+                    SELECT schema_name
+                    FROM information_schema.schemata
+                    WHERE schema_name LIKE 'tenant_%'
+                LOOP
+                    EXECUTE 'DROP SCHEMA "' || schema_rec.schema_name || '" CASCADE';
+                    RAISE NOTICE 'Dropped schema: %', schema_rec.schema_name;
+                END LOOP;
+            END $$;
+            """)
+            logger.info("Successfully dropped all tenant schemas")
+            return True
+    except Exception as e:
+        logger.error(f"Error dropping tenant schemas: {str(e)}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
 def drop_tenant_schema(schema_name):
-    """Drop a tenant schema from the database"""
+    """Drop a specific tenant schema from the database"""
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
@@ -165,9 +195,12 @@ def remove_all_tenants(force=False):
     
     logger.info("Starting tenant removal process...")
     
-    # First, drop all tenant schemas
-    for tenant in tenants:
-        drop_tenant_schema(tenant['schema_name'])
+    # First, drop all tenant schemas using the new function
+    logger.info("Dropping all tenant schemas...")
+    if drop_all_tenant_schemas():
+        logger.info("Successfully dropped all tenant schemas")
+    else:
+        logger.error("Failed to drop all tenant schemas")
     
     # Then truncate tables
     if truncate_tables():

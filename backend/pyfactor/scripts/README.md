@@ -55,6 +55,35 @@ If `database_name` is not provided, it will use the name from settings.py.
 python scripts/initialize_database_tables.py dott_new
 ```
 
+## Migrate Tenant Schema
+
+The `migrate_tenant_schema.py` script runs migrations for a specific tenant schema to ensure all tables are created.
+
+### What it does:
+1. Sets the search path to the specified tenant schema
+2. Runs migrations for all TENANT_APPS
+3. Verifies that all tables have been created
+4. Shows a list of new tables created
+
+### Usage:
+
+```bash
+# Run the script directly
+cd backend/pyfactor
+python scripts/migrate_tenant_schema.py <schema_name> [--force]
+```
+
+Options:
+- `schema_name`: Name of the tenant schema to migrate (required)
+- `--force`: Skip confirmation prompts (use with caution)
+
+### Example:
+
+```bash
+# Migrate a specific tenant schema
+python scripts/migrate_tenant_schema.py tenant_75c2c5e7_903b_4bac_affc_6cd3222bf43a
+```
+
 ## Workflow for Setting Up a New Database
 
 1. Create the database in AWS console
@@ -66,3 +95,9 @@ python scripts/initialize_database_tables.py dott_new
 1. Run the remove_all_tenants.py script to remove all tenants
 2. Confirm by typing 'DELETE ALL TENANTS' when prompted (or use --force to skip confirmation)
 3. All tenant data will be removed, but the database structure remains intact
+
+## Workflow for Fixing Tenant Schemas with Missing Tables
+
+1. Run the migrate_tenant_schema.py script for each tenant schema that needs fixing
+2. The script will run migrations for all TENANT_APPS and create any missing tables
+3. Verify that all required tables have been created
