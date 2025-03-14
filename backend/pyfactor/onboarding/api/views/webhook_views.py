@@ -10,7 +10,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from onboarding.models import OnboardingProgress
-from business.models import Subscription
+from users.models import Subscription
 from users.models import User
 
 logger = logging.getLogger(__name__)

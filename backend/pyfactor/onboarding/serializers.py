@@ -1,8 +1,8 @@
 from rest_framework import serializers
 from .models import OnboardingProgress
-from business.models import Business
+from users.models import Business
 from django.utils import timezone
-from business.choices import BUSINESS_TYPES, LEGAL_STRUCTURE_CHOICES
+from users.choices import BUSINESS_TYPES, LEGAL_STRUCTURE_CHOICES
 from django.db import transaction
 import logging
 

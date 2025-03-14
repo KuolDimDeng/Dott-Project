@@ -24,8 +24,10 @@ from .views import (
     GetBusinessInfoView,
     UpdateOnboardingStatusView,
     SubscriptionStatusView,
+    SetupStatusCheckView,
 )
 from .views.setup import SetupStatusView, InitializeSetupView
+from .views.dashboard_setup import DashboardSchemaSetupView
 from .api.views.webhook_views import stripe_webhook  # Update this import path
 
 
@@ -63,6 +65,7 @@ urlpatterns = [
     # Setup routes
     path('setup/', InitializeSetupView.as_view(), name='initialize-setup'),
     path('setup/status/', SetupStatusView.as_view(), name='setup-status'),
+    path('setup/status/<uuid:tenant_id>/', SetupStatusView.as_view(), name='setup-status-with-tenant'),
     path('setup/start/', StartOnboardingView.as_view(), name='start-setup'),
     path('setup/cancel/', StartOnboardingView.as_view(), name='cancel-setup'),
     path('setup/complete/', CompleteOnboardingView.as_view(), name='complete-setup'),
@@ -75,6 +78,7 @@ urlpatterns = [
     # Task routes
     path('tasks/<str:task_id>/status/', get_task_status, name='task-status'),
     path('tasks/<str:task_id>/cancel/', cancel_task, name='cancel-task'),
+    path('setup-status/<str:task_id>/', SetupStatusCheckView.as_view(), name='setup-status-check'),
     
     # Maintenance routes
     path('cleanup/', CleanupOnboardingView.as_view(), name='cleanup'),
@@ -83,4 +87,7 @@ urlpatterns = [
     # Success/Complete routes
     path('success/', OnboardingSuccessView.as_view(), name='success'),
     path('complete/', CompleteOnboardingView.as_view(), name='complete'),
+    
+    # Dashboard routes
+    path('dashboard/setup/', DashboardSchemaSetupView.as_view(), name='dashboard-setup'),
 ]

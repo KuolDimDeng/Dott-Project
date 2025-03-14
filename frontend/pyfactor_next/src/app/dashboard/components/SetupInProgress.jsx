@@ -45,12 +45,7 @@ export default function SetupInProgress() {
             width: '100%',
           }}
         >
-          <CircularProgress 
-            size={60} 
-            sx={{ mb: 3 }} 
-            variant="determinate" 
-            value={progress}
-          />
+          {/* Removed loading spinner */}
           <Typography variant="h5" gutterBottom align="center">
             {stepMessage || 'Setting up your dashboard...'}
           </Typography>

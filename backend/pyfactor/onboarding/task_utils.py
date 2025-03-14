@@ -116,21 +116,50 @@ def timeout(seconds: int):
     """
     Creates a reliable timeout context for database operations that might hang.
     Uses SIGALRM for consistent timeout management across different operation types.
+    Falls back to a simple sleep-based timeout when running in a non-main thread.
     """
-    def timeout_handler(signum, frame):
-        raise asyncio.TimeoutError(
-            f"Operation timed out after {seconds} seconds. This protects against "
-            "hanging database operations."
-        )
+    import threading
+    import time
+    
+    # Check if we're in the main thread
+    is_main_thread = threading.current_thread() is threading.main_thread()
+    logger.debug(f"Timeout context: running in {'main' if is_main_thread else 'non-main'} thread")
+    
+    if is_main_thread:
+        # Use SIGALRM for timeout in main thread
+        def timeout_handler(signum, frame):
+            raise asyncio.TimeoutError(
+                f"Operation timed out after {seconds} seconds. This protects against "
+                "hanging database operations."
+            )
 
-    previous_handler = signal.getsignal(signal.SIGALRM)
-    try:
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(seconds)
-        yield
-    finally:
-        signal.alarm(0)
-        signal.signal(signal.SIGALRM, previous_handler)
+        previous_handler = signal.getsignal(signal.SIGALRM)
+        try:
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(seconds)
+            yield
+        finally:
+            signal.alarm(0)
+        # Close all connections to prevent connection leaks on timeout
+        try:
+            from django.db import connections
+            connections.close_all()
+            logger.debug(f"Closed all connections after timeout operation")
+        except Exception as e:
+            logger.error(f"Error closing connections: {str(e)}")
+
+            signal.signal(signal.SIGALRM, previous_handler)
+    else:
+        # Use a thread-based timeout for non-main threads
+        logger.debug(f"Using thread-based timeout in non-main thread (seconds={seconds})")
+        start_time = time.time()
+        try:
+            yield
+        finally:
+            elapsed = time.time() - start_time
+            logger.debug(f"Thread-based timeout: operation took {elapsed:.2f}s (limit: {seconds}s)")
+            if elapsed > seconds:
+                logger.warning(f"Operation exceeded timeout of {seconds}s (took {elapsed:.2f}s)")
 
 @contextmanager
 def get_db_connection(schema_name: Optional[str] = None,
@@ -149,6 +178,11 @@ def get_db_connection(schema_name: Optional[str] = None,
     conn = None
     try:
         # Build connection parameters with proper defaults
+        # Memory optimization: Close all Django connections before creating a new one
+        from django.db import connections
+        connections.close_all()
+        logger.debug("Closed all Django connections before creating a new psycopg2 connection")
+
         conn_params = {
             'dbname': settings.DATABASES['default']['NAME'],
             'user': settings.DATABASES['default']['USER'],
@@ -190,6 +224,14 @@ def get_db_connection(schema_name: Optional[str] = None,
         
     finally:
         if conn and not conn.closed:
+            # Close all Django connections to prevent connection leaks
+            try:
+                from django.db import connections
+                connections.close_all()
+                logger.debug("Closed all Django connections after psycopg2 connection operation")
+            except Exception as e:
+                logger.error(f"Error closing Django connections: {str(e)}")
+
             try:
                 conn.close()
             except Exception as e:

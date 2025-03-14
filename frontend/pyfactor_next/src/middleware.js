@@ -39,6 +39,22 @@ export function middleware(request) {
     return NextResponse.next();
   }
   
+  // CRITICAL: Allow direct access to dashboard after subscription
+  // This ensures users can access the dashboard after selecting a plan
+  if (pathname === '/dashboard') {
+    const onboardingStep = request.cookies.get('onboardingStep')?.value;
+    const onboardedStatus = request.cookies.get('onboardedStatus')?.value;
+    
+    // If we have any indication that the user has completed subscription, allow dashboard access
+    // Use a simplified check to reduce processing overhead
+    if (onboardingStep?.toUpperCase() === 'SETUP' ||
+        onboardedStatus?.toUpperCase() === 'SUBSCRIPTION' ||
+        onboardedStatus?.toUpperCase() === 'SETUP') {
+      console.log(`[Middleware] BYPASSING CHECKS for dashboard after subscription: step=${onboardingStep}, status=${onboardedStatus}`);
+      return NextResponse.next();
+    }
+  }
+  
   // CRITICAL: Handle the /onboarding route when user is already in subscription step
   // This prevents the redirect loop issue
   if (pathname === '/onboarding') {
@@ -250,18 +266,17 @@ if (!onboardingStep && !pathname.startsWith('/onboarding/') && !pathname.startsW
       return response;
     }
     
-    // Special case for dashboard - allow access if:
-    // 1. onboardingStep is 'setup' or 'complete'
-    // 2. onboardedStatus is 'SUBSCRIPTION' (to allow free plan users to access dashboard)
-    // 3. setupCompleted cookie is 'true' (indicating onboarding was completed previously)
+    // Special case for dashboard - simplified check to reduce memory usage
+    // Allow access if onboardingStep is setup/complete or onboardedStatus is SUBSCRIPTION/SETUP
     const setupCompleted = request.cookies.get('setupCompleted')?.value === 'true';
     
     if (pathname === '/dashboard' &&
         (normalizedOnboardingStep === 'setup' ||
          normalizedOnboardingStep === 'complete' ||
          normalizedOnboardedStatus === 'SUBSCRIPTION' ||
+         normalizedOnboardedStatus === 'SETUP' ||
          setupCompleted)) {
-      console.log(`[Middleware] Allowing access to dashboard with step=${normalizedOnboardingStep}, status=${normalizedOnboardedStatus}, setupCompleted=${setupCompleted}`);
+      console.log(`[Middleware] Allowing access to dashboard with step=${normalizedOnboardingStep}, status=${normalizedOnboardedStatus}`);
       return response;
     }
     
@@ -286,10 +301,13 @@ if (!onboardingStep && !pathname.startsWith('/onboarding/') && !pathname.startsW
 
     // Only allow access to current or completed steps
     if (requestedStepIndex > currentStepIndex + 1) {
-      // Special case: If we're in SUBSCRIPTION state and trying to access dashboard, allow it
-      if ((normalizedOnboardingStep === 'subscription' || normalizedOnboardedStatus === 'SUBSCRIPTION') &&
+      // Special case: Simplified check for dashboard access
+      if ((normalizedOnboardingStep === 'subscription' ||
+           normalizedOnboardingStep === 'setup' ||
+           normalizedOnboardedStatus === 'SUBSCRIPTION' ||
+           normalizedOnboardedStatus === 'SETUP') &&
           pathname === '/dashboard') {
-        console.log(`[Middleware] Allowing access to dashboard from subscription state`);
+        console.log(`[Middleware] Allowing access to dashboard from subscription or setup state`);
         return response;
       }
       

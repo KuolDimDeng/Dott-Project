@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
-import { getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
+import { getCurrentUser } from '@/config/amplifyServer';
 
 export async function GET(request) {
   const requestId = Math.random().toString(36).substring(2, 15);
@@ -20,25 +20,28 @@ export async function GET(request) {
       );
     }
 
-    // Get user data from Cognito
+    // Get user data from token
     try {
-      const user = await getCurrentUser();
-      const attributes = await fetchUserAttributes();
+      const user = await getCurrentUser(idToken);
+      
+      // Decode the token to get user attributes
+      const { jwtDecode } = await import('jwt-decode');
+      const decoded = jwtDecode(idToken);
       
       // Create a profile response
       const profile = {
         userId: user.userId,
         username: user.username,
-        email: attributes.email,
-        given_name: attributes.given_name || '',
-        family_name: attributes.family_name || '',
-        phone_number: attributes.phone_number || '',
-        is_onboarded: attributes['custom:setupdone'] === 'TRUE',
-        onboarding_status: attributes['custom:onboarding'] || 'NOT_STARTED',
-        business_name: attributes['custom:businessname'] || '',
-        business_id: attributes['custom:businessid'] || '',
-        role: attributes['custom:userrole'] || 'USER',
-        subscription_plan: attributes['custom:subplan'] || 'FREE'
+        email: decoded.email || '',
+        given_name: decoded['custom:given_name'] || '',
+        family_name: decoded['custom:family_name'] || '',
+        phone_number: decoded['phone_number'] || '',
+        is_onboarded: decoded['custom:setupdone'] === 'TRUE',
+        onboarding_status: decoded['custom:onboarding'] || 'NOT_STARTED',
+        business_name: decoded['custom:businessname'] || '',
+        business_id: decoded['custom:businessid'] || '',
+        role: decoded['custom:userrole'] || 'USER',
+        subscription_plan: decoded['custom:subplan'] || 'FREE'
       };
       
       logger.debug('[Profile-API] Returning user profile', { 

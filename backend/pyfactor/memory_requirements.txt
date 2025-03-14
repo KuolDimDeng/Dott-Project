@@ -1,0 +1,5 @@
+# Memory optimization dependencies
+psutil>=5.9.0  # For memory monitoring
+pympler>=1.0.1  # For detailed memory analysis
+objgraph>=3.5.0  # For tracking object references
+memory_profiler>=0.60.0  # For profiling memory usage

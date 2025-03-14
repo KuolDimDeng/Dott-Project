@@ -1,13 +1,11 @@
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { logger } from '@/utils/logger';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 
 export async function validateServerSession(providedTokens) {
   try {
     let accessToken, idToken;
-    
-    // Always initialize cookieStore to avoid reference errors
-    const cookieStore = cookies();
+    let onboardingStep, onboardedStatus, tenantId;
     
     if (providedTokens?.accessToken && providedTokens?.idToken) {
       // Use provided tokens if available
@@ -16,8 +14,33 @@ export async function validateServerSession(providedTokens) {
       logger.debug('[ServerUtils] Using provided tokens');
     } else {
       // Fall back to cookies if no tokens provided
-      accessToken = cookieStore.get('accessToken')?.value;
-      idToken = cookieStore.get('idToken')?.value;
+      // Use request() to get headers which includes cookies
+      const headersList = await headers();
+      const cookieHeader = headersList.get('cookie') || '';
+      
+      // Parse cookies from the header
+      const parseCookies = (cookieHeader) => {
+        const cookies = {};
+        cookieHeader.split(';').forEach(cookie => {
+          const parts = cookie.split('=');
+          if (parts.length >= 2) {
+            const name = parts[0].trim();
+            const value = parts.slice(1).join('=').trim();
+            cookies[name] = value;
+          }
+        });
+        return cookies;
+      };
+      
+      const parsedCookies = parseCookies(cookieHeader);
+      
+      // Extract values from cookies
+      accessToken = parsedCookies['accessToken'];
+      idToken = parsedCookies['idToken'];
+      onboardingStep = parsedCookies['onboardingStep'];
+      onboardedStatus = parsedCookies['onboardedStatus'];
+      tenantId = parsedCookies['tenantId'];
+      
       logger.debug('[ServerUtils] Using tokens from cookies');
     }
 
@@ -34,11 +57,6 @@ export async function validateServerSession(providedTokens) {
 
     // Verify access token
     const payload = await verifier.verify(accessToken);
-
-    // Get onboarding status and business ID from cookies if not in token
-    const onboardingStep = cookieStore.get('onboardingStep')?.value;
-    const onboardedStatus = cookieStore.get('onboardedStatus')?.value;
-    const tenantId = cookieStore.get('tenantId')?.value;
     
     // Extract all custom attributes from the token payload
     const customAttributes = {};

@@ -2,6 +2,8 @@ import axios from 'axios';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 import { getTenantId, getSchemaName, getTenantFromResponse } from '@/utils/tenantUtils';
+import { isTokenExpired } from '@/utils/auth';
+import { jwtDecode } from 'jwt-decode';
 
 // Queue for requests during token refresh
 let isRefreshing = false;
@@ -42,13 +44,55 @@ axiosInstance.interceptors.request.use(
       }
       
       // Get tokens from Amplify session
-      const { tokens, userSub } = await fetchAuthSession();
-      const accessToken = tokens?.accessToken?.toString();
-      const idToken = tokens?.idToken?.toString();
+      let { tokens, userSub } = await fetchAuthSession();
+      let accessToken = tokens?.accessToken?.toString();
+      let idToken = tokens?.idToken?.toString();
       
       if (!accessToken || !idToken) {
         logger.warn('[AxiosConfig] Missing required tokens in session');
         throw new Error('No valid session');
+      }
+      
+      // Check if token is expired or about to expire (within 5 minutes)
+      try {
+        const decoded = jwtDecode(accessToken);
+        const now = Math.floor(Date.now() / 1000);
+        const fiveMinutesInSeconds = 5 * 60;
+        
+        if (decoded.exp && decoded.exp - now < fiveMinutesInSeconds) {
+          logger.info('[AxiosConfig] Token is about to expire, refreshing proactively');
+          
+          // Only refresh if not already refreshing to avoid infinite loops
+          if (!isRefreshing) {
+            isRefreshing = true;
+            try {
+              const refreshResult = await fetchAuthSession({ forceRefresh: true });
+              accessToken = refreshResult.tokens?.accessToken?.toString();
+              idToken = refreshResult.tokens?.idToken?.toString();
+              
+              if (!accessToken || !idToken) {
+                throw new Error('Failed to refresh tokens');
+              }
+              
+              logger.info('[AxiosConfig] Tokens refreshed proactively');
+              
+              // Process any queued requests
+              processQueue(null, { accessToken, idToken });
+            } catch (refreshError) {
+              logger.error('[AxiosConfig] Proactive token refresh failed:', refreshError);
+              processQueue(refreshError);
+              // Continue with original token if it's not expired yet
+              if (decoded.exp <= now) {
+                throw refreshError;
+              }
+            } finally {
+              isRefreshing = false;
+            }
+          }
+        }
+      } catch (tokenCheckError) {
+        logger.warn('[AxiosConfig] Error checking token expiration:', tokenCheckError);
+        // Continue with the request using the original token
       }
       
       // Set auth headers

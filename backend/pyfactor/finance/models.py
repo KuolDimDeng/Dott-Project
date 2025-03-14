@@ -4,8 +4,9 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
-from business.models import Business
-from banking.models import BankAccount, BankTransaction
+# Temporarily commented out to break circular dependency
+# from users.models import Business
+# from banking.models import BankAccount, BankTransaction
 
 from purchases.models import Bill
 
@@ -53,7 +54,9 @@ class Account(models.Model):
     ]
     
     account_number = models.CharField(max_length=20, null=True, unique=True)
-    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="accounts", null=True)
+    # Temporarily commented out to break circular dependency
+    # business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="accounts", null=True)
+    business_id = models.UUIDField(null=True, blank=True)  # Temporary replacement
     name = models.CharField(max_length=100)
     account_type = models.ForeignKey(AccountType, on_delete=models.CASCADE, related_name='accounts')
     objects = AccountManager()
@@ -68,7 +71,9 @@ class Account(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=['account_number']),
-            models.Index(fields=['business', 'account_type']),
+            # Temporarily commented out to break circular dependency
+            # models.Index(fields=['business', 'account_type']),
+            models.Index(fields=['account_type']),
             models.Index(fields=['status']),
         ]
         
@@ -176,7 +181,9 @@ class FinanceTransaction(models.Model):
     posted_at = models.DateTimeField(null=True, blank=True)
     is_reconciled = models.BooleanField(default=False)
     reconciliation = models.ForeignKey('AccountReconciliation', on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
-    business = models.ForeignKey('business.Business', on_delete=models.CASCADE, null=True)
+    # Temporarily commented out to break circular dependency
+    # business = models.ForeignKey('users.Business', on_delete=models.CASCADE, null=True)
+    business_id = models.UUIDField(null=True, blank=True)  # Temporary replacement
     metadata = models.JSONField(default=dict, blank=True)
     
     class Meta:
@@ -185,7 +192,6 @@ class FinanceTransaction(models.Model):
             models.Index(fields=['date']),
             models.Index(fields=['status']),
             models.Index(fields=['category']),
-            models.Index(fields=['business']),
         ]
         
     def __str__(self):
@@ -368,7 +374,7 @@ class JournalEntry(models.Model):
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_entries')
     posted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='posted_entries')
     posted_at = models.DateTimeField(null=True, blank=True)
-    business = models.ForeignKey('business.Business', on_delete=models.CASCADE)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
     reference = models.CharField(max_length=50, blank=True)
     
     class Meta:
@@ -468,6 +474,14 @@ class GeneralLedgerEntry(models.Model):
         return f"{self.date} - {self.account.name} - {self.description}"
     
 
+# Temporary placeholder for BankAccount
+class BankAccountPlaceholder:
+    pass
+
+# Temporary placeholder for BankTransaction
+class BankTransactionPlaceholder:
+    pass
+
 class AccountReconciliation(models.Model):
     STATUS_CHOICES = [
         ('in_progress', 'In Progress'),
@@ -477,7 +491,8 @@ class AccountReconciliation(models.Model):
         ('rejected', 'Rejected')
     ]
     
-    bank_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE)
+    # Temporarily replaced with UUID field
+    bank_account_id = models.UUIDField(null=True, blank=True)
     account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True)
     reconciliation_date = models.DateField()
     statement_balance = models.DecimalField(max_digits=15, decimal_places=2)
@@ -490,7 +505,9 @@ class AccountReconciliation(models.Model):
     reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='reviewed_reconciliations')
     approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='approved_reconciliations')
     notes = models.TextField(blank=True)
-    business = models.ForeignKey('business.Business', on_delete=models.CASCADE)
+    # Temporarily commented out to break circular dependency
+    # business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
+    business_id = models.UUIDField(null=True, blank=True)  # Temporary replacement
     period_start = models.DateField()
     period_end = models.DateField()
     
@@ -502,7 +519,7 @@ class AccountReconciliation(models.Model):
         ]
         
     def __str__(self):
-        return f"Reconciliation for {self.bank_account} on {self.reconciliation_date}"
+        return f"Reconciliation on {self.reconciliation_date}"
         
     def clean(self):
         if self.period_end < self.period_start:
@@ -596,7 +613,8 @@ class ReconciliationItem(models.Model):
     ]
     
     reconciliation = models.ForeignKey(AccountReconciliation, on_delete=models.CASCADE, related_name='items')
-    bank_transaction = models.ForeignKey(BankTransaction, on_delete=models.SET_NULL, null=True)
+    # Temporarily replaced with UUID field
+    bank_transaction_id = models.UUIDField(null=True, blank=True)
     finance_transaction = models.ForeignKey('FinanceTransaction', on_delete=models.SET_NULL, null=True)
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     match_status = models.CharField(max_length=20, choices=MATCH_STATUS_CHOICES, default='unmatched')
@@ -620,17 +638,18 @@ class ReconciliationItem(models.Model):
         return f"Reconciliation Item {self.id} - {self.match_status}"
     
     def clean(self):
-        if not self.bank_transaction and not self.finance_transaction:
+        if not self.bank_transaction_id and not self.finance_transaction:
             raise ValidationError('At least one transaction (bank or finance) must be specified.')
             
-        if self.bank_transaction and self.finance_transaction:
-            bank_amount = self.bank_transaction.amount
-            finance_amount = self.finance_transaction.amount
-            
-            # Check if amounts match within tolerance, considering adjustments
-            total_amount = finance_amount + self.adjustment_amount
-            if abs(bank_amount - total_amount) > 0.01:
-                raise ValidationError('Bank and finance transaction amounts must match (including adjustments).')
+        # Temporarily commented out to break circular dependency
+        # if self.bank_transaction and self.finance_transaction:
+        #     bank_amount = self.bank_transaction.amount
+        #     finance_amount = self.finance_transaction.amount
+        #
+        #     # Check if amounts match within tolerance, considering adjustments
+        #     total_amount = finance_amount + self.adjustment_amount
+        #     if abs(bank_amount - total_amount) > 0.01:
+        #         raise ValidationError('Bank and finance transaction amounts must match (including adjustments).')
                 
         if self.match_status in ['auto_matched', 'manually_matched'] and not self.matched_by:
             raise ValidationError('Matched items must have a matching user.')
@@ -731,7 +750,7 @@ class MonthEndClosing(models.Model):
     
     month = models.IntegerField(choices=MONTH_CHOICES)
     year = models.IntegerField()
-    business = models.ForeignKey('business.Business', on_delete=models.CASCADE)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -958,7 +977,7 @@ class FinancialStatement(models.Model):
     ]
     
     # Basic information
-    business = models.ForeignKey('business.Business', on_delete=models.CASCADE)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
     statement_type = models.CharField(max_length=2, choices=STATEMENT_TYPES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     
@@ -1190,7 +1209,7 @@ class FixedAsset(models.Model):
     description = models.TextField(blank=True)
     asset_type = models.CharField(max_length=20, choices=ASSET_TYPE_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
-    business = models.ForeignKey('business.Business', on_delete=models.CASCADE)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
     department = models.CharField(max_length=100, blank=True)
     
     # Acquisition details
@@ -1413,7 +1432,7 @@ class Budget(models.Model):
     ]
     
     name = models.CharField(max_length=255)
-    business = models.ForeignKey('business.Business', on_delete=models.CASCADE)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     period = models.CharField(max_length=10, choices=PERIOD_CHOICES)
     fiscal_year = models.IntegerField()
@@ -1652,7 +1671,7 @@ class CostCategory(models.Model):
     code = models.CharField(max_length=20, unique=True)
     description = models.TextField(blank=True)
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='subcategories')
-    business = models.ForeignKey('business.Business', on_delete=models.CASCADE)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1697,7 +1716,7 @@ class CostEntry(models.Model):
 
     # Basic information
     cost_id = models.AutoField(primary_key=True)
-    business = models.ForeignKey('business.Business', on_delete=models.CASCADE)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
     description = models.CharField(max_length=255)
     category = models.ForeignKey(CostCategory, on_delete=models.PROTECT)
     cost_type = models.CharField(max_length=10, choices=COST_TYPE_CHOICES)
@@ -1941,7 +1960,7 @@ class IntercompanyTransaction(models.Model):
     
     # Basic information
     transaction_id = models.AutoField(primary_key=True)
-    business = models.ForeignKey('business.Business', on_delete=models.CASCADE)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     
@@ -2112,7 +2131,7 @@ class IntercompanyAccount(models.Model):
     
     # Basic information
     name = models.CharField(max_length=100)
-    business = models.ForeignKey('business.Business', on_delete=models.CASCADE)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
     account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPES)
     status = models.CharField(max_length=25, choices=STATUS_CHOICES, default='active')
     
@@ -2236,7 +2255,397 @@ class AuditTrail(models.Model):
     notes = models.TextField(blank=True)
     ip_address = models.GenericIPAddressField()
     module = models.CharField(max_length=50)
-    business = models.ForeignKey('business.Business', on_delete=models.CASCADE, null=True)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE, null=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['date_time']),
+            models.Index(fields=['transaction_type']),
+            models.Index(fields=['business']),
+            models.Index(fields=['user']),
+        ]
+        
+    def __str__(self):
+        return f"{self.date_time} - {self.user} - {self.action_type}"
+    
+    @classmethod
+    def log_transaction(cls, user, action_type, transaction_id, transaction_type, 
+                       affected_accounts, old_value=None, new_value=None, 
+                       business=None, metadata=None, **kwargs):
+        """
+        Helper method to create audit trail entries with proper validation and formatting
+        """
+        try:
+            audit = cls.objects.create(
+                user=user,
+                action_type=action_type,
+                transaction_id=str(transaction_id),
+                transaction_type=transaction_type,
+                affected_accounts=affected_accounts,
+                old_value=str(old_value) if old_value is not None else None,
+                new_value=str(new_value) if new_value is not None else None,
+                business=business,
+                metadata=metadata or {},
+                **kwargs
+            )
+            return audit
+        except Exception as e:
+            logger.error(f"Failed to create audit trail: {str(e)}")
+            raise
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['department', 'cost_center']),
+        ]
+
+    def __str__(self):
+        return f"Allocation for {self.cost_entry} - {self.allocation_base}"
+        
+    def clean(self):
+        if self.allocation_method == 'percentage' and self.allocation_percentage > 100:
+            raise ValidationError('Allocation percentage cannot exceed 100%')
+            
+        if self.allocation_method == 'unit' and (not self.units or not self.unit_cost):
+            raise ValidationError('Units and unit cost are required for unit-based allocation')
+            
+        if self.end_date and self.end_date < self.start_date:
+            raise ValidationError('End date must be after start date')
+            
+    def calculate_allocated_amount(self):
+        """Calculate allocated amount based on allocation method"""
+        if self.allocation_method == 'percentage':
+            return (self.cost_entry.amount * self.allocation_percentage) / 100
+        elif self.allocation_method == 'unit':
+            return self.units * self.unit_cost
+        return self.allocated_amount
+    
+    
+class IntercompanyTransaction(models.Model):
+    TRANSACTION_TYPES = [
+        ('sale', 'Sale'),
+        ('purchase', 'Purchase'),
+        ('loan', 'Loan'),
+        ('asset_transfer', 'Asset Transfer'),
+        ('service', 'Service'),
+        ('cost_allocation', 'Cost Allocation'),
+        ('dividend', 'Dividend'),
+        ('investment', 'Investment')
+    ]
+    
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('posted', 'Posted'),
+        ('voided', 'Voided')
+    ]
+    
+    RECONCILIATION_STATUS = [
+        ('unmatched', 'Unmatched'),
+        ('partially_matched', 'Partially Matched'),
+        ('fully_matched', 'Fully Matched'),
+        ('disputed', 'Disputed')
+    ]
+    
+    # Basic information
+    transaction_id = models.AutoField(primary_key=True)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    
+    # Entities involved
+    entity_from = models.CharField(max_length=100)
+    entity_to = models.CharField(max_length=100)
+    department_from = models.CharField(max_length=100, blank=True)
+    department_to = models.CharField(max_length=100, blank=True)
+    
+    # Amounts and currency
+    amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    currency = models.CharField(max_length=3)
+    converted_amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    exchange_rate = models.DecimalField(max_digits=10, decimal_places=6)
+    tax_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    
+    # Dates
+    date = models.DateField()
+    due_date = models.DateField(null=True, blank=True)
+    posting_date = models.DateField(null=True, blank=True)
+    
+    # References
+    document_reference = models.CharField(max_length=50, blank=True)
+    invoice_number = models.CharField(max_length=100, blank=True)
+    purchase_order = models.CharField(max_length=100, blank=True)
+    contract_reference = models.CharField(max_length=100, blank=True)
+    
+    # Status tracking
+    reconciliation_status = models.CharField(max_length=20, choices=RECONCILIATION_STATUS, default='unmatched')
+    matched_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Transfer pricing
+    transfer_pricing_method = models.CharField(max_length=100, blank=True)
+    transfer_pricing_documentation = models.JSONField(default=dict, blank=True)
+    
+    # Additional information
+    description = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+    attachments = models.JSONField(default=dict, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    
+    # Workflow
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_intercompany_transactions')
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='approved_intercompany_transactions')
+    posted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='posted_intercompany_transactions')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['date']),
+            models.Index(fields=['business', 'transaction_type']),
+            models.Index(fields=['entity_from', 'entity_to']),
+        ]
+
+    def __str__(self):
+        return f"{self.transaction_id} - {self.transaction_type} from {self.entity_from} to {self.entity_to}"
+        
+    def clean(self):
+        if self.entity_from == self.entity_to:
+            raise ValidationError('Source and destination entities cannot be the same')
+            
+        if self.status == 'approved' and not self.approved_by:
+            raise ValidationError('Approved transactions must have an approving user')
+            
+        if self.status == 'posted' and not self.posted_by:
+            raise ValidationError('Posted transactions must have a posting user')
+            
+        if self.total_amount != self.amount + self.tax_amount:
+            raise ValidationError('Total amount must equal amount plus tax amount')
+            
+        if self.matched_amount > self.total_amount:
+            raise ValidationError('Matched amount cannot exceed total amount')
+            
+    def approve(self, user):
+        """Approve the transaction"""
+        if self.status != 'pending':
+            raise ValidationError('Only pending transactions can be approved')
+            
+        self.status = 'approved'
+        self.approved_by = user
+        self.save()
+        
+        # Create audit trail
+        AuditTrail.log_transaction(
+            user=user,
+            action_type='approve',
+            transaction_id=self.transaction_id,
+            transaction_type='intercompany_transaction',
+            affected_accounts='',
+            business=self.business,
+            metadata={
+                'amount': str(self.amount),
+                'transaction_type': self.transaction_type
+            }
+        )
+        
+    def post(self, user):
+        """Post the transaction"""
+        if self.status != 'approved':
+            raise ValidationError('Only approved transactions can be posted')
+            
+        self.status = 'posted'
+        self.posted_by = user
+        self.posting_date = timezone.now().date()
+        self.save()
+        
+        # Create audit trail
+        AuditTrail.log_transaction(
+            user=user,
+            action_type='modify',
+            transaction_id=self.transaction_id,
+            transaction_type='intercompany_transaction',
+            affected_accounts='',
+            old_value='approved',
+            new_value='posted',
+            business=self.business,
+            metadata={
+                'amount': str(self.amount),
+                'transaction_type': self.transaction_type
+            }
+        )
+        
+    def void(self, user, reason):
+        """Void the transaction"""
+        if self.status not in ['posted', 'approved']:
+            raise ValidationError('Only posted or approved transactions can be voided')
+            
+        old_status = self.status
+        self.status = 'voided'
+        self.save()
+        
+        # Create audit trail
+        AuditTrail.log_transaction(
+            user=user,
+            action_type='void',
+            transaction_id=self.transaction_id,
+            transaction_type='intercompany_transaction',
+            affected_accounts='',
+            old_value=old_status,
+            new_value='voided',
+            business=self.business,
+            metadata={
+                'reason': reason,
+                'amount': str(self.amount),
+                'transaction_type': self.transaction_type
+            }
+        )
+
+class IntercompanyAccount(models.Model):
+    ACCOUNT_TYPES = [
+        ('receivable', 'Receivable'),
+        ('payable', 'Payable'),
+        ('revenue', 'Revenue'),
+        ('expense', 'Expense'),
+        ('loan', 'Loan'),
+        ('investment', 'Investment')
+    ]
+    
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+        ('frozen', 'Frozen'),
+        ('pending_reconciliation', 'Pending Reconciliation')
+    ]
+    
+    # Basic information
+    name = models.CharField(max_length=100)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE)
+    account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPES)
+    status = models.CharField(max_length=25, choices=STATUS_CHOICES, default='active')
+    
+    # Entity details
+    entity = models.CharField(max_length=100)
+    department = models.CharField(max_length=100, blank=True)
+    cost_center = models.CharField(max_length=100, blank=True)
+    
+    # Financial details
+    currency = models.CharField(max_length=3, default='USD')
+    balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    credit_limit = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    payment_terms = models.CharField(max_length=100, blank=True)
+    
+    # Reconciliation
+    last_reconciled = models.DateTimeField(null=True, blank=True)
+    reconciliation_frequency = models.CharField(max_length=50, blank=True)
+    
+    # Additional information
+    description = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_intercompany_accounts')
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['business', 'entity']),
+            models.Index(fields=['account_type']),
+        ]
+        unique_together = ('business', 'entity', 'account_type')
+
+    def __str__(self):
+        return f"{self.name} - {self.entity} ({self.account_type})"
+        
+    def clean(self):
+        if self.balance < 0 and self.account_type not in ['payable', 'loan']:
+            raise ValidationError('Only payable and loan accounts can have negative balances')
+            
+        if self.credit_limit and self.credit_limit < 0:
+            raise ValidationError('Credit limit cannot be negative')
+            
+        if self.status == 'frozen' and self.transactions.filter(created_at__gt=self.updated_at).exists():
+            raise ValidationError('Cannot freeze account with pending transactions')
+            
+    def get_balance_at_date(self, date):
+        """Calculate account balance as of a specific date"""
+        transactions = self.transactions.filter(date__lte=date, status='posted')
+        total = sum(t.amount for t in transactions)
+        return total
+        
+    def get_aging_report(self, as_of_date=None):
+        """Generate aging report for receivables/payables"""
+        if self.account_type not in ['receivable', 'payable']:
+            raise ValidationError('Aging report only available for receivables and payables')
+            
+        if not as_of_date:
+            as_of_date = timezone.now().date()
+            
+        aging_buckets = {
+            '0-30': 0,
+            '31-60': 0,
+            '61-90': 0,
+            '90+': 0
+        }
+        
+        transactions = self.transactions.filter(
+            status='posted',
+            date__lte=as_of_date
+        ).exclude(reconciliation_status='fully_matched')
+        
+        for transaction in transactions:
+            days = (as_of_date - transaction.date).days
+            amount = transaction.amount - transaction.matched_amount
+            
+            if days <= 30:
+                aging_buckets['0-30'] += amount
+            elif days <= 60:
+                aging_buckets['31-60'] += amount
+            elif days <= 90:
+                aging_buckets['61-90'] += amount
+            else:
+                aging_buckets['90+'] += amount
+                
+        return aging_buckets
+    
+    
+class AuditTrail(models.Model):
+    ACTION_TYPES = [
+        ('create', 'Create'),
+        ('modify', 'Modify'),
+        ('delete', 'Delete'),
+        ('approve', 'Approve'),
+        ('reconcile', 'Reconcile'),
+        ('void', 'Void'),
+        ('reverse', 'Reverse')
+    ]
+    
+    TRANSACTION_TYPES = [
+        ('finance_transaction', 'Finance Transaction'),
+        ('bank_transaction', 'Bank Transaction'),
+        ('journal_entry', 'Journal Entry'),
+        ('reconciliation', 'Reconciliation'),
+        ('account_balance', 'Account Balance'),
+        ('month_end', 'Month End Closing')
+    ]
+    
+    date_time = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    action_type = models.CharField(max_length=10, choices=ACTION_TYPES)
+    transaction_id = models.CharField(max_length=50)
+    transaction_type = models.CharField(max_length=50, choices=TRANSACTION_TYPES)
+    affected_accounts = models.CharField(max_length=255)
+    old_value = models.TextField(blank=True, null=True)
+    new_value = models.TextField(blank=True, null=True)
+    approval_status = models.CharField(max_length=20, blank=True)
+    notes = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField()
+    module = models.CharField(max_length=50)
+    business = models.ForeignKey('users.Business', on_delete=models.CASCADE, null=True)
     metadata = models.JSONField(default=dict, blank=True)
     
     class Meta:

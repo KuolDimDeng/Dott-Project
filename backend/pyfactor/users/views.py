@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.core.exceptions import ValidationError
 from custom_auth.jwt import CognitoJWTAuthentication
-from business.models import Business
+from .models import Business
 from .models import UserProfile, User
 from .serializers import UserProfileSerializer
 from pyfactor.logging_config import get_logger

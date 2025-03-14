@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from woocommerce import API
 from .services.shopify_utils import generate_nonce, exchange_code_for_token, store_access_token
-from business.forms import BusinessRegistrationForm
+from users.forms import BusinessRegistrationForm
 from users.models import UserProfile
 from .models import Integration, WooCommerceIntegration, ShopifyIntegration, ShopifyOrder, ShopifyOrderItem
 from .services.woocommerce import fetch_and_store_orders

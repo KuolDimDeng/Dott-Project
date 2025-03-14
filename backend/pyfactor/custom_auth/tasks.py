@@ -1,7 +1,14 @@
 import logging
+import sys
+import traceback
+import uuid
+import time
+import psycopg2
 from celery import shared_task
 from django.db import connections, connection
 from django.core.management import call_command
+from django.conf import settings
+from custom_auth.models import Tenant
 
 logger = logging.getLogger(__name__)
 
@@ -41,3 +48,675 @@ def monitor_database_connections():
         return False
     
     return True
+
+@shared_task
+def check_and_migrate_tenant_schemas():
+    """
+    Celery task to check for tenant schemas with missing or incomplete tables and apply migrations to them.
+    This ensures that migrations happen in the background even if they were deferred during user login.
+    
+    This task performs the following checks:
+    1. Verifies that the schema exists for each tenant
+    2. Checks if the django_migrations table exists in the schema
+    3. Verifies that all expected tables for tenant apps exist
+    4. Runs migrations for schemas with missing tables
+    """
+    task_id = uuid.uuid4()
+    logger.info(f"[MIGRATION-{task_id}] Starting background check for tenant schemas that need migrations")
+    
+    try:
+        # Get all active tenants
+        tenants = Tenant.objects.filter(is_active=True)
+        logger.info(f"[MIGRATION-{task_id}] Found {len(tenants)} active tenants to check")
+        
+        # Initialize counters for summary
+        schemas_checked = 0
+        schemas_created = 0
+        schemas_migrated = 0
+        schemas_with_errors = 0
+        schemas_with_missing_tables = 0
+        schemas_with_missing_migrations_table = 0
+        
+        for tenant in tenants:
+            tenant_start_time = time.time()
+            schema_name = tenant.schema_name
+            logger.info(f"[MIGRATION-{task_id}] Checking tenant {tenant.id} ({tenant.name}) with schema {schema_name}")
+            
+            # Check if schema exists
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT schema_name
+                    FROM information_schema.schemata
+                    WHERE schema_name = %s
+                """, [schema_name])
+                schema_exists = cursor.fetchone() is not None
+            
+            if not schema_exists:
+                logger.warning(f"[MIGRATION-{task_id}] Schema {schema_name} does not exist for tenant {tenant.id}. Creating it.")
+                try:
+                    with connection.cursor() as cursor:
+                        # Create schema
+                        logger.debug(f"[MIGRATION-{task_id}] Executing CREATE SCHEMA IF NOT EXISTS for {schema_name}")
+                        cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
+                        
+                        # Set up permissions
+                        db_user = connection.settings_dict['USER']
+                        logger.debug(f"[MIGRATION-{task_id}] Setting up permissions for user {db_user}")
+                        cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {db_user}')
+                        cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {db_user}')
+                        cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {db_user}')
+                    
+                    schemas_created += 1
+                    logger.info(f"[MIGRATION-{task_id}] Successfully created schema {schema_name}")
+                except Exception as schema_error:
+                    logger.error(f"[MIGRATION-{task_id}] Failed to create schema {schema_name}: {str(schema_error)}")
+                    schemas_with_errors += 1
+                    continue
+            
+            # Check if django_migrations table exists in the schema
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = %s
+                        AND table_name = 'django_migrations'
+                    )
+                """, [schema_name])
+                migrations_table_exists = cursor.fetchone()[0]
+            
+            if not migrations_table_exists:
+                logger.warning(f"[MIGRATION-{task_id}] django_migrations table does not exist in schema {schema_name}")
+                schemas_with_missing_migrations_table += 1
+            
+            # Check if schema has tables and which tables are missing
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT COUNT(*)
+                    FROM information_schema.tables
+                    WHERE table_schema = %s
+                """, [schema_name])
+                table_count = cursor.fetchone()[0]
+                
+                # Get list of tables
+                cursor.execute("""
+                    SELECT table_name
+                    FROM information_schema.tables
+                    WHERE table_schema = %s
+                    ORDER BY table_name
+                """, [schema_name])
+                tables = [row[0] for row in cursor.fetchall()]
+            
+            logger.info(f"[MIGRATION-{task_id}] Schema {schema_name} has {table_count} tables")
+            
+            # Check for expected tables for each tenant app
+            tenant_apps = settings.TENANT_APPS
+            missing_app_tables = []
+            
+            for app in tenant_apps:
+                app_name = app.split('.')[-1] if '.' in app else app
+                app_prefix = f"{app_name}_"
+                
+                # Check if at least one table exists for this app
+                found = False
+                for table in tables:
+                    if table.startswith(app_prefix):
+                        found = True
+                        break
+                
+                if not found:
+                    missing_app_tables.append(app_name)
+            
+            if missing_app_tables:
+                logger.warning(f"[MIGRATION-{task_id}] Missing tables for apps: {', '.join(missing_app_tables)}")
+                schemas_with_missing_tables += 1
+            
+            # Run migrations if:
+            # 1. Schema has no tables, or
+            # 2. django_migrations table is missing, or
+            # 3. There are missing app tables
+            if table_count == 0 or not migrations_table_exists or missing_app_tables:
+                logger.info(f"[MIGRATION-{task_id}] Schema {schema_name} needs migrations. Running migrations.")
+                
+                try:
+                    # Set search path to tenant schema
+                    with connection.cursor() as cursor:
+                        logger.debug(f"[MIGRATION-{task_id}] Setting search path to {schema_name},public")
+                        cursor.execute(f'SET search_path TO "{schema_name}",public')
+                        
+                        # Verify search path was set correctly
+                        cursor.execute('SHOW search_path')
+                        current_path = cursor.fetchone()[0]
+                        logger.debug(f"[MIGRATION-{task_id}] Current search path: {current_path}")
+                    
+                    # Run migrations for all tenant apps
+                    tenant_apps = settings.TENANT_APPS
+                    logger.info(f"[MIGRATION-{task_id}] Running migrations for {len(tenant_apps)} tenant apps in schema {schema_name}")
+                    
+                    # First run the general migrate command
+                    try:
+                        logger.debug(f"[MIGRATION-{task_id}] Running general migrations for schema {schema_name}")
+                        call_command('migrate', verbosity=1)
+                        logger.info(f"[MIGRATION-{task_id}] General migrations completed successfully for schema {schema_name}")
+                    except Exception as migrate_error:
+                        logger.error(f"[MIGRATION-{task_id}] Error running general migrations for schema {schema_name}: {str(migrate_error)}")
+                    
+                    # First run migrations for the users app specifically
+                    logger.info(f"[MIGRATION-{task_id}] Running migrations for users app first in schema {schema_name}")
+                    try:
+                        call_command('migrate', 'users', verbosity=1)
+                        logger.info(f"[MIGRATION-{task_id}] Successfully migrated users app in schema {schema_name}")
+                        app_success_count = 1
+                    except Exception as users_error:
+                        app_error_count = 1
+                        exc_type, exc_value, exc_traceback = sys.exc_info()
+                        stack_trace = traceback.format_exception(exc_type, exc_value, exc_traceback)
+                        logger.error(f"[MIGRATION-{task_id}] Error running migrations for users app in schema {schema_name}: {str(users_error)}")
+                        logger.error(f"[MIGRATION-{task_id}] Users app migration stack trace: {''.join(stack_trace)}")
+                    
+                    # Then run migrations for each TENANT_APP specifically
+                    for app in tenant_apps:
+                        if app != 'users':  # Skip users app as we already migrated it
+                            try:
+                                logger.info(f"[MIGRATION-{task_id}] Running migrations for app {app} in schema {schema_name}")
+                                call_command('migrate', app, verbosity=1)
+                                logger.info(f"[MIGRATION-{task_id}] Successfully migrated app {app} in schema {schema_name}")
+                                app_success_count += 1
+                            except Exception as app_error:
+                                app_error_count += 1
+                                exc_type, exc_value, exc_traceback = sys.exc_info()
+                                stack_trace = traceback.format_exception(exc_type, exc_value, exc_traceback)
+                                logger.error(f"[MIGRATION-{task_id}] Error running migrations for app {app} in schema {schema_name}: {str(app_error)}")
+                                logger.error(f"[MIGRATION-{task_id}] App migration stack trace: {''.join(stack_trace)}")
+                                # Continue with other apps even if one fails
+                    
+                    # Check if schema has tables after migrations
+                    with connection.cursor() as cursor:
+                        cursor.execute("""
+                            SELECT COUNT(*)
+                            FROM information_schema.tables
+                            WHERE table_schema = %s
+                        """, [schema_name])
+                        table_count_after = cursor.fetchone()[0]
+                        
+                        # Check if users_userprofile table exists
+                        cursor.execute("""
+                            SELECT EXISTS (
+                                SELECT 1
+                                FROM information_schema.tables
+                                WHERE table_schema = %s
+                                AND table_name = 'users_userprofile'
+                            )
+                        """, [schema_name])
+                        userprofile_table_exists = cursor.fetchone()[0]
+                    
+                    # If users_userprofile table doesn't exist, create it manually
+                    if not userprofile_table_exists:
+                        logger.warning(f"[MIGRATION-{task_id}] users_userprofile table does not exist in schema {schema_name}, creating it manually")
+                        try:
+                            # Import the fix_tenant_userprofile script
+                            from scripts.fix_tenant_userprofile import create_userprofile_table
+                            
+                            # Create the users_userprofile table
+                            create_userprofile_table(schema_name)
+                            
+                            logger.info(f"[MIGRATION-{task_id}] Successfully created users_userprofile table in schema {schema_name}")
+                            
+                            # Update table count
+                            with connection.cursor() as cursor:
+                                cursor.execute("""
+                                    SELECT COUNT(*)
+                                    FROM information_schema.tables
+                                    WHERE table_schema = %s
+                                """, [schema_name])
+                                table_count_after = cursor.fetchone()[0]
+                        except Exception as e:
+                            logger.error(f"[MIGRATION-{task_id}] Error creating users_userprofile table: {str(e)}")
+                    
+                    logger.info(f"[MIGRATION-{task_id}] Schema {schema_name} now has {table_count_after} tables after migrations")
+                    
+                    # Update tenant status
+                    tenant.database_status = 'active'
+                    tenant.save(update_fields=['database_status'])
+                    logger.info(f"[MIGRATION-{task_id}] Successfully migrated schema {schema_name} for tenant {tenant.id}")
+                    logger.info(f"[MIGRATION-{task_id}] App migration summary: {app_success_count} succeeded, {app_error_count} failed")
+                    
+                    schemas_migrated += 1
+                    
+                except Exception as e:
+                    schemas_with_errors += 1
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
+                    stack_trace = traceback.format_exception(exc_type, exc_value, exc_traceback)
+                    logger.error(f"[MIGRATION-{task_id}] Failed to migrate schema {schema_name}: {str(e)}")
+                    logger.error(f"[MIGRATION-{task_id}] Migration stack trace: {''.join(stack_trace)}")
+                    
+                    # Update tenant status to error
+                    tenant.database_status = 'error'
+                    tenant.setup_error_message = str(e)
+                    tenant.save(update_fields=['database_status', 'setup_error_message'])
+                
+                finally:
+                    # Reset search path to public
+                    with connection.cursor() as cursor:
+                        logger.debug(f"[MIGRATION-{task_id}] Resetting search path to public")
+                        cursor.execute('SET search_path TO public')
+            else:
+                logger.info(f"[MIGRATION-{task_id}] Schema {schema_name} already has {table_count} tables. No migration needed.")
+            
+            schemas_checked += 1
+            tenant_elapsed_time = time.time() - tenant_start_time
+            logger.info(f"[MIGRATION-{task_id}] Finished checking tenant {tenant.id} in {tenant_elapsed_time:.2f} seconds")
+        
+        # Log summary
+        logger.info(f"[MIGRATION-{task_id}] Migration task summary:")
+        logger.info(f"[MIGRATION-{task_id}] - Schemas checked: {schemas_checked}")
+        logger.info(f"[MIGRATION-{task_id}] - Schemas created: {schemas_created}")
+        logger.info(f"[MIGRATION-{task_id}] - Schemas migrated: {schemas_migrated}")
+        logger.info(f"[MIGRATION-{task_id}] - Schemas with missing tables: {schemas_with_missing_tables}")
+        logger.info(f"[MIGRATION-{task_id}] - Schemas with missing migrations table: {schemas_with_missing_migrations_table}")
+        logger.info(f"[MIGRATION-{task_id}] - Schemas with errors: {schemas_with_errors}")
+        
+        return True
+    
+    except Exception as e:
+        logger.error(f"[MIGRATION-{task_id}] Error in check_and_migrate_tenant_schemas: {str(e)}", exc_info=True)
+        return False
+
+@shared_task
+def migrate_tenant_schema(tenant_id):
+    """
+    Celery task to migrate a specific tenant schema.
+    
+    Args:
+        tenant_id: ID of the tenant to migrate
+    """
+    task_id = uuid.uuid4()
+    start_time = time.time()
+    logger.info(f"[TENANT-MIGRATION-{task_id}] Starting migration for tenant {tenant_id}")
+    logger.debug(f"[TENANT-MIGRATION-{task_id}] Task execution started at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    try:
+        # Get tenant
+        tenant = Tenant.objects.get(id=tenant_id)
+        schema_name = tenant.schema_name
+        logger.info(f"[TENANT-MIGRATION-{task_id}] Found tenant: {tenant.name} (Schema: {schema_name})")
+        
+        # Check if schema exists
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT schema_name
+                FROM information_schema.schemata
+                WHERE schema_name = %s
+            """, [schema_name])
+            schema_exists = cursor.fetchone() is not None
+            logger.debug(f"[TENANT-MIGRATION-{task_id}] Schema existence check: {schema_name} exists = {schema_exists}")
+            
+            # Verify schema name format
+            if schema_exists:
+                logger.debug(f"[TENANT-MIGRATION-{task_id}] Schema name format check: starts with 'tenant_' = {schema_name.startswith('tenant_')}")
+                logger.debug(f"[TENANT-MIGRATION-{task_id}] Schema name format check: uses underscores = {'_' in schema_name and '-' not in schema_name}")
+        
+        if not schema_exists:
+            logger.warning(f"[TENANT-MIGRATION-{task_id}] Schema {schema_name} does not exist for tenant {tenant_id}. Creating it.")
+            with connection.cursor() as cursor:
+                # Create schema
+                logger.debug(f"[TENANT-MIGRATION-{task_id}] Executing CREATE SCHEMA IF NOT EXISTS for {schema_name}")
+                cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
+                
+                # Verify schema was created
+                cursor.execute("""
+                    SELECT schema_name FROM information_schema.schemata
+                    WHERE schema_name = %s
+                """, [schema_name])
+                schema_created = cursor.fetchone() is not None
+                logger.debug(f"[TENANT-MIGRATION-{task_id}] Schema creation verification: {schema_created}")
+                
+                # Set up permissions
+                db_user = connection.settings_dict['USER']
+                logger.debug(f"[TENANT-MIGRATION-{task_id}] Setting up permissions for user {db_user}")
+                cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {db_user}')
+                cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {db_user}')
+                cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {db_user}')
+                logger.info(f"[TENANT-MIGRATION-{task_id}] Successfully created schema {schema_name}")
+        else:
+            logger.info(f"[TENANT-MIGRATION-{task_id}] Schema {schema_name} already exists")
+        
+        # Check if schema has tables before migrations
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = %s
+            """, [schema_name])
+            table_count_before = cursor.fetchone()[0]
+        
+        logger.info(f"[TENANT-MIGRATION-{task_id}] Schema {schema_name} has {table_count_before} tables before migrations")
+        
+        # Set search path to tenant schema
+        with connection.cursor() as cursor:
+            logger.debug(f"[TENANT-MIGRATION-{task_id}] Setting search path to {schema_name},public")
+            cursor.execute(f'SET search_path TO "{schema_name}",public')
+            
+            # Verify search path was set correctly
+            cursor.execute('SHOW search_path')
+            current_path = cursor.fetchone()[0]
+            logger.debug(f"[TENANT-MIGRATION-{task_id}] Current search path: {current_path}")
+        
+        # Run migrations for all tenant apps
+        tenant_apps = settings.TENANT_APPS
+        logger.info(f"[TENANT-MIGRATION-{task_id}] Running migrations for {len(tenant_apps)} tenant apps in schema {schema_name}")
+        
+        # First run the general migrate command
+        try:
+            logger.debug(f"[TENANT-MIGRATION-{task_id}] Running general migrations for schema {schema_name}")
+            call_command('migrate', verbosity=1)
+            logger.info(f"[TENANT-MIGRATION-{task_id}] General migrations completed successfully for schema {schema_name}")
+        except Exception as migrate_error:
+            logger.error(f"[TENANT-MIGRATION-{task_id}] Error running general migrations for schema {schema_name}: {str(migrate_error)}")
+        
+        # First run migrations for the users app specifically
+        logger.info(f"[TENANT-MIGRATION-{task_id}] Running migrations for users app first")
+        users_start_time = time.time()
+        try:
+            call_command('migrate', 'users', verbosity=1)
+            users_elapsed_time = time.time() - users_start_time
+            logger.info(f"[TENANT-MIGRATION-{task_id}] Successfully migrated users app in schema {schema_name} in {users_elapsed_time:.2f} seconds")
+            app_success_count = 1
+        except Exception as users_error:
+            app_error_count = 1
+            users_elapsed_time = time.time() - users_start_time
+            logger.error(f"[TENANT-MIGRATION-{task_id}] Error running migrations for users app in schema {schema_name} after {users_elapsed_time:.2f} seconds: {str(users_error)}")
+        
+        # Then run migrations for each TENANT_APP specifically
+        for app in tenant_apps:
+            if app != 'users':  # Skip users app as we already migrated it
+                app_start_time = time.time()
+                try:
+                    logger.info(f"[TENANT-MIGRATION-{task_id}] Running migrations for app {app} in schema {schema_name}")
+                    call_command('migrate', app, verbosity=1)
+                    app_elapsed_time = time.time() - app_start_time
+                    logger.info(f"[TENANT-MIGRATION-{task_id}] Successfully migrated app {app} in schema {schema_name} in {app_elapsed_time:.2f} seconds")
+                    app_success_count += 1
+                except Exception as app_error:
+                    app_error_count += 1
+                    app_elapsed_time = time.time() - app_start_time
+                    logger.error(f"[TENANT-MIGRATION-{task_id}] Error running migrations for app {app} in schema {schema_name} after {app_elapsed_time:.2f} seconds: {str(app_error)}")
+                    # Continue with other apps even if one fails
+        
+        # Check if schema has tables after migrations
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = %s
+            """, [schema_name])
+            table_count_after = cursor.fetchone()[0]
+            
+            # Check if users_userprofile table exists
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = %s
+                    AND table_name = 'users_userprofile'
+                )
+            """, [schema_name])
+            userprofile_table_exists = cursor.fetchone()[0]
+        
+        # If users_userprofile table doesn't exist, create it manually
+        if not userprofile_table_exists:
+            logger.warning(f"[TENANT-MIGRATION-{task_id}] users_userprofile table does not exist in schema {schema_name}, creating it manually")
+            try:
+                # Import the fix_tenant_userprofile script
+                from scripts.fix_tenant_userprofile import create_userprofile_table
+                
+                # Create the users_userprofile table
+                create_userprofile_table(schema_name)
+                
+                logger.info(f"[TENANT-MIGRATION-{task_id}] Successfully created users_userprofile table in schema {schema_name}")
+                
+                # Update table count
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT COUNT(*)
+                        FROM information_schema.tables
+                        WHERE table_schema = %s
+                    """, [schema_name])
+                    table_count_after = cursor.fetchone()[0]
+            except Exception as e:
+                logger.error(f"[TENANT-MIGRATION-{task_id}] Error creating users_userprofile table: {str(e)}")
+        
+        logger.info(f"[TENANT-MIGRATION-{task_id}] Schema {schema_name} now has {table_count_after} tables after migrations")
+        new_tables_count = table_count_after - table_count_before
+        logger.info(f"[TENANT-MIGRATION-{task_id}] Added {new_tables_count} new tables")
+        
+        # List tables in schema
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = %s
+                ORDER BY table_name
+            """, [schema_name])
+            tables = [row[0] for row in cursor.fetchall()]
+            
+            # Check for expected tenant app tables
+            tenant_apps = settings.TENANT_APPS
+            expected_tables = []
+            for app in tenant_apps:
+                app_name = app.split('.')[-1] if '.' in app else app
+                expected_tables.append(f"{app_name}_")
+            
+            missing_app_tables = []
+            for app_prefix in expected_tables:
+                found = False
+                for table in tables:
+                    if table.startswith(app_prefix):
+                        found = True
+                        break
+                if not found:
+                    missing_app_tables.append(app_prefix)
+            
+            if missing_app_tables:
+                logger.warning(f"[TENANT-MIGRATION-{task_id}] Missing tables for apps: {', '.join(missing_app_tables)}")
+            else:
+                logger.info(f"[TENANT-MIGRATION-{task_id}] All expected app tables were created successfully")
+        
+        logger.debug(f"[TENANT-MIGRATION-{task_id}] Tables in schema {schema_name}: {', '.join(tables)}")
+        
+        # Log migration success metrics
+        migration_success = new_tables_count > 0 and table_count_after >= len(tenant_apps)
+        logger.info(f"[TENANT-MIGRATION-{task_id}] Migration success: {migration_success}")
+        
+        # Update tenant status
+        tenant.database_status = 'active'
+        tenant.save(update_fields=['database_status'])
+        logger.info(f"[TENANT-MIGRATION-{task_id}] Successfully migrated schema {schema_name} for tenant {tenant_id}")
+        logger.info(f"[TENANT-MIGRATION-{task_id}] App migration summary: {app_success_count} succeeded, {app_error_count} failed")
+        
+        total_elapsed_time = time.time() - start_time
+        logger.info(f"[TENANT-MIGRATION-{task_id}] Total migration time: {total_elapsed_time:.2f} seconds")
+        
+        return True
+    
+    except Exception as e:
+        total_elapsed_time = time.time() - start_time
+        logger.error(f"[TENANT-MIGRATION-{task_id}] Error in migrate_tenant_schema for tenant {tenant_id} after {total_elapsed_time:.2f} seconds: {str(e)}", exc_info=True)
+        return False
+    
+    finally:
+        # Reset search path to public
+        with connection.cursor() as cursor:
+            logger.debug(f"[TENANT-MIGRATION-{task_id}] Resetting search path to public")
+            cursor.execute('SET search_path TO public')
+
+@shared_task
+def monitor_tenant_schemas_task(fix=True):
+    """
+    Celery task to monitor tenant schemas and fix any issues.
+    
+    This task:
+    1. Checks all tenant schemas for issues
+    2. Fixes any schemas with missing tables
+    3. Runs as a scheduled task to ensure all tenant schemas are properly maintained
+    
+    Args:
+        fix: Whether to automatically fix any issues found (default: True)
+    """
+    task_id = uuid.uuid4()
+    start_time = time.time()
+    
+    logger.info(f"[MONITOR-{task_id}] Starting tenant schema monitoring task")
+    
+    try:
+        # Get all tenants
+        tenants = Tenant.objects.filter(is_active=True)
+        logger.info(f"[MONITOR-{task_id}] Found {len(tenants)} active tenants")
+        
+        # Initialize counters for summary
+        schemas_checked = 0
+        schemas_with_issues = 0
+        schemas_fixed = 0
+        schemas_with_errors = 0
+        schemas_with_missing_tables = 0
+        schemas_with_missing_migrations_table = 0
+        
+        # Check each tenant's schema
+        for tenant in tenants:
+            tenant_start_time = time.time()
+            schema_name = tenant.schema_name
+            logger.info(f"[MONITOR-{task_id}] Checking tenant {tenant.id} ({tenant.name}) with schema {schema_name}")
+            
+            # Check if schema exists
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT schema_name
+                    FROM information_schema.schemata
+                    WHERE schema_name = %s
+                """, [schema_name])
+                schema_exists = cursor.fetchone() is not None
+            
+            if not schema_exists:
+                logger.warning(f"[MONITOR-{task_id}] Schema {schema_name} does not exist for tenant {tenant.id}")
+                schemas_with_issues += 1
+                
+                if fix:
+                    logger.info(f"[MONITOR-{task_id}] Creating schema {schema_name}")
+                    try:
+                        with connection.cursor() as cursor:
+                            # Create schema
+                            cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
+                            
+                            # Set up permissions
+                            db_user = connection.settings_dict['USER']
+                            cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {db_user}')
+                            cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {db_user}')
+                            cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {db_user}')
+                        
+                        # Run migrations for the new schema
+                        migrate_tenant_schema.delay(str(tenant.id))
+                        logger.info(f"[MONITOR-{task_id}] Scheduled migration task for tenant {tenant.id}")
+                        schemas_fixed += 1
+                    except Exception as e:
+                        logger.error(f"[MONITOR-{task_id}] Error creating schema {schema_name}: {str(e)}")
+                        schemas_with_errors += 1
+                
+                continue
+            
+            schemas_checked += 1
+            
+            # Check if django_migrations table exists
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT 1 
+                        FROM information_schema.tables 
+                        WHERE table_schema = %s 
+                        AND table_name = 'django_migrations'
+                    )
+                """, [schema_name])
+                migrations_table_exists = cursor.fetchone()[0]
+            
+            if not migrations_table_exists:
+                logger.warning(f"[MONITOR-{task_id}] django_migrations table does not exist in schema {schema_name}")
+                schemas_with_issues += 1
+                schemas_with_missing_migrations_table += 1
+            
+            # Check if schema has tables
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT COUNT(*)
+                    FROM information_schema.tables
+                    WHERE table_schema = %s
+                """, [schema_name])
+                table_count = cursor.fetchone()[0]
+                
+                # Get list of tables
+                cursor.execute("""
+                    SELECT table_name
+                    FROM information_schema.tables
+                    WHERE table_schema = %s
+                    ORDER BY table_name
+                """, [schema_name])
+                tables = [row[0] for row in cursor.fetchall()]
+            
+            logger.info(f"[MONITOR-{task_id}] Schema {schema_name} has {table_count} tables")
+            
+            # Check for expected tables for each tenant app
+            tenant_apps = settings.TENANT_APPS
+            missing_app_tables = []
+            
+            for app in tenant_apps:
+                app_name = app.split('.')[-1] if '.' in app else app
+                app_prefix = f"{app_name}_"
+                
+                # Check if at least one table exists for this app
+                found = False
+                for table in tables:
+                    if table.startswith(app_prefix):
+                        found = True
+                        break
+                
+                if not found:
+                    missing_app_tables.append(app_name)
+            
+            if missing_app_tables:
+                logger.warning(f"[MONITOR-{task_id}] Missing tables for apps: {', '.join(missing_app_tables)}")
+                schemas_with_issues += 1
+                schemas_with_missing_tables += 1
+            
+            # Fix issues if requested
+            if fix and (not migrations_table_exists or missing_app_tables or table_count == 0):
+                logger.info(f"[MONITOR-{task_id}] Fixing issues with schema {schema_name}")
+                try:
+                    # Schedule migration task
+                    migrate_tenant_schema.delay(str(tenant.id))
+                    logger.info(f"[MONITOR-{task_id}] Scheduled migration task for tenant {tenant.id}")
+                    schemas_fixed += 1
+                except Exception as e:
+                    logger.error(f"[MONITOR-{task_id}] Error scheduling migration for schema {schema_name}: {str(e)}")
+                    schemas_with_errors += 1
+            
+            tenant_elapsed_time = time.time() - tenant_start_time
+            logger.info(f"[MONITOR-{task_id}] Finished checking tenant {tenant.id} in {tenant_elapsed_time:.2f} seconds")
+        
+        # Log summary
+        logger.info(f"[MONITOR-{task_id}] Tenant schema monitoring summary:")
+        logger.info(f"[MONITOR-{task_id}] - Schemas checked: {schemas_checked}")
+        logger.info(f"[MONITOR-{task_id}] - Schemas with issues: {schemas_with_issues}")
+        logger.info(f"[MONITOR-{task_id}] - Schemas with missing tables: {schemas_with_missing_tables}")
+        logger.info(f"[MONITOR-{task_id}] - Schemas with missing migrations table: {schemas_with_missing_migrations_table}")
+        
+        if fix:
+            logger.info(f"[MONITOR-{task_id}] - Schemas fixed: {schemas_fixed}")
+            logger.info(f"[MONITOR-{task_id}] - Schemas with errors: {schemas_with_errors}")
+        
+        total_elapsed_time = time.time() - start_time
+        logger.info(f"[MONITOR-{task_id}] Successfully completed tenant schema monitoring in {total_elapsed_time:.2f} seconds")
+        
+        return True
+    
+    except Exception as e:
+        total_elapsed_time = time.time() - start_time
+        logger.error(f"[MONITOR-{task_id}] Error in monitor_tenant_schemas_task: {str(e)}", exc_info=True)
+        return False

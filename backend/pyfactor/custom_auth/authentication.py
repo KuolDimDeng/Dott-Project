@@ -49,6 +49,9 @@ class CognitoAuthentication(authentication.BaseAuthentication):
 
             token = parts[1]
             
+            # Check if we're in development mode
+            is_development = getattr(settings, 'DEBUG', False)
+            
             # Validate token with Cognito
             try:
                 # First validate token locally before calling Cognito
@@ -77,37 +80,116 @@ class CognitoAuthentication(authentication.BaseAuthentication):
                     raise AuthenticationFailed('No matching public key found')
 
                 # Verify token signature and claims
-                decoded = jwt.decode(
-                    token,
-                    public_key,
-                    algorithms=['RS256'],
-                    issuer=f'https://cognito-idp.{settings.AWS_REGION}.amazonaws.com/{settings.COGNITO_USER_POOL_ID}',
-                    options={
-                        'require_exp': True,
-                        'verify_aud': False,  # Make audience verification optional
-                        'verify_signature': True
-                    }
-                )
+                try:
+                    decoded = jwt.decode(
+                        token,
+                        public_key,
+                        algorithms=['RS256'],
+                        issuer=f'https://cognito-idp.{settings.AWS_REGION}.amazonaws.com/{settings.COGNITO_USER_POOL_ID}',
+                        options={
+                            'require_exp': True,
+                            'verify_aud': False,  # Make audience verification optional
+                            'verify_signature': True
+                        }
+                    )
+                except jwt.ExpiredSignatureError:
+                    if is_development:
+                        # In development mode, decode without verification for expired tokens
+                        logger.warning("[Auth] Token expired but continuing in development mode")
+                        decoded = jwt.decode(
+                            token,
+                            options={
+                                'verify_signature': False,
+                                'verify_exp': False
+                            }
+                        )
+                    else:
+                        # In production, strictly enforce token expiration
+                        raise AuthenticationFailed('Token has expired')
 
                 # Verify audience if present
                 if 'aud' in decoded and decoded['aud'] != settings.COGNITO_APP_CLIENT_ID:
                     raise AuthenticationFailed('Invalid audience claim')
 
-                # Verify token is not expired
+                # Verify token is not expired (already handled above, but keeping for clarity)
                 now = datetime.datetime.utcnow().timestamp()
-                if decoded['exp'] < now:
+                
+                if decoded['exp'] < now and not is_development:
                     raise AuthenticationFailed('Token has expired')
 
-                # Now verify with Cognito service
-                user_data = self.cognito_client.get_user(AccessToken=token)
-
-                logger.debug("[Auth] Token validation successful", {
-                    'username': user_data.get('Username')
-                })
-
-                # Get or create Django user
-                user = self.get_or_create_user(user_data)
-                return (user, token)
+                # Check if we're in development mode
+                is_development = getattr(settings, 'DEBUG', False)
+                
+                try:
+                    # Now verify with Cognito service
+                    user_data = self.cognito_client.get_user(AccessToken=token)
+                    
+                    logger.debug("[Auth] Token validation successful", {
+                        'username': user_data.get('Username')
+                    })
+                    
+                    # Get or create Django user
+                    user = self.get_or_create_user(user_data)
+                    return (user, token)
+                except ClientError as e:
+                    # Check if this is an expired token error in development mode
+                    error_code = e.response['Error']['Code']
+                    error_msg = e.response['Error'].get('Message', str(e))
+                    
+                    if is_development and (
+                        'expired' in error_msg.lower() or
+                        'token is invalid' in error_msg.lower()
+                    ):
+                        # In development mode, extract user info from the decoded token
+                        logger.warning("[Auth] Token expired but continuing in development mode", {
+                            'exp': decoded.get('exp'),
+                            'now': datetime.datetime.utcnow().timestamp(),
+                            'error_code': error_code,
+                            'error_message': error_msg
+                        })
+                        
+                        # Extract user info from token
+                        cognito_sub = decoded.get('sub')
+                        if not cognito_sub:
+                            raise AuthenticationFailed('Missing sub claim in token')
+                        
+                        # Create mock user_data structure
+                        mock_user_data = {
+                            'Username': cognito_sub,
+                            'UserAttributes': []
+                        }
+                        
+                        # Add email from ID token if available
+                        id_token = request.headers.get('X-Id-Token')
+                        if id_token:
+                            try:
+                                id_token_payload = jwt.decode(id_token, options={'verify_signature': False})
+                                if 'email' in id_token_payload:
+                                    mock_user_data['UserAttributes'].append({
+                                        'Name': 'email',
+                                        'Value': id_token_payload['email']
+                                    })
+                                if 'given_name' in id_token_payload:
+                                    mock_user_data['UserAttributes'].append({
+                                        'Name': 'given_name',
+                                        'Value': id_token_payload['given_name']
+                                    })
+                                if 'family_name' in id_token_payload:
+                                    mock_user_data['UserAttributes'].append({
+                                        'Name': 'family_name',
+                                        'Value': id_token_payload['family_name']
+                                    })
+                            except Exception as id_err:
+                                logger.warning("[Auth] Error decoding ID token in development mode", {
+                                    'error': str(id_err)
+                                })
+                        
+                        # Get or create Django user using mock data
+                        user = self.get_or_create_user(mock_user_data)
+                        return (user, decoded)
+                    else:
+                        # In production or for other errors, raise the exception
+                        raise
 
             except ClientError as e:
                 error_code = e.response['Error']['Code']

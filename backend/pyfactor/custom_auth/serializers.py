@@ -4,7 +4,7 @@ from allauth.account.adapter import get_adapter
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from rest_framework import serializers
 from .models import User, Tenant
-from business.models import Subscription
+from users.models import Subscription
 
 class TenantSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,7 +29,7 @@ from django.contrib.auth import authenticate
 from pyfactor.logging_config import get_logger
 from users.models import UserProfile  # Adjust the import path as necessary
 from django.db import transaction
-from business.choices import SUBSCRIPTION_TYPES  # Add this import
+from users.choices import SUBSCRIPTION_TYPES  # Import from users.choices
 
 
 
@@ -116,7 +116,8 @@ class CustomRegisterSerializer(RegisterSerializer):
     def custom_signup(self, request, user):
         business_name = self.validated_data.get('business_name')
         if business_name:
-            business = Business.objects.create(name=business_name, owner=user)
+            from users.models import Business
+            business = Business.objects.create(business_name=business_name, owner=user)
         else:
             business = None
 

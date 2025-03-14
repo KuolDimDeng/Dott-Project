@@ -90,7 +90,7 @@ from ..serializers import BusinessInfoSerializer
 
 
 # App imports
-from business.models import Business, Subscription
+from users.models import Business, Subscription
 from finance.models import Account
 from pyfactor.logging_config import get_logger
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
@@ -988,7 +988,7 @@ class StartOnboardingView(BaseOnboardingView):
                     
                 # If no business exists, create it with a separate transaction
                 # to avoid deadlocks with other processes
-                from business.models import Business
+                from users.models import Business
                 
                 # Use a transaction
                 with transaction.atomic():
@@ -1011,7 +1011,7 @@ class StartOnboardingView(BaseOnboardingView):
             except UserProfile.DoesNotExist:
                 logger.warning(f"No user profile found for user {user.id}")
                 # Create profile and business
-                from business.models import Business
+                from users.models import Business
                 
                 try:
                     with transaction.atomic():
@@ -1060,180 +1060,173 @@ class StartOnboardingView(BaseOnboardingView):
         return response
 
     def post(self, request):
-        """Handle POST requests with improved deadlock handling"""
+        """Handle POST requests with improved memory efficiency and error handling"""
         request_id = request.headers.get('X-Request-ID', str(uuid.uuid4()))
         logger.info(f"Starting onboarding process - Request ID: {request_id}")
         
-        # Maximum number of retry attempts for the entire operation
-        max_retries = 3
-        retry_delay = 0.5  # Initial delay in seconds
+        # Validate authorization header first to fail fast
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            logger.error(f"[{request_id}] Missing or invalid authorization header")
+            return self.initialize_response({
+                'error': 'Missing or invalid authorization header',
+                'code': 'invalid_auth'
+            }, status.HTTP_401_UNAUTHORIZED)
         
-        for attempt in range(max_retries):
+        try:
+            # Get business ID - this is a critical operation
+            business_id = None
             try:
-                # Validate authorization header
-                auth_header = request.headers.get('Authorization')
-                if not auth_header or not auth_header.startswith('Bearer '):
-                    logger.error(f"[{request_id}] Missing or invalid authorization header")
-                    return self.initialize_response({
-                        'error': 'Missing or invalid authorization header',
-                        'code': 'invalid_auth'
-                    }, status.HTTP_401_UNAUTHORIZED)
-    
-                # Handle specific exceptions that might occur during the process
-                try:
-                    # Split operations into smaller transactions to reduce deadlock risk
-                    
-                    # 1. Get or create onboarding progress
-                    try:
-                        onboarding, created = self.get_or_create_onboarding(request.user)
-                    except Exception as e:
-                        logger.error(f"[{request_id}] Failed to get/create onboarding: {str(e)}")
-                        if "deadlock detected" in str(e).lower() and attempt < max_retries - 1:
-                            wait_time = retry_delay * (2 ** attempt)
-                            logger.info(f"Deadlock detected in onboarding creation, retrying in {wait_time} seconds")
-                            time.sleep(wait_time)
-                            continue
-                        raise
-        
-                    # 2. Get business ID in a separate operation
-                    try:
-                        business_id = self.get_business_id(request.user)
-                        if not business_id:
-                            logger.error(f"[{request_id}] Failed to get or create business")
-                            return self.initialize_response({
-                                'error': 'Failed to get or create business',
-                                'code': 'business_error'
-                            }, status.HTTP_400_BAD_REQUEST)
-                    except Exception as e:
-                        logger.error(f"[{request_id}] Error getting business ID: {str(e)}")
-                        if "deadlock detected" in str(e).lower() and attempt < max_retries - 1:
-                            wait_time = retry_delay * (2 ** attempt)
-                            logger.info(f"Deadlock detected in business ID retrieval, retrying in {wait_time} seconds")
-                            time.sleep(wait_time)
-                            continue
-                        raise
-                        
-                except AuthenticationFailed as e:
-                    logger.error(f"[{request_id}] Authentication failed: {str(e)}")
-                    return self.initialize_response({
-                        'error': str(e),
-                        'code': 'auth_failed'
-                    }, status.HTTP_401_UNAUTHORIZED)
-                except ValidationError as e:
-                    logger.error(f"[{request_id}] Validation error: {str(e)}")
-                    return self.initialize_response({
-                        'error': str(e),
-                        'code': 'validation_error'
-                    }, status.HTTP_400_BAD_REQUEST)
-    
-                    # 3. Update onboarding status with direct SQL to avoid ORM deadlocks
-                    try:
-                        with connection.cursor() as cursor:
-                            # Set a statement timeout to prevent long-running queries
-                            cursor.execute("SET LOCAL statement_timeout = 10000")  # 10 seconds
-                            
-                            # Update onboarding progress
-                            cursor.execute("""
-                                UPDATE onboarding_onboardingprogress
-                                SET onboarding_status = 'setup',
-                                    current_step = 'setup',
-                                    next_step = 'complete',
-                                    setup_error = NULL,
-                                    updated_at = NOW()
-                                WHERE user_id = %s
-                            """, [str(request.user.id)])
-                            
-                            # Update tenant status if it exists
-                            cursor.execute("""
-                                UPDATE auth_tenant
-                                SET database_status = 'pending',
-                                    setup_status = 'in_progress',
-                                    last_setup_attempt = NOW()
-                                WHERE owner_id = %s
-                            """, [str(request.user.id)])
-                    except Exception as e:
-                        logger.error(f"[{request_id}] Database update error: {str(e)}")
-                        if "deadlock detected" in str(e).lower() and attempt < max_retries - 1:
-                            wait_time = retry_delay * (2 ** attempt)
-                            logger.info(f"Deadlock detected in database update, retrying in {wait_time} seconds")
-                            time.sleep(wait_time)
-                            continue
-                        raise
-                    
-                    # Refresh from database to get updated values
-                    onboarding.refresh_from_db()
-
-                    # 4. Queue setup task with error handling
-                    try:
-                        task = setup_user_schema_task.apply_async(
-                            args=[str(request.user.id), business_id],
-                            queue='setup',
-                            retry=True,
-                            retry_policy={
-                                'max_retries': 3,
-                                'interval_start': 5,
-                                'interval_step': 30,
-                                'interval_max': 300
-                            }
-                        )
-                        # Store task ID in session instead of model
-                        request.session['setup_task_id'] = task.id
-                        
-                        logger.info(f"Setup task {task.id} queued successfully")
-                        
-                    except (CeleryOperationalError, KombuOperationalError) as e:
-                        logger.critical(f"Failed to queue setup task: {str(e)}")
-                        # Update error status with direct SQL to avoid ORM deadlocks
-                        with connection.cursor() as cursor:
-                            cursor.execute("""
-                                UPDATE onboarding_onboardingprogress
-                                SET setup_error = %s,
-                                    updated_at = NOW()
-                                WHERE user_id = %s
-                            """, [f"Queue error: {str(e)}", str(request.user.id)])
-                        
-                        return self.initialize_response({
-                            "error": "System busy - failed to queue setup task",
-                            "code": "queue_error"
-                        }, status.HTTP_503_SERVICE_UNAVAILABLE)
-
-                    response_data = {
-                        "status": "success",
-                        "setup_id": task.id,
-                        "message": "Setup initiated successfully",
-                        "onboarding_id": str(onboarding.id),
-                        "onboarding_status": onboarding.onboarding_status,
-                        "current_step": onboarding.current_step
-                    }
-
-                    logger.info(f"[{request_id}] Setup initiated successfully", extra={
-                        'user_id': str(request.user.id),
-                        'task_id': task.id,
-                        'business_id': business_id
-                    })
-
-                    response = self.initialize_response(response_data, status.HTTP_200_OK)
-                    response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
-                    response["Access-Control-Allow-Credentials"] = "true"
-                    return response
-                                
-            except Exception as e:
-                # Handle any other errors that might occur
-                logger.error(f"[{request_id}] Error in attempt {attempt+1}: {str(e)}")
-                
-                if attempt < max_retries - 1:
-                    wait_time = retry_delay * (2 ** attempt)
-                    logger.info(f"Retrying operation in {wait_time} seconds")
-                    time.sleep(wait_time)
-                    continue
+                # Use a more efficient query to get business ID
+                profile = UserProfile.objects.select_related('business').filter(user=request.user).first()
+                if profile and profile.business:
+                    business_id = str(profile.business.id)
                 else:
-                    # We've exhausted all retries, return an error
+                    # If no business exists, create a minimal one
+                    from users.models import Business
+                    with transaction.atomic():
+                        business = Business.objects.create(
+                            owner=request.user,
+                            business_name=f"{request.user.first_name}'s Business",
+                            business_type='default'
+                        )
+                        # Update profile in a separate query to avoid deadlocks
+                        if profile:
+                            UserProfile.objects.filter(id=profile.id).update(business=business)
+                        else:
+                            UserProfile.objects.create(user=request.user, business=business)
+                        business_id = str(business.id)
+            except Exception as e:
+                logger.error(f"[{request_id}] Failed to get/create business: {str(e)}")
+                return self.initialize_response({
+                    'error': 'Failed to get or create business',
+                    'code': 'business_error'
+                }, status.HTTP_400_BAD_REQUEST)
+            
+            # Get or create onboarding progress with minimal DB operations
+            onboarding = None
+            try:
+                # First try to get without locking
+                onboarding = OnboardingProgress.objects.filter(user=request.user).first()
+                if not onboarding:
+                    # Create with minimal fields
+                    onboarding = OnboardingProgress.objects.create(
+                        user=request.user,
+                        onboarding_status='setup',
+                        current_step='setup',
+                        next_step='complete'
+                    )
+                else:
+                    # Update with direct SQL for efficiency
+                    with connection.cursor() as cursor:
+                        cursor.execute("""
+                            UPDATE onboarding_onboardingprogress
+                            SET onboarding_status = 'setup',
+                                current_step = 'setup',
+                                next_step = 'complete',
+                                setup_error = NULL,
+                                updated_at = NOW()
+                            WHERE user_id = %s
+                        """, [str(request.user.id)])
+            except Exception as e:
+                logger.error(f"[{request_id}] Failed to get/create onboarding: {str(e)}")
+                return self.initialize_response({
+                    'error': 'Failed to get or create onboarding progress',
+                    'code': 'onboarding_error'
+                }, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            # Update tenant status if it exists - use direct SQL for efficiency
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE auth_tenant
+                        SET database_status = 'pending',
+                            setup_status = 'in_progress',
+                            last_setup_attempt = NOW()
+                        WHERE owner_id = %s
+                    """, [str(request.user.id)])
+            except Exception as e:
+                # Log but continue - this is not critical
+                logger.warning(f"[{request_id}] Failed to update tenant status: {str(e)}")
+            
+            # Check for deferred setup
+            is_deferred = False
+            task_id = None
+            
+            # First check session
+            pending_setup = request.session.get('pending_schema_setup', {})
+            if pending_setup and pending_setup.get('deferred', False) is True:
+                is_deferred = True
+                logger.info(f"Schema setup deferred for user {request.user.id} - will be triggered at dashboard")
+                request.session['setup_task_id'] = None
+            else:
+                # Check profile metadata
+                try:
+                    profile = UserProfile.objects.filter(user=request.user).first()
+                    if profile and hasattr(profile, 'metadata') and isinstance(profile.metadata, dict):
+                        profile_setup = profile.metadata.get('pending_schema_setup', {})
+                        if profile_setup and profile_setup.get('deferred', False) is True:
+                            is_deferred = True
+                            logger.info(f"Using deferred setup from profile metadata for user {request.user.id}")
+                            request.session['setup_task_id'] = None
+                except Exception as e:
+                    # Log but continue - this is not critical
+                    logger.warning(f"Could not check profile metadata: {str(e)}")
+            
+            # Queue task if not deferred
+            if not is_deferred:
+                try:
+                    task = setup_user_schema_task.apply_async(
+                        args=[str(request.user.id), business_id],
+                        queue='setup',
+                        retry=True,
+                        retry_policy={
+                            'max_retries': 3,
+                            'interval_start': 5,
+                            'interval_step': 30,
+                            'interval_max': 300
+                        }
+                    )
+                    task_id = task.id
+                    request.session['setup_task_id'] = task_id
+                    logger.info(f"Setup task {task_id} queued successfully")
+                except Exception as e:
+                    logger.error(f"Failed to queue setup task: {str(e)}")
                     return self.initialize_response({
-                        "error": f"Setup failed after {max_retries} attempts: {str(e)}",
-                        "code": "setup_error"
-                    }, status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        # End of post method
+                        "error": "System busy - failed to queue setup task",
+                        "code": "queue_error"
+                    }, status.HTTP_503_SERVICE_UNAVAILABLE)
+            
+            # Prepare response
+            response_data = {
+                "status": "success",
+                "setup_id": task_id,
+                "message": "Setup deferred until dashboard" if is_deferred else "Setup initiated successfully",
+                "onboarding_id": str(onboarding.id) if onboarding else None,
+                "onboarding_status": "setup",
+                "current_step": "setup",
+                "setup_deferred": is_deferred
+            }
+            
+            logger.info(f"[{request_id}] {is_deferred and 'Setup deferred' or 'Setup initiated successfully'}", extra={
+                'user_id': str(request.user.id),
+                'task_id': task_id,
+                'business_id': business_id,
+                'deferred': is_deferred
+            })
+            
+            response = self.initialize_response(response_data, status.HTTP_200_OK)
+            response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
+            response["Access-Control-Allow-Credentials"] = "true"
+            return response
+            
+        except Exception as e:
+            # Handle any unexpected errors
+            logger.error(f"[{request_id}] Unexpected error: {str(e)}", exc_info=True)
+            return self.initialize_response({
+                "error": f"Setup failed: {str(e)}",
+                "code": "setup_error"
+            }, status.HTTP_500_INTERNAL_SERVER_ERROR)
 class UpdateOnboardingView(BaseOnboardingView):
     @sync_to_async
     def get_user(self, request):
@@ -1601,7 +1594,7 @@ class SaveStep1View(APIView):
                 return number
 
     def post(self, request, *args, **kwargs):
-        request_id = request.headers.get('X-Request-Id', 'unknown')
+        request_id = request.headers.get('X-Request-Id', str(uuid.uuid4()))
         
         logger.info("Received business info save request:", {
             'request_id': request_id,
@@ -1610,7 +1603,7 @@ class SaveStep1View(APIView):
         })
 
         try:
-            # Validate request data
+            # Validate request data - this is fast
             serializer = BusinessInfoSerializer(data=request.data)
             if not serializer.is_valid():
                 return Response({
@@ -1619,45 +1612,39 @@ class SaveStep1View(APIView):
                     'errors': serializer.errors
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            # Generate business number
+            # Generate business number - this is fast
             business_num = ''.join(random.choices(string.digits, k=6))
             while Business.objects.filter(business_num=business_num).exists():
                 business_num = ''.join(random.choices(string.digits, k=6))
 
-            # Get tenant ID from headers and create schema name
+            # Get tenant ID from headers
             tenant_id = request.headers.get('X-Tenant-ID')
             if not tenant_id:
                 raise ValidationError("X-Tenant-ID header is required")
                 
-            # Create schema name from tenant ID - ensure tenant_id is a string
-            # Convert tenant_id to string and replace hyphens with underscores
+            # Create schema name from tenant ID - this is fast
             tenant_id_str = str(tenant_id).replace('-', '_')
             schema_name = f"tenant_{tenant_id_str}"
-            logger.debug(f"Created schema name: {schema_name} from tenant ID: {tenant_id}")
-            logger.debug(f"Setting up tenant with schema: {schema_name}")
-
-            # Get or update tenant with proper transaction management
+            
+            # FAST PATH: Only do minimal work to save business info
+            # We'll defer all schema creation and heavy DB operations
+            
+            # Get or create tenant with minimal operations
+            from custom_auth.models import Tenant
+            from onboarding.utils import generate_unique_schema_name
+            
+            # Use a lightweight transaction
             with transaction.atomic():
-                # Get existing tenant with proper locking
-                from custom_auth.models import Tenant
-                from onboarding.utils import generate_unique_schema_name
+                # Check if tenant exists without locking
+                tenant = Tenant.objects.filter(owner=request.user).first()
                 
-                tenant = Tenant.objects.select_for_update(nowait=True).filter(owner=request.user).first()
-                
-                if tenant:
-                    # Update existing tenant status
-                    tenant.is_active = True
-                    tenant.database_status = 'not_created'
-                    tenant.setup_status = 'pending'
-                    tenant.save(update_fields=['is_active', 'database_status', 'setup_status'])
-                    logger.debug(f"Updated existing tenant: {tenant.schema_name}")
-                else:
-                    # Generate unique schema name
+                if not tenant:
+                    # Generate unique schema name - this is fast
                     schema_name = generate_unique_schema_name(request.user)
                     if not schema_name:
                         raise ValidationError("Failed to generate valid schema name")
-                        
-                    # Create new tenant
+                    
+                    # Create new tenant with minimal fields
                     tenant = Tenant.objects.create(
                         owner=request.user,
                         schema_name=schema_name,
@@ -1665,252 +1652,117 @@ class SaveStep1View(APIView):
                         database_status='not_created',
                         setup_status='pending'
                     )
-                    logger.debug(f"Created new tenant with schema: {schema_name}")
+                else:
+                    # Just update status fields - avoid heavy operations
+                    Tenant.objects.filter(id=tenant.id).update(
+                        is_active=True,
+                        database_status='not_created',
+                        setup_status='pending',
+                        last_setup_attempt=timezone.now()
+                    )
+                    # Refresh our local copy
+                    tenant.refresh_from_db()
 
-                # Handle schema creation/update
-                logger.debug(f"Handling schema for tenant: {schema_name}")
-                with connection.cursor() as cursor:
-                    # Drop old schema if it exists and schema name changed
-                    if tenant.database_status == 'active' and tenant.schema_name != schema_name:
-                        logger.debug(f"Dropping old schema: {tenant.schema_name}")
-                        cursor.execute(f'DROP SCHEMA IF EXISTS "{tenant.schema_name}" CASCADE')
-                    
-                    # Create new schema
-                    from onboarding.utils import create_tenant_schema, validate_schema_creation
-                    # Ensure user ID is passed as a string with hyphens replaced by underscores
-                    user_id_str = str(request.user.id).replace('-', '_')
-                    create_tenant_schema(cursor, schema_name, user_id_str)
-                    logger.debug(f"Called create_tenant_schema with schema_name: {schema_name}, user_id: {user_id_str}")
-                    
-                    # Verify schema was created
-                    if not validate_schema_creation(cursor, schema_name):
-                        raise ValidationError(f"Schema {schema_name} creation verification failed")
-                        
-                    tenant.database_status = 'active'
-                    tenant.save()
-                    logger.debug(f"Successfully created and verified schema: {schema_name}")
-
-                    # Always ensure user-tenant relationship is correct
-                    if request.user.tenant != tenant:
-                        request.user.tenant = tenant
-                        request.user.save(update_fields=['tenant'])
-                        logger.debug(f"Updated user {request.user.id} tenant to {schema_name}")
-
-                    # Set and verify schema for this request
-                    cursor.execute(f'SET search_path TO "{schema_name}",public')
-                    
-                    # Verify search path was set
-                    cursor.execute('SHOW search_path')
-                    current_path = cursor.fetchone()[0]
-                    if schema_name not in current_path:
-                        raise ValidationError(f"Failed to set search_path to {schema_name}")
-                    
-                    # Verify schema exists and is accessible
-                    cursor.execute(f"SELECT schema_name FROM information_schema.schemata WHERE schema_name = '{schema_name}'")
-                    if not cursor.fetchone():
-                        raise ValidationError(f"Schema {schema_name} does not exist or is not accessible")
-                        
-                    logger.debug(f"Set and verified search_path to {schema_name},public")
-
-                # Get user's name from Cognito attributes
+                # Get user's name
                 first_name = request.user.first_name or ''
                 last_name = request.user.last_name or ''
 
-                # Get current search path
-                with connection.cursor() as cursor:
-                    cursor.execute('SHOW search_path')
-                    current_path = cursor.fetchone()[0]
-                    logger.debug(f"Current search path: {current_path}")
-                    # Create business record in a single transaction
-                with transaction.atomic():
-                    with connection.cursor() as cursor:
-                        # Switch to public schema
-                        cursor.execute('SET search_path TO public')
-                        logger.debug("Switched to public schema")
-
-                        # Create business record
-                        cursor.execute("""
-                            INSERT INTO business_business (
-                                id, owner_id, business_num, business_name,
-                                business_type, country, legal_structure, date_founded,
-                                created_at, modified_at, business_subtype_selections
-                            ) VALUES (
-                                %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), %s
-                            ) RETURNING id
-                        """, [
-                            str(uuid.uuid4()), str(request.user.id), business_num,
-                            serializer.validated_data['business_name'],
-                            serializer.validated_data['business_type'],
-                            serializer.validated_data['country'],
-                            serializer.validated_data['legal_structure'],
-                            serializer.validated_data['date_founded'],
-                            '{}'  # Empty JSON object for business_subtype_selections
-                        ])
-                        business_id = cursor.fetchone()[0]
-                            
-                        # Fetch the created business
-                        cursor.execute("""
-                            SELECT * FROM business_business WHERE id = %s
-                        """, [business_id])
-                        business_data = cursor.fetchone()
-                        business = Business(
-                            id=business_data[0],
-                            owner_id=business_data[1],
-                            business_num=business_data[2],
-                            business_name=business_data[3],
-                            business_type=business_data[4],
-                            country=business_data[5],
-                            legal_structure=business_data[6],
-                            date_founded=business_data[7]
-                        )
-                        logger.debug(f"Created business record: {business.id}")
-                        
-                        # Update tenant status using raw SQL
-                        cursor.execute("""
-                            UPDATE auth_tenant
-                            SET setup_status = 'in_progress',
-                                last_setup_attempt = NOW()
-                            WHERE owner_id = %s
-                            RETURNING id
-                        """, [str(request.user.id)])
-                        
-                        tenant_id = cursor.fetchone()[0]
-                        
-                        # Get user profile ID
-                        cursor.execute("""
-                            SELECT id FROM users_userprofile
-                            WHERE user_id = %s
-                        """, [str(request.user.id)])
-                        
-                        profile_id = cursor.fetchone()[0]
-                        
-                        # Fetch the updated profile
-                        cursor.execute("""
-                            SELECT * FROM users_userprofile WHERE id = %s
-                        """, [profile_id])
-                        profile_data = cursor.fetchone()
-                        
-                        # Create profile object from database result
-                        profile = UserProfile(
-                            id=profile_data[0],
-                            user_id=profile_data[1],
-                            business_id=profile_data[2],
-                            is_business_owner=profile_data[3],
-                        )
-                        logger.debug(f"Updated user profile for user: {request.user.id}")
-                        
-                        # Create or update onboarding progress using raw SQL
-                        cursor.execute("""
-                            INSERT INTO onboarding_onboardingprogress (
-                                id, user_id, onboarding_status, current_step, next_step,
-                                created_at, updated_at, account_status, user_role,
-                                subscription_plan, attribute_version, preferences,
-                                completed_steps, selected_plan, business_id
-                            )
-                            VALUES (
-                                %s, %s, %s, %s, %s, NOW(), NOW(),
-                                'pending', 'owner', 'free', '1.0.0', '{}'::jsonb,
-                                '[]'::jsonb, 'free', %s
-                            )
-                            ON CONFLICT (user_id) DO UPDATE
-                            SET (onboarding_status, current_step, next_step, updated_at,
-                                account_status, user_role, subscription_plan, attribute_version,
-                                preferences, completed_steps, selected_plan, business_id) =
-                                (EXCLUDED.onboarding_status, EXCLUDED.current_step, EXCLUDED.next_step, NOW(),
-                                COALESCE(onboarding_onboardingprogress.account_status, 'pending'),
-                                COALESCE(onboarding_onboardingprogress.user_role, 'owner'),
-                                COALESCE(onboarding_onboardingprogress.subscription_plan, 'free'),
-                                COALESCE(onboarding_onboardingprogress.attribute_version, '1.0.0'),
-                                COALESCE(onboarding_onboardingprogress.preferences, '{}'::jsonb),
-                                COALESCE(onboarding_onboardingprogress.completed_steps, '[]'::jsonb),
-                                COALESCE(onboarding_onboardingprogress.selected_plan, 'free'),
-                                EXCLUDED.business_id)
-                            RETURNING id
-                        """, [
-                            str(uuid.uuid4()), str(request.user.id), 'business-info', 'business-info',
-                            'subscription', business_id
-                        ])
-                        progress_id = cursor.fetchone()[0]
-
-                        # Fetch the created/updated progress
-                        cursor.execute("""
-                            SELECT * FROM onboarding_onboardingprogress WHERE id = %s
-                        """, [progress_id])
-                        progress_data = cursor.fetchone()
-                        progress = OnboardingProgress(
-                            id=progress_data[0],
-                            user_id=progress_data[1],
-                            onboarding_status=progress_data[2],
-                            current_step=progress_data[3],
-                            next_step=progress_data[4]
-                        )
-                            
-                # Restore original search path outside the transaction
-                if current_path:
-                    with connection.cursor() as cursor:
-                        try:
-                            cursor.execute(f'SET search_path TO {current_path}')
-                            logger.debug(f"Restored search path to: {current_path}")
-                        except Exception as e:
-                            logger.error(f"Error restoring search path: {str(e)}")
-                            cursor.execute('SET search_path TO public')
-                            logger.debug("Set fallback public schema")
-
-                # Update onboarding progress and queue schema setup
-                with transaction.atomic():
-                    progress = OnboardingProgress.objects.select_for_update().get_or_create(
-                        user=request.user,
-                        defaults={
-                            'onboarding_status': 'business-info',
-                            'current_step': 'business-info',
-                            'next_step': 'subscription',
-                            'business': business  # Add business reference in defaults
-
-                        }
-                    )[0]
-                    
-                    if not progress.business:
-                        progress.business = business
-                        progress.save(update_fields=[
-                            'business',
-                            'updated_at'
-                        ])
-                    
-                    logger.debug(f"Updated onboarding progress for user: {request.user.id}")
-
-                # Check tenant status before queuing task
-                if tenant.setup_status == 'failed':
-                    # Reset the setup status first
-                    tenant.setup_status = 'pending'
-                    tenant.save(update_fields=['setup_status'])
-
-                # Queue setup task with updated retry policy
-                setup_task = setup_user_schema_task.apply_async(
-                    args=[str(request.user.id), str(business.id)],
-                    queue='setup',
-                    retry=True,
-                    retry_policy={
-                        'max_retries': 3,
-                        'interval_start': 5,  # Start with a 5 second delay
-                        'interval_step': 30,  # Increase by 30 seconds each retry
-                        'interval_max': 300,  # Max interval of 5 minutes
+                # Create business record efficiently
+                business = Business.objects.create(
+                    owner=request.user,
+                    business_num=business_num,
+                    business_name=serializer.validated_data['business_name'],
+                    business_type=serializer.validated_data['business_type'],
+                    country=serializer.validated_data['country'],
+                    legal_structure=serializer.validated_data['legal_structure'],
+                    date_founded=serializer.validated_data['date_founded'],
+                    business_subtype_selections={}
+                )
+                
+                # Update user profile efficiently
+                UserProfile.objects.filter(user=request.user).update(
+                    business=business,
+                    is_business_owner=True
+                )
+                
+                # Create or update onboarding progress efficiently
+                progress, created = OnboardingProgress.objects.update_or_create(
+                    user=request.user,
+                    defaults={
+                        'onboarding_status': 'business-info',
+                        'current_step': 'business-info',
+                        'next_step': 'subscription',
+                        'business': business,
+                        'account_status': 'pending',
+                        'user_role': 'owner',
+                        'subscription_plan': 'free',
+                        'attribute_version': '1.0.0'
                     }
                 )
-
-                # Update progress and log success
-                progress.save(update_fields=['updated_at'])
-                logger.info("Schema setup task queued:", {
-                    'request_id': request_id,
-                    'task_id': setup_task.id,
+                
+                # Store setup info in session for later processing
+                pending_setup = {
                     'user_id': str(request.user.id),
                     'business_id': str(business.id),
-                    'queue': 'setup'
+                    'timestamp': timezone.now().isoformat(),
+                    'source': 'business_info_page',
+                    'deferred': True,  # Flag to indicate this setup should be deferred
+                    'next_step': 'subscription'  # Explicitly indicate the next step
+                }
+                
+                request.session['pending_schema_setup'] = pending_setup
+                request.session.modified = True
+                
+                # Log the pending setup for debugging
+                logger.info(f"Created pending schema setup with deferred=True for user {request.user.id}", extra={
+                    'user_id': str(request.user.id),
+                    'business_id': str(business.id),
+                    'deferred': True,
+                    'next_step': 'subscription'
                 })
-
-                # Prepare response with schema setup status and tenant info
+                
+                # Also store in user profile metadata for persistence
+                try:
+                    profile = UserProfile.objects.get(user=request.user)
+                    if not hasattr(profile, 'metadata') or not isinstance(profile.metadata, dict):
+                        profile.metadata = {}
+                    
+                    # Ensure the deferred flag is explicitly set to True
+                    pending_setup['deferred'] = True
+                    profile.metadata['pending_schema_setup'] = pending_setup
+                    profile.save(update_fields=['metadata'])
+                    
+                    logger.info(f"Stored pending schema setup in profile metadata for user {request.user.id}", extra={
+                        'user_id': str(request.user.id),
+                        'profile_id': str(profile.id),
+                        'deferred': True,
+                        'next_step': 'subscription'
+                    })
+                    
+                    # Update tenant status to indicate setup is deferred
+                    if tenant:
+                        tenant.setup_status = 'deferred'
+                        tenant.save(update_fields=['setup_status'])
+                        logger.info(f"Marked tenant setup as deferred for user {request.user.id}")
+                except Exception as e:
+                    logger.warning("Failed to store pending setup in profile metadata", extra={
+                        'request_id': request_id,
+                        'error': str(e),
+                        'error_type': type(e).__name__,
+                        'stack_trace': traceback.format_exc()
+                    })
+                
+                logger.info("Business info saved quickly, all schema setup deferred:", {
+                    'request_id': request_id,
+                    'user_id': str(request.user.id),
+                    'business_id': str(business.id),
+                    'setup_status': 'deferred'
+                })
+                
+                # Prepare response with business info and tenant info
                 response_data = {
                     "success": True,
-                    "message": "Business information saved successfully",
+                    "message": "Business information saved successfully. You can continue with the onboarding process without waiting.",
                     "request_id": request_id,
                     "data": {
                         "onboarding": {
@@ -1937,15 +1789,9 @@ class SaveStep1View(APIView):
                             "created_at": business.created_at.isoformat() if hasattr(business, 'created_at') and business.created_at else None
                         },
                         "schemaSetup": {
-                            "taskId": setup_task.id,
-                            "message": "Schema setup initiated",
-                            "tenant": {
-                                "id": str(request.user.tenant.id),
-                                "schema_name": request.user.tenant.schema_name,
-                                "database_status": request.user.tenant.database_status,
-                                "setup_status": request.user.tenant.setup_status,
-                                "last_setup_attempt": request.user.tenant.last_setup_attempt.isoformat() if request.user.tenant.last_setup_attempt else None
-                            }
+                            "status": "deferred",
+                            "message": "Database setup will be performed automatically when you reach the dashboard",
+                            "backgroundProcessing": True
                         },
                         "timestamp": timezone.now().isoformat()
                     }
@@ -1960,21 +1806,30 @@ class SaveStep1View(APIView):
                 'trace': traceback.format_exc()
             })
             # Update tenant and progress to reflect error
-            with transaction.atomic():
-                with connection.cursor() as cursor:
-                    if request.user.tenant:
-                        cursor.execute("""
-                            UPDATE auth_tenant
-                            SET database_status = 'error',
-                                setup_status = 'failed',
-                                last_setup_attempt = NOW(),
-                                setup_error_message = %s
-                            WHERE owner_id = %s
-                        """, [str(e), str(request.user.id)])
+            try:
+                with transaction.atomic():
+                    with connection.cursor() as cursor:
+                        if request.user.tenant:
+                            cursor.execute("""
+                                UPDATE auth_tenant
+                                SET database_status = 'error',
+                                    setup_status = 'failed',
+                                    last_setup_attempt = NOW(),
+                                    setup_error_message = %s
+                                WHERE owner_id = %s
+                            """, [str(e), str(request.user.id)])
 
-                    if 'onboarding' in locals():
-                        onboarding.setup_error = str(e)
-                        onboarding.save(update_fields=['setup_error'])
+                    # Try to update progress if it exists
+                    try:
+                        progress = OnboardingProgress.objects.get(user=request.user)
+                        progress.setup_error = str(e)
+                        progress.save(update_fields=['setup_error'])
+                    except OnboardingProgress.DoesNotExist:
+                        logger.warning(f"No onboarding progress found for user {request.user.id} during error handling")
+                    except Exception as inner_e:
+                        logger.warning(f"Failed to update onboarding progress during error handling: {str(inner_e)}")
+            except Exception as err:
+                logger.error(f"Error during error handling: {str(err)}")
 
             return Response({
                 'success': False,
@@ -2081,6 +1936,53 @@ class SaveStep2View(APIView):
                 'onboarding_status', 'current_step',
                 'next_step', 'selected_plan'
             ])
+            
+            # For free plan users, we'll still defer the schema setup until they reach the dashboard
+            # This improves user experience by not making them wait during onboarding
+            if data['selected_plan'] == 'free':
+                # Keep the pending_setup info in the session
+                # It will be triggered when the user completes onboarding and reaches the dashboard
+                pending_setup = request.session.get('pending_schema_setup')
+                request_id = request.headers.get('X-Request-Id', str(uuid.uuid4()))
+                
+                if pending_setup:
+                    user_id = pending_setup.get('user_id')
+                    business_id = pending_setup.get('business_id')
+                    
+                    if user_id and business_id:
+                        logger.info("Schema setup for free plan user will be triggered when user reaches dashboard", extra={
+                            'request_id': request_id,
+                            'user_id': user_id,
+                            'business_id': business_id,
+                            'plan': 'free'
+                        })
+                        
+                        # Update the session with plan information
+                        pending_setup['plan'] = 'free'
+                        pending_setup['updated_at'] = timezone.now().isoformat()
+                        pending_setup['source'] = 'subscription_page'
+                        request.session['pending_schema_setup'] = pending_setup
+                        request.session.modified = True
+                        
+                        # Also update in profile metadata for persistence
+                        try:
+                            profile = UserProfile.objects.get(user=request.user)
+                            if not hasattr(profile, 'metadata') or not isinstance(profile.metadata, dict):
+                                profile.metadata = {}
+                            
+                            profile.metadata['pending_schema_setup'] = pending_setup
+                            profile.save(update_fields=['metadata'])
+                            
+                            logger.info("Updated pending schema setup in profile metadata", extra={
+                                'request_id': request_id,
+                                'profile_id': str(profile.id),
+                                'plan': 'free'
+                            })
+                        except Exception as e:
+                            logger.warning("Failed to update pending setup in profile metadata", extra={
+                                'request_id': request_id,
+                                'error': str(e)
+                            })
             
             # Update Cognito attributes
             try:
@@ -3055,12 +2957,58 @@ class OnboardingSuccessView(BaseOnboardingView):
             # Update subscription
             await self.update_subscription(user, session)
 
+            # Update the pending setup info for paid users
+            # The actual schema setup will be triggered when the user reaches the dashboard
+            request_id = request.headers.get('X-Request-Id', str(uuid.uuid4()))
+            pending_setup = request.session.get('pending_schema_setup')
+            
+            if pending_setup:
+                user_id = pending_setup.get('user_id')
+                business_id = pending_setup.get('business_id')
+                
+                if user_id and business_id:
+                    logger.info("Schema setup for paid plan user will be triggered when user reaches dashboard", extra={
+                        'request_id': request_id,
+                        'user_id': user_id,
+                        'business_id': business_id,
+                        'plan': 'paid'
+                    })
+                    
+                    # Update the session with plan information
+                    pending_setup['plan'] = 'paid'
+                    pending_setup['payment_completed'] = True
+                    pending_setup['updated_at'] = timezone.now().isoformat()
+                    pending_setup['source'] = 'payment_success_page'
+                    request.session['pending_schema_setup'] = pending_setup
+                    request.session.modified = True
+                    
+                    # Also store in user profile metadata for persistence
+                    try:
+                        profile = UserProfile.objects.get(user=user)
+                        if not hasattr(profile, 'metadata') or not isinstance(profile.metadata, dict):
+                            profile.metadata = {}
+                        
+                        profile.metadata['pending_schema_setup'] = pending_setup
+                        profile.save(update_fields=['metadata'])
+                        
+                        logger.info("Stored pending schema setup in profile metadata", extra={
+                            'request_id': request_id,
+                            'profile_id': str(profile.id),
+                            'plan': 'paid'
+                        })
+                    except Exception as e:
+                        logger.warning("Failed to store pending setup in profile metadata", extra={
+                            'request_id': request_id,
+                            'error': str(e)
+                        })
+
             # Complete onboarding
             state_manager = OnboardingStateManager(user)
             if await state_manager.transition_to('complete'):
                 logger.info(f"Onboarding completed for user: {user.id}")
                 return Response({
-                    "message": "Onboarding completed successfully"
+                    "message": "Onboarding completed successfully",
+                    "schema_setup": "initiated"
                 }, status=status.HTTP_200_OK)
 
             logger.error(f"Failed to transition onboarding state for user: {user.id}")
@@ -3241,33 +3189,35 @@ class DatabaseHealthCheckView(BaseOnboardingView):
 
             with transaction.atomic():
                 # Update tenant status based on health check
-                if is_healthy and tables_valid:
+                with connection.cursor() as cursor:
+                    if is_healthy and tables_valid:
+                        cursor.execute("""
+                            UPDATE auth_tenant
+                            SET database_status = 'active',
+                                setup_status = 'complete',
+                                last_health_check = NOW()
+                            WHERE owner_id = %s
+                        """, [str(request.user.id)])
+                    else:
+                        cursor.execute("""
+                            UPDATE auth_tenant
+                            SET database_status = 'error',
+                                setup_status = 'failed',
+                                last_health_check = NOW()
+                            WHERE owner_id = %s
+                        """, [str(request.user.id)])
+                    
+                # Get updated tenant status
+                # Get updated tenant status
+                tenant_status = None
+                with connection.cursor() as cursor:
                     cursor.execute("""
-                        UPDATE auth_tenant
-                        SET database_status = 'active',
-                            setup_status = 'complete',
-                            last_health_check = NOW()
-                        WHERE owner_id = %s
-                    """, [str(request.user.id)])
-                else:
-                    cursor.execute("""
-                        UPDATE auth_tenant
-                        SET database_status = 'error',
-                            setup_status = 'failed',
-                            last_health_check = NOW()
+                        SELECT database_status, setup_status, last_health_check
+                        FROM auth_tenant
                         WHERE owner_id = %s
                     """, [str(request.user.id)])
                     
-            # Keep using the same cursor for all operations
-            with connection.cursor() as cursor:
-                # Get updated tenant status
-                cursor.execute("""
-                    SELECT database_status, setup_status, last_health_check
-                    FROM auth_tenant
-                    WHERE owner_id = %s
-                """, [str(request.user.id)])
-                
-                tenant_status = cursor.fetchone()
+                    tenant_status = cursor.fetchone()
                 
                 response_data = {
                     "status": "healthy" if (is_healthy and tables_valid) else "unhealthy",
@@ -3465,14 +3415,18 @@ async def get_schema_status(request):
     except Exception as e:
         # Update tenant status on error if tenant exists
         if request.user.tenant:
-            cursor.execute("""
-                UPDATE auth_tenant
-                SET database_status = 'error',
-                    setup_status = 'failed',
-                    last_health_check = NOW(),
-                    setup_error_message = %s
-                WHERE owner_id = %s
-            """, [str(e), str(request.user.id)])
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE auth_tenant
+                        SET database_status = 'error',
+                            setup_status = 'failed',
+                            last_health_check = NOW(),
+                            setup_error_message = %s
+                        WHERE owner_id = %s
+                    """, [str(e), str(request.user.id)])
+            except Exception as update_error:
+                logger.error(f"Failed to update tenant status on error: {str(update_error)}")
 
         return Response({
             'status': 'error',
@@ -3837,6 +3791,76 @@ class ValidateSubscriptionAccessView(BaseOnboardingView):
         return super().handle_exception(exc)
 
 
+class SetupStatusCheckView(APIView):
+    """
+    View to check the status of a background schema setup task.
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [CognitoAuthentication]
+    
+    def get(self, request, task_id):
+        """
+        Get the current status of a background schema setup task.
+        """
+        try:
+            # Retrieve the task result
+            task = AsyncResult(task_id)
+            
+            # Get task info
+            task_info = task.info if isinstance(task.info, dict) else {}
+            
+            # Prepare response based on task state
+            if task.state == 'PENDING':
+                response_data = {
+                    'status': 'pending',
+                    'message': 'Setup task is pending execution',
+                    'progress': 0
+                }
+            elif task.state == 'STARTED':
+                response_data = {
+                    'status': 'in_progress',
+                    'message': 'Setup task has started',
+                    'progress': task_info.get('progress', 5)
+                }
+            elif task.state == 'SUCCESS':
+                response_data = {
+                    'status': 'complete',
+                    'message': 'Setup completed successfully',
+                    'progress': 100,
+                    'result': task.result
+                }
+            elif task.state == 'FAILURE':
+                response_data = {
+                    'status': 'failed',
+                    'message': f'Setup failed: {str(task.result)}',
+                    'error': str(task.result),
+                    'progress': -1
+                }
+            else:
+                # For states like RETRY, REVOKED, etc.
+                response_data = {
+                    'status': task.state.lower(),
+                    'message': f'Setup task is in {task.state} state',
+                    'progress': task_info.get('progress', 0)
+                }
+                
+            # Add task details if available
+            if task_info:
+                response_data.update({
+                    'step': task_info.get('step', 'Unknown'),
+                    'details': task_info
+                })
+                
+            return Response(response_data)
+            
+        except Exception as e:
+            logger.error(f"Error checking task status: {str(e)}")
+            return Response({
+                'status': 'error',
+                'message': f'Error checking task status: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class TokenVerifyView(APIView):
     """
     View to verify the validity of an access token.
@@ -4048,6 +4072,38 @@ def stripe_webhook(request):
                 progress.onboarding_status = 'complete'
                 progress.current_step = 'complete'
                 progress.save()
+                
+                # Trigger schema setup task
+                try:
+                    # Get business ID from profile
+                    business_id = str(profile.business.id) if profile.business else None
+                    
+                    # For webhook events, we'll update the user's profile data if possible
+                    # The actual schema setup will be triggered when they reach the dashboard
+                    if business_id:
+                        logger.info(f"Marking payment as completed for user {user.id} via webhook")
+                        
+                        # Store this information in the user's profile or another persistent storage
+                        # so it can be checked when they reach the dashboard
+                        try:
+                            profile = user.profile
+                            profile.metadata = profile.metadata or {}
+                            profile.metadata['pending_schema_setup'] = {
+                                'user_id': str(user.id),
+                                'business_id': business_id,
+                                'plan': 'paid',
+                                'payment_completed': True,
+                                'timestamp': timezone.now().isoformat()
+                            }
+                            profile.save(update_fields=['metadata'])
+                            logger.info(f"Updated user profile with pending schema setup info via webhook")
+                        except Exception as e:
+                            logger.error(f"Error updating user profile via webhook: {str(e)}")
+                    else:
+                        logger.error(f"Cannot trigger schema setup: No business ID for user {user.id}")
+                except Exception as e:
+                    logger.error(f"Failed to trigger schema setup from webhook: {str(e)}")
+                    # Continue even if setup task fails - we can retry later
                 
                 # Update Cognito attributes
                 try:

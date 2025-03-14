@@ -189,3 +189,42 @@ class User(AbstractBaseUser, PermissionsMixin):
     def get_short_name(self):
         """Returns the user's first name."""
         return self.first_name
+
+
+# Add pre-save signal to ensure schema names use underscores
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
+
+@receiver(pre_save, sender=Tenant)
+def ensure_schema_name_uses_underscores(sender, instance, **kwargs):
+    """Ensure schema name uses underscores instead of hyphens"""
+    if instance.schema_name:
+        # Check if schema name starts with tenant_ prefix
+        if not instance.schema_name.startswith('tenant_'):
+            original_schema_name = instance.schema_name
+            instance.schema_name = f"tenant_{instance.schema_name}"
+            print(f"[SCHEMA-NAME-FIX] Added tenant_ prefix to schema name: '{original_schema_name}' -> '{instance.schema_name}'")
+            
+            # Log to the Django logger
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                f"Schema name missing tenant_ prefix and was automatically fixed. "
+                f"Original: '{original_schema_name}', Fixed: '{instance.schema_name}', "
+                f"Tenant ID: {instance.id}, Owner: {getattr(instance.owner, 'email', 'unknown')}"
+            )
+        
+        # Check if schema name contains hyphens
+        if '-' in instance.schema_name:
+            original_schema_name = instance.schema_name
+            instance.schema_name = instance.schema_name.replace('-', '_')
+            print(f"[SCHEMA-NAME-FIX] Converted schema name from '{original_schema_name}' to '{instance.schema_name}'")
+            
+            # Also log to the Django logger
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                f"Schema name contained hyphens and was automatically fixed. "
+                f"Original: '{original_schema_name}', Fixed: '{instance.schema_name}', "
+                f"Tenant ID: {instance.id}, Owner: {getattr(instance.owner, 'email', 'unknown')}"
+            )

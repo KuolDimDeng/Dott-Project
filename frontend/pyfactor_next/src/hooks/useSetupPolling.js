@@ -4,14 +4,15 @@ import { logger } from '@/utils/logger';
 import { getCurrentUser } from 'aws-amplify/auth';
 
 // Increase initial polling interval and add exponential backoff
-const BASE_POLLING_INTERVAL = 5000; // 5 seconds
-const MAX_POLLING_INTERVAL = 60000; // 60 seconds (1 minute)
-const MAX_POLLING_TIME = 10 * 60 * 1000; // 10 minutes
-const MAX_RETRIES = 5;
+const BASE_POLLING_INTERVAL = 30000; // 30 seconds (increased from 15 seconds)
+const MAX_POLLING_INTERVAL = 120000; // 120 seconds (2 minutes, increased from 1 minute)
+const MAX_POLLING_TIME = 15 * 60 * 1000; // 15 minutes (increased from 10 minutes)
+const MAX_RETRIES = 7; // Increased from 5
 
-// Calculate polling interval with exponential backoff
+// Calculate polling interval with exponential backoff and jitter
 const getPollingInterval = (retryCount) => {
-  return Math.min(BASE_POLLING_INTERVAL * Math.pow(2, retryCount), MAX_POLLING_INTERVAL);
+  const base = Math.min(BASE_POLLING_INTERVAL * Math.pow(2.5, retryCount), MAX_POLLING_INTERVAL);
+  return base + (Math.random() * 0.75 * base); // Add up to 75% jitter (increased from 50%)
 };
 
 export function useSetupPolling() {
@@ -111,6 +112,33 @@ export function useSetupPolling() {
     const pollStatus = async () => {
       if (!isPolling) return;
 
+      // Check if we recently had a 429 error and need to wait longer
+      const last429Time = localStorage.getItem('last_429_error');
+      if (last429Time) {
+        const timeSince429 = Date.now() - parseInt(last429Time, 10);
+        const minWaitTime = MAX_POLLING_INTERVAL * 4; // At least 4x max interval after a 429 (increased from 2x)
+        
+        if (timeSince429 < minWaitTime) {
+          const remainingWait = minWaitTime - timeSince429;
+          logger.info(`[SetupPolling] Still in 429 cooldown period, waiting ${remainingWait}ms more`);
+          
+          // Try to refresh user attributes during cooldown period
+          try {
+            const auth = await import('aws-amplify/auth');
+            await auth.fetchUserAttributes();
+            logger.info('[SetupPolling] Refreshed user attributes during cooldown period');
+          } catch (refreshError) {
+            logger.error('[SetupPolling] Failed to refresh user attributes during cooldown:', refreshError);
+          }
+          
+          timeoutId = setTimeout(pollStatus, remainingWait);
+          return;
+        } else {
+          // Clear the 429 timestamp if enough time has passed
+          localStorage.removeItem('last_429_error');
+        }
+      }
+
       try {
         const response = await axiosInstance.get(
           '/api/onboarding/setup/status/'
@@ -135,11 +163,32 @@ export function useSetupPolling() {
         
         // If we get a 429 (Too Many Requests), increase the backoff more aggressively
         if (error.response?.status === 429) {
-          currentRetryCount = Math.min(currentRetryCount + 2, MAX_RETRIES);
-          logger.warn('[SetupPolling] Rate limited (429), increasing backoff', {
+          // Jump to maximum retry count to use maximum delay
+          currentRetryCount = MAX_RETRIES;
+          logger.warn('[SetupPolling] Rate limited (429), using maximum backoff', {
             retryCount: currentRetryCount,
             nextDelay: getPollingInterval(currentRetryCount)
           });
+          
+          // Add an even longer delay for 429 errors - 5x the max interval (increased from 3x)
+          const nextDelay = MAX_POLLING_INTERVAL * 5;
+          logger.info('[SetupPolling] Adding maximum delay for rate limiting', { nextDelay });
+          
+          // Store the last 429 timestamp to avoid polling too soon
+          localStorage.setItem('last_429_error', Date.now().toString());
+          
+          // Force a refresh of the user's Cognito attributes to update onboarding status
+          try {
+            // Attempt to refresh the user's session to get updated attributes
+            const auth = await import('aws-amplify/auth');
+            await auth.fetchUserAttributes();
+            logger.info('[SetupPolling] Refreshed user attributes after 429 error');
+          } catch (refreshError) {
+            logger.error('[SetupPolling] Failed to refresh user attributes:', refreshError);
+          }
+          
+          timeoutId = setTimeout(pollStatus, nextDelay);
+          return; // Skip the normal retry logic below
         }
         
         if (error.response?.status === 401) {

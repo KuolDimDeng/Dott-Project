@@ -1,4 +1,3 @@
-
 # taxes/models.py
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
@@ -163,7 +162,9 @@ class TaxForm(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    employee = models.ForeignKey('hr.Employee', on_delete=models.CASCADE, related_name='tax_forms')
+    # Temporarily commented out to break circular dependency
+    # employee = models.ForeignKey('hr.Employee', on_delete=models.CASCADE, related_name='tax_forms')
+    employee_id = models.UUIDField(null=True, blank=True)  # Temporary replacement
     form_type = models.CharField(max_length=20, choices=FORM_TYPE_CHOICES)
     tax_year = models.IntegerField()
     filing_status = models.CharField(max_length=20, blank=True, null=True)
@@ -199,15 +200,16 @@ class TaxForm(models.Model):
     
     class Meta:
         app_label = 'taxes'
-        unique_together = ('employee', 'form_type', 'tax_year')
+        unique_together = ('employee_id', 'form_type', 'tax_year')
         
     def __str__(self):
-        return f"{self.form_type} ({self.tax_year}) - {self.employee.first_name} {self.employee.last_name}"
+        return f"{self.form_type} ({self.tax_year}) - Employee ID: {self.employee_id}"
     
     def get_ssn_last_four(self):
         """
         Get the last four digits of the employee's SSN from the Employee model
         """
-        if self.employee.ssn_stored_in_stripe and self.employee.ssn_last_four:
-            return self.employee.ssn_last_four
+        # Temporarily commented out to break circular dependency
+        # if self.employee.ssn_stored_in_stripe and self.employee.ssn_last_four:
+        #     return self.employee.ssn_last_four
         return None

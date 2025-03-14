@@ -6,10 +6,12 @@ from django.core.exceptions import PermissionDenied
 from django.urls import resolve
 from django.db import connection
 from django.http import HttpResponse
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework import status
 from onboarding.utils import tenant_schema_context, create_tenant_schema
 from custom_auth.models import Tenant
+from django.db import IntegrityError
 
 logger = logging.getLogger(__name__)
 
@@ -289,6 +291,59 @@ class TenantMiddleware:
         ]
 
     def __call__(self, request):
+        # Check if this is a dashboard request - if so, we need to trigger schema setup
+        is_dashboard_request = '/dashboard' in request.path or '/api/dashboard' in request.path
+        
+        if is_dashboard_request and hasattr(request, 'user') and request.user.is_authenticated:
+            # Check if we have pending schema setup
+            pending_setup = request.session.get('pending_schema_setup', {})
+            
+            if pending_setup and pending_setup.get('deferred', False):
+                logger.info(f"Dashboard access detected, triggering deferred schema setup for user {request.user.id}")
+                
+                # Get business ID from pending setup
+                business_id = pending_setup.get('business_id')
+                
+                if business_id:
+                    # Trigger schema setup task
+                    try:
+                        from onboarding.tasks import setup_user_schema_task
+                        
+                        # Queue the task
+                        task = setup_user_schema_task.apply_async(
+                            args=[str(request.user.id), business_id],
+                            queue='setup',
+                            retry=True,
+                            retry_policy={
+                                'max_retries': 3,
+                                'interval_start': 5,
+                                'interval_step': 30,
+                                'interval_max': 300
+                            }
+                        )
+                        
+                        logger.info(f"Queued deferred schema setup task {task.id} for user {request.user.id}")
+                        
+                        # Update session to indicate setup is in progress
+                        pending_setup['deferred'] = False
+                        pending_setup['in_progress'] = True
+                        pending_setup['task_id'] = task.id
+                        pending_setup['triggered_at'] = timezone.now().isoformat()
+                        request.session['pending_schema_setup'] = pending_setup
+                        request.session.modified = True
+                        
+                        # Also update user profile metadata
+                        try:
+                            from users.models import UserProfile
+                            profile = UserProfile.objects.get(user=request.user)
+                            if hasattr(profile, 'metadata') and isinstance(profile.metadata, dict):
+                                profile.metadata['pending_schema_setup'] = pending_setup
+                                profile.save(update_fields=['metadata'])
+                        except Exception as e:
+                            logger.warning(f"Failed to update profile metadata: {str(e)}")
+                    except Exception as e:
+                        logger.error(f"Failed to trigger schema setup task: {str(e)}")
+        
         # Skip for public paths and onboarding paths
         # Allow initialization and business info endpoints without tenant context
         # Paths that don't require tenant context
@@ -371,9 +426,32 @@ class TenantMiddleware:
                 request.tenant = tenant
                 logger.debug(f'Using tenant: {tenant.schema_name} (Status: {tenant.database_status})')
                 
-                # Create schema if needed
-                if tenant.database_status == 'not_created':
-                    logger.debug(f"Creating schema for tenant: {tenant.schema_name}")
+                # Check if schema creation should be deferred
+                should_defer = False
+                
+                # Check session for pending schema setup with deferred flag
+                pending_setup = request.session.get('pending_schema_setup', {})
+                if pending_setup and pending_setup.get('deferred', False) is True:
+                    should_defer = True
+                    logger.debug(f"Found deferred schema setup in session for tenant: {tenant.schema_name}")
+                
+                # Also check user profile metadata for deferred flag
+                if not should_defer and hasattr(request, 'user') and request.user.is_authenticated:
+                    try:
+                        from users.models import UserProfile
+                        profile = UserProfile.objects.get(user=request.user)
+                        if (hasattr(profile, 'metadata') and
+                            isinstance(profile.metadata, dict) and
+                            'pending_schema_setup' in profile.metadata and
+                            profile.metadata['pending_schema_setup'].get('deferred', False) is True):
+                            should_defer = True
+                            logger.debug(f"Found deferred schema setup in profile metadata for tenant: {tenant.schema_name}")
+                    except Exception as e:
+                        logger.warning(f"Error checking profile metadata for deferred flag: {str(e)}")
+                
+                # Create schema if needed and not deferred
+                if tenant.database_status == 'not_created' and not should_defer:
+                    logger.debug(f"Creating schema for tenant: {tenant.schema_name} (not deferred)")
                     try:
                         with connection.cursor() as cursor:
                             create_tenant_schema(cursor, tenant.schema_name, request.user.id)
@@ -385,17 +463,27 @@ class TenantMiddleware:
                         with connection.cursor() as cursor:
                             cursor.execute('SET search_path TO public')
                         return self.get_response(request)
+                elif tenant.database_status == 'not_created' and should_defer:
+                    logger.info(f"Schema creation deferred for tenant: {tenant.schema_name}")
 
             try:
                 # Always ensure we have a valid database connection
                 connection.ensure_connection()
                 
-                # For onboarding endpoints, always use public schema
+                # For onboarding endpoints, handle schema appropriately
                 if request.path.startswith('/api/onboarding/'):
                     from pyfactor.db_routers import TenantSchemaRouter
-                    # Use optimized connection for public schema
-                    TenantSchemaRouter.get_connection_for_schema('public')
-                    logger.debug("Set schema to public for onboarding endpoint")
+                    
+                    # For business-info endpoint, use the tenant's schema if available
+                    if request.path.startswith('/api/onboarding/business-info') and tenant and tenant.schema_name:
+                        # Use tenant schema for business-info endpoint
+                        TenantSchemaRouter.get_connection_for_schema(tenant.schema_name)
+                        logger.debug(f"Set schema to {tenant.schema_name} for business-info endpoint")
+                    else:
+                        # Use public schema for other onboarding endpoints
+                        TenantSchemaRouter.get_connection_for_schema('public')
+                        logger.debug("Set schema to public for onboarding endpoint")
+                    
                     return self.get_response(request)
                 
                 # Fallback to user's tenant if header-based lookup failed
@@ -407,9 +495,32 @@ class TenantMiddleware:
                         # Store tenant in request for views
                         request.tenant = tenant
                         
-                        # Check if schema needs to be created
-                        if tenant.database_status == 'not_created':
-                            logger.info(f"Creating schema for tenant: {tenant.schema_name}")
+                        # Check if schema creation should be deferred
+                        should_defer = False
+                        
+                        # Check session for pending schema setup with deferred flag
+                        pending_setup = request.session.get('pending_schema_setup', {})
+                        if pending_setup and pending_setup.get('deferred', False) is True:
+                            should_defer = True
+                            logger.debug(f"Found deferred schema setup in session for tenant: {tenant.schema_name}")
+                        
+                        # Also check user profile metadata for deferred flag
+                        if not should_defer:
+                            try:
+                                from users.models import UserProfile
+                                profile = UserProfile.objects.get(user=request.user)
+                                if (hasattr(profile, 'metadata') and
+                                    isinstance(profile.metadata, dict) and
+                                    'pending_schema_setup' in profile.metadata and
+                                    profile.metadata['pending_schema_setup'].get('deferred', False) is True):
+                                    should_defer = True
+                                    logger.debug(f"Found deferred schema setup in profile metadata for tenant: {tenant.schema_name}")
+                            except Exception as e:
+                                logger.warning(f"Error checking profile metadata for deferred flag: {str(e)}")
+                        
+                        # Check if schema needs to be created and not deferred
+                        if tenant.database_status == 'not_created' and not should_defer:
+                            logger.info(f"Creating schema for tenant: {tenant.schema_name} (not deferred)")
                             try:
                                 with connection.cursor() as cursor:
                                     create_tenant_schema(cursor, tenant.schema_name, request.user.id)
@@ -420,6 +531,8 @@ class TenantMiddleware:
                                 with connection.cursor() as cursor:
                                     cursor.execute('SET search_path TO public')
                                 return self.get_response(request)
+                        elif tenant.database_status == 'not_created' and should_defer:
+                            logger.info(f"Schema creation deferred for tenant: {tenant.schema_name}")
                         
                         # Use schema context for this request
                         try:

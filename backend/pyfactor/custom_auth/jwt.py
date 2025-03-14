@@ -91,6 +91,25 @@ class CognitoJWTAuthentication(JWTAuthentication):
                 unverified_payload = jwt.decode(raw_token, options={'verify_signature': False})
                 logger.debug(f"Unverified payload: {json.dumps(unverified_payload)}")
 
+                # Check if we're in development mode
+                is_development = getattr(settings, 'DEBUG', False)
+                
+                # In development mode, be more lenient with token expiration
+                if is_development:
+                    # Check if token is expired
+                    now = datetime.now().timestamp()
+                    if 'exp' in unverified_payload and unverified_payload['exp'] < now:
+                        logger.warning(
+                            "Token has expired but continuing in development mode",
+                            extra={
+                                'exp': unverified_payload['exp'],
+                                'now': now,
+                                'diff_minutes': (unverified_payload['exp'] - now) / 60,
+                                'exp_time': datetime.fromtimestamp(unverified_payload['exp']).isoformat(),
+                                'current_time': datetime.fromtimestamp(now).isoformat()
+                            }
+                        )
+                
                 # Verify and decode the token with modified options
                 payload = jwt.decode(
                     raw_token,
@@ -98,12 +117,13 @@ class CognitoJWTAuthentication(JWTAuthentication):
                     algorithms=['RS256'],
                     issuer=f"https://cognito-idp.{settings.AWS_REGION}.amazonaws.com/{settings.COGNITO_USER_POOL_ID}",
                     options={
-                        'verify_exp': True,
+                        'verify_exp': not is_development,  # Skip expiration check in development
                         'verify_iss': True,
                         'verify_aud': False,  # Skip audience verification
                     }
                 )
             except jwt.ExpiredSignatureError:
+                # This should only happen in production mode now
                 logger.error("Token has expired", extra={'token_claims': unverified_payload})
                 raise InvalidToken('Token has expired')
             except jwt.InvalidIssuerError:
@@ -126,8 +146,26 @@ class CognitoJWTAuthentication(JWTAuthentication):
             logger.debug(f"Token payload: {json.dumps(payload)}")
             return payload
         except jwt.ExpiredSignatureError:
-            logger.error("Token has expired")
-            raise InvalidToken('Token has expired')
+            # Check if we're in development mode
+            is_development = getattr(settings, 'DEBUG', False)
+            if is_development:
+                # In development mode, log a warning but continue
+                logger.warning("Token has expired but continuing in development mode")
+                # Extract payload without verification for development mode
+                try:
+                    payload = jwt.decode(raw_token, options={'verify_signature': False, 'verify_exp': False})
+                    # Still verify basic structure
+                    if not payload.get('sub'):
+                        raise InvalidToken('Missing sub claim')
+                    logger.debug(f"Using unverified token in development mode: {json.dumps(payload)}")
+                    return payload
+                except Exception as e:
+                    logger.error(f"Failed to use expired token in development mode: {str(e)}")
+                    raise InvalidToken('Token validation failed')
+            else:
+                # In production, strictly enforce token expiration
+                logger.error("Token has expired")
+                raise InvalidToken('Token has expired')
         except jwt.InvalidTokenError as e:
             logger.error(f"Token validation failed: {str(e)}")
             raise InvalidToken(str(e))

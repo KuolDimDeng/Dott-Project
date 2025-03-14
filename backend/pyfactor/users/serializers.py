@@ -1,9 +1,8 @@
 import uuid
 from rest_framework import serializers
 from django_countries.serializers import CountryFieldMixin
-from .models import UserProfile, User
-from business.models import Business
-from business.serializer_helpers import BusinessProfileSerializer
+from .models import UserProfile, User, Business
+from .serializer_helpers import BusinessProfileSerializer
 from pyfactor.logging_config import get_logger
 
 logger = get_logger()

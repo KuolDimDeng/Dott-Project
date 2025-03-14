@@ -378,6 +378,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'custom_auth.tasks.monitor_database_connections',
         'schedule': crontab(minute='*/5'),  # Every 5 minutes
     },
+    'check_and_migrate_tenant_schemas': {
+        'task': 'custom_auth.tasks.check_and_migrate_tenant_schemas',
+        'schedule': crontab(minute='*/15'),  # Every 15 minutes
+    },
 }
 
 # Session and authentication settings
@@ -582,11 +586,6 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
-        'chatbot': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
     },
 }
 
@@ -658,18 +657,18 @@ INSTALLED_APPS = [
     'payroll',
     'inventory',
     'analysis',
-    'chatbot',
     'chart',
     'integrations',
-    'alerts',
     'taxes',
     'purchases',
     'barcode',
     'django_extensions',
     'custom_auth',
-    'hr.apps.HrConfig',
-    'business.apps.BusinessConfig',
-    'onboarding.apps.OnboardingConfig'
+    # Temporarily commented out to break circular dependency
+    # 'hr.apps.HrConfig',
+    'onboarding.apps.OnboardingConfig',
+    'crm.apps.CrmConfig',
+    'transport.apps.TransportConfig'
 ]
 
 MIDDLEWARE = [
@@ -688,10 +687,11 @@ MIDDLEWARE = [
     'custom_auth.middleware.RequestIDMiddleware',
     'custom_auth.tenant_middleware.EnhancedTenantMiddleware',  # Use our enhanced tenant middleware
     'custom_auth.middleware.TenantMiddleware',  # Keep the original for backward compatibility
+    'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',  # Check and trigger migrations for dashboard access
 ]
 
 # Maximum number of database connections allowed
-MAX_DB_CONNECTIONS = 50
+MAX_DB_CONNECTIONS = 20  # Reduced from 50 to prevent connection exhaustion
 
 # Connection pool configuration
 CONNECTION_POOL_CONFIG = {
@@ -790,15 +790,14 @@ TENANT_APPS = (
     'payroll',
     'inventory',
     'analysis',
-    'chatbot',
     'chart',
     'integrations',
-    'alerts',
     'taxes',
     'purchases',
-    'barcode',
-    'hr',
-    'business',
+    # Temporarily commented out to break circular dependency
+    # 'hr',
+    'crm',
+    'transport',
 )
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]

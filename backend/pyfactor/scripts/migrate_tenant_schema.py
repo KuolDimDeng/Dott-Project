@@ -141,13 +141,21 @@ def run_migrations_for_tenant_apps(schema_name, force=False):
                 with connection.cursor() as django_cursor:
                     django_cursor.execute(f'SET search_path TO "{schema_name}",public')
                 
-                # Run migrations for all tenant apps
+                # First run migrations for the users app specifically
+                logger.info("Running migrations for users app first")
+                try:
+                    call_command('migrate', 'users', verbosity=1)
+                except Exception as users_error:
+                    logger.error(f"Error running migrations for users app: {str(users_error)}")
+                
+                # Then run migrations for all tenant apps
                 for app in tenant_apps:
-                    logger.info(f"Running migrations for app: {app}")
-                    try:
-                        call_command('migrate', app, verbosity=1)
-                    except Exception as app_error:
-                        logger.error(f"Error running migrations for app {app}: {str(app_error)}")
+                    if app != 'users':  # Skip users app as we already migrated it
+                        logger.info(f"Running migrations for app: {app}")
+                        try:
+                            call_command('migrate', app, verbosity=1)
+                        except Exception as app_error:
+                            logger.error(f"Error running migrations for app {app}: {str(app_error)}")
                 
                 logger.info("Migrations completed successfully")
             except Exception as e:

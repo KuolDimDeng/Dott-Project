@@ -1,7 +1,8 @@
 #/Users/kuoldeng/projectx/backend/pyfactor/payroll/models.py
 from datetime import timedelta, timezone
 from django.db import models
-from hr.models import Employee
+# Temporarily commented out to break circular dependency
+# from hr.models import Employee
 import uuid
 
 
@@ -12,10 +13,15 @@ def default_due_datetime():
     return get_current_datetime() + timedelta(days=30)
 
 
+# Define a placeholder for Employee
+class EmployeePlaceholder:
+    full_name = "Employee Name"
+
 class Timesheet(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     timesheet_number = models.CharField(max_length=20, unique=True, editable=False)
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    # Temporarily replaced with UUID field
+    employee_id = models.UUIDField(null=True, blank=True)
     start_date = models.DateField(default=get_current_datetime)
     end_date = models.DateField(default=get_current_datetime)
     total_hours = models.DecimalField(max_digits=5, decimal_places=2)
@@ -44,7 +50,7 @@ class Timesheet(models.Model):
         return f"TMS{new_number:06d}"
 
     def __str__(self):
-        return f"Timesheet {self.timesheet_number} - {self.employee.full_name}"
+        return f"Timesheet {self.timesheet_number}"
 
 class TimesheetEntry(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -120,7 +126,8 @@ class PayrollRun(models.Model):
         return f"Payroll {self.payroll_number}"
 
 class PayrollTransaction(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    # Temporarily replaced with UUID field
+    employee_id = models.UUIDField(null=True, blank=True)
     payroll_run = models.ForeignKey(PayrollRun, on_delete=models.CASCADE)
     gross_pay = models.DecimalField(max_digits=10, decimal_places=2)
     net_pay = models.DecimalField(max_digits=10, decimal_places=2)
@@ -134,7 +141,8 @@ class PayrollTransaction(models.Model):
     
 
 class TaxForm(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    # Temporarily replaced with UUID field
+    employee_id = models.UUIDField(null=True, blank=True)
     form_type = models.CharField(max_length=20)
     tax_year = models.IntegerField()
     file = models.FileField(upload_to='tax_forms/')

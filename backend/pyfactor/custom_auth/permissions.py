@@ -13,6 +13,7 @@ class SetupEndpointPermission(permissions.BasePermission):
             '/api/onboarding/setup/',
             '/api/onboarding/setup/status/',
             '/api/onboarding/setup/complete/',
+            '/api/onboarding/setup/start/',
             '/api/onboarding/reset/',
             '/api/profile/'
         ]

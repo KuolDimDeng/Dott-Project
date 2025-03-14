@@ -1,3 +1,4 @@
+#/Users/kuoldeng/projectx/backend/pyfactor/inventory/models.py
 import uuid
 from django.db import models
 from django.core.validators import MinValueValidator

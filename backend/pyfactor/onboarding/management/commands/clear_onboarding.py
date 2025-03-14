@@ -3,7 +3,7 @@ from django.db import transaction
 from django.contrib.auth import get_user_model
 from onboarding.models import OnboardingProgress
 from users.models import UserProfile
-from business.models import Business, Subscription
+from users.models import Business, Subscription
 from finance.models import Account
 
 User = get_user_model()

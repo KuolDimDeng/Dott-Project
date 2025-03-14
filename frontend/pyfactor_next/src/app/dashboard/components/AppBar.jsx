@@ -48,7 +48,6 @@ const AppBar = ({
   handleAlertClick,
   handleDashboardClick,
   handleDeviceSettingsClick,
-  handleSendGlobalAlertClick,
   handleSettingsOptionSelect,
   selectedSettingsOption,
   handleLogout,
@@ -288,9 +287,6 @@ const AppBar = ({
                     </Box>
                   </Box>
                 </MenuItem>,
-                userData?.is_staff && (
-                  <MenuItem key="global-alert" onClick={handleSendGlobalAlertClick}>Send Global Alert</MenuItem>
-                ),
                 <MenuItem
                   key="terms"
                   onClick={handleTermsClick}

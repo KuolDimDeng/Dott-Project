@@ -185,6 +185,14 @@ export function Subscription() {
             logger.debug('[Subscription] Updating onboarding status to COMPLETE for free plan');
             await updateOnboardingStatus(ONBOARDING_STATES.COMPLETE);
             logger.info('[Subscription] Free plan selected, redirecting to dashboard');
+            
+            // Store pending schema setup info in session storage
+            // This will be used by the dashboard to show appropriate loading state
+            sessionStorage.setItem('pendingSchemaSetup', JSON.stringify({
+              plan: planId,
+              timestamp: new Date().toISOString(),
+              status: 'pending'
+            }));
           } catch (statusError) {
             // Log the error but continue with the flow
             logger.error('[Subscription] Error updating status to COMPLETE, continuing anyway:', {
@@ -194,14 +202,12 @@ export function Subscription() {
           }
           
           // Update the message to inform the user
-          setError(`Free plan selected! Redirecting to dashboard in a moment...`);
+          setError(`Free plan selected! Redirecting to dashboard...`);
           
-          // Add a small delay to ensure state updates are processed
-          setTimeout(() => {
-            logger.debug('[Subscription] Executing redirect to dashboard');
-            // Force a hard navigation to avoid any client-side routing issues
-            window.location.href = '/dashboard';
-          }, 2000);
+          // Redirect immediately to dashboard
+          logger.debug('[Subscription] Executing redirect to dashboard');
+          // Use replace instead of href to avoid adding to browser history
+          window.location.replace('/dashboard');
         } else {
           try {
             // For paid plans, update to PAYMENT and redirect to payment page
@@ -219,12 +225,12 @@ export function Subscription() {
           // Update the message to inform the user
           setError(`${planId === 'professional' ? 'Professional' : 'Enterprise'} plan selected! Redirecting to payment page in a moment...`);
           
-          // Add a small delay to ensure state updates are processed
+          // Use a single redirection with a short delay to reduce memory usage
           setTimeout(() => {
             logger.debug('[Subscription] Executing redirect to payment page');
-            // Force a hard navigation to avoid any client-side routing issues
-            window.location.href = '/onboarding/payment';
-          }, 2000);
+            // Use replace instead of href to avoid adding to browser history
+            window.location.replace('/onboarding/payment');
+          }, 1000);
         }
       } catch (apiError) {
         logger.error('[Subscription] API error:', {
@@ -282,15 +288,16 @@ export function Subscription() {
         setError(`${planId === 'free' ? 'Free' : planId === 'professional' ? 'Professional' : 'Enterprise'} plan selected! Redirecting in a moment...`);
         
         // Continue with the flow despite the error
+        // Use a single redirection with a short delay to reduce memory usage
         setTimeout(() => {
           if (planId === 'free') {
             logger.info('[Subscription] Redirecting to dashboard despite error');
-            window.location.href = '/dashboard';
+            window.location.replace('/dashboard');
           } else {
             logger.info('[Subscription] Redirecting to payment page despite error');
-            window.location.href = '/onboarding/payment';
+            window.location.replace('/onboarding/payment');
           }
-        }, 2000);
+        }, 1000);
         return;
       }
       
@@ -305,13 +312,14 @@ export function Subscription() {
         setError('This subscription plan is already selected. Please try a different plan or continue to the next step.');
         
         // Try to recover by redirecting to the appropriate page based on the selected plan
+        // Use a shorter timeout and window.location.replace to reduce memory usage
         setTimeout(() => {
           if (planId === 'free') {
-            window.location.href = '/dashboard';
+            window.location.replace('/dashboard');
           } else {
-            window.location.href = '/onboarding/payment';
+            window.location.replace('/onboarding/payment');
           }
-        }, 3000);
+        }, 1500);
       } else {
         setError(error.message || 'Failed to save subscription. Please try again.');
       }

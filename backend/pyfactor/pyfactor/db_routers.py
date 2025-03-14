@@ -2,6 +2,7 @@ from django.conf import settings
 import threading
 import logging
 import time
+import os
 from django.db import connections
 
 logger = logging.getLogger(__name__)
@@ -76,7 +77,7 @@ class TenantSchemaRouter:
         Route read operations to the appropriate schema.
         Tenant-specific models go to tenant schema, shared models to public schema.
         """
-        # Always use public schema for onboarding-related models
+        # Always use public schema for onboarding-related models and business models
         if model._meta.app_label in ['onboarding', 'business'] and not getattr(model, 'is_tenant_specific', False):
             logger.debug(f"Routing read for {model._meta.app_label}.{model._meta.model_name} to public schema")
             # Use optimized connection with public schema
@@ -107,7 +108,7 @@ class TenantSchemaRouter:
         Route write operations to the appropriate schema.
         Tenant-specific models go to tenant schema, shared models to public schema.
         """
-        # Always use public schema for onboarding-related models
+        # Always use public schema for onboarding-related models and business models
         if model._meta.app_label in ['onboarding', 'business'] and not getattr(model, 'is_tenant_specific', False):
             logger.debug(f"Routing write for {model._meta.app_label}.{model._meta.model_name} to public schema")
             # Use optimized connection with public schema
@@ -155,17 +156,68 @@ class TenantSchemaRouter:
     def allow_migrate(self, db, app_label, model_name=None, **hints):
         """
         Control which models get synchronized to which schemas.
+        
+        This method determines whether a migration for a specific app should be
+        applied to a specific database connection. For tenant apps, migrations
+        should only be applied to tenant schemas, not to the public schema.
         """
-        # Always allow migrations in the public schema
-        if db == 'default':
-            return True
+        # Skip migration checks for problematic apps
+        # Return None to let Django's default behavior handle these apps
+        if app_label in ['business', 'finance', 'hr', 'crm', 'transport']:
+            logger.debug(f"Skipping migration check for {app_label} app (special case)")
+            return None
             
-        # For tenant schemas, only allow tenant app migrations
+        # Get the current schema from thread local storage
+        current_schema = self._get_tenant_schema()
         tenant_apps = getattr(settings, 'TENANT_APPS', [])
-        if app_label in tenant_apps:
+        shared_apps = getattr(settings, 'SHARED_APPS', [])
+        
+        # Check if this is a migration operation
+        is_migration_operation = hints.get('operation_type') == 'migration'
+        
+        # Special handling for django_migrations table
+        if model_name == 'migration' and app_label == 'migrations':
+            # Allow django_migrations table to be created in all schemas
             return True
+        
+        # For tenant apps
+        if app_label in tenant_apps:
+            # If we're in a tenant schema, allow tenant app migrations
+            if current_schema != 'public' and current_schema.startswith('tenant_'):
+                logger.debug(f"Allowing migration for tenant app {app_label} in tenant schema {current_schema}")
+                return True
             
-        return False
+            # If we're in the public schema, check if we should allow tenant app migrations
+            if current_schema == 'public':
+                # Check for environment variable to temporarily allow tenant migrations in public schema
+                if os.environ.get('ALLOW_TENANT_MIGRATIONS_IN_PUBLIC') == 'True':
+                    logger.debug(f"Temporarily allowing migration for tenant app {app_label} in public schema")
+                    return True
+                else:
+                    logger.debug(f"Blocking migration for tenant app {app_label} in public schema")
+                    return False
+        
+        # For shared apps
+        if app_label in shared_apps:
+            # Allow shared app migrations in the public schema
+            if current_schema == 'public':
+                logger.debug(f"Allowing migration for shared app {app_label} in public schema")
+                return True
+            
+            # Also allow shared app migrations in tenant schemas
+            # This is important for apps like 'auth' that are needed in both schemas
+            if current_schema != 'public' and current_schema.startswith('tenant_'):
+                logger.debug(f"Allowing migration for shared app {app_label} in tenant schema {current_schema}")
+                return True
+        
+        # Special case for users app - always allow in tenant schemas
+        if app_label == 'users' and current_schema != 'public' and current_schema.startswith('tenant_'):
+            logger.debug(f"Allowing migration for users app in tenant schema {current_schema}")
+            return True
+        
+        # Default behavior for other apps
+        logger.debug(f"Default migration behavior for app {app_label} in schema {current_schema}: {app_label not in tenant_apps}")
+        return app_label not in tenant_apps
         
     @classmethod
     def clear_connection_cache(cls):

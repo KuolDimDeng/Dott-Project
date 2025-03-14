@@ -18,7 +18,7 @@ from celery import shared_task, chain
 from asgiref.sync import sync_to_async
 from pyfactor.logging_config import get_logger
 from django.contrib.auth import get_user_model
-from business.models import Business
+from .models import Business
 from .exceptions import DatabaseError, ValidationError, ServiceUnavailableError
 from onboarding.models import OnboardingProgress
 from .models import UserProfile

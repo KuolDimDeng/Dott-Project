@@ -11,28 +11,29 @@ logger = logging.getLogger(__name__)
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     try:
-        with transaction.atomic():
-            if created:
-                logger.info(f"Creating profile for new user: {instance.email}")
+        # Remove transaction.atomic() as we're already in a transaction from the post_save signal
+        if created:
+            logger.info(f"Creating profile for new user: {instance.email}")
+            UserProfile.objects.using('default').create(
+                user=instance,
+                is_business_owner=True  # Set as business owner for new users
+            )
+            logger.info(f"Successfully created profile for user: {instance.email}")
+        else:
+            logger.debug(f"Updating profile for user: {instance.email}")
+            try:
+                profile = UserProfile.objects.using('default').get(user=instance)
+                profile.save(using='default')
+                logger.debug(f"Successfully updated profile for user: {instance.email}")
+            except UserProfile.DoesNotExist:
+                # Create profile if it doesn't exist
                 UserProfile.objects.using('default').create(
                     user=instance,
-                    is_business_owner=True  # Set as business owner for new users
+                    is_business_owner=True
                 )
-                logger.info(f"Successfully created profile for user: {instance.email}")
-            else:
-                logger.debug(f"Updating profile for user: {instance.email}")
-                try:
-                    profile = UserProfile.objects.using('default').get(user=instance)
-                    profile.save(using='default')
-                    logger.debug(f"Successfully updated profile for user: {instance.email}")
-                except UserProfile.DoesNotExist:
-                    # Create profile if it doesn't exist
-                    UserProfile.objects.using('default').create(
-                        user=instance,
-                        is_business_owner=True
-                    )
-                    logger.info(f"Created missing profile for existing user: {instance.email}")
+                logger.info(f"Created missing profile for existing user: {instance.email}")
     except Exception as e:
         logger.error(f"Error in create_or_update_user_profile for user {instance.email}: {str(e)}",
                     exc_info=True)
-        raise
+        # Don't re-raise the exception to prevent breaking the save operation
+        # Just log the error and continue

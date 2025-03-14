@@ -40,6 +40,11 @@ class Command(BaseCommand):
                 self.stdout.write(f"Deleted directory: {file}")
 
     def handle(self, *args, **kwargs):
+        # Get the main database name from settings
+        main_db_name = settings.DATABASES['default']['NAME']
+        self.stdout.write(f"\n*** IMPORTANT: This script will NOT delete the main database ({main_db_name}) ***")
+        self.stdout.write("It will only clean schemas and tables within the database, and delete migration files.\n")
+        
         if not self.prompt_confirmation():
             self.stdout.write("Operation cancelled by user.")
             return
@@ -60,17 +65,21 @@ class Command(BaseCommand):
         else:
             self.stdout.write("No migration files found to delete.")
 
-        # Step 2: Drop tables and user-specific databases
+        # Step 2: Clean schemas and drop other databases
         try:
             conn_details = self.get_db_connection_details()
             with psycopg2.connect(**conn_details) as conn:
                 conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
                 with conn.cursor() as cur:
+                    # First drop tenant schemas
+                    self.drop_tenant_schemas(cur)
+                    # Then drop public schema
                     self.drop_public_schema(cur)
                     self.clear_user_data(cur)
 
             database_status = self.drop_non_template_databases(conn_details)
-            self.stdout.write("All tables in public schema and non-template databases processed.")
+            self.stdout.write(f"All tenant schemas and public schema tables in {main_db_name} have been cleaned.")
+            self.stdout.write("Other non-template databases (except the main database) have been processed.")
         except Exception as e:
             self.stdout.write(f"Error connecting to the database: {e}")
 
@@ -114,6 +123,24 @@ class Command(BaseCommand):
             self.stdout.write("Public schema dropped and recreated successfully.")
         except Exception as e:
             self.stdout.write(f"Error dropping public schema: {e}")
+            
+    def drop_tenant_schemas(self, cursor):
+        try:
+            # Get all tenant schemas
+            cursor.execute("SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE 'tenant_%';")
+            tenant_schemas = cursor.fetchall()
+            
+            for schema in tenant_schemas:
+                schema_name = schema[0]
+                try:
+                    cursor.execute(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE;')
+                    self.stdout.write(f"Dropped tenant schema: {schema_name}")
+                except Exception as e:
+                    self.stdout.write(f"Error dropping tenant schema {schema_name}: {e}")
+                    
+            self.stdout.write(f"Dropped {len(tenant_schemas)} tenant schemas.")
+        except Exception as e:
+            self.stdout.write(f"Error dropping tenant schemas: {e}")
 
     def clear_user_data(self, cursor):
         try:
@@ -131,9 +158,14 @@ class Command(BaseCommand):
                     cur.execute("SELECT datname FROM pg_database WHERE datistemplate = false;")
                     databases = cur.fetchall()
 
+            # Get the main database name from settings
+            main_db_name = settings.DATABASES['default']['NAME']
+            self.stdout.write(f"Preserving main database: {main_db_name}")
+
             for db in databases:
                 db_name = db[0]
-                if db_name not in ['postgres', 'template0', 'template1', 'rdsadmin']:
+                # Skip the main database, postgres, and template databases
+                if db_name not in ['postgres', 'template0', 'template1', 'rdsadmin', main_db_name]:
                     try:
                         with psycopg2.connect(**conn_details) as conn:
                             conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
@@ -152,6 +184,9 @@ class Command(BaseCommand):
                     except Exception as e:
                         database_status[db_name] = f"Error: {str(e)}"
                         self.stdout.write(f"Error dropping database {db_name}: {e}")
+                else:
+                    database_status[db_name] = "Preserved"
+                    self.stdout.write(f"Database {db_name} preserved (not dropped).")
 
             self.stdout.write("\nDatabase Status:")
             for db, status in database_status.items():
@@ -194,13 +229,81 @@ class Command(BaseCommand):
                 except Exception as e:
                     self.stdout.write(f"Error dropping sequence {seq[0]}: {e}")
 
+    def fix_logger_configuration(self):
+        """Fix logger configuration to avoid 'duration' field errors."""
+        self.stdout.write("Fixing logger configuration...")
+        import logging
+        
+        # Get all loggers
+        for logger_name in logging.root.manager.loggerDict:
+            logger = logging.getLogger(logger_name)
+            
+            # Check and fix handlers
+            for handler in logger.handlers:
+                if hasattr(handler, 'formatter') and handler.formatter:
+                    # Check if formatter uses 'duration' field
+                    if hasattr(handler.formatter, '_fmt') and '%(duration)' in str(handler.formatter._fmt):
+                        # Create a new formatter without the duration field
+                        new_fmt = str(handler.formatter._fmt).replace('%(duration)', '0.0')
+                        handler.setFormatter(logging.Formatter(new_fmt))
+                        self.stdout.write(f"Fixed formatter for logger: {logger_name}")
+        
+        # Fix Django's db logger specifically
+        db_logger = logging.getLogger('django.db.backends')
+        if db_logger.handlers:
+            for handler in db_logger.handlers:
+                if hasattr(handler, 'formatter'):
+                    handler.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
+        
+        self.stdout.write("Logger configuration fixed.")
+
     def recreate_and_apply_migrations(self):
         self.stdout.write("Making new migrations...")
         django.core.management.call_command('makemigrations')
 
-        self.stdout.write("Applying migrations...")
-        django.core.management.call_command('migrate')
+        # Fix logger configuration to avoid 'duration' field errors
+        self.fix_logger_configuration()
 
+        # Apply migrations in a specific order to avoid circular dependencies
+        self.stdout.write("Applying migrations in a controlled order...")
+        
+        # First apply auth and contenttypes migrations
+        self.stdout.write("Step 1: Applying auth and contenttypes migrations...")
+        django.core.management.call_command('migrate', 'auth')
+        django.core.management.call_command('migrate', 'contenttypes')
+        django.core.management.call_command('migrate', 'admin')
+        
+        # Apply shared apps migrations
+        self.stdout.write("Step 2: Applying shared apps migrations...")
+        from django.conf import settings
+        shared_apps = getattr(settings, 'SHARED_APPS', [])
+        for app in shared_apps:
+            if app not in ['auth', 'contenttypes', 'admin', 'sessions', 'messages', 'staticfiles', 'business', 'onboarding']:
+                try:
+                    self.stdout.write(f"Migrating shared app: {app}")
+                    django.core.management.call_command('migrate', app)
+                except Exception as e:
+                    self.stdout.write(f"Error migrating {app}: {e}")
+        
+        # Apply business migrations first, then onboarding to handle the dependency
+        self.stdout.write("Step 3: Applying business migrations...")
+        try:
+            django.core.management.call_command('migrate', 'business')
+            self.stdout.write("Business migrations applied successfully.")
+        except Exception as e:
+            self.stdout.write(f"Error applying business migrations: {e}")
+            
+        self.stdout.write("Step 4: Applying onboarding migrations...")
+        try:
+            django.core.management.call_command('migrate', 'onboarding')
+            self.stdout.write("Onboarding migrations applied successfully.")
+        except Exception as e:
+            self.stdout.write(f"Error applying onboarding migrations: {e}")
+        
+        # Apply remaining migrations
+        self.stdout.write("Step 5: Applying remaining migrations...")
+        django.core.management.call_command('migrate', '--fake-initial')
+        
         self.stdout.write("Migrations recreated and applied.")
 
     def check_and_clear_lingering_data(self):
@@ -242,9 +345,14 @@ class Command(BaseCommand):
         self.stdout.write(f"Tables successfully flushed: {sum(1 for status in table_status.values() if status == 'Dropped')}")
         self.stdout.write(f"Tables with errors: {sum(1 for status in table_status.values() if status.startswith('Error'))}")
 
-        self.stdout.write(f"\nDatabases attempted to drop: {len(database_status)}")
-        self.stdout.write(f"Databases successfully dropped: {sum(1 for status in database_status.values() if status == 'Dropped')}")
+        self.stdout.write(f"\nDatabases processed: {len(database_status)}")
+        self.stdout.write(f"Databases preserved: {sum(1 for status in database_status.values() if status == 'Preserved')}")
+        self.stdout.write(f"Databases dropped: {sum(1 for status in database_status.values() if status == 'Dropped')}")
         self.stdout.write(f"Databases with errors: {sum(1 for status in database_status.values() if status.startswith('Error'))}")
+        
+        # Get the main database name from settings
+        main_db_name = settings.DATABASES['default']['NAME']
+        self.stdout.write(f"\nMain database ({main_db_name}) was preserved, but all schemas and tables within it were cleaned.")
 
 # Ensure Django settings are configured
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')

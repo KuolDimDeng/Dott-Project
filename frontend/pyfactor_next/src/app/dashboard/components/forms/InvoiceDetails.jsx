@@ -15,9 +15,9 @@ const InvoiceDetails = ({ invoiceId, onBackToCustomerDetails }) => {
   const fetchUserProfile = useCallback(async () => {
     try {
       const response = await axiosInstance.get('/api/profile/');
-      setUserDatabase(response.data.database_name);
-      logger.log('User profile:', response.data);
-      logger.log('User database:', response.data.database_name);
+      setUserDatabase(response.data.schema_name);
+      logger.debug('User profile:', response.data);
+      logger.debug('User database:', response.data.schema_name);
     } catch (error) {
       logger.error('Error fetching user profile:', error);
       setError('Failed to load user profile');

@@ -1,3 +1,4 @@
+#/Users/kuoldeng/projectx/backend/pyfactor/purchases/models.py
 import uuid
 from django.db import models
 from django.utils import timezone

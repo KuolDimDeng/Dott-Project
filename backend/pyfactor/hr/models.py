@@ -1,3 +1,4 @@
+#/Users/kuoldeng/projectx/backend/pyfactor/hr/models.py
 import datetime
 import uuid
 from django.db import models
@@ -146,13 +147,9 @@ class Employee(models.Model):
     pension_enrollment = models.BooleanField(default=False)
     termination_date = models.DateField(null=True, blank=True)
     reason_for_leaving = models.TextField(blank=True, null=True)
-    business = models.ForeignKey(
-            'business.Business',
-            on_delete=models.CASCADE,
-            related_name='business_employees',
-            null=True,  
-            blank=True  
-        )
+    # Temporarily break circular dependency with UUIDField
+    business_id = models.UUIDField(null=True, blank=True)
+    # business = models.ForeignKey('users.Business', on_delete=models.CASCADE, related_name='business_employees', null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.employee_number:

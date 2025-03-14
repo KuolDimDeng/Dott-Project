@@ -1,103 +1,117 @@
-# Database Management Scripts
+# PyFactor Scripts
 
-This directory contains scripts for managing the multi-tenant database system.
+This directory contains utility scripts for managing the PyFactor application.
 
-## Remove All Tenants
+## Database Management Scripts
 
-The `remove_all_tenants.py` script removes all tenants from the dott_main database.
+### `initialize_database_tables.py`
 
-### What it does:
-1. Lists all tenants in the database
-2. Deletes all tenant records
-3. Drops all tenant schemas
-
-### Usage:
+Initialize tables in an existing database.
 
 ```bash
-# Run the script directly
-cd backend/pyfactor
-python scripts/remove_all_tenants.py [--force]
-```
-
-Options:
-- `--force`: Skip confirmation prompt (use with caution)
-
-**WARNING**: This will permanently delete all tenant data! Without the `--force` flag, the script will ask for confirmation before proceeding.
-
-## Initialize Database Tables
-
-The `initialize_database_tables.py` script initializes tables in an existing database.
-
-### What it does:
-1. Checks if the database exists (must be created first in AWS console)
-2. Runs all migrations to create the necessary tables
-3. Sets up proper permissions
-4. Lists all created tables
-
-### Usage:
-
-```bash
-# Run the script directly
-cd backend/pyfactor
 python scripts/initialize_database_tables.py [database_name] [--force]
 ```
 
 Options:
-- `database_name`: Name of the database to initialize (optional, defaults to the one in settings.py)
-- `--force`: Skip confirmation prompts (use with caution)
+- `database_name`: Name of the database to initialize tables in (optional, defaults to settings.py)
+- `--force`: Skip confirmation prompts
 
-If `database_name` is not provided, it will use the name from settings.py.
+### `remove_all_tenants.py`
 
-### Example:
+Remove all tenants from the database.
 
 ```bash
-# Initialize tables in a database named "dott_new"
-python scripts/initialize_database_tables.py dott_new
+python scripts/remove_all_tenants.py [--force]
 ```
 
-## Migrate Tenant Schema
+Options:
+- `--force`: Skip confirmation prompts
 
-The `migrate_tenant_schema.py` script runs migrations for a specific tenant schema to ensure all tables are created.
+### `drop_all_schemas.sh`
 
-### What it does:
-1. Sets the search path to the specified tenant schema
-2. Runs migrations for all TENANT_APPS
-3. Verifies that all tables have been created
-4. Shows a list of new tables created
-
-### Usage:
+Drop all tenant schemas from the database.
 
 ```bash
-# Run the script directly
-cd backend/pyfactor
+./scripts/drop_all_schemas.sh
+```
+
+### `direct_drop_all_schemas.py`
+
+Drop all tenant schemas directly using psycopg2.
+
+```bash
+python scripts/direct_drop_all_schemas.py [--force]
+```
+
+Options:
+- `--force`: Skip confirmation prompts
+
+### `migrate_tenant_schema.py`
+
+Run migrations for a specific tenant schema.
+
+```bash
 python scripts/migrate_tenant_schema.py <schema_name> [--force]
 ```
 
 Options:
-- `schema_name`: Name of the tenant schema to migrate (required)
-- `--force`: Skip confirmation prompts (use with caution)
+- `schema_name`: Name of the tenant schema to migrate
+- `--force`: Skip confirmation prompts
 
-### Example:
+### `check_and_migrate_tenant.py`
+
+Check and migrate a specific tenant schema. This script will:
+1. Check if the tenant exists
+2. Check if the tenant schema exists
+3. Check if the schema has tables
+4. Run migrations if needed
 
 ```bash
-# Migrate a specific tenant schema
-python scripts/migrate_tenant_schema.py tenant_75c2c5e7_903b_4bac_affc_6cd3222bf43a
+python scripts/check_and_migrate_tenant.py <tenant_id>
 ```
 
-## Workflow for Setting Up a New Database
+Options:
+- `tenant_id`: ID of the tenant to check and migrate
 
-1. Create the database in AWS console
-2. Run the initialize_database_tables.py script to create all tables
-3. The database is now ready for tenant creation
+## Tenant Migration Management
 
-## Workflow for Cleaning Up Tenants
+The system now includes several features to ensure tenant migrations happen properly:
 
-1. Run the remove_all_tenants.py script to remove all tenants
-2. Confirm by typing 'DELETE ALL TENANTS' when prompted (or use --force to skip confirmation)
-3. All tenant data will be removed, but the database structure remains intact
+1. **Background Migration Task**: A Celery task runs every 15 minutes to check for tenant schemas with no tables and applies migrations to them.
 
-## Workflow for Fixing Tenant Schemas with Missing Tables
+2. **Dashboard Migration Middleware**: When a user accesses the dashboard, the system checks if their tenant schema has tables and triggers migrations if needed.
 
-1. Run the migrate_tenant_schema.py script for each tenant schema that needs fixing
-2. The script will run migrations for all TENANT_APPS and create any missing tables
-3. Verify that all required tables have been created
+3. **Management Command**: A Django management command to manually trigger migrations for a specific tenant.
+
+```bash
+python manage.py migrate_tenant <tenant_id> [--async]
+```
+
+Options:
+- `tenant_id`: ID of the tenant to migrate
+- `--async`: Run migration asynchronously using Celery
+
+## Troubleshooting Tenant Migrations
+
+If a tenant schema has no tables, you can:
+
+1. Run the check_and_migrate_tenant.py script:
+```bash
+python scripts/check_and_migrate_tenant.py <tenant_id>
+```
+
+2. Use the Django management command:
+```bash
+python manage.py migrate_tenant <tenant_id>
+```
+
+3. Manually trigger the Celery task:
+```python
+from custom_auth.tasks import check_and_migrate_tenant_schemas
+check_and_migrate_tenant_schemas.delay()
+```
+
+4. Manually trigger migration for a specific tenant:
+```python
+from custom_auth.tasks import migrate_tenant_schema
+migrate_tenant_schema.delay('<tenant_id>')

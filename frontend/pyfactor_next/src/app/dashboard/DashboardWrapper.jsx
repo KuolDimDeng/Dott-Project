@@ -1,18 +1,48 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/DashboardWrapper.jsx
-import { useState } from 'react';
-import { logger } from '@/utils/logger';
+'use client';
 
-export function DashboardWrapper({ children }) {
-  const [requestId] = useState(() => crypto.randomUUID());
+import React, { useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import Dashboard from './DashboardContent';
+import { startMemoryMonitoring, stopMemoryMonitoring } from '@/utils/memoryDebugger';
 
-  logger.debug('Dashboard wrapper rendering:', {
-    requestId,
-    timestamp: new Date().toISOString()
-  });
+// Dynamically import the MemoryDebugger component to avoid SSR issues
+const MemoryDebugger = dynamic(() => import('@/components/Debug/MemoryDebugger'), {
+  ssr: false
+});
 
+/**
+ * Dashboard Wrapper Component
+ * 
+ * This component wraps the main Dashboard component and adds memory debugging
+ * capabilities in development mode. It helps identify memory leaks and performance
+ * issues in the dashboard.
+ */
+const DashboardWrapper = () => {
+  // Start memory monitoring when the component mounts
+  useEffect(() => {
+    // Only run in development mode
+    if (process.env.NODE_ENV !== 'development') return;
+    
+    console.log('[Memory] Starting dashboard memory monitoring');
+    
+    // Start monitoring with a 10-second interval
+    const monitoringInterval = startMemoryMonitoring(10000);
+    
+    return () => {
+      // Stop monitoring when the component unmounts
+      if (monitoringInterval) {
+        stopMemoryMonitoring(monitoringInterval);
+      }
+    };
+  }, []);
+  
   return (
     <>
-      {children}
+      <Dashboard />
+      {/* Only show the memory debugger in development mode */}
+      {process.env.NODE_ENV === 'development' && <MemoryDebugger />}
     </>
   );
-}
+};
+
+export default DashboardWrapper;

@@ -1,80 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Paper, Grid, Button, Tabs, Tab } from '@mui/material';
-import CustomerList from './lists/CustomerList.js';
-import InvoiceTemplateBuilder from './forms/InvoiceTemplateBuilder.jsx';
-import TransactionForm from '../../createNew/forms/TransactionForm.jsx';
-import TransactionList from './lists/TransactionList.jsx';
-import ReportDisplay from './forms/ReportDisplay.jsx';
-import BankingDashboard from './forms/BankingDashboard.jsx';
-import AnalysisPage from './forms/AnalysisPage.jsx';
-import InvoiceDetails from './forms/InvoiceDetails.jsx';
-import CustomerDetails from './forms/CustomerDetails.js';
-import renderForm from './RenderForm.jsx';
-import ProductManagement from './forms/ProductManagement.jsx';
-import ServiceManagement from './forms/ServiceManagement.jsx';
-import EstimateManagement from './forms/EstimateManagement.jsx';
-import SalesOrderManagement from './forms/SalesOrderManagement.jsx';
-import InvoiceManagement from './forms/InvoiceManagement.jsx';
-import VendorManagement from './forms/VendorManagement.jsx';
-import BillManagement from './forms/BillManagement.jsx';
-import PurchaseOrderManagement from './forms/PurchaseOrderManagement.jsx';
-import ExpensesManagement from './forms/ExpensesManagement.jsx';
-import PurchaseReturnsManagement from './forms/PurchaseReturnsManagement.jsx';
-import ProcurementManagement from './forms/ProcurementManagement.jsx';
-import EmployeeManagement from './forms/EmployeeManagement.jsx';
-import PayrollManagement from './forms/PayrollManagement.jsx';
-import TimesheetManagement from './forms/TimesheetManagement.jsx';
-import ChartOfAccountsManagement from './forms/ChartOfAccountsManagement.jsx';
-import JournalEntryManagement from './forms/JournalEntryManagement.jsx';
-import GeneralLedgerManagement from './forms/GeneralLedgerManagement.jsx';
-import AccountReconManagement from './forms/AccountReconManagement.jsx';
-import MonthEndManagement from './forms/MonthEndManagement.jsx';
-import FinancialManagement from './forms/FinancialStatementsManagement.jsx';
-import FixedAssetManagement from './forms/FixedAssetManagement.jsx';
-import BudgetManagement from './forms/BudgetManagement.jsx';
-import CostAccountingManagement from './forms/CostAccountingManagement.jsx';
-import IntercompanyManagement from './forms/IntercompanyManagement.jsx';
-import AuditTrailManagement from './forms/AuditTrailManagement.jsx';
-import ProfitAndLossReport from './forms/ProfitAndLossReport.jsx';
-import BalanceSheetReport from './forms/BalanceSheetReport.jsx';
-import CashFlowReport from './forms/CashFlowReport.jsx';
-import IncomeByCustomer from './forms/IncomeByCustomer.jsx';
-import AgedReceivables from './forms/AgedReceivables.jsx';
-import AgedPayables from './forms/AgedPayables.jsx';
-import AccountBalances from './forms/AccountBalances.jsx';
-import TrialBalances from './forms/TrialBalances.jsx';
-import ProfitAndLossAnalysis from './forms/ProfitAndLossAnalysis.jsx';
-import CashFlowAnalysis from './forms/CashFlowAnalysis.jsx';
-import BudgetVsActualAnalysis from './forms/BudgetVsActualAnalysis.jsx';
-import SalesAnalysis from './forms/SalesAnalysis.jsx';
-import ExpenseAnalysis from './forms/ExpenseAnalysis.jsx';
-import KPIDashboard from './forms/KPIDashboard.jsx';
-import BalanceSheetAnalysis from './forms/BalanceSheetAnalysis.jsx';
-import ChartContainer from '@/app/chart/component/ChartContainer';
-import IntegrationSettings from '../../Settings/integrations/components/IntegrationSettings.jsx';
-import UserProfileSettings from '@/app/Settings/UserProfile/components/UserProfileSettings';
-import ProfileSettings from '@/app/Settings/components/ProfileSettings';
-import BusinessSettings from '@/app/Settings/components/BusinessSettings';
-import AccountingSettings from '@/app/Settings/components/AccountingSettings';
-import PayrollSettings from '@/app/Settings/components/PayrollSettings';
-import DeviceSettings from '@/app/Settings/components/DeviceSettings';
-import HelpCenter from '@/app/helpcenter/components/HelpCenter';
-import TermsAndConditions from '@/app/Terms&Privacy/components/TermsOfUse';
-import PrivacyPolicy from '@/app/Terms&Privacy/components/PrivacyPolicy';
-import DownloadTransactions from './forms/DownloadTransactions';
-import ConnectBank from './forms/ConnectBank';
-import PayrollTransactions from './forms/PayrollTransactions';
-import BankReconciliation from './forms/BankReconciliation';
-import PayrollReport from './forms/PayrollReport';
-import BankReport from './forms/BankReport';
-import InventoryItems from '@/app/inventory/components/InventoryItemList';
-import MainDashboard from './forms/MainDashboard.jsx';
-import BankTransactions from './forms/BankTransactionPage';
-import PayrollDashboard from './forms/PayrollDashboard.jsx';
-import InventoryManagement from '@/app/inventory/components/InventoryManagement.jsx';
-import Home from './forms/Home';
-import HRDashboard from './forms/HRDashboard.jsx';
+'use client';
 
+import React, { Suspense, lazy } from 'react';
+import { Box, Button, CircularProgress, Typography, Tabs, Tab } from '@mui/material';
+
+// Empty loading component (removed spinner)
+const LoadingComponent = () => null;
+
+// Content Wrapper component
 const ContentWrapper = ({ children }) => (
   <Box
     sx={{
@@ -83,7 +15,6 @@ const ContentWrapper = ({ children }) => (
       maxWidth: '1200px',
       height: '100%',
       margin: '0',
-      padding: '20px',
       display: 'flex',
       flexDirection: 'column',
     }}
@@ -91,81 +22,85 @@ const ContentWrapper = ({ children }) => (
     {children}
   </Box>
 );
-const SettingsTabPanel = ({ selectedSettingsOption }) => {
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [tabs, setTabs] = useState([]);
-  const [content, setContent] = useState(null);
 
-  const handleTabChange = (event, newValue) => {
-    setSelectedTab(newValue);
-  };
+// Lazy load all components
+const CustomerList = lazy(() => import('./lists/CustomerList.js'));
+const InvoiceTemplateBuilder = lazy(() => import('./forms/InvoiceTemplateBuilder.jsx'));
+const TransactionForm = lazy(() => import('../../createNew/forms/TransactionForm.jsx'));
+const TransactionList = lazy(() => import('./lists/TransactionList.jsx'));
+const ReportDisplay = lazy(() => import('./forms/ReportDisplay.jsx'));
+const BankingDashboard = lazy(() => import('./forms/BankingDashboard.jsx'));
+const AnalysisPage = lazy(() => import('./forms/AnalysisPage.jsx'));
+const InvoiceDetails = lazy(() => import('./forms/InvoiceDetails.jsx'));
+const CustomerDetails = lazy(() => import('./forms/CustomerDetails.js'));
+const RenderForm = lazy(() => import('./RenderForm.jsx').then(m => ({ default: m.default || m })));
+const ProductManagement = lazy(() => import('./forms/ProductManagement.jsx'));
+const ServiceManagement = lazy(() => import('./forms/ServiceManagement.jsx'));
+const EstimateManagement = lazy(() => import('./forms/EstimateManagement.jsx'));
+const SalesOrderManagement = lazy(() => import('./forms/SalesOrderManagement.jsx'));
+const InvoiceManagement = lazy(() => import('./forms/InvoiceManagement.jsx'));
+const VendorManagement = lazy(() => import('./forms/VendorManagement.jsx'));
+const BillManagement = lazy(() => import('./forms/BillManagement.jsx'));
+const PurchaseOrderManagement = lazy(() => import('./forms/PurchaseOrderManagement.jsx'));
+const ExpensesManagement = lazy(() => import('./forms/ExpensesManagement.jsx'));
+const PurchaseReturnsManagement = lazy(() => import('./forms/PurchaseReturnsManagement.jsx'));
+const ProcurementManagement = lazy(() => import('./forms/ProcurementManagement.jsx'));
+const EmployeeManagement = lazy(() => import('./forms/EmployeeManagement.jsx'));
+const PayrollManagement = lazy(() => import('./forms/PayrollManagement.jsx'));
+const TimesheetManagement = lazy(() => import('./forms/TimesheetManagement.jsx'));
+const ChartOfAccountsManagement = lazy(() => import('./forms/ChartOfAccountsManagement.jsx'));
+const JournalEntryManagement = lazy(() => import('./forms/JournalEntryManagement.jsx'));
+const GeneralLedgerManagement = lazy(() => import('./forms/GeneralLedgerManagement.jsx'));
+const AccountReconManagement = lazy(() => import('./forms/AccountReconManagement.jsx'));
+const MonthEndManagement = lazy(() => import('./forms/MonthEndManagement.jsx'));
+const FinancialManagement = lazy(() => import('./forms/FinancialStatementsManagement.jsx'));
+const FixedAssetManagement = lazy(() => import('./forms/FixedAssetManagement.jsx'));
+const BudgetManagement = lazy(() => import('./forms/BudgetManagement.jsx'));
+const CostAccountingManagement = lazy(() => import('./forms/CostAccountingManagement.jsx'));
+const IntercompanyManagement = lazy(() => import('./forms/IntercompanyManagement.jsx'));
+const AuditTrailManagement = lazy(() => import('./forms/AuditTrailManagement.jsx'));
+const ProfitAndLossReport = lazy(() => import('./forms/ProfitAndLossReport.jsx'));
+const BalanceSheetReport = lazy(() => import('./forms/BalanceSheetReport.jsx'));
+const CashFlowReport = lazy(() => import('./forms/CashFlowReport.jsx'));
+const IncomeByCustomer = lazy(() => import('./forms/IncomeByCustomer.jsx'));
+const AgedReceivables = lazy(() => import('./forms/AgedReceivables.jsx'));
+const AgedPayables = lazy(() => import('./forms/AgedPayables.jsx'));
+const AccountBalances = lazy(() => import('./forms/AccountBalances.jsx'));
+const TrialBalances = lazy(() => import('./forms/TrialBalances.jsx'));
+const ProfitAndLossAnalysis = lazy(() => import('./forms/ProfitAndLossAnalysis.jsx'));
+const CashFlowAnalysis = lazy(() => import('./forms/CashFlowAnalysis.jsx'));
+const BudgetVsActualAnalysis = lazy(() => import('./forms/BudgetVsActualAnalysis.jsx'));
+const SalesAnalysis = lazy(() => import('./forms/SalesAnalysis.jsx'));
+const ExpenseAnalysis = lazy(() => import('./forms/ExpenseAnalysis.jsx'));
+const KPIDashboard = lazy(() => import('./dashboards/KPIDashboard'));
+const BalanceSheetAnalysis = lazy(() => import('./forms/BalanceSheetAnalysis.jsx'));
+const IntegrationSettings = lazy(() => import('../../Settings/integrations/components/IntegrationSettings.jsx'));
+const UserProfileSettings = lazy(() => import('@/app/Settings/UserProfile/components/UserProfileSettings'));
+const ProfileSettings = lazy(() => import('@/app/Settings/components/ProfileSettings'));
+const BusinessSettings = lazy(() => import('@/app/Settings/components/BusinessSettings'));
+const AccountingSettings = lazy(() => import('@/app/Settings/components/AccountingSettings'));
+const PayrollSettings = lazy(() => import('@/app/Settings/components/PayrollSettings'));
+const DeviceSettings = lazy(() => import('@/app/Settings/components/DeviceSettings'));
+const HelpCenter = lazy(() => import('@/app/helpcenter/components/HelpCenter'));
+const TermsAndConditions = lazy(() => import('@/app/Terms&Privacy/components/TermsOfUse'));
+const PrivacyPolicy = lazy(() => import('@/app/Terms&Privacy/components/PrivacyPolicy'));
+const DownloadTransactions = lazy(() => import('./forms/DownloadTransactions'));
+const ConnectBank = lazy(() => import('./forms/ConnectBank'));
+const PayrollTransactions = lazy(() => import('./forms/PayrollTransactions'));
+const BankReconciliation = lazy(() => import('./forms/BankReconciliation'));
+const PayrollReport = lazy(() => import('./forms/PayrollReport'));
+const BankReport = lazy(() => import('./forms/BankReport'));
+const InventoryItems = lazy(() => import('@/app/inventory/components/InventoryItemList'));
+const MainDashboard = lazy(() => import('./dashboards/MainDashboard'));
+const BankTransactions = lazy(() => import('./forms/BankTransactionPage'));
+const InventoryManagement = lazy(() => import('@/app/inventory/components/InventoryManagement.jsx'));
+const Home = lazy(() => import('./Home'));
 
-  useEffect(() => {
-    let newTabs = [];
-    let newContent = null;
-
-    switch (selectedSettingsOption) {
-      case 'Profile Settings':
-        newTabs = [
-          'Personal Information',
-          'Password and Security',
-          'Notifications',
-          'Businesses',
-          'Billing and Subscriptions',
-        ];
-        newContent = <ProfileSettings selectedTab={selectedTab} />;
-        break;
-      case 'Business Settings':
-        newTabs = [
-          'User Management',
-          'Invoices and Estimates',
-          'Payments',
-          'Email Templates',
-          'Custom Charge Settings',
-        ];
-        newContent = <BusinessSettings selectedTab={selectedTab} />;
-        break;
-      case 'Accounting Settings':
-        newTabs = ['Dates and Currency', 'Sales Tax'];
-        newContent = <AccountingSettings selectedTab={selectedTab} />;
-        break;
-      case 'Payroll Settings':
-        newTabs = [
-          'Business Profile',
-          'Company Signatory',
-          'Source Bank Account',
-          'Tax Profile',
-          'Payroll Setup',
-        ];
-        newContent = <PayrollSettings selectedTab={selectedTab} />;
-        break;
-      case 'Device Settings':
-        newContent = <DeviceSettings />;
-        break;
-      default:
-        return null;
-    }
-
-    setTabs(newTabs);
-    setContent(newContent);
-  }, [selectedSettingsOption, selectedTab]);
-
-    return (
-      <Box sx={{ width: '100%' }}>
-        {tabs.length > 0 && (
-          <Tabs value={selectedTab} onChange={handleTabChange}>
-            {tabs.map((tab, index) => (
-              <Tab key={index} label={tab} />
-            ))}
-          </Tabs>
-        )}
-        <Box sx={{ p: 1 }}>{content}</Box>
-      </Box>
-    );
-  };
-
-
-const RenderMainContent = ({
+/**
+ * Renders the main content of the dashboard based on the current view
+ * This component uses lazy loading to reduce memory usage
+ */
+function RenderMainContent({
   showTransactionForm,
   showInvoiceBuilder,
   showCreateOptions,
@@ -250,198 +185,161 @@ const RenderMainContent = ({
   showBankTransactions,
   showInventoryManagement,
   showHome,
-}) => {
-  console.log('RenderMainContent: Rendering with selectedSettingsOption:', selectedSettingsOption);
+}) {
+  const [selectedTab, setSelectedTab] = React.useState(0);
 
-  
-  const renderContent = () => {
+  const handleTabChange = (event, newValue) => {
+    setSelectedTab(newValue);
+  };
+
+  const renderSettingsTabs = () => {
+    console.log('RenderMainContent: renderSettingsTabs called with selectedSettingsOption:', selectedSettingsOption);
+
+    let tabs = [];
     let content = null;
 
+    return (
+      <Suspense fallback={<LoadingComponent />}>
+        {(() => {
+          switch (selectedSettingsOption) {
+            case 'Profile Settings':
+              tabs = ['Personal Information', 'Password and Security', 'Notifications', 'Businesses', 'Billing and Subscriptions'];
+              content = <ProfileSettings selectedTab={selectedTab} />;
+              break;
+            case 'Business Settings':
+              tabs = ['User Management', 'Invoices and Estimates', 'Payments', 'Email Templates', 'Custom Charge Settings'];
+              content = <BusinessSettings selectedTab={selectedTab} />;
+              break;
+            case 'Accounting Settings':
+              tabs = ['Dates and Currency', 'Sales Tax'];
+              content = <AccountingSettings selectedTab={selectedTab} />;
+              break;
+            case 'Payroll Settings':
+              tabs = ['Business Profile', 'Company Signatory', 'Source Bank Account', 'Tax Profile', 'Payroll Setup'];
+              content = <PayrollSettings selectedTab={selectedTab} />;
+              break;
+            case 'Device Settings':
+              content = <DeviceSettings />;
+              break;
+            default:
+              return null;
+          }
+
+          return (
+            <Box sx={{ width: '100%' }}>
+              {tabs.length > 0 && (
+                <Tabs value={selectedTab} onChange={handleTabChange}>
+                  {tabs.map((tab, index) => (
+                    <Tab key={index} label={tab} />
+                  ))}
+                </Tabs>
+              )}
+              <Box sx={{ p: 1 }}>
+                {content}
+              </Box>
+            </Box>
+          );
+        })()}
+      </Suspense>
+    );
+  };
+
+  const renderContent = () => {
     if (selectedSettingsOption) {
-      content = <SettingsTabPanel selectedSettingsOption={selectedSettingsOption} />;
-    } else if (showUserProfileSettings) {
-      content = <UserProfileSettings userData={userData} onUpdate={handleUserProfileUpdate} />;
-    } else if (showIntegrationSettings) {
-      return null;
-    } else if (showProductManagement) {
-      content = <ProductManagement />;
-    } else if (showServiceManagement) {
-      content = <ServiceManagement />;
-    } else if (showConnectBank) {
-      content = <ConnectBank />;
-    } else if (showInventoryItems) {
-      content = <InventoryItems />;
-    } else if (showPayrollReport) {
-      content = <PayrollReport />;
-    } else if (showBankReport) {
-      content = <BankReport />;
-    } else if (showMainDashboard) {
-      content = <MainDashboard />;
-    } else if (showEstimateManagement) {
-      content = <EstimateManagement />;
-    } else if (showSalesOrderManagement) {
-      content = <SalesOrderManagement />;
-    } else if (showInvoiceManagement) {
-      content = <InvoiceManagement />;
-    } else if (showVendorManagement) {
-      content = <VendorManagement />;
-    } else if (showBillManagement) {
-      content = <BillManagement />;
-    } else if (showPurchaseOrderManagement) {
-      content = <PurchaseOrderManagement />;
-    } else if (showTermsAndConditions) {
-      content = <TermsAndConditions />;
-    } else if (showBankRecon) {
-      content = <BankReconciliation />;
-    } else if (showInventoryManagement) {
-      content = <InventoryManagement />;
-    } else if (showPrivacyPolicy) {
-      content = <PrivacyPolicy />;
-    } else if (showExpensesManagement) {
-      content = <ExpensesManagement />;
-    } else if (showPurchaseReturnManagement) {
-      content = <PurchaseReturnsManagement />;
-    } else if (showProcurementManagement) {
-      content = <ProcurementManagement />;
-    } else if (showPayrollManagement) {
-      content = <PayrollManagement />;
-    } else if (showPayrollTransactions) {
-      content = <PayrollTransactions />;
-    } else if (showDownloadTransactions) {
-      content = <DownloadTransactions />;
-    } else if (showTimesheetManagement) {
-      content = <TimesheetManagement />;
-    } else if (showChartOfAccounts) {
-      content = <ChartOfAccountsManagement />;
-    } else if (showGeneralLedgerManagement) {
-      content = <GeneralLedgerManagement />;
-    } else if (showAccountReconManagement) {
-      content = <AccountReconManagement />;
-    } else if (showMonthEndManagement) {
-      content = <MonthEndManagement />;
-    } else if (showFinancialStatements) {
-      content = <FinancialManagement />;
-    } else if (showFixedAssetManagement) {
-      content = <FixedAssetManagement />;
-    } else if (showBudgetManagement) {
-      content = <BudgetManagement />;
-    } else if (showBankTransactions) {
-      content = <BankTransactions />;
-    } else if (showCostAccountingManagement) {
-      content = <CostAccountingManagement />;
-    } else if (showIntercompanyManagement) {
-      content = <IntercompanyManagement />;
-    } else if (showAuditTrailManagement) {
-      content = <AuditTrailManagement />;
-    } else if (showProfitAndLossReport) {
-      content = <ProfitAndLossReport />;
-    } else if (showBalanceSheetReport) {
-      content = <BalanceSheetReport />;
-    } else if (showCashFlowReport) {
-      content = <CashFlowReport />;
-    } else if (showIncomeByCustomer) {
-      content = <IncomeByCustomer />;
-    } else if (showAgedReceivables) {
-      content = <AgedReceivables />;
-    } else if (showAgedPayables) {
-      content = <AgedPayables />;
-    } else if (showAccountBalances) {
-      content = <AccountBalances />;
-    } else if (showTrialBalances) {
-      content = <TrialBalances />;
-    } else if (showProfitAndLossAnalysis) {
-      content = <ProfitAndLossAnalysis />;
-    } else if (showBalanceSheetAnalysis) {
-      content = <BalanceSheetAnalysis />;
-    } else if (showHelpCenter) {
-      content = <HelpCenter />;
-    } else if (showCashFlowAnalysis) {
-      content = <CashFlowAnalysis />;
-    } else if (showBudgetVsActualAnalysis) {
-      content = <BudgetVsActualAnalysis />;
-    } else if (showSalesAnalysis) {
-      content = <SalesAnalysis />;
-    } else if (showDeviceSettings) {
-      content = <DeviceSettings />;
-    } else if (showExpenseAnalysis) {
-      content = <ExpenseAnalysis />;
-    } else if (showKPIDashboard) {
-      content = <KPIDashboard />;
-    } else if (showEmployeeManagement) {
-      console.log('Rendering EmployeeManagement component');
-      content = <EmployeeManagement />;
-    } else if (showJournalEntryManagement) {
-      console.log('Rendering Journal Entry Management Component');
-      content = <JournalEntryManagement />;
-    } else if (selectedInvoiceId !== null) {
-      content = <InvoiceDetails invoiceId={selectedInvoiceId} onBack={handleBackFromInvoice} />;
-    } else if (showCustomerDetails && selectedCustomer) {
-      content = (
-        <CustomerDetails
-          customer={selectedCustomer}
-          onInvoiceSelect={handleInvoiceSelect}
-          onBack={handleBackToCustomerDetails}
-        />
-      );
-    } else if (showAnalysisPage) {
-      content = <AnalysisPage />;
-    } else if (showCustomerList) {
-      content = (
-        <CustomerList
-          onCreateCustomer={handleCreateCustomer}
-          onInvoiceSelect={handleInvoiceSelect}
-          onCustomerSelect={handleCustomerSelect}
-        />
-      );
-    } else if (showReports && selectedReport) {
-      content = <ReportDisplay reportType={selectedReport} />;
-    } else if (showBankingDashboard) {
-      content = <BankingDashboard />;
-    } else if (showHRDashboard) {
-      content = <HRDashboard section={hrSection} />;
-    } else if (showPayrollDashboard) {
-      content = <PayrollDashboard section={payrollSection} />;
-    } else if (showHome) {
-      content = <Home />;
-    } else if (showAccountPage) {
-      content = (
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
+      return renderSettingsTabs();
+    }
+
+    return (
+      <Suspense fallback={<LoadingComponent />}>
+        {showUserProfileSettings && <UserProfileSettings userData={userData} onUpdate={handleUserProfileUpdate} />}
+        {showIntegrationSettings && <IntegrationSettings />}
+        {showProductManagement && <ProductManagement />}
+        {showServiceManagement && <ServiceManagement />}
+        {showConnectBank && <ConnectBank />}
+        {showInventoryItems && <InventoryItems />}
+        {showPayrollReport && <PayrollReport />}
+        {showBankReport && <BankReport />}
+        {showMainDashboard && <MainDashboard userData={userData} />}
+        {showEstimateManagement && <EstimateManagement />}
+        {showSalesOrderManagement && <SalesOrderManagement />}
+        {showInvoiceManagement && <InvoiceManagement />}
+        {showVendorManagement && <VendorManagement />}
+        {showBillManagement && <BillManagement />}
+        {showPurchaseOrderManagement && <PurchaseOrderManagement />}
+        {showTermsAndConditions && <TermsAndConditions />}
+        {showBankRecon && <BankReconciliation />}
+        {showInventoryManagement && <InventoryManagement />}
+        {showPrivacyPolicy && <PrivacyPolicy />}
+        {showExpensesManagement && <ExpensesManagement />}
+        {showPurchaseReturnManagement && <PurchaseReturnsManagement />}
+        {showProcurementManagement && <ProcurementManagement />}
+        {showPayrollManagement && <PayrollManagement />}
+        {showPayrollTransactions && <PayrollTransactions />}
+        {showDownloadTransactions && <DownloadTransactions />}
+        {showTimesheetManagement && <TimesheetManagement />}
+        {showChartOfAccounts && <ChartOfAccountsManagement />}
+        {showGeneralLedgerManagement && <GeneralLedgerManagement />}
+        {showAccountReconManagement && <AccountReconManagement />}
+        {showMonthEndManagement && <MonthEndManagement />}
+        {showFinancialStatements && <FinancialManagement />}
+        {showFixedAssetManagement && <FixedAssetManagement />}
+        {showBudgetManagement && <BudgetManagement />}
+        {showBankTransactions && <BankTransactions />}
+        {showCostAccountingManagement && <CostAccountingManagement />}
+        {showIntercompanyManagement && <IntercompanyManagement />}
+        {showAuditTrailManagement && <AuditTrailManagement />}
+        {showProfitAndLossReport && <ProfitAndLossReport />}
+        {showBalanceSheetReport && <BalanceSheetReport />}
+        {showCashFlowReport && <CashFlowReport />}
+        {showIncomeByCustomer && <IncomeByCustomer />}
+        {showAgedReceivables && <AgedReceivables />}
+        {showAgedPayables && <AgedPayables />}
+        {showAccountBalances && <AccountBalances />}
+        {showTrialBalances && <TrialBalances />}
+        {showProfitAndLossAnalysis && <ProfitAndLossAnalysis />}
+        {showBalanceSheetAnalysis && <BalanceSheetAnalysis />}
+        {showHelpCenter && <HelpCenter />}
+        {showCashFlowAnalysis && <CashFlowAnalysis />}
+        {showBudgetVsActualAnalysis && <BudgetVsActualAnalysis />}
+        {showSalesAnalysis && <SalesAnalysis />}
+        {showDeviceSettings && <DeviceSettings />}
+        {showExpenseAnalysis && <ExpenseAnalysis />}
+        {showKPIDashboard && <KPIDashboard userData={userData} />}
+        {showEmployeeManagement && <EmployeeManagement />}
+        {showJournalEntryManagement && <JournalEntryManagement />}
+        {selectedInvoiceId !== null && <InvoiceDetails invoiceId={selectedInvoiceId} onBack={handleBackFromInvoice} />}
+        {showCustomerDetails && selectedCustomer && <CustomerDetails customer={selectedCustomer} onInvoiceSelect={handleInvoiceSelect} onBack={handleBackToCustomerDetails} />}
+        {showAnalysisPage && <AnalysisPage />}
+        {showCustomerList && <CustomerList onCreateCustomer={handleCreateCustomer} onInvoiceSelect={handleInvoiceSelect} onCustomerSelect={handleCustomerSelect} />}
+        {showReports && selectedReport && <ReportDisplay reportType={selectedReport} />}
+        {showBankingDashboard && <BankingDashboard />}
+        {showHRDashboard && <div>HR Dashboard content goes here</div>}
+        {showPayrollDashboard && <div>Payroll Dashboard content goes here</div>}
+        {showHome && <Home userData={userData} />}
+        {showAccountPage && (
+          <Box>
             <Button variant="contained" color="error" onClick={handleDeleteAccount}>
               Delete Account
             </Button>
-          </Grid>
-        </Grid>
-      );
-    } else if (showTransactionForm) {
-      content = (
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
+          </Box>
+        )}
+        {showTransactionForm && (
+          <>
             <TransactionForm />
-          </Grid>
-          <Grid item xs={12}>
             <TransactionList />
-          </Grid>
-        </Grid>
-      );
-    } else if (showInvoiceBuilder) {
-      content = (
-        <InvoiceTemplateBuilder handleClose={handleCloseInvoiceBuilder} userData={userData} />
-      );
-    } else if (showCreateOptions) {
-      content = (
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
-            {renderForm(selectedOption, userData)}
-          </Grid>
-        </Grid>
-      );
-    }
-
-    return content;
+          </>
+        )}
+        {showInvoiceBuilder && <InvoiceTemplateBuilder handleClose={handleCloseInvoiceBuilder} userData={userData} />}
+        {showCreateOptions && <RenderForm selectedOption={selectedOption} userData={userData} />}
+      </Suspense>
+    );
   };
 
-  return <ContentWrapper>{renderContent()}</ContentWrapper>;
-};
+  return (
+    <ContentWrapper>
+      {renderContent()}
+    </ContentWrapper>
+  );
+}
 
 export default RenderMainContent;

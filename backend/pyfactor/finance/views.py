@@ -15,6 +15,7 @@ from rest_framework.decorators import parser_classes
 from dateutil import parser as date_parser  # This is the changed line
 from sales.models import Invoice
 from sales.serializers import InvoiceSerializer
+from inventory.models import Product
 from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from .models import AccountReconciliation, AccountType, Account, AuditTrail, Budget, CostCategory, CostEntry, FinanceTransaction, FinancialStatement, FixedAsset, GeneralLedgerEntry, Income, IntercompanyAccount, IntercompanyTransaction, JournalEntry, MonthEndClosing, MonthEndTask, ReconciliationItem, RevenueAccount, CashAccount, AccountCategory, ChartOfAccount
 from datetime import datetime

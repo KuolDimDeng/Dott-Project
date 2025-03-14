@@ -1,7 +1,8 @@
+#/Users/kuoldeng/projectx/backend/pyfactor/onboarding/models.py
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator, MaxLengthValidator
-from business.models import Business
+from users.models import Business
 
 User = get_user_model()
 

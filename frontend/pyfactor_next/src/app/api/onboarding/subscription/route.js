@@ -1,9 +1,23 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { logger } from '@/utils/logger';
 import { validateServerSession } from '@/utils/serverUtils';
 import { updateOnboardingStep, validateSubscription } from '@/utils/onboardingUtils';
 import crypto from 'crypto';
+
+// Helper function to parse cookies from header
+const parseCookies = (cookieHeader) => {
+  const cookies = {};
+  cookieHeader.split(';').forEach(cookie => {
+    const parts = cookie.split('=');
+    if (parts.length >= 2) {
+      const name = parts[0].trim();
+      const value = parts.slice(1).join('=').trim();
+      cookies[name] = value;
+    }
+  });
+  return cookies;
+};
 
 export async function POST(request) {
   try {
@@ -163,7 +177,7 @@ export async function POST(request) {
     }
 
     // Add reset flag to backend request headers
-    const headers = {
+    const requestHeadersObj = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
       'X-Id-Token': idToken,
@@ -172,7 +186,7 @@ export async function POST(request) {
     };
 
     if (isReset) {
-      headers['X-Reset-Onboarding'] = 'true';
+      requestHeadersObj['X-Reset-Onboarding'] = 'true';
     }
     
     // Get IDs and validate request
@@ -211,7 +225,7 @@ export async function POST(request) {
 
     logger.debug('[Subscription] Request headers:', {
       ...Object.fromEntries(
-        Object.entries(headers).filter(([key]) =>
+        Object.entries(requestHeadersObj).filter(([key]) =>
           !['Authorization', 'X-Id-Token'].includes(key)
         )
       ),
@@ -255,8 +269,10 @@ export async function POST(request) {
     }
 
     // Try to get business ID from cookies if not in attributes
-    const cookieStore = cookies();
-    const cookieTenantId = cookieStore.get('tenantId')?.value;
+    const headersList = await headers();
+    const cookieHeader = headersList.get('cookie') || '';
+    const parsedCookies = parseCookies(cookieHeader);
+    const cookieTenantId = parsedCookies['tenantId'];
     
     // Use cookie tenant ID if attribute is missing
     if (!tenantId && cookieTenantId) {
@@ -288,10 +304,13 @@ export async function POST(request) {
         businessId: attributes['custom:businessid'],
         attributes: Object.keys(attributes)
       });
-      
       // Check if onboarding status indicates business info is completed
-      const onboardingStep = cookieStore.get('onboardingStep')?.value;
-      const onboardedStatus = cookieStore.get('onboardedStatus')?.value;
+      // Use the same cookie parsing approach
+      const headersList = await headers();
+      const cookieHeader = headersList.get('cookie') || '';
+      const parsedCookies = parseCookies(cookieHeader);
+      const onboardingStep = parsedCookies['onboardingStep'];
+      const onboardedStatus = parsedCookies['onboardedStatus'];
       
       logger.debug('[Subscription] Checking onboarding status from cookies:', {
         onboardingStep,
@@ -353,7 +372,7 @@ export async function POST(request) {
     // Prepare request headers with tracking
     const requestId = Math.random().toString(36).substring(7);
     const requestHeaders = {
-      ...headers,
+      ...requestHeadersObj,
       'X-Tenant-ID': tenantId,
       'X-Cognito-Sub': cognitoUserId,
       'X-Business-ID': attributes['custom:businessid'],
@@ -382,7 +401,7 @@ export async function POST(request) {
       method: 'POST',
       headers: {
         ...Object.fromEntries(
-          Object.entries(headers).filter(([key]) =>
+          Object.entries(requestHeadersObj).filter(([key]) =>
             !['Authorization', 'X-Id-Token'].includes(key)
           )
         ),
@@ -406,7 +425,7 @@ export async function POST(request) {
       url: requestUrl,
       tenantId,
       headers: {
-        ...headers,
+        ...requestHeadersObj,
         Authorization: '[REDACTED]',
         'X-Id-Token': '[REDACTED]'
       },
@@ -705,14 +724,6 @@ export async function POST(request) {
       timestamp: new Date().toISOString()
     });
 
-    // Trigger schema setup in background before returning response
-    logger.info('[Subscription] Starting schema setup:', {
-      cognitoUserId,
-      userId,
-      businessId: attributes['custom:businessid'],
-      timestamp: new Date().toISOString()
-    });
-
     // Setup schema setup
     const setupUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/setup/start/`;
     
@@ -725,56 +736,6 @@ export async function POST(request) {
       ? attributes['custom:businessid']
       : tenantId; // Use tenantId as fallback
     
-    const setupBody = {
-      userId: validUserId,
-      businessId: validBusinessId,
-      setupInBackground: true,
-      timestamp: new Date().toISOString(),
-      tenant: {
-        id: tenantId,
-        status: 'pending'
-      },
-      user: {
-        id: validUserId,
-        email: attributes.email || 'user@example.com', // Provide fallback
-        setupDone: attributes['custom:setupdone'] || 'FALSE',
-        onboarding: attributes['custom:onboarding'] || 'BUSINESS_INFO',
-        acctstatus: attributes['custom:acctstatus'] || 'ACTIVE'
-      },
-      cognito: {
-        sub: validUserId,
-        email: attributes.email || 'user@example.com', // Provide fallback
-        username: attributes.Username || validUserId,
-        attributes: {
-          businessId: validBusinessId,
-          businessName: attributes['custom:businessname'] || 'Business',
-          setupDone: attributes['custom:setupdone'] || 'FALSE'
-        }
-      }
-    };
-
-    // Log detailed setup request
-    logger.debug('[Subscription] Schema setup request:', {
-      url: setupUrl,
-      body: {
-        ...setupBody,
-        user: {
-          id: cognitoUserId,
-          email: attributes.email,
-          setupDone: attributes['custom:setupdone']
-        }
-      },
-      headers: {
-        'X-Tenant-ID': tenantId,
-        'Content-Type': 'application/json',
-        'X-Cognito-Sub': cognitoUserId,
-        'X-Business-ID': attributes['custom:businessid'],
-        'X-Setup-Done': attributes['custom:setupdone']
-      }
-    });
-
-    // Start schema setup
-    const setupRequestId = Math.random().toString(36).substring(7);
     const setupHeaders = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
@@ -783,73 +744,80 @@ export async function POST(request) {
       'X-Cognito-Sub': validUserId,
       'X-Business-ID': validBusinessId,
       'X-Setup-Done': attributes['custom:setupdone'] || 'FALSE',
-      'X-Request-ID': setupRequestId
+      'X-Request-ID': Math.random().toString(36).substring(7)
     };
 
-    logger.info('[Subscription] Initiating schema setup:', {
-      setupRequestId,
-      url: setupUrl,
-      tenantId,
-      cognitoUserId,
-      validUserId,
-      validBusinessId
-    });
-
-    try {
-      // Execute schema setup synchronously before returning
-      const setupResponse = await fetch(setupUrl, {
-        method: 'POST',
-        headers: setupHeaders,
-        body: JSON.stringify({
-          ...setupBody,
-          request_id: setupRequestId,
-          timestamp: new Date().toISOString()
-        })
-      });
-
-      let responseText = '';
-      try {
-        responseText = await setupResponse.text();
-      } catch (textError) {
-        logger.warn('[Subscription] Failed to get response text:', {
-          setupRequestId,
-          error: textError.message
-        });
-      }
-
-      if (!setupResponse.ok) {
-        logger.warn(`Schema setup returned non-OK status: ${setupResponse.status}`, {
-          setupRequestId,
-          status: setupResponse.status,
-          response: responseText
-        });
-        // Continue anyway since this is not critical for the user flow
-      } else {
-        let setupData;
-        try {
-          setupData = responseText ? JSON.parse(responseText) : {};
-          logger.info('[Subscription] Schema setup initiated successfully:', {
-            setupRequestId,
-            success: setupResponse.ok,
-            status: setupResponse.status,
-            taskId: setupData?.taskId
-          });
-        } catch (parseError) {
-          logger.warn('[Subscription] Failed to parse setup response:', {
-            setupRequestId,
-            error: parseError.message,
-            responseText
-          });
+    // Only initiate schema setup for free plans to reduce memory usage
+    // For professional plans, schema setup will happen after payment
+    if (body.plan.toLowerCase() === 'free') {
+      // Make the schema setup request truly asynchronous by not awaiting it
+      logger.info('[Subscription] Initiating schema setup asynchronously for free plan');
+      
+      // Ensure we have proper authentication headers with all required tokens
+      const authHeaders = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'X-Id-Token': idToken,
+        'X-Tenant-ID': tenantId,
+        'X-Cognito-Sub': validUserId,
+        'X-Business-ID': validBusinessId,
+        'X-Setup-Done': attributes['custom:setupdone'] || 'FALSE',
+        'X-Request-ID': Math.random().toString(36).substring(7),
+        'X-Onboarding-Status': nextStatus
+      };
+      
+      // Use a minimal request body to reduce memory usage
+      const minimalBody = {
+        userId: validUserId,
+        businessId: validBusinessId,
+        setupInBackground: true,
+        timestamp: new Date().toISOString(),
+        accessToken: accessToken, // Include token in body as well
+        idToken: idToken // Include token in body as well
+      };
+      
+      logger.debug('[Subscription] Schema setup request details:', {
+        url: setupUrl,
+        headers: {
+          ...Object.fromEntries(
+            Object.entries(authHeaders).filter(([key]) =>
+              !['Authorization', 'X-Id-Token'].includes(key)
+            )
+          ),
+          Authorization: '[REDACTED]',
+          'X-Id-Token': '[REDACTED]'
         }
-      }
-    } catch (error) {
-      // Log error but continue with response
-      logger.error('[Subscription] Schema setup error:', {
-        setupRequestId,
-        error: error.message,
-        stack: error.stack
       });
-      // We don't want to fail the whole request if setup fails
+      
+      // Use fetch without await to make it non-blocking
+      fetch(setupUrl, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify(minimalBody),
+        credentials: 'include' // Include cookies for authentication
+      })
+      .then(async (setupResponse) => {
+        if (!setupResponse.ok) {
+          const errorText = await setupResponse.text();
+          logger.warn(`Schema setup returned non-OK status: ${setupResponse.status}`, {
+            error: errorText,
+            status: setupResponse.status
+          });
+        } else {
+          logger.info('[Subscription] Schema setup initiated successfully');
+        }
+      })
+      .catch((error) => {
+        logger.error('[Subscription] Schema setup error:', {
+          error: error.message,
+          stack: error.stack
+        });
+      });
+      
+      // Add a log to confirm we're not waiting for the schema setup
+      logger.info('[Subscription] Continuing with response without waiting for schema setup');
+    } else {
+      logger.info('[Subscription] Skipping schema setup for non-free plan');
     }
 
     // Return success response

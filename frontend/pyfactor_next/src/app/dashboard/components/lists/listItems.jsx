@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
@@ -26,6 +27,8 @@ import AnalyticsIcon from '@mui/icons-material/Analytics';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import ContactsIcon from '@mui/icons-material/Contacts';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Image from 'next/image';
 
@@ -44,6 +47,8 @@ const MainListItems = ({
   handleReportClick,
   handleAnalysisClick,
   handleTaxesClick,
+  handleCRMClick,
+  handleTransportClick,
   handleShowCreateOptions,
   borderRightColor = '#bbdefb',
   borderRightWidth = '2px',
@@ -111,6 +116,47 @@ const MainListItems = ({
       ],
     },
     {
+      icon: <ContactsIcon />,
+      label: 'CRM',
+      subItems: [
+        { label: 'Dashboard', onClick: handleCRMClick, value: 'dashboard' },
+        { label: 'Contacts', onClick: handleCRMClick, value: 'contacts' },
+        { label: 'Leads', onClick: handleCRMClick, value: 'leads' },
+        { label: 'Opportunities', onClick: handleCRMClick, value: 'opportunities' },
+        { label: 'Deals', onClick: handleCRMClick, value: 'deals' },
+        { label: 'Activities', onClick: handleCRMClick, value: 'activities' },
+        { label: 'Campaigns', onClick: handleCRMClick, value: 'campaigns' },
+        { label: 'Reports', onClick: handleCRMClick, value: 'reports' },
+      ],
+    },
+    {
+      icon: <Inventory2OutlinedIcon />,
+      label: 'Inventory',
+      subItems: [
+        { label: 'Dashboard', onClick: handleInventoryClick, value: 'inventorydashboard' },
+        { label: 'Products', onClick: handleInventoryClick, value: 'items' },
+        { label: 'Stock Adjustments', onClick: handleInventoryClick, value: 'stock-adjustments' },
+        { label: 'Locations', onClick: handleInventoryClick, value: 'locations' },
+        { label: 'Suppliers', onClick: handleInventoryClick, value: 'suppliers' },
+        { label: 'Transactions', onClick: handleInventoryClick, value: 'transactions' },
+        { label: 'Reports', onClick: handleInventoryClick, value: 'reports' },
+      ],
+    },
+    {
+      icon: <LocalShippingIcon />,
+      label: 'Transport',
+      subItems: [
+        { label: 'Dashboard', onClick: handleTransportClick, value: 'dashboard' },
+        { label: 'Loads/Jobs', onClick: handleTransportClick, value: 'loads' },
+        { label: 'Equipment', onClick: handleTransportClick, value: 'equipment' },
+        { label: 'Routes', onClick: handleTransportClick, value: 'routes' },
+        { label: 'Expenses', onClick: handleTransportClick, value: 'expenses' },
+        { label: 'Maintenance', onClick: handleTransportClick, value: 'maintenance' },
+        { label: 'Compliance', onClick: handleTransportClick, value: 'compliance' },
+        { label: 'Reports', onClick: handleTransportClick, value: 'reports' },
+      ],
+    },
+    {
       icon: <PaymentsIcon />,
       label: 'Payments',
       subItems: [
@@ -171,32 +217,43 @@ const MainListItems = ({
       ],
     },
     {
-      icon: <PaymentsIcon />,
-      label: 'Payroll',
+      icon: <PeopleOutlineIcon />,
+      label: 'HR',
       subItems: [
         { label: 'Dashboard', onClick: handlePayrollClick, value: 'dashboard' },
         { label: 'Employees', onClick: handlePayrollClick, value: 'employees' },
         { label: 'Timesheets', onClick: handlePayrollClick, value: 'timesheets' },
         { label: 'Taxes', onClick: handlePayrollClick, value: 'taxes' },
         { label: 'Benefits', onClick: handlePayrollClick, value: 'benefits' },
+        { label: 'Reports', onClick: handlePayrollClick, value: 'reports' },
+
+      ],
+    },
+    {
+      icon: <PaymentsIcon />,
+      label: 'Payroll',
+      subItems: [
+        { label: 'Dashboard', onClick: handlePayrollClick, value: 'dashboard' },
         { label: 'Run Payroll', onClick: handlePayrollClick, value: 'run' },
         { label: 'Payroll Transactions', onClick: handlePayrollClick, value: 'transactions' },
         { label: 'Reports', onClick: handlePayrollClick, value: 'reports' },
       ],
     },
+
     {
-      icon: <Inventory2OutlinedIcon />,
-      label: 'Inventory',
+      icon: <ReceiptLongIcon />,
+      label: 'Taxes',
       subItems: [
-        { label: 'Dashboard', onClick: handleInventoryClick, value: 'inventorydashboard' },
-        { label: 'Products', onClick: handleInventoryClick, value: 'items' },
-        { label: 'Stock Adjustments', onClick: handleInventoryClick, value: 'stock-adjustments' },
-        { label: 'Locations', onClick: handleInventoryClick, value: 'locations' },
-        { label: 'Suppliers', onClick: handleInventoryClick, value: 'suppliers' },
-        { label: 'Transactions', onClick: handleInventoryClick, value: 'transactions' },
-        { label: 'Reports', onClick: handleInventoryClick, value: 'reports' },
+        { label: 'Dashboard', onClick: handleTaxesClick, value: 'dashboard' },
+        { label: 'Sales Tax', onClick: handleTaxesClick, value: 'sales-tax' },
+        { label: 'Income Tax', onClick: handleTaxesClick, value: 'income-tax' },
+        { label: 'Payroll Tax', onClick: handleTaxesClick, value: 'payroll-tax' },
+        { label: 'Tax Payments', onClick: handleTaxesClick, value: 'tax-payments' },
+        { label: 'Tax Forms', onClick: handleTaxesClick, value: 'tax-forms' },
+        { label: 'Reports', onClick: handleTaxesClick, value: 'reports' },
       ],
     },
+
     {
       icon: <AssessmentIcon />,
       label: 'Reports',
@@ -215,6 +272,8 @@ const MainListItems = ({
         { label: 'General Ledger', onClick: handleReportClick, value: 'general_ledger' },
       ],
     },
+
+ 
     {
       icon: <AnalyticsIcon />,
       label: 'Analytics',
@@ -225,19 +284,6 @@ const MainListItems = ({
         { label: 'Profit & Loss', onClick: handleAnalysisClick, value: 'profit-loss-analysis' },
         { label: 'Cash Flow', onClick: handleAnalysisClick, value: 'cash-flow' },
         { label: 'Budget vs. Actual', onClick: handleAnalysisClick, value: 'budget-vs-actual' },
-      ],
-    },
-    {
-      icon: <ReceiptLongIcon />,
-      label: 'Taxes',
-      subItems: [
-        { label: 'Dashboard', onClick: handleTaxesClick, value: 'dashboard' },
-        { label: 'Sales Tax', onClick: handleTaxesClick, value: 'sales-tax' },
-        { label: 'Income Tax', onClick: handleTaxesClick, value: 'income-tax' },
-        { label: 'Payroll Tax', onClick: handleTaxesClick, value: 'payroll-tax' },
-        { label: 'Tax Payments', onClick: handleTaxesClick, value: 'tax-payments' },
-        { label: 'Tax Forms', onClick: handleTaxesClick, value: 'tax-forms' },
-        { label: 'Reports', onClick: handleTaxesClick, value: 'reports' },
       ],
     },
   ];
@@ -504,7 +550,11 @@ const MainListItems = ({
               <ListItemButton
                 key={index}
                 onClick={() => {
-                  option.onClick(option.value);
+                  if (typeof option.onClick === 'function') {
+                    option.onClick(option.value);
+                  } else {
+                    console.warn(`onClick handler for option "${option.label}" is not a function`);
+                  }
                   handleCreateClose();
                 }}
                 onMouseEnter={() => setHoveredCreateOption(option.value)}

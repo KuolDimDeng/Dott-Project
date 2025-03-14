@@ -336,6 +336,78 @@ export const prefetchCommonData = async (endpoints = []) => {
   );
 };
 
+/**
+ * Check the status of a background task
+ * @param {string} taskId - The ID of the task to check
+ * @param {Object} options - Request options
+ * @returns {Promise<any>} Task status data
+ */
+export const checkTaskStatus = async (taskId, options = {}) => {
+  if (!taskId) {
+    logger.error('[ApiService] Task ID is required for status check');
+    return { status: 'error', message: 'Task ID is required' };
+  }
+  
+  const {
+    showErrorNotification = false,
+    pollInterval = 0, // If > 0, will poll until task completes or fails
+    maxPolls = 10,    // Maximum number of polling attempts
+    onProgress = null // Optional callback for progress updates
+  } = options;
+  
+  // Function to perform a single status check
+  const checkOnce = async () => {
+    try {
+      const endpoint = `/api/onboarding/setup-status/${taskId}/`;
+      logger.debug(`[ApiService] Checking task status: ${taskId}`);
+      
+      const response = await fetchData(endpoint, {
+        useCache: false, // Always get fresh status
+        showErrorNotification,
+        timeout: 5000 // Short timeout for status checks
+      });
+      
+      // Call progress callback if provided
+      if (onProgress && typeof onProgress === 'function') {
+        onProgress(response);
+      }
+      
+      return response;
+    } catch (error) {
+      return handleApiError(error, {
+        fallbackData: { status: 'error', message: 'Failed to check task status' },
+        showNotification: showErrorNotification,
+        rethrow: false
+      });
+    }
+  };
+  
+  // If polling is not requested, just check once
+  if (!pollInterval || pollInterval <= 0) {
+    return checkOnce();
+  }
+  
+  // Polling implementation
+  let pollCount = 0;
+  let lastStatus = null;
+  
+  while (pollCount < maxPolls) {
+    const statusData = await checkOnce();
+    lastStatus = statusData;
+    
+    // If task is complete or failed, stop polling
+    if (['complete', 'success', 'failed', 'error'].includes(statusData.status)) {
+      break;
+    }
+    
+    // Wait for the specified interval before checking again
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+    pollCount++;
+  }
+  
+  return lastStatus;
+};
+
 // Export a default object with all methods
 export const apiService = {
   fetch: fetchData,
@@ -343,7 +415,8 @@ export const apiService = {
   put: putData,
   delete: deleteData,
   handleError: handleApiError,
-  prefetchCommonData
+  prefetchCommonData,
+  checkTaskStatus
 };
 
 export default apiService;

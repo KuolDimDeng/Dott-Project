@@ -158,7 +158,7 @@ const ProductForm = () => {
   };
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
+    <Box sx={{ backgroundColor: theme.palette.background.default, p: 2, borderRadius: 2 }}>
       <Box display="flex" alignItems="center" mb={3}>
         <InventoryIcon sx={{ fontSize: 40, color: theme.palette.primary.main, mr: 2 }} />
         <Box>

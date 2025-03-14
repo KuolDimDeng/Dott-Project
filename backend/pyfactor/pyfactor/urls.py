@@ -3,10 +3,8 @@ from django.urls import path, include, register_converter
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.decorators.csrf import csrf_exempt
-from chatbot.views import staff_interface, respond_to_message
 from django.utils.decorators import method_decorator
 from onboarding.views import DatabaseHealthCheckView
-from .views import message_stream  # Import the message_stream view correctly
 from custom_auth.api.views.tenant_views import TenantDetailView
 
 class UUIDConverter:
@@ -33,10 +31,13 @@ api_patterns = [
     
     # Business operations with proper async handling
     path('inventory/', include(('inventory.urls', 'inventory'), namespace='inventory')),
-    path('hr/', include(('hr.urls', 'hr'), namespace='hr')),
+    # Temporarily commented out to break circular dependency
+    # path('hr/', include(('hr.urls', 'hr'), namespace='hr')),
     path('sales/', include(('sales.urls', 'sales'), namespace='sales')),
     path('purchases/', include(('purchases.urls', 'purchases'), namespace='purchases')),
     path('taxes/', include(('taxes.urls', 'taxes'), namespace='taxes')),
+    path('crm/', include(('crm.urls', 'crm'), namespace='crm')),
+    path('transport/', include(('transport.urls', 'transport'), namespace='transport')),
     
     # Analytics and reporting with proper async handling
     path('reports/', include(('reports.urls', 'reports'), namespace='reports')),
@@ -44,12 +45,7 @@ api_patterns = [
     path('chart/', include(('chart.urls', 'chart'), namespace='chart')),
     
     # System features with proper async handling
-    path('chatbot/', include(('chatbot.urls', 'chatbot'), namespace='chatbot')),
     path('integrations/', include(('integrations.urls', 'integrations'), namespace='integrations')),
-    path('alerts/', include(('alerts.urls', 'alerts'), namespace='alerts')),
-    
-    # Message stream endpoint - now properly imported
-    path('messages/', csrf_exempt(message_stream), name='message_stream'),
     
     # Tenant endpoint
     path('tenant/<uuid:tenant_id>/', csrf_exempt(TenantDetailView.as_view()), name='tenant-detail'),
@@ -74,11 +70,6 @@ urlpatterns = [
     # Authentication routes
     path('accounts/', include('allauth.urls')),
     
-    # Staff interface routes
-    path('staff/', include([
-        path('interface/', staff_interface, name='staff_interface'),
-        path('chat/respond/<int:message_id>/', respond_to_message, name='respond_to_message'),
-    ])),
 ]
 
 # Handle debug configuration properly

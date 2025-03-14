@@ -10,6 +10,7 @@ import {
 } from '@/app/utils/businessData';
 import { logger } from '@/utils/logger';
 import { validateSession } from '@/utils/onboardingUtils';
+import { getRefreshedAccessToken } from '@/utils/auth';
 import countryList from 'react-select-country-list';
 import { ONBOARDING_STATES } from '../state/OnboardingStateManager';
 import { appendLanguageParam, getLanguageQueryString } from '@/utils/languageUtils';
@@ -93,8 +94,21 @@ export default function BusinessInfoPage() {
         throw new Error('No valid session tokens');
       }
 
-      const accessToken = tokens.accessToken.toString();
+      // Ensure we have a fresh token
+      let accessToken = tokens.accessToken.toString();
       const idToken = tokens.idToken.toString();
+      
+      // Try to refresh the token before making the API request
+      try {
+        const refreshedToken = await getRefreshedAccessToken();
+        if (refreshedToken) {
+          logger.info('[BusinessInfo] Using refreshed token for API request');
+          accessToken = refreshedToken;
+        }
+      } catch (refreshError) {
+        logger.warn('[BusinessInfo] Token refresh failed, using original token:', refreshError);
+        // Continue with original token
+      }
       
       logger.debug('[BusinessInfo] Making API request:', {
         token: accessToken.substring(0, 20) + '...', // Log first 20 chars of token
@@ -107,7 +121,7 @@ export default function BusinessInfoPage() {
       });
 
       // Submit business info to API with auth tokens
-      const response = await fetch('/api/onboarding/business-info', {
+      let response = await fetch('/api/onboarding/business-info', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -117,7 +131,38 @@ export default function BusinessInfoPage() {
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) {
+      // Handle 401 Unauthorized errors by trying again with a forced token refresh
+      if (response.status === 401) {
+        logger.warn('[BusinessInfo] Received 401 Unauthorized, attempting token refresh and retry');
+        
+        // Force token refresh
+        const forcedRefreshToken = await getRefreshedAccessToken();
+        if (!forcedRefreshToken) {
+          throw new Error('Token refresh failed after 401 error');
+        }
+        
+        // Retry the request with the new token
+        logger.info('[BusinessInfo] Retrying request with fresh token');
+        response = await fetch('/api/onboarding/business-info', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${forcedRefreshToken}`,
+            'X-Id-Token': idToken
+          },
+          body: JSON.stringify(formData),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          logger.error('[BusinessInfo] API retry request failed:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData
+          });
+          throw new Error(errorData.message || 'Failed to update business information after token refresh');
+        }
+      } else if (!response.ok) {
         const errorData = await response.json();
         logger.error('[BusinessInfo] API request failed:', {
           status: response.status,

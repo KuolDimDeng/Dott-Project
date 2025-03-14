@@ -107,8 +107,9 @@ class TenantMetadataService:
                 'schema_name': TenantMetadataService.get_schema_name(tenant_id),
                 'name': tenant.name,
                 'is_active': tenant.is_active,
-                'created_at': str(tenant.created_at),
-                'updated_at': str(tenant.updated_at),
+                'created_on': str(tenant.created_on),
+                # No updated_at field in the model, using created_on instead
+                'updated_at': str(tenant.created_on),
                 # Add future fields for sharding
                 'db_alias': 'default',  # Currently always default, but prepared for sharding
             }
@@ -203,8 +204,9 @@ class TenantMetadataService:
             'name': tenant.name,
             'db_alias': 'default',  # Currently always default
             'is_active': tenant.is_active,
-            'created_at': str(tenant.created_at),
-            'updated_at': str(tenant.updated_at),
+            'created_on': str(tenant.created_on),
+            # No updated_at field in the model, using created_on instead
+            'updated_at': str(tenant.created_on),
         }
         
         # Store in Django cache
@@ -262,8 +264,9 @@ class TenantMetadataService:
                     'schema_name': TenantMetadataService.get_schema_name(tenant.id),
                     'name': tenant.name,
                     'is_active': tenant.is_active,
-                    'created_at': str(tenant.created_at),
-                    'updated_at': str(tenant.updated_at),
+                    'created_on': str(tenant.created_on),
+                    # No updated_at field in the model, using created_on instead
+                    'updated_at': str(tenant.created_on),
                     'db_alias': 'default',  # Currently always default
                 }
                 tenants.append(tenant_info)

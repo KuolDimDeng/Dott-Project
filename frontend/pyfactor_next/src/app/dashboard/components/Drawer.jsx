@@ -2,14 +2,14 @@ import React from 'react';
 import { Drawer as MuiDrawer, Box } from '@mui/material';
 import MainListItems from './lists/listItems';
 
-const drawerWidth = 228;
+const drawerWidth = 220;
 
 const Drawer = ({
   drawerOpen,
   handleDrawerToggle,
   handleShowInvoiceBuilder,
   handleCloseInvoiceBuilder,
-  handleShowCreateOptions,
+  handleShowCreateOptions = (option) => console.log(`Create option selected: ${option}`),
   handleShowTransactionForm,
   handleReportClick,
   handleBankingClick,
@@ -25,6 +25,7 @@ const Drawer = ({
   handleAccountingClick,
   handleInventoryClick,
   handleHomeClick,
+  handleCRMClick,
 }) => {
   const scrollThumbColor = '#64b5f6'; // Light blue color for the scrollbar thumb
   const scrollTrackColor = '#e3f2fd'; // Slightly lighter blue for the scrollbar track
@@ -87,6 +88,7 @@ const Drawer = ({
           handleAccountingClick={handleAccountingClick}
           handleInventoryClick={handleInventoryClick}
           handleHomeClick={handleHomeClick}
+          handleCRMClick={handleCRMClick}
         />
       </Box>
     </MuiDrawer>

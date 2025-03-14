@@ -1,5 +1,7 @@
 import { fetchAuthSession, getCurrentUser, updateUserAttributes } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
+import { getRefreshedAccessToken, isTokenExpired } from '@/utils/auth';
+import { jwtDecode } from 'jwt-decode';
 
 export async function validateSession(providedTokens) {
   try {
@@ -10,6 +12,12 @@ export async function validateSession(providedTokens) {
       if (!tokens?.accessToken || !tokens?.idToken) {
         throw new Error('No valid session tokens provided for server-side operation');
       }
+      
+      // Check if token is expired
+      if (isTokenExpired(tokens.accessToken)) {
+        throw new Error('Token expired for server-side operation');
+      }
+      
       return { tokens };
     }
 
@@ -25,17 +33,63 @@ export async function validateSession(providedTokens) {
       }
     }
 
-    // If still no valid tokens, get fresh session
-    if (!tokens?.accessToken || !tokens?.idToken) {
-      logger.debug('[OnboardingUtils] No valid tokens, fetching fresh session');
-      const session = await fetchAuthSession();
-      tokens = {
-        accessToken: session.tokens.accessToken.toString(),
-        idToken: session.tokens.idToken.toString()
-      };
+    // Check if tokens are expired or missing
+    let needsRefresh = !tokens?.accessToken || !tokens?.idToken;
+    
+    if (tokens?.accessToken && !needsRefresh) {
+      try {
+        // Check if token is expired or about to expire (within 5 minutes)
+        const decoded = jwtDecode(tokens.accessToken);
+        const now = Math.floor(Date.now() / 1000);
+        const fiveMinutesInSeconds = 5 * 60;
+        
+        if (decoded.exp && decoded.exp - now < fiveMinutesInSeconds) {
+          logger.info('[OnboardingUtils] Token is expired or about to expire, refreshing');
+          needsRefresh = true;
+        }
+      } catch (tokenError) {
+        logger.warn('[OnboardingUtils] Error checking token expiration:', tokenError);
+        needsRefresh = true;
+      }
+    }
 
-      document.cookie = `idToken=${tokens.idToken}; path=/`;
-      document.cookie = `accessToken=${tokens.accessToken}; path=/`;
+    // If tokens need refresh, get fresh tokens
+    if (needsRefresh) {
+      logger.debug('[OnboardingUtils] Tokens need refresh, getting new tokens');
+      
+      // Try to use our specialized refresh function first
+      try {
+        const refreshedToken = await getRefreshedAccessToken();
+        if (refreshedToken) {
+          logger.info('[OnboardingUtils] Successfully refreshed token');
+          
+          // Get a fresh session to get both tokens
+          const session = await fetchAuthSession();
+          tokens = {
+            accessToken: session.tokens.accessToken.toString(),
+            idToken: session.tokens.idToken.toString()
+          };
+          
+          // Update cookies
+          document.cookie = `idToken=${tokens.idToken}; path=/`;
+          document.cookie = `accessToken=${tokens.accessToken}; path=/`;
+        } else {
+          throw new Error('Token refresh failed');
+        }
+      } catch (refreshError) {
+        logger.warn('[OnboardingUtils] Token refresh failed, falling back to fetchAuthSession:', refreshError);
+        
+        // Fallback to regular session fetch
+        const session = await fetchAuthSession();
+        tokens = {
+          accessToken: session.tokens.accessToken.toString(),
+          idToken: session.tokens.idToken.toString()
+        };
+        
+        // Update cookies
+        document.cookie = `idToken=${tokens.idToken}; path=/`;
+        document.cookie = `accessToken=${tokens.accessToken}; path=/`;
+      }
     }
 
     logger.debug('[OnboardingUtils] Session tokens:', {
@@ -89,26 +143,38 @@ export async function updateOnboardingStep(step, additionalAttributes = {}, toke
       attributes: Object.keys(formattedAttributes)
     });
 
-    // Server-side update using Cognito API directly
+    // Server-side update using AWS SDK
     if (typeof window === 'undefined') {
-      const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-amz-json-1.1',
-          'X-Amz-Target': 'AWSCognitoIdentityProviderService.UpdateUserAttributes',
-          'Authorization': `Bearer ${validTokens.accessToken}`
-        },
-        body: JSON.stringify({
+      try {
+        // Import AWS SDK - must use require for server-side
+        const AWS = require('aws-sdk');
+        
+        // Configure the Cognito Identity Provider
+        const cognitoIdentityServiceProvider = new AWS.CognitoIdentityServiceProvider({
+          region: 'us-east-1'
+        });
+        
+        // Format attributes for AWS SDK
+        const userAttributes = Object.entries(formattedAttributes).map(([key, value]) => ({
+          Name: key,
+          Value: value
+        }));
+        
+        // Make the update request using the SDK
+        const updateParams = {
           AccessToken: validTokens.accessToken,
-          UserAttributes: Object.entries(formattedAttributes).map(([key, value]) => ({
-            Name: key,
-            Value: value
-          }))
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update attributes: ${response.status}`);
+          UserAttributes: userAttributes
+        };
+        
+        await cognitoIdentityServiceProvider.updateUserAttributes(updateParams).promise();
+        logger.debug('[OnboardingUtils] Server-side attributes updated successfully');
+      } catch (error) {
+        logger.error('[OnboardingUtils] Server-side attribute update failed:', {
+          error: error.message,
+          code: error.code,
+          statusCode: error.statusCode
+        });
+        throw new Error(`Failed to update attributes: ${error.message}`);
       }
     } else {
       // Client-side update using Amplify
