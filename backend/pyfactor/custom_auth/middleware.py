@@ -394,7 +394,7 @@ class TenantMiddleware:
                 
                 try:
                     # First check if user already has a tenant
-                    existing_tenant = Tenant.objects.filter(owner=request.user).first()
+                    existing_tenant = Tenant.objects.filter(owner_id=request.user.id).first()
                     if existing_tenant:
                         logger.debug(f"Using existing tenant for user: {existing_tenant.schema_name}")
                         tenant = existing_tenant
@@ -409,13 +409,13 @@ class TenantMiddleware:
                                     schema_name=tenant_id,
                                     is_active=True,
                                     database_status='not_created',
-                                    owner=request.user
+                                    owner_id=request.user.id
                                 )
                                 logger.debug(f"Successfully created tenant: {tenant.schema_name}")
                             except IntegrityError:
                                 logger.warning("Duplicate tenant creation attempt detected")
                                 # Get existing tenant if race condition occurred
-                                tenant = Tenant.objects.get(owner=request.user)
+                                tenant = Tenant.objects.get(owner_id=request.user.id)
                         elif not tenant:
                             logger.error("Cannot create tenant - no authenticated user")
                             return self.get_response(request)

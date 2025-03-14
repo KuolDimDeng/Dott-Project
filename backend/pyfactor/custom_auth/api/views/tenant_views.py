@@ -21,7 +21,7 @@ class TenantDetailView(APIView):
         except Tenant.DoesNotExist:
             # If not found by ID, try to get by owner
             try:
-                tenant = Tenant.objects.get(owner=request.user)
+                tenant = Tenant.objects.get(owner_id=request.user.id)
                 serializer = TenantSerializer(tenant)
                 return Response(serializer.data)
             except Tenant.DoesNotExist:
@@ -35,7 +35,7 @@ class TenantDetailView(APIView):
             with transaction.atomic():
                 try:
                     # Try to get existing tenant first
-                    tenant = Tenant.objects.get(owner=request.user)
+                    tenant = Tenant.objects.get(owner_id=request.user.id)
                     serializer = TenantSerializer(tenant, data=request.data, partial=True)
                 except Tenant.DoesNotExist:
                     # Create new tenant if none exists
@@ -67,7 +67,7 @@ class TenantDetailView(APIView):
                 except IntegrityError as e:
                     if 'auth_tenant_owner_id_key' in str(e):
                         # If owner already has a tenant, return existing tenant
-                        tenant = Tenant.objects.get(owner=request.user)
+                        tenant = Tenant.objects.get(owner_id=request.user.id)
                         serializer = TenantSerializer(tenant)
                         return Response({
                             "success": True,

@@ -664,8 +664,7 @@ INSTALLED_APPS = [
     'barcode',
     'django_extensions',
     'custom_auth',
-    # Temporarily commented out to break circular dependency
-    # 'hr.apps.HrConfig',
+    'hr.apps.HrConfig',
     'onboarding.apps.OnboardingConfig',
     'crm.apps.CrmConfig',
     'transport.apps.TransportConfig'
@@ -794,8 +793,7 @@ TENANT_APPS = (
     'integrations',
     'taxes',
     'purchases',
-    # Temporarily commented out to break circular dependency
-    # 'hr',
+    'hr',
     'crm',
     'transport',
 )
@@ -870,12 +868,24 @@ DATABASES = {
     }
 }
 
+# Database pool arguments
+DATABASE_POOL_ARGS = {
+    "pre_ping": True,
+    "echo": False,
+    "timeout": 30,
+    "recycle": 300,
+    "pool_size": 20,
+    "max_overflow": 10,
+    "autocommit": True,
+}
+
 # Database performance settings to be applied after connection
 DATABASE_PERFORMANCE_SETTINGS = {
     'statement_timeout': 30000,  # 30 seconds timeout for queries
     'idle_in_transaction_session_timeout': 60000,  # 1 minute timeout for idle transactions
     'work_mem': '4MB',  # Memory for sorting operations
 }
+
 
 # Initialize the connection pool
 # We'll initialize the connection pool in apps.py to avoid circular imports

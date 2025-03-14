@@ -49,13 +49,15 @@ class OnboardingProgress(models.Model):
         on_delete=models.CASCADE,
         related_name='onboarding_progress'
     )
-    business = models.ForeignKey(
-        Business,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='onboarding_records'
-    )
+    # Temporarily replace ForeignKey with UUIDField to break circular dependency
+    # business = models.ForeignKey(
+    #     Business,
+    #     on_delete=models.SET_NULL,
+    #     null=True,
+    #     blank=True,
+    #     related_name='onboarding_records'
+    # )
+    business_id = models.UUIDField(null=True, blank=True)  # Store the UUID of the business
 
     # Status fields matching Cognito attributes
     onboarding_status = models.CharField(

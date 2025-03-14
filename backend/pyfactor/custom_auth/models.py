@@ -33,11 +33,9 @@ class Tenant(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     schema_name = models.CharField(max_length=63, unique=True)
     name = models.CharField(max_length=100)
-    owner = models.OneToOneField(
-        'User',
-        on_delete=models.PROTECT,
-        related_name='owned_tenant'
-    )
+    # Replace OneToOneField with UUID field to break circular dependency
+    # owner_id = models.UUIDField(null=True, blank=True)  # Temporarily replaced OneToOneField
+    owner_id = models.UUIDField(null=True, blank=True)  # Store the UUID of the owner
     created_on = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     
@@ -118,13 +116,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     stripe_customer_id = models.CharField(max_length=255, blank=True, null=True)  # Optional, for payment integration
     cognito_sub = models.CharField(max_length=36, unique=True, null=True, blank=True)  # Cognito user ID
 
-    tenant = models.ForeignKey(
-        Tenant,
-        on_delete=models.CASCADE,
-        related_name='users',  # This allows tenant.users.all() to get all users
-        null=True,  # Allow null during onboarding
-        blank=True
-    )
+    # Replace ForeignKey with UUID field to break circular dependency
+    # tenant = models.ForeignKey(
+    #     Tenant,
+    #     on_delete=models.CASCADE,
+    #     related_name='users',  # This allows tenant.users.all() to get all users
+    #     null=True,  # Allow null during onboarding
+    #     blank=True
+    # )
+    tenant_id = models.UUIDField(null=True, blank=True)  # Store the UUID of the tenant
 
     USERNAME_FIELD = 'email'
     EMAIL_FIELD = 'email'
@@ -135,8 +135,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
         ('OWNER', 'Business Owner'),
         ('ADMIN', 'Administrator'),
-        ('EMPLOYEE', 'Employee'),
-      
+        ('EMPLOYEE', 'Employee')
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='OWNER')
 
@@ -208,10 +207,22 @@ def ensure_schema_name_uses_underscores(sender, instance, **kwargs):
             # Log to the Django logger
             import logging
             logger = logging.getLogger(__name__)
+            
+            # Get owner email if possible
+            owner_email = "unknown"
+            if instance.owner_id:
+                try:
+                    from django.contrib.auth import get_user_model
+                    User = get_user_model()
+                    owner = User.objects.get(id=instance.owner_id)
+                    owner_email = owner.email
+                except:
+                    pass
+                
             logger.warning(
                 f"Schema name missing tenant_ prefix and was automatically fixed. "
                 f"Original: '{original_schema_name}', Fixed: '{instance.schema_name}', "
-                f"Tenant ID: {instance.id}, Owner: {getattr(instance.owner, 'email', 'unknown')}"
+                f"Tenant ID: {instance.id}, Owner ID: {instance.owner_id}, Owner Email: {owner_email}"
             )
         
         # Check if schema name contains hyphens
@@ -223,8 +234,20 @@ def ensure_schema_name_uses_underscores(sender, instance, **kwargs):
             # Also log to the Django logger
             import logging
             logger = logging.getLogger(__name__)
+            
+            # Get owner email if possible
+            owner_email = "unknown"
+            if instance.owner_id:
+                try:
+                    from django.contrib.auth import get_user_model
+                    User = get_user_model()
+                    owner = User.objects.get(id=instance.owner_id)
+                    owner_email = owner.email
+                except:
+                    pass
+                
             logger.warning(
                 f"Schema name contained hyphens and was automatically fixed. "
                 f"Original: '{original_schema_name}', Fixed: '{instance.schema_name}', "
-                f"Tenant ID: {instance.id}, Owner: {getattr(instance.owner, 'email', 'unknown')}"
+                f"Tenant ID: {instance.id}, Owner ID: {instance.owner_id}, Owner Email: {owner_email}"
             )

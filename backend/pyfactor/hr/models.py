@@ -147,9 +147,15 @@ class Employee(models.Model):
     pension_enrollment = models.BooleanField(default=False)
     termination_date = models.DateField(null=True, blank=True)
     reason_for_leaving = models.TextField(blank=True, null=True)
-    # Temporarily break circular dependency with UUIDField
-    business_id = models.UUIDField(null=True, blank=True)
-    # business = models.ForeignKey('users.Business', on_delete=models.CASCADE, related_name='business_employees', null=True, blank=True)
+    # Replace ForeignKey with UUID field to break circular dependency
+    # business = models.ForeignKey(
+    #         'users.Business',
+    #         on_delete=models.CASCADE,
+    #         related_name='business_employees',
+    #         null=True,
+    #         blank=True
+    #     )
+    business_id = models.UUIDField(null=True, blank=True)  # Store the UUID of the business
 
     def save(self, *args, **kwargs):
         if not self.employee_number:
@@ -172,11 +178,20 @@ class Employee(models.Model):
     def save_ssn_to_stripe(self, ssn):
         """Save SSN to Stripe instead of storing it directly"""
         import stripe
+        from users.models import Business
         
         if not self.stripe_account_id:
             # Create or get a Stripe account for this employee's business
-            business_account = self.business.get_or_create_stripe_account()
-            self.stripe_account_id = business_account.id
+            # Get the business object using the business_id
+            if self.business_id:
+                try:
+                    business = Business.objects.get(id=self.business_id)
+                    business_account = business.get_or_create_stripe_account()
+                    self.stripe_account_id = business_account.id
+                except Business.DoesNotExist:
+                    raise ValueError("Business not found for the given business_id")
+            else:
+                raise ValueError("business_id is required to save SSN to Stripe")
             
         # Create or update a Person object in Stripe
         if not self.stripe_person_id:
@@ -213,10 +228,19 @@ class Employee(models.Model):
     def save_bank_account_to_stripe(self, account_number, routing_number):
         """Save bank account details to Stripe"""
         import stripe
+        from users.models import Business
         
         if not self.stripe_account_id:
-            business_account = self.business.get_or_create_stripe_account()
-            self.stripe_account_id = business_account.id
+            # Get the business object using the business_id
+            if self.business_id:
+                try:
+                    business = Business.objects.get(id=self.business_id)
+                    business_account = business.get_or_create_stripe_account()
+                    self.stripe_account_id = business_account.id
+                except Business.DoesNotExist:
+                    raise ValueError("Business not found for the given business_id")
+            else:
+                raise ValueError("business_id is required to save bank account to Stripe")
             
         # Create external account (bank account)
         bank_account = stripe.Account.create_external_account(

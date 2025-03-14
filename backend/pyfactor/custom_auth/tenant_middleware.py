@@ -69,6 +69,19 @@ class EnhancedTenantMiddleware:
             '/api/onboarding/setup/'
             # Removed '/api/onboarding/business-info/' from no_tenant_paths to ensure it uses tenant schema
         ]
+    def set_schema_with_transaction_handling(self, schema_name):
+        """Set the schema with proper transaction handling"""
+        from django.db import connection
+        
+        # If we're in a transaction, we need to commit it before changing schemas
+        if connection.in_atomic_block:
+            # Log that we're in a transaction
+            logger.warning(f"Attempting to change schema while in transaction. Committing first.")
+            connection.commit()
+        
+        # Now set the schema
+        with connection.cursor() as cursor:
+            cursor.execute(f'SET search_path TO "{schema_name}"')
 
     def __call__(self, request):
         # Skip for public paths and onboarding paths
@@ -498,7 +511,7 @@ class EnhancedTenantMiddleware:
                             try:
                                 tenant = None
                                 if hasattr(request, 'user') and request.user.is_authenticated:
-                                    tenant = Tenant.objects.filter(owner=request.user).first()
+                                    tenant = Tenant.objects.filter(owner_id=request.user.id).first()
                                 
                                 if tenant:
                                     # Mark tenant as deferred setup
@@ -894,7 +907,7 @@ class EnhancedTenantMiddleware:
                                 logger.info(f"Successfully created all missing essential tables in {schema_name}")
                     
                     # Use optimized connection management with explicit schema setting
-                    set_current_schema(schema_name)
+                    self.set_schema_with_transaction_handling(schema_name)
                     conn = get_connection_for_schema(schema_name)
                     
                     # Double-check search path is set correctly

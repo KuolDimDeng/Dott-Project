@@ -122,16 +122,15 @@ def check_setup_status(request):
         response["Access-Control-Allow-Credentials"] = "true"
         return response
 
+    # Define old_autocommit at the beginning to avoid reference before assignment
+    old_autocommit = None
+    
     try:
-        # For OPTIONS requests, just return CORS headers
-        if request.method == 'OPTIONS':
-            response = Response()
-            response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
-            response["Access-Control-Allow-Methods"] = "GET, OPTIONS"
-            response["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Request-Id"
-            response["Access-Control-Allow-Credentials"] = "true"
-            return response
-
+        # Manual transaction handling
+        from django.db import connection
+        old_autocommit = connection.get_autocommit()
+        connection.set_autocommit(True)  # Important to avoid transaction issues
+        
         # For authenticated requests, get progress
         if request.user and request.user.is_authenticated:
             try:
@@ -146,6 +145,7 @@ def check_setup_status(request):
                     response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
                     response["Access-Control-Allow-Credentials"] = "true"
                     return response
+                    
             except OnboardingProgress.DoesNotExist:
                 response = Response({
                     'status': 'not_found',
@@ -265,7 +265,14 @@ def check_setup_status(request):
         response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
         response["Access-Control-Allow-Credentials"] = "true"
         return response
-
+    finally:
+        # Restore previous autocommit setting if it was set
+        if old_autocommit is not None:
+            try:
+                if connection.get_autocommit() != old_autocommit:
+                    connection.set_autocommit(old_autocommit)
+            except Exception as ac_error:
+                logger.error(f"Error restoring autocommit: {ac_error}")
 
 class ServiceUnavailableError(Exception):
     """Raised when required services are unavailable"""
@@ -316,7 +323,6 @@ class BaseOnboardingView(APIView):
         response.renderer_context = {}
         return response
 
-
     def handle_exception(self, exc):
         logger.error('View exception:', {
             'error': str(exc),
@@ -335,15 +341,26 @@ class BaseOnboardingView(APIView):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-
     def get_authenticated_user(self, request):
         """Get authenticated user in synchronous context"""
         return request.user
 
     def validate_user_state(self, user):
         """Validate user state with proper error handling"""
+        # Manual transaction handling instead of atomic
+        from django.db import connection
+        
+        # Store autocommit setting
+        old_autocommit = connection.get_autocommit()
+        connection.set_autocommit(True)  # Important: Set autocommit to True
+        
         try:
-            with transaction.atomic():
+            # Create a new connection if needed
+            if connection.in_atomic_block:
+                connection.close()
+                connection.connect()
+            
+            try:
                 profile = UserProfile.objects.select_related('user', 'business').get(user=user)
                 progress = OnboardingProgress.objects.get(user=user)
 
@@ -389,28 +406,38 @@ class BaseOnboardingView(APIView):
                         'health': health_details
                     }
                 }
-        except UserProfile.DoesNotExist:
-            logger.error(f"Profile not found for user: {user.id}")
-            return {
-                'isValid': False, 
-                'redirectTo': '/onboarding/step1',
-                'reason': 'profile_not_found'
-            }
-        except OnboardingProgress.DoesNotExist:
-            logger.error(f"Onboarding progress not found for user: {user.id}")
-            return {
-                'isValid': False,
-                'redirectTo': '/onboarding/step1', 
-                'reason': 'progress_not_found'
-            }
+            except UserProfile.DoesNotExist:
+                logger.error(f"Profile not found for user: {user.id}")
+                return {
+                    'isValid': False, 
+                    'redirectTo': '/onboarding/step1',
+                    'reason': 'profile_not_found'
+                }
+            except OnboardingProgress.DoesNotExist:
+                logger.error(f"Onboarding progress not found for user: {user.id}")
+                return {
+                    'isValid': False,
+                    'redirectTo': '/onboarding/step1', 
+                    'reason': 'progress_not_found'
+                }
+            except Exception as e:
+                logger.error(f"Validation error: {str(e)}")
+                return {
+                    'isValid': False,
+                    'redirectTo': '/error',
+                    'reason': 'validation_error',
+                    'error': str(e)
+                }
         except Exception as e:
-            logger.error(f"Validation error: {str(e)}")
-            return {
-                'isValid': False,
-                'redirectTo': '/error',
-                'reason': 'validation_error',
-                'error': str(e)
-            }
+            logger.error(f"Error in validate_user_state: {str(e)}", exc_info=True)
+            raise
+        finally:
+            # Restore previous autocommit setting
+            try:
+                if old_autocommit != connection.get_autocommit():
+                    connection.set_autocommit(old_autocommit)
+            except Exception as ac_error:
+                logger.error(f"Error restoring autocommit: {ac_error}")
 
     def dispatch(self, request, *args, **kwargs):
         try:
@@ -425,7 +452,7 @@ class BaseOnboardingView(APIView):
                     'message': 'Authentication required'
                 }, status.HTTP_401_UNAUTHORIZED)
 
-          # Add token expiration check
+            # Add token expiration check
             if request.auth and isinstance(request.auth, AccessToken):
                 if request.auth.payload['exp'] < timezone.now().timestamp():
                     raise AuthenticationFailed('Token expired')
@@ -450,7 +477,7 @@ class BaseOnboardingView(APIView):
             if not hasattr(response, 'accepted_renderer'):
                 response.accepted_renderer = request.accepted_renderer
                 response.accepted_media_type = request.accepted_media_type
-
+            
             return response
 
         except AuthenticationFailed as e:
@@ -490,42 +517,54 @@ class BaseOnboardingView(APIView):
         except Exception as e:
             logger.error(f"WebSocket notification failed: {str(e)}")
             # Don't raise the error since notifications are non-critical
+
     def get_onboarding_progress(self, user):
         """Get onboarding progress with retry logic"""
-        for attempt in range(3):
-            try:
-                with transaction.atomic():
-                    try:
-                        # Use select_for_update to prevent race conditions
-                        progress = OnboardingProgress.objects.select_for_update(
-                            nowait=True
-                        ).get(user=user)  # Just get by user
-                        return progress
-                    except OnboardingProgress.DoesNotExist:
-                        # Create new progress if none exists
-                        return OnboardingProgress.objects.create(
-                            user=user,
-                            onboarding_status='step1',
-                            current_step=1
-                        )
-            except OperationalError:
-                if attempt == 2:
+        from django.db import connection
+        
+        # Store autocommit setting
+        old_autocommit = connection.get_autocommit()
+        connection.set_autocommit(True)  # Important: Set autocommit to True
+        
+        try:
+            # Create a new connection if needed
+            if connection.in_atomic_block:
+                connection.close()
+                connection.connect()
+                
+            for attempt in range(3):
+                try:
+                    # Use select_for_update to prevent race conditions
+                    progress = OnboardingProgress.objects.select_for_update(
+                        nowait=True
+                    ).get(user=user)  # Just get by user
+                    return progress
+                except OnboardingProgress.DoesNotExist:
+                    # Create new progress if none exists
+                    return OnboardingProgress.objects.create(
+                        user=user,
+                        onboarding_status='step1',
+                        current_step=1
+                    )
+                except OperationalError:
+                    if attempt == 2:
+                        raise
+                    time.sleep(0.1 * (2 ** attempt))
+                    continue
+                except IntegrityError as e:
+                    if 'onboarding_progress_email_key' in str(e):
+                        return OnboardingProgress.objects.get(user=user)  # Simplified since we're using user only
                     raise
-                time.sleep(0.1 * (2 ** attempt))
-                continue
-            except IntegrityError as e:
-                if 'onboarding_progress_email_key' in str(e):
-                    return OnboardingProgress.objects.get(user=user)  # Simplified since we're using user only
-                raise
-
-    def handle_exception(self, exc):
-        """Handle exceptions with proper response formatting"""
-        if isinstance(exc, AuthenticationFailed):
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        return super().handle_exception(exc)
+        except Exception as e:
+            logger.error(f"Error in get_onboarding_progress: {str(e)}", exc_info=True)
+            raise
+        finally:
+            # Restore previous autocommit setting
+            try:
+                if old_autocommit != connection.get_autocommit():
+                    connection.set_autocommit(old_autocommit)
+            except Exception as ac_error:
+                logger.error(f"Error restoring autocommit: {ac_error}")
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GoogleTokenExchangeView(APIView):
@@ -674,7 +713,19 @@ class GoogleTokenExchangeView(APIView):
                 first_name = name_parts[0]
                 last_name = name_parts[1] if len(name_parts) > 1 else ''
 
-            with transaction.atomic():
+            # Manual transaction handling instead of atomic
+            from django.db import connection
+            
+            # Store autocommit setting
+            old_autocommit = connection.get_autocommit()
+            connection.set_autocommit(True)  # Important: Set autocommit to True
+            
+            try:
+                # Create a new connection if needed
+                if connection.in_atomic_block:
+                    connection.close()
+                    connection.connect()
+                
                 try:
                     # Get or create user with logging
                     user, user_created = User.objects.get_or_create(
@@ -736,15 +787,29 @@ class GoogleTokenExchangeView(APIView):
                         'error_type': type(e).__name__
                     })
                     raise ValidationError(f"Database integrity error: {str(e)}")
-
+            except Exception as e:
+                logger.error("User creation/update failed", {
+                    'request_id': request_id,
+                    'error': str(e),
+                    'error_type': type(e).__name__,
+                    'stack_trace': traceback.format_exc()
+                })
+                raise ValidationError(f"Failed to create/update user: {str(e)}")
+            finally:
+                # Restore previous autocommit setting
+                try:
+                    if old_autocommit != connection.get_autocommit():
+                        connection.set_autocommit(old_autocommit)
+                except Exception as ac_error:
+                    logger.error(f"Error restoring autocommit: {ac_error}")
         except Exception as e:
-            logger.error("User creation/update failed", {
+            logger.error("User creation/update outer error", {
                 'request_id': request_id,
                 'error': str(e),
                 'error_type': type(e).__name__,
                 'stack_trace': traceback.format_exc()
             })
-            raise ValidationError(f"Failed to create/update user: {str(e)}")
+            raise
 
     def post(self, request, *args, **kwargs):
         request_id = request.headers.get('X-Request-ID', str(uuid.uuid4()))
@@ -939,8 +1004,20 @@ class StartOnboardingView(BaseOnboardingView):
                     
                 except OnboardingProgress.DoesNotExist:
                     # Try to create with a shorter transaction
+                    # Manual transaction handling instead of atomic
+                    from django.db import connection
+                    
+                    # Store autocommit setting
+                    old_autocommit = connection.get_autocommit()
+                    connection.set_autocommit(True)  # Important: Set autocommit to True
+                    
                     try:
-                        with transaction.atomic():
+                        # Create a new connection if needed
+                        if connection.in_atomic_block:
+                            connection.close()
+                            connection.connect()
+                        
+                        try:
                             onboarding = OnboardingProgress.objects.create(
                                 user=user,
                                 onboarding_status="setup",
@@ -948,10 +1025,20 @@ class StartOnboardingView(BaseOnboardingView):
                                 next_step="complete"
                             )
                             return onboarding, True
-                    except IntegrityError:
-                        # Another process created it first, try to get it again
-                        onboarding = OnboardingProgress.objects.get(user=user)
-                        return onboarding, False
+                        except IntegrityError:
+                            # Another process created it first, try to get it again
+                            onboarding = OnboardingProgress.objects.get(user=user)
+                            return onboarding, False
+                    except Exception as e:
+                        logger.error(f"Error in transaction: {str(e)}", exc_info=True)
+                        raise
+                    finally:
+                        # Restore previous autocommit setting
+                        try:
+                            if old_autocommit != connection.get_autocommit():
+                                connection.set_autocommit(old_autocommit)
+                        except Exception as ac_error:
+                            logger.error(f"Error restoring autocommit: {ac_error}")
                         
             except OperationalError as e:
                 # Handle deadlocks with retries
@@ -991,7 +1078,19 @@ class StartOnboardingView(BaseOnboardingView):
                 from users.models import Business
                 
                 # Use a transaction
-                with transaction.atomic():
+                # Manual transaction handling instead of atomic
+                from django.db import connection
+                
+                # Store autocommit setting
+                old_autocommit = connection.get_autocommit()
+                connection.set_autocommit(True)  # Important: Set autocommit to True
+                
+                try:
+                    # Create a new connection if needed
+                    if connection.in_atomic_block:
+                        connection.close()
+                        connection.connect()
+                    
                     # Create a default business first
                     business = Business.objects.create(
                         owner=user,
@@ -1007,6 +1106,16 @@ class StartOnboardingView(BaseOnboardingView):
                     )
                     
                     return str(business.id)
+                except Exception as e:
+                    logger.error(f"Error in transaction: {str(e)}", exc_info=True)
+                    raise
+                finally:
+                    # Restore previous autocommit setting
+                    try:
+                        if old_autocommit != connection.get_autocommit():
+                            connection.set_autocommit(old_autocommit)
+                    except Exception as ac_error:
+                        logger.error(f"Error restoring autocommit: {ac_error}")
                     
             except UserProfile.DoesNotExist:
                 logger.warning(f"No user profile found for user {user.id}")
@@ -1014,7 +1123,19 @@ class StartOnboardingView(BaseOnboardingView):
                 from users.models import Business
                 
                 try:
-                    with transaction.atomic():
+                    # Manual transaction handling instead of atomic
+                    from django.db import connection
+                    
+                    # Store autocommit setting
+                    old_autocommit = connection.get_autocommit()
+                    connection.set_autocommit(True)  # Important: Set autocommit to True
+                    
+                    try:
+                        # Create a new connection if needed
+                        if connection.in_atomic_block:
+                            connection.close()
+                            connection.connect()
+                        
                         business = Business.objects.create(
                             owner=user,
                             business_name=f"{user.first_name}'s Business",
@@ -1026,6 +1147,16 @@ class StartOnboardingView(BaseOnboardingView):
                             is_business_owner=True
                         )
                         return str(business.id)
+                    except Exception as e:
+                        logger.error(f"Error in transaction: {str(e)}", exc_info=True)
+                        raise
+                    finally:
+                        # Restore previous autocommit setting
+                        try:
+                            if old_autocommit != connection.get_autocommit():
+                                connection.set_autocommit(old_autocommit)
+                        except Exception as ac_error:
+                            logger.error(f"Error restoring autocommit: {ac_error}")
                 except Exception as e:
                     logger.error(f"Error creating profile and business: {str(e)}")
                     if attempt < max_retries - 1:
@@ -1084,7 +1215,20 @@ class StartOnboardingView(BaseOnboardingView):
                 else:
                     # If no business exists, create a minimal one
                     from users.models import Business
-                    with transaction.atomic():
+                    
+                    # Manual transaction handling instead of atomic
+                    from django.db import connection
+                    
+                    # Store autocommit setting
+                    old_autocommit = connection.get_autocommit()
+                    connection.set_autocommit(True)  # Important: Set autocommit to True
+                    
+                    try:
+                        # Create a new connection if needed
+                        if connection.in_atomic_block:
+                            connection.close()
+                            connection.connect()
+                        
                         business = Business.objects.create(
                             owner=request.user,
                             business_name=f"{request.user.first_name}'s Business",
@@ -1096,6 +1240,16 @@ class StartOnboardingView(BaseOnboardingView):
                         else:
                             UserProfile.objects.create(user=request.user, business=business)
                         business_id = str(business.id)
+                    except Exception as e:
+                        logger.error(f"Error in transaction: {str(e)}", exc_info=True)
+                        raise
+                    finally:
+                        # Restore previous autocommit setting
+                        try:
+                            if old_autocommit != connection.get_autocommit():
+                                connection.set_autocommit(old_autocommit)
+                        except Exception as ac_error:
+                            logger.error(f"Error restoring autocommit: {ac_error}")
             except Exception as e:
                 logger.error(f"[{request_id}] Failed to get/create business: {str(e)}")
                 return self.initialize_response({
@@ -1227,6 +1381,8 @@ class StartOnboardingView(BaseOnboardingView):
                 "error": f"Setup failed: {str(e)}",
                 "code": "setup_error"
             }, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class UpdateOnboardingView(BaseOnboardingView):
     @sync_to_async
     def get_user(self, request):
@@ -1234,16 +1390,37 @@ class UpdateOnboardingView(BaseOnboardingView):
 
     @sync_to_async
     def update_progress(self, user, step, data):
-        with transaction.atomic():
+        # Manual transaction handling instead of atomic
+        from django.db import connection
+        
+        # Store autocommit setting
+        old_autocommit = connection.get_autocommit()
+        connection.set_autocommit(True)  # Important: Set autocommit to True
+        
+        try:
+            # Create a new connection if needed
+            if connection.in_atomic_block:
+                connection.close()
+                connection.connect()
+                
             onboarding = get_object_or_404(OnboardingProgress, user=user)
             data['onboarding_status'] = f'step{step}'
             serializer = OnboardingProgressSerializer(onboarding, data=data, partial=True)
             if serializer.is_valid():
                 return serializer.save()
             raise ValidationError(serializer.errors)
+        except Exception as e:
+            logger.error(f"Error updating progress: {str(e)}", exc_info=True)
+            raise
+        finally:
+            # Restore previous autocommit setting
+            try:
+                if old_autocommit != connection.get_autocommit():
+                    connection.set_autocommit(old_autocommit)
+            except Exception as ac_error:
+                logger.error(f"Error restoring autocommit: {ac_error}")
 
     async def put(self, request, step):
-
         try: 
             logger.info(f"Update onboarding request for step {step}")
             logger.debug(f"Received request data: {request.data}")
@@ -1295,11 +1472,33 @@ class CompleteOnboardingView(BaseOnboardingView):
     
     @sync_to_async
     def complete_onboarding(self, onboarding):
-        with transaction.atomic():
+        # Manual transaction handling instead of atomic
+        from django.db import connection
+        
+        # Store autocommit setting
+        old_autocommit = connection.get_autocommit()
+        connection.set_autocommit(True)  # Important: Set autocommit to True
+        
+        try:
+            # Create a new connection if needed
+            if connection.in_atomic_block:
+                connection.close()
+                connection.connect()
+                
             onboarding.onboarding_status = 'complete'
             onboarding.current_step = 0
             onboarding.save()
             return onboarding
+        except Exception as e:
+            logger.error(f"Error completing onboarding: {str(e)}", exc_info=True)
+            raise
+        finally:
+            # Restore previous autocommit setting
+            try:
+                if old_autocommit != connection.get_autocommit():
+                    connection.set_autocommit(old_autocommit)
+            except Exception as ac_error:
+                logger.error(f"Error restoring autocommit: {ac_error}")
 
     async def post(self, request):
         logger.info("Received request to complete onboarding process")
@@ -1342,11 +1541,33 @@ class CleanupOnboardingView(BaseOnboardingView):
     @sync_to_async
     def cleanup_expired_records(self):
         """Cleanup expired records with transaction handling"""
-        with transaction.atomic():
+        # Manual transaction handling instead of atomic
+        from django.db import connection
+        
+        # Store autocommit setting
+        old_autocommit = connection.get_autocommit()
+        connection.set_autocommit(True)  # Important: Set autocommit to True
+        
+        try:
+            # Create a new connection if needed
+            if connection.in_atomic_block:
+                connection.close()
+                connection.connect()
+                
             expiration_time = timezone.now() - timedelta(hours=5)
             return OnboardingProgress.objects.filter(
                 created_at__lt=expiration_time
             ).delete()
+        except Exception as e:
+            logger.error(f"Error cleaning up expired records: {str(e)}", exc_info=True)
+            raise
+        finally:
+            # Restore previous autocommit setting
+            try:
+                if old_autocommit != connection.get_autocommit():
+                    connection.set_autocommit(old_autocommit)
+            except Exception as ac_error:
+                logger.error(f"Error restoring autocommit: {ac_error}")
 
     @sync_to_async
     def get_or_create_progress(self, user):
@@ -1357,7 +1578,19 @@ class CleanupOnboardingView(BaseOnboardingView):
 
         for attempt in range(max_retries):
             try:
-                with transaction.atomic():
+                # Manual transaction handling instead of atomic
+                from django.db import connection
+                
+                # Store autocommit setting
+                old_autocommit = connection.get_autocommit()
+                connection.set_autocommit(True)  # Important: Set autocommit to True
+                
+                try:
+                    # Create a new connection if needed
+                    if connection.in_atomic_block:
+                        connection.close()
+                        connection.connect()
+                    
                     progress = OnboardingProgress.objects.select_for_update(
                         nowait=True,
                         skip_locked=True
@@ -1371,6 +1604,16 @@ class CleanupOnboardingView(BaseOnboardingView):
                             current_step=1
                         )
                     return progress
+                except Exception as e:
+                    logger.error(f"Error in transaction: {str(e)}", exc_info=True)
+                    raise
+                finally:
+                    # Restore previous autocommit setting
+                    try:
+                        if old_autocommit != connection.get_autocommit():
+                            connection.set_autocommit(old_autocommit)
+                    except Exception as ac_error:
+                        logger.error(f"Error restoring autocommit: {ac_error}")
             except OperationalError as e:
                 last_error = e
                 if attempt < max_retries - 1:
@@ -1425,6 +1668,7 @@ class CleanupOnboardingView(BaseOnboardingView):
                 "current_step": 1
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 @shared_task(
     bind=True,
     max_retries=3,
@@ -1447,47 +1691,6 @@ def cleanup_expired_onboarding(self):
         raise self.retry(exc=e)
 
 
-        
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-@authentication_classes([CognitoAuthentication])
-def update_session(request):
-    """
-    Update the user's session by saving the new access and refresh tokens
-    passed from the frontend after a token refresh.
-    """
-    user = request.user
-    new_access_token = request.data.get('accessToken')
-    new_refresh_token = request.data.get('refreshToken')
-
-    # Check that both tokens are provided
-    if not new_access_token or not new_refresh_token:
-        logger.error("Access token or refresh token is missing")
-        return Response(
-            {'error': 'Both accessToken and refreshToken are required'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    try:
-        # Validate the new refresh token using SimpleJWT
-        RefreshToken(new_refresh_token)  # This will throw if invalid
-
-        # Save tokens in the user's session (or as user model fields)
-        # Here assuming you may have fields `access_token` and `refresh_token`
-        user.access_token = new_access_token
-        user.refresh_token = new_refresh_token
-        user.save()
-
-        logger.info("Session tokens updated successfully for user %s", user.email)
-        return Response({'message': 'Session updated successfully'}, status=status.HTTP_200_OK)
-    
-    except Exception as e:
-        logger.error("Error updating session tokens: %s", str(e))
-        return Response(
-            {'error': 'Failed to update session tokens'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
 @method_decorator(csrf_exempt, name='dispatch')
 class SaveStep1View(APIView):
     permission_classes = [IsAuthenticated]
@@ -1495,104 +1698,6 @@ class SaveStep1View(APIView):
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
     
-    REQUIRED_FIELDS = [
-        'business_name', 'business_type', 'country',
-        'legal_structure', 'date_founded', 'first_name', 'last_name'
-    ]
-
-    def validate_data(self, data):
-        missing_fields = [field for field in self.REQUIRED_FIELDS if not data.get(field)]
-        if missing_fields:
-            raise ValidationError(f"Missing required fields: {', '.join(missing_fields)}")
-        return True
-
-    @transaction.atomic
-    def save_business_data(self, user, data: Dict[str, Any]) -> Tuple[Business, bool]:
-        logger.info(f"Saving business data with: {data}")
-        try:
-            # Handle date_founded with better validation
-            try:
-                if isinstance(data['date_founded'], str):
-                    date_founded = datetime.strptime(data['date_founded'], '%Y-%m-%d').date()
-                elif isinstance(data['date_founded'], date):
-                    date_founded = data['date_founded']
-                else:
-                    raise ValidationError("Invalid date format for date_founded")
-            except (ValueError, KeyError) as e:
-                raise ValidationError(f"Date validation failed: {str(e)}")
-
-            # Create or update business record
-            business, created = Business.objects.update_or_create(
-                owner=user,
-                defaults={
-                    'business_name': data.get('business_name'),
-                    'business_type': data.get('business_type'),
-                    'country': data.get('country'),
-                    'legal_structure': data.get('legal_structure'),
-                    'date_founded': date_founded,
-                }
-            )
-
-            # Update user profile
-            profile, _ = UserProfile.objects.get_or_create(
-                user=user,
-                defaults={'is_business_owner': True}
-            )
-            profile.business = business
-            profile.is_business_owner = True
-            profile.save(update_fields=['business', 'is_business_owner'])
-
-            return business, created
-
-        except ValidationError:
-            raise
-        except Exception as e:
-            logger.error(f"Failed to save business data: {str(e)}", exc_info=True)
-            raise ValidationError(f"Failed to save business data: {str(e)}")
-
-    @transaction.atomic
-    def update_onboarding_progress(self, user, business):
-        try:
-            # Get or create onboarding progress
-            progress, _ = OnboardingProgress.objects.get_or_create(
-                user=user,
-                defaults={
-                    'onboarding_status': 'business-info',
-                    'current_step': 1,
-                    'next_step': 2
-                }
-            )
-
-            # Link business to progress and update status
-            progress.business = business
-            progress.onboarding_status = 'business-info'
-            progress.current_step = 'business-info'
-            progress.next_step = 'subscription'
-            progress.save(update_fields=[
-                'business',
-                'onboarding_status', 
-                'current_step',
-                'next_step',
-                'modified_at'
-            ])
-
-            return progress
-
-        except Exception as e:
-            logger.error("Error updating progress:", {
-                'error': str(e),
-                'user_id': user.id,
-                'business_id': business.id if business else None
-            })
-            raise
-
-    def generate_business_number(self):
-        """Generate a unique 6-digit business number"""
-        while True:
-            number = ''.join(random.choices(string.digits, k=6))
-            if not Business.objects.filter(business_num=number).exists():
-                return number
-
     def post(self, request, *args, **kwargs):
         request_id = request.headers.get('X-Request-Id', str(uuid.uuid4()))
         
@@ -1603,7 +1708,7 @@ class SaveStep1View(APIView):
         })
 
         try:
-            # Validate request data - this is fast
+            # Validate request data
             serializer = BusinessInfoSerializer(data=request.data)
             if not serializer.is_valid():
                 return Response({
@@ -1612,192 +1717,99 @@ class SaveStep1View(APIView):
                     'errors': serializer.errors
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            # Generate business number - this is fast
+            # Generate business number
             business_num = ''.join(random.choices(string.digits, k=6))
-            while Business.objects.filter(business_num=business_num).exists():
-                business_num = ''.join(random.choices(string.digits, k=6))
-
+            
             # Get tenant ID from headers
             tenant_id = request.headers.get('X-Tenant-ID')
             if not tenant_id:
                 raise ValidationError("X-Tenant-ID header is required")
-                
-            # Create schema name from tenant ID - this is fast
-            tenant_id_str = str(tenant_id).replace('-', '_')
-            schema_name = f"tenant_{tenant_id_str}"
             
-            # FAST PATH: Only do minimal work to save business info
-            # We'll defer all schema creation and heavy DB operations
+            # Create a temporary business ID to use in the response and for storing in session
+            business_id = uuid.uuid4()
             
-            # Get or create tenant with minimal operations
-            from custom_auth.models import Tenant
-            from onboarding.utils import generate_unique_schema_name
+            # Get user's name
+            first_name = request.user.first_name or ''
+            last_name = request.user.last_name or ''
             
-            # Use a lightweight transaction
-            with transaction.atomic():
-                # Check if tenant exists without locking
-                tenant = Tenant.objects.filter(owner=request.user).first()
-                
-                if not tenant:
-                    # Generate unique schema name - this is fast
-                    schema_name = generate_unique_schema_name(request.user)
-                    if not schema_name:
-                        raise ValidationError("Failed to generate valid schema name")
-                    
-                    # Create new tenant with minimal fields
-                    tenant = Tenant.objects.create(
-                        owner=request.user,
-                        schema_name=schema_name,
-                        is_active=True,
-                        database_status='not_created',
-                        setup_status='pending'
-                    )
-                else:
-                    # Just update status fields - avoid heavy operations
-                    Tenant.objects.filter(id=tenant.id).update(
-                        is_active=True,
-                        database_status='not_created',
-                        setup_status='pending',
-                        last_setup_attempt=timezone.now()
-                    )
-                    # Refresh our local copy
-                    tenant.refresh_from_db()
-
-                # Get user's name
-                first_name = request.user.first_name or ''
-                last_name = request.user.last_name or ''
-
-                # Create business record efficiently
-                business = Business.objects.create(
-                    owner=request.user,
-                    business_num=business_num,
-                    business_name=serializer.validated_data['business_name'],
-                    business_type=serializer.validated_data['business_type'],
-                    country=serializer.validated_data['country'],
-                    legal_structure=serializer.validated_data['legal_structure'],
-                    date_founded=serializer.validated_data['date_founded'],
-                    business_subtype_selections={}
-                )
-                
-                # Update user profile efficiently
-                UserProfile.objects.filter(user=request.user).update(
-                    business=business,
-                    is_business_owner=True
-                )
-                
-                # Create or update onboarding progress efficiently
-                progress, created = OnboardingProgress.objects.update_or_create(
-                    user=request.user,
-                    defaults={
-                        'onboarding_status': 'business-info',
-                        'current_step': 'business-info',
-                        'next_step': 'subscription',
-                        'business': business,
-                        'account_status': 'pending',
-                        'user_role': 'owner',
-                        'subscription_plan': 'free',
-                        'attribute_version': '1.0.0'
-                    }
-                )
-                
-                # Store setup info in session for later processing
-                pending_setup = {
-                    'user_id': str(request.user.id),
-                    'business_id': str(business.id),
-                    'timestamp': timezone.now().isoformat(),
-                    'source': 'business_info_page',
-                    'deferred': True,  # Flag to indicate this setup should be deferred
-                    'next_step': 'subscription'  # Explicitly indicate the next step
+            # Store setup info in response data rather than session
+            pending_setup = {
+                'user_id': str(request.user.id),
+                'business_id': str(business_id),
+                'business_data': {
+                    'business_num': business_num,
+                    'business_name': serializer.validated_data['business_name'],
+                    'business_type': serializer.validated_data['business_type'],
+                    'country': str(serializer.validated_data['country']),
+                    'legal_structure': serializer.validated_data['legal_structure'],
+                    'date_founded': serializer.validated_data['date_founded'].isoformat() if serializer.validated_data.get('date_founded') else None
+                },
+                'timestamp': timezone.now().isoformat(),
+                'source': 'business_info_page',
+                'deferred': True,
+                'next_step': 'subscription'
+            }
+            
+            # Define onboarding status
+            onboarding_status = 'business-info'
+            next_step = 'subscription'
+            
+            # Create response data
+            response_data = {
+                "success": True,
+                "message": "Business information saved successfully. You can continue with the onboarding process without waiting.",
+                "request_id": request_id,
+                "data": {
+                    "onboarding": {
+                        "status": onboarding_status,
+                        "currentStep": onboarding_status,
+                        "nextStep": next_step,
+                        "redirectTo": "/onboarding/subscription"
+                    },
+                    "businessInfo": {
+                        "id": str(business_id),
+                        "business_num": business_num,
+                        "business_name": serializer.validated_data['business_name'],
+                        "business_type": serializer.validated_data['business_type'],
+                        "country": serializer.validated_data['country'].code if hasattr(serializer.validated_data['country'], 'code') else None,
+                        "legal_structure": serializer.validated_data['legal_structure'],
+                        "date_founded": serializer.validated_data['date_founded'].isoformat() if serializer.validated_data.get('date_founded') else None,
+                        "first_name": first_name,
+                        "last_name": last_name,
+                        "created_at": timezone.now().isoformat()
+                    },
+                    "pendingSetup": pending_setup,
+                    "schemaSetup": {
+                        "status": "deferred",
+                        "message": "Database setup will be performed automatically when you reach the dashboard",
+                        "backgroundProcessing": True
+                    },
+                    "timestamp": timezone.now().isoformat()
                 }
-                
-                request.session['pending_schema_setup'] = pending_setup
-                request.session.modified = True
-                
-                # Log the pending setup for debugging
-                logger.info(f"Created pending schema setup with deferred=True for user {request.user.id}", extra={
-                    'user_id': str(request.user.id),
-                    'business_id': str(business.id),
-                    'deferred': True,
-                    'next_step': 'subscription'
-                })
-                
-                # Also store in user profile metadata for persistence
-                try:
-                    profile = UserProfile.objects.get(user=request.user)
-                    if not hasattr(profile, 'metadata') or not isinstance(profile.metadata, dict):
-                        profile.metadata = {}
-                    
-                    # Ensure the deferred flag is explicitly set to True
-                    pending_setup['deferred'] = True
-                    profile.metadata['pending_schema_setup'] = pending_setup
-                    profile.save(update_fields=['metadata'])
-                    
-                    logger.info(f"Stored pending schema setup in profile metadata for user {request.user.id}", extra={
-                        'user_id': str(request.user.id),
-                        'profile_id': str(profile.id),
-                        'deferred': True,
-                        'next_step': 'subscription'
-                    })
-                    
-                    # Update tenant status to indicate setup is deferred
-                    if tenant:
-                        tenant.setup_status = 'deferred'
-                        tenant.save(update_fields=['setup_status'])
-                        logger.info(f"Marked tenant setup as deferred for user {request.user.id}")
-                except Exception as e:
-                    logger.warning("Failed to store pending setup in profile metadata", extra={
-                        'request_id': request_id,
-                        'error': str(e),
-                        'error_type': type(e).__name__,
-                        'stack_trace': traceback.format_exc()
-                    })
-                
-                logger.info("Business info saved quickly, all schema setup deferred:", {
-                    'request_id': request_id,
-                    'user_id': str(request.user.id),
-                    'business_id': str(business.id),
-                    'setup_status': 'deferred'
-                })
-                
-                # Prepare response with business info and tenant info
-                response_data = {
-                    "success": True,
-                    "message": "Business information saved successfully. You can continue with the onboarding process without waiting.",
-                    "request_id": request_id,
-                    "data": {
-                        "onboarding": {
-                            "status": progress.onboarding_status,
-                            "currentStep": progress.current_step,
-                            "nextStep": progress.next_step,
-                            "redirectTo": "/onboarding/subscription"  # Explicitly tell frontend where to go next
-                        },
-                       "tenant": {
-                            "database_status": tenant.database_status if tenant else None,
-                            "setup_status": tenant.setup_status if tenant else None,
-                            "last_setup_attempt": tenant.last_setup_attempt.isoformat() if tenant and hasattr(tenant, 'last_setup_attempt') and tenant.last_setup_attempt else None
-                        },
-                        "businessInfo": {
-                            "id": str(business.id),
-                            "business_num": business_num,
-                            "business_name": business.business_name,
-                            "business_type": business.business_type,
-                            "country": business.country.code if business.country else None,
-                            "legal_structure": business.legal_structure,
-                            "date_founded": business.date_founded.isoformat() if business.date_founded else None,
-                            "first_name": first_name,
-                            "last_name": last_name,
-                            "created_at": business.created_at.isoformat() if hasattr(business, 'created_at') and business.created_at else None
-                        },
-                        "schemaSetup": {
-                            "status": "deferred",
-                            "message": "Database setup will be performed automatically when you reach the dashboard",
-                            "backgroundProcessing": True
-                        },
-                        "timestamp": timezone.now().isoformat()
-                    }
-                }
-
-                return Response(response_data, status=status.HTTP_200_OK)
+            }
+            
+            # Create a response object
+            response = Response(response_data, status=status.HTTP_200_OK)
+            
+            # Store the pending setup data in a cookie instead of session
+            # This avoids database writes and transaction issues
+            response.set_cookie(
+                'pending_schema_setup',
+                json.dumps(pending_setup),
+                max_age=86400,  # 1 day
+                httponly=True,
+                samesite='Lax'
+            )
+            
+            # Log that we're deferring actual database work
+            logger.info(f"Created pending schema setup with deferred=True for user {request.user.id}", extra={
+                'user_id': str(request.user.id),
+                'business_id': str(business_id),
+                'deferred': True,
+                'next_step': 'subscription'
+            })
+            
+            return response
 
         except Exception as e:
             logger.error("Error saving business info:", {
@@ -1805,31 +1817,6 @@ class SaveStep1View(APIView):
                 'error': str(e),
                 'trace': traceback.format_exc()
             })
-            # Update tenant and progress to reflect error
-            try:
-                with transaction.atomic():
-                    with connection.cursor() as cursor:
-                        if request.user.tenant:
-                            cursor.execute("""
-                                UPDATE auth_tenant
-                                SET database_status = 'error',
-                                    setup_status = 'failed',
-                                    last_setup_attempt = NOW(),
-                                    setup_error_message = %s
-                                WHERE owner_id = %s
-                            """, [str(e), str(request.user.id)])
-
-                    # Try to update progress if it exists
-                    try:
-                        progress = OnboardingProgress.objects.get(user=request.user)
-                        progress.setup_error = str(e)
-                        progress.save(update_fields=['setup_error'])
-                    except OnboardingProgress.DoesNotExist:
-                        logger.warning(f"No onboarding progress found for user {request.user.id} during error handling")
-                    except Exception as inner_e:
-                        logger.warning(f"Failed to update onboarding progress during error handling: {str(inner_e)}")
-            except Exception as err:
-                logger.error(f"Error during error handling: {str(err)}")
 
             return Response({
                 'success': False,
@@ -1878,33 +1865,42 @@ class SaveStep2View(APIView):
     def get_business(self, request):
         """Retrieve business with explicit default database connection"""
         try:
-            # First try to get the profile and business without locking
-            profile = UserProfile.objects.select_related('business').get(user=request.user)
-            if profile.business:
-                return profile.business
+            # Use values() to avoid selecting all fields and only get the necessary data
+            profile_data = UserProfile.objects.filter(user=request.user).values('id', 'business_id').first()
+            
+            if profile_data and profile_data['business_id']:
+                # If we have a business_id, just get the business directly
+                return Business.objects.get(id=profile_data['business_id'])
 
             # Check session using default DB
             if business_id := request.session.get('business_id'):
                 try:
                     business = Business.objects.get(id=business_id)
-                    # Update profile with business in a separate transaction
-                    with transaction.atomic():
-                        profile_to_update = UserProfile.objects.select_for_update().get(id=profile.id)
-                        profile_to_update.business = business
-                        profile_to_update.save(update_fields=['business'])
+                    
+                    # Only if we have a profile, update it with business in a separate transaction
+                    if profile_data:
+                        # Use direct SQL to avoid ORM issues with the occupation field
+                        from django.db import connection
+                        with connection.cursor() as cursor:
+                            cursor.execute("""
+                                UPDATE users_userprofile 
+                                SET business_id = %s 
+                                WHERE id = %s
+                            """, [business.id, profile_data['id']])
+                    
                     return business
                 except Business.DoesNotExist:
                     # Continue to next method if business not found
                     pass
 
             # Check onboarding progress using default DB
-            progress = OnboardingProgress.objects.get(user=request.user)
-            if progress.business:
-                return progress.business
+            progress_data = OnboardingProgress.objects.filter(user=request.user).values('business_id').first()
+            if progress_data and progress_data['business_id']:
+                return Business.objects.get(id=progress_data['business_id'])
 
-        except (UserProfile.DoesNotExist, OnboardingProgress.DoesNotExist):
-            pass
-            
+        except Exception as e:
+            logger.error(f"Business lookup error: {str(e)}", extra={'user': request.user.id})
+                
         logger.error("Business lookup failed", extra={'user': request.user.id})
         raise ValidationError({
             'error': 'Complete business setup first',
@@ -1914,7 +1910,19 @@ class SaveStep2View(APIView):
 
     def handle_subscription_creation(self, request, business, data):
         """Core subscription handling with explicit DB connections"""
-        with transaction.atomic():
+        # Manual transaction handling instead of atomic
+        from django.db import connection
+        
+        # Store autocommit setting
+        old_autocommit = connection.get_autocommit()
+        connection.set_autocommit(True)  # Important: Set autocommit to True
+        
+        try:
+            # Create a new connection if needed
+            if connection.in_atomic_block:
+                connection.close()
+                connection.connect()
+            
             # Create/update subscription in default DB
             subscription = Subscription.objects.update_or_create(
                 business=business,
@@ -2008,7 +2016,17 @@ class SaveStep2View(APIView):
                 logger.error(f"Failed to update Cognito attributes: {str(e)}")
                 # Continue even if Cognito update fails
 
-        return subscription
+            return subscription
+        except Exception as e:
+            logger.error(f"Error in handle_subscription_creation: {str(e)}", exc_info=True)
+            raise
+        finally:
+            # Restore previous autocommit setting
+            try:
+                if old_autocommit != connection.get_autocommit():
+                    connection.set_autocommit(old_autocommit)
+            except Exception as ac_error:
+                logger.error(f"Error restoring autocommit: {ac_error}")
 
     def post(self, request):
         request_id = str(uuid.uuid4())
@@ -2024,16 +2042,38 @@ class SaveStep2View(APIView):
             business = self.get_business(request)
 
             # Database operations
-            with transaction.atomic():
+            # Manual transaction handling instead of atomic
+            from django.db import connection
+            
+            # Store autocommit setting
+            old_autocommit = connection.get_autocommit()
+            connection.set_autocommit(True)  # Important: Set autocommit to True
+            
+            try:
+                # Create a new connection if needed
+                if connection.in_atomic_block:
+                    connection.close()
+                    connection.connect()
+                
                 subscription = self.handle_subscription_creation(request, business, request.data)
 
-            return Response({
-                'success': True,
-                'selected_plan': subscription.selected_plan,
-                'billing_cycle': subscription.billing_cycle,
-                'next_step': 'complete' if subscription.is_active else 'payment',
-                'onboarding_status': 'subscription'
-            }, status=status.HTTP_200_OK)
+                return Response({
+                    'success': True,
+                    'selected_plan': subscription.selected_plan,
+                    'billing_cycle': subscription.billing_cycle,
+                    'next_step': 'complete' if subscription.is_active else 'payment',
+                    'onboarding_status': 'subscription'
+                }, status=status.HTTP_200_OK)
+            except Exception as e:
+                logger.error(f"Error in post transaction: {str(e)}", exc_info=True)
+                raise
+            finally:
+                # Restore previous autocommit setting
+                try:
+                    if old_autocommit != connection.get_autocommit():
+                        connection.set_autocommit(old_autocommit)
+                except Exception as ac_error:
+                    logger.error(f"Error restoring autocommit: {ac_error}")
 
         except ValidationError as e:
             # Django ValidationError doesn't have a 'detail' attribute, but DRF ValidationError does
@@ -2054,7 +2094,6 @@ class SaveStep2View(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-
 class SaveStep3View(BaseOnboardingView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [CognitoAuthentication]
@@ -2064,7 +2103,19 @@ class SaveStep3View(BaseOnboardingView):
     @sync_to_async
     def save_payment_status(self, user, payment_completed, payment_data=None):
         """Save payment status with validation and transaction handling."""
-        with transaction.atomic():
+        # Manual transaction handling instead of atomic
+        from django.db import connection
+        
+        # Store autocommit setting
+        old_autocommit = connection.get_autocommit()
+        connection.set_autocommit(True)  # Important: Set autocommit to True
+        
+        try:
+            # Create a new connection if needed
+            if connection.in_atomic_block:
+                connection.close()
+                connection.connect()
+                
             try:
                 progress = OnboardingProgress.objects.select_for_update().get(user=user)
 
@@ -2098,6 +2149,16 @@ class SaveStep3View(BaseOnboardingView):
             except Exception as e:
                 logger.error(f"Error saving payment status: {str(e)}", exc_info=True)
                 raise
+        except Exception as e:
+            logger.error(f"Transaction error: {str(e)}", exc_info=True)
+            raise
+        finally:
+            # Restore previous autocommit setting
+            try:
+                if old_autocommit != connection.get_autocommit():
+                    connection.set_autocommit(old_autocommit)
+            except Exception as ac_error:
+                logger.error(f"Error restoring autocommit: {ac_error}")
 
     @sync_to_async
     def validate_payment_data(self, data):
@@ -2125,7 +2186,6 @@ class SaveStep3View(BaseOnboardingView):
         user = await self.get_user(request)
         data = request.data
         state_manager = OnboardingStateManager(user)
-
 
         try:
             # Validate current state
@@ -2220,6 +2280,8 @@ class SaveStep3View(BaseOnboardingView):
                 "error": "Failed to fetch payment information",
                 "type": "server_error"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 # Define task states as an enum for better type safety and validation
 class TaskState(Enum):
@@ -2339,7 +2401,6 @@ class SaveStep4View(BaseOnboardingView):
                 'error': str(e),
                 'code': 'dispatch_error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
 
     def _error_response(self, message, code, status_code, request_id):
         response = Response({
@@ -2432,7 +2493,6 @@ class SaveStep4View(BaseOnboardingView):
         except Exception as e:
             return self._handle_exception(e, request_id)
 
-
     def get_or_create_user_profile(self, user, request_id=None):
         """
         Retrieves or creates a user profile with enhanced error handling and retries.
@@ -2470,7 +2530,19 @@ class SaveStep4View(BaseOnboardingView):
             except UserProfile.DoesNotExist:
                 try:
                     # Create new profile with atomic transaction
-                    with transaction.atomic():
+                    # Manual transaction handling instead of atomic
+                    from django.db import connection
+                    
+                    # Store autocommit setting
+                    old_autocommit = connection.get_autocommit()
+                    connection.set_autocommit(True)  # Important: Set autocommit to True
+                    
+                    try:
+                        # Create a new connection if needed
+                        if connection.in_atomic_block:
+                            connection.close()
+                            connection.connect()
+                        
                         # Get or create business first
                         business, created = Business.objects.get_or_create(
                             owner=user,
@@ -2498,6 +2570,16 @@ class SaveStep4View(BaseOnboardingView):
                             'business_created': created
                         })
                         return profile
+                    except Exception as e:
+                        logger.error(f"Error in transaction: {str(e)}", exc_info=True)
+                        raise
+                    finally:
+                        # Restore previous autocommit setting
+                        try:
+                            if old_autocommit != connection.get_autocommit():
+                                connection.set_autocommit(old_autocommit)
+                        except Exception as ac_error:
+                            logger.error(f"Error restoring autocommit: {ac_error}")
 
                 except IntegrityError as e:
                     # Handle race condition - another process might have created the profile
@@ -2511,7 +2593,7 @@ class SaveStep4View(BaseOnboardingView):
                         continue
                     raise
 
-            raise Exception("Failed to create user profile after retries")
+        raise Exception("Failed to create user profile after retries")
 
     def get_progress_with_lock(self, user, request_id=None):
         """
@@ -2537,7 +2619,19 @@ class SaveStep4View(BaseOnboardingView):
                 
                 if progress_exists:
                     # If it exists, lock it without using select_related to avoid the nullable join issue
-                    with transaction.atomic():
+                    # Manual transaction handling instead of atomic
+                    from django.db import connection
+                    
+                    # Store autocommit setting
+                    old_autocommit = connection.get_autocommit()
+                    connection.set_autocommit(True)  # Important: Set autocommit to True
+                    
+                    try:
+                        # Create a new connection if needed
+                        if connection.in_atomic_block:
+                            connection.close()
+                            connection.connect()
+                        
                         progress = OnboardingProgress.objects.select_for_update(nowait=True).get(user=user)
                         
                         # After locking, fetch related objects separately if needed
@@ -2552,6 +2646,16 @@ class SaveStep4View(BaseOnboardingView):
                             'attempt': attempt + 1
                         })
                         return progress
+                    except Exception as e:
+                        logger.error(f"Error in transaction: {str(e)}", exc_info=True)
+                        raise
+                    finally:
+                        # Restore previous autocommit setting
+                        try:
+                            if old_autocommit != connection.get_autocommit():
+                                connection.set_autocommit(old_autocommit)
+                        except Exception as ac_error:
+                            logger.error(f"Error restoring autocommit: {ac_error}")
                 else:
                     logger.error("Onboarding progress not found:", {
                         'request_id': request_id,
@@ -2577,6 +2681,9 @@ class SaveStep4View(BaseOnboardingView):
                     'user_email': user.email
                 })
                 raise
+
+        # If we get here, we've exhausted all retries
+        raise Exception("Failed to get progress with lock after maximum retries")
 
     @transaction.atomic
     def handle_start(self, user, data):
@@ -2680,7 +2787,19 @@ class SaveStep4View(BaseOnboardingView):
         
         try:
             # Acquire lock on progress record to prevent race conditions
-            with transaction.atomic():
+            # Manual transaction handling instead of atomic
+            from django.db import connection
+            
+            # Store autocommit setting
+            old_autocommit = connection.get_autocommit()
+            connection.set_autocommit(True)  # Important: Set autocommit to True
+            
+            try:
+                # Create a new connection if needed
+                if connection.in_atomic_block:
+                    connection.close()
+                    connection.connect()
+                
                 progress = OnboardingProgress.objects.select_for_update().get(user=user)
 
                 # If there's an active task, handle its cancellation
@@ -2744,6 +2863,16 @@ class SaveStep4View(BaseOnboardingView):
                     'status': 'no_task',
                     'message': 'No active setup task found'
                 })
+            except Exception as e:
+                logger.error(f"Error in transaction: {str(e)}", exc_info=True)
+                raise
+            finally:
+                # Restore previous autocommit setting
+                try:
+                    if old_autocommit != connection.get_autocommit():
+                        connection.set_autocommit(old_autocommit)
+                except Exception as ac_error:
+                    logger.error(f"Error restoring autocommit: {ac_error}")
 
         except OnboardingProgress.DoesNotExist:
             logger.error("Cannot cancel - progress not found:", {
@@ -2898,8 +3027,20 @@ class OnboardingSuccessView(BaseOnboardingView):
         """
         Update the user's subscription details and onboarding progress.
         """
+        # Manual transaction handling instead of atomic
+        from django.db import connection
+        
+        # Store autocommit setting
+        old_autocommit = connection.get_autocommit()
+        connection.set_autocommit(True)  # Important: Set autocommit to True
+        
         try:
-            with transaction.atomic():
+            # Create a new connection if needed
+            if connection.in_atomic_block:
+                connection.close()
+                connection.connect()
+            
+            try:
                 # Update onboarding progress
                 progress = OnboardingProgress.objects.select_for_update().get(user=user)
                 progress.payment_completed = True
@@ -2929,12 +3070,22 @@ class OnboardingSuccessView(BaseOnboardingView):
                 )
                 logger.info(f"Subscription updated for user: {user.email}")
                 return subscription
-        except OnboardingProgress.DoesNotExist:
-            logger.error(f"Onboarding progress not found for user: {user.id}")
-            raise
+            except OnboardingProgress.DoesNotExist:
+                logger.error(f"Onboarding progress not found for user: {user.id}")
+                raise
+            except Exception as e:
+                logger.error(f"Error updating subscription: {str(e)}", exc_info=True)
+                raise
         except Exception as e:
-            logger.error(f"Error updating subscription: {str(e)}", exc_info=True)
+            logger.error(f"Transaction error: {str(e)}", exc_info=True)
             raise
+        finally:
+            # Restore previous autocommit setting
+            try:
+                if old_autocommit != connection.get_autocommit():
+                    connection.set_autocommit(old_autocommit)
+            except Exception as ac_error:
+                logger.error(f"Error restoring autocommit: {ac_error}")
 
     async def post(self, request):
         """
@@ -3187,7 +3338,19 @@ class DatabaseHealthCheckView(BaseOnboardingView):
             is_healthy = check_schema_health(tenant.schema_name)
             tables_valid = self.check_table_requirements(tenant.schema_name) if is_healthy else False
 
-            with transaction.atomic():
+            # Manual transaction handling instead of atomic
+            from django.db import connection
+            
+            # Store autocommit setting
+            old_autocommit = connection.get_autocommit()
+            connection.set_autocommit(True)  # Important: Set autocommit to True
+            
+            try:
+                # Create a new connection if needed
+                if connection.in_atomic_block:
+                    connection.close()
+                    connection.connect()
+                
                 # Update tenant status based on health check
                 with connection.cursor() as cursor:
                     if is_healthy and tables_valid:
@@ -3207,7 +3370,6 @@ class DatabaseHealthCheckView(BaseOnboardingView):
                             WHERE owner_id = %s
                         """, [str(request.user.id)])
                     
-                # Get updated tenant status
                 # Get updated tenant status
                 tenant_status = None
                 with connection.cursor() as cursor:
@@ -3234,10 +3396,20 @@ class DatabaseHealthCheckView(BaseOnboardingView):
                     "timestamp": timezone.now().isoformat()
                 }
 
-            return Response(
-                response_data,
-                status=status.HTTP_200_OK if (is_healthy and tables_valid) else status.HTTP_503_SERVICE_UNAVAILABLE
-            )
+                return Response(
+                    response_data,
+                    status=status.HTTP_200_OK if (is_healthy and tables_valid) else status.HTTP_503_SERVICE_UNAVAILABLE
+                )
+            except Exception as e:
+                logger.error(f"Error in transaction: {str(e)}", exc_info=True)
+                raise
+            finally:
+                # Restore previous autocommit setting
+                try:
+                    if old_autocommit != connection.get_autocommit():
+                        connection.set_autocommit(old_autocommit)
+                except Exception as ac_error:
+                    logger.error(f"Error restoring autocommit: {ac_error}")
 
         except Exception as e:
             logger.error(f"Health check error: {str(e)}", exc_info=True)
@@ -3248,7 +3420,9 @@ class DatabaseHealthCheckView(BaseOnboardingView):
                 "message": str(e),
                 "timestamp": timezone.now().isoformat()
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
+
+
+
 class ResetOnboardingView(BaseOnboardingView):
 
     def get_user_profile(self, user):
@@ -3289,6 +3463,7 @@ class ResetOnboardingView(BaseOnboardingView):
             return False
 
     def reset_business_data(self, user):
+        """Reset business data to initial state"""
         try:
             logger.info(f"Resetting business data for user {user.email}")
             business = Business.objects.get(user_profile__user=user)
@@ -3318,41 +3493,59 @@ class ResetOnboardingView(BaseOnboardingView):
         Raises:
             Exception: If reset operations fail
         """
+        # Manual transaction handling instead of atomic
+        from django.db import connection
+        
+        # Store autocommit setting
+        old_autocommit = connection.get_autocommit()
+        connection.set_autocommit(True)  # Important: Set autocommit to True
+        
         try:
-            with transaction.atomic():
-                # Reset tenant-related fields
-                user = profile.user
-                if user.tenant:
-                    # Clean up schema
-                    self.cleanup_tenant_schema(user.tenant)
-                    # Delete tenant
-                    user.tenant.delete()
-                    user.tenant = None
-                    user.save(update_fields=['tenant'])
+            # Create a new connection if needed
+            if connection.in_atomic_block:
+                connection.close()
+                connection.connect()
+                
+            # Reset tenant-related fields
+            user = profile.user
+            if user.tenant:
+                # Clean up schema
+                self.cleanup_tenant_schema(user.tenant)
+                # Delete tenant
+                user.tenant.delete()
+                user.tenant = None
+                user.save(update_fields=['tenant'])
 
-                profile.last_setup_attempt = None
-                profile.setup_error_message = None
-                profile.database_setup_task_id = None
-                
-                # Save all changes atomically
-                profile.save(update_fields=[
-                    'last_setup_attempt',
-                    'setup_error_message',
-                    'database_setup_task_id'
-                ])
-                
-                # Reset related onboarding progress
-                OnboardingProgress.objects.filter(user=profile.user).update(
-                    onboarding_status='step1',
-                    current_step=1,
-                    completed_at=None
-                )
-                
-                logger.info(f"Successfully reset profile for user {profile.user.email}")
-                
+            profile.last_setup_attempt = None
+            profile.setup_error_message = None
+            profile.database_setup_task_id = None
+            
+            # Save all changes atomically
+            profile.save(update_fields=[
+                'last_setup_attempt',
+                'setup_error_message',
+                'database_setup_task_id'
+            ])
+            
+            # Reset related onboarding progress
+            OnboardingProgress.objects.filter(user=profile.user).update(
+                onboarding_status='step1',
+                current_step=1,
+                completed_at=None
+            )
+            
+            logger.info(f"Successfully reset profile for user {profile.user.email}")
+            
         except Exception as e:
             logger.error(f"Failed to reset profile: {str(e)}", exc_info=True)
             raise
+        finally:
+            # Restore previous autocommit setting
+            try:
+                if old_autocommit != connection.get_autocommit():
+                    connection.set_autocommit(old_autocommit)
+            except Exception as ac_error:
+                logger.error(f"Error restoring autocommit: {ac_error}")
 
     def post(self, request):
         """
@@ -3393,7 +3586,6 @@ class ResetOnboardingView(BaseOnboardingView):
                 "error": str(e),
                 "code": "reset_failed"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -3551,14 +3743,6 @@ async def cancel_task(request, task_id: str):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class SetupStatusView(BaseOnboardingView):
-    def options(self, request, *args, **kwargs):
-        response = Response()
-        response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
-        response["Access-Control-Allow-Methods"] = "GET, OPTIONS"
-        response["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Request-Id"
-        response["Access-Control-Allow-Credentials"] = "true"
-        return response
-    
     """
     View for checking database setup status. This view provides detailed information
     about the current state of a user's database setup process.
@@ -3568,6 +3752,14 @@ class SetupStatusView(BaseOnboardingView):
     authentication_classes = [CognitoAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
+
+    def options(self, request, *args, **kwargs):
+        response = Response()
+        response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
+        response["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Request-Id"
+        response["Access-Control-Allow-Credentials"] = "true"
+        return response
 
     def get_task_info(self, task_id):
         """
@@ -3655,7 +3847,6 @@ class SetupStatusView(BaseOnboardingView):
                 "error": str(e),
                 "timestamp": timezone.now().isoformat()
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class ValidateSubscriptionAccessView(BaseOnboardingView):
     def get(self, request):
@@ -3967,7 +4158,19 @@ class UpdateOnboardingStatusView(APIView):
                     'valid_steps': self.VALID_STEPS
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            with transaction.atomic():
+            # Manual transaction handling instead of atomic
+            from django.db import connection
+            
+            # Store autocommit setting
+            old_autocommit = connection.get_autocommit()
+            connection.set_autocommit(True)  # Important: Set autocommit to True
+            
+            try:
+                # Create a new connection if needed
+                if connection.in_atomic_block:
+                    connection.close()
+                    connection.connect()
+                    
                 # Get progress with locking
                 progress = OnboardingProgress.objects.select_for_update().get(user=request.user)
                 
@@ -3993,6 +4196,16 @@ class UpdateOnboardingStatusView(APIView):
                     "next_step": next_step,
                     "onboarding_status": progress.onboarding_status
                 })
+            except Exception as e:
+                logger.error(f"Error in transaction: {str(e)}", exc_info=True)
+                raise
+            finally:
+                # Restore previous autocommit setting
+                try:
+                    if old_autocommit != connection.get_autocommit():
+                        connection.set_autocommit(old_autocommit)
+                except Exception as ac_error:
+                    logger.error(f"Error restoring autocommit: {ac_error}")
 
         except OnboardingProgress.DoesNotExist:
             logger.error("Progress not found:", {
@@ -4044,7 +4257,19 @@ def stripe_webhook(request):
                 return HttpResponse(status=404)
                 
             # Update subscription status
-            with transaction.atomic():
+            # Manual transaction handling instead of atomic
+            from django.db import connection
+            
+            # Store autocommit setting
+            old_autocommit = connection.get_autocommit()
+            connection.set_autocommit(True)  # Important: Set autocommit to True
+            
+            try:
+                # Create a new connection if needed
+                if connection.in_atomic_block:
+                    connection.close()
+                    connection.connect()
+                    
                 profile = UserProfile.objects.select_for_update().get(user=user)
                 progress = OnboardingProgress.objects.select_for_update().get(user=user)
                 
@@ -4124,6 +4349,17 @@ def stripe_webhook(request):
                 
                 logger.info(f"Subscription activated for user {user.id}")
                 
+            except Exception as e:
+                logger.error(f"Error in transaction: {str(e)}", exc_info=True)
+                raise
+            finally:
+                # Restore previous autocommit setting
+                try:
+                    if old_autocommit != connection.get_autocommit():
+                        connection.set_autocommit(old_autocommit)
+                except Exception as ac_error:
+                    logger.error(f"Error restoring autocommit: {ac_error}")
+                
         elif event.type == 'customer.subscription.deleted':
             subscription = event.data.object
             customer = stripe.Customer.retrieve(subscription.customer)
@@ -4177,3 +4413,30 @@ class SubscriptionStatusView(BaseOnboardingView):
                 'error': f'Failed to get subscription status: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+def update_session(request):
+    """
+    Update the session without causing database transaction issues.
+    
+    This function handles updating session data safely without using 
+    database transactions that could cause conflicts.
+    """
+    try:
+        # Get data from request
+        data = json.loads(request.body)
+        
+        # Update session data
+        for key, value in data.items():
+            request.session[key] = value
+        
+        request.session.modified = True
+        
+        # Return success response
+        return JsonResponse({
+            'success': True,
+            'message': 'Session updated successfully'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)

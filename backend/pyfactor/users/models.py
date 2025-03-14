@@ -112,7 +112,7 @@ class BusinessMember(models.Model):
     ROLE_CHOICES = [
         ('OWNER', 'Business Owner'),
         ('ADMIN', 'Administrator'),
-        ('EMPLOYEE', 'Employee'),
+        ('EMPLOYEE', 'Employee')
     ]
 
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='business_memberships')
@@ -193,7 +193,7 @@ class UserProfile(models.Model):
             schema_name = f"tenant_{self.user.id}"
             try:
                 # Try to get existing tenant first
-                tenant = Tenant.objects.get(owner=self.user)
+                tenant = Tenant.objects.get(owner_id=self.user.id)
                 if not tenant.schema_name:
                     tenant.schema_name = schema_name
                     tenant.save(update_fields=['schema_name'])
@@ -202,7 +202,7 @@ class UserProfile(models.Model):
                 # Create tenant first
                 tenant = Tenant.objects.create(
                     name=self.business.business_name if self.business else f"Tenant-{self.user.id}",
-                    owner=self.user,
+                    owner_id=self.user.id,  # Use owner_id instead of owner
                     schema_name=schema_name,
                     setup_status='pending'
                 )

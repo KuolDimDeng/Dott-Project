@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 """
 Radical approach to break circular dependencies by:
-1. Temporarily modifying both models involved in the circular dependency
-2. Running migrations in distinct phases
+1. Temporarily modifying all models involved in circular dependencies
+2. Running migrations in a controlled order
 3. Restoring the original model files
 4. Creating migrations to add back the relationships
 
 This script:
-- Backs up both hr/models.py and users/models.py
-- Modifies both files to remove circular references
+- Backs up hr/models.py, users/models.py, banking/models.py, and custom_auth/models.py
+- Modifies all files to remove circular references
 - Drops all tables in the database
 - Deletes all migration files
-- Creates and applies migrations with the modified models
+- Creates and applies migrations with the modified models in a specific order
 - Restores the original model files
 - Creates and applies migrations to add back the relationships
 
@@ -43,6 +43,8 @@ logger = logging.getLogger(__name__)
 # Set up constants
 HR_MODEL_PATH = 'hr/models.py'
 USERS_MODEL_PATH = 'users/models.py'
+BANKING_MODEL_PATH = 'banking/models.py'
+CUSTOM_AUTH_MODEL_PATH = 'custom_auth/models.py'
 
 def run_command(command):
     """Run a shell command and print output"""
@@ -85,33 +87,97 @@ def backup_file(file_path):
 def fix_indentation_issues():
     """Fix indentation issues in model files"""
     try:
-        # Fix users/models.py
+        # Fix users/models.py using a more robust line-by-line approach
         with open(USERS_MODEL_PATH, 'r') as f:
-            content = f.read()
+            lines = f.readlines()
         
-        # Fix indentation for ROLE_CHOICES closing brace
-        fixed_content = re.sub(
-            r'(\s+)\}(\s+)',
-            r'    }\n\n',
-            content
-        )
+        fixed_lines = []
+        in_role_choices = False
+        for line in lines:
+            # Check if we're entering ROLE_CHOICES definition
+            if 'ROLE_CHOICES' in line and '[' in line:
+                in_role_choices = True
+                fixed_lines.append(line)
+            # Check if we're at the closing bracket of ROLE_CHOICES
+            elif in_role_choices and ']' in line:
+                in_role_choices = False
+                # Ensure proper indentation for closing bracket
+                fixed_lines.append('    ]\n')
+            # Fix indentation for closing braces inside ROLE_CHOICES
+            elif in_role_choices and '}' in line and not line.strip().startswith('}'):
+                # Ensure proper indentation for closing brace
+                fixed_lines.append('    ' + line.strip() + '\n')
+            # Fix indentation for 'employee = None' line
+            elif 'employee = None' in line and '# Will fix this after initial migration' in line:
+                fixed_lines.append('    employee = None  # Will fix this after initial migration\n')
+            # Keep other lines unchanged
+            else:
+                fixed_lines.append(line)
         
-        # Also fix indentation for 'employee = None' line if it exists
-        fixed_content = re.sub(
-            r'(\s+)employee = None  # Will fix this after initial migration',
-            r'    employee = None  # Will fix this after initial migration',
-            fixed_content
-        )
+        # Write the fixed content back to the file
+        with open(USERS_MODEL_PATH, 'w') as f:
+            f.writelines(fixed_lines)
         
-        # Check if any changes were made
-        if fixed_content != content:
-            with open(USERS_MODEL_PATH, 'w') as f:
-                f.write(fixed_content)
-            logger.info("Fixed indentation issues in users/models.py")
-        
+        logger.info("Fixed indentation issues in users/models.py using line-by-line approach")
         return True
     except Exception as e:
         logger.error(f"Error fixing indentation issues: {str(e)}")
+        return False
+
+def modify_banking_model():
+    """Replace Employee ForeignKey with UUID field in banking/models.py"""
+    try:
+        with open(BANKING_MODEL_PATH, 'r') as f:
+            content = f.read()
+        
+        # Replace employee ForeignKey with simple UUID
+        modified = re.sub(
+            r'employee\s*=\s*models\.ForeignKey\(.*?hr\.Employee.*?\)',
+            'employee_id = models.UUIDField(null=True, blank=True)  # Temporarily replaced ForeignKey',
+            content,
+            flags=re.DOTALL
+        )
+        
+        # Check if any changes were made
+        if modified == content:
+            logger.warning("No changes made to banking/models.py. The employee ForeignKey pattern might not have been found.")
+            logger.warning("You may need to manually modify the file.")
+        
+        with open(BANKING_MODEL_PATH, 'w') as f:
+            f.write(modified)
+        
+        logger.info("Modified banking/models.py to replace employee ForeignKey with UUIDField")
+        return True
+    except Exception as e:
+        logger.error(f"Error modifying banking/models.py: {str(e)}")
+        return False
+
+def modify_custom_auth_model():
+    """Modify Tenant model to break circular dependency with User"""
+    try:
+        with open(CUSTOM_AUTH_MODEL_PATH, 'r') as f:
+            content = f.read()
+        
+        # Replace owner ForeignKey with simple UUID
+        modified = re.sub(
+            r'owner\s*=\s*models\.OneToOneField\(.*?User.*?\)',
+            'owner_id = models.UUIDField(null=True, blank=True)  # Temporarily replaced OneToOneField',
+            content,
+            flags=re.DOTALL
+        )
+        
+        # Check if any changes were made
+        if modified == content:
+            logger.warning("No changes made to custom_auth/models.py. The owner OneToOneField pattern might not have been found.")
+            logger.warning("You may need to manually modify the file.")
+        
+        with open(CUSTOM_AUTH_MODEL_PATH, 'w') as f:
+            f.write(modified)
+        
+        logger.info("Modified custom_auth/models.py to replace owner OneToOneField with UUIDField")
+        return True
+    except Exception as e:
+        logger.error(f"Error modifying custom_auth/models.py: {str(e)}")
         return False
 
 def modify_hr_model():
@@ -261,7 +327,9 @@ def main():
     logger.info("Step 1: Backing up model files")
     backup_paths = [
         (HR_MODEL_PATH, backup_file(HR_MODEL_PATH)),
-        (USERS_MODEL_PATH, backup_file(USERS_MODEL_PATH))
+        (USERS_MODEL_PATH, backup_file(USERS_MODEL_PATH)),
+        (BANKING_MODEL_PATH, backup_file(BANKING_MODEL_PATH)),
+        (CUSTOM_AUTH_MODEL_PATH, backup_file(CUSTOM_AUTH_MODEL_PATH))
     ]
     
     # Check if backups were created successfully
@@ -272,7 +340,10 @@ def main():
     try:
         # Step 2: Modify models to break dependencies
         logger.info("Step 2: Modifying models to break circular dependencies")
-        if not modify_hr_model() or not modify_users_model():
+        if not (modify_hr_model() and
+                modify_users_model() and
+                modify_banking_model() and
+                modify_custom_auth_model()):
             logger.error("Failed to modify model files")
             restore_files(backup_paths)
             return False
@@ -298,10 +369,60 @@ def main():
             restore_files(backup_paths)
             return False
         
-        # Step 6: Apply migrations
-        logger.info("Step 6: Applying migrations")
+        # Step 6: Apply migrations in controlled order
+        logger.info("Step 6: Applying migrations in controlled order")
+        
+        # First apply auth and contenttypes
+        logger.info("Step 6.1: Applying auth and contenttypes migrations")
+        if not run_command("python manage.py migrate auth"):
+            logger.error("Failed to apply auth migrations")
+            restore_files(backup_paths)
+            return False
+        
+        if not run_command("python manage.py migrate contenttypes"):
+            logger.error("Failed to apply contenttypes migrations")
+            restore_files(backup_paths)
+            return False
+        
+        # Then apply custom_auth (without tenant relationship to user)
+        logger.info("Step 6.2: Applying custom_auth migrations")
+        if not run_command("python manage.py migrate custom_auth"):
+            logger.error("Failed to apply custom_auth migrations")
+            restore_files(backup_paths)
+            return False
+        
+        # Then users (without hr dependencies)
+        logger.info("Step 6.3: Applying users migrations")
+        if not run_command("python manage.py migrate users"):
+            logger.error("Failed to apply users migrations")
+            restore_files(backup_paths)
+            return False
+        
+        # Then hr (without banking dependencies)
+        logger.info("Step 6.4: Applying hr migrations")
+        if not run_command("python manage.py migrate hr"):
+            logger.error("Failed to apply hr migrations")
+            restore_files(backup_paths)
+            return False
+        
+        # Then banking
+        logger.info("Step 6.5: Applying banking migrations")
+        if not run_command("python manage.py migrate banking"):
+            logger.error("Failed to apply banking migrations")
+            restore_files(backup_paths)
+            return False
+        
+        # Then onboarding
+        logger.info("Step 6.6: Applying onboarding migrations")
+        if not run_command("python manage.py migrate onboarding"):
+            logger.error("Failed to apply onboarding migrations")
+            restore_files(backup_paths)
+            return False
+        
+        # Then remaining apps
+        logger.info("Step 6.7: Applying remaining migrations")
         if not run_command("python manage.py migrate"):
-            logger.error("Failed to apply migrations")
+            logger.error("Failed to apply remaining migrations")
             restore_files(backup_paths)
             return False
         
@@ -313,7 +434,7 @@ def main():
         
         # Step 8: Create migrations to add relationships back
         logger.info("Step 8: Creating migrations to restore relationships")
-        if not run_command("python manage.py makemigrations hr users --name restore_relationships"):
+        if not run_command("python manage.py makemigrations hr users banking custom_auth --name restore_relationships"):
             logger.error("Failed to create migrations to restore relationships")
             return False
         
