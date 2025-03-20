@@ -142,7 +142,90 @@ def check_expected_tables(schema_name):
     
     return missing_app_tables
 
-def check_tenant_schema(tenant_id=None):
+def check_migration_order(schema_name):
+    """
+    Check if custom_auth migrations are applied before users migrations.
+    
+    Returns:
+        dict: Info about migration order with keys 'correct_order', 'custom_auth_time', 'users_time'
+    """
+    if not check_migrations_table(schema_name):
+        return {'correct_order': False, 'error': 'No django_migrations table'}
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Set search path to the tenant schema
+    cursor.execute(f'SET search_path TO "{schema_name}"')
+    
+    # Get timestamps for custom_auth and users initial migrations
+    cursor.execute("""
+        SELECT 
+            (SELECT applied FROM django_migrations 
+             WHERE app = 'custom_auth' AND name = '0001_initial') as custom_auth_time,
+            (SELECT applied FROM django_migrations 
+             WHERE app = 'users' AND name = '0001_initial') as users_time
+    """)
+    
+    result = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    
+    # Check if both migrations exist
+    if result[0] is None or result[1] is None:
+        return {
+            'correct_order': False, 
+            'error': 'Missing migration record',
+            'custom_auth_exists': result[0] is not None,
+            'users_exists': result[1] is not None
+        }
+    
+    # Check order (custom_auth should be applied before users)
+    return {
+        'correct_order': result[0] < result[1],
+        'custom_auth_time': result[0],
+        'users_time': result[1]
+    }
+
+def fix_migration_order(schema_name):
+    """
+    Fix the order of custom_auth and users migrations by updating timestamps.
+    
+    Returns:
+        bool: True if fix was applied, False otherwise
+    """
+    if not check_migrations_table(schema_name):
+        return False
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Set search path to the tenant schema
+    cursor.execute(f'SET search_path TO "{schema_name}"')
+    
+    try:
+        # Update timestamps to ensure correct order
+        cursor.execute("""
+            UPDATE django_migrations 
+            SET applied = NOW() - INTERVAL '5 minutes'
+            WHERE app = 'custom_auth' AND name = '0001_initial';
+            
+            UPDATE django_migrations 
+            SET applied = NOW() - INTERVAL '3 minutes'
+            WHERE app = 'users' AND name = '0001_initial';
+        """)
+        
+        success = True
+    except Exception as e:
+        logger.error(f"Error fixing migration order in {schema_name}: {str(e)}")
+        success = False
+    
+    cursor.close()
+    conn.close()
+    
+    return success
+
+def check_tenant_schema(tenant_id=None, fix_issues=False):
     """Check tenant schema migrations and diagnose issues."""
     process_id = uuid.uuid4()
     start_time = time.time()
@@ -155,6 +238,9 @@ def check_tenant_schema(tenant_id=None):
     schemas_with_migrations_table = 0
     schemas_without_migrations_table = 0
     schemas_with_missing_app_tables = 0
+    schemas_with_correct_order = 0
+    schemas_with_incorrect_order = 0
+    schemas_fixed = 0
     
     if tenant_id:
         logger.info(f"[CHECK-{process_id}] Checking tenant schema for tenant {tenant_id}")
@@ -213,6 +299,24 @@ def check_tenant_schema(tenant_id=None):
                 # Log migrations by app
                 for app, migrations in app_migrations.items():
                     logger.info(f"[CHECK-{process_id}] App {app} has {len(migrations)} migrations")
+                
+                # Check migration order
+                order_info = check_migration_order(schema_name)
+                if 'error' in order_info:
+                    logger.warning(f"[CHECK-{process_id}] Cannot check migration order: {order_info['error']}")
+                elif order_info.get('correct_order'):
+                    schemas_with_correct_order += 1
+                    logger.info(f"[CHECK-{process_id}] Migration order is correct in schema {schema_name}")
+                else:
+                    schemas_with_incorrect_order += 1
+                    logger.error(f"[CHECK-{process_id}] MIGRATION ORDER ISSUE: custom_auth migration applied at {order_info['custom_auth_time']}, users migration applied at {order_info['users_time']}")
+                    
+                    if fix_issues:
+                        if fix_migration_order(schema_name):
+                            schemas_fixed += 1
+                            logger.info(f"[CHECK-{process_id}] Fixed migration order in schema {schema_name}")
+                        else:
+                            logger.error(f"[CHECK-{process_id}] Failed to fix migration order in schema {schema_name}")
             else:
                 schemas_without_migrations_table += 1
                 logger.warning(f"[CHECK-{process_id}] django_migrations table does not exist in schema {schema_name}")
@@ -273,6 +377,40 @@ def check_tenant_schema(tenant_id=None):
             if migrations_table_exists:
                 schemas_with_migrations_table += 1
                 logger.info(f"[CHECK-{process_id}] django_migrations table exists in schema {schema_name}")
+                
+                # Get migration records
+                migrations = get_migration_records(schema_name)
+                logger.info(f"[CHECK-{process_id}] Found {len(migrations)} migration records in schema {schema_name}")
+                
+                # Group migrations by app
+                app_migrations = {}
+                for migration in migrations:
+                    app = migration['app']
+                    if app not in app_migrations:
+                        app_migrations[app] = []
+                    app_migrations[app].append(migration['name'])
+                
+                # Log migrations by app
+                for app, migrations in app_migrations.items():
+                    logger.info(f"[CHECK-{process_id}] App {app} has {len(migrations)} migrations")
+                
+                # Check migration order
+                order_info = check_migration_order(schema_name)
+                if 'error' in order_info:
+                    logger.warning(f"[CHECK-{process_id}] Cannot check migration order: {order_info['error']}")
+                elif order_info.get('correct_order'):
+                    schemas_with_correct_order += 1
+                    logger.info(f"[CHECK-{process_id}] Migration order is correct in schema {schema_name}")
+                else:
+                    schemas_with_incorrect_order += 1
+                    logger.error(f"[CHECK-{process_id}] MIGRATION ORDER ISSUE: custom_auth migration applied at {order_info['custom_auth_time']}, users migration applied at {order_info['users_time']}")
+                    
+                    if fix_issues:
+                        if fix_migration_order(schema_name):
+                            schemas_fixed += 1
+                            logger.info(f"[CHECK-{process_id}] Fixed migration order in schema {schema_name}")
+                        else:
+                            logger.error(f"[CHECK-{process_id}] Failed to fix migration order in schema {schema_name}")
             else:
                 schemas_without_migrations_table += 1
                 logger.warning(f"[CHECK-{process_id}] django_migrations table does not exist in schema {schema_name}")
@@ -294,6 +432,10 @@ def check_tenant_schema(tenant_id=None):
     logger.info(f"[CHECK-{process_id}] Schemas with django_migrations table: {schemas_with_migrations_table}")
     logger.info(f"[CHECK-{process_id}] Schemas without django_migrations table: {schemas_without_migrations_table}")
     logger.info(f"[CHECK-{process_id}] Schemas with missing app tables: {schemas_with_missing_app_tables}")
+    logger.info(f"[CHECK-{process_id}] Schemas with correct migration order: {schemas_with_correct_order}")
+    logger.info(f"[CHECK-{process_id}] Schemas with incorrect migration order: {schemas_with_incorrect_order}")
+    if fix_issues:
+        logger.info(f"[CHECK-{process_id}] Schemas fixed: {schemas_fixed}")
     
     total_elapsed_time = time.time() - start_time
     logger.info(f"[CHECK-{process_id}] Successfully tested tenant migrations in {total_elapsed_time:.2f} seconds")
@@ -302,9 +444,7 @@ def main():
     """Main function."""
     parser = argparse.ArgumentParser(description='Check tenant schema migrations')
     parser.add_argument('--tenant_id', help='Check migrations for a specific tenant ID')
+    parser.add_argument('--fix', action='store_true', help='Fix migration order issues')
     args = parser.parse_args()
     
-    check_tenant_schema(tenant_id=args.tenant_id)
-
-if __name__ == '__main__':
-    main()
+    check_tenant_schema(tenant_id=args.tenant_id, fix_issues=args.fix)

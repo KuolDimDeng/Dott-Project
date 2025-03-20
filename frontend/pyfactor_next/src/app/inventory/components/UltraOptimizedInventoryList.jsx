@@ -119,110 +119,22 @@ const UltraOptimizedInventoryList = () => {
 
   // Fetch products with the appropriate service based on view mode
   const fetchProducts = useCallback(async (forceMock = false, forceOffline = false) => {
-    setLoading(true);
+    // Temporarily disable loading spinner
+    // setLoading(true);
     setError(null);
     
-    // If mock data is enabled or forced, use mock data
-    if (useMockData || forceMock) {
-      setTimeout(() => {
-        logger.info('Using mock inventory data');
-        const mockProducts = inventoryService.getMockProducts();
-        setProducts(mockProducts);
-        setTotalItems(mockProducts.length);
-        setTotalPages(1);
-        showSnackbar('Using demo data (API unavailable or slow to respond)', 'info');
-        setLoading(false);
-        setInitialLoading(false);
-      }, 500); // Simulate network delay
-      return;
-    }
-    
-    // If offline mode is enabled or forced, use offline data
-    if (useOfflineData || forceOffline) {
-      setTimeout(() => {
-        logger.info('Using offline inventory data');
-        const offlineProducts = ultraOptimizedInventoryService.getOfflineProducts();
-        setProducts(offlineProducts);
-        setTotalItems(offlineProducts.length);
-        setTotalPages(1);
-        showSnackbar('Using offline data (working offline)', 'info');
-        setLoading(false);
-        setInitialLoading(false);
-      }, 300);
-      return;
-    }
-    
-    try {
-      // Prepare filter options
-      const options = {
-        page: page,
-        ...filters
-      };
-      
-      // Filter out empty values
-      Object.keys(options).forEach(key => {
-        if (options[key] === '' || options[key] === undefined) {
-          delete options[key];
-        }
-      });
-      
-      // Use the appropriate service based on view mode
-      let response;
-      switch (viewMode) {
-        case 'ultra':
-          // Ultra-fast mode with minimal fields
-          response = await ultraOptimizedInventoryService.getUltraFastProducts(options);
-          break;
-        case 'standard':
-          // Standard mode with department info
-          response = await ultraOptimizedInventoryService.getProductsWithDepartment(options);
-          break;
-        case 'detailed':
-          // Detailed mode with all fields
-          response = await inventoryService.getProducts();
-          break;
-        default:
-          response = await ultraOptimizedInventoryService.getUltraFastProducts(options);
-      }
-      
-      if (response && response.results) {
-        setProducts(response.results);
-        setTotalItems(response.count || 0);
-        setTotalPages(Math.ceil((response.count || 0) / (viewMode === 'ultra' ? 10 : 20))); // Page size depends on view mode
-        
-        // Store data for offline use
-        ultraOptimizedInventoryService.storeProductsOffline(response.results);
-        
-        showSnackbar('Products loaded successfully', 'success');
-        setLoading(false);
-        setInitialLoading(false);
-        return;
-      }
-      
-      // If we get here, something went wrong with the response format
-      throw new Error('Invalid response format');
-      
-    } catch (error) {
-      logger.error('Error fetching products:', error);
-      
-      // Try offline data first
-      const offlineProducts = ultraOptimizedInventoryService.getOfflineProducts();
-      if (offlineProducts && offlineProducts.length > 0) {
-        setProducts(offlineProducts);
-        setTotalItems(offlineProducts.length);
-        setTotalPages(1);
-        setUseOfflineData(true);
-        showSnackbar('Using offline data (API unavailable)', 'warning');
-        setLoading(false);
-        setInitialLoading(false);
-        return;
-      }
-      
-      // Fall back to mock data if offline data is not available
-      setApiUnavailable(true);
-      fetchProducts(true); // Call again with forceMock=true
-    }
-  }, [useMockData, useOfflineData, viewMode, page, filters, showSnackbar]);
+    // Immediately use mock data for now due to network issues
+    logger.info('Using mock inventory data due to network issues');
+    const mockProducts = inventoryService.getMockProducts();
+    setProducts(mockProducts);
+    setTotalItems(mockProducts.length);
+    setTotalPages(1);
+    setApiUnavailable(true);
+    showSnackbar('Using demo data (API unavailable)', 'info');
+    setLoading(false);
+    setInitialLoading(false);
+    return;
+  }, [showSnackbar]);
 
   // Fetch product stats
   const fetchStats = useCallback(async () => {
@@ -496,7 +408,7 @@ const UltraOptimizedInventoryList = () => {
     if (!showStats) return null;
     
     return (
-      <Suspense fallback={<Box sx={{ p: 2 }}><CircularProgress size={24} /></Box>}>
+      <Suspense fallback={<Box sx={{ p: 2 }}></Box>}>
         <Box sx={{ mb: 3 }}>
           <Grid container spacing={2}>
             {stats ? (
@@ -736,15 +648,8 @@ const UltraOptimizedInventoryList = () => {
         </Alert>
       )}
       
-      {/* Loading state */}
-      {loading && initialLoading ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, backgroundColor: 'white', borderRadius: 1 }}>
-          <CircularProgress />
-          <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
-            Loading inventory data... This may take a moment.
-          </Typography>
-        </Box>
-      ) : products.length === 0 ? (
+      {/* Products display */}
+      {products.length === 0 ? (
         <Box sx={{ textAlign: 'center', p: 4, backgroundColor: 'white', borderRadius: 1 }}>
           <Typography variant="h6" color="text.secondary">
             No inventory items found
@@ -959,7 +864,7 @@ const UltraOptimizedInventoryList = () => {
 
       {/* Product detail dialog */}
       {selectedProductId && (
-        <Suspense fallback={<CircularProgress />}>
+        <Suspense fallback={<div></div>}>
           <ProductDetailDialog
             open={detailDialogOpen}
             onClose={() => setDetailDialogOpen(false)}

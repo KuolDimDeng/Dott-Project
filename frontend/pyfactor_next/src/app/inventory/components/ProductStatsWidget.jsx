@@ -22,11 +22,7 @@ import NewReleasesIcon from '@mui/icons-material/NewReleases';
  */
 const ProductStatsWidget = ({ stats, loading }) => {
   if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-        <CircularProgress size={30} />
-      </Box>
-    );
+    return null; // Return nothing while loading to avoid showing spinners
   }
 
   if (!stats) {

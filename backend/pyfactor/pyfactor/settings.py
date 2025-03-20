@@ -260,7 +260,7 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_TASK_TIME_LIMIT = 1800              # 30 minutes max task time
 CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_TASK_PUBLISH_RETRY = True
@@ -271,7 +271,9 @@ CELERY_TASK_PUBLISH_RETRY_POLICY = {
     'interval_max': 0.5
 }
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-CELERY_WORKER_MAX_TASKS_PER_CHILD = 50
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1
+CELERY_WORKER_CONCURRENCY = 1              # Limit to a single worker
+
 
 REDIS_HOST = '127.0.0.1'
 REDIS_PORT = 6379
@@ -625,55 +627,12 @@ COGNITO_ATTR_MAPPING = {
 
 logging.config.dictConfig(LOGGING)
 
-# Application definition
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.sites',
-    'django_celery_beat',
-    'corsheaders',
-    'rest_framework',
-    'rest_framework_simplejwt.token_blacklist',
-    'django_countries',
-    'rest_framework.authtoken',
-    'dj_rest_auth',
-    'dj_rest_auth.registration',  # Add this line
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
-    'django_cryptography',
-    'phonenumber_field',
-    'users.apps.UsersConfig',
-    'sales',
-    'finance',
-    'reports',
-    'banking',
-    'payments',
-    'payroll',
-    'inventory',
-    'analysis',
-    'chart',
-    'integrations',
-    'taxes',
-    'purchases',
-    'barcode',
-    'django_extensions',
-    'custom_auth',
-    'hr.apps.HrConfig',
-    'onboarding.apps.OnboardingConfig',
-    'crm.apps.CrmConfig',
-    'transport.apps.TransportConfig'
-]
+
 
 MIDDLEWARE = [
-    'custom_auth.connection_limiter.ConnectionLimiterMiddleware',  # Connection limiter for emergency situations
-    'custom_auth.connection_pool.ConnectionPoolMiddleware',  # Efficient connection pooling
-    'custom_auth.tenant_metrics.QueryMetricsMiddleware',  # Collect tenant usage metrics
+    #'custom_auth.connection_limiter.ConnectionLimiterMiddleware',  # Connection limiter for emergency situations
+    #'custom_auth.connection_pool.ConnectionPoolMiddleware',  # Efficient connection pooling
+    #'custom_auth.tenant_metrics.QueryMetricsMiddleware',  # Collect tenant usage metrics
     'django.middleware.security.SecurityMiddleware',
     'custom_auth.cors.CorsMiddleware',  # Use our new CORS middleware
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -713,15 +672,7 @@ REDIS_TENANT_DB = 2  # Use a separate Redis database for tenant metadata
 # Check if we're running in ASGI mode
 IS_ASGI = any(arg in sys.argv for arg in ['daphne', '--async', 'runserver --async'])
 
-# Only enable Debug Toolbar for non-ASGI environments
-if DEBUG and not IS_ASGI:  # Make sure DEBUG is True as well
-    INSTALLED_APPS.append("debug_toolbar")
-    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # Add at start
-    
-    # Debug Toolbar settings
-    INTERNAL_IPS = [
-        "127.0.0.1",
-    ]
+
 
 REQUEST_ID_HEADER = 'HTTP_X_REQUEST_ID'
 GENERATE_REQUEST_ID_IF_ABSENT = True
@@ -763,6 +714,7 @@ SHARED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    'django_celery_beat',
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
@@ -776,16 +728,18 @@ SHARED_APPS = (
     'allauth.socialaccount.providers.google',
     'django_cryptography',
     'phonenumber_field',
+    'django_extensions',
     'custom_auth',
-    'onboarding',
+    'onboarding.apps.OnboardingConfig',
 )
 
 TENANT_APPS = (
-    'users',
+    'users.apps.UsersConfig',
     'sales',
     'finance',
     'reports',
     'banking',
+    'payments',
     'payroll',
     'inventory',
     'analysis',
@@ -793,12 +747,24 @@ TENANT_APPS = (
     'integrations',
     'taxes',
     'purchases',
-    'hr',
-    'crm',
-    'transport',
+    'barcode',
+    'hr.apps.HrConfig',
+    'crm.apps.CrmConfig',
+    'transport.apps.TransportConfig',
 )
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
+
+
+# Only enable Debug Toolbar for non-ASGI environments
+if DEBUG and not IS_ASGI:  # Make sure DEBUG is True as well
+    INSTALLED_APPS.append("debug_toolbar")
+    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # Add at start
+    
+    # Debug Toolbar settings
+    INTERNAL_IPS = [
+        "127.0.0.1",
+    ]
 
 # Add database routers
 DATABASE_ROUTERS = [
@@ -830,11 +796,11 @@ DATABASES = {
             'keepalives_count': 5,
         },
         'POOL_OPTIONS': {
-            'POOL_SIZE': 20,
-            'MAX_OVERFLOW': 10,
-            'RECYCLE': 300,  # Connection lifetime in seconds
-            'TIMEOUT': 30,   # Connection timeout in seconds
-            'RETRY': 3,      # Number of retries if connection fails
+            'POOL_SIZE': 5,            # Reduced from 20
+            'MAX_OVERFLOW': 2,         # Reduced from 10
+            'RECYCLE': 300,            # Keep at 300 seconds
+            'TIMEOUT': 30,             # Keep at 30 seconds
+            'RETRY': 3,                # Keep at 3
             'RECONNECT': True,
             'DISABLE_POOLING': False,
         }
@@ -872,13 +838,12 @@ DATABASES = {
 DATABASE_POOL_ARGS = {
     "pre_ping": True,
     "echo": False,
-    "timeout": 30,
+    "timeout": 20,           # Reduced from 30
     "recycle": 300,
-    "pool_size": 20,
-    "max_overflow": 10,
+    "pool_size": 5,          # Reduced from 20
+    "max_overflow": 2,       # Reduced from 10
     "autocommit": True,
 }
-
 # Database performance settings to be applied after connection
 DATABASE_PERFORMANCE_SETTINGS = {
     'statement_timeout': 30000,  # 30 seconds timeout for queries
@@ -938,12 +903,12 @@ DB_POOL_OPTIONS = {
 }
 
 DATABASE_CONNECTION_POOL = {
-    'MAX_CONNS': 50,          # Reduced to prevent connection exhaustion
-    'MIN_CONNS': 10,          # Reduced to match MAX_CONNS reduction
-    'CONN_LIFETIME': 120,     # Reduced to 2 minutes to recycle connections more frequently
-    'CONN_TIMEOUT': 20,       # Reduced timeout
-    'MAX_QUERIES_PER_CONN': 1000,
-    'SCHEMA_CACHE_TTL': 300,  # 5 minutes cache for schema names
+    'MAX_CONNS': 10,          # Reduced from 50
+    'MIN_CONNS': 3,           # Reduced from 10
+    'CONN_LIFETIME': 60,      # Reduced from 120
+    'CONN_TIMEOUT': 10,       # Reduced from 20
+    'MAX_QUERIES_PER_CONN': 500, # Reduced from 1000
+    'SCHEMA_CACHE_TTL': 300,
 }
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

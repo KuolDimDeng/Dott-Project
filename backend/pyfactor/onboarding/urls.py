@@ -89,5 +89,5 @@ urlpatterns = [
     path('complete/', CompleteOnboardingView.as_view(), name='complete'),
     
     # Dashboard routes
-    path('dashboard/setup/', DashboardSchemaSetupView.as_view(), name='dashboard-setup'),
+    path('setup/trigger/', DashboardSchemaSetupView.as_view(), name='trigger_schema_setup'),
 ]

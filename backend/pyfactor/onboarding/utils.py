@@ -1,3 +1,5 @@
+
+#/Users/kuoldeng/projectx/backend/pyfactor/onboarding/utils.py
 import re
 import time
 import uuid
@@ -15,6 +17,10 @@ from pyfactor.logging_config import get_logger
 from pyfactor.db.utils import get_connection, return_connection
 from django.contrib.auth import get_user_model
 from contextlib import contextmanager
+from django.db.migrations.loader import MigrationLoader
+
+logger = logging.getLogger('Pyfactor')
+
 
 # Fix for logging error with missing 'duration' field
 class DurationSafeFormatter(logging.Formatter):
@@ -147,6 +153,14 @@ def create_tenant_schema(cursor, schema_name, user_id):
     """Create new schema for tenant with proper permissions"""
     try:
         logger.debug(f"Starting schema creation for {schema_name}")
+        # Memory optimization: Close all connections before starting schema creation
+        from django.db import connections
+        connections.close_all()
+        logger.debug("Closed all connections before schema creation")
+        
+        # Set a statement timeout to prevent long-running queries
+        cursor.execute("SET statement_timeout = '30s'")
+
         # Memory optimization: Close all connections before starting schema creation
         from django.db import connections
         connections.close_all()
@@ -612,8 +626,14 @@ def create_tenant_schema(cursor, schema_name, user_id):
         raise
 
 @contextmanager
-def tenant_schema_context(cursor, schema_name):
-    """Context manager for schema operations"""
+def tenant_schema_context(cursor, schema_name, preserve_context=False):
+    """Context manager for schema operations that ensures proper connection handling
+    
+    Args:
+        cursor: Database cursor (will be replaced with a new cursor)
+        schema_name: Schema to use in context
+        preserve_context: If True, don't reset schema to public when exiting
+    """
     from django.db import connections
     from pyfactor.db_routers import TenantSchemaRouter, local
     import psycopg2
@@ -624,13 +644,17 @@ def tenant_schema_context(cursor, schema_name):
     
     logger.info(f"[TRANSACTION DEBUG] Entering tenant_schema_context for schema: {schema_name}")
     
-    # Always create a new connection with autocommit=True to avoid transaction issues
+    # CRITICAL IMPROVEMENT: Always create a completely new isolated connection
+    # with autocommit mode to avoid nested transactions and abortion issues
     new_connection = None
     new_cursor = None
     
-    logger.info(f"[TRANSACTION DEBUG] Creating new connection with autocommit=True")
+    logger.info(f"[TRANSACTION DEBUG] Creating isolated connection with ISOLATION_LEVEL_AUTOCOMMIT")
     try:
+        # Get database settings
         db_settings = settings.DATABASES['default']
+        
+        # Create fresh connection, completely isolated from Django's connection pool
         new_connection = psycopg2.connect(
             dbname=db_settings['NAME'],
             user=db_settings['USER'],
@@ -638,145 +662,126 @@ def tenant_schema_context(cursor, schema_name):
             host=db_settings['HOST'],
             port=db_settings['PORT']
         )
-        new_connection.autocommit = True
-        new_cursor = new_connection.cursor()
-        logger.info(f"[TRANSACTION DEBUG] Successfully created new connection with autocommit=True")
         
-        # Use the new cursor instead of the original one
+        # Set autocommit immediately to prevent transaction blocks
+        # CRITICAL: This ensures we won't hit "transaction is aborted" errors
+        new_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        new_connection.autocommit = True  # Set both flags for extra safety
+        
+        # Create cursor from our fresh autocommit connection
+        new_cursor = new_connection.cursor()
+        logger.info(f"[TRANSACTION DEBUG] Successfully created isolated autocommit connection")
+        
+        # Replace the provided cursor with our new one
         cursor = new_cursor
     except Exception as conn_error:
-        logger.error(f"[TRANSACTION DEBUG] Error creating new connection: {str(conn_error)}")
-        # Continue with the original cursor if we can't create a new one
+        logger.error(f"[TRANSACTION DEBUG] Error creating isolated connection: {str(conn_error)}")
+        # Clean up partial connections if needed
+        if new_connection:
+            try:
+                new_connection.close()
+            except:
+                pass
+        # Re-raise the exception - don't proceed with original potentially broken cursor
+        raise
     
     try:
-        # Get current schema
-        # Memory optimization: Set statement timeout
-        logger.debug(f"[TRANSACTION DEBUG] Setting statement timeout")
+        # Set reasonable timeouts to prevent blocking operations
         cursor.execute("SET statement_timeout = '30s'")
-        
-        # Set a lock timeout to prevent deadlocks
-        logger.debug(f"[TRANSACTION DEBUG] Setting lock timeout")
         cursor.execute("SET lock_timeout = '5s'")
 
-        logger.debug(f"[TRANSACTION DEBUG] Getting current search path")
-        cursor.execute('SHOW search_path')
-        previous_schema = cursor.fetchone()[0]
-        logger.info(f"[TRANSACTION DEBUG] Saving previous schema: {previous_schema}")
+        # Verify our connection is really in autocommit mode
+        try:
+            cursor.execute("SHOW transaction_isolation")
+            isolation = cursor.fetchone()[0]
+            cursor.execute("SHOW default_transaction_isolation")
+            default_isolation = cursor.fetchone()[0]
+            cursor.execute("SELECT pg_is_in_recovery()")
+            in_recovery = cursor.fetchone()[0]
+            
+            logger.info(f"[TRANSACTION DEBUG] Connection state: isolation={isolation}, default={default_isolation}, in_recovery={in_recovery}")
+            
+            # Additional check to verify no transaction is in progress
+            cursor.execute("SELECT pg_current_xact_id_if_assigned()")
+            current_txid = cursor.fetchone()[0]
+            if current_txid:
+                logger.warning(f"[TRANSACTION DEBUG] Transaction ID still assigned ({current_txid}) despite autocommit mode!")
+            else:
+                logger.info(f"[TRANSACTION DEBUG] No transaction ID assigned - autocommit confirmed")
+                
+        except Exception as check_error:
+            logger.warning(f"[TRANSACTION DEBUG] Could not fully verify transaction status: {str(check_error)}")
         
-        # Clear connection cache to ensure clean state
-        logger.info(f"[TRANSACTION DEBUG] Clearing connection cache")
-        TenantSchemaRouter.clear_connection_cache()
-        
-        # Set new schema using optimized connection
-        # Always ensure schema name uses underscores, not hyphens
+        # Normalize schema name (replace hyphens with underscores)
         if '-' in schema_name:
             schema_name = schema_name.replace('-', '_')
-            logger.info(f"[TRANSACTION DEBUG] Converted schema name to use underscores: {schema_name}")
+            logger.info(f"[TRANSACTION DEBUG] Normalized schema name: {schema_name}")
         
         # Ensure schema name is properly formatted for SQL identifiers
         schema_name = re.sub(r'[^a-zA-Z0-9_]', '_', schema_name)
-        logger.info(f"[TRANSACTION DEBUG] Formatted schema name: {schema_name}")
+        logger.info(f"[TRANSACTION DEBUG] Using sanitized schema name: {schema_name}")
         
-        # Set the schema directly on the cursor first to ensure it's immediately available
+        # Set search path to our schema
         logger.info(f"[TRANSACTION DEBUG] Setting search_path to {schema_name}")
-        try:
-            cursor.execute(f'SET search_path TO "{schema_name}",public')
-            logger.info(f"[TRANSACTION DEBUG] Successfully set search_path")
-        except Exception as e:
-            logger.error(f"[TRANSACTION DEBUG] Error setting search_path: {str(e)}")
-            # Check if we're in a transaction
-            try:
-                cursor.execute("SELECT txid_current() != txid_current_if_assigned()")
-                in_transaction = not cursor.fetchone()[0]
-                logger.error(f"[TRANSACTION DEBUG] Transaction status after error: {'IN TRANSACTION' if in_transaction else 'NO TRANSACTION'}")
-            except Exception as tx_error:
-                logger.error(f"[TRANSACTION DEBUG] Could not check transaction status: {str(tx_error)}")
-            raise
+        cursor.execute(f'SET search_path TO "{schema_name}",public')
         
-        # Then use the router to ensure all connections use this schema
-        logger.info(f"[TRANSACTION DEBUG] Getting connection for schema: {schema_name}")
-        connection = TenantSchemaRouter.get_connection_for_schema(schema_name)
-        logger.info(f"[TRANSACTION DEBUG] Successfully set schema to: {schema_name} in {time.time() - start_time:.4f}s")
-        
-        # Store the current schema in thread local storage for the router
-        logger.info(f"[TRANSACTION DEBUG] Setting thread local tenant_schema to: {schema_name}")
-        setattr(local, 'tenant_schema', schema_name)
-        
-        # Verify the schema is set correctly
-        logger.info(f"[TRANSACTION DEBUG] Verifying search_path")
+        # Verify search path was set correctly
         cursor.execute('SHOW search_path')
         current_path = cursor.fetchone()[0]
         logger.info(f"[TRANSACTION DEBUG] Current search_path: {current_path}")
+        
         if schema_name not in current_path:
-            logger.warning(f"[TRANSACTION DEBUG] Schema {schema_name} not in search path: {current_path}, attempting to fix")
+            # Retry setting the search path if needed
+            logger.warning(f"[TRANSACTION DEBUG] Schema {schema_name} not in search path: {current_path}, retrying")
             cursor.execute(f'SET search_path TO "{schema_name}",public')
             cursor.execute('SHOW search_path')
             fixed_path = cursor.fetchone()[0]
-            logger.info(f"[TRANSACTION DEBUG] Fixed search_path: {fixed_path}")
-        logger.info(f"[TRANSACTION DEBUG] Yielding control back to caller")
-        yield
+            logger.info(f"[TRANSACTION DEBUG] Updated search_path: {fixed_path}")
+            
+            if schema_name not in fixed_path:
+                raise Exception(f"Failed to set search path to {schema_name}")
+        
+        # Store schema in thread local for routing
+        setattr(local, 'tenant_schema', schema_name)
+        
+        # Hand control to caller code
+        logger.info(f"[TRANSACTION DEBUG] Context ready, yielding to caller")
+        yield cursor  # Important: yield the cursor so caller can use it
         logger.info(f"[TRANSACTION DEBUG] Control returned to tenant_schema_context")
+        
     except Exception as e:
         logger.error(f"[TRANSACTION DEBUG] Error in tenant_schema_context: {str(e)}")
-        logger.error(f"[TRANSACTION DEBUG] Exception type: {type(e).__name__}")
         
-        # Check transaction status after error
-        try:
-            cursor.execute("SELECT txid_current() != txid_current_if_assigned()")
-            in_transaction = not cursor.fetchone()[0]
-            logger.error(f"[TRANSACTION DEBUG] Transaction status after error: {'IN TRANSACTION' if in_transaction else 'NO TRANSACTION'}")
-        except Exception as tx_error:
-            logger.error(f"[TRANSACTION DEBUG] Could not check transaction status: {str(tx_error)}")
-            
         # Log stack trace for better debugging
         import traceback
         logger.error(f"[TRANSACTION DEBUG] Stack trace: {traceback.format_exc()}")
         
+        # Re-raise to caller
         raise
-    finally:
-        logger.info(f"[TRANSACTION DEBUG] Entering finally block of tenant_schema_context")
         
-        # Close the new connection if it was created
+    finally:
+        logger.info(f"[TRANSACTION DEBUG] Cleanup in tenant_schema_context finally block")
+        
+        # Always close our isolated connection to prevent leaks
         if new_connection:
-            logger.info(f"[TRANSACTION DEBUG] Closing new connection created with autocommit=True")
+            logger.info(f"[TRANSACTION DEBUG] Closing isolated connection")
             try:
                 if new_cursor:
                     new_cursor.close()
                 new_connection.close()
-                logger.info(f"[TRANSACTION DEBUG] Successfully closed new connection")
+                logger.info(f"[TRANSACTION DEBUG] Successfully closed isolated connection")
             except Exception as conn_close_error:
-                logger.error(f"[TRANSACTION DEBUG] Error closing new connection: {str(conn_close_error)}")
+                logger.error(f"[TRANSACTION DEBUG] Error closing connection: {str(conn_close_error)}")
         
-        # Close all connections to prevent connection leaks
-        from django.db import connections
-        logger.info(f"[TRANSACTION DEBUG] Closing all connections in finally block")
-        connections.close_all()
-        logger.info(f"[TRANSACTION DEBUG] Closed all connections after schema context operation")
-
-        # Create a fresh connection to set the schema back to public
-        try:
-            db_settings = settings.DATABASES['default']
-            reset_connection = psycopg2.connect(
-                dbname=db_settings['NAME'],
-                user=db_settings['USER'],
-                password=db_settings['PASSWORD'],
-                host=db_settings['HOST'],
-                port=db_settings['PORT']
-            )
-            reset_connection.autocommit = True
-            with reset_connection.cursor() as reset_cursor:
-                reset_cursor.execute('SET search_path TO public')
-                logger.info(f"[TRANSACTION DEBUG] Reset search path to public with fresh connection")
-            reset_connection.close()
-        except Exception as reset_error:
-            logger.error(f"[TRANSACTION DEBUG] Error resetting schema with fresh connection: {str(reset_error)}")
+        # Reset context if requested
+        if not preserve_context:
+            # Reset thread local to public schema
+            setattr(local, 'tenant_schema', 'public')
+            logger.info(f"[TRANSACTION DEBUG] Reset tenant_schema to public")
+        else:
+            logger.info(f"[TRANSACTION DEBUG] Preserved tenant schema context: {schema_name}")
         
-        # Reset thread local storage to public
-        TenantSchemaRouter.clear_connection_cache()
-        setattr(local, 'tenant_schema', 'public')
-        logger.info(f"[TRANSACTION DEBUG] Reset thread local tenant_schema to: public")
-        
-        logger.info(f"[TRANSACTION DEBUG] Schema context operation completed in {time.time() - start_time:.4f}s")
+        logger.info(f"[TRANSACTION DEBUG] Schema context completed in {time.time() - start_time:.4f}s")
 
 def set_tenant_schema(cursor, schema_name):
     """Set search_path to tenant schema"""
@@ -882,3 +887,77 @@ def cleanup_schema(schema_name):
                         logger.debug(f"Restored search path to: {original_search_path}")
     except Exception as e:
         logger.error(f"Schema cleanup failed: {str(e)}", exc_info=True)
+
+
+def save_to_schemas(request, business_data, tenant_schema=None):
+    """Save business info to both public and tenant schemas if available"""
+    # Save to public schema first
+    business = Business.objects.create(**business_data)
+    
+    # If tenant schema exists, save there too
+    if tenant_schema:
+        try:
+            with connection.cursor() as cursor:
+                with tenant_schema_context(cursor, tenant_schema):
+                    # Check if business already exists in tenant schema
+                    cursor.execute("""
+                        SELECT COUNT(*) FROM users_business
+                        WHERE id = %s
+                    """, [str(business.id)])
+                    
+                    if cursor.fetchone()[0] == 0:
+                        # Insert business data directly to tenant schema
+                        fields = ', '.join([f'"{k}"' for k in business_data.keys()])
+                        placeholders = ', '.join(['%s' for _ in business_data.keys()])
+                        values = [business_data[k] for k in business_data.keys()]
+                        
+                        cursor.execute(f"""
+                            INSERT INTO users_business ({fields})
+                            VALUES ({placeholders})
+                        """, values)
+        except Exception as e:
+            logger.warning(f"Failed to save business to tenant schema: {str(e)}")
+    
+    return business
+
+def verify_migration_dependencies():
+    """
+    Verify that migration dependencies are correctly ordered,
+    particularly that users depends on custom_auth.
+    
+    Returns:
+        bool: True if dependencies are valid, False otherwise
+    """
+    # Load the migration graph
+    loader = MigrationLoader(None, ignore_no_migrations=True)
+    
+    # Find the users and custom_auth initial migrations
+    users_node = None
+    custom_auth_node = None
+    
+    for node in loader.graph.nodes.values():
+        if node.app_label == 'users' and node.name == '0001_initial':
+            users_node = node
+        elif node.app_label == 'custom_auth' and node.name == '0001_initial':
+            custom_auth_node = node
+    
+    if not users_node or not custom_auth_node:
+        logger.warning("Could not find users or custom_auth initial migrations in loader.")
+        return False
+    
+    # Check if users depends on custom_auth
+    custom_auth_key = ('custom_auth', '0001_initial')
+    has_dependency = custom_auth_key in users_node.dependencies
+    
+    if not has_dependency:
+        logger.error("Migration dependency issue: users.0001_initial does not depend on custom_auth.0001_initial")
+        return False
+    
+    # Find the migration order in the graph
+    for node, deps in loader.graph.dependencies.items():
+        if node[0] == 'users' and node[1] == '0001_initial':
+            if custom_auth_key not in deps:
+                logger.error("Migration graph inconsistency: users.0001_initial does not depend on custom_auth.0001_initial")
+                return False
+    
+    return True

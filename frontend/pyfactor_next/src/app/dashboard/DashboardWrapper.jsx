@@ -1,48 +1,140 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import dynamic from 'next/dynamic';
+import React, { useEffect, useState } from 'react';
 import Dashboard from './DashboardContent';
-import { startMemoryMonitoring, stopMemoryMonitoring } from '@/utils/memoryDebugger';
-
-// Dynamically import the MemoryDebugger component to avoid SSR issues
-const MemoryDebugger = dynamic(() => import('@/components/Debug/MemoryDebugger'), {
-  ssr: false
-});
+import { logger } from '@/utils/logger';
 
 /**
  * Dashboard Wrapper Component
  * 
- * This component wraps the main Dashboard component and adds memory debugging
- * capabilities in development mode. It helps identify memory leaks and performance
- * issues in the dashboard.
+ * This component wraps the main Dashboard component and handles schema setup
+ * when the dashboard first loads.
  */
 const DashboardWrapper = () => {
-  // Start memory monitoring when the component mounts
+  const [setupStatus, setSetupStatus] = useState('pending');
+
+  // Add an effect to trigger the schema setup when the dashboard loads
   useEffect(() => {
-    // Only run in development mode
-    if (process.env.NODE_ENV !== 'development') return;
+    console.log('[Dashboard] Setup effect triggered');
     
-    console.log('[Memory] Starting dashboard memory monitoring');
-    
-    // Start monitoring with a 10-second interval
-    const monitoringInterval = startMemoryMonitoring(10000);
-    
-    return () => {
-      // Stop monitoring when the component unmounts
-      if (monitoringInterval) {
-        stopMemoryMonitoring(monitoringInterval);
+    const triggerSchemaSetup = async () => {
+      console.log('[Dashboard] Starting schema setup trigger');
+      
+      try {
+        logger.debug('[Dashboard] Triggering schema setup...');
+        console.log('[Dashboard] About to call fetch');
+        
+        const response = await fetch('/api/onboarding/setup/trigger/', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Request-Id': crypto.randomUUID()
+          },
+          body: JSON.stringify({ force_setup: true }), // Add force_setup parameter
+          credentials: 'include' // This ensures cookies are sent with the request
+        });
+        
+        console.log('[Dashboard] Fetch response received:', response.status);
+        
+        // Check content type to avoid parsing errors
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const errorText = await response.text();
+          console.error('[Dashboard] Non-JSON response:', errorText.substring(0, 500));
+          setSetupStatus('error');
+          return;
+        }
+        
+        const data = await response.json();
+        console.log('[Dashboard] Response data:', data);
+        
+        if (response.ok) {
+          // Success cases
+          if (data.status === 'complete') {
+            // Setup is already complete
+            logger.info('[Dashboard] Schema setup already completed');
+            setSetupStatus('complete');
+          } else if (data.status === 'pending' || data.status === 'in_progress') {
+            // Setup is pending or in progress
+            logger.info('[Dashboard] Schema setup is in progress');
+            setSetupStatus('in_progress');
+            
+            // Store task ID if available
+            if (data.task_id) {
+              sessionStorage.setItem('schemaSetupTaskId', data.task_id);
+            }
+          } else if (data.status === 'success' && data.task_id) {
+            // We have a task ID, store it for later reference
+            sessionStorage.setItem('schemaSetupTaskId', data.task_id);
+            logger.debug('[Dashboard] Schema setup triggered successfully:', data);
+            setSetupStatus('in_progress');
+          } else if (data.status === 'already_setup') {
+            // Legacy status for backward compatibility
+            logger.info('[Dashboard] Schema already fully set up:', data);
+            setSetupStatus('complete');
+          } else {
+            // Default success case
+            logger.debug('[Dashboard] Schema setup triggered with status:', data.status);
+            setSetupStatus(data.status || 'unknown');
+          }
+        } else {
+          // Handle specific error cases
+          if (response.status === 404 && data.message === 'No pending schema setup found') {
+            // This is actually expected for users with setupDone=TRUE
+            logger.info('[Dashboard] Schema setup not needed (already done)');
+            setSetupStatus('complete');
+          } else if (response.status === 401) {
+            // Authentication issue
+            console.error('[Dashboard] Authentication required for schema setup');
+            setSetupStatus('auth_error');
+          } else {
+            // Generic error
+            logger.warn('[Dashboard] Failed to trigger schema setup:', data);
+            setSetupStatus('error');
+          }
+        }
+      } catch (error) {
+        // Non-critical error, log but don't disrupt user experience
+        console.error('[Dashboard] Error triggering schema setup:', error);
+        logger.error('[Dashboard] Error triggering schema setup:', error);
+        setSetupStatus('error');
       }
     };
-  }, []);
+    
+    // Call the function to trigger schema setup
+    triggerSchemaSetup();
+    
+    // Set up polling for status updates
+    const statusInterval = setInterval(async () => {
+      if (setupStatus !== 'in_progress') {
+        clearInterval(statusInterval);
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/onboarding/setup/status/', {
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === 'complete') {
+            setSetupStatus('complete');
+            clearInterval(statusInterval);
+          }
+        }
+      } catch (error) {
+        console.error('[Dashboard] Error checking setup status:', error);
+      }
+    }, 5000);
+    
+    // Clean up interval on unmount
+    return () => clearInterval(statusInterval);
+  }, [setupStatus]);
   
-  return (
-    <>
-      <Dashboard />
-      {/* Only show the memory debugger in development mode */}
-      {process.env.NODE_ENV === 'development' && <MemoryDebugger />}
-    </>
-  );
+  // You could show a setup indicator based on setupStatus if needed
+  // For now, just render the Dashboard component
+  return <Dashboard setupStatus={setupStatus} />;
 };
 
 export default DashboardWrapper;

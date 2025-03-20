@@ -101,7 +101,7 @@ class PaymentMethod(models.Model):
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     business = models.ForeignKey(
-        'business.Business',
+        'users.Business',
         on_delete=models.CASCADE,
         related_name='payment_methods'
     )
@@ -185,7 +185,7 @@ class PaymentTransaction(models.Model):
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     business = models.ForeignKey(
-        'business.Business',
+        'users.Business',
         on_delete=models.CASCADE,
         related_name='payment_transactions'
     )

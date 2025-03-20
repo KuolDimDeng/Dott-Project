@@ -447,7 +447,13 @@ class TenantMiddleware:
                             should_defer = True
                             logger.debug(f"Found deferred schema setup in profile metadata for tenant: {tenant.schema_name}")
                     except Exception as e:
-                        logger.warning(f"Error checking profile metadata for deferred flag: {str(e)}")
+                        # Check if the error is about the updated_at column
+                        if "column users_userprofile.updated_at does not exist" in str(e):
+                            logger.warning("UserProfile schema needs update - using modified_at instead of updated_at")
+                            # Continue with execution - the schema will be updated later
+                        else:
+                            logger.warning(f"Error checking profile metadata for deferred flag: {str(e)}")
+                        # Continue with execution even if there's an error checking metadata
                 
                 # Create schema if needed and not deferred
                 if tenant.database_status == 'not_created' and not should_defer:

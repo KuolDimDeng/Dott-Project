@@ -97,37 +97,9 @@ const ProductDetailDialog = ({ open, onClose, productId }) => {
     });
   };
 
-  // Render loading state
+  // Skip loading state and immediately show product or error
   if (loading) {
-    return (
-      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-        <DialogTitle>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Skeleton variant="text" width="60%" />
-            <IconButton onClick={onClose}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Skeleton variant="rectangular" height={200} />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Skeleton variant="text" height={30} />
-              <Skeleton variant="text" height={20} />
-              <Skeleton variant="text" height={20} />
-              <Skeleton variant="text" height={20} />
-              <Skeleton variant="text" height={20} />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Close</Button>
-        </DialogActions>
-      </Dialog>
-    );
+    return null; // Return nothing while loading to avoid showing spinners
   }
 
   // Render error state

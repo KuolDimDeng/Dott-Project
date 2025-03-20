@@ -28,8 +28,17 @@ const StyledMenuItem = styled(MenuItem)(({ theme }) => ({
   },
 }));
 
-const SettingsMenu = ({ anchorEl, open, onClose, onOptionSelect, selectedOption }) => {
-  console.log('SettingsMenu: Rendering with selectedOption:', selectedOption);
+const SettingsMenu = ({ 
+  anchorEl, 
+  open, 
+  onClose, 
+  onOptionSelect, 
+  selectedOption,
+  onIntegrationsClick,
+  onDeviceSettingsClick,
+  backgroundColor
+}) => {
+  // Removed console.log to avoid unnecessary logging
 
   // Menu options array
   const options = [
@@ -43,11 +52,8 @@ const SettingsMenu = ({ anchorEl, open, onClose, onOptionSelect, selectedOption 
 
   // Handle option click and call the onOptionSelect callback
   const handleOptionClick = (option) => {
-    console.log('SettingsMenu: handleOptionClick called with option:', option);
     if (typeof onOptionSelect === 'function') {
       onOptionSelect(option); // Call the callback passed as a prop
-    } else {
-      console.error('SettingsMenu: onOptionSelect is not a function');
     }
     onClose(); // Close the menu after selection
   };

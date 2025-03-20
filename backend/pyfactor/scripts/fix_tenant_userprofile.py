@@ -113,7 +113,7 @@ def create_userprofile_table(schema_name):
                     "shopify_access_token" varchar(255) NULL,
                     "schema_name" varchar(63) NULL,
                     "metadata" jsonb NULL,
-                    "business_id" bigint NULL,
+                    "business_id" uuid NULL,
                     "tenant_id" uuid NULL,
                     "user_id" uuid NOT NULL
                 )

@@ -9,6 +9,114 @@ from .models import Tenant
 
 logger = logging.getLogger(__name__)
 
+def ensure_schema_consistency(schema_name, reference_schema='public'):
+    """
+    Ensure that all tables and columns in the tenant schema match the reference schema.
+    This function checks for column type mismatches and fixes them.
+    
+    Args:
+        schema_name: The name of the tenant schema to check
+        reference_schema: The reference schema to compare against (default: public)
+    
+    Returns:
+        bool: True if all issues were fixed or no issues found, False otherwise
+    """
+    logger.info(f"Ensuring schema consistency for {schema_name} against {reference_schema}")
+    
+    try:
+        with connection.cursor() as cursor:
+            # Get all tables in the tenant schema
+            cursor.execute("""
+                SELECT table_name FROM information_schema.tables
+                WHERE table_schema = %s
+                AND table_type = 'BASE TABLE'
+            """, [schema_name])
+            tenant_tables = [row[0] for row in cursor.fetchall()]
+            
+            # Get all tables in the reference schema
+            cursor.execute("""
+                SELECT table_name FROM information_schema.tables
+                WHERE table_schema = %s
+                AND table_type = 'BASE TABLE'
+            """, [reference_schema])
+            reference_tables = [row[0] for row in cursor.fetchall()]
+            
+            # Find common tables
+            common_tables = set(tenant_tables).intersection(set(reference_tables))
+            logger.info(f"Found {len(common_tables)} common tables between {schema_name} and {reference_schema}")
+            
+            issues_found = 0
+            issues_fixed = 0
+            
+            # Check each common table for column type mismatches
+            for table in common_tables:
+                # Get column definitions from reference schema
+                cursor.execute("""
+                    SELECT column_name, data_type, character_maximum_length,
+                           numeric_precision, numeric_scale, is_nullable
+                    FROM information_schema.columns
+                    WHERE table_schema = %s
+                    AND table_name = %s
+                    ORDER BY ordinal_position
+                """, [reference_schema, table])
+                reference_columns = cursor.fetchall()
+                
+                # Get column definitions from tenant schema
+                cursor.execute("""
+                    SELECT column_name, data_type, character_maximum_length,
+                           numeric_precision, numeric_scale, is_nullable
+                    FROM information_schema.columns
+                    WHERE table_schema = %s
+                    AND table_name = %s
+                    ORDER BY ordinal_position
+                """, [schema_name, table])
+                tenant_columns = cursor.fetchall()
+                
+                # Create dictionaries for easier comparison
+                reference_col_dict = {col[0]: col for col in reference_columns}
+                tenant_col_dict = {col[0]: col for col in tenant_columns}
+                
+                # Check for type mismatches
+                for col_name, reference_col in reference_col_dict.items():
+                    if col_name in tenant_col_dict:
+                        tenant_col = tenant_col_dict[col_name]
+                        
+                        # Compare data types
+                        if tenant_col[1] != reference_col[1]:  # data_type is at index 1
+                            issues_found += 1
+                            logger.warning(f"Column type mismatch in {schema_name}.{table}.{col_name}: {tenant_col[1]} vs {reference_schema}.{table}.{col_name}: {reference_col[1]}")
+                            
+                            try:
+                                # Set search path to tenant schema
+                                cursor.execute(f"SET search_path TO {schema_name}")
+                                
+                                # Alter the column type
+                                logger.info(f"Fixing column type in {schema_name}.{table}.{col_name} from {tenant_col[1]} to {reference_col[1]}")
+                                cursor.execute(f"""
+                                    ALTER TABLE {table}
+                                    ALTER COLUMN {col_name} TYPE {reference_col[1]} USING
+                                    CASE
+                                        WHEN {col_name} IS NULL THEN NULL
+                                        ELSE {col_name}::text::{reference_col[1]}
+                                    END
+                                """)
+                                
+                                logger.info(f"Successfully fixed column type in {schema_name}.{table}.{col_name}")
+                                issues_fixed += 1
+                            except Exception as e:
+                                logger.error(f"Error fixing column type for {schema_name}.{table}.{col_name}: {str(e)}")
+            
+            if issues_found == 0:
+                logger.info(f"No schema issues found in {schema_name}")
+                return True
+            else:
+                logger.info(f"Found and fixed {issues_fixed} out of {issues_found} schema issues in {schema_name}")
+                return issues_fixed == issues_found
+                
+    except Exception as e:
+        logger.error(f"Error ensuring schema consistency: {str(e)}")
+        return False
+
 def create_tenant_schema_for_user(user, business_name=None):
     """
     Create a tenant schema for a user immediately after authentication.
@@ -174,6 +282,45 @@ def create_tenant_schema_for_user(user, business_name=None):
                 """, [schema_name])
                 userprofile_table_exists = cursor.fetchone()[0]
                 
+                # Ensure column types match between tenant and public schemas
+                if userprofile_table_exists:
+                    # Check business_id column type in public schema
+                    cursor.execute("""
+                        SELECT data_type FROM information_schema.columns
+                        WHERE table_schema = 'public'
+                        AND table_name = 'users_userprofile'
+                        AND column_name = 'business_id'
+                    """)
+                    public_type = cursor.fetchone()
+                    
+                    # Check business_id column type in tenant schema
+                    cursor.execute("""
+                        SELECT data_type FROM information_schema.columns
+                        WHERE table_schema = %s
+                        AND table_name = 'users_userprofile'
+                        AND column_name = 'business_id'
+                    """, [schema_name])
+                    tenant_type = cursor.fetchone()
+                    
+                    # If types don't match, fix the tenant schema
+                    if public_type and tenant_type and public_type[0] != tenant_type[0]:
+                        logger.warning(f"[TENANT-CREATION-{process_id}] Column type mismatch in {schema_name}.users_userprofile.business_id: {tenant_type[0]} vs public.users_userprofile.business_id: {public_type[0]}")
+                        
+                        # Set search path to tenant schema
+                        cursor.execute(f"SET search_path TO {schema_name}")
+                        
+                        # Alter the column type to match public schema
+                        logger.info(f"[TENANT-CREATION-{process_id}] Fixing column type in {schema_name}.users_userprofile.business_id from {tenant_type[0]} to {public_type[0]}")
+                        cursor.execute(f"""
+                            ALTER TABLE users_userprofile
+                            ALTER COLUMN business_id TYPE {public_type[0]} USING
+                                CASE
+                                    WHEN business_id IS NULL THEN NULL
+                                    ELSE business_id::text::{public_type[0]}
+                                END
+                        """)
+                        logger.info(f"[TENANT-CREATION-{process_id}] Successfully fixed column type in {schema_name}.users_userprofile.business_id")
+                
                 # If users_userprofile table doesn't exist, create it manually
                 if not userprofile_table_exists:
                     logger.warning(f"[TENANT-CREATION-{process_id}] users_userprofile table does not exist in schema {schema_name}, creating it manually")
@@ -257,6 +404,18 @@ def create_tenant_schema_for_user(user, business_name=None):
                 tenant.database_status = 'active'
                 tenant.save(update_fields=['database_status'])
                 logger.info(f"[TENANT-CREATION-{process_id}] Updated tenant status to 'active'")
+            
+            # Run a comprehensive schema consistency check
+            logger.info(f"[TENANT-CREATION-{process_id}] Running comprehensive schema consistency check for {schema_name}")
+            schema_check_start = time.time()
+            try:
+                ensure_schema_consistency(schema_name)
+                schema_check_time = time.time() - schema_check_start
+                logger.info(f"[TENANT-CREATION-{process_id}] Schema consistency check completed in {schema_check_time:.2f} seconds")
+            except Exception as e:
+                schema_check_time = time.time() - schema_check_start
+                logger.error(f"[TENANT-CREATION-{process_id}] Error during schema consistency check after {schema_check_time:.2f} seconds: {str(e)}")
+                # Continue even if schema consistency check fails
             
             # Associate tenant with user
             user.tenant = tenant

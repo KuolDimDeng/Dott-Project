@@ -22,69 +22,168 @@ from users.choices import (
     BILLING_CYCLES
 )
 
+
 # Business model moved from business app to users app
 class Business(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    owner = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='owned_businesses'
-    )
-    business_num = models.CharField(max_length=6, unique=True, editable=False)
-    business_name = models.CharField(max_length=200)
-    business_type = models.CharField(max_length=50, choices=BUSINESS_TYPES)
-    business_subtype_selections = models.JSONField(default=dict, blank=True)
-    street = models.CharField(max_length=200, blank=True, null=True)
-    city = models.CharField(max_length=200, blank=True, null=True)
-    state = models.CharField(max_length=200, blank=True, null=True)
-    postcode = models.CharField(max_length=20, blank=True, null=True)
-    country = CountryField(default='US')
-    address = models.TextField(null=True, blank=True)
-    email = models.EmailField(null=True, blank=True)
-    phone_number = models.CharField(max_length=20, blank=True, null=True)
-    database_name = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    name = models.CharField(max_length=255)  # This matches the actual column in your DB
+    business_type = models.CharField(max_length=50, choices=BUSINESS_TYPES, null=True, blank=True)  
     created_at = models.DateTimeField(auto_now_add=True)
-    modified_at = models.DateTimeField(auto_now=True)
-    members = models.ManyToManyField(User, through='BusinessMember', related_name='businesses')
-    
-    legal_structure = models.CharField(
-        max_length=50,
-        choices=LEGAL_STRUCTURE_CHOICES,
-        default='SOLE_PROPRIETORSHIP'
-    )
-    
-    date_founded = models.DateField(
-        null=True,
-        blank=True,
-        validators=[MinValueValidator(limit_value=timezone.now().date())]
-    )
+    updated_at = models.DateTimeField(auto_now=True)  # This matches 'updated_at' in your DB
+    business_num = models.CharField(max_length=6, unique=True, null=True, blank=True)
+
+    # Virtual properties to maintain compatibility with existing code
+    @property
+    def business_name(self):
+        return self.name
+        
+    @business_name.setter
+    def business_name(self, value):
+        self.name = value
+        
+
+ 
+        
+    @property
+    def owner(self):
+        # Get the owner via UserProfile (since there's no direct owner_id)
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT user_id 
+                FROM users_userprofile 
+                WHERE business_id = %s 
+                LIMIT 1
+            """, [str(self.id)])
+            row = cursor.fetchone()
+            
+        if row and row[0]:
+            from custom_auth.models import User
+            try:
+                return User.objects.get(id=row[0])
+            except User.DoesNotExist:
+                return None
+        return None
+
+    @property
+    def business_type(self):
+        """
+        Get business_type from the related BusinessDetails object
+        """
+        try:
+            return self.businessdetails.business_type
+        except BusinessDetails.DoesNotExist:
+            return None
+
+    @business_type.setter
+    def business_type(self, value):
+        """
+        Set business_type on the related BusinessDetails object, 
+        creating it if it doesn't exist
+        """
+        try:
+            details = self.businessdetails
+        except BusinessDetails.DoesNotExist:
+            details = BusinessDetails(business=self)
+        
+        details.business_type = value
+        details.save()
+            
+    @owner.setter
+    def owner(self, value):
+        if value:
+            self._owner = value
+            # Store the owner ID for later use in save method
+            if hasattr(value, 'id'):
+                self._owner_id = value.id
+
 
     def save(self, *args, **kwargs):
         # Generate a unique business number if not provided
         if not self.business_num:
             self.business_num = self.generate_business_number()
             
-        if not self.owner_id and hasattr(self, '_owner_id'):
-            self.owner_id = self._owner_id
+        # Handle the case where we're linked to an owner
+        owner_id = getattr(self, '_owner_id', None)
+
+        # Perform the actual save operation
         super().save(*args, **kwargs)
+        
+        # If we have an owner_id, update the UserProfile safely
+        if owner_id:
+            try:
+                from users.models import UserProfile
+                # Check if profile exists using ORM
+                try:
+                    # Get existing profile
+                    profile = UserProfile.objects.get(user_id=owner_id)
+                    
+                    # Update existing profile using ORM
+                    now = timezone.now()
+                    profile.business = self
+                    profile.modified_at = now
+                    profile.updated_at = now
+                    profile.save(update_fields=['business', 'modified_at', 'updated_at'])
+                    
+                except UserProfile.DoesNotExist:
+                    # Create new profile using ORM
+                    now = timezone.now()
+                    UserProfile.objects.create(
+                        user_id=owner_id,
+                        business=self,
+                        created_at=now,
+                        modified_at=now,
+                        updated_at=now
+                    )
+                
+                # Ensure BusinessDetails exists for this business
+                from users.models import BusinessDetails
+                BusinessDetails.objects.get_or_create(
+                    business=self,
+                    defaults={
+                        'business_type': 'default',
+                        'legal_structure': 'SOLE_PROPRIETORSHIP',
+                        'country': 'US'
+                    }
+                )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error updating UserProfile: {str(e)}")
 
     def generate_business_number(self):
         """Generate a unique 6-digit business number"""
+        import random
+        import string
         while True:
             number = ''.join(random.choices(string.digits, k=6))
             if not Business.objects.filter(business_num=number).exists():
                 return number
 
     def __str__(self):
-        return self.business_name if self.business_name else f"Business {self.pk if self.pk else 'unsaved'}"
+        return self.name
 
     class Meta:
+        db_table = 'users_business'  # Explicitly set the table name
         indexes = [
             models.Index(fields=['business_num']),
-            models.Index(fields=['business_name']),
-            models.Index(fields=['database_name']),
-            models.Index(fields=['owner']),
         ]
+
+class BusinessDetails(models.Model):
+    business = models.OneToOneField(Business, on_delete=models.CASCADE, primary_key=True)
+    business_type = models.CharField(max_length=50, choices=BUSINESS_TYPES, blank=True, null=True)
+    business_subtype_selections = models.JSONField(default=dict, blank=True)
+    legal_structure = models.CharField(
+        max_length=50,
+        choices=LEGAL_STRUCTURE_CHOICES,
+        default='SOLE_PROPRIETORSHIP'
+    )
+    date_founded = models.DateField(null=True, blank=True)
+    country = CountryField(default='US')
+    # Additional fields
+    
+    class Meta:
+        db_table = 'users_business_details'
 
 class Subscription(models.Model):
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='subscriptions')
@@ -158,13 +257,19 @@ class UserProfile(models.Model):
     phone_number = models.CharField(max_length=200, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
+    # Add updated_at field to match database schema
+    updated_at = models.DateTimeField(auto_now=True)  # Ensure this field exists
+    # Ensure we only have one auto-updating timestamp field to avoid confusion
+    # modified_at will be used as the standard field for tracking updates
+
     is_business_owner = models.BooleanField(default=False)
     shopify_access_token = models.CharField(max_length=255, null=True, blank=True)
     schema_name = models.CharField(max_length=63, null=True, blank=True)
     
     # Add metadata field to store additional information like pending schema setup
     metadata = models.JSONField(default=dict, blank=True, null=True)
-
+    
+ 
     
     # Move these fields to the Tenant model as they're tenant-specific
     # Remove:
@@ -230,7 +335,9 @@ class UserProfile(models.Model):
                 logger.info(f"Deferred schema setup for user {self.user.email} - will be triggered when user reaches dashboard")
             self.tenant = tenant
         
-        self.modified_at = timezone.now()
+        now = timezone.now()
+        self.modified_at = now
+        self.updated_at = now
         super().save(*args, **kwargs)
 
     def to_dict(self):

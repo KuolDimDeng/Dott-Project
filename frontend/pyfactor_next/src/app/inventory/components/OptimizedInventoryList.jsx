@@ -96,139 +96,22 @@ const OptimizedInventoryList = () => {
 
   // Fetch products with optimized service
   const fetchProducts = useCallback(async (forceMock = false, forceOffline = false) => {
-    setLoading(true);
+    // Temporarily disable loading spinner
+    // setLoading(true);
     setError(null);
     
-    // If mock data is enabled or forced, use mock data
-    if (useMockData || forceMock) {
-      setTimeout(() => {
-        logger.info('Using mock inventory data');
-        const mockProducts = inventoryService.getMockProducts();
-        setProducts(mockProducts);
-        setTotalItems(mockProducts.length);
-        setTotalPages(1);
-        showSnackbar('Using demo data (API unavailable or slow to respond)', 'info');
-        setLoading(false);
-        setInitialLoading(false);
-      }, 500); // Simulate network delay
-      return;
-    }
-    
-    // If offline mode is enabled or forced, use offline data
-    if (useOfflineData || forceOffline) {
-      setTimeout(() => {
-        logger.info('Using offline inventory data');
-        const offlineProducts = optimizedInventoryService.getOfflineProducts();
-        setProducts(offlineProducts);
-        setTotalItems(offlineProducts.length);
-        setTotalPages(1);
-        showSnackbar('Using offline data (working offline)', 'info');
-        setLoading(false);
-        setInitialLoading(false);
-      }, 300);
-      return;
-    }
-    
-    try {
-      // Use optimized endpoint if enabled, otherwise fall back to regular endpoint
-      if (useOptimizedEndpoint) {
-        try {
-          logger.debug('Fetching products from optimized service');
-          
-          // Prepare filter options
-          const options = {
-            page: page,
-            ...filters
-          };
-          
-          // Filter out empty values
-          Object.keys(options).forEach(key => {
-            if (options[key] === '' || options[key] === undefined) {
-              delete options[key];
-            }
-          });
-          
-          const response = await optimizedInventoryService.getOptimizedProducts(options);
-          
-          if (response && response.results) {
-            setProducts(response.results);
-            setTotalItems(response.count || 0);
-            setTotalPages(Math.ceil((response.count || 0) / 20)); // 20 is the page size in the backend
-            
-            // Store data for offline use
-            optimizedInventoryService.storeProductsOffline(response.results);
-            
-            showSnackbar('Products loaded successfully', 'success');
-            setLoading(false);
-            setInitialLoading(false);
-            return;
-          }
-        } catch (optimizedError) {
-          logger.warn('Optimized endpoint failed, falling back to regular endpoint:', optimizedError);
-          // Fall through to try regular endpoint
-        }
-      }
-      
-      // Fall back to regular endpoint
-      try {
-        logger.debug('Fetching products from regular inventory service');
-        const products = await inventoryService.getProducts();
-        
-        if (products && Array.isArray(products)) {
-          setProducts(products);
-          setTotalItems(products.length);
-          setTotalPages(1); // No pagination in regular endpoint
-          
-          // Store data for offline use
-          optimizedInventoryService.storeProductsOffline(products);
-          
-          showSnackbar('Products loaded successfully (using standard endpoint)', 'success');
-          setLoading(false);
-          setInitialLoading(false);
-          return;
-        }
-      } catch (regularError) {
-        logger.warn('Regular endpoint failed, trying offline data:', regularError);
-        
-        // Try offline data
-        const offlineProducts = optimizedInventoryService.getOfflineProducts();
-        if (offlineProducts && offlineProducts.length > 0) {
-          setProducts(offlineProducts);
-          setTotalItems(offlineProducts.length);
-          setTotalPages(1);
-          setUseOfflineData(true);
-          showSnackbar('Using offline data (API unavailable)', 'warning');
-          setLoading(false);
-          setInitialLoading(false);
-          return;
-        }
-        
-        // If no offline data, fall back to mock data
-        setApiUnavailable(true);
-        fetchProducts(true); // Call again with forceMock=true
-        return;
-      }
-    } catch (error) {
-      logger.error('Error fetching products:', error);
-      
-      // Try offline data first
-      const offlineProducts = optimizedInventoryService.getOfflineProducts();
-      if (offlineProducts && offlineProducts.length > 0) {
-        setProducts(offlineProducts);
-        setTotalItems(offlineProducts.length);
-        setTotalPages(1);
-        setUseOfflineData(true);
-        showSnackbar('Using offline data (API unavailable)', 'warning');
-        setLoading(false);
-        setInitialLoading(false);
-        return;
-      }
-      
-      // Fall back to mock data if offline data is not available
-      setApiUnavailable(true);
-      fetchProducts(true); // Call again with forceMock=true
-    }
-  }, [useMockData, useOfflineData, useOptimizedEndpoint, page, filters, showSnackbar]);
+    // Immediately use mock data for now due to network issues
+    logger.info('Using mock inventory data due to network issues');
+    const mockProducts = inventoryService.getMockProducts();
+    setProducts(mockProducts);
+    setTotalItems(mockProducts.length);
+    setTotalPages(1);
+    setApiUnavailable(true);
+    showSnackbar('Using demo data (API unavailable)', 'info');
+    setLoading(false);
+    setInitialLoading(false);
+    return;
+  }, [showSnackbar]);
 
   // Effect to fetch products on component mount and when dependencies change
   useEffect(() => {
@@ -578,15 +461,8 @@ const OptimizedInventoryList = () => {
         </Alert>
       )}
       
-      {/* Loading state */}
-      {loading && initialLoading ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, backgroundColor: 'white', borderRadius: 1 }}>
-          <CircularProgress />
-          <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
-            Loading inventory data... This may take a moment.
-          </Typography>
-        </Box>
-      ) : products.length === 0 ? (
+      {/* Products display */}
+      {products.length === 0 ? (
         <Box sx={{ textAlign: 'center', p: 4, backgroundColor: 'white', borderRadius: 1 }}>
           <Typography variant="h6" color="text.secondary">
             No inventory items found

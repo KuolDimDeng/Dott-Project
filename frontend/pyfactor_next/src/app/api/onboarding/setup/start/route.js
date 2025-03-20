@@ -1,3 +1,4 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/api/onboarding/setup/start/route.js
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { validateServerSession } from '@/utils/serverUtils';

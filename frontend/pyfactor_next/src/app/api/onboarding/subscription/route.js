@@ -1,3 +1,4 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/api/onboarding/subscription/route.js
 import { NextResponse } from 'next/server';
 import { cookies, headers } from 'next/headers';
 import { logger } from '@/utils/logger';
@@ -374,6 +375,7 @@ export async function POST(request) {
     const requestHeaders = {
       ...requestHeadersObj,
       'X-Tenant-ID': tenantId,
+      'X-Schema-Name': `tenant_${tenantId.replace(/-/g, '_')}`, // Add formatted schema name
       'X-Cognito-Sub': cognitoUserId,
       'X-Business-ID': attributes['custom:businessid'],
       'X-Onboarding-Status': attributes['custom:onboarding'],
@@ -460,6 +462,7 @@ export async function POST(request) {
       reset_onboarding: isReset,
       requires_payment: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise'),
       tenant_id: tenantId,
+      schema_name: `tenant_${tenantId.replace(/-/g, '_')}`, // Format as Django expects it
       business_id: attributes['custom:businessid'],
       cognito_sub: cognitoUserId,
       request_id: requestId,

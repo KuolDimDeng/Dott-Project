@@ -398,7 +398,7 @@ const MainListItems = ({
           <AddCircleOutlineIcon />
         </ListItemIcon>
         <ListItemText
-          primary="Create new"
+          primary="New"
           sx={{
             '& .MuiListItemText-primary': {
               fontWeight: 'inherit',

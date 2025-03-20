@@ -168,6 +168,50 @@ def fix_circular_dependencies(graph, dry_run=False):
     
     return True
 
+# Add this function to fix_migration_dependencies.py
+def ensure_user_depends_on_custom_auth():
+    """Ensure users app migrations properly depend on custom_auth migrations."""
+    logger.info("Checking users migration dependencies...")
+    
+    # Find the users and custom_auth initial migrations
+    users_migration = None
+    custom_auth_migration = None
+    
+    for app_config in apps.get_app_configs():
+        if app_config.label == 'users':
+            migrations_dir = os.path.join(app_config.path, 'migrations')
+            for filename in os.listdir(migrations_dir):
+                if filename == '0001_initial.py':
+                    users_migration = os.path.join(migrations_dir, filename)
+        
+        if app_config.label == 'custom_auth':
+            migrations_dir = os.path.join(app_config.path, 'migrations')
+            for filename in os.listdir(migrations_dir):
+                if filename == '0001_initial.py':
+                    custom_auth_migration = os.path.join(migrations_dir, filename)
+    
+    if not users_migration or not custom_auth_migration:
+        logger.error("Could not find users or custom_auth initial migrations.")
+        return False
+    
+    # Check if users depends on custom_auth
+    users_deps = parse_dependencies(users_migration)
+    has_dependency = ('custom_auth', '0001_initial') in users_deps
+    
+    if not has_dependency:
+        logger.info("Users migration does not depend on custom_auth, fixing...")
+        
+        # Add the dependency
+        users_deps.append(('custom_auth', '0001_initial'))
+        update_dependencies(users_migration, users_deps)
+        
+        logger.info(f"Updated dependencies in {users_migration}")
+        return True
+    else:
+        logger.info("Users migration already depends on custom_auth correctly.")
+        return False
+
+
 def fix_onboarding_business_dependency(dry_run=False):
     """Fix the specific dependency issue between onboarding and business apps."""
     # Find the onboarding and business initial migrations
@@ -253,24 +297,24 @@ def reset_migrations(dry_run=False):
         return
     
     with connection.cursor() as cursor:
-        # Get all migrations for onboarding and business
+        # Get all migrations for relevant apps
         cursor.execute("""
             SELECT app, name
             FROM django_migrations
-            WHERE app IN ('onboarding', 'business')
+            WHERE app IN ('onboarding', 'business', 'users', 'custom_auth')
             ORDER BY id
         """)
         migrations = cursor.fetchall()
         
-        logger.info(f"Found {len(migrations)} migrations for onboarding and business.")
+        logger.info(f"Found {len(migrations)} migrations for relevant apps.")
         
         # Delete these migrations
         cursor.execute("""
             DELETE FROM django_migrations
-            WHERE app IN ('onboarding', 'business')
+            WHERE app IN ('onboarding', 'business', 'users', 'custom_auth')
         """)
         
-        logger.info("Deleted migrations for onboarding and business.")
+        logger.info("Deleted migrations for relevant apps.")
 
 def main():
     """Main function."""
@@ -279,6 +323,9 @@ def main():
     args = parser.parse_args()
     
     logger.info("Checking for migration dependency issues...")
+
+     # Add this before other fixes
+    fixed_users_dependency = ensure_user_depends_on_custom_auth()
     
     # Fix the specific issue between onboarding and business
     fixed_specific = fix_onboarding_business_dependency(dry_run=args.dry_run)
@@ -288,7 +335,7 @@ def main():
     graph = build_dependency_graph(migration_files)
     fixed_circular = fix_circular_dependencies(graph, dry_run=args.dry_run)
     
-    if fixed_specific or fixed_circular:
+    if fixed_users_dependency or fixed_specific or fixed_circular:
         logger.info("Fixed migration dependency issues.")
         
         # Reset migrations

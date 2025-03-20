@@ -1,3 +1,4 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/DashboardContent.jsx
 'use client';
 
 import React, { useState, useCallback, useEffect, lazy, Suspense } from 'react';
@@ -62,6 +63,8 @@ function DashboardContent() {
     showKPIDashboard: false,
     showMainDashboard: false,
     showHome: true, // Show Home page by default,
+    showInventoryItems: false, // Added for inventory items
+    showInventoryManagement: false, // Added for inventory management
     
     // Form visibility
     showForm: false,
@@ -74,7 +77,7 @@ function DashboardContent() {
     selectedOption, selectedReport, selectedInvoiceId, selectedCustomer,
     selectedInvoice, selectedCustomerId, selectedAnalysis, selectedSettingsOption,
     products, services, showKPIDashboard, showMainDashboard, showHome,
-    showForm, formOption
+    showInventoryItems, showInventoryManagement, showForm, formOption
   } = uiState;
   
   // Computed values
@@ -107,6 +110,8 @@ function DashboardContent() {
       showKPIDashboard: false,
       showMainDashboard: false,
       showHome: false,
+      showInventoryItems: false,
+      showInventoryManagement: false,
       showForm: false,
       formOption: null,
       // Keep other state values
@@ -246,6 +251,46 @@ function DashboardContent() {
     }
   }, [resetAllStates, updateState]);
 
+  // Handler for Inventory options
+  const handleInventoryClick = useCallback((value) => {
+    resetAllStates();
+    // Implement navigation or state changes based on the selected inventory option
+    console.log('Inventory option selected:', value);
+    
+    switch(value) {
+      case 'inventorydashboard':
+        updateState({ view: 'inventory-dashboard' });
+        break;
+      case 'items':
+        updateState({
+          view: 'inventory-items',
+          showInventoryItems: true
+        });
+        break;
+      case 'stock-adjustments':
+        updateState({ view: 'inventory-stock-adjustments' });
+        break;
+      case 'locations':
+        updateState({ view: 'inventory-locations' });
+        break;
+      case 'suppliers':
+        updateState({ view: 'inventory-suppliers' });
+        break;
+      case 'transactions':
+        updateState({ view: 'inventory-transactions' });
+        break;
+      case 'reports':
+        updateState({ view: 'inventory-reports' });
+        break;
+      default:
+        // If no specific option is selected, show the inventory management page
+        updateState({
+          view: 'inventory-management',
+          showInventoryManagement: true
+        });
+    }
+  }, [resetAllStates, updateState]);
+
   // Handler for showing create options
   const handleShowCreateOptions = useCallback((option) => {
     resetAllStates();
@@ -302,7 +347,7 @@ function DashboardContent() {
             handleDashboardClick={handleMainDashboardClick}
             handlePurchasesClick={() => {}}
             handleAccountingClick={() => {}}
-            handleInventoryClick={() => {}}
+            handleInventoryClick={handleInventoryClick}
             handleCRMClick={handleCRMClick}
           />
           
@@ -328,6 +373,8 @@ function DashboardContent() {
                     showKPIDashboard={showKPIDashboard}
                     showMainDashboard={showMainDashboard}
                     showHome={showHome}
+                    showInventoryItems={showInventoryItems}
+                    showInventoryManagement={showInventoryManagement}
                     userData={userData}
                   />
                 )

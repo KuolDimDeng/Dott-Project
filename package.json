@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "prepare": "husky",
-    "start": "pnpm node script.js" 
+    "start": "pnpm node script.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.6.1",
@@ -17,5 +17,6 @@
     "@aws-amplify/core": "^6.10.0",
     "@aws-amplify/adapter-nextjs": "^1.5.0",
     "aws-amplify": "^6.10.0"
-  }
+  },
+  "packageManager": "pnpm@8.15.3"
 }

@@ -24,6 +24,14 @@ class Command(BaseCommand):
             '--no-input', action='store_true',
             help='Skip all user prompts',
         )
+        parser.add_argument(
+            '--reset-migrations-only', action='store_true',
+            help='Only reset and recreate migrations without dropping data',
+        )
+        parser.add_argument(
+            '--clean-tenant-data', action='store_true',
+            help='Delete all tenant-related data from public tables',
+        )
 
     def find_migration_files(self):
         migration_files = []
@@ -40,11 +48,23 @@ class Command(BaseCommand):
         for file in files:
             self.stdout.write(file)
 
-    def prompt_confirmation(self, no_input=False):
+    def prompt_confirmation(self, no_input=False, message=None):
+        """
+        Prompt the user for confirmation before proceeding.
+        
+        Args:
+            no_input: If True, skip the prompt and assume "yes"
+            message: Custom confirmation message to display
+            
+        Returns:
+            bool: True if confirmed, False otherwise
+        """
         if no_input:
             return True
-        response = input("Are you sure you want to reset the database and recreate migrations? This will delete all data. (yes/no): ")
-        return response.lower() == 'yes'
+            
+        confirm_message = message or "This will reset your database. Are you sure? Type 'yes' to confirm: "
+        answer = input(confirm_message)
+        return answer.lower() == 'yes'
 
     def delete_files(self, files):
         for file in files:
@@ -57,6 +77,24 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         no_input = options['no_input']
+        reset_migrations_only = options['reset_migrations_only']
+        clean_tenant_data = options['clean_tenant_data']
+            
+        if clean_tenant_data:
+            if not self.prompt_confirmation(no_input, "This will DELETE ALL TENANT DATA from your database! Are you sure? Type 'yes' to confirm: "):
+                self.stdout.write("Operation cancelled by user.")
+                return
+            self.clean_tenant_data()
+            return
+                
+        
+        if reset_migrations_only:
+            if not self.prompt_confirmation(no_input):
+                self.stdout.write("Operation cancelled by user.")
+                return
+            self.reset_migrations()
+            return
+            
         
         if not self.prompt_confirmation(no_input):
             self.stdout.write("Operation cancelled by user.")
@@ -64,6 +102,8 @@ class Command(BaseCommand):
 
         table_status = {}
         database_status = {}
+        used_fake_migrations = False  # Track if we used fake migrations
+
 
         try:
             # Step 1: Delete migration files
@@ -108,17 +148,20 @@ class Command(BaseCommand):
                 self.clear_report_data(cursor)
 
             # Step 9: Recreate and apply migrations
-            self.recreate_and_apply_migrations()
+            used_fake_migrations = self.recreate_and_apply_migrations()
 
             # Step 10: Reset sequences again after migrations
             self.reset_all_sequences()
 
-
             # Step 11: Check for lingering data
             self.check_and_clear_lingering_data()
 
-            # Step 12: Recreate account types
-            self.recreate_account_types()
+            # Step 12: Recreate account types (skip if using fake migrations)
+            if not used_fake_migrations:
+                self.recreate_account_types()
+            else:
+                logger.info("Skipping account types recreation when using --fake migrations")
+
 
             # Step 13: Check for any remaining model changes
             self.check_and_apply_remaining_changes()
@@ -335,10 +378,10 @@ class Command(BaseCommand):
 
     def clear_user_data(self, cursor):
         try:
-            cursor.execute("TRUNCATE TABLE users_user CASCADE;")
+            cursor.execute("TRUNCATE TABLE custom_auth_user CASCADE;")
             logger.info("User data cleared successfully.")
         except ProgrammingError:
-            logger.info("users_user table does not exist. Skipping.")
+            logger.info("custom_auth_user table does not exist. Skipping.")
         except Exception as e:
             logger.error(f"Error clearing user data: {e}")
 
@@ -500,17 +543,2045 @@ class Command(BaseCommand):
         logger.info("Making new migrations...")
         django.core.management.call_command('makemigrations')
         
-        logger.info("Applying migrations...")
-        django.core.management.call_command('migrate')
-        
-        # Add indexes after migrations
-        logger.info("Adding indexes...")
+        # Create all 191 tables identified in the foreign key constraints
+        logger.info("Creating all 191 tables directly...")
         with connection.cursor() as cursor:
+            # First, create schema and extensions
+            cursor.execute("CREATE SCHEMA IF NOT EXISTS public;")
+            cursor.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";")
+            
+            # Create base tables with no dependencies first
+            # Core Django tables
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_inventory_item_sku ON inventory_inventoryitem(sku);
-                CREATE INDEX IF NOT EXISTS idx_inventory_item_name ON inventory_inventoryitem(name);
-                CREATE INDEX IF NOT EXISTS idx_report_type ON reports_report(report_type);
+            CREATE TABLE IF NOT EXISTS django_migrations (
+                id SERIAL PRIMARY KEY,
+                app VARCHAR(255) NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                applied TIMESTAMP WITH TIME ZONE NOT NULL
+            );
             """)
+            logger.info("Created django_migrations table")
+            
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS django_content_type (
+                id SERIAL PRIMARY KEY,
+                app_label VARCHAR(100) NOT NULL,
+                model VARCHAR(100) NOT NULL,
+                name VARCHAR(100) NULL,
+                CONSTRAINT django_content_type_app_label_model_76bd3d3b_uniq UNIQUE (app_label, model)
+            );
+            """)
+            logger.info("Created django_content_type table")
+            
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS django_site (
+                id SERIAL PRIMARY KEY,
+                domain VARCHAR(100) NOT NULL,
+                name VARCHAR(50) NOT NULL,
+                CONSTRAINT django_site_domain_key UNIQUE (domain)
+            );
+            INSERT INTO django_site (id, domain, name) VALUES (1, 'example.com', 'example.com')
+            ON CONFLICT DO NOTHING;
+            """)
+            logger.info("Created django_site table")
+            
+            # Create base tables (no foreign key dependencies)
+            
+            # Auth group table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS auth_group (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(150) NOT NULL UNIQUE
+            );
+            """)
+            logger.info("Created auth_group table")
+            
+            # Create account type table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_accounttype (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL UNIQUE,
+                description TEXT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_accounttype table")
+            
+            # Create account category table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_accountcategory (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                description TEXT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_accountcategory table")
+            
+            # Create inventory category table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventory_category (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                description TEXT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created inventory_category table")
+            
+            # Create inventory location table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventory_location (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                address TEXT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created inventory_location table")
+            
+            # Create inventory supplier table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventory_supplier (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                contact_info TEXT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created inventory_supplier table")
+            
+            # Create inventory department table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventory_department (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                description TEXT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created inventory_department table")
+            
+            # Create HR role table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS hr_role (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(100) NOT NULL,
+                description TEXT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created hr_role table")
+            
+            # Create taxes state table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS taxes_state (
+                id SERIAL PRIMARY KEY,
+                code VARCHAR(2) NOT NULL UNIQUE,
+                name VARCHAR(100) NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created taxes_state table")
+            
+            # Create custom charge plan table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventory_customchargeplan (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                description TEXT NULL,
+                rate DECIMAL(10, 2) NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created inventory_customchargeplan table")
+            
+            # Create auth_permission table after content_type but before user permissions
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS auth_permission (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                content_type_id INTEGER NOT NULL,
+                codename VARCHAR(100) NOT NULL,
+                CONSTRAINT auth_permission_content_type_id_codename_01ab375a_uniq UNIQUE (content_type_id, codename),
+                CONSTRAINT auth_permission_content_type_id_2f476e4b_fk_django_co FOREIGN KEY (content_type_id)
+                    REFERENCES django_content_type (id) DEFERRABLE INITIALLY DEFERRED
+            );
+            """)
+            logger.info("Created auth_permission table")
+            
+            # Create custom_auth_tenant table with all required fields
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS custom_auth_tenant (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                schema_name VARCHAR(63) UNIQUE NOT NULL,
+                name VARCHAR(100) NOT NULL,
+                created_on TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                is_active BOOLEAN DEFAULT TRUE,
+                database_status VARCHAR(50) DEFAULT 'not_created',
+                setup_status VARCHAR(20) DEFAULT 'not_started',
+                last_setup_attempt TIMESTAMP WITH TIME ZONE,
+                setup_error_message TEXT,
+                last_health_check TIMESTAMP WITH TIME ZONE,
+                setup_task_id VARCHAR(255),
+                owner_id UUID NOT NULL,
+                storage_quota_bytes BIGINT DEFAULT 2147483648,
+                last_archive_date TIMESTAMP WITH TIME ZONE NULL,
+                archive_retention_days INTEGER DEFAULT 2555,
+                archive_expiry_notification_sent BOOLEAN DEFAULT FALSE,
+                archive_expiry_notification_date TIMESTAMP WITH TIME ZONE NULL,
+                archive_user_decision VARCHAR(20) DEFAULT 'pending'
+            );
+            """)
+            logger.info("Created custom_auth_tenant table with all required fields")
+                        
+            # Create custom_auth_user table before anything that depends on it
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS custom_auth_user (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                password VARCHAR(128) NOT NULL,
+                last_login TIMESTAMP WITH TIME ZONE NULL,
+                is_superuser BOOLEAN NOT NULL DEFAULT FALSE,
+                email VARCHAR(254) UNIQUE NOT NULL,
+                first_name VARCHAR(100) NOT NULL DEFAULT '',
+                last_name VARCHAR(100) NOT NULL DEFAULT '',
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                is_staff BOOLEAN NOT NULL DEFAULT FALSE,
+                date_joined TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                email_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
+                confirmation_token UUID NOT NULL DEFAULT gen_random_uuid(),
+                is_onboarded BOOLEAN NOT NULL DEFAULT FALSE,
+                stripe_customer_id VARCHAR(255) NULL,
+                role VARCHAR(20) NOT NULL DEFAULT 'OWNER',
+                occupation VARCHAR(50) NOT NULL DEFAULT 'OWNER',
+                tenant_id UUID NULL REFERENCES custom_auth_tenant(id),
+                cognito_sub VARCHAR(36) UNIQUE NULL
+            );
+            """)
+            logger.info("Created custom_auth_user table")
+            
+            # Create users_business table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users_business (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                business_num VARCHAR(6) NULL,
+                name VARCHAR(200) NOT NULL,
+                business_name VARCHAR(200) NULL,
+                business_type VARCHAR(50) NULL,
+                business_subtype_selections JSONB NOT NULL DEFAULT '{}'::jsonb,
+                street VARCHAR(200) NULL,
+                city VARCHAR(200) NULL,
+                state VARCHAR(200) NULL,
+                postcode VARCHAR(20) NULL,
+                country VARCHAR(2) NOT NULL DEFAULT 'US',
+                address TEXT NULL,
+                email VARCHAR(254) NULL,
+                phone_number VARCHAR(20) NULL,
+                database_name VARCHAR(255) NULL,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                legal_structure VARCHAR(50) NOT NULL DEFAULT 'SOLE_PROPRIETORSHIP',
+                date_founded DATE NULL,
+                owner_id UUID NULL REFERENCES custom_auth_user(id) ON DELETE SET NULL
+            );
+            CREATE INDEX IF NOT EXISTS users_business_owner_id_idx ON users_business(owner_id);
+            CREATE INDEX IF NOT EXISTS users_business_business_num_idx ON users_business(business_num);
+            """)
+            logger.info("Created users_business table")
+            
+            # Create users_business_details table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users_business_details (
+                business_id UUID PRIMARY KEY REFERENCES users_business(id) ON DELETE CASCADE,
+                business_type VARCHAR(50) NOT NULL,
+                business_subtype_selections JSONB NOT NULL DEFAULT '{}'::jsonb,
+                legal_structure VARCHAR(50) NOT NULL DEFAULT 'SOLE_PROPRIETORSHIP',
+                country VARCHAR(2) NOT NULL DEFAULT 'US',
+                date_founded DATE NULL,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+            );
+            """)
+            logger.info("Created users_business_details table")
+            
+            # Create users_userprofile table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users_userprofile (
+                id BIGSERIAL PRIMARY KEY,
+                user_id UUID NOT NULL UNIQUE REFERENCES custom_auth_user(id) ON DELETE CASCADE,
+                occupation VARCHAR(200) NULL,
+                street VARCHAR(200) NULL,
+                city VARCHAR(200) NULL,
+                state VARCHAR(200) NULL,
+                postcode VARCHAR(20) NULL,
+                country VARCHAR(2) NOT NULL DEFAULT 'US',
+                phone_number VARCHAR(20) NULL,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                modified_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                is_business_owner BOOLEAN NOT NULL DEFAULT FALSE,
+                shopify_access_token VARCHAR(255) NULL,
+                schema_name VARCHAR(63) NULL,
+                metadata JSONB NULL DEFAULT '{}'::jsonb,
+                business_id UUID NULL REFERENCES users_business(id) ON DELETE SET NULL,
+                tenant_id UUID NULL REFERENCES custom_auth_tenant(id) ON DELETE SET NULL,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                email_verified BOOLEAN DEFAULT FALSE,
+                database_status VARCHAR(50) DEFAULT 'not_created',
+                last_setup_attempt TIMESTAMP WITH TIME ZONE NULL,
+                setup_error_message TEXT NULL,
+                database_setup_task_id VARCHAR(255) NULL
+            );
+            CREATE INDEX IF NOT EXISTS users_userprofile_user_id_idx ON users_userprofile(user_id);
+            CREATE INDEX IF NOT EXISTS users_userprofile_tenant_id_idx ON users_userprofile(tenant_id);
+            CREATE INDEX IF NOT EXISTS users_userprofile_business_id_idx ON users_userprofile(business_id);
+            """)
+            logger.info("Created users_userprofile table")
+            
+            # Create finance_account table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_account (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                account_number VARCHAR(50) NULL,
+                account_type_id INTEGER NOT NULL REFERENCES finance_accounttype(id),
+                parent_account_id INTEGER NULL REFERENCES finance_account(id),
+                business_id UUID NOT NULL REFERENCES users_business(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_account table")
+            
+            # Create chart of account table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_chartofaccount (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                code VARCHAR(50) NOT NULL,
+                description TEXT NULL,
+                parent_id INTEGER NULL REFERENCES finance_chartofaccount(id),
+                category_id INTEGER NOT NULL REFERENCES finance_accountcategory(id),
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_chartofaccount table")
+            
+            # Create finance_costcategory table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_costcategory (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT NULL,
+                parent_id INTEGER NULL REFERENCES finance_costcategory(id),
+                business_id UUID NOT NULL REFERENCES users_business(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_costcategory table")
+            
+            # Create banking_bankaccount table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS banking_bankaccount (
+                id SERIAL PRIMARY KEY,
+                account_number VARCHAR(50) NOT NULL,
+                bank_name VARCHAR(255) NOT NULL,
+                account_type VARCHAR(50) NOT NULL,
+                routing_number VARCHAR(50) NULL,
+                balance DECIMAL(15, 2) NOT NULL DEFAULT 0,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created banking_bankaccount table")
+            
+            # Create hr_employee table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS hr_employee (
+                id SERIAL PRIMARY KEY,
+                first_name VARCHAR(100) NOT NULL,
+                last_name VARCHAR(100) NOT NULL,
+                email VARCHAR(254) NOT NULL,
+                phone VARCHAR(20) NULL,
+                hire_date DATE NOT NULL,
+                supervisor_id INTEGER NULL REFERENCES hr_employee(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created hr_employee table")
+            
+            # Create payroll_payrollrun table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS payroll_payrollrun (
+                id SERIAL PRIMARY KEY,
+                start_date DATE NOT NULL,
+                end_date DATE NOT NULL,
+                payment_date DATE NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created payroll_payrollrun table")
+            
+            # Create crm_customer table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS crm_customer (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(254) NULL,
+                phone VARCHAR(20) NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created crm_customer table")
+            
+            # Create crm_lead table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS crm_lead (
+                id SERIAL PRIMARY KEY,
+                first_name VARCHAR(100) NOT NULL,
+                last_name VARCHAR(100) NOT NULL,
+                email VARCHAR(254) NULL,
+                phone VARCHAR(20) NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'new',
+                assigned_to_id UUID NULL REFERENCES custom_auth_user(id),
+                converted_to_id INTEGER NULL REFERENCES crm_customer(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created crm_lead table")
+            
+            # Create crm_opportunity table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS crm_opportunity (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                stage VARCHAR(50) NOT NULL DEFAULT 'prospecting',
+                expected_close_date DATE NULL,
+                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
+                assigned_to_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created crm_opportunity table")
+            
+            # Create crm_campaign table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS crm_campaign (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'planned',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created crm_campaign table")
+            
+            # Create crm_deal table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS crm_deal (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                stage VARCHAR(50) NOT NULL DEFAULT 'negotiation',
+                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
+                opportunity_id INTEGER NULL REFERENCES crm_opportunity(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created crm_deal table")
+            
+            # Create crm_contact table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS crm_contact (
+                id SERIAL PRIMARY KEY,
+                first_name VARCHAR(100) NOT NULL,
+                last_name VARCHAR(100) NOT NULL,
+                email VARCHAR(254) NULL,
+                phone VARCHAR(20) NULL,
+                position VARCHAR(100) NULL,
+                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created crm_contact table")
+            
+            # Create crm_activity table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS crm_activity (
+                id SERIAL PRIMARY KEY,
+                type VARCHAR(50) NOT NULL,
+                subject VARCHAR(255) NOT NULL,
+                description TEXT NULL,
+                due_date DATE NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                customer_id INTEGER NULL REFERENCES crm_customer(id),
+                lead_id INTEGER NULL REFERENCES crm_lead(id),
+                opportunity_id INTEGER NULL REFERENCES crm_opportunity(id),
+                deal_id INTEGER NULL REFERENCES crm_deal(id),
+                assigned_to_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created crm_activity table")
+            
+            # Create crm_campaignmember table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS crm_campaignmember (
+                id SERIAL PRIMARY KEY,
+                campaign_id INTEGER NOT NULL REFERENCES crm_campaign(id),
+                customer_id INTEGER NULL REFERENCES crm_customer(id),
+                lead_id INTEGER NULL REFERENCES crm_lead(id),
+                status VARCHAR(50) NOT NULL DEFAULT 'sent',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created crm_campaignmember table")
+            
+            # Create inventory_product table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventory_product (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                sku VARCHAR(50) NOT NULL,
+                description TEXT NULL,
+                price DECIMAL(15, 2) NOT NULL,
+                cost DECIMAL(15, 2) NOT NULL,
+                department_id INTEGER NULL REFERENCES inventory_department(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created inventory_product table")
+            
+            # Create inventory_service table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventory_service (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT NULL,
+                rate DECIMAL(15, 2) NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created inventory_service table")
+            
+            # Create inventory_inventoryitem table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventory_inventoryitem (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                sku VARCHAR(50) NOT NULL,
+                description TEXT NULL,
+                quantity INTEGER NOT NULL DEFAULT 0,
+                reorder_level INTEGER NOT NULL DEFAULT 0,
+                category_id INTEGER NULL REFERENCES inventory_category(id),
+                supplier_id INTEGER NULL REFERENCES inventory_supplier(id),
+                location_id INTEGER NULL REFERENCES inventory_location(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created inventory_inventoryitem table")
+            
+            # Create inventory_inventorytransaction table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventory_inventorytransaction (
+                id SERIAL PRIMARY KEY,
+                transaction_type VARCHAR(50) NOT NULL,
+                quantity INTEGER NOT NULL,
+                transaction_date TIMESTAMP WITH TIME ZONE NOT NULL,
+                item_id INTEGER NOT NULL REFERENCES inventory_inventoryitem(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created inventory_inventorytransaction table")
+            
+            # Create inventory_producttypefields table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventory_producttypefields (
+                id SERIAL PRIMARY KEY,
+                product_id INTEGER NOT NULL REFERENCES inventory_product(id),
+                field_name VARCHAR(100) NOT NULL,
+                field_value TEXT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created inventory_producttypefields table")
+            
+            # Create inventory_servicetypefields table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventory_servicetypefields (
+                id SERIAL PRIMARY KEY,
+                service_id INTEGER NOT NULL REFERENCES inventory_service(id),
+                field_name VARCHAR(100) NOT NULL,
+                field_value TEXT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created inventory_servicetypefields table")
+            
+            # Create inventory_product_custom_charge_plans table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventory_product_custom_charge_plans (
+                id SERIAL PRIMARY KEY,
+                product_id INTEGER NOT NULL REFERENCES inventory_product(id),
+                customchargeplan_id INTEGER NOT NULL REFERENCES inventory_customchargeplan(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created inventory_product_custom_charge_plans table")
+            
+            # Create inventory_service_custom_charge_plans table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventory_service_custom_charge_plans (
+                id SERIAL PRIMARY KEY,
+                service_id INTEGER NOT NULL REFERENCES inventory_service(id),
+                customchargeplan_id INTEGER NOT NULL REFERENCES inventory_customchargeplan(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created inventory_service_custom_charge_plans table")
+            
+            # Create purchases_vendor table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS purchases_vendor (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                contact_name VARCHAR(100) NULL,
+                email VARCHAR(254) NULL,
+                phone VARCHAR(20) NULL,
+                address TEXT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created purchases_vendor table")
+            
+            # Create purchases_purchaseorder table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS purchases_purchaseorder (
+                id SERIAL PRIMARY KEY,
+                order_number VARCHAR(50) NOT NULL,
+                order_date DATE NOT NULL,
+                expected_delivery_date DATE NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'draft',
+                vendor_id INTEGER NOT NULL REFERENCES purchases_vendor(id),
+                created_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created purchases_purchaseorder table")
+            
+            # Create purchases_purchaseorderitem table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS purchases_purchaseorderitem (
+                id SERIAL PRIMARY KEY,
+                quantity INTEGER NOT NULL,
+                unit_price DECIMAL(15, 2) NOT NULL,
+                product_id INTEGER NOT NULL REFERENCES inventory_product(id),
+                purchase_order_id INTEGER NOT NULL REFERENCES purchases_purchaseorder(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created purchases_purchaseorderitem table")
+            
+            # Create purchases_purchasereturn table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS purchases_purchasereturn (
+                id SERIAL PRIMARY KEY,
+                return_number VARCHAR(50) NOT NULL,
+                return_date DATE NOT NULL,
+                reason TEXT NULL,
+                purchase_order_id INTEGER NOT NULL REFERENCES purchases_purchaseorder(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created purchases_purchasereturn table")
+            
+            # Create purchases_purchasereturnitem table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS purchases_purchasereturnitem (
+                id SERIAL PRIMARY KEY,
+                quantity INTEGER NOT NULL,
+                product_id INTEGER NOT NULL REFERENCES inventory_product(id),
+                purchase_return_id INTEGER NOT NULL REFERENCES purchases_purchasereturn(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created purchases_purchasereturnitem table")
+            
+            # Create purchases_bill table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS purchases_bill (
+                id SERIAL PRIMARY KEY,
+                bill_number VARCHAR(50) NOT NULL,
+                bill_date DATE NOT NULL,
+                due_date DATE NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'unpaid',
+                vendor_id INTEGER NOT NULL REFERENCES purchases_vendor(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created purchases_bill table")
+            
+            # Create purchases_billitem table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS purchases_billitem (
+                id SERIAL PRIMARY KEY,
+                description TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                unit_price DECIMAL(15, 2) NOT NULL,
+                bill_id INTEGER NOT NULL REFERENCES purchases_bill(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created purchases_billitem table")
+            
+            # Create purchases_procurement table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS purchases_procurement (
+                id SERIAL PRIMARY KEY,
+                procurement_number VARCHAR(50) NOT NULL,
+                procurement_date DATE NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                vendor_id INTEGER NOT NULL REFERENCES purchases_vendor(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created purchases_procurement table")
+            
+            # Create purchases_procurementitem table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS purchases_procurementitem (
+                id SERIAL PRIMARY KEY,
+                quantity INTEGER NOT NULL,
+                unit_price DECIMAL(15, 2) NOT NULL,
+                product_id INTEGER NOT NULL REFERENCES inventory_product(id),
+                procurement_id INTEGER NOT NULL REFERENCES purchases_procurement(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created purchases_procurementitem table")
+            
+            # Create finance_accountreconciliation table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_accountreconciliation (
+                id SERIAL PRIMARY KEY,
+                reconciliation_date DATE NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                account_id INTEGER NOT NULL REFERENCES finance_account(id),
+                bank_account_id INTEGER NOT NULL REFERENCES banking_bankaccount(id),
+                business_id UUID NOT NULL REFERENCES users_business(id),
+                completed_by_id UUID NULL REFERENCES custom_auth_user(id),
+                reviewed_by_id UUID NULL REFERENCES custom_auth_user(id),
+                approved_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_accountreconciliation table")
+
+            # Create finance_financetransaction table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_financetransaction (
+                id SERIAL PRIMARY KEY,
+                transaction_type VARCHAR(50) NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                transaction_date DATE NOT NULL,
+                description TEXT NULL,
+                account_id INTEGER NOT NULL REFERENCES finance_account(id),
+                business_id UUID NOT NULL REFERENCES users_business(id),
+                created_by_id UUID NULL REFERENCES custom_auth_user(id),
+                posted_by_id UUID NULL REFERENCES custom_auth_user(id),
+                bill_id INTEGER NULL REFERENCES purchases_bill(id),
+                invoice_id INTEGER NULL,
+                reconciliation_id INTEGER NULL REFERENCES finance_accountreconciliation(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_financetransaction table")
+
+            #Create sales_invoice table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sales_invoice (
+                id SERIAL PRIMARY KEY,
+                invoice_number VARCHAR(50) NOT NULL,
+                invoice_date DATE NOT NULL,
+                due_date DATE NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'unpaid',
+                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
+                transaction_id INTEGER NULL REFERENCES finance_financetransaction(id),
+                accounts_receivable_id INTEGER NULL REFERENCES finance_account(id),
+                sales_revenue_id INTEGER NULL REFERENCES finance_account(id),
+                sales_tax_payable_id INTEGER NULL REFERENCES finance_account(id),
+                inventory_id INTEGER NULL REFERENCES finance_account(id),
+                cost_of_goods_sold_id INTEGER NULL REFERENCES finance_account(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            ALTER TABLE finance_financetransaction 
+                ADD CONSTRAINT finance_financetransaction_invoice_id_fkey 
+                FOREIGN KEY (invoice_id) REFERENCES sales_invoice(id);
+            """)
+            logger.info("Created sales_invoice table")
+            
+            # Create sales_sale table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sales_sale (
+                id SERIAL PRIMARY KEY,
+                sale_date DATE NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                payment_method VARCHAR(50) NOT NULL,
+                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
+                product_id INTEGER NULL REFERENCES inventory_product(id),
+                invoice_id INTEGER NULL REFERENCES sales_invoice(id),
+                created_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created sales_sale table")
+            
+            # Create banking_banktransaction table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS banking_banktransaction (
+                id SERIAL PRIMARY KEY,
+                transaction_date DATE NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                description TEXT NULL,
+                transaction_type VARCHAR(50) NOT NULL,
+                account_id INTEGER NOT NULL REFERENCES banking_bankaccount(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created banking_banktransaction table")
+            
+            # Create finance_cashaccount table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_cashaccount (
+                id SERIAL PRIMARY KEY,
+                account_id INTEGER NOT NULL REFERENCES finance_account(id),
+                transaction_id INTEGER NULL REFERENCES finance_financetransaction(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_cashaccount table")
+            
+            # Create finance_reconciliationitem table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_reconciliationitem (
+                id SERIAL PRIMARY KEY,
+                match_date DATE NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                reconciliation_id INTEGER NOT NULL REFERENCES finance_accountreconciliation(id),
+                finance_transaction_id INTEGER NULL REFERENCES finance_financetransaction(id),
+                bank_transaction_id INTEGER NULL REFERENCES banking_banktransaction(id),
+                matched_by_id UUID NULL REFERENCES custom_auth_user(id),
+                reviewed_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_reconciliationitem table")
+            
+            # Create finance_revenueaccount table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_revenueaccount (
+                id SERIAL PRIMARY KEY,
+                account_type_id INTEGER NOT NULL REFERENCES finance_accounttype(id),
+                transaction_id INTEGER NOT NULL REFERENCES finance_financetransaction(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_revenueaccount table")
+            
+            # Create finance_salestaxaccount table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_salestaxaccount (
+                id SERIAL PRIMARY KEY,
+                transaction_id INTEGER NOT NULL REFERENCES finance_financetransaction(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_salestaxaccount table")
+            
+            # Create finance_income table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_income (
+                id SERIAL PRIMARY KEY,
+                transaction_id INTEGER NOT NULL REFERENCES finance_financetransaction(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_income table")
+            
+            # Create finance_generalledgerentry table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_generalledgerentry (
+                id SERIAL PRIMARY KEY,
+                entry_date DATE NOT NULL,
+                debit DECIMAL(15, 2) NOT NULL DEFAULT 0,
+                credit DECIMAL(15, 2) NOT NULL DEFAULT 0,
+                account_id INTEGER NOT NULL REFERENCES finance_chartofaccount(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_generalledgerentry table")
+            
+            # Create finance_journalentry table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_journalentry (
+                id SERIAL PRIMARY KEY,
+                entry_date DATE NOT NULL,
+                description TEXT NULL,
+                reference VARCHAR(100) NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'draft',
+                business_id UUID NOT NULL REFERENCES users_business(id),
+                created_by_id UUID NULL REFERENCES custom_auth_user(id),
+                posted_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_journalentry table")
+            
+            # Create finance_journalentryline table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_journalentryline (
+                id SERIAL PRIMARY KEY,
+                description TEXT NULL,
+                debit DECIMAL(15, 2) NOT NULL DEFAULT 0,
+                credit DECIMAL(15, 2) NOT NULL DEFAULT 0,
+                account_id INTEGER NOT NULL REFERENCES finance_chartofaccount(id),
+                journal_entry_id INTEGER NOT NULL REFERENCES finance_journalentry(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_journalentryline table")
+            
+            # Create finance_intercompanyaccount table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_intercompanyaccount (
+                id SERIAL PRIMARY KEY,
+                account_name VARCHAR(255) NOT NULL,
+                business_id UUID NOT NULL REFERENCES users_business(id),
+                created_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_intercompanyaccount table")
+            
+            # Create finance_intercompanytransaction table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_intercompanytransaction (
+                id SERIAL PRIMARY KEY,
+                transaction_date DATE NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                description TEXT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                business_id UUID NOT NULL REFERENCES users_business(id),
+                created_by_id UUID NULL REFERENCES custom_auth_user(id),
+                posted_by_id UUID NULL REFERENCES custom_auth_user(id),
+                approved_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_intercompanytransaction table")
+            
+            # Create finance_monthendclosing table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_monthendclosing (
+                id SERIAL PRIMARY KEY,
+                closing_month DATE NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                business_id UUID NOT NULL REFERENCES users_business(id),
+                completed_by_id UUID NULL REFERENCES custom_auth_user(id),
+                reviewed_by_id UUID NULL REFERENCES custom_auth_user(id),
+                approved_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_monthendclosing table")
+            
+            # Create finance_monthendtask table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_monthendtask (
+                id SERIAL PRIMARY KEY,
+                task_name VARCHAR(255) NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                closing_id INTEGER NOT NULL REFERENCES finance_monthendclosing(id),
+                completed_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_monthendtask table")
+            
+            # Create finance_budget table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_budget (
+                id SERIAL PRIMARY KEY,
+                budget_year INTEGER NOT NULL,
+                budget_name VARCHAR(255) NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'draft',
+                business_id UUID NOT NULL REFERENCES users_business(id),
+                created_by_id UUID NULL REFERENCES custom_auth_user(id),
+                submitted_by_id UUID NULL REFERENCES custom_auth_user(id),
+                reviewed_by_id UUID NULL REFERENCES custom_auth_user(id),
+                approved_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_budget table")
+            
+            # Create finance_budgetitem table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_budgetitem (
+                id SERIAL PRIMARY KEY,
+                month INTEGER NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                budget_id INTEGER NOT NULL REFERENCES finance_budget(id),
+                account_id INTEGER NOT NULL REFERENCES finance_chartofaccount(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_budgetitem table")
+            
+            # Create finance_fixedasset table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_fixedasset (
+                id SERIAL PRIMARY KEY,
+                asset_name VARCHAR(255) NOT NULL,
+                acquisition_date DATE NOT NULL,
+                acquisition_cost DECIMAL(15, 2) NOT NULL,
+                useful_life_years INTEGER NOT NULL,
+                residual_value DECIMAL(15, 2) NOT NULL DEFAULT 0,
+                business_id UUID NOT NULL REFERENCES users_business(id),
+                created_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_fixedasset table")
+            
+            # Create finance_costentry table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_costentry (
+                cost_id SERIAL PRIMARY KEY,
+                entry_date DATE NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                description TEXT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'draft',
+                category_id INTEGER NOT NULL REFERENCES finance_costcategory(id),
+                business_id UUID NOT NULL REFERENCES users_business(id),
+                created_by_id UUID NULL REFERENCES custom_auth_user(id),
+                posted_by_id UUID NULL REFERENCES custom_auth_user(id),
+                approved_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_costentry table")
+            
+            # Create finance_costallocation table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_costallocation (
+                id SERIAL PRIMARY KEY,
+                allocation_date DATE NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                description TEXT NULL,
+                cost_entry_id INTEGER NOT NULL REFERENCES finance_costentry(cost_id),
+                created_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_costallocation table")
+            
+            # Create finance_financialstatement table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_financialstatement (
+                id SERIAL PRIMARY KEY,
+                statement_type VARCHAR(50) NOT NULL,
+                statement_date DATE NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'draft',
+                business_id UUID NOT NULL REFERENCES users_business(id),
+                generated_by_id UUID NULL REFERENCES custom_auth_user(id),
+                reviewed_by_id UUID NULL REFERENCES custom_auth_user(id),
+                approved_by_id UUID NULL REFERENCES custom_auth_user(id),
+                previous_version_id INTEGER NULL REFERENCES finance_financialstatement(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_financialstatement table")
+            
+            # Create finance_audittrail table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_audittrail (
+                id SERIAL PRIMARY KEY,
+                action VARCHAR(50) NOT NULL,
+                entity_type VARCHAR(100) NOT NULL,
+                entity_id VARCHAR(100) NOT NULL,
+                description TEXT NULL,
+                changes JSONB NULL,
+                user_id UUID NULL REFERENCES custom_auth_user(id),
+                business_id UUID NOT NULL REFERENCES users_business(id),
+                timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+            );
+            """)
+            logger.info("Created finance_audittrail table")
+            
+            # Create hr_accesspermission table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS hr_accesspermission (
+                id SERIAL PRIMARY KEY,
+                module VARCHAR(100) NOT NULL,
+                permission_level VARCHAR(50) NOT NULL,
+                role_id INTEGER NOT NULL REFERENCES hr_role(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created hr_accesspermission table")
+            
+            # Create hr_employeerole table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS hr_employeerole (
+                id SERIAL PRIMARY KEY,
+                employee_id INTEGER NOT NULL REFERENCES hr_employee(id),
+                role_id INTEGER NOT NULL REFERENCES hr_role(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created hr_employeerole table")
+            
+            # Create hr_preboardingform table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS hr_preboardingform (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                form_data JSONB NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created hr_preboardingform table")
+            
+            # Create payroll_timesheet table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS payroll_timesheet (
+                id SERIAL PRIMARY KEY,
+                start_date DATE NOT NULL,
+                end_date DATE NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                employee_id INTEGER NOT NULL REFERENCES hr_employee(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created payroll_timesheet table")
+            
+            # Create payroll_timesheetentry table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS payroll_timesheetentry (
+                id SERIAL PRIMARY KEY,
+                entry_date DATE NOT NULL,
+                hours DECIMAL(5, 2) NOT NULL,
+                description TEXT NULL,
+                timesheet_id INTEGER NOT NULL REFERENCES payroll_timesheet(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created payroll_timesheetentry table")
+            
+            # Create payroll_payrolltransaction table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS payroll_payrolltransaction (
+                id SERIAL PRIMARY KEY,
+                transaction_date DATE NOT NULL,
+                gross_amount DECIMAL(15, 2) NOT NULL,
+                tax_deductions DECIMAL(15, 2) NOT NULL,
+                net_amount DECIMAL(15, 2) NOT NULL,
+                employee_id INTEGER NOT NULL REFERENCES hr_employee(id),
+                payroll_run_id INTEGER NOT NULL REFERENCES payroll_payrollrun(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created payroll_payrolltransaction table")
+            
+            # Create payroll_taxform table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS payroll_taxform (
+                id SERIAL PRIMARY KEY,
+                form_type VARCHAR(50) NOT NULL,
+                tax_year INTEGER NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                employee_id INTEGER NOT NULL REFERENCES hr_employee(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created payroll_taxform table")
+            
+            # Create taxes_incometaxrate table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS taxes_incometaxrate (
+                id SERIAL PRIMARY KEY,
+                tax_year INTEGER NOT NULL,
+                income_bracket_lower DECIMAL(15, 2) NOT NULL,
+                income_bracket_upper DECIMAL(15, 2) NULL,
+                rate DECIMAL(5, 2) NOT NULL,
+                state_id INTEGER NULL REFERENCES taxes_state(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created taxes_incometaxrate table")
+            
+            # Create taxes_payrolltaxfiling table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS taxes_payrolltaxfiling (
+                id SERIAL PRIMARY KEY,
+                filing_period_start DATE NOT NULL,
+                filing_period_end DATE NOT NULL,
+                due_date DATE NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                state_id INTEGER NOT NULL REFERENCES taxes_state(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created taxes_payrolltaxfiling table")
+            
+            # Create taxes_taxapitransaction table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS taxes_taxapitransaction (
+                id SERIAL PRIMARY KEY,
+                transaction_type VARCHAR(50) NOT NULL,
+                request_data JSONB NULL,
+                response_data JSONB NULL,
+                status VARCHAR(50) NOT NULL,
+                state_id INTEGER NULL REFERENCES taxes_state(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created taxes_taxapitransaction table")
+            
+            # Create taxes_taxfilinginstruction table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS taxes_taxfilinginstruction (
+                id SERIAL PRIMARY KEY,
+                tax_type VARCHAR(50) NOT NULL,
+                filing_frequency VARCHAR(50) NOT NULL,
+                instructions TEXT NULL,
+                state_id INTEGER NOT NULL REFERENCES taxes_state(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created taxes_taxfilinginstruction table")
+            
+            # Create taxes_taxform table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS taxes_taxform (
+                id SERIAL PRIMARY KEY,
+                form_type VARCHAR(50) NOT NULL,
+                form_number VARCHAR(50) NOT NULL,
+                tax_year INTEGER NOT NULL,
+                form_data JSONB NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'draft',
+                verified_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created taxes_taxform table")
+            
+            # Create analysis_chartconfiguration table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS analysis_chartconfiguration (
+                id SERIAL PRIMARY KEY,
+                chart_type VARCHAR(50) NOT NULL,
+                configuration JSONB NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created analysis_chartconfiguration table")
+            
+            # Create analysis_financialdata table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS analysis_financialdata (
+                id SERIAL PRIMARY KEY,
+                data_type VARCHAR(50) NOT NULL,
+                data_date DATE NOT NULL,
+                data_value DECIMAL(15, 2) NOT NULL,
+                metadata JSONB NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created analysis_financialdata table")
+            
+            # Create transport_driver table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS transport_driver (
+                id SERIAL PRIMARY KEY,
+                license_number VARCHAR(50) NOT NULL,
+                license_type VARCHAR(50) NOT NULL,
+                expiration_date DATE NOT NULL,
+                user_id UUID NOT NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created transport_driver table")
+            
+            # Create transport_equipment table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS transport_equipment (
+                id SERIAL PRIMARY KEY,
+                equipment_type VARCHAR(50) NOT NULL,
+                make VARCHAR(100) NOT NULL,
+                model VARCHAR(100) NOT NULL,
+                year INTEGER NOT NULL,
+                vin VARCHAR(17) NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created transport_equipment table")
+            
+            # Create transport_route table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS transport_route (
+                id SERIAL PRIMARY KEY,
+                origin VARCHAR(255) NOT NULL,
+                destination VARCHAR(255) NOT NULL,
+                distance DECIMAL(10, 2) NOT NULL,
+                estimated_time INTERVAL NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created transport_route table")
+            
+            # Create transport_compliance table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS transport_compliance (
+                id SERIAL PRIMARY KEY,
+                document_type VARCHAR(50) NOT NULL,
+                issue_date DATE NOT NULL,
+                expiration_date DATE NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'active',
+                driver_id INTEGER NOT NULL REFERENCES transport_driver(id),
+                equipment_id INTEGER NOT NULL REFERENCES transport_equipment(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created transport_compliance table")
+            
+            # Create transport_load table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS transport_load (
+                id SERIAL PRIMARY KEY,
+                load_number VARCHAR(50) NOT NULL,
+                pickup_date TIMESTAMP WITH TIME ZONE NOT NULL,
+                delivery_date TIMESTAMP WITH TIME ZONE NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
+                driver_id INTEGER NOT NULL REFERENCES transport_driver(id),
+                equipment_id INTEGER NOT NULL REFERENCES transport_equipment(id),
+                route_id INTEGER NOT NULL REFERENCES transport_route(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created transport_load table")
+            
+            # Create transport_expense table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS transport_expense (
+                id SERIAL PRIMARY KEY,
+                expense_type VARCHAR(50) NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                expense_date DATE NOT NULL,
+                description TEXT NULL,
+                equipment_id INTEGER NOT NULL REFERENCES transport_equipment(id),
+                load_id INTEGER NULL REFERENCES transport_load(id),
+                created_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created transport_expense table")
+            
+            # Create transport_maintenance table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS transport_maintenance (
+                id SERIAL PRIMARY KEY,
+                maintenance_type VARCHAR(50) NOT NULL,
+                service_date DATE NOT NULL,
+                service_provider VARCHAR(255) NULL,
+                cost DECIMAL(15, 2) NOT NULL,
+                description TEXT NULL,
+                equipment_id INTEGER NOT NULL REFERENCES transport_equipment(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created transport_maintenance table")
+            
+            # Create banking_plaiditem table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS banking_plaiditem (
+                id SERIAL PRIMARY KEY,
+                item_id VARCHAR(255) NOT NULL,
+                access_token VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created banking_plaiditem table")
+            
+            # Create banking_tinkitem table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS banking_tinkitem (
+                id SERIAL PRIMARY KEY,
+                item_id VARCHAR(255) NOT NULL,
+                access_token VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created banking_tinkitem table")
+            
+            # Create account_emailaddress table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS account_emailaddress (
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(254) NOT NULL UNIQUE,
+                verified BOOLEAN NOT NULL DEFAULT FALSE,
+                "primary" BOOLEAN NOT NULL DEFAULT FALSE,
+                user_id UUID NOT NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created account_emailaddress table")
+            
+            # Create account_emailconfirmation table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS account_emailconfirmation (
+                id SERIAL PRIMARY KEY,
+                created TIMESTAMP WITH TIME ZONE NOT NULL,
+                sent TIMESTAMP WITH TIME ZONE NULL,
+                key VARCHAR(64) NOT NULL UNIQUE,
+                email_address_id INTEGER NOT NULL REFERENCES account_emailaddress(id)
+            );
+            """)
+            logger.info("Created account_emailconfirmation table")
+            
+            # Create socialaccount_socialapp table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS socialaccount_socialapp (
+                id SERIAL PRIMARY KEY,
+                provider VARCHAR(30) NOT NULL,
+                name VARCHAR(40) NOT NULL,
+                client_id VARCHAR(191) NOT NULL,
+                secret VARCHAR(191) NOT NULL,
+                key VARCHAR(191) NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created socialaccount_socialapp table")
+            
+            # Create socialaccount_socialaccount table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS socialaccount_socialaccount (
+                id SERIAL PRIMARY KEY,
+                provider VARCHAR(30) NOT NULL,
+                uid VARCHAR(191) NOT NULL,
+                last_login TIMESTAMP WITH TIME ZONE NOT NULL,
+                date_joined TIMESTAMP WITH TIME ZONE NOT NULL,
+                extra_data TEXT NOT NULL,
+                user_id UUID NOT NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                UNIQUE (provider, uid)
+            );
+            """)
+            logger.info("Created socialaccount_socialaccount table")
+            
+            # Create socialaccount_socialapp_sites table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS socialaccount_socialapp_sites (
+                id SERIAL PRIMARY KEY,
+                socialapp_id INTEGER NOT NULL REFERENCES socialaccount_socialapp(id),
+                site_id INTEGER NOT NULL REFERENCES django_site(id),
+                UNIQUE (socialapp_id, site_id)
+            );
+            """)
+            logger.info("Created socialaccount_socialapp_sites table")
+            
+            # Create socialaccount_socialtoken table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS socialaccount_socialtoken (
+                id SERIAL PRIMARY KEY,
+                token TEXT NOT NULL,
+                token_secret VARCHAR(200) NOT NULL,
+                expires_at TIMESTAMP WITH TIME ZONE NULL,
+                account_id INTEGER NOT NULL REFERENCES socialaccount_socialaccount(id),
+                app_id INTEGER NOT NULL REFERENCES socialaccount_socialapp(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                UNIQUE (account_id, app_id)
+            );
+            """)
+            logger.info("Created socialaccount_socialtoken table")
+
+            # Create authtoken_token table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS authtoken_token (
+                key VARCHAR(40) NOT NULL PRIMARY KEY,
+                created TIMESTAMP WITH TIME ZONE NOT NULL,
+                user_id UUID NOT NULL UNIQUE REFERENCES custom_auth_user(id)
+            );
+            """)
+
+            # Create authtoken_token table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS authtoken_token (
+                key VARCHAR(40) NOT NULL PRIMARY KEY,
+                created TIMESTAMP WITH TIME ZONE NOT NULL,
+                user_id UUID NOT NULL UNIQUE REFERENCES custom_auth_user(id)
+            );
+            """)
+            logger.info("Created authtoken_token table")
+            
+            # Create token_blacklist_outstandingtoken table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS token_blacklist_outstandingtoken (
+                id SERIAL PRIMARY KEY,
+                token TEXT NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                jti VARCHAR(255) NOT NULL UNIQUE,
+                user_id UUID NULL REFERENCES custom_auth_user(id)
+            );
+            """)
+            logger.info("Created token_blacklist_outstandingtoken table")
+            
+            # Create token_blacklist_blacklistedtoken table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS token_blacklist_blacklistedtoken (
+                id SERIAL PRIMARY KEY,
+                blacklisted_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                token_id INTEGER NOT NULL UNIQUE REFERENCES token_blacklist_outstandingtoken(id)
+            );
+            """)
+            logger.info("Created token_blacklist_blacklistedtoken table")
+            
+            # Create users_subscription table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users_subscription (
+                id SERIAL PRIMARY KEY,
+                business_id UUID NOT NULL UNIQUE REFERENCES users_business(id) ON DELETE CASCADE,
+                selected_plan VARCHAR(20) NOT NULL DEFAULT 'free',
+                start_date DATE NOT NULL,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                end_date DATE NULL,
+                billing_cycle VARCHAR(20) NOT NULL DEFAULT 'monthly',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created users_subscription table")
+            
+            # Create users_verification_token table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users_verification_token (
+                identifier VARCHAR(255) NOT NULL,
+                token VARCHAR(255) NOT NULL,
+                expires TIMESTAMP WITH TIME ZONE NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                PRIMARY KEY (identifier, token)
+            );
+            """)
+            logger.info("Created users_verification_token table")
+            
+            # Create users_account table (NextAuth.js)
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users_account (
+                id SERIAL PRIMARY KEY,
+                user_id UUID NOT NULL REFERENCES custom_auth_user(id) ON DELETE CASCADE,
+                provider VARCHAR(255) NOT NULL,
+                provider_account_id VARCHAR(255) NOT NULL,
+                refresh_token TEXT,
+                access_token TEXT,
+                expires_at BIGINT,
+                token_type VARCHAR(255),
+                scope VARCHAR(255),
+                id_token TEXT,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                UNIQUE(provider, provider_account_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_account_user ON users_account(user_id);
+            """)
+            logger.info("Created users_account table")
+            
+            # Create users_session table (NextAuth.js)
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users_session (
+                id SERIAL PRIMARY KEY,
+                user_id UUID NOT NULL REFERENCES custom_auth_user(id) ON DELETE CASCADE,
+                expires TIMESTAMP WITH TIME ZONE NOT NULL,
+                session_token VARCHAR(255) UNIQUE NOT NULL,
+                access_token TEXT,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_session_user ON users_session(user_id);
+            """)
+            logger.info("Created users_session table")
+            
+            # Create reports_report table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS reports_report (
+                id SERIAL PRIMARY KEY,
+                report_name VARCHAR(255) NOT NULL,
+                report_type VARCHAR(50) NOT NULL,
+                report_data JSONB NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                user_profile_id BIGINT NULL REFERENCES users_userprofile(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_report_type ON reports_report(report_type);
+            """)
+            logger.info("Created reports_report table")
+            
+            # Create sales_estimate table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sales_estimate (
+                id SERIAL PRIMARY KEY,
+                estimate_number VARCHAR(50) NOT NULL,
+                estimate_date DATE NOT NULL,
+                valid_until DATE NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created sales_estimate table")
+            
+            # Create sales_estimateitem table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sales_estimateitem (
+                id SERIAL PRIMARY KEY,
+                quantity INTEGER NOT NULL,
+                unit_price DECIMAL(15, 2) NOT NULL,
+                estimate_id INTEGER NOT NULL REFERENCES sales_estimate(id),
+                product_id INTEGER NULL REFERENCES inventory_product(id),
+                service_id INTEGER NULL REFERENCES inventory_service(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created sales_estimateitem table")
+            
+            # Create sales_estimateattachment table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sales_estimateattachment (
+                id SERIAL PRIMARY KEY,
+                file_name VARCHAR(255) NOT NULL,
+                file_path VARCHAR(255) NOT NULL,
+                estimate_id INTEGER NOT NULL REFERENCES sales_estimate(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created sales_estimateattachment table")
+            
+            # Create sales_salesorder table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sales_salesorder (
+                id SERIAL PRIMARY KEY,
+                order_number VARCHAR(50) NOT NULL,
+                order_date DATE NOT NULL,
+                expected_delivery_date DATE NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'pending',
+                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
+                created_by_id UUID NULL REFERENCES custom_auth_user(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created sales_salesorder table")
+            
+            # Create sales_salesorderitem table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sales_salesorderitem (
+                id SERIAL PRIMARY KEY,
+                quantity INTEGER NOT NULL,
+                unit_price DECIMAL(15, 2) NOT NULL,
+                sales_order_id INTEGER NOT NULL REFERENCES sales_salesorder(id),
+                product_id INTEGER NULL REFERENCES inventory_product(id),
+                service_id INTEGER NULL REFERENCES inventory_service(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created sales_salesorderitem table")
+            
+            # Create sales_invoiceitem table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sales_invoiceitem (
+                id SERIAL PRIMARY KEY,
+                quantity INTEGER NOT NULL,
+                unit_price DECIMAL(15, 2) NOT NULL,
+                invoice_id INTEGER NOT NULL REFERENCES sales_invoice(id),
+                product_id INTEGER NULL REFERENCES inventory_product(id),
+                service_id INTEGER NULL REFERENCES inventory_service(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created sales_invoiceitem table")
+            
+            # Create sales_refund table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sales_refund (
+                id SERIAL PRIMARY KEY,
+                refund_date DATE NOT NULL,
+                amount DECIMAL(15, 2) NOT NULL,
+                reason TEXT NULL,
+                sale_id INTEGER NOT NULL REFERENCES sales_sale(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created sales_refund table")
+            
+            # Create sales_refunditem table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sales_refunditem (
+                id SERIAL PRIMARY KEY,
+                quantity INTEGER NOT NULL,
+                unit_price DECIMAL(15, 2) NOT NULL,
+                refund_id INTEGER NOT NULL REFERENCES sales_refund(id),
+                product_id INTEGER NOT NULL REFERENCES inventory_product(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created sales_refunditem table")
+            
+            # Create sales_saleitem table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sales_saleitem (
+                id SERIAL PRIMARY KEY,
+                quantity INTEGER NOT NULL,
+                unit_price DECIMAL(15, 2) NOT NULL,
+                sale_id INTEGER NOT NULL REFERENCES sales_sale(id),
+                product_id INTEGER NOT NULL REFERENCES inventory_product(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """)
+            logger.info("Created sales_saleitem table")
+            
+            # Create django_session table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS django_session (
+                session_key VARCHAR(40) NOT NULL PRIMARY KEY,
+                session_data TEXT NOT NULL,
+                expire_date TIMESTAMP WITH TIME ZONE NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS django_session_expire_date_a5c62663 ON django_session (expire_date);
+            """)
+            logger.info("Created django_session table")
+            
+            # Create django_admin_log table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS django_admin_log (
+                id SERIAL PRIMARY KEY,
+                action_time TIMESTAMP WITH TIME ZONE NOT NULL,
+                object_id TEXT NULL,
+                object_repr VARCHAR(200) NOT NULL,
+                action_flag SMALLINT NOT NULL CHECK (action_flag > 0),
+                change_message TEXT NOT NULL,
+                content_type_id INTEGER NULL REFERENCES django_content_type(id) DEFERRABLE INITIALLY DEFERRED,
+                user_id UUID NOT NULL REFERENCES custom_auth_user(id) DEFERRABLE INITIALLY DEFERRED
+            );
+            """)
+            logger.info("Created django_admin_log table")
+            
+            # Create custom_auth_user_groups table (for Django auth)
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS custom_auth_user_groups (
+                id SERIAL PRIMARY KEY,
+                user_id UUID NOT NULL,
+                group_id INTEGER NOT NULL,
+                CONSTRAINT auth_user_groups_user_id_group_id_94350c0c_uniq UNIQUE (user_id, group_id),
+                CONSTRAINT auth_user_groups_user_id_6a12ed8b_fk_users_user_id FOREIGN KEY (user_id)
+                    REFERENCES custom_auth_user (id) DEFERRABLE INITIALLY DEFERRED,
+                CONSTRAINT auth_user_groups_group_id_97559544_fk_auth_group_id FOREIGN KEY (group_id)
+                    REFERENCES auth_group (id) DEFERRABLE INITIALLY DEFERRED
+            );
+            """)
+            logger.info("Created custom_auth_user_groups table")
+            
+            # Create auth_user_user_permissions table (for Django auth)
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS auth_user_user_permissions (
+                id SERIAL PRIMARY KEY,
+                user_id UUID NOT NULL,
+                permission_id INTEGER NOT NULL,
+                CONSTRAINT auth_user_user_permissions_user_id_permission_id_14a6b632_uniq UNIQUE (user_id, permission_id),
+                CONSTRAINT auth_user_user_permissions_user_id_a95ead1b_fk_users_user_id FOREIGN KEY (user_id)
+                    REFERENCES custom_auth_user (id) DEFERRABLE INITIALLY DEFERRED,
+                CONSTRAINT auth_user_user_permi_permission_id_1fbb5f2c_fk_auth_perm FOREIGN KEY (permission_id)
+                    REFERENCES auth_permission (id) DEFERRABLE INITIALLY DEFERRED
+            );
+            """)
+            logger.info("Created auth_user_user_permissions table")
+            
+            # Create auth_group_permissions table (for Django auth)
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS auth_group_permissions (
+                id SERIAL PRIMARY KEY,
+                group_id INTEGER NOT NULL,
+                permission_id INTEGER NOT NULL,
+                CONSTRAINT auth_group_permissions_group_id_permission_id_0cd325b0_uniq UNIQUE (group_id, permission_id),
+                CONSTRAINT auth_group_permissions_group_id_b120cbf9_fk_auth_group_id FOREIGN KEY (group_id)
+                    REFERENCES auth_group (id) DEFERRABLE INITIALLY DEFERRED,
+                CONSTRAINT auth_group_permissions_permission_id_84c5c92e_fk_auth_perm FOREIGN KEY (permission_id)
+                    REFERENCES auth_permission (id) DEFERRABLE INITIALLY DEFERRED
+            );
+            """)
+            logger.info("Created auth_group_permissions table")
+            
+            # Create onboarding_onboardingprogress table after custom_auth_user
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS onboarding_onboardingprogress (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                onboarding_status VARCHAR(256) NOT NULL,
+                account_status VARCHAR(9) NOT NULL,
+                user_role VARCHAR(10) NOT NULL,
+                subscription_plan VARCHAR(12) NOT NULL,
+                current_step VARCHAR(256) NOT NULL,
+                next_step VARCHAR(256) NULL,
+                completed_steps JSONB NOT NULL DEFAULT '[]'::jsonb,
+                last_active_step VARCHAR(256) NULL,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                last_login TIMESTAMP WITH TIME ZONE NULL,
+                access_token_expiration TIMESTAMP WITH TIME ZONE NULL,
+                completed_at TIMESTAMP WITH TIME ZONE NULL,
+                attribute_version VARCHAR(10) NOT NULL DEFAULT '1.0',
+                preferences JSONB NOT NULL DEFAULT '{}'::jsonb,
+                setup_error TEXT NULL,
+                selected_plan VARCHAR(12) NOT NULL DEFAULT 'free',
+                business_id UUID NULL REFERENCES users_business(id) ON DELETE SET NULL,
+                user_id UUID NOT NULL UNIQUE REFERENCES custom_auth_user(id) ON DELETE CASCADE,
+                payment_completed BOOLEAN DEFAULT FALSE,
+                payment_method VARCHAR(50) NULL,
+                payment_reference VARCHAR(255) NULL,
+                last_payment_attempt TIMESTAMP WITH TIME ZONE NULL,
+                database_setup_task_id VARCHAR(255) NULL,
+                setup_progress INTEGER DEFAULT 0,
+                database_provisioning_status VARCHAR(50) DEFAULT 'not_started',
+                technical_setup_status VARCHAR(50) DEFAULT 'not_started',
+                setup_started_at TIMESTAMP WITH TIME ZONE NULL,
+                setup_retries INTEGER DEFAULT 0
+            );
+            """)
+            logger.info("Created onboarding_onboardingprogress table")
+            
+            # Update custom_auth_tenant with the owner_id foreign key
+            cursor.execute("""
+            ALTER TABLE custom_auth_tenant 
+            ADD CONSTRAINT auth_tenant_owner_id_fk 
+            FOREIGN KEY (owner_id) REFERENCES custom_auth_user(id);
+            """)
+            logger.info("Updated custom_auth_tenant with FK to custom_auth_user")
+            
+            # Fill in the django_content_type table with default content types
+            cursor.execute("""
+            INSERT INTO django_content_type (app_label, model) VALUES
+            ('admin', 'logentry'),
+            ('auth', 'permission'),
+            ('auth', 'group'),
+            ('contenttypes', 'contenttype'),
+            ('sessions', 'session'),
+            ('sites', 'site'),
+            ('users', 'user'),
+            ('users', 'business'),
+            ('users', 'businessdetails'),
+            ('users', 'userprofile'),
+            ('users', 'subscription'),
+            ('finance', 'account'),
+            ('finance', 'accounttype'),
+            ('finance', 'transaction'),
+            ('inventory', 'product'),
+            ('inventory', 'service'),
+            ('inventory', 'category'),
+            ('inventory', 'supplier'),
+            ('custom_auth', 'tenant'),
+            ('onboarding', 'onboardingprogress')
+            ON CONFLICT DO NOTHING;
+            """)
+            logger.info("Populated django_content_type table")
+            
+            # Record migrations in explicit chronological order with wide time gaps
+            cursor.execute("""
+            INSERT INTO django_migrations (app, name, applied) VALUES
+            -- Sites app first
+            ('sites', '0001_initial', NOW() - INTERVAL '80 minutes'),
+            ('sites', '0002_alter_domain_unique', NOW() - INTERVAL '79 minutes'),
+
+            -- Content Types next
+            ('contenttypes', '0001_initial', NOW() - INTERVAL '75 minutes'),
+            ('contenttypes', '0002_remove_content_type_name', NOW() - INTERVAL '74 minutes'),
+            ('contenttypes', '0003_initial_structure', NOW() - INTERVAL '73 minutes'),
+
+            -- Auth migrations
+            ('auth', '0001_initial', NOW() - INTERVAL '70 minutes'),
+            ('auth', '0002_alter_permission_name_max_length', NOW() - INTERVAL '69 minutes'),
+            ('auth', '0003_alter_user_email_max_length', NOW() - INTERVAL '68 minutes'),
+            ('auth', '0004_alter_user_username_opts', NOW() - INTERVAL '67 minutes'),
+            ('auth', '0005_alter_user_last_login_null', NOW() - INTERVAL '66 minutes'),
+            ('auth', '0006_require_contenttypes_0002', NOW() - INTERVAL '65 minutes'),
+            ('auth', '0007_alter_validators_add_error_messages', NOW() - INTERVAL '64 minutes'),
+            ('auth', '0008_alter_user_username_max_length', NOW() - INTERVAL '63 minutes'),
+            ('auth', '0009_alter_user_last_name_max_length', NOW() - INTERVAL '62 minutes'),
+            ('auth', '0010_alter_group_name_max_length', NOW() - INTERVAL '61 minutes'),
+            ('auth', '0011_update_proxy_permissions', NOW() - INTERVAL '60 minutes'),
+            ('auth', '0012_alter_user_first_name_max_length', NOW() - INTERVAL '59 minutes'),
+            ('auth', '0013_initial_structure', NOW() - INTERVAL '58 minutes'),
+
+            -- Admin and sessions
+            ('admin', '0001_initial', NOW() - INTERVAL '55 minutes'),
+            ('admin', '0002_logentry_remove_auto_add', NOW() - INTERVAL '54 minutes'),
+            ('admin', '0003_logentry_add_action_flag_choices', NOW() - INTERVAL '53 minutes'),
+            ('sessions', '0001_initial', NOW() - INTERVAL '52 minutes'),
+            ('sessions', '0002_initial_structure', NOW() - INTERVAL '51 minutes'),
+
+            -- Core custom apps (with greater time gaps to ensure proper ordering)
+            ('custom_auth', '0001_initial', NOW() - INTERVAL '45 minutes'),
+            ('users', '0001_initial', NOW() - INTERVAL '40 minutes'),
+            ('onboarding', '0001_initial', NOW() - INTERVAL '35 minutes'),
+
+            -- Other apps
+            ('finance', '0001_initial', NOW() - INTERVAL '30 minutes'),
+            ('inventory', '0001_initial', NOW() - INTERVAL '29 minutes'),
+            ('crm', '0001_initial', NOW() - INTERVAL '28 minutes'),
+            ('sales', '0001_initial', NOW() - INTERVAL '27 minutes'),
+            ('purchases', '0001_initial', NOW() - INTERVAL '26 minutes'),
+            ('taxes', '0001_initial', NOW() - INTERVAL '25 minutes'),
+            ('hr', '0001_initial', NOW() - INTERVAL '24 minutes'),
+            ('payroll', '0001_initial', NOW() - INTERVAL '23 minutes'),
+            ('banking', '0001_initial', NOW() - INTERVAL '22 minutes'),
+            ('reports', '0001_initial', NOW() - INTERVAL '21 minutes'),
+            ('transport', '0001_initial', NOW() - INTERVAL '20 minutes'),
+            ('finance', '0002_initial', NOW() - INTERVAL '19 minutes'),
+            ('crm', '0002_initial', NOW() - INTERVAL '18 minutes'),
+            ('banking', '0002_initial', NOW() - INTERVAL '17 minutes')
+            ON CONFLICT DO NOTHING;
+            """)
+            logger.info("Recorded core migrations in django_migrations table")
+            
+            # Apply remaining migrations with --fake
+            os.environ['ALLOW_TENANT_MIGRATIONS_IN_PUBLIC'] = 'True'
+            try:
+                logger.info("Applying all migrations with --fake...")
+                django.core.management.call_command('migrate', '--fake')
+                using_fake = True
+            finally:
+                # Reset the environment variable
+                os.environ.pop('ALLOW_TENANT_MIGRATIONS_IN_PUBLIC', None)
+            
+            # Add indexes after migrations
+            logger.info("Adding indexes...")
+            with connection.cursor() as cursor:
+                try:
+                    cursor.execute("""
+                        CREATE INDEX IF NOT EXISTS idx_inventory_item_sku ON inventory_inventoryitem(sku);
+                        CREATE INDEX IF NOT EXISTS idx_inventory_item_name ON inventory_inventoryitem(name);
+                        CREATE INDEX IF NOT EXISTS idx_tenant_schema_name ON custom_auth_tenant(schema_name);
+                        CREATE INDEX IF NOT EXISTS idx_user_email ON custom_auth_user(email);
+                        CREATE INDEX IF NOT EXISTS idx_user_tenant ON custom_auth_user(tenant_id);
+                    """)
+                except Exception as e:
+                    logger.warning(f"Error creating indexes: {e}")
+            
+            return using_fake  # Return True to indicate we used fake migrations
+            
+        
 
     def check_and_clear_lingering_data(self):
         logger.info("Checking for lingering data...")
@@ -564,121 +2635,329 @@ class Command(BaseCommand):
             logger.error(f"Error clearing report data: {e}")
 
     def create_nextauth_tables(self, conn_details):
-        logger.info("Starting to create NextAuth.js tables")
+        logger.info("Verifying NextAuth.js tables and extensions")
         
         try:
             with psycopg2.connect(**conn_details) as conn:
                 conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
                 with conn.cursor() as cur:
-                    commands = (
-                        """
-                        CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-                        """,
-                        # Tenant table
-                        """
-                        CREATE TABLE IF NOT EXISTS auth_tenant (
-                            id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-                            schema_name VARCHAR(63) UNIQUE NOT NULL,
-                            name VARCHAR(100) NOT NULL,
-                            owner_id UUID NOT NULL,
-                            created_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                            is_active BOOLEAN DEFAULT TRUE,
-                            database_status VARCHAR(50) DEFAULT 'not_created',
-                            setup_status VARCHAR(20) DEFAULT 'not_started',
-                            last_setup_attempt TIMESTAMP,
-                            setup_error_message TEXT,
-                            last_health_check TIMESTAMP,
-                            database_setup_task_id VARCHAR(255)
-                        );
-                        """,
-                        # User table
-                        """
-                        CREATE TABLE IF NOT EXISTS users_user (
-                            id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-                            email VARCHAR(255) UNIQUE NOT NULL,
-                            first_name VARCHAR(100),
-                            last_name VARCHAR(100),
-                            is_active BOOLEAN DEFAULT TRUE,
-                            occupation VARCHAR(50) DEFAULT 'OTHER',
-                            role VARCHAR(20) DEFAULT 'EMPLOYEE',
-                            tenant_id UUID REFERENCES auth_tenant(id),
-                            is_staff BOOLEAN DEFAULT FALSE,
-                            date_joined TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                            email_confirmed BOOLEAN DEFAULT FALSE,
-                            confirmation_token UUID DEFAULT uuid_generate_v4(),
-                            is_onboarded BOOLEAN DEFAULT FALSE,
-                            stripe_customer_id VARCHAR(255),
-                            password VARCHAR(128),
-                            is_superuser BOOLEAN DEFAULT FALSE,
-                            last_login TIMESTAMP
-                        );
-                        """,
-                        # Account table for OAuth
-                        """
-                        CREATE TABLE IF NOT EXISTS users_account (
-                            id SERIAL PRIMARY KEY,
-                            user_id UUID NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
-                            provider VARCHAR(255) NOT NULL,
-                            provider_account_id VARCHAR(255) NOT NULL,
-                            refresh_token TEXT,
-                            access_token TEXT,
-                            expires_at BIGINT,
-                            token_type VARCHAR(255),
-                            scope VARCHAR(255),
-                            id_token TEXT,
-                            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                            UNIQUE(provider, provider_account_id)
-                        );
-                        """,
-                        # Session table
-                        """
-                        CREATE TABLE IF NOT EXISTS users_session (
-                            id SERIAL PRIMARY KEY,
-                            user_id UUID NOT NULL REFERENCES users_user(id) ON DELETE CASCADE,
-                            expires TIMESTAMP NOT NULL,
-                            session_token VARCHAR(255) UNIQUE NOT NULL,
-                            access_token TEXT,
-                            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                        );
-                        """,
-                        # Verification token table
-                        """
-                        CREATE TABLE IF NOT EXISTS users_verification_token (
-                            identifier VARCHAR(255) NOT NULL,
-                            token VARCHAR(255) NOT NULL,
-                            expires TIMESTAMP NOT NULL,
-                            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                            PRIMARY KEY (identifier, token)
-                        );
-                        """,
-                        # Add indexes
-                        """
-                        CREATE INDEX IF NOT EXISTS idx_tenant_schema_name ON auth_tenant(schema_name);
-                        CREATE INDEX IF NOT EXISTS idx_user_email ON users_user(email);
-                        CREATE INDEX IF NOT EXISTS idx_user_tenant ON users_user(tenant_id);
-                        CREATE INDEX IF NOT EXISTS idx_account_user ON users_account(user_id);
-                        CREATE INDEX IF NOT EXISTS idx_session_user ON users_session(user_id);
-                        """
-                    )
+                    # Only create the UUID extension - tables are already created in recreate_and_apply_migrations
+                    cur.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";")
+                    logger.info("UUID extension created or verified")
+                    
+                    # Verify tables exist
+                    tables_to_check = [
+                        'custom_auth_tenant', 'custom_auth_user', 'users_account',
+                        'users_session', 'users_verification_token'
+                    ]
+                    
+                    for table in tables_to_check:
+                        cur.execute(f"""
+                            SELECT EXISTS (
+                                SELECT FROM information_schema.tables
+                                WHERE table_schema = 'public'
+                                AND table_name = '{table}'
+                            );
+                        """)
+                        exists = cur.fetchone()[0]
+                        if exists:
+                            logger.info(f"Table {table} exists")
+                        else:
+                            logger.warning(f"Table {table} does not exist - this may cause issues")
+                    
+                    # Verify indexes exist
+                    indexes_to_check = [
+                        'idx_tenant_schema_name', 'idx_user_email',
+                        'idx_user_tenant', 'idx_account_user', 'idx_session_user'
+                    ]
+                    
+                    for index in indexes_to_check:
+                        cur.execute(f"""
+                            SELECT EXISTS (
+                                SELECT FROM pg_indexes
+                                WHERE schemaname = 'public'
+                                AND indexname = '{index}'
+                            );
+                        """)
+                        exists = cur.fetchone()[0]
+                        if exists:
+                            logger.info(f"Index {index} exists")
+                        else:
+                            logger.warning(f"Index {index} does not exist - this may cause performance issues")
 
-                    for i, command in enumerate(commands, 1):
-                        try:
-                            logger.info(f"Executing table creation command {i} of {len(commands)}")
-                            cur.execute(command)
-                            logger.info(f"Table creation command {i} executed successfully")
-                        except Exception as e:
-                            logger.error(f"Error executing command {i}: {str(e)}")
-                            raise
-
-                logger.info("All tables created successfully.")
-                self.stdout.write(self.style.SUCCESS("All tables created successfully."))
+                logger.info("NextAuth.js tables verification completed")
+                self.stdout.write(self.style.SUCCESS("NextAuth.js tables verification completed"))
                 
         except Exception as e:
-            logger.error(f"An error occurred while creating tables: {e}")
-            self.stdout.write(self.style.ERROR(f"Failed to create tables: {e}"))
+            logger.error(f"An error occurred while verifying NextAuth.js tables: {e}")
+            self.stdout.write(self.style.ERROR(f"Failed to verify NextAuth.js tables: {e}"))
+
+    def reset_migrations(self):
+        logger.info("Resetting all migrations...")
+        # Delete all migration files
+        migration_files = self.find_migration_files()
+        if migration_files:
+            self.delete_files(migration_files)
+            logger.info("All migration files deleted.")
+        
+        # Reset migration records in the database
+        with connection.cursor() as cursor:
+            try:
+                # Ensure the content_type table has the name column for compatibility
+                try:
+                    cursor.execute("""
+                        SELECT column_name FROM information_schema.columns 
+                        WHERE table_name = 'django_content_type' 
+                        AND column_name = 'name';
+                    """)
+                    has_name_column = bool(cursor.fetchone())
+                    
+                    if not has_name_column:
+                        # Add the name column if it doesn't exist
+                        logger.info("Adding 'name' column to django_content_type table for migration compatibility")
+                        cursor.execute("""
+                            ALTER TABLE django_content_type ADD COLUMN name VARCHAR(100) NULL;
+                        """)
+                except Exception as e:
+                    logger.warning(f"Error checking/modifying content_type table: {e}")
+                
+                # Now clear the migrations table
+                cursor.execute("TRUNCATE django_migrations;")
+                logger.info("Migration records cleared from database.")
+                    
+            except Exception as e:
+                logger.error(f"Error clearing migration records: {e}")
+        
+        # Create new migration files in correct order
+        logger.info("Creating migrations for core apps in correct order...")
+        
+        # First create migrations for Django built-in apps
+        django.core.management.call_command('makemigrations', 'contenttypes')
+        django.core.management.call_command('makemigrations', 'auth')
+        
+        # Then create migrations for custom_auth (must come before users)
+        django.core.management.call_command('makemigrations', 'custom_auth')
+        
+        # Then create migrations for users (depends on custom_auth)
+        django.core.management.call_command('makemigrations', 'users')
+        
+        # Then create migrations for onboarding
+        django.core.management.call_command('makemigrations', 'onboarding')
+        
+        # Then create remaining migrations for all other apps
+        logger.info("Creating migrations for remaining apps...")
+        django.core.management.call_command('makemigrations')
+        
+        try:
+            # Apply migrations in controlled order
+            logger.info("Applying migrations in controlled order...")
+            
+            # First apply contenttype and auth migrations
+            logger.info("1. Applying contenttype migrations...")
+            django.core.management.call_command('migrate', 'contenttypes', '--fake')
+            
+            logger.info("2. Applying auth migrations...")
+            django.core.management.call_command('migrate', 'auth', '--fake')
+            
+            # Then apply custom_auth migrations before any user-related migrations
+            logger.info("3. Applying custom_auth migrations...")
+            django.core.management.call_command('migrate', 'custom_auth', '--fake')
+            
+            # Then apply users migrations
+            logger.info("4. Applying users migrations...")
+            django.core.management.call_command('migrate', 'users', '--fake')
+            
+            # Then apply onboarding migrations
+            logger.info("5. Applying onboarding migrations...")
+            django.core.management.call_command('migrate', 'onboarding', '--fake')
+            
+            # Then fake apply all other migrations
+            logger.info("6. Applying remaining migrations with --fake...")
+            django.core.management.call_command('migrate', '--fake')
+            
+            # Finally apply real migrations
+            logger.info("7. Applying all migrations normally...")
+            django.core.management.call_command('migrate')
+            
+        except Exception as e:
+            logger.error(f"Error during migration: {e}")
+            logger.info("Attempting alternative migration approach...")
+            
+            # Try another approach - fake each app individually in correct order
+            apps = [
+                'contenttypes', 
+                'auth', 
+                'custom_auth',  # custom_auth must come before users
+                'users',
+                'onboarding',
+                'admin', 
+                'sessions', 
+                'finance', 
+                'inventory', 
+                'sales',
+                # Add other apps as needed
+            ]
+            
+            for app in apps:
+                try:
+                    logger.info(f"Fake migrating {app}...")
+                    django.core.management.call_command('migrate', app, '--fake')
+                except Exception as app_error:
+                    logger.error(f"Error fake migrating {app}: {app_error}")
+            
+            # Try a regular migrate to apply any remaining migrations
+            try:
+                logger.info("Applying all migrations normally...")
+                django.core.management.call_command('migrate')
+            except Exception as migrate_error:
+                logger.error(f"Error during final migration: {migrate_error}")
+        
+        logger.info("Migration reset completed successfully.")
+
+    def clean_tenant_data(self):
+        """
+        Cleans all tenant-related data from public tables while preserving essential system data.
+        """
+        self.stdout.write("Starting tenant data cleanup...")
+        
+        with connection.cursor() as cursor:
+            try:
+                # Start a transaction
+                cursor.execute("BEGIN;")
+                
+                # Check if each table exists before trying to delete from it
+                def table_exists(table_name):
+                    cursor.execute("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables 
+                            WHERE table_schema = 'public' 
+                            AND table_name = %s
+                        );
+                    """, [table_name])
+                    return cursor.fetchone()[0]
+                
+                # Delete data in the correct order to respect foreign key constraints
+                
+                # 1. First clear leaf tables (those with no dependencies)
+                self.stdout.write("Cleaning leaf tables...")
+                
+                # Token blacklist tables
+                if table_exists("token_blacklist_blacklistedtoken"):
+                    cursor.execute("DELETE FROM token_blacklist_blacklistedtoken;")
+                    self.stdout.write(f"Deleted {cursor.rowcount} records from token_blacklist_blacklistedtoken")
+                
+                # Clear line items and transaction details first
+                for table in [
+                    "finance_journalentryline", "finance_reconciliationitem",
+                    "payroll_timesheetentry", "sales_invoiceitem", "sales_estimateitem",
+                    "sales_saleitem", "sales_refunditem", "sales_salesorderitem",
+                    "purchases_billitem", "purchases_procurementitem", "purchases_purchaseorderitem",
+                    "purchases_purchasereturnitem", "inventory_product_custom_charge_plans",
+                    "inventory_service_custom_charge_plans", "sales_estimateattachment",
+                    "finance_budgetitem", "hr_employeerole", "crm_campaignmember",
+                    "crm_activity", "finance_monthendtask"
+                ]:
+                    if table_exists(table):
+                        cursor.execute(f"DELETE FROM {table};")
+                        self.stdout.write(f"Deleted {cursor.rowcount} records from {table}")
+                
+                # 2. Clear tables with foreign keys to other business tables
+                self.stdout.write("Cleaning transaction tables...")
+                
+                # Banking and transaction tables
+                for table in [
+                    "banking_banktransaction", "sales_refund", "finance_generalledgerentry",
+                    "sales_sale", "sales_invoice", "sales_estimate", "sales_salesorder",
+                    "finance_financetransaction", "finance_income", "finance_revenueaccount",
+                    "finance_salestaxaccount", "finance_cashaccount", "finance_costallocation",
+                    "transport_expense", "transport_maintenance", "transport_compliance",
+                    "transport_load", "purchases_purchasereturn", "purchases_purchaseorder",
+                    "purchases_procurement", "purchases_bill", "payroll_payrolltransaction",
+                    "payroll_timesheet", "payroll_taxform", "reports_report"
+                ]:
+                    if table_exists(table):
+                        cursor.execute(f"DELETE FROM {table};")
+                        self.stdout.write(f"Deleted {cursor.rowcount} records from {table}")
+                
+                # 3. Delete mid-level tables
+                self.stdout.write("Cleaning mid-level tables...")
+                
+                for table in [
+                    "payroll_payrollrun", "finance_journalentry", "finance_fixedasset",
+                    "finance_intercompanytransaction", "finance_accountreconciliation",
+                    "finance_monthendclosing", "finance_budget", "finance_costentry",
+                    "finance_financialstatement", "crm_opportunity", "crm_deal",
+                    "crm_lead", "inventory_inventorytransaction", "inventory_inventoryitem",
+                    "inventory_product", "inventory_service", "purchases_vendor",
+                    "banking_bankaccount", "banking_plaiditem", "banking_tinkitem",
+                    "crm_contact", "crm_customer", "crm_campaign", "transport_driver",
+                    "transport_equipment", "transport_route", "hr_employee", "hr_role",
+                    "hr_accesspermission", "hr_preboardingform", "taxes_incometaxrate",
+                    "taxes_payrolltaxfiling", "taxes_taxapitransaction", 
+                    "taxes_taxfilinginstruction", "taxes_taxform", "taxes_state",
+                    "analysis_chartconfiguration", "analysis_financialdata",
+                    "onboarding_onboardingprogress", "token_blacklist_outstandingtoken"
+                ]:
+                    if table_exists(table):
+                        cursor.execute(f"DELETE FROM {table};")
+                        self.stdout.write(f"Deleted {cursor.rowcount} records from {table}")
+                
+                # 4. Delete base system/configuration tables
+                self.stdout.write("Cleaning configuration tables...")
+                
+                for table in [
+                    "finance_account", "finance_intercompanyaccount", "finance_costcategory",
+                    "finance_chartofaccount", "finance_accounttype", "finance_accountcategory",
+                    "inventory_supplier", "inventory_location", "inventory_department",
+                    "inventory_category", "inventory_customchargeplan",
+                    "inventory_producttypefields", "inventory_servicetypefields",
+                    "finance_audittrail"
+                ]:
+                    if table_exists(table):
+                        cursor.execute(f"DELETE FROM {table};")
+                        self.stdout.write(f"Deleted {cursor.rowcount} records from {table}")
+                
+                # 5. Finally clear user data
+                self.stdout.write("Cleaning user data...")
+                
+                # Clear user data in the correct order
+                if table_exists("users_subscription"):
+                    cursor.execute("DELETE FROM users_subscription;")
+                    self.stdout.write(f"Deleted {cursor.rowcount} records from users_subscription")
+                
+                if table_exists("users_userprofile"):
+                    cursor.execute("DELETE FROM users_userprofile;")
+                    self.stdout.write(f"Deleted {cursor.rowcount} records from users_userprofile")
+                
+                if table_exists("users_business_details"):
+                    cursor.execute("DELETE FROM users_business_details;")
+                    self.stdout.write(f"Deleted {cursor.rowcount} records from users_business_details")
+                
+                if table_exists("users_business"):
+                    cursor.execute("DELETE FROM users_business;")
+                    self.stdout.write(f"Deleted {cursor.rowcount} records from users_business")
+                
+                if table_exists("django_session"):
+                    cursor.execute("DELETE FROM django_session;")
+                    self.stdout.write(f"Deleted {cursor.rowcount} records from django_session")
+                
+                if table_exists("custom_auth_tenant"):
+                    cursor.execute("DELETE FROM custom_auth_tenant;")
+                    self.stdout.write(f"Deleted {cursor.rowcount} records from custom_auth_tenant")
+                
+                # Only delete non-superuser users
+                if table_exists("custom_auth_user"):
+                    cursor.execute("DELETE FROM custom_auth_user WHERE is_superuser = FALSE;")
+                    self.stdout.write(f"Deleted {cursor.rowcount} records from custom_auth_user")
+                
+                # Commit the transaction
+                cursor.execute("COMMIT;")
+                self.stdout.write(self.style.SUCCESS("Successfully cleaned all tenant data!"))
+                
+            except Exception as e:
+                cursor.execute("ROLLBACK;")
+                self.stderr.write(self.style.ERROR(f"Error cleaning tenant data: {str(e)}"))
+                raise
 
     def print_summary(self, table_status, database_status):
         self.stdout.write("\nOperation Summary:")
@@ -689,6 +2968,8 @@ class Command(BaseCommand):
         self.stdout.write(f"\nDatabases attempted to drop: {len(database_status)}")
         self.stdout.write(f"Databases successfully dropped: {sum(1 for status in database_status.values() if status == 'Dropped')}")
         self.stdout.write(f"Databases with errors: {sum(1 for status in database_status.values() if status.startswith('Error'))}")
+
+
 
 # Ensure Django settings are configured
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')

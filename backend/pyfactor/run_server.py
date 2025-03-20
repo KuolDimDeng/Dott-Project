@@ -125,28 +125,29 @@ def start_celery():
     env['PYTHONUNBUFFERED'] = '1'  # Disable output buffering
     env['PYTHONOPTIMIZE'] = '1'    # Enable basic optimizations
     env['CELERY_WORKER_HIJACK_ROOT_LOGGER'] = 'False'  # Prevent logger hijacking
-    env['CELERY_WORKER_MAX_MEMORY_PER_CHILD'] = str(MAX_CELERY_MEMORY * 1000)  # KB
+    # env['CELERY_WORKER_MAX_MEMORY_PER_CHILD'] = str(MAX_CELERY_MEMORY * 1000)  # KB - removed this setting
     
-    # Enable memory optimizations for Python
-    env['PYTHONMALLOC'] = 'malloc'  # Use system malloc for better memory tracking
-    env['PYTHONFAULTHANDLER'] = '1'  # Enable fault handler for better debugging
+    # Enable fault handler for better debugging
+    env['PYTHONFAULTHANDLER'] = '1'
+    
+    # Add database connection cleanup
+    env['DJANGO_DB_CLOSE_OLD_CONNECTIONS'] = 'True'
     
     celery_command = [
         'celery',
         '-A', 'pyfactor',
         'worker',
         '--loglevel=INFO',
-        '--concurrency=2',              # Limit concurrent tasks for database safety
-        '--max-tasks-per-child=25',     # Restart workers more frequently to prevent memory leaks
-        '--max-memory-per-child=768000', # Increased from 512MB to 768MB per worker
+        '--concurrency=1',              # Single worker to avoid concurrent DB connections
+        '--max-tasks-per-child=1',      # Restart after each task to prevent memory leaks
+        '--pool=solo',                  # Use solo pool instead of prefork to avoid connection issues
         '--task-events',                # Enable task event monitoring
         '--without-gossip',             # Disable gossip for less network overhead
         '--without-mingle',             # Disable mingle for faster startup
-        '--optimization=fair',          # Fair task distribution
         '-Q', 'default,setup,onboarding'  # Specify queues for different task types
     ]
     
-    logger.info("Starting Celery worker with memory optimizations")
+    logger.info("Starting Celery worker with safer database connection settings")
     
     # Start Celery in the project directory
     return subprocess.Popen(
@@ -161,7 +162,6 @@ def run_uvicorn():
     Configures logging, reload behavior, and memory limits for better stability.
     """
     # Set environment variables for Uvicorn
-    os.environ['PYTHONMALLOC'] = 'malloc'  # Use system malloc
     os.environ['PYTHONOPTIMIZE'] = '1'     # Enable basic optimizations
     
     # Force garbage collection before starting server
@@ -175,15 +175,15 @@ def run_uvicorn():
         reload=True,        # Enable auto-reload for development
         log_level="info",   # Reduced logging to save memory
         workers=1,          # Single worker for development
-        limit_concurrency=50,  # Limit concurrent connections
-        timeout_keep_alive=30,  # Reduce keep-alive timeout
+        limit_concurrency=20,  # Reduced from 50 to lower connection load
+        timeout_keep_alive=15,  # Reduced from 30 to close connections faster
         loop="auto",        # Use the best available event loop
         http="h11",         # Use h11 for HTTP protocol (more memory efficient)
         proxy_headers=True, # Process proxy headers
         server_header=False, # Don't send server header to save bandwidth
     )
     
-    logger.info("Starting Uvicorn with memory optimizations")
+    logger.info("Starting Uvicorn with safer database connection settings")
     
     # Start Uvicorn server
     server = uvicorn.Server(config)
@@ -229,13 +229,16 @@ if __name__ == "__main__":
     # Start Celery worker
     celery_process_ref = start_celery()
     
-    # Start memory monitoring in a separate thread
+    # Memory monitoring is disabled temporarily to see if it's causing issues
+    # Comment out this block to re-enable it later
+    """
     memory_thread = threading.Thread(
         target=monitor_memory,
         args=(celery_process_ref,),
         daemon=True
     )
     memory_thread.start()
+    """
     
     try:
         # Start Uvicorn (this will block until server stops)

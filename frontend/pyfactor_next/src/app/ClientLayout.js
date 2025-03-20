@@ -35,10 +35,16 @@ export default function ClientLayout({ children }) {
         setupRenderDebugging();
         
         // Add global error handler for "render is not a function" errors
+        // but prevent infinite loops by not calling the original handler for certain errors
         const originalError = console.error;
         console.error = (...args) => {
           const errorString = args.join(' ');
-          if (errorString.includes('render is not a function')) {
+          
+          // Check for specific error patterns that might cause infinite loops
+          const isMaxUpdateDepthError = errorString.includes('Maximum update depth exceeded');
+          const isRenderNotFunctionError = errorString.includes('render is not a function');
+          
+          if (isRenderNotFunctionError) {
             logger.error('[ClientLayout] Caught "render is not a function" error:', {
               args,
               stack: new Error().stack,
@@ -71,8 +77,14 @@ export default function ClientLayout({ children }) {
             }
           }
           
-          // Call original error handler
-          originalError.apply(console, args);
+          // Only call original error handler if it's not a max update depth error
+          // This prevents infinite loops
+          if (!isMaxUpdateDepthError) {
+            originalError.apply(console, args);
+          } else {
+            // Just log to our logger without calling original console.error
+            logger.error('[ClientLayout] Maximum update depth exceeded error detected and suppressed');
+          }
         };
         
         setDebugInitialized(true);

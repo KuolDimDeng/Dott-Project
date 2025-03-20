@@ -62,9 +62,9 @@ def stripe_webhook(request):
                 progress.payment_completed = True
                 progress.save()
 
-                # 3. Start database setup in background
-                from onboarding.tasks import setup_user_database_task
-                setup_user_database_task.delay(
+                # 3. Start schema setup in background
+                from onboarding.tasks import setup_user_schema_task
+                setup_user_schema_task.delay(
                     user_id=str(user.id),
                     business_id=str(progress.business.id)
                 )

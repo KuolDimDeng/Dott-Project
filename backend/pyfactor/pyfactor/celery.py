@@ -29,7 +29,7 @@ app.conf.update(
     
     # Task routing
     task_routes={
-        'setup_user_database_task': {'queue': 'setup'},
+        'setup_user_schema_task': {'queue': 'setup'},
         'send_websocket_notification': {'queue': 'default'},
         'onboarding.*': {'queue': 'onboarding'}
     }

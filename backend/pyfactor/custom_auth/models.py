@@ -34,8 +34,13 @@ class Tenant(models.Model):
     schema_name = models.CharField(max_length=63, unique=True)
     name = models.CharField(max_length=100)
     # Replace OneToOneField with UUID field to break circular dependency
-    # owner_id = models.UUIDField(null=True, blank=True)  # Temporarily replaced OneToOneField
-    owner_id = models.UUIDField(null=True, blank=True)  # Store the UUID of the owner
+    owner = models.OneToOneField(
+        'custom_auth.User',  # String reference to avoid import
+        on_delete=models.SET_NULL,
+        related_name='owned_tenant',
+        null=True,
+        blank=True
+    )    
     created_on = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     
@@ -88,7 +93,7 @@ class Tenant(models.Model):
 
 
     class Meta:
-        db_table = 'auth_tenant'
+        db_table = 'custom_auth_tenant'
 
     def __str__(self):
         return self.name
@@ -116,15 +121,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     stripe_customer_id = models.CharField(max_length=255, blank=True, null=True)  # Optional, for payment integration
     cognito_sub = models.CharField(max_length=36, unique=True, null=True, blank=True)  # Cognito user ID
 
-    # Replace ForeignKey with UUID field to break circular dependency
-    # tenant = models.ForeignKey(
-    #     Tenant,
-    #     on_delete=models.CASCADE,
-    #     related_name='users',  # This allows tenant.users.all() to get all users
-    #     null=True,  # Allow null during onboarding
-    #     blank=True
-    # )
-    tenant_id = models.UUIDField(null=True, blank=True)  # Store the UUID of the tenant
+    tenant = models.ForeignKey(
+        'custom_auth.Tenant',  # String reference to avoid import
+        on_delete=models.CASCADE,
+        related_name='users',
+        null=True,
+        blank=True
+    )
+
 
     USERNAME_FIELD = 'email'
     EMAIL_FIELD = 'email'
@@ -173,7 +177,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     occupation = models.CharField(max_length=50, choices=OCCUPATION_CHOICES, default='OWNER')
 
     class Meta:
-        db_table = 'users_user'
+        db_table = 'custom_auth_user'
 
     def __str__(self):
         return self.email
@@ -210,14 +214,19 @@ def ensure_schema_name_uses_underscores(sender, instance, **kwargs):
             
             # Get owner email if possible
             owner_email = "unknown"
-            if instance.owner_id:
+            if instance.owner_id:  # Django automatically creates this field from the relationship
                 try:
-                    from django.contrib.auth import get_user_model
-                    User = get_user_model()
-                    owner = User.objects.get(id=instance.owner_id)
-                    owner_email = owner.email
-                except:
-                    pass
+                    # Try to get owner directly from relationship first
+                    if hasattr(instance, 'owner') and instance.owner:
+                        owner_email = instance.owner.email
+                    else:
+                        # Fallback to query if relationship isn't loaded
+                        from django.contrib.auth import get_user_model
+                        User = get_user_model()
+                        owner = User.objects.get(id=instance.owner_id)
+                        owner_email = owner.email
+                except Exception as e:
+                    logger.debug(f"Could not get owner email: {str(e)}")
                 
             logger.warning(
                 f"Schema name missing tenant_ prefix and was automatically fixed. "
@@ -239,12 +248,17 @@ def ensure_schema_name_uses_underscores(sender, instance, **kwargs):
             owner_email = "unknown"
             if instance.owner_id:
                 try:
-                    from django.contrib.auth import get_user_model
-                    User = get_user_model()
-                    owner = User.objects.get(id=instance.owner_id)
-                    owner_email = owner.email
-                except:
-                    pass
+                    # Try to get owner directly from relationship first
+                    if hasattr(instance, 'owner') and instance.owner:
+                        owner_email = instance.owner.email
+                    else:
+                        # Fallback to query if relationship isn't loaded
+                        from django.contrib.auth import get_user_model
+                        User = get_user_model()
+                        owner = User.objects.get(id=instance.owner_id)
+                        owner_email = owner.email
+                except Exception as e:
+                    logger.debug(f"Could not get owner email: {str(e)}")
                 
             logger.warning(
                 f"Schema name contained hyphens and was automatically fixed. "

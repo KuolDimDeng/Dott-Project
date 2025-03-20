@@ -226,6 +226,12 @@ class CognitoAuthentication(authentication.BaseAuthentication):
                 for attr in cognito_user['UserAttributes']
             }
             
+            # Log all attributes for debugging
+            logger.debug("[Auth] Processing Cognito attributes:", {
+                'attributes': attributes,
+                'cognito_username': cognito_user['Username']
+            })
+            
             email = attributes.get('email')
             if not email:
                 logger.error("[Auth] Email not found in Cognito attributes", {
@@ -233,10 +239,35 @@ class CognitoAuthentication(authentication.BaseAuthentication):
                 })
                 raise ValueError("Email not found in Cognito attributes")
 
+            # Check if the cognito_sub column exists in the database
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'users_user' AND column_name = 'cognito_sub'
+                """)
+                has_cognito_sub = cursor.fetchone() is not None
+                logger.debug(f"[Auth] users_user table has cognito_sub column: {has_cognito_sub}")
+                
+                # If column doesn't exist, log available columns for debugging
+                if not has_cognito_sub:
+                    cursor.execute("""
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'users_user'
+                    """)
+                    columns = [col[0] for col in cursor.fetchall()]
+                    logger.error(f"[Auth] Missing cognito_sub column! Available columns: {columns}")
+
             # First try to find user by cognito_sub
             cognito_sub = cognito_user['Username']
+            logger.debug(f"[Auth] Looking for user with cognito_sub: {cognito_sub}")
+            
             try:
                 user = User.objects.get(cognito_sub=cognito_sub)
+                logger.debug(f"[Auth] Found user by cognito_sub: {user.email}")
+                
                 # Update user fields
                 user.email = email
                 user.first_name = attributes.get('given_name', '')
@@ -244,26 +275,55 @@ class CognitoAuthentication(authentication.BaseAuthentication):
                 user.is_active = True
                 user.save(update_fields=['email', 'first_name', 'last_name', 'is_active'])
                 created = False
-            except User.DoesNotExist:
+                
+            except Exception as sub_error:
+                logger.debug(f"[Auth] Error getting user by cognito_sub: {str(sub_error)}")
+                
                 # Try to find by email
                 try:
+                    logger.debug(f"[Auth] Looking for user by email: {email}")
                     user = User.objects.get(email=email)
+                    logger.debug(f"[Auth] Found user by email: {user.id}")
+                    
                     # Update existing user with cognito_sub
-                    user.cognito_sub = cognito_sub
-                    user.first_name = attributes.get('given_name', '')
-                    user.last_name = attributes.get('family_name', '')
-                    user.is_active = True
-                    user.save(update_fields=['cognito_sub', 'first_name', 'last_name', 'is_active'])
+                    if has_cognito_sub:  # Only update if column exists
+                        user.cognito_sub = cognito_sub
+                        user.first_name = attributes.get('given_name', '')
+                        user.last_name = attributes.get('family_name', '')
+                        user.is_active = True
+                        user.save(update_fields=['cognito_sub', 'first_name', 'last_name', 'is_active'])
+                    else:
+                        # Skip cognito_sub if column doesn't exist
+                        user.first_name = attributes.get('given_name', '')
+                        user.last_name = attributes.get('family_name', '')
+                        user.is_active = True
+                        user.save(update_fields=['first_name', 'last_name', 'is_active'])
+                        logger.warning(f"[Auth] Skipped updating cognito_sub for user {user.email} because column doesn't exist")
+                        
                     created = False
+                    
                 except User.DoesNotExist:
                     # Create new user
-                    user = User.objects.create(
-                        email=email,
-                        cognito_sub=cognito_sub,
-                        first_name=attributes.get('given_name', ''),
-                        last_name=attributes.get('family_name', ''),
-                        is_active=True
-                    )
+                    logger.debug(f"[Auth] Creating new user with email: {email}")
+                    
+                    if has_cognito_sub:  # Only include cognito_sub if column exists
+                        user = User.objects.create(
+                            email=email,
+                            cognito_sub=cognito_sub,
+                            first_name=attributes.get('given_name', ''),
+                            last_name=attributes.get('family_name', ''),
+                            is_active=True
+                        )
+                    else:
+                        # Create without cognito_sub
+                        user = User.objects.create(
+                            email=email,
+                            first_name=attributes.get('given_name', ''),
+                            last_name=attributes.get('family_name', ''),
+                            is_active=True
+                        )
+                        logger.warning(f"[Auth] Created user {email} without cognito_sub because column doesn't exist")
+                        
                     created = True
 
             if created:
@@ -285,6 +345,31 @@ class CognitoAuthentication(authentication.BaseAuthentication):
                 'type': type(e).__name__,
                 'cognito_username': cognito_user.get('Username')
             })
+            
+            # Add detailed database schema debugging for critical errors
+            if "column" in str(e) and "does not exist" in str(e):
+                try:
+                    from django.db import connection
+                    with connection.cursor() as cursor:
+                        cursor.execute("""
+                            SELECT column_name 
+                            FROM information_schema.columns 
+                            WHERE table_name = 'users_user'
+                        """)
+                        columns = [col[0] for col in cursor.fetchall()]
+                        logger.error(f"[Auth] Database schema error. Available columns in users_user: {columns}")
+                        
+                        # Also check User model fields
+                        model_fields = [f.name for f in User._meta.get_fields()]
+                        logger.error(f"[Auth] User model fields: {model_fields}")
+                        
+                        # Check if there's a mismatch between model and database
+                        missing_fields = [f for f in model_fields if f not in columns and f != 'id']
+                        if missing_fields:
+                            logger.error(f"[Auth] Missing database columns for model fields: {missing_fields}")
+                except Exception as schema_error:
+                    logger.error(f"[Auth] Error checking schema: {str(schema_error)}")
+            
             raise AuthenticationFailed({
                 'code': 'user_creation_failed',
                 'message': 'Failed to create or update user',

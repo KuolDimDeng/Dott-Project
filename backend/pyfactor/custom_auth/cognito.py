@@ -387,3 +387,12 @@ def update_user_attributes_sync(user_id, attributes):
                 raise last_error
 
 cognito_client = CognitoClient()
+
+# Add the function here
+def get_cognito_client():
+    """
+    Returns the Cognito client instance.
+    This function is used for consistent access to the Cognito client
+    throughout the application.
+    """
+    return cognito_client

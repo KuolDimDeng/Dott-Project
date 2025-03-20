@@ -125,7 +125,7 @@ const AppBar = ({
           <Image
             src={logoPath}
             alt="PyFactor Logo"
-            width={100}
+            width={90}
             height={80}
             style={{ marginLeft: '-20px' }}
           />

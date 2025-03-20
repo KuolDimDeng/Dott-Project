@@ -72,7 +72,7 @@ from google.auth.transport import requests
 from kombu.exceptions import OperationalError as KombuOperationalError
 from redis.exceptions import ConnectionError as RedisConnectionError
 from celery.exceptions import OperationalError as CeleryOperationalError
-from psycopg2 import OperationalError as DjangoOperationalError
+from psycopg2 import OperationalError as DjangoOperationalError, extensions
 
 # Local imports
 from ..locks import acquire_lock, release_lock, task_lock
@@ -1204,6 +1204,12 @@ class StartOnboardingView(BaseOnboardingView):
                 'code': 'invalid_auth'
             }, status.HTTP_401_UNAUTHORIZED)
         
+        # Explicitly close all database connections before starting
+        # This helps prevent transaction issues
+        for conn in connections.all():
+            conn.close()
+        logger.debug(f"[{request_id}] Closed all database connections before starting")
+        
         try:
             # Get business ID - this is a critical operation
             business_id = None
@@ -1690,15 +1696,17 @@ def cleanup_expired_onboarding(self):
         logger.error(f"Error in cleanup task: {str(e)}", exc_info=True)
         raise self.retry(exc=e)
 
-
 @method_decorator(csrf_exempt, name='dispatch')
 class SaveStep1View(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [CognitoAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
-    
+
     def post(self, request, *args, **kwargs):
+        from django.db import connection, transaction
+        from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+
         request_id = request.headers.get('X-Request-Id', str(uuid.uuid4()))
         
         logger.info("Received business info save request:", {
@@ -1707,7 +1715,13 @@ class SaveStep1View(APIView):
             'data': request.data
         })
 
+        # Store autocommit setting to restore later
+        old_autocommit = connection.get_autocommit()
+        
         try:
+            # Set autocommit to True to avoid transaction issues
+            connection.set_autocommit(True)
+            
             # Validate request data
             serializer = BusinessInfoSerializer(data=request.data)
             if not serializer.is_valid():
@@ -1725,17 +1739,520 @@ class SaveStep1View(APIView):
             if not tenant_id:
                 raise ValidationError("X-Tenant-ID header is required")
             
-            # Create a temporary business ID to use in the response and for storing in session
+            # Generate schema name for this tenant
+            schema_name = f"tenant_{tenant_id.replace('-', '_')}"
+            
+            # Create a business ID to use in the response and for storing in session
             business_id = uuid.uuid4()
             
             # Get user's name
             first_name = request.user.first_name or ''
             last_name = request.user.last_name or ''
             
-            # Store setup info in response data rather than session
+            # Step 1: Create or ensure schema exists with minimal structure - without foreign keys
+            try:
+                # Import schema_creation_lock here if it's not accessible in the current scope
+                from custom_auth.tenant_middleware import schema_creation_lock
+                
+                # Create a new connection with autocommit=True specifically for schema operations
+                schema_conn = None
+                try:
+                    # Get connection parameters from Django's connection
+                    conn_params = connection.get_connection_params()
+                    
+                    # Import psycopg2 for direct connection
+                    import psycopg2
+                    
+                    # Create a new connection with autocommit=True
+                    schema_conn = psycopg2.connect(**conn_params)
+                    schema_conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+                    
+                    # Set statement timeout to prevent long-running queries
+                    with schema_conn.cursor() as timeout_cursor:
+                        timeout_cursor.execute("SET statement_timeout = '30s'")
+                    
+                    with schema_creation_lock:
+                        with schema_conn.cursor() as cursor:
+                            # Check if schema already exists
+                            cursor.execute("""
+                                SELECT schema_name FROM information_schema.schemata
+                                WHERE schema_name = %s
+                            """, [schema_name])
+                            schema_exists = cursor.fetchone() is not None
+                            
+                            if not schema_exists:
+                                # Create the schema if it doesn't exist
+                                logger.info(f"Creating minimal schema for {schema_name}")
+                                cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
+                                
+                                # Verify schema was created
+                                cursor.execute("""
+                                    SELECT schema_name FROM information_schema.schemata
+                                    WHERE schema_name = %s
+                                """, [schema_name])
+                                if not cursor.fetchone():
+                                    logger.error(f"Failed to create schema {schema_name}")
+                                    raise Exception(f"Failed to create schema {schema_name}")
+                                
+                                # Set up basic permissions
+                                db_user = connection.settings_dict['USER']
+                                cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {db_user}')
+                                cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {db_user}')
+                                cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {db_user}')
+                            else:
+                                logger.info(f"Schema {schema_name} already exists, using it")
+                                
+                            # Set search path to the schema
+                            cursor.execute(f'SET search_path TO "{schema_name}",public')
+                finally:
+                    # Close the dedicated connection
+                    if schema_conn:
+                        # Make sure to rollback any pending transactions before closing
+                        if schema_conn.status in (psycopg2.extensions.STATUS_IN_TRANSACTION,
+                                                psycopg2.extensions.STATUS_BEGIN):
+                            schema_conn.rollback()
+                        schema_conn.close()
+                
+                # Now use Django's connection with the new search path
+                with connection.cursor() as cursor:
+                    # Set search path in the main connection too
+                    cursor.execute(f'SET search_path TO "{schema_name}",public')
+                    
+                    # IMPORTANT: Defer all constraints to allow creating tables without dependencies
+                    cursor.execute("SET CONSTRAINTS ALL DEFERRED")
+                        
+                    # Create django_migrations table in the schema if it doesn't exist
+                    cursor.execute(f"""
+                        CREATE TABLE IF NOT EXISTS "{schema_name}"."django_migrations" (
+                            "id" serial NOT NULL PRIMARY KEY,
+                            "app" varchar(255) NOT NULL,
+                            "name" varchar(255) NOT NULL,
+                            "applied" timestamp with time zone NOT NULL
+                        );
+                    """)
+                        
+                    # Create essential tables for business info - WITHOUT FOREIGN KEY CONSTRAINTS
+                    # First, check if users_business exists
+                    cursor.execute("""
+                        SELECT 1 FROM information_schema.tables
+                        WHERE table_schema = %s AND table_name = 'users_business'
+                    """, [schema_name])
+                        
+                    if not cursor.fetchone():
+                        # Create users_business table without foreign keys
+                        cursor.execute(f"""
+                            CREATE TABLE IF NOT EXISTS "{schema_name}"."users_business" (
+                                "id" uuid NOT NULL PRIMARY KEY,
+                                "business_num" varchar(6) NOT NULL,
+                                "name" varchar(200) NOT NULL,
+                                "business_type" varchar(50) NOT NULL,
+                                "business_subtype_selections" jsonb NOT NULL DEFAULT '{{}}'::jsonb,
+                                "street" varchar(200) NULL,
+                                "city" varchar(200) NULL,
+                                "state" varchar(200) NULL,
+                                "postcode" varchar(20) NULL,
+                                "country" varchar(2) NOT NULL DEFAULT 'US',
+                                "address" text NULL,
+                                "email" varchar(254) NULL,
+                                "phone_number" varchar(20) NULL,
+                                "database_name" varchar(255) NULL,
+                                "created_at" timestamp with time zone NOT NULL DEFAULT now(),
+                                "updated_at" timestamp with time zone NOT NULL DEFAULT now(),
+                                "legal_structure" varchar(50) NOT NULL DEFAULT 'SOLE_PROPRIETORSHIP',
+                                "date_founded" date NULL,
+                                "owner_id" uuid NOT NULL
+                            );
+                        """)
+                        
+                        # Create an index for business_num
+                        cursor.execute(f"""
+                            CREATE INDEX IF NOT EXISTS "users_business_business_num_idx"
+                            ON "{schema_name}"."users_business" ("business_num");
+                        """)
+                    
+                    # Check if users_business_details exists
+                    cursor.execute("""
+                        SELECT 1 FROM information_schema.tables
+                        WHERE table_schema = %s AND table_name = 'users_business_details'
+                    """, [schema_name])
+                    
+                    if not cursor.fetchone():
+                        # Create users_business_details table without foreign key constraint
+                        cursor.execute(f"""
+                            CREATE TABLE IF NOT EXISTS "{schema_name}"."users_business_details" (
+                                "business_id" uuid NOT NULL PRIMARY KEY,
+                                "business_type" varchar(50) NOT NULL,
+                                "business_subtype_selections" jsonb NOT NULL DEFAULT '{{}}'::jsonb,
+                                "legal_structure" varchar(50) NOT NULL DEFAULT 'SOLE_PROPRIETORSHIP',
+                                "country" varchar(2) NOT NULL DEFAULT 'US',
+                                "date_founded" date NULL,
+                                "created_at" timestamp with time zone NOT NULL DEFAULT now(),
+                                "updated_at" timestamp with time zone NOT NULL DEFAULT now()
+                            );
+                        """)
+                    
+                    # Check if users_userprofile exists
+                    cursor.execute("""
+                        SELECT 1 FROM information_schema.tables
+                        WHERE table_schema = %s AND table_name = 'users_userprofile'
+                    """, [schema_name])
+                    
+                    if not cursor.fetchone():
+                        # Create users_userprofile table - without foreign key constraints
+                        cursor.execute(f"""
+                            CREATE TABLE IF NOT EXISTS "{schema_name}"."users_userprofile" (
+                                "id" bigserial NOT NULL PRIMARY KEY,
+                                "occupation" varchar(200) NULL,
+                                "street" varchar(200) NULL,
+                                "city" varchar(200) NULL,
+                                "state" varchar(200) NULL,
+                                "postcode" varchar(200) NULL,
+                                "country" varchar(2) NOT NULL DEFAULT 'US',
+                                "phone_number" varchar(200) NULL,
+                                "created_at" timestamp with time zone NOT NULL DEFAULT now(),
+                                "modified_at" timestamp with time zone NOT NULL DEFAULT now(),
+                                "is_business_owner" boolean NOT NULL DEFAULT false,
+                                "shopify_access_token" varchar(255) NULL,
+                                "schema_name" varchar(63) NULL,
+                                "metadata" jsonb NULL DEFAULT '{{}}'::jsonb,
+                                "business_id" uuid NULL,
+                                "tenant_id" uuid NULL,
+                                "user_id" uuid NOT NULL,
+                                "updated_at" timestamp with time zone DEFAULT NOW()
+                            );
+                        """)
+                        
+                        # Create index on tenant_id
+                        cursor.execute(f"""
+                            CREATE INDEX IF NOT EXISTS "users_userprofile_tenant_id_idx"
+                            ON "{schema_name}"."users_userprofile" ("tenant_id");
+                        """)
+                        
+                        # Create unique index on user_id
+                        cursor.execute(f"""
+                            CREATE UNIQUE INDEX IF NOT EXISTS "users_userprofile_user_id_key"
+                            ON "{schema_name}"."users_userprofile" ("user_id");
+                        """)
+                    
+                    # Record deferred migrations marker in django_migrations
+                    cursor.execute(f"""
+                        INSERT INTO "{schema_name}"."django_migrations" (app, name, applied)
+                        VALUES ('onboarding', 'deferred_migrations', NOW())
+                        ON CONFLICT DO NOTHING;
+                    """)
+                    
+                    # Update tenant status if it exists
+                    cursor.execute("""
+                        UPDATE auth_tenant
+                        SET schema_name = %s,
+                            setup_status = 'minimal',
+                            last_setup_attempt = NOW()
+                        WHERE owner_id = %s;
+                    """, [schema_name, str(request.user.id)])
+                    
+                    # If rows affected is 0, tenant doesn't exist yet
+                    if cursor.rowcount == 0:
+                        # Create tenant record
+                        tenant_uuid = uuid.UUID(tenant_id)
+                        cursor.execute("""
+                            INSERT INTO auth_tenant (id, schema_name, name, owner_id, created_on, is_active, setup_status)
+                            VALUES (%s, %s, %s, %s, NOW(), TRUE, 'minimal');
+                        """, [tenant_id, schema_name, f"Tenant for {request.user.email}", str(request.user.id)])
+                        logger.info(f"Created tenant record for user {request.user.id}")
+            except Exception as schema_error:
+                logger.error(f"Error setting up schema: {str(schema_error)}", exc_info=True)
+                # Continue even if schema setup fails - we'll try again at dashboard
+            
+            # Step 2: Create the business in database - WITHOUT FOREIGN KEY CONSTRAINTS
+            try:
+                # Create a new connection with autocommit=True to avoid transaction issues
+                with connection.cursor() as cursor:
+                    # First, create the business in the tenant schema
+                    # Ensure we're using fresh connections and auto-commit mode
+                    connection.close()
+                    connection.connect()
+                    connection.set_autocommit(True)
+                    
+                    # Check if we're in a transaction and log warning
+                    if connection.in_atomic_block:
+                        logger.warning(f"Still in atomic block after setting autocommit=True for schema {schema_name}")
+                        # Force transaction isolation level to READ COMMITTED to avoid deadlocks
+                        cursor.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+                        logger.debug("Set transaction isolation level to READ COMMITTED")
+                    
+                    # Create a completely separate connection for tenant operations to avoid transaction issues
+                    import psycopg2
+                    
+                    # Get connection parameters from Django's connection
+                    conn_params = connection.get_connection_params()
+                    # Add explicit isolation level to connection parameters
+                    conn_params['options'] = f"{conn_params.get('options', '')} -c default_transaction_isolation=read committed"
+                    tenant_conn = None
+                    
+                    logger.debug(f"Creating tenant connection with params: {conn_params}")
+                    
+                    try:
+                        # Create a new connection with autocommit=True
+                        logger.debug(f"Creating dedicated tenant connection for schema {schema_name}")
+                        tenant_conn = psycopg2.connect(**conn_params)
+                        tenant_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+                        
+                        # Create a cursor from this dedicated connection
+                        with tenant_conn.cursor() as tenant_cursor:
+                            # Set search path to the tenant schema
+                            logger.debug(f"Setting search path to schema {schema_name}")
+                            tenant_cursor.execute(f'SET search_path TO "{schema_name}", public')
+                            
+                            # Defer all constraints to avoid transaction issues
+                            logger.debug("Deferring all constraints")
+                            tenant_cursor.execute("SET CONSTRAINTS ALL DEFERRED")
+                            
+                            # Defer constraints
+                            tenant_cursor.execute("SET CONSTRAINTS ALL DEFERRED")
+                            
+                            # Insert business directly using raw SQL with improved retry logic
+                            now = timezone.now()
+                            max_retries = 3
+                            retry_delay = 0.5  # seconds
+                            
+                            for attempt in range(max_retries):
+                                try:
+                                    # Ensure we're in a clean connection state before each attempt
+                                    if tenant_conn.status in (psycopg2.extensions.STATUS_IN_TRANSACTION,
+                                                            psycopg2.extensions.STATUS_BEGIN):
+                                        tenant_conn.rollback()
+                                        logger.debug("Rolled back existing transaction before new attempt")
+                                    
+                                    # Set statement timeout to prevent long-running queries
+                                    tenant_cursor.execute("SET statement_timeout = '30s'")
+                                    
+                                    # Set transaction isolation level to READ COMMITTED
+                                    tenant_cursor.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+                                    
+                                    logger.debug(f"Attempting to insert business data (attempt {attempt+1}/{max_retries})")
+                                    tenant_cursor.execute("""
+                                        INSERT INTO users_business (
+                                            id, business_num, name, business_type,
+                                            created_at, updated_at, owner_id, legal_structure
+                                        ) VALUES (
+                                            %s, %s, %s, %s,
+                                            %s, %s, %s, %s
+                                        ) RETURNING id;
+                                    """, [
+                                        str(business_id),
+                                        business_num,
+                                        serializer.validated_data['business_name'],
+                                        serializer.validated_data['business_type'],
+                                        now,
+                                        now,
+                                        str(request.user.id),
+                                        serializer.validated_data.get('legal_structure', 'SOLE_PROPRIETORSHIP')
+                                    ])
+                                    # Explicitly commit after successful insertion
+                                    tenant_conn.commit()
+                                    logger.debug(f"Successfully inserted business data on attempt {attempt+1}")
+                                    break
+                                except psycopg2.Error as e:
+                                    # Always rollback on error to ensure clean state
+                                    try:
+                                        tenant_conn.rollback()
+                                        logger.debug(f"Rolled back transaction after error on attempt {attempt+1}")
+                                    except Exception as rollback_error:
+                                        logger.error(f"Error rolling back: {str(rollback_error)}")
+                                    
+                                    if attempt < max_retries - 1:
+                                        logger.warning(f"Database error on attempt {attempt+1}: {str(e)}")
+                                        time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
+                                        continue
+                                    else:
+                                        logger.error(f"Failed to insert business data after {max_retries} attempts")
+                                        raise
+                            
+                            # Create business details with raw SQL and proper transaction handling
+                            try:
+                                date_founded = serializer.validated_data.get('date_founded')
+                                date_founded_str = date_founded.isoformat() if date_founded else None
+                                
+                                tenant_cursor.execute("""
+                                    INSERT INTO users_business_details (
+                                        business_id, business_type, legal_structure, country, date_founded,
+                                        created_at, updated_at
+                                    ) VALUES (
+                                        %s, %s, %s, %s, %s, %s, %s
+                                    );
+                                """, [
+                                    str(business_id),
+                                    serializer.validated_data['business_type'],
+                                    serializer.validated_data['legal_structure'],
+                                    str(serializer.validated_data['country']),
+                                    date_founded_str,
+                                    now,
+                                    now
+                                ])
+                                
+                                # Commit after business details insertion
+                                tenant_conn.commit()
+                                logger.debug("Successfully inserted business details")
+                            except psycopg2.Error as e:
+                                # Rollback on error
+                                tenant_conn.rollback()
+                                logger.error(f"Error inserting business details: {str(e)}")
+                                raise
+                            
+                            # Update or create user profile with raw SQL in a separate transaction
+                            try:
+                                # First check if profile exists
+                                tenant_cursor.execute("""
+                                    SELECT id FROM users_userprofile
+                                    WHERE user_id = %s;
+                                """, [str(request.user.id)])
+                                profile_exists = tenant_cursor.fetchone()
+                                
+                                if profile_exists:
+                                    # Update existing profile
+                                    tenant_cursor.execute("""
+                                        UPDATE users_userprofile
+                                        SET business_id = %s,
+                                            modified_at = %s,
+                                            updated_at = %s,
+                                            is_business_owner = TRUE,
+                                            tenant_id = %s
+                                        WHERE user_id = %s;
+                                    """, [
+                                        str(business_id),
+                                        now,
+                                        now,
+                                        tenant_id,
+                                        str(request.user.id)
+                                    ])
+                                else:
+                                    # Create new profile
+                                    tenant_cursor.execute("""
+                                        INSERT INTO users_userprofile
+                                        (user_id, business_id, tenant_id, is_business_owner, created_at, modified_at, updated_at, country)
+                                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+                                    """, [
+                                        str(request.user.id),
+                                        str(business_id),
+                                        tenant_id,
+                                        True,
+                                        now,
+                                        now,
+                                        now,
+                                        'US'
+                                    ])
+                                
+                                # Commit after profile update/creation
+                                tenant_conn.commit()
+                                logger.debug("Successfully updated/created user profile")
+                            except psycopg2.Error as e:
+                                # Rollback on error
+                                tenant_conn.rollback()
+                                logger.error(f"Error updating/creating user profile: {str(e)}")
+                                raise
+                            
+                            # Add foreign key constraints AFTER data is inserted in a separate transaction
+                            try:
+                                # Ensure we're in a clean connection state
+                                if tenant_conn.status in (psycopg2.extensions.STATUS_IN_TRANSACTION,
+                                                        psycopg2.extensions.STATUS_BEGIN):
+                                    tenant_conn.rollback()
+                                    logger.debug("Rolled back existing transaction before adding constraints")
+                                
+                                # Add FK constraint for business_details to business
+                                tenant_cursor.execute(f"""
+                                    ALTER TABLE "{schema_name}"."users_business_details"
+                                    ADD CONSTRAINT IF NOT EXISTS users_business_details_business_id_fk
+                                    FOREIGN KEY (business_id) REFERENCES "{schema_name}"."users_business" (id)
+                                    DEFERRABLE INITIALLY DEFERRED;
+                                """)
+                                
+                                # Commit after first constraint
+                                tenant_conn.commit()
+                                logger.debug("Added business_details foreign key constraint")
+                                
+                                # Add FK constraint for userprofile to business in a separate transaction
+                                tenant_cursor.execute(f"""
+                                    ALTER TABLE "{schema_name}"."users_userprofile"
+                                    ADD CONSTRAINT IF NOT EXISTS users_userprofile_business_id_fk
+                                    FOREIGN KEY (business_id) REFERENCES "{schema_name}"."users_business" (id)
+                                    DEFERRABLE INITIALLY DEFERRED;
+                                """)
+                                
+                                # Commit after second constraint
+                                tenant_conn.commit()
+                                logger.info(f"Added foreign key constraints to {schema_name} schema")
+                            except psycopg2.Error as fk_error:
+                                # Rollback on error
+                                try:
+                                    tenant_conn.rollback()
+                                    logger.debug("Rolled back transaction after constraint error")
+                                except Exception as rollback_error:
+                                    logger.error(f"Error rolling back after constraint error: {str(rollback_error)}")
+                                
+                                # Log but continue if constraint addition fails
+                                logger.warning(f"Error adding foreign key constraints: {str(fk_error)}")
+                    except psycopg2.OperationalError as op_error:
+                        # Handle operational errors specifically
+                        logger.error(f"Database operational error: {str(op_error)}", exc_info=True)
+                        logger.error(f"Connection details: schema_name={schema_name}, autocommit=True",
+                                    extra={'schema': schema_name, 'error_type': 'OperationalError'})
+                        # Re-raise with more context
+                        raise Exception(f"Database connection error: {str(op_error)}. This may indicate connection issues or server overload.")
+                    except psycopg2.IntegrityError as int_error:
+                        # Handle integrity errors (constraint violations)
+                        logger.error(f"Database integrity error: {str(int_error)}", exc_info=True)
+                        logger.error(f"Integrity violation: schema_name={schema_name}, business_id={business_id}",
+                                    extra={'schema': schema_name, 'error_type': 'IntegrityError'})
+                        # Re-raise with more context
+                        raise Exception(f"Data integrity error: {str(int_error)}. This may indicate duplicate or invalid data.")
+                    except Exception as db_op_error:
+                        # Log the error with detailed context
+                        logger.error(f"Database operation failed: {str(db_op_error)}", exc_info=True)
+                        logger.error(f"Database operation context: schema_name={schema_name}, business_id={business_id}",
+                                    extra={
+                                        'schema': schema_name,
+                                        'error_type': type(db_op_error).__name__,
+                                        'sql_state': getattr(db_op_error, 'pgcode', 'unknown'),
+                                        'transaction_status': getattr(tenant_conn, 'status', None) if 'tenant_conn' in locals() else 'unknown'
+                                    })
+                        # Re-raise to be caught by the outer try/except
+                        raise
+                    finally:
+                        # Always close the dedicated connection
+                        if 'tenant_conn' in locals() and tenant_conn:
+                            try:
+                                # Check connection status before closing
+                                conn_status = tenant_conn.status if hasattr(tenant_conn, 'status') else 'unknown'
+                                logger.debug(f"Closing dedicated tenant connection for schema {schema_name} (status: {conn_status})")
+                                
+                                # If connection is in error state, try to reset it
+                                if conn_status in (psycopg2.extensions.STATUS_IN_TRANSACTION,
+                                                  psycopg2.extensions.STATUS_BEGIN):
+                                    logger.warning(f"Connection in transaction state before closing (status: {conn_status})")
+                                    try:
+                                        # Try to rollback any pending transaction
+                                        tenant_conn.rollback()
+                                        logger.debug("Successfully rolled back transaction before closing")
+                                    except Exception as rollback_error:
+                                        logger.error(f"Error rolling back transaction: {str(rollback_error)}")
+                                
+                                # Close the connection
+                                tenant_conn.close()
+                                logger.debug(f"Successfully closed dedicated tenant connection for schema {schema_name}")
+                            except Exception as close_error:
+                                logger.error(f"Error closing tenant connection: {str(close_error)}", exc_info=True)
+                                logger.error(f"Connection details: schema={schema_name}, status={getattr(tenant_conn, 'status', 'unknown')}")
+            except Exception as db_error:
+                # Log the error but continue with the response
+                logger.error(f"Error creating business record: {str(db_error)}", exc_info=True)
+                # We'll continue with the deferred setup approach
+            
+            # Store setup info in response data 
             pending_setup = {
                 'user_id': str(request.user.id),
                 'business_id': str(business_id),
+                'schema_name': schema_name,  # Store the schema name
                 'business_data': {
                     'business_num': business_num,
                     'business_name': serializer.validated_data['business_name'],
@@ -1747,6 +2264,7 @@ class SaveStep1View(APIView):
                 'timestamp': timezone.now().isoformat(),
                 'source': 'business_info_page',
                 'deferred': True,
+                'minimal_schema_created': True,  # Flag that we created a minimal schema
                 'next_step': 'subscription'
             }
             
@@ -1780,9 +2298,10 @@ class SaveStep1View(APIView):
                     },
                     "pendingSetup": pending_setup,
                     "schemaSetup": {
-                        "status": "deferred",
-                        "message": "Database setup will be performed automatically when you reach the dashboard",
-                        "backgroundProcessing": True
+                        "status": "minimal",
+                        "message": "Basic database setup complete. Full setup will be performed when you reach the dashboard.",
+                        "backgroundProcessing": True,
+                        "schema_name": schema_name
                     },
                     "timestamp": timezone.now().isoformat()
                 }
@@ -1792,7 +2311,6 @@ class SaveStep1View(APIView):
             response = Response(response_data, status=status.HTTP_200_OK)
             
             # Store the pending setup data in a cookie instead of session
-            # This avoids database writes and transaction issues
             response.set_cookie(
                 'pending_schema_setup',
                 json.dumps(pending_setup),
@@ -1801,11 +2319,63 @@ class SaveStep1View(APIView):
                 samesite='Lax'
             )
             
-            # Log that we're deferring actual database work
-            logger.info(f"Created pending schema setup with deferred=True for user {request.user.id}", extra={
+            # Also store in user profile metadata for persistence using direct SQL
+            try:
+                # First check if profile exists in public schema
+                with connection.cursor() as cursor:
+                    # Reset search path to public
+                    cursor.execute('SET search_path TO public')
+                    
+                    # Check if profile exists
+                    cursor.execute("""
+                        SELECT id, metadata FROM users_userprofile 
+                        WHERE user_id = %s;
+                    """, [str(request.user.id)])
+                    
+                    profile_data = cursor.fetchone()
+                    
+                    if profile_data:
+                        profile_id, existing_metadata = profile_data
+                        
+                        # Parse existing metadata or initialize empty dict
+                        if existing_metadata is None:
+                            metadata = {}
+                        else:
+                            metadata = existing_metadata
+                        
+                        # Update metadata
+                        metadata['pending_schema_setup'] = pending_setup
+                        
+                        # Update profile with new metadata
+                        cursor.execute("""
+                            UPDATE users_userprofile 
+                            SET metadata = %s
+                            WHERE id = %s;
+                        """, [json.dumps(metadata), profile_id])
+                        
+                        logger.info(f"Stored schema setup info in user profile metadata")
+                    else:
+                        # Create public schema profile if it doesn't exist
+                        cursor.execute("""
+                            INSERT INTO users_userprofile (user_id, metadata, created_at, modified_at, updated_at)
+                            VALUES (%s, %s, %s, %s, %s);
+                        """, [
+                            str(request.user.id),
+                            json.dumps({'pending_schema_setup': pending_setup}),
+                            timezone.now(),
+                            timezone.now(),
+                            timezone.now()
+                        ])
+                        logger.info(f"Created new public schema profile with metadata for user {request.user.id}")
+            except Exception as meta_error:
+                logger.warning(f"Failed to store schema info in profile metadata: {str(meta_error)}")
+            
+            # Log that we're setting up with minimal schema
+            logger.info(f"Created minimal schema and business data for user {request.user.id}", extra={
                 'user_id': str(request.user.id),
                 'business_id': str(business_id),
-                'deferred': True,
+                'schema_name': schema_name,
+                'minimal': True,
                 'next_step': 'subscription'
             })
             
@@ -1823,6 +2393,14 @@ class SaveStep1View(APIView):
                 'message': 'Failed to save business information',
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        finally:
+            # Restore previous autocommit setting
+            try:
+                if old_autocommit != connection.get_autocommit():
+                    connection.set_autocommit(old_autocommit)
+            except Exception as ac_error:
+                logger.error(f"Error restoring autocommit: {ac_error}")
+
 
     def options(self, request, *args, **kwargs):
         response = Response()
@@ -1831,6 +2409,193 @@ class SaveStep1View(APIView):
         response["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Request-Id"
         response["Access-Control-Allow-Credentials"] = "true"
         return response
+
+    def get_business(self, request):
+        """Retrieve business with explicit default database connection"""
+        from django.db import connection
+        import json
+        
+        try:
+            # Make sure all necessary tables exist and have proper columns
+            with connection.cursor() as cursor:
+                # First make sure the UserProfile table exists with updated_at column
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS users_userprofile (
+                        id SERIAL PRIMARY KEY,
+                        user_id UUID NOT NULL UNIQUE,
+                        business_id UUID NULL REFERENCES users_business(id),
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        metadata JSONB DEFAULT '{}'::jsonb,
+                        country VARCHAR(2) DEFAULT 'US'
+                    )
+                """)
+                
+                # Check if updated_at column exists, add if missing
+                cursor.execute("""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns 
+                            WHERE table_name = 'users_userprofile' 
+                            AND column_name = 'updated_at'
+                        ) THEN
+                            ALTER TABLE users_userprofile 
+                            ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+                        END IF;
+                    END
+                    $$;
+                """)
+                
+                # Create business table if it doesn't exist
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS users_business (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        name VARCHAR(255) NOT NULL,
+                        business_num VARCHAR(20),
+                        date_founded DATE NULL,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        modified_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                    )
+                """)
+                # Create business_details table if it doesn't exist
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS users_business_details (
+                        business_id UUID PRIMARY KEY REFERENCES users_business(id),
+                        business_type VARCHAR(50),
+                        "business_subtype_selections" jsonb NOT NULL DEFAULT '{}'::jsonb,
+                        legal_structure VARCHAR(50) DEFAULT 'SOLE_PROPRIETORSHIP',
+                        date_founded DATE,
+                        country VARCHAR(2) DEFAULT 'US',
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                    )
+                """)
+                
+                logger.info("All necessary tables created or verified")
+                
+                # Make sure the user profile exists
+                cursor.execute("""
+                    INSERT INTO users_userprofile
+                    (user_id, business_id, created_at, updated_at, country, metadata)
+                    VALUES (%s, %s, NOW(), NOW(), %s, %s)
+                    ON CONFLICT (user_id) DO UPDATE
+                    SET business_id = EXCLUDED.business_id,
+                        updated_at = NOW()
+                """, [
+                    str(request.user.id),
+                    str(business.id) if business else None,
+                    'US',
+                    '{}'
+                ])
+                logger.info(f"User profile created or updated for {request.user.email}")
+            
+            # First try to get business from Cognito attributes
+            if hasattr(request, 'cognito_attributes') and request.cognito_attributes:
+                business_id = request.cognito_attributes.get('businessid')
+                if business_id:
+                    from users.models import Business
+                    try:
+                        # Get business by ID only
+                        return Business.objects.get(id=business_id)
+                    except Business.DoesNotExist:
+                        # Create new business using only valid fields
+                        business = Business.objects.create(
+                            id=business_id,
+                            name=request.cognito_attributes.get('businessname', 'My Business')
+                        )
+                        
+                        # Now create BusinessDetails separately using direct SQL
+                        with connection.cursor() as cursor:
+                            cursor.execute("""
+                                INSERT INTO users_business_details 
+                                (business_id, business_type, legal_structure, country, created_at)
+                                VALUES (%s, %s, %s, %s, NOW())
+                            """, [
+                                str(business_id),
+                                request.cognito_attributes.get('businesstype', 'Default'),
+                                request.cognito_attributes.get('legalstructure', 'SOLE_PROPRIETORSHIP'),
+                                request.cognito_attributes.get('businesscountry', 'US')
+                            ])
+                        
+                        # Update profile with business_id using SQL
+                        with connection.cursor() as cursor:
+                            cursor.execute("""
+                                UPDATE users_userprofile
+                                SET business_id = %s, updated_at = NOW()
+                                WHERE user_id = %s
+                            """, [
+                                str(business.id),
+                                str(request.user.id)
+                            ])
+                            
+                        return business
+            
+            # Try to find business via UserProfile using direct SQL
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT b.id 
+                    FROM users_business b
+                    JOIN users_userprofile up ON up.business_id = b.id
+                    WHERE up.user_id = %s
+                    LIMIT 1
+                """, [str(request.user.id)])
+                row = cursor.fetchone()
+                    
+            if row and row[0]:
+                from users.models import Business
+                return Business.objects.get(id=row[0])
+                    
+            # Check session using default DB
+            if business_id := request.session.get('business_id'):
+                try:
+                    from users.models import Business
+                    return Business.objects.get(id=business_id)
+                except Business.DoesNotExist:
+                    pass
+
+            # If all else fails, create a new business
+            from users.models import Business
+            
+            # Create the base business with valid fields only
+            business = Business.objects.create(
+                name=f"{request.user.first_name}'s Business"
+            )
+            
+            # Create business details using direct SQL
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO users_business_details 
+                    (business_id, business_type, legal_structure, country, created_at)
+                    VALUES (%s, %s, %s, %s, NOW())
+                """, [
+                    str(business.id),
+                    'default',
+                    'SOLE_PROPRIETORSHIP',
+                    'US'
+                ])
+            
+            # Update profile with business_id using SQL
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE users_userprofile
+                    SET business_id = %s, updated_at = NOW()
+                    WHERE user_id = %s
+                """, [
+                    str(business.id),
+                    str(request.user.id)
+                ])
+            
+            return business
+
+        except Exception as e:
+            logger.error(f"Business lookup error: {str(e)}", extra={'user': request.user.id})
+            logger.error("Business lookup failed", extra={'user': request.user.id})
+            raise ValidationError({
+                'error': 'Complete business setup first',
+                'code': 'missing_business',
+                'next_step': '/onboarding/business-info'
+            })
+               
 
 @method_decorator(csrf_exempt, name='dispatch')
 class SaveStep2View(APIView):
@@ -1863,93 +2628,491 @@ class SaveStep2View(APIView):
         return True, None
 
     def get_business(self, request):
-        """Retrieve business with explicit default database connection"""
+        """Retrieve business with explicit tenant context consideration"""
+        from django.db import connection
+        from onboarding.utils import tenant_schema_context
+        
+        # Get tenant information from headers or request data
+        tenant_id = request.headers.get('X-Tenant-ID') or request.data.get('tenant_id')
+        schema_name = request.headers.get('X-Schema-Name') or request.data.get('schema_name')
+        
+        # If frontend didn't provide schema_name but gave tenant_id, format it
+        if not schema_name and tenant_id:
+            schema_name = f"tenant_{tenant_id.replace('-', '_')}"
+        
+        logger.info(f"Looking up business with tenant context: {schema_name}", 
+                    extra={'tenant_id': tenant_id, 'schema_name': schema_name})
+        
         try:
-            # Use values() to avoid selecting all fields and only get the necessary data
-            profile_data = UserProfile.objects.filter(user=request.user).values('id', 'business_id').first()
+            # If we have a valid schema name, try to use it first
+            if schema_name:
+                try:
+                    # Try to get the business from the tenant schema
+                    business_id = None
+                    business_name = None
+                    
+                    with tenant_schema_context(connection.cursor(), schema_name, preserve_context=True):
+                        # Check if user profile exists in tenant schema
+                        with connection.cursor() as cursor:
+                            cursor.execute("""
+                                SELECT b.id, b.name 
+                                FROM users_userprofile up
+                                JOIN users_business b ON up.business_id = b.id
+                                WHERE up.user_id = %s
+                                LIMIT 1
+                            """, [str(request.user.id)])
+                            
+                            result = cursor.fetchone()
+                            if result:
+                                business_id, business_name = result
+                                # Create a minimal Business object
+                                from users.models import Business
+                                business = Business(id=business_id, name=business_name)
+                                logger.info(f"Found business in tenant schema: {business_id}")
+                                
+                                # Create or update OnboardingProgress with this business
+                                try:
+                                    progress, created = OnboardingProgress.objects.get_or_create(
+                                        user=request.user,
+                                        defaults={
+                                            'onboarding_status': 'business-info',
+                                            'current_step': 'business-info',
+                                            'next_step': 'subscription'
+                                        }
+                                    )
+                                    
+                                    # Update business_id if needed
+                                    if not progress.business_id or str(progress.business_id) != business_id:
+                                        progress.business_id = business_id
+                                        progress.save(update_fields=['business_id'])
+                                        logger.info(f"Updated OnboardingProgress with business_id: {business_id}")
+                                except Exception as progress_error:
+                                    logger.warning(f"Failed to update OnboardingProgress: {str(progress_error)}")
+                                
+                                return business
+                except Exception as schema_error:
+                    logger.warning(f"Error accessing tenant schema: {str(schema_error)}")
+                    # Fall back to public schema if tenant schema access fails
             
-            if profile_data and profile_data['business_id']:
-                # If we have a business_id, just get the business directly
-                return Business.objects.get(id=profile_data['business_id'])
+            # Fallback to existing methods if tenant schema approach failed
+            # First try to get the profile and business without locking
+            profile = UserProfile.objects.select_related('business').get(user=request.user)
+            if profile.business:
+                return profile.business
 
             # Check session using default DB
             if business_id := request.session.get('business_id'):
                 try:
                     business = Business.objects.get(id=business_id)
+                    # Update profile with business in a separate transaction
+                    # Manual transaction handling instead of atomic
                     
-                    # Only if we have a profile, update it with business in a separate transaction
-                    if profile_data:
-                        # Use direct SQL to avoid ORM issues with the occupation field
-                        from django.db import connection
-                        with connection.cursor() as cursor:
-                            cursor.execute("""
-                                UPDATE users_userprofile 
-                                SET business_id = %s 
-                                WHERE id = %s
-                            """, [business.id, profile_data['id']])
+                    # Store autocommit setting
+                    old_autocommit = connection.get_autocommit()
+                    connection.set_autocommit(True)  # Important: Set autocommit to True
                     
-                    return business
+                    try:
+                        # Create a new connection if needed
+                        if connection.in_atomic_block:
+                            connection.close()
+                            connection.connect()
+                        
+                        profile_to_update = UserProfile.objects.select_for_update().get(id=profile.id)
+                        profile_to_update.business = business
+                        profile_to_update.save(update_fields=['business'])
+                        
+                        return business
+                    except Exception as e:
+                        logger.error(f"Error updating profile: {str(e)}")
+                        raise
+                    finally:
+                        # Restore previous autocommit setting
+                        try:
+                            if old_autocommit != connection.get_autocommit():
+                                connection.set_autocommit(old_autocommit)
+                        except Exception as ac_error:
+                            logger.error(f"Error restoring autocommit: {ac_error}")
                 except Business.DoesNotExist:
                     # Continue to next method if business not found
                     pass
 
-            # Check onboarding progress using default DB
-            progress_data = OnboardingProgress.objects.filter(user=request.user).values('business_id').first()
-            if progress_data and progress_data['business_id']:
-                return Business.objects.get(id=progress_data['business_id'])
+            # Try to create OnboardingProgress if it doesn't exist yet
+            try:
+                progress = OnboardingProgress.objects.get(user=request.user)
+                if progress.business:
+                    return progress.business
+            except OnboardingProgress.DoesNotExist:
+                # Create OnboardingProgress record with default values
+                OnboardingProgress.objects.create(
+                    user=request.user,
+                    onboarding_status='business-info',
+                    current_step='business-info',
+                    next_step='subscription'
+                )
+                # Note that we're not creating a business here since we don't have one yet
+
+            # If all else fails, create a new business
+            from users.models import Business, BusinessDetails
+            
+            # Create the base business with valid fields only
+            business = Business.objects.create(
+                name=f"{request.user.first_name}'s Business"
+            )
+            
+            # Set owner through property setter 
+            business._owner = request.user
+            business._owner_id = request.user.id
+            business.save()  # This will update UserProfile
+            
+            # Create business details using direct SQL
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS users_business_details (
+                        business_id UUID PRIMARY KEY REFERENCES users_business(id),
+                        business_type VARCHAR(50),
+                        "business_subtype_selections" jsonb NOT NULL DEFAULT '{{}}'::jsonb,
+                        legal_structure VARCHAR(50) DEFAULT 'SOLE_PROPRIETORSHIP',
+                        date_founded DATE,
+                        country VARCHAR(2) DEFAULT 'US'
+                    )
+                """)
+                
+                cursor.execute("""
+                    INSERT INTO users_business_details 
+                    (business_id, business_type, legal_structure, country)
+                    VALUES (%s, %s, %s, %s)
+                """, [
+                    str(business.id),
+                    'default',
+                    'SOLE_PROPRIETORSHIP',
+                    'US'
+                ])
+            
+            # Update OnboardingProgress with this business
+            try:
+                OnboardingProgress.objects.filter(user=request.user).update(business=business)
+            except Exception as e:
+                logger.warning(f"Failed to update OnboardingProgress with new business: {str(e)}")
+            
+            return business
 
         except Exception as e:
             logger.error(f"Business lookup error: {str(e)}", extra={'user': request.user.id})
-                
-        logger.error("Business lookup failed", extra={'user': request.user.id})
-        raise ValidationError({
-            'error': 'Complete business setup first',
-            'code': 'missing_business',
-            'next_step': '/onboarding/business-info'
-        })
+            logger.error("Business lookup failed", extra={'user': request.user.id})
+            raise ValidationError({
+                'error': 'Complete business setup first',
+                'code': 'missing_business',
+                'next_step': '/onboarding/business-info'
+            })
 
     def handle_subscription_creation(self, request, business, data):
         """Core subscription handling with explicit DB connections"""
+        # Get schema name from tenant or session
+        schema_name = None
+        tenant = getattr(request.user, 'tenant', None)
+        if tenant and tenant.schema_name:
+            schema_name = tenant.schema_name
+        else:
+            pending_setup = request.session.get('pending_schema_setup', {})
+            schema_name = pending_setup.get('schema_name')
+        
         # Manual transaction handling instead of atomic
         from django.db import connection
+        from django.utils import timezone
+        import uuid
+        import json
+        from onboarding.utils import tenant_schema_context
         
         # Store autocommit setting
         old_autocommit = connection.get_autocommit()
         connection.set_autocommit(True)  # Important: Set autocommit to True
         
         try:
+            # Make sure all required tables exist in public schema
+            with connection.cursor() as cursor:
+                # First make sure the UserProfile table exists with updated_at column
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS users_userprofile (
+                        id SERIAL PRIMARY KEY,  
+                        user_id UUID NOT NULL UNIQUE,
+                        business_id UUID NULL REFERENCES users_business(id),
+                        email VARCHAR(255),
+                        first_name VARCHAR(255),
+                        last_name VARCHAR(255),
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        metadata JSONB DEFAULT '{}'::jsonb,
+                        country VARCHAR(2) DEFAULT 'US',
+                        is_active BOOLEAN DEFAULT TRUE
+                    )
+                """)
+                # Create subscription table if it doesn't exist
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS users_subscription (
+                        id SERIAL PRIMARY KEY,
+                        business_id UUID NOT NULL REFERENCES users_business(id),
+                        selected_plan VARCHAR(20) NOT NULL DEFAULT 'free',
+                        start_date DATE NOT NULL,
+                        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                        end_date DATE NULL,
+                        billing_cycle VARCHAR(20) NOT NULL DEFAULT 'monthly',
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                    )
+                """)
+                
+                # Add unique constraint if it doesn't exist
+                cursor.execute("""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM pg_constraint
+                            WHERE conname = 'users_subscription_business_id_key'
+                            AND conrelid = 'users_subscription'::regclass
+                        ) THEN
+                            ALTER TABLE users_subscription ADD CONSTRAINT users_subscription_business_id_key UNIQUE (business_id);
+                        END IF;
+                    END
+                    $$;
+                """)
+                
+                # Create onboarding_progress table if it doesn't exist
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS onboarding_onboardingprogress (
+                        id SERIAL PRIMARY KEY,
+                        user_id UUID NOT NULL,
+                        business_id UUID NULL REFERENCES users_business(id),
+                        onboarding_status VARCHAR(50) DEFAULT 'NOT_STARTED',
+                        current_step VARCHAR(50) DEFAULT 'NOT_STARTED',
+                        next_step VARCHAR(50) DEFAULT 'business-info',
+                        selected_plan VARCHAR(50) NULL,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        UNIQUE(user_id)
+                    )
+                """)
+                
+                # Make sure the user profile exists
+                cursor.execute("""
+                    INSERT INTO users_userprofile
+                    (user_id, business_id, created_at, updated_at, country, metadata)
+                    VALUES (%s, %s, NOW(), NOW(), %s, %s)
+                    ON CONFLICT (user_id) DO UPDATE
+                    SET business_id = EXCLUDED.business_id,
+                        updated_at = NOW()
+                """, [
+                    str(request.user.id),
+                    str(business.id) if business else None,
+                    'US',
+                    '{}'
+                ])
+                logger.info(f"User profile created or updated for {request.user.email} with business {business.id}")
+            
             # Create a new connection if needed
             if connection.in_atomic_block:
                 connection.close()
                 connection.connect()
             
-            # Create/update subscription in default DB
-            subscription = Subscription.objects.update_or_create(
-                business=business,
-                defaults={
-                    'selected_plan': data['selected_plan'],
-                    'billing_cycle': data.get('billing_cycle', 'monthly'),
-                    'is_active': data['selected_plan'] == 'free',
-                    'start_date': timezone.now().date()
-                }
-            )[0]
-
-            # Update onboarding progress in default DB
-            progress = OnboardingProgress.objects.select_for_update().get(user=request.user)
-            progress.onboarding_status = 'subscription'
-            progress.current_step = 'subscription'
-            progress.next_step = 'complete' if data['selected_plan'] == 'free' else 'payment'
-            progress.selected_plan = data['selected_plan']
-            progress.save(update_fields=[
-                'onboarding_status', 'current_step',
-                'next_step', 'selected_plan'
-            ])
+            # Create subscription with direct SQL in public schema
+            sub_id = None
+            with connection.cursor() as cursor:
+                # First check if a subscription already exists for this business
+                cursor.execute("""
+                    SELECT id FROM users_subscription WHERE business_id = %s
+                """, [str(business.id)])
+                
+                existing_subscription = cursor.fetchone()
+                
+                if existing_subscription:
+                    # Update existing subscription
+                    cursor.execute("""
+                        UPDATE users_subscription
+                        SET selected_plan = %s,
+                            billing_cycle = %s,
+                            is_active = %s,
+                            start_date = CASE WHEN start_date IS NULL THEN %s ELSE start_date END
+                        WHERE business_id = %s
+                        RETURNING id
+                    """, [
+                        data['selected_plan'],
+                        data.get('billing_cycle', 'monthly'),
+                        data['selected_plan'] == 'free',
+                        timezone.now().date(),
+                        str(business.id)
+                    ])
+                else:
+                    # Insert new subscription
+                    cursor.execute("""
+                        INSERT INTO users_subscription
+                        (business_id, selected_plan, start_date, is_active, billing_cycle)
+                        VALUES (%s, %s, %s, %s, %s)
+                        RETURNING id
+                    """, [
+                        str(business.id),
+                        data['selected_plan'],
+                        timezone.now().date(),
+                        data['selected_plan'] == 'free',
+                        data.get('billing_cycle', 'monthly')
+                    ])
+                result = cursor.fetchone()
+                if result:
+                    sub_id = result[0]
+                    logger.info(f"Created/updated subscription {sub_id} with direct SQL in public schema")
             
-            # For free plan users, we'll still defer the schema setup until they reach the dashboard
-            # This improves user experience by not making them wait during onboarding
+            # If tenant schema exists, save subscription there too
+            if schema_name:
+                try:
+                    with connection.cursor() as cursor:
+                        with tenant_schema_context(cursor, schema_name):
+                            # Check if subscription exists in tenant schema
+                            cursor.execute("""
+                                SELECT COUNT(*) FROM information_schema.tables
+                                WHERE table_schema = %s AND table_name = 'users_subscription'
+                            """, [schema_name])
+                            
+                            if cursor.fetchone()[0] > 0:  # If subscription table exists in tenant schema
+                                # Check if a record already exists
+                                cursor.execute("""
+                                    SELECT COUNT(*) FROM users_subscription
+                                    WHERE business_id = %s
+                                """, [str(business.id)])
+                                
+                                if cursor.fetchone()[0] == 0:
+                                    # Create new subscription in tenant schema
+                                    cursor.execute("""
+                                        INSERT INTO users_subscription
+                                        (id, business_id, selected_plan, start_date, is_active, billing_cycle, created_at, updated_at)
+                                        VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+                                        ON CONFLICT (business_id) DO NOTHING
+                                    """, [
+                                        str(uuid.uuid4()),
+                                        str(business.id),
+                                        data['selected_plan'],
+                                        timezone.now().date(),
+                                        data['selected_plan'] == 'free',
+                                        data.get('billing_cycle', 'monthly')
+                                    ])
+                                    logger.info(f"Created subscription in tenant schema {schema_name}")
+                                else:
+                                    # Update existing subscription in tenant schema
+                                    cursor.execute("""
+                                        UPDATE users_subscription
+                                        SET selected_plan = %s,
+                                            billing_cycle = %s,
+                                            is_active = %s,
+                                            updated_at = NOW()
+                                        WHERE business_id = %s
+                                    """, [
+                                        data['selected_plan'],
+                                        data.get('billing_cycle', 'monthly'),
+                                        data['selected_plan'] == 'free',
+                                        str(business.id)
+                                    ])
+                                    logger.info(f"Updated subscription in tenant schema {schema_name}")
+                except Exception as schema_error:
+                    logger.warning(f"Failed to save subscription to tenant schema: {str(schema_error)}")
+            
+            # Create a subscription object to return
+            class DummySubscription:
+                def __init__(self, sub_id):
+                    self.id = sub_id
+                    self.selected_plan = data['selected_plan']
+                    self.billing_cycle = data.get('billing_cycle', 'monthly')
+                    self.is_active = data['selected_plan'] == 'free'
+                    self.start_date = timezone.now().date()
+                    
+            subscription = DummySubscription(sub_id or uuid.uuid4())
+
+            # Update onboarding progress with direct SQL
+            with connection.cursor() as cursor:
+                # Generate a UUID for the id field
+                progress_id = uuid.uuid4()
+                
+                cursor.execute("""
+                    INSERT INTO onboarding_onboardingprogress
+                    (id, user_id, business_id, onboarding_status, current_step, next_step, selected_plan, created_at, updated_at, account_status, user_role, subscription_plan, completed_steps, attribute_version, preferences)
+                    VALUES (%s, %s, %s, 'subscription', 'subscription', %s, %s, NOW(), NOW(), 'PENDING', 'owner', %s, '[]', '1.0.0', '{}')
+                    ON CONFLICT (user_id) DO UPDATE
+                    SET onboarding_status = 'subscription',
+                        current_step = 'subscription',
+                        next_step = %s,
+                        selected_plan = %s,
+                        business_id = EXCLUDED.business_id,
+                        account_status = COALESCE(onboarding_onboardingprogress.account_status, 'PENDING'),
+                        user_role = COALESCE(onboarding_onboardingprogress.user_role, 'owner'),
+                        subscription_plan = %s,
+                        completed_steps = COALESCE(onboarding_onboardingprogress.completed_steps, '[]'),
+                        attribute_version = COALESCE(onboarding_onboardingprogress.attribute_version, '1.0.0'),
+                        preferences = COALESCE(onboarding_onboardingprogress.preferences, '{}'),
+                        updated_at = NOW()
+                """, [
+                    str(progress_id),
+                    str(request.user.id),
+                    str(business.id),
+                    'complete' if data['selected_plan'] == 'free' else 'payment',
+                    data['selected_plan'],
+                    data['selected_plan'],  # For subscription_plan in INSERT
+                    'complete' if data['selected_plan'] == 'free' else 'payment',
+                    data['selected_plan'],
+                    data['selected_plan']   # For subscription_plan in UPDATE
+                ])
+                logger.info(f"Updated onboarding progress for user {request.user.id}")
+            
+            # Also update progress in tenant schema if it exists
+            if schema_name:
+                try:
+                    with connection.cursor() as cursor:
+                        with tenant_schema_context(cursor, schema_name):
+                            # Check if onboarding_progress table exists
+                            cursor.execute("""
+                                SELECT COUNT(*) FROM information_schema.tables
+                                WHERE table_schema = %s AND table_name = 'onboarding_onboardingprogress'
+                            """, [schema_name])
+                            
+                            if cursor.fetchone()[0] > 0:  # If progress table exists in tenant schema
+                                # Check if a record exists
+                                cursor.execute("""
+                                    SELECT COUNT(*) FROM onboarding_onboardingprogress
+                                    WHERE user_id = %s
+                                """, [str(request.user.id)])
+                                
+                                if cursor.fetchone()[0] == 0:
+                                    # Create new progress record
+                                    cursor.execute("""
+                                        INSERT INTO onboarding_onboardingprogress
+                                        (id, user_id, business_id, onboarding_status, current_step, next_step, selected_plan, created_at, updated_at, account_status, user_role, subscription_plan, completed_steps, attribute_version, preferences)
+                                        VALUES (%s, %s, %s, 'subscription', 'subscription', %s, %s, NOW(), NOW(), 'PENDING', 'owner', %s, '[]', '1.0.0', '{}')
+                                        ON CONFLICT (user_id) DO NOTHING
+                                    """, [
+                                        str(progress_id),
+                                        str(request.user.id),
+                                        str(business.id),
+                                        'complete' if data['selected_plan'] == 'free' else 'payment',
+                                        data['selected_plan'],
+                                        data['selected_plan']
+                                    ])
+                                else:
+                                    # Update existing progress
+                                    cursor.execute("""
+                                        UPDATE onboarding_onboardingprogress
+                                        SET onboarding_status = 'subscription',
+                                            current_step = 'subscription',
+                                            next_step = %s,
+                                            selected_plan = %s,
+                                            subscription_plan = %s,
+                                            updated_at = NOW()
+                                        WHERE user_id = %s
+                                    """, [
+                                        'complete' if data['selected_plan'] == 'free' else 'payment',
+                                        data['selected_plan'],
+                                        data['selected_plan'],
+                                        str(request.user.id)
+                                    ])
+                                logger.info(f"Updated onboarding progress in tenant schema {schema_name}")
+                except Exception as e:
+                    logger.warning(f"Failed to update progress in tenant schema: {str(e)}")
+            
+            # For free plan users, defer schema setup until dashboard access
             if data['selected_plan'] == 'free':
-                # Keep the pending_setup info in the session
-                # It will be triggered when the user completes onboarding and reaches the dashboard
                 pending_setup = request.session.get('pending_schema_setup')
                 request_id = request.headers.get('X-Request-Id', str(uuid.uuid4()))
                 
@@ -1972,25 +3135,21 @@ class SaveStep2View(APIView):
                         request.session['pending_schema_setup'] = pending_setup
                         request.session.modified = True
                         
-                        # Also update in profile metadata for persistence
+                        # Update profile metadata using direct SQL
                         try:
-                            profile = UserProfile.objects.get(user=request.user)
-                            if not hasattr(profile, 'metadata') or not isinstance(profile.metadata, dict):
-                                profile.metadata = {}
-                            
-                            profile.metadata['pending_schema_setup'] = pending_setup
-                            profile.save(update_fields=['metadata'])
-                            
-                            logger.info("Updated pending schema setup in profile metadata", extra={
-                                'request_id': request_id,
-                                'profile_id': str(profile.id),
-                                'plan': 'free'
-                            })
-                        except Exception as e:
-                            logger.warning("Failed to update pending setup in profile metadata", extra={
-                                'request_id': request_id,
-                                'error': str(e)
-                            })
+                            with connection.cursor() as cursor:
+                                cursor.execute("""
+                                    UPDATE users_userprofile
+                                    SET metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{pending_schema_setup}', %s::jsonb),
+                                        updated_at = NOW()
+                                    WHERE user_id = %s
+                                """, [
+                                    json.dumps(pending_setup),
+                                    str(request.user.id)
+                                ])
+                                logger.info(f"Updated profile metadata for user {request.user.id}")
+                        except Exception as meta_error:
+                            logger.warning(f"Failed to update profile metadata: {str(meta_error)}")
             
             # Update Cognito attributes
             try:
@@ -2014,7 +3173,6 @@ class SaveStep2View(APIView):
                     logger.warning(f"No valid Cognito attributes to update for user {request.user.id}")
             except Exception as e:
                 logger.error(f"Failed to update Cognito attributes: {str(e)}")
-                # Continue even if Cognito update fails
 
             return subscription
         except Exception as e:
@@ -2028,9 +3186,41 @@ class SaveStep2View(APIView):
             except Exception as ac_error:
                 logger.error(f"Error restoring autocommit: {ac_error}")
 
+
     def post(self, request):
         request_id = str(uuid.uuid4())
         logger.info(f"Subscription save request initiated: {request_id}")
+
+        # Get tenant information from headers/request body
+        tenant_id = request.headers.get('X-Tenant-ID') or request.data.get('tenant_id')
+        schema_name = request.headers.get('X-Schema-Name') or request.data.get('schema_name')
+        
+        # Format schema name if only tenant_id is provided
+        if not schema_name and tenant_id:
+            schema_name = f"tenant_{tenant_id.replace('-', '_')}"
+        
+        # Log tenant information for debugging
+        logger.info(f"Processing subscription with tenant context: {schema_name}", 
+                    extra={'tenant_id': tenant_id, 'schema_name': schema_name, 'request_id': request_id})
+        
+        # Store tenant information in thread-local storage for DB router
+        if schema_name:
+            from django.db import connection
+            from threading import local
+            _thread_locals = local()
+            setattr(_thread_locals, 'tenant_schema', schema_name)
+            
+            # Also set it on the request object for middleware access
+            request.tenant_schema = schema_name
+            
+            # Update connection search path if needed
+            if not connection.in_atomic_block:
+                try:
+                    with connection.cursor() as cursor:
+                        cursor.execute(f"SET search_path TO {schema_name}, public")
+                        logger.debug(f"Set search path to {schema_name}")
+                except Exception as e:
+                    logger.warning(f"Error setting search path: {str(e)}")
 
         try:
             # Validate input data
@@ -2042,7 +3232,6 @@ class SaveStep2View(APIView):
             business = self.get_business(request)
 
             # Database operations
-            # Manual transaction handling instead of atomic
             from django.db import connection
             
             # Store autocommit setting
@@ -2055,6 +3244,11 @@ class SaveStep2View(APIView):
                     connection.close()
                     connection.connect()
                 
+                # If we have schema_name, ensure it's set in the connection
+                if schema_name and not connection.in_atomic_block:
+                    with connection.cursor() as cursor:
+                        cursor.execute(f"SET search_path TO {schema_name}, public")
+                
                 subscription = self.handle_subscription_creation(request, business, request.data)
 
                 return Response({
@@ -2062,11 +3256,10 @@ class SaveStep2View(APIView):
                     'selected_plan': subscription.selected_plan,
                     'billing_cycle': subscription.billing_cycle,
                     'next_step': 'complete' if subscription.is_active else 'payment',
-                    'onboarding_status': 'subscription'
+                    'onboarding_status': 'subscription',
+                    'tenant_id': tenant_id,
+                    'schema_name': schema_name
                 }, status=status.HTTP_200_OK)
-            except Exception as e:
-                logger.error(f"Error in post transaction: {str(e)}", exc_info=True)
-                raise
             finally:
                 # Restore previous autocommit setting
                 try:
@@ -2093,6 +3286,8 @@ class SaveStep2View(APIView):
                 {'error': 'Subscription processing failed', 'details': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+            
 
 class SaveStep3View(BaseOnboardingView):
     permission_classes = [IsAuthenticated]

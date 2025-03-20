@@ -1,3 +1,5 @@
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/page.js
 'use client';
 
 import React, { Suspense, useState, useEffect } from 'react';
@@ -6,13 +8,13 @@ import dynamic from 'next/dynamic';
 import { logger } from '@/utils/logger';
 
 // Dynamically import the DashboardContent with increased timeout and chunking
-const DashboardContent = dynamic(() =>
-  import('./DashboardContent').then(mod => ({
+const DashboardWrapper = dynamic(() =>
+  import('./DashboardWrapper').then(mod => ({
     default: mod.default
   })),
   {
     ssr: false,
-    loading: () => null // Remove loading spinner
+    loading: () => null
   }
 );
 
@@ -217,7 +219,7 @@ export default function DashboardPage() {
       )}
       
       <Suspense fallback={null}>
-        {mounted && <DashboardContent />}
+        {mounted && <DashboardWrapper />}
       </Suspense>
     </>
   );

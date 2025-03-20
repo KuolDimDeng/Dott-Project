@@ -1,161 +1,176 @@
 #!/usr/bin/env python
 """
-Fix script to modify transaction handling in the onboarding view to avoid
-the 'set_session cannot be used inside a transaction' error
+Fix for transaction handling issues in the SaveStep1View.post method.
+
+This script addresses the issue where transactions are aborted but the code
+continues trying to execute commands within that transaction, leading to
+"current transaction is aborted, commands ignored until end of transaction block" errors.
 """
 
 import os
 import sys
-import re
+import django
+import logging
+import traceback
 
-# Add the parent directory to the Python path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, parent_dir)
+# Set up Django environment
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pyfactor.settings")
+django.setup()
 
-def find_onboarding_views():
-    """Find all potential onboarding view files"""
-    views_files = []
-    onboarding_dir = os.path.join(parent_dir, 'onboarding')
+from django.db import connection, transaction
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+import psycopg2
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+def fix_transaction_handling():
+    """
+    Apply fixes to the transaction handling in the SaveStep1View.post method.
     
-    # Check if onboarding directory exists
-    if not os.path.exists(onboarding_dir):
-        print(f"❌ Onboarding directory not found at {onboarding_dir}")
-        return []
-    
-    # Look for views.py or views directory
-    views_file = os.path.join(onboarding_dir, 'views.py')
-    views_dir = os.path.join(onboarding_dir, 'views')
-    
-    if os.path.exists(views_file):
-        views_files.append(views_file)
+    This function modifies the code to:
+    1. Properly handle transaction aborts
+    2. Add explicit transaction state checking and rollback when needed
+    3. Ensure constraints are properly deferred before executing INSERT operations
+    4. Add better error recovery for transaction aborts
+    """
+    try:
+        # Path to the views.py file
+        views_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+                                 'onboarding', 'views', 'views.py')
         
-    if os.path.exists(views_dir) and os.path.isdir(views_dir):
-        for file in os.listdir(views_dir):
-            if file.endswith('.py'):
-                views_files.append(os.path.join(views_dir, file))
+        # Read the current file content
+        with open(views_path, 'r') as file:
+            content = file.read()
+        
+        # Find the problematic section (around lines 2005-2042)
+        start_marker = "for attempt in range(max_retries):"
+        end_marker = "raise"
+        
+        # Find the start and end positions
+        start_pos = content.find(start_marker)
+        if start_pos == -1:
+            logger.error("Could not find the start marker in the file.")
+            return False
+        
+        # Find the section that needs to be replaced
+        section_start = content.rfind("for attempt in range(max_retries):", 0, start_pos + 2000)
+        if section_start == -1:
+            logger.error("Could not find the retry loop in the file.")
+            return False
+        
+        # Find the end of the section (the raise statement after the retry loop)
+        section_end = content.find("                                        raise", section_start)
+        if section_end == -1:
+            logger.error("Could not find the end of the retry loop in the file.")
+            return False
+        
+        # Move to the end of the line
+        section_end = content.find("\n", section_end) + 1
+        
+        # Extract the section to replace
+        section_to_replace = content[section_start:section_end]
+        
+        # Create the improved version with better transaction handling
+        improved_section = """                                for attempt in range(max_retries):
+                                    try:
+                                        # Check connection state first
+                                        if tenant_conn.status in (psycopg2.extensions.STATUS_IN_TRANSACTION,
+                                                                 psycopg2.extensions.STATUS_BEGIN):
+                                            # If we're in a transaction, roll it back to get a clean state
+                                            tenant_conn.rollback()
+                                            logger.debug("Rolled back existing transaction before insert attempt")
+                                        
+                                        # Set isolation level to READ COMMITTED to avoid deadlocks
+                                        tenant_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
+                                        
+                                        # Explicitly defer constraints again after rollback
+                                        with tenant_conn.cursor() as constraint_cursor:
+                                            constraint_cursor.execute("SET CONSTRAINTS ALL DEFERRED")
+                                        
+                                        logger.debug(f"Attempting to insert business data (attempt {attempt+1}/{max_retries})")
+                                        tenant_cursor.execute(\"\"\"
+                                            INSERT INTO users_business (
+                                                id, business_num, name, business_type,
+                                                created_at, updated_at, owner_id, legal_structure
+                                            ) VALUES (
+                                                %s, %s, %s, %s,
+                                                %s, %s, %s, %s
+                                            ) RETURNING id;
+                                        \"\"\", [
+                                            str(business_id),
+                                            business_num,
+                                            serializer.validated_data['business_name'],
+                                            serializer.validated_data['business_type'],
+                                            now,
+                                            now,
+                                            str(request.user.id),
+                                            serializer.validated_data.get('legal_structure', 'SOLE_PROPRIETORSHIP')
+                                        ])
+                                        logger.debug(f"Successfully inserted business data on attempt {attempt+1}")
+                                        break
+                                    except psycopg2.Error as e:
+                                        # Check for transaction abort error
+                                        is_aborted = "current transaction is aborted" in str(e)
+                                        
+                                        if attempt < max_retries - 1:
+                                            logger.warning(f"Database error on attempt {attempt+1}: {str(e)}")
+                                            
+                                            # Always try to rollback on error
+                                            try:
+                                                tenant_conn.rollback()
+                                                logger.debug("Rolled back transaction after error")
+                                            except Exception as rollback_error:
+                                                logger.error(f"Error rolling back: {str(rollback_error)}")
+                                            
+                                            # If transaction is aborted, we need to reset the connection
+                                            if is_aborted:
+                                                try:
+                                                    # Close and reopen the connection
+                                                    tenant_conn.close()
+                                                    tenant_conn = psycopg2.connect(**conn_params)
+                                                    tenant_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+                                                    
+                                                    # Create a new cursor
+                                                    tenant_cursor = tenant_conn.cursor()
+                                                    
+                                                    # Set search path and defer constraints again
+                                                    tenant_cursor.execute(f'SET search_path TO "{schema_name}", public')
+                                                    tenant_cursor.execute("SET CONSTRAINTS ALL DEFERRED")
+                                                    
+                                                    logger.debug("Reset connection after transaction abort")
+                                                except Exception as reset_error:
+                                                    logger.error(f"Error resetting connection: {str(reset_error)}")
+                                            
+                                            # Wait with exponential backoff
+                                            time.sleep(retry_delay * (2 ** attempt))
+                                            continue
+                                        else:
+                                            logger.error(f"Failed to insert business data after {max_retries} attempts: {str(e)}")
+                                            raise
+"""
+        
+        # Replace the section in the content
+        new_content = content.replace(section_to_replace, improved_section)
+        
+        # Write the updated content back to the file
+        with open(views_path, 'w') as file:
+            file.write(new_content)
+        
+        logger.info("Successfully updated the transaction handling in SaveStep1View.post method.")
+        return True
     
-    return views_files
-
-def fix_transaction_in_file(file_path):
-    """Modify file to fix transaction handling"""
-    print(f"Examining {file_path}...")
-    
-    # Read the file
-    with open(file_path, 'r') as f:
-        content = f.read()
-    
-    # Check if this file has transaction.atomic() calls
-    if 'transaction.atomic' not in content:
-        print(f"No transaction.atomic calls found in {file_path}")
+    except Exception as e:
+        logger.error(f"Error fixing transaction handling: {str(e)}")
+        logger.error(traceback.format_exc())
         return False
-    
-    # Make a backup of the file
-    backup_path = file_path + '.bak'
-    with open(backup_path, 'w') as f:
-        f.write(content)
-    
-    print(f"Created backup at {backup_path}")
-    
-    # Replace all transaction.atomic() blocks
-    modified_content = re.sub(
-        r'with\s+transaction\.atomic\(\):',
-        r'# Using direct connection instead of atomic\n'
-        r'        from django.db import connection\n'
-        r'        # Store current autocommit state\n'
-        r'        old_autocommit = connection.get_autocommit()\n'
-        r'        \n'
-        r'        # First close any existing connection if it\'s in a transaction\n'
-        r'        if connection.in_atomic_block:\n'
-        r'            connection.close()\n'
-        r'            connection.connect()\n'
-        r'        \n'
-        r'        # Use try/except/finally for transaction control\n'
-        r'        try:\n'
-        r'            connection.set_autocommit(False)',
-        content
-    )
-    
-    # Check if any replacements were made
-    if modified_content == content:
-        print(f"Could not find any transaction.atomic() blocks to replace in {file_path}")
-        return False
-    
-    # Add transaction cleanup code
-    modified_content = re.sub(
-        r'(return\s+[a-zA-Z0-9_.()\'\"{}[\]]+)(\s+)(?=\n\s*except|\n\s*$)',
-        r'            # Commit the transaction\n'
-        r'            connection.commit()\n'
-        r'            \1\2'
-        r'        except Exception as e:\n'
-        r'            # Rollback on error\n'
-        r'            try:\n'
-        r'                connection.rollback()\n'
-        r'            except Exception as rollback_error:\n'
-        r'                logger.error(f"Error during rollback: {rollback_error}")\n'
-        r'            # Re-raise the original exception\n'
-        r'            raise\n'
-        r'        finally:\n'
-        r'            # Restore previous autocommit setting\n'
-        r'            try:\n'
-        r'                connection.set_autocommit(old_autocommit)\n'
-        r'            except Exception as autocommit_error:\n'
-        r'                logger.error(f"Error restoring autocommit: {autocommit_error}")',
-        modified_content
-    )
-    
-    # Write the updated content back to the file
-    with open(file_path, 'w') as f:
-        f.write(modified_content)
-    
-    print(f"✅ Successfully modified {file_path} to handle transactions better")
-    return True
-
-def fix_onboarding_views():
-    """Find and fix all onboarding views"""
-    views_files = find_onboarding_views()
-    
-    if not views_files:
-        print("❌ No onboarding view files found")
-        return False
-    
-    success = False
-    for file_path in views_files:
-        if fix_transaction_in_file(file_path):
-            success = True
-    
-    return success
 
 if __name__ == "__main__":
-    print("Fixing transaction handling in onboarding views...")
-    success = fix_onboarding_views()
-    
+    logger.info("Starting transaction handling fix...")
+    success = fix_transaction_handling()
     if success:
-        print("\n✅ Fixed transaction handling in onboarding views!")
-        print("\nNext steps:")
-        print("1. Restart your Django server")
-        print("2. Test the onboarding process again")
+        logger.info("Transaction handling fix completed successfully.")
     else:
-        print("\n❌ Failed to fix transaction handling.")
-        print("Please check the error messages above.")
-        print("\nAlternative approach: Try manually modifying your onboarding views to use direct transaction control:")
-        print("1. Find where 'transaction.atomic()' is used in business-info save logic")
-        print("2. Replace the atomic block with manual transaction management:")
-        print("""
-        # Before:
-        with transaction.atomic():
-            # business logic here
-            
-        # After:
-        from django.db import connection
-        old_autocommit = connection.get_autocommit()
-        try:
-            connection.set_autocommit(False)
-            # business logic here
-            connection.commit()
-        except Exception as e:
-            connection.rollback()
-            raise
-        finally:
-            connection.set_autocommit(old_autocommit)
-        """)
+        logger.error("Failed to apply transaction handling fix.")

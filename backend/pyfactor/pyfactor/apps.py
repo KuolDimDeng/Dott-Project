@@ -64,7 +64,7 @@ class OnboardingConfig(AppConfig):
             from pyfactor.celery import app
             
             # Explicitly register tasks if needed
-            app.tasks.register(onboarding.tasks.setup_user_database_task)
+            app.tasks.register(onboarding.tasks.setup_user_schema_task)
             app.tasks.register(onboarding.tasks.send_websocket_notification_task)
 
         except Exception as e:

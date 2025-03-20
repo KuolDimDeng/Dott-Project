@@ -109,6 +109,8 @@ class OnboardingProgress(models.Model):
     last_login = models.DateTimeField(null=True, blank=True)
     access_token_expiration = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    database_setup_task_id = models.CharField(max_length=255, null=True, blank=True)
+
 
     # Version tracking
     attribute_version = models.CharField(

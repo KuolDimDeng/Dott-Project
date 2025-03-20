@@ -1,0 +1,172 @@
+// In /src/app/api/onboarding/setup/trigger/route.js
+import { NextResponse } from 'next/server';
+import { logger } from '@/utils/logger';
+import { validateServerSession } from '@/utils/serverUtils';
+
+export async function POST(request) {
+  try {
+    console.log('[SetupTriggerAPI] Request received');
+    
+    // Parse request body to get force_setup parameter
+    let requestBody = {};
+    try {
+      requestBody = await request.json();
+    } catch (e) {
+      // If parsing fails, use an empty object
+      logger.debug('[SetupTriggerAPI] No request body or invalid JSON');
+    }
+    
+    // Get force_setup parameter from request, default to true for dashboard
+    const forceSetup = requestBody.force_setup !== undefined ? requestBody.force_setup : true;
+    
+    // Use validateServerSession to get user data and tokens
+    const { tokens, user } = await validateServerSession();
+    
+    if (!tokens?.accessToken || !tokens?.idToken) {
+      logger.warn('[SetupTriggerAPI] Authentication required - missing tokens');
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    // Get tenant ID from user attributes
+    const tenantId = user.attributes['custom:businessid'];
+    
+    if (!tenantId) {
+      logger.warn('[SetupTriggerAPI] Tenant ID not found');
+      return NextResponse.json(
+        { error: 'Tenant ID not found' },
+        { status: 400 }
+      );
+    }
+    
+    // Check the setupDone attribute - only proceed if FALSE
+    const setupDone = user.attributes['custom:setupdone']?.toUpperCase() === 'TRUE';
+    
+    if (setupDone && !forceSetup) {
+      logger.info('[SetupTriggerAPI] Schema setup already completed for tenant:', tenantId);
+      return NextResponse.json({
+        status: 'complete',
+        message: 'Schema setup already completed',
+      });
+    }
+    
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    
+    logger.debug('[SetupTriggerAPI] Auth details:', {
+      tenantId: tenantId,
+      setupDone: setupDone,
+      forceSetup: forceSetup,
+      apiUrl: API_URL
+    });
+    
+    console.log('[SetupTriggerAPI] Making request to backend:', `${API_URL}/api/onboarding/setup/trigger/`);
+    
+    // Generate a request ID for tracking
+    const requestId = crypto.randomUUID();
+    
+    // Make request to backend with the setupDone info in body
+    const response = await fetch(`${API_URL}/api/onboarding/setup/trigger/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tokens.accessToken}`,
+        'X-Id-Token': tokens.idToken,
+        'X-Tenant-ID': tenantId,
+        'X-Request-Id': requestId
+      },
+      body: JSON.stringify({
+        tenant_id: tenantId,
+        setup_done: setupDone,
+        force_setup: forceSetup, // Use the value from request or default
+        request_id: requestId
+      }),
+      credentials: 'include',
+      cache: 'no-store'
+    });
+    
+    console.log('[SetupTriggerAPI] Backend response status:', response.status);
+    
+    // Check if response is JSON before parsing
+    const contentType = response.headers.get('content-type');
+    console.log('[SetupTriggerAPI] Response content type:', contentType);
+    
+    if (!contentType || !contentType.includes('application/json')) {
+      // Not JSON, get the text and log it
+      const textResponse = await response.text();
+      logger.error('[SetupTriggerAPI] Non-JSON response from backend:', {
+        status: response.status,
+        contentType: contentType,
+        bodyPreview: textResponse.substring(0, 500) // First 500 chars only
+      });
+      
+      return NextResponse.json(
+        { 
+          error: 'Backend returned non-JSON response',
+          status: response.status,
+          contentType: contentType || 'unknown'
+        },
+        { status: 500 }
+      );
+    }
+    
+    // Safe to parse JSON
+    const data = await response.json();
+    
+    // Handle 404 "No pending schema setup" differently if we're forcing setup
+    if (response.status === 404 && data.message === 'No pending schema setup found' && forceSetup) {
+      logger.info('[SetupTriggerAPI] No pending setup found but force_setup=true, creating new setup...');
+      
+      // Could make a second call here to create setup if needed, or just inform user
+      return NextResponse.json({
+        status: 'pending',
+        message: 'No setup found but setup not completed. Backend should auto-create setup.',
+        force_attempted: true
+      });
+    }
+    
+    if (!response.ok) {
+      logger.error('[SetupTriggerAPI] Trigger failed with JSON response:', {
+        status: response.status,
+        data: data
+      });
+
+      return NextResponse.json(
+        { 
+          error: data.message || 'Failed to trigger setup',
+          details: data
+        },
+        { status: response.status }
+      );
+    }
+    
+    // Handle successful response
+    logger.debug('[SetupTriggerAPI] Setup triggered successfully:', {
+      taskId: data.task_id,
+      status: data.status,
+      requestId: requestId
+    });
+    
+    // If we get here, things worked! Return the data to the client
+    return NextResponse.json({
+      ...data,
+      request_id: requestId
+    });
+    
+  } catch (error) {
+    logger.error('[SetupTriggerAPI] Setup trigger failed:', error);
+    console.error('[SetupTriggerAPI] Error details:', {
+      message: error.message,
+      stack: error.stack
+    });
+    
+    return NextResponse.json(
+      { 
+        error: 'Setup trigger failed unexpectedly',
+        message: error.message
+      },
+      { status: error.status || 500 }
+    );
+  }
+}
