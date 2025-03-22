@@ -260,8 +260,11 @@ if (!onboardingStep && !pathname.startsWith('/onboarding/') && !pathname.startsW
       return response;
     }
     
-    // Special case for payment page - allow access if onboardingStep is 'payment'
-    if (pathname === '/onboarding/payment' && normalizedOnboardingStep === 'payment') {
+    // Special case for payment page - allow access if onboardingStep is 'PAYMENT' or coming from subscription
+    if (pathname === '/onboarding/payment' &&
+        (normalizedOnboardingStep === 'payment' ||
+         normalizedOnboardingStep === 'subscription' ||
+         normalizedOnboardedStatus === 'BUSINESS_INFO')) {
       console.log(`[Middleware] Allowing access to payment page with step=${normalizedOnboardingStep}`);
       return response;
     }

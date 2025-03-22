@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession';
 import { ONBOARDING_STATES } from '@/app/onboarding/state/OnboardingStateManager';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession, updateUserAttributes } from 'aws-amplify/auth';
 import {
   Container,
   Grid,
@@ -154,7 +154,7 @@ export function Subscription() {
     
     setIsSubmitting(true);
     setError(null);
-  
+
     try {
       if (!user) {
         throw new Error('No user found');
@@ -163,8 +163,8 @@ export function Subscription() {
       // Show a message to the user that we're processing their selection
       setError(`Processing your ${planId === 'free' ? 'Free' : planId === 'professional' ? 'Professional' : 'Enterprise'} plan selection...`);
 
+      // Get auth tokens
       try {
-        // Get auth tokens
         const { tokens } = await fetchAuthSession();
         if (!tokens?.accessToken || !tokens?.idToken) {
           throw new Error('No valid session tokens');
@@ -202,13 +202,35 @@ export function Subscription() {
           body: JSON.stringify(subscriptionData)
         });
 
-        // Rest of the code remains the same
-        // ... (existing API response handling)
+        if (!subscriptionResponse.ok) {
+          const errorData = await subscriptionResponse.json();
+          throw new Error(errorData.error || 'Failed to save subscription');
+        }
+
+        const responseData = await subscriptionResponse.json();
+        
+        logger.debug('[Subscription] Subscription saved successfully:', {
+          responseData,
+          nextStep: responseData.next_step,
+          redirect: responseData.redirect
+        });
 
         // Handle redirection based on plan type and payment method
         if (planId === 'free') {
           try {
-            await updateOnboardingStatus(ONBOARDING_STATES.COMPLETE);
+            // Update user attributes directly instead of using updateOnboardingStatus 
+            logger.debug('[Subscription] Updating onboarding status to COMPLETE for free plan');
+            
+            await updateUserAttributes({
+              userAttributes: {
+                'custom:onboarding': ONBOARDING_STATES.COMPLETE,
+                'custom:updated_at': new Date().toISOString()
+              }
+            });
+            
+            // Set cookies for middleware
+            document.cookie = `onboardingStep=complete; path=/; max-age=${60 * 60 * 24 * 7}`;
+            document.cookie = `onboardedStatus=COMPLETE; path=/; max-age=${60 * 60 * 24 * 7}`;
             
             sessionStorage.setItem('pendingSchemaSetup', JSON.stringify({
               plan: planId,
@@ -227,7 +249,20 @@ export function Subscription() {
         } else {
           if (paymentMethodId === 'credit_card') {
             try {
-              await updateOnboardingStatus(ONBOARDING_STATES.PAYMENT);
+              // Update user attributes directly instead of using updateOnboardingStatus
+              logger.debug('[Subscription] Updating onboarding status to PAYMENT');
+              
+              await updateUserAttributes({
+                userAttributes: {
+                  'custom:onboarding': ONBOARDING_STATES.PAYMENT,
+                  'custom:updated_at': new Date().toISOString()
+                }
+              });
+              
+              // Set cookies for middleware
+              document.cookie = `onboardingStep=payment; path=/; max-age=${60 * 60 * 24 * 7}`;
+              document.cookie = `onboardedStatus=PAYMENT; path=/; max-age=${60 * 60 * 24 * 7}`;
+              
             } catch (statusError) {
               logger.error('[Subscription] Error updating status to PAYMENT, continuing anyway:', {
                 error: statusError.message,
@@ -243,7 +278,19 @@ export function Subscription() {
             }, 1000);
           } else {
             try {
-              await updateOnboardingStatus(ONBOARDING_STATES.COMPLETE);
+              // Update user attributes directly instead of using updateOnboardingStatus
+              logger.debug('[Subscription] Updating onboarding status to COMPLETE');
+              
+              await updateUserAttributes({
+                userAttributes: {
+                  'custom:onboarding': ONBOARDING_STATES.COMPLETE,
+                  'custom:updated_at': new Date().toISOString()
+                }
+              });
+              
+              // Set cookies for middleware
+              document.cookie = `onboardingStep=complete; path=/; max-age=${60 * 60 * 24 * 7}`;
+              document.cookie = `onboardedStatus=COMPLETE; path=/; max-age=${60 * 60 * 24 * 7}`;
               
               sessionStorage.setItem('pendingSchemaSetup', JSON.stringify({
                 plan: planId,
@@ -277,7 +324,7 @@ export function Subscription() {
         throw apiError;
       }
     } catch (error) {
-      // Error handling (existing code)
+      // Error handling
       logger.error('[Subscription] Error:', {
         error: error.message,
         code: error.code,
@@ -288,9 +335,8 @@ export function Subscription() {
         userId: user?.username,
         pathname: window.location.pathname
       });
-
-      // Handle specific error cases (existing code)
-      // ...
+      
+      setError(`Error selecting plan: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }

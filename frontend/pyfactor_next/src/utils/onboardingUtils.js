@@ -244,50 +244,76 @@ export async function getOnboardingStatus() {
 }
 
 export async function validateBusinessInfo(data) {
-  const requiredFields = [
-    'businessName',
-    'businessType',
-    'country',
-    'legalStructure',
-    'dateFounded'
-  ];
+  logger.debug('[OnboardingUtils] Validating business info:', data);
 
-  const missingFields = requiredFields.filter(field => !data[field]);
-  if (missingFields.length > 0) {
-    throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+  const {
+    businessName,
+    businessType,
+    businessSubtypes = '',
+    country,
+    businessState = '',
+    legalStructure,
+    dateFounded,
+    businessId = crypto.randomUUID()
+  } = data;
+
+  const errors = [];
+
+  if (!businessName || businessName.trim().length < 2) {
+    errors.push({ field: 'businessName', message: 'Business name must be at least 2 characters' });
   }
 
-  // Additional validation rules
-  if (data.businessName.length < 2 || data.businessName.length > 100) {
-    throw new Error('Business name must be between 2 and 100 characters');
+  if (!businessType) {
+    errors.push({ field: 'businessType', message: 'Business type is required' });
   }
 
-  if (data.country.length !== 2) {
-    throw new Error('Invalid country code');
+  if (!legalStructure) {
+    errors.push({ field: 'legalStructure', message: 'Legal structure is required' });
   }
 
-  // Validate date founded
-  const dateFounded = new Date(data.dateFounded);
-  if (isNaN(dateFounded.getTime())) {
-    throw new Error('Invalid date founded');
+  if (!dateFounded) {
+    errors.push({ field: 'dateFounded', message: 'Date founded is required' });
   }
 
-  if (dateFounded > new Date()) {
-    throw new Error('Date founded cannot be in the future');
+  if (!country) {
+    errors.push({ field: 'country', message: 'Country is required' });
   }
 
-  // Format business info for Cognito attributes
-  const formattedAttributes = {
-    'custom:businessname': String(data.businessName),
-    'custom:businesstype': String(data.businessType),
-    'custom:businesssubtypes': String(data.businessSubtypes || ''),
-    'custom:businesscountry': String(data.country),
-    'custom:businessstate': String(data.businessState || ''),
-    'custom:legalstructure': String(data.legalStructure),
-    'custom:datefounded': data.dateFounded.split('T')[0] // Format as YYYY-MM-DD
+  if (errors.length > 0) {
+    logger.error('[OnboardingUtils] Business info validation failed:', {
+      errors,
+      data
+    });
+    const error = new Error('Validation failed');
+    error.fields = errors;
+    throw error;
+  }
+
+  logger.debug('[OnboardingUtils] Business info validation successful:', {
+    businessId,
+    businessName,
+    businessType
+  });
+
+  // Generate a properly formatted version string (v1.0.0)
+  const attrVersion = 'v1.0.0';
+  logger.debug('[OnboardingUtils] Setting attribute version:', { attrVersion });
+
+  // Format attributes for Cognito
+  return {
+    'custom:businessid': businessId,
+    'custom:businessname': businessName,
+    'custom:businesstype': businessType,
+    'custom:businesssubtypes': businessSubtypes,
+    'custom:businesscountry': country,
+    'custom:businessstate': businessState,
+    'custom:legalstructure': legalStructure,
+    'custom:datefounded': dateFounded,
+    'custom:onboarding': 'BUSINESS_INFO',
+    'custom:updated_at': new Date().toISOString(),
+    'custom:acctstatus': 'ACTIVE',
+    'custom:attrversion': attrVersion // Using semantic versioning format
   };
-
-  return formattedAttributes;
 }
 
 export async function validateSubscription(data) {

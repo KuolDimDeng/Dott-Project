@@ -31,10 +31,38 @@ export function usePaymentForm() {
   const handlePaymentSuccess = async (paymentId) => {
     setIsLoading(true);
     try {
-      await completePayment({ id: paymentId });
-      
-      logger.debug('Payment verification successful', {
+      logger.debug('[usePaymentForm] Processing payment', {
         paymentId,
+        timestamp: new Date().toISOString(),
+      });
+      
+      // Call our mock payment processing API
+      const response = await fetch('/api/onboarding/payment/process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentId,
+          plan: session?.user?.subscriptionPlan,
+          interval: session?.user?.preferences?.billingCycle || 'monthly',
+          amount: session?.user?.subscriptionPlan === 'professional' ? 1500 : 4500,
+          currency: 'usd',
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Payment processing failed');
+      }
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Payment processing failed');
+      }
+      
+      logger.debug('[usePaymentForm] Payment processed successfully', {
+        result,
         timestamp: new Date().toISOString(),
       });
       
@@ -56,16 +84,16 @@ export function usePaymentForm() {
         status: 'pending'
       }));
       
-      toast.success('Payment verified successfully');
+      toast.success('Payment successful');
       
       // Redirect to dashboard
       logger.info('[usePaymentForm] Redirecting to dashboard after successful payment');
       setTimeout(() => {
-        window.location.replace('/dashboard');
+        window.location.replace(result.redirect || '/dashboard');
       }, 1000);
     } catch (error) {
-      logger.error('Payment verification failed:', error);
-      toast.error(error.message || 'Failed to verify payment');
+      logger.error('[usePaymentForm] Payment verification failed:', error);
+      toast.error(error.message || 'Failed to process payment');
     } finally {
       setIsLoading(false);
     }

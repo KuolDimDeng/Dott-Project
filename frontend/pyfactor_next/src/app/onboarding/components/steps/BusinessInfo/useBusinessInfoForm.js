@@ -133,20 +133,48 @@ export const useBusinessInfoForm = () => {
 
         const formData = methods.getValues();
 
+        // Validate session first
+        const { tokens } = await fetchAuthSession();
+        if (!tokens?.idToken) {
+          throw new Error('Your session has expired. Please sign in again.');
+        }
+
         logger.debug('Business info submission - initial state:', {
           operationId,
           currentStatus: session?.user?.onboarding,
           formData,
         });
 
+        // Validate form data
+        const validationResult = await methods.trigger();
+        if (!validationResult) {
+          throw new Error('Please check all required fields and try again');
+        }
+
         // Save business info
-        const saveResponse = await onboardingApi.saveBusinessInfo({
+        const saveResponse = await onboardingApi.submitBusinessInfo({
           ...formData,
           operation_id: operationId,
         });
 
         if (!saveResponse?.success) {
-          throw new Error('Failed to save information');
+          const errorData = saveResponse?.error || {};
+          logger.error('Business info save failed:', {
+            operationId,
+            error: errorData,
+            response: saveResponse
+          });
+          
+          // Handle specific error cases
+          if (errorData.code === 'authentication_error') {
+            throw new Error('Your session has expired. Please sign in again.');
+          } else if (errorData.tenant_error) {
+            throw new Error('There was an issue with your account configuration. Please contact support.');
+          } else if (errorData.code === 'unknown_error') {
+            throw new Error('An unexpected error occurred. Our team has been notified.');
+          }
+          
+          throw new Error(errorData.error || 'Failed to save business information');
         }
 
         // Update onboarding status
@@ -158,7 +186,21 @@ export const useBusinessInfoForm = () => {
         });
 
         if (!statusResponse?.success) {
-          throw new Error('Failed to update status');
+          const errorData = statusResponse?.error || {};
+          logger.error('Status update failed:', {
+            operationId,
+            error: errorData,
+            response: statusResponse
+          });
+
+          // Handle specific error cases
+          if (errorData.code === 'authentication_error') {
+            throw new Error('Your session has expired. Please sign in again.');
+          } else if (errorData.tenant_error) {
+            throw new Error('There was an issue with your account configuration. Please contact support.');
+          }
+          
+          throw new Error(errorData.error || 'Failed to update status');
         }
 
         // Update user attributes in Cognito and refresh session
@@ -184,13 +226,33 @@ export const useBusinessInfoForm = () => {
       } catch (error) {
         logger.error('Form submission failed:', {
           operationId,
-          error: error.message,
-          stack: error.stack,
+          error: {
+            message: error.message,
+            status: error.status,
+            statusText: error.statusText,
+            data: error.data,
+            stack: error.stack,
+            name: error.name,
+            code: error.code
+          },
+          formData: methods.getValues()
         });
 
         if (toastId) {
           toast.dismiss(toastId);
-          toast.error(error.message || 'Failed to save information');
+          
+          // Handle specific error cases
+          if (error.message.includes('session has expired')) {
+            toast.error('Your session has expired. Please sign in again.');
+            await signOut();
+            router.push('/auth/signin');
+          } else if (error.status === 500) {
+            toast.error('An unexpected error occurred. Our team has been notified.');
+          } else if (error.data?.tenant_error) {
+            toast.error('There was an issue with your account configuration. Please contact support.');
+          } else {
+            toast.error(error.message || 'Failed to save information');
+          }
         }
         return { success: false, error };
       } finally {

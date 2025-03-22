@@ -6,29 +6,51 @@ from custom_auth.models import Tenant
 from custom_auth.serializers import TenantSerializer
 from rest_framework.permissions import IsAuthenticated
 import logging
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 logger = logging.getLogger('Pyfactor')
 
 class TenantDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, tenant_id):
+    def get(self, request, tenant_id=None):
         try:
-            # First try to get by ID
-            tenant = Tenant.objects.get(id=tenant_id)
-            serializer = TenantSerializer(tenant)
-            return Response(serializer.data)
-        except Tenant.DoesNotExist:
-            # If not found by ID, try to get by owner
-            try:
-                tenant = Tenant.objects.get(owner_id=request.user.id)
-                serializer = TenantSerializer(tenant)
-                return Response(serializer.data)
-            except Tenant.DoesNotExist:
-                return Response(
-                    {"error": "Tenant not found"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+            # Log request details
+            logger.debug(f"[TenantDetail] GET request for tenant {tenant_id} by user {request.user.id}")
+            logger.debug(f"[TenantDetail] Available tenants for user:", {
+                'user_id': request.user.id,
+                'email': request.user.email,
+                'tenants': list(Tenant.objects.filter(owner=request.user).values('id', 'schema_name'))
+            })
+
+            tenant = get_object_or_404(Tenant, id=tenant_id)
+            
+            # Check if user has access to this tenant
+            if tenant.owner != request.user:
+                logger.warning(f"[TenantDetail] User {request.user.id} attempted to access tenant {tenant_id} but is not the owner")
+                return Response({
+                    'error': 'You do not have access to this tenant',
+                    'detail': 'User is not the owner of this tenant'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            return Response({
+                'id': str(tenant.id),
+                'schema_name': tenant.schema_name,
+                'owner': {
+                    'id': str(tenant.owner.id),
+                    'email': tenant.owner.email
+                },
+                'status': tenant.status,
+                'created_at': tenant.created_at.isoformat() if tenant.created_at else None,
+                'updated_at': tenant.updated_at.isoformat() if tenant.updated_at else None
+            })
+        except Exception as e:
+            logger.error(f"[TenantDetail] Error getting tenant details: {str(e)}")
+            return Response({
+                'error': 'Failed to get tenant details',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request, tenant_id):
         try:
@@ -125,4 +147,82 @@ class TenantDetailView(APIView):
                 "success": False,
                 "message": "Failed to process tenant request",
                 "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class TenantExistsView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """Check if a tenant exists"""
+        try:
+            tenant_id = request.data.get('tenantId')
+            if not tenant_id:
+                return Response({
+                    'exists': False,
+                    'error': 'No tenant ID provided'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # First check if this user owns any tenant
+            user_tenant = Tenant.objects.filter(owner=request.user).first()
+            if user_tenant:
+                # If user has a tenant, check if it matches the provided ID
+                exists = str(user_tenant.id) == str(tenant_id)
+                return Response({
+                    'exists': exists,
+                    'correctTenantId': str(user_tenant.id) if not exists else None,
+                    'message': 'User already has a different tenant' if not exists else 'Tenant found'
+                })
+            
+            # If user has no tenant, check if the provided ID exists but is owned by someone else
+            other_tenant = Tenant.objects.filter(id=tenant_id).exists()
+            return Response({
+                'exists': other_tenant,
+                'message': 'Tenant exists but belongs to another user' if other_tenant else 'Tenant not found'
+            })
+            
+        except Exception as e:
+            logger.error(f"Error checking tenant existence: {str(e)}")
+            return Response({
+                'exists': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CurrentTenantView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            # Log request details
+            logger.debug(f"[CurrentTenant] Finding tenant for user {request.user.id}")
+            
+            # Get all tenants for the user
+            tenants = Tenant.objects.filter(owner=request.user).values('id', 'schema_name')
+            tenant_list = list(tenants)
+            
+            logger.debug(f"[CurrentTenant] Found tenants:", {
+                'user_id': request.user.id,
+                'email': request.user.email,
+                'tenants': tenant_list
+            })
+            
+            if not tenant_list:
+                return Response({
+                    'error': 'No tenant found for user',
+                    'detail': 'User does not own any tenants'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # If user has multiple tenants, try to find the primary one
+            # For now, we'll just return the first one
+            tenant = tenant_list[0]
+            
+            return Response({
+                'id': str(tenant['id']),
+                'schema_name': tenant['schema_name'],
+                'is_primary': True
+            })
+        except Exception as e:
+            logger.error(f"[CurrentTenant] Error finding current tenant: {str(e)}")
+            return Response({
+                'error': 'Failed to find current tenant',
+                'detail': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

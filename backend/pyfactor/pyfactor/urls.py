@@ -70,6 +70,7 @@ urlpatterns = [
     # Authentication routes
     path('accounts/', include('allauth.urls')),
     
+    path('api/auth/', include('custom_auth.api.urls')),
 ]
 
 # Handle debug configuration properly

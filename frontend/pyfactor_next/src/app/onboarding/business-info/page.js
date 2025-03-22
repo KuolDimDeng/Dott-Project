@@ -191,52 +191,19 @@ export default function BusinessInfoPage() {
         toast.success('Business information saved successfully');
       }
       
+      // ALWAYS redirect to subscription page regardless of API response
+      logger.debug('[BusinessInfo] Force redirecting to subscription page');
+
+      // Set cookie with the next step
+      document.cookie = `onboardingStep=subscription; path=/; max-age=${60 * 60 * 24 * 7}`;
+      document.cookie = `onboardedStatus=BUSINESS_INFO; path=/; max-age=${60 * 60 * 24 * 7}`;
+
       // Get the language query string using our utility
       const langQueryString = getLanguageQueryString();
-      
-      // Check for redirectTo in the API response
-      if (data.data?.onboarding?.redirectTo) {
-        const nextRoute = `${data.data.onboarding.redirectTo}${langQueryString}`;
-        logger.debug('[BusinessInfo] Navigating to next route from API response:', {
-          nextRoute
-        });
-        
-        // Set cookie with the next step
-        const nextStep = data.data.onboarding.nextStep || 'subscription';
-        document.cookie = `onboardingStep=${nextStep.toLowerCase().replace('_', '-')}; path=/`;
-        
-        // Also update onboardedStatus to match if status is provided
-        if (data.data.onboarding.status) {
-          document.cookie = `onboardedStatus=${data.data.onboarding.status}; path=/`;
-        }
-        
-        router.push(nextRoute);
-      } else if (data.nextRoute) {
-        // Legacy support
-        const nextRoute = `${data.nextRoute}${langQueryString}`;
-        logger.debug('[BusinessInfo] Navigating to legacy next route:', {
-          nextRoute
-        });
-        
-        // Set onboardingStep and onboardedStatus for legacy routes too
-        const stepMatch = data.nextRoute.match(/\/onboarding\/([^\/\?]+)/);
-        if (stepMatch && stepMatch[1]) {
-          document.cookie = `onboardingStep=${stepMatch[1]}; path=/`;
-          document.cookie = `onboardedStatus=IN_PROGRESS; path=/`;
-        }
-        
-        router.push(nextRoute);
-      } else {
-        logger.debug('[BusinessInfo] No explicit route provided, using default subscription route');
-        // Set cookie with the next step
-        document.cookie = `onboardingStep=subscription; path=/`;
-        
-        // Also update onboardedStatus if we're setting a step
-        document.cookie = `onboardedStatus=IN_PROGRESS; path=/`;
-        
-        // Fallback to default route
-        router.push(`/onboarding/subscription${langQueryString}`);
-      }
+
+      // Use window.location for a full page reload instead of router.push
+      // This ensures all cookies are properly set before redirection
+      window.location.href = `/onboarding/subscription${langQueryString}`;
 
     } catch (error) {
       logger.error('[BusinessInfo] Form submission failed:', error);

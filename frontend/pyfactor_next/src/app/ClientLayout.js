@@ -1,15 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import { isPublicRoute } from '@/lib/authUtils';
+import { fetchAuthSession } from 'aws-amplify/auth';
+import { refreshUserSession } from '@/utils/refreshUserSession';
+import { initializeTenant } from '@/utils/tenantUtils';
 // These providers are now handled in providers.js
 import AuthErrorBoundary from '@/components/ErrorBoundary';
 import LoadingFallback from '@/components/ClientOnly/LoadingFallback';
 import { setupRenderDebugging } from '@/utils/debugReactRendering';
 import dynamic from 'next/dynamic';
 import ConfigureAmplify from '@/components/ConfigureAmplify';
+import debounce from 'lodash/debounce';
 
 // Dynamically import the ReactErrorDebugger to avoid SSR issues
 const ReactErrorDebugger = dynamic(
@@ -24,6 +28,9 @@ export default function ClientLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const [debugInitialized, setDebugInitialized] = useState(false);
+  const sessionCheckCache = useRef(new Map());
+  const [isVerifying, setIsVerifying] = useState(true);
+  const [tenantInitialized, setTenantInitialized] = useState(false);
 
   // Initialize debugging tools
   useEffect(() => {
@@ -177,79 +184,124 @@ export default function ClientLayout({ children }) {
     }
   }, [router, pathname]);
 
-  useEffect(() => {
-    const verifySession = async (attempt = 1, maxAttempts = 3) => {
-      logger.debug('[ClientLayout] Verifying session:', {
-        attempt,
-        maxAttempts,
-        pathname
-      });
-
-      // CRITICAL: Skip all checks for verify-email routes
-      if (pathname === '/auth/verify-email' || pathname.startsWith('/auth/verify-email')) {
-        logger.debug(`[ClientLayout] BYPASSING ALL CHECKS for verify-email route: ${pathname}`);
-        return;
-      }
-
-      // Skip session check for public routes
-      if (isPublicRoute(pathname)) {
-        logger.debug(`[ClientLayout] Skipping session check for public route: ${pathname}`);
-        return;
-      }
+  // Create stable verifySession function
+  const verifySession = useRef(
+    debounce(async (pathname, attempt = 1) => {
+      const maxAttempts = 3;
       
-      // Double-check for root path
-      if (pathname === '/' || pathname === '') {
-        logger.debug(`[ClientLayout] Root path detected, skipping session check`);
-        return;
-      }
-      
-      logger.debug(`[ClientLayout] Route ${pathname} is not public, checking session`);
-
       try {
-        // Check if we have a session
-        const response = await fetch('/api/session');
-        if (!response.ok) {
-          logger.debug(`[ClientLayout] Session check failed: ${response.status}`);
-          if (attempt < maxAttempts) {
-            setTimeout(() => verifySession(attempt + 1, maxAttempts), 1000);
-            return;
+        // Check cache first
+        const cacheKey = `${pathname}-${attempt}`;
+        if (sessionCheckCache.current.has(cacheKey)) {
+          const cachedResult = sessionCheckCache.current.get(cacheKey);
+          setIsVerifying(false);
+          return cachedResult;
+        }
+
+        logger.debug('[ClientLayout] Verifying session:', {
+          attempt,
+          maxAttempts,
+          pathname
+        });
+
+        // If it's a public route, no need to verify
+        if (isPublicRoute(pathname)) {
+          setIsVerifying(false);
+          return true;
+        }
+
+        // Get current session
+        const { tokens } = await fetchAuthSession();
+        const isValid = !!tokens?.idToken;
+
+        if (isValid && !tenantInitialized) {
+          try {
+            // Initialize tenant if we have a valid session
+            await initializeTenant(tokens.idToken);
+            setTenantInitialized(true);
+          } catch (error) {
+            logger.error('[ClientLayout] Failed to initialize tenant:', error);
+            // Don't fail the session check if tenant init fails
           }
-          
-          // CRITICAL: Never redirect from verify-email routes
-          if (pathname === '/auth/verify-email' || pathname.startsWith('/auth/verify-email')) {
-            logger.debug(`[ClientLayout] NEVER redirecting from verify-email route: ${pathname}`);
-            return;
+        }
+
+        // Cache the result
+        sessionCheckCache.current.set(cacheKey, isValid);
+
+        // Clear cache after 5 minutes
+        setTimeout(() => {
+          sessionCheckCache.current.delete(cacheKey);
+        }, 5 * 60 * 1000);
+
+        if (!isValid && attempt < maxAttempts) {
+          // Try to refresh session
+          const refreshed = await refreshUserSession();
+          if (refreshed) {
+            return verifySession.current(pathname, attempt + 1);
           }
-          
-          // Never redirect from root path
-          if (pathname === '/' || pathname === '') {
-            logger.debug(`[ClientLayout] Not redirecting from root path`);
-            return;
-          }
-          
-          if (!isPublicRoute(pathname)) {
-            logger.debug(`[ClientLayout] Redirecting to sign-in page from ${pathname}`);
-            router.push('/auth/signin');
-          } else {
-            logger.debug(`[ClientLayout] Not redirecting from ${pathname} because it's a public route`);
-          }
-          return;
+        }
+
+        if (!isValid) {
+          logger.warn('[ClientLayout] Invalid session, redirecting to signin');
+          router.replace('/auth/signin');
+          setIsVerifying(false);
+          return false;
+        }
+
+        logger.debug('[ClientLayout] Session check successful');
+        setIsVerifying(false);
+        return true;
+      } catch (error) {
+        logger.error('[ClientLayout] Session verification failed:', {
+          error: error.message,
+          attempt,
+          pathname
+        });
+        
+        if (attempt < maxAttempts) {
+          return verifySession.current(pathname, attempt + 1);
         }
         
-        logger.debug('[ClientLayout] Session check successful');
-      } catch (error) {
-        logger.error('[ClientLayout] Error verifying session:', error);
-        if (attempt < maxAttempts) {
-          setTimeout(() => verifySession(attempt + 1, maxAttempts), 1000);
+        setIsVerifying(false);
+        router.replace('/auth/signin');
+        return false;
+      }
+    }, 100)
+  );
+
+  // Reset tenant initialization when pathname changes
+  useEffect(() => {
+    if (!isPublicRoute(pathname)) {
+      setTenantInitialized(false);
+    }
+  }, [pathname]);
+
+  // Initialize verifySession on mount
+  useEffect(() => {
+    const verify = async () => {
+      if (pathname && verifySession.current) {
+        try {
+          await verifySession.current(pathname);
+        } catch (error) {
+          logger.error('[ClientLayout] Error in session verification:', error);
+          setIsVerifying(false);
         }
       }
-
-      // Render content
-      logger.debug('[ClientLayout] Rendering providers and content');
     };
 
-    verifySession();
-  }, [pathname, router]);
+    verify();
+
+    return () => {
+      if (verifySession.current?.cancel) {
+        verifySession.current.cancel();
+      }
+    };
+  }, [pathname]);
+
+  // Show loading state while verifying
+  if (isVerifying && !isPublicRoute(pathname)) {
+    return <LoadingFallback />;
+  }
 
   // Enhanced error boundary with detailed logging
   const handleError = (error, errorInfo) => {

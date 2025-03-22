@@ -14,6 +14,7 @@ import {
 } from '@/config/amplifyUnified';
 import { createSafeContext, useSafeContext } from '@/utils/ContextFix';
 import { logMemoryUsage, trackMemory, detectMemorySpike, clearMemoryTracking } from '@/utils/memoryDebug';
+import { setTokens } from '@/utils/tenantUtils';
 
 // Create a minimal initial state object
 const initialState = {
@@ -132,6 +133,12 @@ export function AuthProvider({ children }) {
         
         const session = await fetchAuthSession();
         tokens = session.tokens;
+        
+        // Store tokens in tenantUtils for API requests
+        if (tokens?.accessToken && tokens?.idToken) {
+          setTokens(tokens);
+          logger.debug('[Auth] Tokens stored in tenantUtils');
+        }
         
         // Track memory after auth session fetch
         trackMemory('AuthProvider', 'after-fetchAuthSession');

@@ -1,4 +1,4 @@
-import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
+import { fetchAuthSession, getCurrentUser, signOut } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 import { parseJwt } from '@/lib/authUtils';
 
@@ -69,128 +69,34 @@ const clearCookie = (name) => {
   }
 };
 
-export async function refreshUserSession(retryCount = 0) {
+export async function refreshUserSession() {
   try {
-    logger.debug('[Session] Starting session refresh:', {
-      attempt: retryCount + 1,
-      maxAttempts: MAX_RETRIES
-    });
-
-    // Get current session using v6 API with force refresh
-    const { tokens } = await fetchAuthSession({
-      forceRefresh: true
-    });
-
-    if (!tokens?.idToken) {
-      throw new Error('No valid session');
-    }
-
-    // Parse tokens for logging
-    const idTokenData = parseJwt(tokens.idToken.toString());
-    const accessTokenData = parseJwt(tokens.accessToken.toString());
-
-    logger.debug('[Session] Tokens fetched:', {
-      hasIdToken: !!tokens.idToken,
-      hasAccessToken: !!tokens.accessToken,
-      hasRefreshToken: !!tokens.refreshToken,
-      idTokenExp: idTokenData?.exp ? new Date(idTokenData.exp * 1000) : null,
-      accessTokenExp: accessTokenData?.exp ? new Date(accessTokenData.exp * 1000) : null,
-      username: idTokenData?.username
-    });
-
-    // Get current user using v6 API
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new Error('No current user found');
-    }
-
-    logger.debug('[Session] Current user fetched:', {
-      username: user.username,
-      attributes: Object.keys(user.attributes)
-    });
-
-    // Extract onboarding status from user attributes if available
-    let onboardingStep;
-    let onboardedStatus;
+    logger.debug('[RefreshSession] Attempting to refresh session');
     
-    try {
-      const userAttributes = await user.fetchUserAttributes();
-      logger.debug('[Session] User attributes fetched:', {
-        attributeKeys: Object.keys(userAttributes)
-      });
-      
-      // Check for onboarding attributes
-      if (userAttributes['custom:onboarding_step']) {
-        onboardingStep = userAttributes['custom:onboarding_step'];
-      }
-      
-      if (userAttributes['custom:onboarding_status']) {
-        onboardedStatus = userAttributes['custom:onboarding_status'];
-      }
-    } catch (attrError) {
-      logger.warn('[Session] Failed to fetch user attributes:', {
-        error: attrError.message
-      });
-    }
+    // Use the new fetchAuthSession with forceRefresh option
+    const { tokens, hasValidSession } = await fetchAuthSession({ forceRefresh: true });
     
-    // Set cookies using the API route
-    try {
-      const response = await fetch('/api/auth/set-cookies', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          idToken: tokens.idToken.toString(),
-          accessToken: tokens.accessToken.toString(),
-          refreshToken: tokens.refreshToken ? tokens.refreshToken.toString() : undefined,
-          onboardingStep,
-          onboardedStatus
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to set cookies via API: ${errorData.error || response.statusText}`);
-      }
-
-      logger.debug('[Session] Session refresh completed successfully:', {
-        username: user.username,
-        hasRefreshToken: !!tokens.refreshToken,
-        onboardingStep,
-        onboardedStatus
-      });
-    } catch (cookieError) {
-      logger.error('[Session] Failed to set cookies via API:', {
-        error: cookieError.message,
-        stack: cookieError.stack
-      });
-      throw cookieError;
+    if (!hasValidSession || !tokens?.idToken) {
+      logger.warn('[RefreshSession] No valid session after refresh attempt');
+      // Sign out user if session is invalid
+      await signOut();
+      return false;
     }
 
+    logger.info('[RefreshSession] Successfully refreshed session');
     return true;
   } catch (error) {
-    logger.error('[Session] Failed to refresh session:', {
+    logger.error('[RefreshSession] Failed to refresh session:', {
       error: error.message,
-      code: error.code,
-      retryCount,
-      stack: error.stack
+      name: error.name,
+      code: error.code
     });
-
-    // Implement exponential backoff for retries
-    if (retryCount < MAX_RETRIES) {
-      const delay = Math.pow(2, retryCount) * RETRY_DELAY;
-      logger.debug(`[Session] Retrying refresh after ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return refreshUserSession(retryCount + 1);
+    
+    // If the error is related to invalid/expired tokens, sign out the user
+    if (error.name === 'NotAuthorizedException' || error.name === 'TokenExpiredError') {
+      await signOut();
     }
-
-    // Clear cookies on failure
-    clearCookie('idToken');
-    clearCookie('accessToken');
-    clearCookie('refreshToken');
-
-    logger.debug('[Session] Cookies cleared after refresh failure');
+    
     return false;
   }
 }

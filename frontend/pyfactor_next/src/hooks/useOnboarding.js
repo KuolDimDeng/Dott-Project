@@ -142,6 +142,22 @@ export function useOnboarding() {
     }
   }, [validateSession, loadOnboardingState, currentStep, getNextRoute, router]);
 
+  const isStepCompleted = useCallback((step) => {
+    const stepOrder = [
+      ONBOARDING_STATES.NOT_STARTED,
+      ONBOARDING_STATES.BUSINESS_INFO,
+      ONBOARDING_STATES.SUBSCRIPTION,
+      ONBOARDING_STATES.PAYMENT,
+      ONBOARDING_STATES.SETUP,
+      ONBOARDING_STATES.COMPLETE
+    ];
+    
+    const currentStepIndex = stepOrder.indexOf(currentStep);
+    const targetStepIndex = stepOrder.indexOf(step);
+    
+    return targetStepIndex < currentStepIndex;
+  }, [currentStep]);
+
   // Load initial onboarding state
   useEffect(() => {
     const initOnboarding = async () => {
@@ -166,6 +182,7 @@ export function useOnboarding() {
     error,
     handleStepCompletion,
     validateCurrentStep,
-    getNextRoute
+    getNextRoute,
+    isStepCompleted
   };
 }
