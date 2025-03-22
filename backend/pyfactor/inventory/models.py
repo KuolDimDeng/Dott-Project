@@ -113,7 +113,7 @@ class Item(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_for_sale = models.BooleanField(default=True)
     is_for_rent = models.BooleanField(default=False)
-    salesTax = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    salestax = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     height = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)

@@ -175,3 +175,15 @@ export async function getOnboardingStatus() {
     throw error;
   }
 }
+
+// Export a consolidated onboardingApi object
+export const onboardingApi = {
+  submitBusinessInfo,
+  getBusinessInfo,
+  submitSubscription,
+  submitPayment,
+  completeSetup,
+  getOnboardingStatus
+};
+
+export default onboardingApi;

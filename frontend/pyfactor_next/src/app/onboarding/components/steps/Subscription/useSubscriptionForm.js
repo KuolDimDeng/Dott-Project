@@ -1,3 +1,4 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/components/steps/Subscription/useSubscriptionForm.js
 import { useEffect, useCallback, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,7 +17,11 @@ const validationSchema = z.object({
         required_error: 'Please select a billing cycle',
         invalid_type_error: 'Invalid billing cycle selected',
     }),
+    payment_method: z.enum(['credit_card', 'paypal', 'mobile_money'], {
+        required_error: 'Please select a payment method',
+    }).optional(),
 }).refine(data => {
+    // Existing validation for billing cycle
     if ((data.selected_plan === 'professional' || data.selected_plan === 'enterprise') && !data.billing_cycle) {
         return false;
     }
@@ -24,11 +29,21 @@ const validationSchema = z.object({
 }, {
     message: 'Billing cycle is required for paid plans',
     path: ['billing_cycle'],
+}).refine(data => {
+    // New validation for payment method
+    if ((data.selected_plan === 'professional' || data.selected_plan === 'enterprise') && !data.payment_method) {
+        return false;
+    }
+    return true;
+}, {
+    message: 'Payment method is required for paid plans',
+    path: ['payment_method'],
 });
 
 const defaultValues = {
     selected_plan: '',
     billing_cycle: 'monthly',
+    payment_method: '',
     price: 0,
 };
 

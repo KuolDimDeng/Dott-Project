@@ -163,7 +163,7 @@ class TenantSchemaRouter:
         """
         # Skip migration checks for problematic apps
         # Return None to let Django's default behavior handle these apps
-        if app_label in ['business', 'finance', 'hr', 'crm', 'transport']:
+        if app_label in ['business', 'finance', 'hr', 'crm', 'transport', 'auth']:  # Added 'auth' here
             logger.debug(f"Skipping migration check for {app_label} app (special case)")
             return None
             

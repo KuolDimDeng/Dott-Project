@@ -33,8 +33,8 @@ export async function POST(request) {
       return NextResponse.json(
         { error: 'Missing required tokens' },
         { status: 401 }
-            );
-        }
+      );
+    }
 
     let body;
     try {
@@ -42,6 +42,7 @@ export async function POST(request) {
       logger.info('[Subscription] Received request:', {
         plan: body?.plan,
         interval: body?.interval,
+        payment_method: body?.payment_method,
         userId: userId,
         timestamp: new Date().toISOString()
       });
@@ -58,7 +59,8 @@ export async function POST(request) {
           details: 'Plan and interval are required',
           received: {
             plan: body?.plan,
-            interval: body?.interval
+            interval: body?.interval,
+            payment_method: body?.payment_method
           }
         }, { status: 400 });
       }
@@ -66,9 +68,11 @@ export async function POST(request) {
       // Validate plan and interval values
       const validPlans = ['FREE', 'PROFESSIONAL', 'ENTERPRISE'];
       const validIntervals = ['MONTHLY', 'YEARLY'];
+      const validPaymentMethods = ['CREDIT_CARD', 'PAYPAL', 'MOBILE_MONEY'];
       
       const plan = body.plan.toUpperCase();
       const interval = body.interval.toUpperCase();
+      const paymentMethod = body.payment_method ? body.payment_method.toUpperCase() : null;
       
       if (!validPlans.includes(plan) || !validIntervals.includes(interval)) {
         logger.error('[Subscription] Invalid plan or interval:', {
@@ -85,7 +89,24 @@ export async function POST(request) {
             intervals: validIntervals
           }
         }, { status: 400 });
-    }
+      }
+      
+      // Validate payment method if provided (required for paid plans)
+      if ((plan === 'PROFESSIONAL' || plan === 'ENTERPRISE') && paymentMethod) {
+        if (!validPaymentMethods.includes(paymentMethod)) {
+          logger.error('[Subscription] Invalid payment method:', {
+            paymentMethod,
+            validPaymentMethods
+          });
+          return NextResponse.json({
+            error: 'Invalid payment method',
+            details: 'Invalid payment method value',
+            validOptions: {
+              paymentMethods: validPaymentMethods
+            }
+          }, { status: 400 });
+        }
+      }
     } catch (error) {
       logger.error('[Subscription] Failed to parse request body:', {
         error: error.message,
@@ -108,7 +129,8 @@ export async function POST(request) {
         data: body,
         validationRules: {
           validPlans: ['FREE', 'PROFESSIONAL', 'ENTERPRISE'],
-          validIntervals: ['MONTHLY', 'YEARLY']
+          validIntervals: ['MONTHLY', 'YEARLY'],
+          validPaymentMethods: ['CREDIT_CARD', 'PAYPAL', 'MOBILE_MONEY']
         }
       });
       return NextResponse.json({
@@ -117,7 +139,8 @@ export async function POST(request) {
         details: error.message,
         validationRules: {
           validPlans: ['FREE', 'PROFESSIONAL', 'ENTERPRISE'],
-          validIntervals: ['MONTHLY', 'YEARLY']
+          validIntervals: ['MONTHLY', 'YEARLY'],
+          validPaymentMethods: ['CREDIT_CARD', 'PAYPAL', 'MOBILE_MONEY']
         }
       }, { status: 400 });
     }
@@ -212,14 +235,30 @@ export async function POST(request) {
       }
     });
 
+    // Determine next step based on plan and payment method
+    const plan = body.plan.toLowerCase();
+    const paymentMethod = body.payment_method ? body.payment_method.toLowerCase() : null;
+    
+    // Default next step based on plan
+    let nextStep = plan === 'free' ? 'SETUP' : 'PAYMENT';
+    
+    // Override for paid plans with non-credit card payment methods
+    if ((plan === 'professional' || plan === 'enterprise') && 
+        paymentMethod && paymentMethod !== 'credit_card') {
+      nextStep = 'SETUP'; // Skip payment page for PayPal and Mobile Money
+    }
+
     logger.debug('[Subscription] Request validation:', {
       plan: body.plan,
       interval: body.interval,
+      paymentMethod: body.payment_method,
       isReset,
       currentStatus,
+      nextStep,
       validationRules: {
         validPlans: ['FREE', 'PROFESSIONAL', 'ENTERPRISE'],
         validIntervals: ['MONTHLY', 'YEARLY'],
+        validPaymentMethods: ['CREDIT_CARD', 'PAYPAL', 'MOBILE_MONEY'],
         allowedStatus: ['BUSINESS_INFO', 'NOT_STARTED']
       }
     });
@@ -246,7 +285,7 @@ export async function POST(request) {
       requestUrl,
       method: 'POST',
       currentStatus,
-      nextStatus: body.plan.toUpperCase() === 'PROFESSIONAL' ? 'PAYMENT' : 'SETUP',
+      nextStep,
       environment: {
         NODE_ENV: process.env.NODE_ENV,
         NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL
@@ -397,70 +436,16 @@ export async function POST(request) {
       setupDone: attributes['custom:setupdone']
     });
 
-    // Log request details
-    logger.debug('[Subscription] Request details:', {
-      url: requestUrl,
-      method: 'POST',
-      headers: {
-        ...Object.fromEntries(
-          Object.entries(requestHeadersObj).filter(([key]) =>
-            !['Authorization', 'X-Id-Token'].includes(key)
-          )
-        ),
-        Authorization: '[REDACTED]',
-        'X-Id-Token': '[REDACTED]'
-      },
-      body: {
-        selected_plan: body.plan.toLowerCase(),
-        billing_cycle: body.interval.toLowerCase(),
-        current_status: currentStatus,
-        next_status: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') ? 'PAYMENT' : 'SETUP',
-        reset_onboarding: isReset,
-        requires_payment: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise'),
-        tenant_id: tenantId,
-        business_id: attributes['custom:businessid'],
-        cognito_sub: cognitoUserId
-      }
-    });
-
-    logger.info('[Subscription] Preparing backend request:', {
-      url: requestUrl,
-      tenantId,
-      headers: {
-        ...requestHeadersObj,
-        Authorization: '[REDACTED]',
-        'X-Id-Token': '[REDACTED]'
-      },
-      body: {
-        selected_plan: body.plan.toLowerCase(),
-        billing_cycle: body.interval.toLowerCase(),
-        current_status: currentStatus,
-        next_status: body.plan.toLowerCase() === 'professional' ? 'PAYMENT' : 'SETUP',
-        reset_onboarding: isReset,
-        requires_payment: body.plan.toLowerCase() === 'professional',
-        tenant_id: tenantId
-      }
-    });
-
-    logger.debug('[Subscription] Environment:', {
-      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-      defaultUrl: 'http://127.0.0.1:8000',
-      finalUrl: requestUrl
-    });
-
-    // Make request with retries
-    let response;
-    let retries = 3;
-    let delay = 1000;
-
-    // Prepare request body once
+    // Prepare request body
     const requestBody = {
       selected_plan: body.plan.toLowerCase(),
       billing_cycle: body.interval.toLowerCase(),
+      payment_method: body.payment_method ? body.payment_method.toLowerCase() : null,
       current_status: currentStatus,
-      next_status: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') ? 'PAYMENT' : 'SETUP',
+      next_status: nextStep,
       reset_onboarding: isReset,
-      requires_payment: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise'),
+      requires_payment: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') && 
+                        (!body.payment_method || body.payment_method.toLowerCase() === 'credit_card'),
       tenant_id: tenantId,
       schema_name: `tenant_${tenantId.replace(/-/g, '_')}`, // Format as Django expects it
       business_id: attributes['custom:businessid'],
@@ -484,6 +469,11 @@ export async function POST(request) {
       }
     };
 
+    // Make request with retries
+    let response;
+    let retries = 3;
+    let delay = 1000;
+
     while (retries > 0) {
       try {
         logger.info('[Subscription] Attempting request:', {
@@ -491,7 +481,8 @@ export async function POST(request) {
           attempt: 4 - retries,
           url: requestUrl,
           plan: body.plan.toLowerCase(),
-          interval: body.interval.toLowerCase()
+          interval: body.interval.toLowerCase(),
+          paymentMethod: body.payment_method ? body.payment_method.toLowerCase() : null
         });
 
         response = await fetch(requestUrl, {
@@ -550,7 +541,6 @@ export async function POST(request) {
         delay *= 2;
       }
     }
-
 
     // Handle response
     let data;
@@ -623,33 +613,50 @@ export async function POST(request) {
     }
 
     // Update onboarding status in Cognito with tokens
-    const nextStatus = 'SETUP'; // Always go to setup since schema setup happens in background
     try {
-      await updateOnboardingStep(nextStatus, {
+      const attributesToUpdate = {
         'custom:subplan': body.plan,
         'custom:subscriptioninterval': body.interval,
-        'custom:requirespayment': (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') ? 'TRUE' : 'FALSE',
+        'custom:requirespayment': (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') && 
+                                 (!body.payment_method || body.payment_method.toLowerCase() === 'credit_card') ? 'TRUE' : 'FALSE',
         'custom:setupdone': 'FALSE' // Indicate setup is pending
-      }, {
+      };
+      
+      // Add payment method if provided
+      if (body.payment_method) {
+        attributesToUpdate['custom:paymentmethod'] = body.payment_method.toLowerCase();
+      }
+      
+      await updateOnboardingStep(nextStep, attributesToUpdate, {
         accessToken: accessToken,
         idToken: idToken
       });
-      logger.info('[Subscription] Successfully updated onboarding step to SETUP');
+      
+      logger.info(`[Subscription] Successfully updated onboarding step to ${nextStep}`);
     } catch (updateError) {
       // Log the error but continue since the subscription was saved successfully
       logger.warn('[Subscription] Failed to update onboarding step, but subscription was saved:', {
         error: updateError.message,
-        nextStatus
+        nextStep
       });
       // Continue with the response since the subscription was saved successfully
+    }
+
+    // Determine next route based on plan and payment method
+    let nextRoute = '/dashboard';
+    
+    // For paid plans with credit card payment, go to payment page
+    if ((body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') && 
+        (!body.payment_method || body.payment_method.toLowerCase() === 'credit_card')) {
+      nextRoute = '/onboarding/payment';
     }
 
     // Create response data with redirect info
     const responseData = {
       ...data,
       setupStatus: 'pending',
-      nextRoute: '/dashboard',
-      message: 'Subscription saved successfully. Redirecting to dashboard...',
+      nextRoute,
+      message: `Subscription saved successfully. Redirecting to ${nextRoute === '/dashboard' ? 'dashboard' : 'payment'}...`,
       timestamp: new Date().toISOString(),
       tenant: {
         id: tenantId,
@@ -664,7 +671,7 @@ export async function POST(request) {
 
     logger.debug('[Subscription] Response data prepared:', {
       setupStatus: 'pending',
-      nextRoute: '/dashboard',
+      nextRoute,
       tenant: {
         id: tenantId,
         status: 'pending'
@@ -688,7 +695,8 @@ export async function POST(request) {
     const finalResponse = NextResponse.json({
       success: true,
       message: 'Subscription saved successfully',
-      nextStep: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') ? 'payment' : 'dashboard',
+      nextStep: nextRoute.replace('/onboarding/', '').replace('/',''),
+      payment_method: body.payment_method || null,
       setupStatus: 'pending',
       timestamp: new Date().toISOString(),
       tenant: {
@@ -706,55 +714,47 @@ export async function POST(request) {
         'X-Tenant-ID': tenantId,
         'X-Cognito-Sub': cognitoUserId,
         'X-Setup-Status': 'pending',
-        'X-Next-Step': (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') ? 'payment' : 'dashboard',
+        'X-Next-Step': nextRoute.replace('/onboarding/', '').replace('/',''),
+        'X-Payment-Method': body.payment_method || 'none',
         // CORS headers
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Id-Token, X-Tenant-ID, X-Cognito-Sub, X-Setup-Status, X-Next-Step',
-        'Access-Control-Expose-Headers': 'X-Tenant-ID, X-Cognito-Sub, X-Setup-Status, X-Next-Step'
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Id-Token, X-Tenant-ID, X-Cognito-Sub, X-Setup-Status, X-Next-Step, X-Payment-Method',
+        'Access-Control-Expose-Headers': 'X-Tenant-ID, X-Cognito-Sub, X-Setup-Status, X-Next-Step, X-Payment-Method'
       }
     });
 
     // Set cookies
     finalResponse.cookies.set('accessToken', accessToken, cookieOptions);
     finalResponse.cookies.set('idToken', idToken, cookieOptions);
-    finalResponse.cookies.set('onboardingStep', nextStatus, cookieOptions);
+    finalResponse.cookies.set('onboardingStep', nextStep, cookieOptions);
     finalResponse.cookies.set('tenantId', tenantId, cookieOptions);
+    if (body.payment_method) {
+      finalResponse.cookies.set('paymentMethod', body.payment_method.toLowerCase(), cookieOptions);
+    }
 
     logger.info('[Subscription] Returning response:', {
-      nextStep: body.plan.toLowerCase() === 'professional' ? 'payment' : 'dashboard',
+      nextStep,
+      nextRoute,
+      paymentMethod: body.payment_method || 'none',
       setupStatus: 'pending',
       timestamp: new Date().toISOString()
     });
 
-    // Setup schema setup
-    const setupUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/setup/start/`;
-    
-    // Ensure we have valid UUIDs for userId and businessId
-    const validUserId = cognitoUserId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cognitoUserId)
-      ? cognitoUserId
-      : tenantId; // Use tenantId as fallback
-    
-    const validBusinessId = attributes['custom:businessid'] && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(attributes['custom:businessid'])
-      ? attributes['custom:businessid']
-      : tenantId; // Use tenantId as fallback
-    
-    const setupHeaders = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-      'X-Id-Token': idToken,
-      'X-Tenant-ID': tenantId,
-      'X-Cognito-Sub': validUserId,
-      'X-Business-ID': validBusinessId,
-      'X-Setup-Done': attributes['custom:setupdone'] || 'FALSE',
-      'X-Request-ID': Math.random().toString(36).substring(7)
-    };
-
-    // Only initiate schema setup for free plans to reduce memory usage
-    // For professional plans, schema setup will happen after payment
-    if (body.plan.toLowerCase() === 'free') {
-      // Make the schema setup request truly asynchronous by not awaiting it
-      logger.info('[Subscription] Initiating schema setup asynchronously for free plan');
+    // Setup schema setup for free plans or non-credit card payment methods
+    if (body.plan.toLowerCase() === 'free' || 
+        (body.payment_method && body.payment_method.toLowerCase() !== 'credit_card')) {
+      // Setup schema in background
+      const setupUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/setup/start/`;
+      
+      // Ensure we have valid UUIDs for userId and businessId
+      const validUserId = cognitoUserId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cognitoUserId)
+        ? cognitoUserId
+        : tenantId; // Use tenantId as fallback
+      
+      const validBusinessId = attributes['custom:businessid'] && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(attributes['custom:businessid'])
+        ? attributes['custom:businessid']
+        : tenantId; // Use tenantId as fallback
       
       // Ensure we have proper authentication headers with all required tokens
       const authHeaders = {
@@ -766,7 +766,7 @@ export async function POST(request) {
         'X-Business-ID': validBusinessId,
         'X-Setup-Done': attributes['custom:setupdone'] || 'FALSE',
         'X-Request-ID': Math.random().toString(36).substring(7),
-        'X-Onboarding-Status': nextStatus
+        'X-Onboarding-Status': nextStep
       };
       
       // Use a minimal request body to reduce memory usage
@@ -776,7 +776,8 @@ export async function POST(request) {
         setupInBackground: true,
         timestamp: new Date().toISOString(),
         accessToken: accessToken, // Include token in body as well
-        idToken: idToken // Include token in body as well
+        idToken: idToken, // Include token in body as well
+        payment_method: body.payment_method || null
       };
       
       logger.debug('[Subscription] Schema setup request details:', {
@@ -793,6 +794,7 @@ export async function POST(request) {
       });
       
       // Use fetch without await to make it non-blocking
+      logger.info('[Subscription] Initiating schema setup asynchronously');
       fetch(setupUrl, {
         method: 'POST',
         headers: authHeaders,
@@ -820,16 +822,10 @@ export async function POST(request) {
       // Add a log to confirm we're not waiting for the schema setup
       logger.info('[Subscription] Continuing with response without waiting for schema setup');
     } else {
-      logger.info('[Subscription] Skipping schema setup for non-free plan');
+      logger.info('[Subscription] Skipping immediate schema setup for credit card payment - will setup after payment');
     }
 
     // Return success response
-    logger.info('[Subscription] Returning success response:', {
-      requestId,
-      setupStatus: 'pending',
-      nextStep: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') ? 'payment' : 'dashboard'
-    });
-
     return finalResponse;
   } catch (outerError) {
     // Handle errors from the entire request
@@ -869,7 +865,8 @@ export async function OPTIONS() {
         'X-Business-ID',
         'X-Onboarding-Status',
         'X-Setup-Done',
-        'X-Request-ID'
+        'X-Request-ID',
+        'X-Payment-Method'
       ].join(', ')
     }
   });

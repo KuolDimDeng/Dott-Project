@@ -961,3 +961,91 @@ def verify_migration_dependencies():
                 return False
     
     return True
+
+def create_table_from_model(cursor, schema_name, model_class):
+    """
+    Dynamically create a database table based on a Django model class
+    """
+    from django.db import models
+    
+    table_name = model_class._meta.db_table
+    field_definitions = []
+    
+    # Process all fields
+    for field in model_class._meta.fields:
+        field_name = field.column
+        
+        # Skip fields from parent models that will be created separately
+        if isinstance(field, models.OneToOneField) and field.primary_key:
+            continue
+            
+        # Generate SQL definition based on field type
+        if isinstance(field, models.CharField):
+            field_def = f"{field_name} VARCHAR({field.max_length})"
+        elif isinstance(field, models.TextField):
+            field_def = f"{field_name} TEXT"
+        elif isinstance(field, models.BooleanField):
+            field_def = f"{field_name} BOOLEAN"
+        elif isinstance(field, models.DateField):
+            field_def = f"{field_name} DATE"
+        elif isinstance(field, models.DateTimeField):
+            field_def = f"{field_name} TIMESTAMP WITH TIME ZONE"
+        elif isinstance(field, models.DecimalField):
+            field_def = f"{field_name} DECIMAL({field.max_digits}, {field.decimal_places})"
+        elif isinstance(field, models.IntegerField):
+            field_def = f"{field_name} INTEGER"
+        elif isinstance(field, models.BigIntegerField):
+            field_def = f"{field_name} BIGINT"
+        elif isinstance(field, models.UUIDField):
+            field_def = f"{field_name} UUID"
+        elif isinstance(field, models.JSONField):
+            field_def = f"{field_name} JSONB"
+        elif isinstance(field, models.ForeignKey):
+            field_def = f"{field_name} INTEGER"
+        elif isinstance(field, models.OneToOneField):
+            field_def = f"{field_name} INTEGER"
+        else:
+            field_def = f"{field_name} VARCHAR(255)"  # Default fallback
+        
+        # Add NULL/NOT NULL
+        if field.null:
+            field_def += " NULL"
+        else:
+            field_def += " NOT NULL"
+            
+        # Add default if specified
+        if field.default is not None and field.default != models.fields.NOT_PROVIDED:
+            if isinstance(field, models.BooleanField):
+                field_def += f" DEFAULT {'TRUE' if field.default else 'FALSE'}"
+            elif isinstance(field, models.CharField) or isinstance(field, models.TextField):
+                field_def += f" DEFAULT '{field.default}'"
+            else:
+                field_def += f" DEFAULT {field.default}"
+                
+        # Add primary key
+        if field.primary_key:
+            field_def += " PRIMARY KEY"
+            
+        # Add unique constraint
+        elif field.unique:
+            field_def += " UNIQUE"
+            
+        field_definitions.append(field_def)
+    
+    # Create the table
+    create_sql = f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        {', '.join(field_definitions)}
+    );
+    """
+    
+    cursor.execute(create_sql)
+    
+    # Add indexes
+    for index in model_class._meta.indexes:
+        index_name = f"idx_{table_name}_{'_'.join(index.fields)}"
+        index_fields = ', '.join(index.fields)
+        cursor.execute(f"""
+        CREATE INDEX IF NOT EXISTS {index_name} 
+        ON {table_name} ({index_fields});
+        """)

@@ -13,6 +13,7 @@ export const getTenantId = () => {
   
   // Try to get from cookie first
   const cookies = document.cookie.split(';');
+  logger.debug(`[TenantUtils] Checking cookies: ${cookies.length} cookies found`);
   const tenantCookie = cookies.find(cookie => cookie.trim().startsWith('tenantId='));
   if (tenantCookie) {
     const tenantId = tenantCookie.split('=')[1].trim();
@@ -23,8 +24,10 @@ export const getTenantId = () => {
   // Try to get from user attributes in localStorage
   try {
     const userDataStr = localStorage.getItem('userData');
+    logger.debug(`[TenantUtils] Checking userData in localStorage: ${userDataStr ? 'found' : 'not found'}`);
     if (userDataStr) {
       const userData = JSON.parse(userDataStr);
+      logger.debug(`[TenantUtils] Parsed userData keys: ${Object.keys(userData || {}).join(', ')}`);
       if (userData && userData['custom:businessid']) {
         const tenantId = userData['custom:businessid'];
         logger.debug(`[TenantUtils] Found tenant ID in user attributes: ${tenantId}`);
@@ -37,6 +40,7 @@ export const getTenantId = () => {
   
   // Fallback to direct localStorage value
   const tenantId = localStorage.getItem('tenantId');
+  logger.debug(`[TenantUtils] Checking tenantId in localStorage: ${tenantId ? tenantId : 'not found'}`);
   if (tenantId) {
     logger.debug(`[TenantUtils] Found tenant ID in localStorage: ${tenantId}`);
     return tenantId;
@@ -46,6 +50,7 @@ export const getTenantId = () => {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const businessId = urlParams.get('businessId');
+    logger.debug(`[TenantUtils] Checking URL for businessId: ${businessId ? businessId : 'not found'}`);
     if (businessId) {
       logger.debug(`[TenantUtils] Found business ID in URL: ${businessId}`);
       // Store it for future use
@@ -56,7 +61,7 @@ export const getTenantId = () => {
     logger.error('[TenantUtils] Error checking URL for business ID:', error);
   }
   
-  logger.debug('[TenantUtils] No tenant ID found, using default');
+  logger.warn('[TenantUtils] No tenant ID found from any source. This may cause API requests to fail.');
   return null;
 };
 

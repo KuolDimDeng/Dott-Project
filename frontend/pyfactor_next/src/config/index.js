@@ -1,5 +1,20 @@
 // src/config/index.js
 
+// Helper functions - Now defined BEFORE being used in APP_CONFIG
+const getWebSocketUrl = () => {
+  if (typeof window === 'undefined') return '';
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${window.location.hostname}:8000`;
+};
+
+const deepFreeze = (obj) => {
+  Object.keys(obj).forEach((prop) => {
+    if (typeof obj[prop] === 'object' && obj[prop] !== null) {
+      deepFreeze(obj[prop]);
+    }
+  });
+  return Object.freeze(obj);
+};
 
 export const APP_CONFIG = {
   api: {
@@ -231,30 +246,14 @@ export const APP_CONFIG = {
       initialization_failed: 'Failed to initialize onboarding process.',
     },
   },
- };
+};
  
- // Helper functions
- const getWebSocketUrl = () => {
-  if (typeof window === 'undefined') return '';
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${window.location.hostname}:8000`;
- };
+export const getApiUrl = (endpoint) => `${APP_CONFIG.api.baseURL}${endpoint}`;
+export const getWebsocketEndpoint = (path) => `${APP_CONFIG.websocket.baseURL}${path}`;
+export const getStorageKey = (key) => `${APP_CONFIG.storage.prefix}${key}`;
  
- const deepFreeze = (obj) => {
-  Object.keys(obj).forEach((prop) => {
-    if (typeof obj[prop] === 'object' && obj[prop] !== null) {
-      deepFreeze(obj[prop]);
-    }
-  });
-  return Object.freeze(obj);
- };
- 
- export const getApiUrl = (endpoint) => `${APP_CONFIG.api.baseURL}${endpoint}`;
- export const getWebsocketEndpoint = (path) => `${APP_CONFIG.websocket.baseURL}${path}`;
- export const getStorageKey = (key) => `${APP_CONFIG.storage.prefix}${key}`;
- 
- // Validation
- if (process.env.NODE_ENV === 'development') {
+// Validation
+if (process.env.NODE_ENV === 'development') {
   const requiredEnvVars = ['NEXT_PUBLIC_API_URL', 'NEXT_PUBLIC_WS_URL', 'NEXT_PUBLIC_APP_URL'];
   requiredEnvVars.forEach((envVar) => {
     if (!process.env[envVar]) console.warn(`Warning: ${envVar} is not set`);
@@ -282,8 +281,8 @@ export const APP_CONFIG = {
   };
  
   validateConfig(APP_CONFIG);
- }
+}
  
- deepFreeze(APP_CONFIG);
+deepFreeze(APP_CONFIG);
  
- export default APP_CONFIG;
+export default APP_CONFIG;

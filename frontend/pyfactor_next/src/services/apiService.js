@@ -1,6 +1,6 @@
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import { getTenantContext, getTenantHeaders, extractTenantFromResponse } from '@/utils/tenantContext';
+import { getTenantContext, extractTenantFromResponse } from '@/utils/tenantContext';
 import { dataCache } from '@/utils/enhancedCache';
 
 /**
@@ -129,7 +129,7 @@ export const fetchData = async (endpoint, options = {}) => {
     logger.debug(`[ApiService] Fetching ${endpoint}`, { params });
     
     // Add tenant headers
-    const tenantHeaders = getTenantHeaders();
+    const tenantHeaders = getRequestTenantHeaders();
     
     // Make the request
     const response = await axiosInstance.get(endpoint, {
@@ -179,7 +179,7 @@ export const postData = async (endpoint, data = {}, options = {}) => {
     logger.debug(`[ApiService] Posting to ${endpoint}`, { dataKeys: Object.keys(data) });
     
     // Add tenant headers
-    const tenantHeaders = getTenantHeaders();
+    const tenantHeaders = getRequestTenantHeaders();
     
     // Make the request
     const response = await axiosInstance.post(endpoint, data, {
@@ -230,7 +230,7 @@ export const putData = async (endpoint, data = {}, options = {}) => {
     logger.debug(`[ApiService] Putting to ${endpoint}`, { dataKeys: Object.keys(data) });
     
     // Add tenant headers
-    const tenantHeaders = getTenantHeaders();
+    const tenantHeaders = getRequestTenantHeaders();
     
     // Make the request
     const response = await axiosInstance.put(endpoint, data, {
@@ -281,7 +281,7 @@ export const deleteData = async (endpoint, options = {}) => {
     logger.debug(`[ApiService] Deleting ${endpoint}`);
     
     // Add tenant headers
-    const tenantHeaders = getTenantHeaders();
+    const tenantHeaders = getRequestTenantHeaders();
     
     // Make the request
     const response = await axiosInstance.delete(endpoint, {
@@ -408,6 +408,159 @@ export const checkTaskStatus = async (taskId, options = {}) => {
   return lastStatus;
 };
 
+/**
+ * Get the tenant headers (internal helper function)
+ * @returns {Object} The tenant headers
+ */
+const getRequestTenantHeaders = () => {
+  // Get tenant context directly
+  try {
+    const context = getTenantContext();
+    const { tenantId, schemaName } = context;
+    
+    logger.debug('[ApiService] Getting tenant headers:', { 
+      tenantId: tenantId || 'null', 
+      schemaName: schemaName || 'null' 
+    });
+    
+    const headers = {};
+    
+    if (tenantId) {
+      headers['X-Tenant-ID'] = tenantId;
+    }
+    
+    if (schemaName) {
+      headers['X-Schema-Name'] = schemaName;
+    }
+    
+    return headers;
+  } catch (error) {
+    logger.error('[ApiService] Error getting tenant headers:', error);
+    return {};
+  }
+};
+
+/**
+ * Get the tenant headers for external use (exported for diagnostics)
+ * @returns {Object} The tenant headers
+ */
+export const getDebugTenantHeaders = () => {
+  return getRequestTenantHeaders();
+};
+
+/**
+ * Check if tenant context is properly set up
+ * @returns {Object} Tenant verification result
+ */
+export const verifyTenantContext = async () => {
+  try {
+    // Try to get from auth store
+    const { getTenantContext } = await import('@/utils/tenantContext');
+    const { tenantId, schemaName } = getTenantContext();
+    
+    // Try to get from tenantUtils as fallback
+    let fallbackTenantId = null;
+    let fallbackSchema = null;
+    
+    try {
+      const { getTenantId, getSchemaName } = await import('@/utils/tenantUtils');
+      fallbackTenantId = getTenantId();
+      fallbackSchema = getSchemaName();
+    } catch (e) {
+      logger.error('[ApiService] Error getting fallback tenant info:', e);
+    }
+    
+    // Check localStorage directly
+    let localStorageTenantId = null;
+    if (typeof window !== 'undefined') {
+      localStorageTenantId = localStorage.getItem('tenantId');
+    }
+    
+    // Check cookie directly
+    let cookieTenantId = null;
+    if (typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';');
+      const tenantCookie = cookies.find(cookie => cookie.trim().startsWith('tenantId='));
+      if (tenantCookie) {
+        cookieTenantId = tenantCookie.split('=')[1].trim();
+      }
+    }
+    
+    const result = {
+      fromContext: { tenantId, schemaName },
+      fromFallback: { tenantId: fallbackTenantId, schemaName: fallbackSchema },
+      fromLocalStorage: localStorageTenantId,
+      fromCookie: cookieTenantId,
+      isValid: !!tenantId || !!fallbackTenantId || !!localStorageTenantId || !!cookieTenantId
+    };
+    
+    logger.debug('[ApiService] Tenant verification result:', result);
+    return result;
+  } catch (error) {
+    logger.error('[ApiService] Error verifying tenant context:', error);
+    return { isValid: false, error: error.message };
+  }
+};
+
+/**
+ * Set the tenant ID explicitly across all storage mechanisms
+ * @param {string} tenantId - The tenant ID to set
+ * @returns {boolean} Whether the operation was successful
+ */
+export const setTenantId = async (tenantId) => {
+  if (!tenantId) {
+    logger.error('[ApiService] Cannot set empty tenant ID');
+    return false;
+  }
+  
+  logger.debug(`[ApiService] Setting tenant ID to: ${tenantId}`);
+  
+  try {
+    // 1. Set in auth store via tenantContext
+    try {
+      const { setTenantContext } = await import('@/utils/tenantContext');
+      setTenantContext(tenantId);
+      logger.debug('[ApiService] Set tenant ID in auth store');
+    } catch (e) {
+      logger.error('[ApiService] Error setting tenant in context:', e);
+    }
+    
+    // 2. Set in localStorage directly
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tenantId', tenantId);
+      logger.debug('[ApiService] Set tenant ID in localStorage');
+    }
+    
+    // 3. Set in cookie directly
+    if (typeof document !== 'undefined') {
+      document.cookie = `tenantId=${tenantId}; path=/; max-age=31536000`; // 1 year
+      logger.debug('[ApiService] Set tenant ID in cookie');
+    }
+    
+    // 4. Set in userData if it exists
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const userDataStr = localStorage.getItem('userData');
+        if (userDataStr) {
+          const userData = JSON.parse(userDataStr);
+          if (userData) {
+            userData['custom:businessid'] = tenantId;
+            localStorage.setItem('userData', JSON.stringify(userData));
+            logger.debug('[ApiService] Updated tenant ID in userData');
+          }
+        }
+      } catch (error) {
+        logger.error('[ApiService] Error updating userData with tenant ID:', error);
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    logger.error('[ApiService] Error setting tenant ID:', error);
+    return false;
+  }
+};
+
 // Export a default object with all methods
 export const apiService = {
   fetch: fetchData,
@@ -416,7 +569,10 @@ export const apiService = {
   delete: deleteData,
   handleError: handleApiError,
   prefetchCommonData,
-  checkTaskStatus
+  checkTaskStatus,
+  getTenantHeaders: getDebugTenantHeaders, // Use the renamed function
+  verifyTenantContext,
+  setTenantId
 };
 
 export default apiService;

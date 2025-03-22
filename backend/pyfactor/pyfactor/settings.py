@@ -384,6 +384,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'custom_auth.tasks.check_and_migrate_tenant_schemas',
         'schedule': crontab(minute='*/15'),  # Every 15 minutes
     },
+    'verify_tenant_schemas_daily': {
+        'task': 'onboarding.tasks.verify_all_tenant_schemas',
+        'schedule': timedelta(days=1),  # Run once per day
+    },
 }
 
 # Session and authentication settings

@@ -88,6 +88,9 @@ class EnhancedTenantMiddleware:
         if any(request.path.startswith(path) for path in self.public_paths) or \
            any(request.path.startswith(path) for path in self.no_tenant_paths):
             return self.get_response(request)
+        
+        # Add a hook attribute that can be used to modify the response
+        request._tenant_correction_hook = None
 
         # Start timing for performance monitoring
         start_time = time.time()
@@ -201,11 +204,55 @@ class EnhancedTenantMiddleware:
                     # Continue with the request
                     response = self.get_response(request)
                     
+                    # Apply any tenant correction hook if present
+                    if hasattr(request, '_tenant_correction_hook') and callable(request._tenant_correction_hook):
+                        response = request._tenant_correction_hook(request, response)
+                    
                     # Reset to public schema after request
                     set_current_schema('public')
                     return response
                 
-                # If schema doesn't exist, check if we should defer creation
+                # If schema doesn't exist, first check if the user already has a tenant assigned in the database
+                # This prevents creating multiple tenants for the same user
+                existing_tenant = None
+                tenant_schema_name = None
+                
+                if hasattr(request, 'user') and request.user.is_authenticated:
+                    try:
+                        # Check if user already has a tenant in database
+                        from custom_auth.models import Tenant
+                        existing_tenant = Tenant.objects.filter(owner=request.user).first()
+                        
+                        if existing_tenant:
+                            logger.info(f"Found existing tenant {existing_tenant.id} with schema {existing_tenant.schema_name} for user {request.user.id}")
+                            tenant_schema_name = existing_tenant.schema_name
+                            
+                            # If the existing tenant has a different schema name than the one in the request,
+                            # we should use the one from the database as the canonical source of truth
+                            if tenant_schema_name != schema_name:
+                                logger.warning(
+                                    f"Schema name mismatch for user {request.user.id}: "
+                                    f"Request has '{schema_name}' but database has '{tenant_schema_name}'. "
+                                    f"Using database version as source of truth."
+                                )
+                                schema_name = tenant_schema_name
+                                
+                                # Add to response headers so frontend can update its stored tenant ID
+                                original_tenant_id = tenant_id
+                                tenant_id = existing_tenant.id
+                                
+                                # Add tenant ID correction to response via middleware hook
+                                def add_tenant_correction(request, response):
+                                    # Add headers to notify frontend of the correct tenant ID
+                                    response['X-Correct-Tenant-ID'] = str(tenant_id)
+                                    response['X-Correct-Schema-Name'] = tenant_schema_name
+                                    logger.info(f"Added tenant correction headers to response: {tenant_id}, {tenant_schema_name}")
+                                    return response
+                                
+                                request._tenant_correction_hook = add_tenant_correction
+                    except Exception as e:
+                        logger.warning(f"Error checking for existing tenant: {str(e)}")
+                
                 # Check if this is a dashboard request (indicating user has completed onboarding)
                 is_dashboard_request = '/dashboard' in request.path or '/api/dashboard' in request.path
                 

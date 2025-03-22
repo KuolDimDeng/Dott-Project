@@ -2,12 +2,22 @@ import uuid
 import logging
 import time
 import sys
+import redis
 import traceback
 from django.db import connection, transaction
 from django.conf import settings
 from .models import Tenant
 
-logger = logging.getLogger(__name__)
+from rest_framework.views import exception_handler
+from rest_framework.exceptions import AuthenticationFailed
+from botocore.exceptions import ClientError
+
+
+
+logger = logging.getLogger('Pyfactor')
+
+redis_client = redis.Redis(host='localhost', port=6379, db=0)
+
 
 def ensure_schema_consistency(schema_name, reference_schema='public'):
     """
@@ -443,12 +453,6 @@ def create_tenant_schema_for_user(user, business_name=None):
             logger.info(f"[TENANT-CREATION-{process_id}] Updated tenant status to 'error'")
         raise
 
-import logging
-from rest_framework.views import exception_handler
-from rest_framework.exceptions import AuthenticationFailed
-from botocore.exceptions import ClientError
-
-logger = logging.getLogger(__name__)
 
 def custom_exception_handler(exc, context):
     """
@@ -471,3 +475,33 @@ def custom_exception_handler(exc, context):
 
     # Return the original response
     return response
+
+def acquire_user_lock(user_id, timeout=60, retry_interval=0.1, max_retries=50):
+    """
+    Acquire a distributed lock for a specific user to prevent concurrent tenant creation
+    Returns True if lock acquired, False otherwise
+    """
+    lock_key = f"tenant_creation_lock:{user_id}"
+    retry_count = 0
+    
+    while retry_count < max_retries:
+        # Try to acquire lock with an expiration
+        acquired = redis_client.set(lock_key, "1", ex=timeout, nx=True)
+        
+        if acquired:
+            logger.debug(f"Lock acquired for user {user_id}")
+            return True
+            
+        logger.debug(f"Lock acquisition attempt {retry_count+1} failed for user {user_id}, retrying...")
+        time.sleep(retry_interval)
+        retry_count += 1
+    
+    logger.warning(f"Failed to acquire lock for user {user_id} after {max_retries} attempts")
+    return False
+
+def release_user_lock(user_id):
+    """Release the distributed lock for a user"""
+    lock_key = f"tenant_creation_lock:{user_id}"
+    released = redis_client.delete(lock_key)
+    logger.debug(f"Lock released for user {user_id}: {released}")
+    return released

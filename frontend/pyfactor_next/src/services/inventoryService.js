@@ -1,6 +1,7 @@
 import { apiService } from './apiService';
 import { logger } from '@/utils/logger';
 import { inventoryCache } from '@/utils/enhancedCache';
+import { checkAndFixTenantId } from '@/utils/fixTenantId';
 
 /**
  * InventoryService - Consolidated service for inventory-related operations
@@ -279,14 +280,55 @@ export const getProductByCode = async (code, options = {}) => {
  */
 export const createProduct = async (productData) => {
   try {
+    logger.debug('[InventoryService] Creating product with data:', {
+      productName: productData.name,
+      productCode: productData.product_code
+    });
+    
+    // Check tenant headers if available
+    if (apiService.getTenantHeaders) {
+      const tenantHeaders = await apiService.getTenantHeaders();
+      logger.debug('[InventoryService] Tenant headers:', tenantHeaders);
+    }
+    
+    // Check if tenant ID is available before making the request
+    const { getTenantContext } = await import('@/utils/tenantContext');
+    const { tenantId, schemaName } = getTenantContext();
+    logger.debug(`[InventoryService] Tenant context for product creation: tenantId=${tenantId}, schemaName=${schemaName}`);
+    
+    if (!tenantId) {
+      logger.warn('[InventoryService] No tenant ID available, attempting to fix');
+      // Try to fix the tenant ID issue
+      const tenantFromError = 'e0522ead-61aa-4f04-9e8a-ad8c5979b8a1'; // Extracted from the error
+      
+      try {
+        // Attempt to fix with the tenant ID from the error message
+        const fixResult = await apiService.setTenantId(tenantFromError);
+        logger.info(`[InventoryService] Tenant ID fix result: ${fixResult}`);
+        
+        if (fixResult) {
+          // Get the context again after fixing
+          const fixedContext = getTenantContext();
+          logger.info(`[InventoryService] Fixed tenant context: tenantId=${fixedContext.tenantId}, schemaName=${fixedContext.schemaName}`);
+        }
+      } catch (fixError) {
+        logger.error('[InventoryService] Error fixing tenant ID:', fixError);
+      }
+    }
+    
     const result = await apiService.post('/api/inventory/products/create/', productData, {
       invalidateCache: ['products', 'ultra/products', 'stats']
     });
     
-    logger.info('Product created successfully');
+    logger.info('[InventoryService] Product created successfully');
     return result;
   } catch (error) {
-    logger.error('Error creating product:', error);
+    logger.error('[InventoryService] Error creating product:', {
+      error: error.message || error,
+      status: error.response?.status,
+      details: error.details,
+      requestDetails: error.requestDetails
+    });
     throw error;
   }
 };

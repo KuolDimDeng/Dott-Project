@@ -153,12 +153,44 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    logger.error('[AxiosConfig] Response error:', {
-      url: originalRequest?.url,
-      status: error.response?.status,
-      message: error.message,
-      headers: originalRequest?.headers
-    });
+    // More robust error logging - ensure we have all required properties
+    const errorDetails = {
+      url: originalRequest?.url || 'unknown',
+      status: error.response?.status || 'unknown',
+      message: error.message || 'No error message',
+      name: error.name || 'Unknown error',
+      stack: error.stack ? error.stack.split('\n').slice(0, 3).join('\n') : 'No stack trace'
+    };
+    
+    // Add request info if available
+    if (originalRequest) {
+      errorDetails.method = originalRequest.method || 'unknown';
+      errorDetails.baseURL = originalRequest.baseURL || '';
+      
+      // Only add headers if they exist and don't contain sensitive data
+      if (originalRequest.headers) {
+        const safeHeaders = { ...originalRequest.headers };
+        
+        // Remove sensitive headers for security
+        delete safeHeaders.Authorization;
+        delete safeHeaders['X-Id-Token'];
+        
+        errorDetails.headers = safeHeaders;
+      }
+    }
+    
+    // Only add response data if it exists and isn't too large
+    if (error.response?.data) {
+      const dataStr = typeof error.response.data === 'string' 
+        ? error.response.data 
+        : JSON.stringify(error.response.data);
+        
+      errorDetails.responseData = dataStr.length > 1000 
+        ? dataStr.substring(0, 1000) + '... [truncated]'
+        : dataStr;
+    }
+    
+    logger.error('[AxiosConfig] Response error:', errorDetails);
 
     // Handle 401 errors with token refresh and request queuing
     if (error.response?.status === 401) {

@@ -3,10 +3,10 @@
 
 import React, { Suspense } from 'react';
 import { Payment } from '../components/steps';
-import { OnboardingLayout } from '../components/layout';
+import OnboardingLayout from '../layout';
 import { STEP_METADATA } from '../components/registry';
-import { ErrorBoundary } from '../components/shared/ErrorBoundary';
-import { LoadingSpinner } from '../components/shared/LoadingSpinner';
+import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession';
 import { logger } from '@/utils/logger';

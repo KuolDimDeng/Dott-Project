@@ -66,25 +66,78 @@ const InventoryItemList = () => {
   // No longer need fetchWithRetry as we're using the service layer
 
   const fetchItems = useCallback(async (forceMock = false) => {
-    // Temporarily disable loading spinner
-    // setLoading(true);
+    setLoading(true);
     setError(null);
     
-    // Immediately use mock data for now due to network issues
-    logger.info('Using mock inventory data due to network issues');
-    const mockProducts = inventoryService.getMockProducts();
-    const mappedMockData = mockProducts.map(product => ({
-      ...product,
-      sku: product.product_code || '',
-      unit_price: product.price || 0,
-      quantity: product.stock_quantity || 0,
-      reorder_level: product.reorder_level || 0
-    }));
-    setItems(mappedMockData);
-    setApiUnavailable(true);
-    showSnackbar('Using demo data (API unavailable)', 'info');
+    if (forceMock) {
+      // Use mock data if explicitly requested
+      logger.info('Using mock inventory data (requested)');
+      const mockProducts = inventoryService.getMockProducts();
+      const mappedMockData = mockProducts.map(product => ({
+        ...product,
+        sku: product.product_code || '',
+        unit_price: product.price || 0,
+        quantity: product.stock_quantity || 0,
+        reorder_level: product.reorder_level || 0
+      }));
+      setItems(mappedMockData);
+      setUseMockData(true);
+      setApiUnavailable(false);
+      showSnackbar('Using demo data (requested)', 'info');
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      // Try to fetch real data from API
+      const response = await inventoryService.getProducts({
+        page: 1,
+        view_mode: 'detailed'
+      }, {
+        useCache: false // Don't use cache for fresh data
+      });
+      
+      if (response && response.results) {
+        // Map API product format to component's expected format
+        const mappedData = response.results.map(product => ({
+          ...product,
+          sku: product.product_code || '',
+          unit_price: product.price || 0,
+          quantity: product.stock_quantity || 0,
+          reorder_level: product.reorder_level || 0
+        }));
+        
+        setItems(mappedData);
+        setApiUnavailable(false);
+        setUseMockData(false);
+        logger.info('Successfully loaded product data from API');
+      } else {
+        // Handle empty response
+        setItems([]);
+        setApiUnavailable(false);
+        setUseMockData(false);
+      }
+    } catch (error) {
+      // Handle API errors
+      logger.error('Error fetching products from API:', error);
+      
+      // Fall back to mock data
+      const mockProducts = inventoryService.getMockProducts();
+      const mappedMockData = mockProducts.map(product => ({
+        ...product,
+        sku: product.product_code || '',
+        unit_price: product.price || 0,
+        quantity: product.stock_quantity || 0,
+        reorder_level: product.reorder_level || 0
+      }));
+      
+      setItems(mappedMockData);
+      setApiUnavailable(true);
+      setUseMockData(false);
+      showSnackbar('Using demo data (API unavailable)', 'info');
+    }
+    
     setLoading(false);
-    return;
   }, [showSnackbar]);
 
   // Effect to fetch items on component mount
@@ -268,6 +321,33 @@ const InventoryItemList = () => {
             disabled={loading}
           >
             {useMockData ? "Using Demo Data" : "Use Demo Data"}
+          </Button>
+          <Button
+            variant="outlined"
+            color="info"
+            onClick={async () => {
+              try {
+                setLoading(true);
+                showSnackbar('Refreshing session...', 'info');
+                
+                // Import the session refresh utility
+                const { refreshUserSession } = await import('@/utils/refreshUserSession');
+                await refreshUserSession();
+                
+                showSnackbar('Session refreshed successfully', 'success');
+                // Fetch items after session refresh
+                await fetchItems(false);
+              } catch (error) {
+                logger.error('Error refreshing session:', error);
+                showSnackbar('Failed to refresh session', 'error');
+              } finally {
+                setLoading(false);
+              }
+            }}
+            sx={{ mr: 1 }}
+            disabled={loading}
+          >
+            Refresh Session
           </Button>
           <Button
             variant="contained"

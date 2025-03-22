@@ -38,52 +38,121 @@ export default function ClientLayout({ children }) {
         // but prevent infinite loops by not calling the original handler for certain errors
         const originalError = console.error;
         console.error = (...args) => {
-          const errorString = args.join(' ');
-          
-          // Check for specific error patterns that might cause infinite loops
-          const isMaxUpdateDepthError = errorString.includes('Maximum update depth exceeded');
-          const isRenderNotFunctionError = errorString.includes('render is not a function');
-          
-          if (isRenderNotFunctionError) {
-            logger.error('[ClientLayout] Caught "render is not a function" error:', {
-              args,
-              stack: new Error().stack,
-              pathname
+          try {
+            // Safely convert args to string for pattern matching
+            let errorString = '';
+            try {
+              errorString = args
+                .map(arg => 
+                  typeof arg === 'string' ? arg : 
+                  (arg instanceof Error ? arg.message : 
+                  JSON.stringify(arg))
+                )
+                .join(' ');
+            } catch (e) {
+              errorString = 'Error converting error to string';
+            }
+            
+            // Check for specific error patterns that might cause infinite loops
+            const isMaxUpdateDepthError = errorString.includes('Maximum update depth exceeded');
+            const isRenderNotFunctionError = errorString.includes('render is not a function');
+            const isReactAxiosNetworkError = errorString.includes('AxiosConfig') && errorString.includes('Response error');
+            
+            // Create safer args for logging
+            const safeArgs = args.map(arg => {
+              if (typeof arg === 'object' && arg !== null) {
+                try {
+                  // Create a shallow copy without circular references
+                  return { 
+                    ...Object.keys(arg).reduce((acc, key) => {
+                      try {
+                        const value = arg[key];
+                        // Only include primitive values and simple objects
+                        if (typeof value !== 'function' && 
+                            typeof value !== 'symbol' && 
+                            !(value instanceof Element)) {
+                          acc[key] = value;
+                        }
+                      } catch (e) {
+                        // Skip properties that can't be accessed
+                      }
+                      return acc;
+                    }, {})
+                  };
+                } catch (e) {
+                  return '[Complex Object]';
+                }
+              }
+              return arg;
             });
             
-            // Add to window for debugging
-            window.__LAST_RENDER_ERROR = {
-              message: errorString,
-              stack: new Error().stack,
-              timestamp: new Date().toISOString(),
-              pathname
-            };
-            
-            // Try to identify the component causing the error
-            try {
-              const stackLines = new Error().stack.split('\n');
-              const componentLine = stackLines.find(line =>
-                line.includes('/components/') ||
-                line.includes('/app/') ||
-                line.includes('createElement')
-              );
+            if (isRenderNotFunctionError) {
+              logger.error('[ClientLayout] Caught "render is not a function" error:', {
+                errorString,
+                stack: new Error().stack,
+                pathname
+              });
               
-              if (componentLine) {
-                logger.error('[ClientLayout] Potential component causing error:', componentLine);
-                window.__LAST_RENDER_ERROR.componentLine = componentLine;
+              // Add to window for debugging
+              window.__LAST_RENDER_ERROR = {
+                message: errorString,
+                stack: new Error().stack,
+                timestamp: new Date().toISOString(),
+                pathname
+              };
+              
+              // Try to identify the component causing the error
+              try {
+                const stackLines = new Error().stack.split('\n');
+                const componentLine = stackLines.find(line =>
+                  line.includes('/components/') ||
+                  line.includes('/app/') ||
+                  line.includes('createElement')
+                );
+                
+                if (componentLine) {
+                  logger.error('[ClientLayout] Potential component causing error:', componentLine);
+                  window.__LAST_RENDER_ERROR.componentLine = componentLine;
+                }
+              } catch (e) {
+                logger.error('[ClientLayout] Error analyzing stack:', e);
               }
-            } catch (e) {
-              logger.error('[ClientLayout] Error analyzing stack:', e);
             }
-          }
-          
-          // Only call original error handler if it's not a max update depth error
-          // This prevents infinite loops
-          if (!isMaxUpdateDepthError) {
-            originalError.apply(console, args);
-          } else {
-            // Just log to our logger without calling original console.error
-            logger.error('[ClientLayout] Maximum update depth exceeded error detected and suppressed');
+            
+            // Handle Axios errors specially
+            if (isReactAxiosNetworkError) {
+              logger.warn('[ClientLayout] Caught Axios network error - logging safely');
+              // Let the original error handler show it, but also log it safely
+            }
+            
+            // Only call original error handler if it's not a max update depth error
+            // This prevents infinite loops
+            if (!isMaxUpdateDepthError) {
+              try {
+                originalError.apply(console, args);
+              } catch (callError) {
+                // If applying the original error fails, log safely
+                logger.error('[ClientLayout] Failed to call original console.error:', {
+                  errorString,
+                  callError: callError.message,
+                  pathname
+                });
+                // Fallback to basic console.error
+                originalError.call(console, errorString);
+              }
+            } else {
+              // Just log to our logger without calling original console.error
+              logger.error('[ClientLayout] Maximum update depth exceeded error detected and suppressed');
+            }
+          } catch (handlerError) {
+            // If our error handler itself fails, log safely and call original
+            try {
+              logger.error('[ClientLayout] Error in console.error handler:', handlerError);
+              originalError.apply(console, args);
+            } catch (e) {
+              // Last resort fallback
+              originalError.call(console, 'Error in error handler');
+            }
           }
         };
         

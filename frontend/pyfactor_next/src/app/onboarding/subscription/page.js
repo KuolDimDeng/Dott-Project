@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useOnboarding } from '@/app/onboarding/hooks/useOnboarding';
 import { ONBOARDING_STATES } from '@/app/onboarding/state/OnboardingStateManager';
 import Subscription from '@/app/onboarding/components/steps/Subscription/Subscription';
-import ErrorBoundary from '@/components/ErrorBoundary/ErrorBoundary';
+import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 import { generateRequestId } from '@/lib/authUtils';
 import { logger } from '@/utils/logger';
 

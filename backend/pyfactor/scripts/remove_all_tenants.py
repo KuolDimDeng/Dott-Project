@@ -54,7 +54,7 @@ def list_all_tenants():
         conn = get_db_connection()
         with conn.cursor() as cursor:
             cursor.execute("""
-                SELECT id, name, schema_name FROM auth_tenant
+                SELECT id, name, schema_name FROM custom_auth_tenant
             """)
             
             tenants = []
@@ -146,7 +146,7 @@ def truncate_tables():
         conn = get_db_connection()
         with conn.cursor() as cursor:
             # Try to truncate tables with CASCADE
-            cursor.execute("TRUNCATE TABLE auth_tenant, users_user CASCADE")
+            cursor.execute("TRUNCATE TABLE custom_auth_tenant, custom_auth_user CASCADE")
             logger.info("Successfully truncated all tables")
             return True
     except Exception as e:
@@ -157,15 +157,15 @@ def truncate_tables():
             with conn.cursor() as cursor:
                 # Update the owner_id to NULL if possible
                 cursor.execute("""
-                    ALTER TABLE auth_tenant ALTER COLUMN owner_id DROP NOT NULL;
+                    ALTER TABLE custom_auth_tenant ALTER COLUMN owner_id DROP NOT NULL;
                 """)
                 cursor.execute("""
-                    UPDATE auth_tenant SET owner_id = NULL;
+                    UPDATE custom_auth_tenant SET owner_id = NULL;
                 """)
-                
+
                 # Now delete from both tables
-                cursor.execute("DELETE FROM users_user")
-                cursor.execute("DELETE FROM auth_tenant")
+                cursor.execute("DELETE FROM custom_auth_user")
+                cursor.execute("DELETE FROM custom_auth_tenant")
                 
                 logger.info("Successfully deleted all data using alternative approach")
                 return True

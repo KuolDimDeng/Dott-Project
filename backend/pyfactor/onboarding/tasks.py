@@ -19,6 +19,8 @@ from psycopg2 import OperationalError
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from django.db.migrations.exceptions import InconsistentMigrationHistory
 from django.db.migrations import loader as migrations_loader
+from onboarding.utils import create_table_from_model
+
 
 
 
@@ -609,13 +611,113 @@ def setup_user_schema_task(self, user_id: str, business_id: str, **kwargs) -> Di
                         );
                         CREATE INDEX IF NOT EXISTS django_session_expire_date_idx ON django_session (expire_date);
                     """)
-                    
-                    # Create essential indexes for better performance
+
+                    # Create inventory_product table
                     cursor.execute("""
-                        CREATE INDEX IF NOT EXISTS custom_auth_user_email_idx ON custom_auth_user (email);
-                        CREATE INDEX IF NOT EXISTS users_business_name_idx ON users_business (name);
+                    -- Create inventory_department table
+                    CREATE TABLE IF NOT EXISTS inventory_department (
+                        id SERIAL PRIMARY KEY,
+                        name VARCHAR(255) NOT NULL,
+                        description TEXT NULL,
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+                    );
+
+                    -- Create inventory_product table
+                    CREATE TABLE IF NOT EXISTS inventory_product (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        name VARCHAR(255) NOT NULL,
+                        description TEXT NULL,
+                        price DECIMAL(10, 2) NOT NULL DEFAULT 0,
+                        is_for_sale BOOLEAN NOT NULL DEFAULT TRUE,
+                        is_for_rent BOOLEAN NOT NULL DEFAULT FALSE,
+                        salestax DECIMAL(5, 2) NOT NULL DEFAULT 0,
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        product_code VARCHAR(50) NOT NULL UNIQUE,
+                        department_id INTEGER NULL REFERENCES inventory_department(id),
+                        stock_quantity INTEGER NOT NULL DEFAULT 0,
+                        reorder_level INTEGER NOT NULL DEFAULT 0,
+                        height DECIMAL(10, 2) NULL,
+                        width DECIMAL(10, 2) NULL,
+                        height_unit VARCHAR(10) NOT NULL DEFAULT 'cm',
+                        width_unit VARCHAR(10) NOT NULL DEFAULT 'cm',
+                        weight DECIMAL(10, 2) NULL,
+                        weight_unit VARCHAR(10) NOT NULL DEFAULT 'kg',
+                        charge_period VARCHAR(10) NOT NULL DEFAULT 'day',
+                        charge_amount DECIMAL(10, 2) NOT NULL DEFAULT 0
+                    );
+
+                    -- Create inventory_service table
+                    CREATE TABLE IF NOT EXISTS inventory_service (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- Change to UUID like product
+                        name VARCHAR(255) NOT NULL,
+                        description TEXT NULL,
+                        price DECIMAL(10, 2) NOT NULL DEFAULT 0,
+                        is_for_sale BOOLEAN NOT NULL DEFAULT TRUE,
+                        is_for_rent BOOLEAN NOT NULL DEFAULT FALSE,
+                        salestax DECIMAL(5, 2) NOT NULL DEFAULT 0,
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                        service_code VARCHAR(50) NOT NULL UNIQUE,
+                        duration INTERVAL NULL,
+                        is_recurring BOOLEAN NOT NULL DEFAULT FALSE,
+                        height DECIMAL(10, 2) NULL,
+                        width DECIMAL(10, 2) NULL,
+                        height_unit VARCHAR(10) NOT NULL DEFAULT 'cm',
+                        width_unit VARCHAR(10) NOT NULL DEFAULT 'cm',
+                        weight DECIMAL(10, 2) NULL,
+                        weight_unit VARCHAR(10) NOT NULL DEFAULT 'kg',
+                        charge_period VARCHAR(10) NOT NULL DEFAULT 'day',
+                        charge_amount DECIMAL(10, 2) NOT NULL DEFAULT 0
+                    );
+
+                    -- Create inventory_producttypefields table
+                    CREATE TABLE IF NOT EXISTS inventory_producttypefields (
+                        id SERIAL PRIMARY KEY,
+                        product_id UUID NOT NULL REFERENCES inventory_product(id) ON DELETE CASCADE,
+                        category VARCHAR(100) NULL,
+                        subcategory VARCHAR(100) NULL,
+                        material VARCHAR(100) NULL,
+                        brand VARCHAR(100) NULL,
+                        condition VARCHAR(50) NULL,
+                        ingredients TEXT NULL,
+                        allergens TEXT NULL,
+                        nutritional_info TEXT NULL,
+                        size VARCHAR(20) NULL,
+                        color VARCHAR(50) NULL,
+                        gender VARCHAR(20) NULL,
+                        vehicle_type VARCHAR(100) NULL,
+                        load_capacity DECIMAL(10, 2) NULL,
+                        extra_fields JSONB NOT NULL DEFAULT '{}'::jsonb
+                    );
+
+                    -- Create inventory_servicetypefields table
+                    CREATE TABLE IF NOT EXISTS inventory_servicetypefields (
+                        id SERIAL PRIMARY KEY,
+                        service_id UUID NOT NULL REFERENCES inventory_service(id) ON DELETE CASCADE,
+                        category VARCHAR(100) NULL,
+                        subcategory VARCHAR(100) NULL,
+                        skill_level VARCHAR(50) NULL,
+                        certification VARCHAR(100) NULL,
+                        experience_years INTEGER NULL,
+                        min_booking_notice INTERVAL NULL,
+                        buffer_time INTERVAL NULL,
+                        max_capacity INTEGER NULL,
+                        amenities TEXT NULL,
+                        service_area VARCHAR(100) NULL,
+                        vehicle_requirements TEXT NULL,
+                        extra_fields JSONB NOT NULL DEFAULT '{}'::jsonb
+                    );
+
                     """)
-                    
+                    logger.info("Created inventory_department table")
+                    logger.info("Created inventory_product table")
+                    logger.info("Created inventory_service table")
+                    logger.info("Created inventory_producttypefields table")
+                    logger.info("Created inventory_servicetypefields table")
+
+                
                     # CRITICAL: Mark the migrations in the correct order with timestamps
                     # This ensures custom_auth.0001_initial is applied before users.0001_initial
                     cursor.execute("""
@@ -1180,3 +1282,261 @@ def create_minimal_schema_task(self, user_id: str, business_id: str, tenant_id: 
     finally:
         # Make sure to close all connections
         connections.close_all()
+
+
+def verify_tenant_schema(schema_name, cursor, logger=None):
+    """
+    Verify and update tenant schema tables to match current model definitions.
+    Add missing columns if needed.
+    """
+    if logger is None:
+        import logging
+        logger = logging.getLogger('Pyfactor')
+    
+    logger.info(f"Verifying schema {schema_name} matches model definitions")
+    
+    # Set search path to tenant schema
+    cursor.execute(f"SET search_path TO {schema_name}")
+    
+    # Define table columns that should exist based on models
+    model_tables = {
+        'inventory_product': {
+            # Item fields
+            'name': 'VARCHAR(100) NOT NULL',
+            'description': 'TEXT NULL',
+            'price': 'DECIMAL(10, 2) NOT NULL DEFAULT 0',
+            'is_for_sale': 'BOOLEAN NOT NULL DEFAULT TRUE',
+            'is_for_rent': 'BOOLEAN NOT NULL DEFAULT FALSE',
+            'salestax': 'DECIMAL(5, 2) NOT NULL DEFAULT 0',
+            'created_at': 'TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()',
+            'updated_at': 'TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()',
+            'height': 'DECIMAL(10, 2) NULL',
+            'width': 'DECIMAL(10, 2) NULL',
+            'height_unit': 'VARCHAR(10) NOT NULL DEFAULT \'cm\'',
+            'width_unit': 'VARCHAR(10) NOT NULL DEFAULT \'cm\'',
+            'weight': 'DECIMAL(10, 2) NULL',
+            'weight_unit': 'VARCHAR(10) NOT NULL DEFAULT \'kg\'',
+            'charge_period': 'VARCHAR(10) NOT NULL DEFAULT \'day\'',
+            'charge_amount': 'DECIMAL(10, 2) NOT NULL DEFAULT 0',
+            
+            # Product specific fields
+            'product_code': 'VARCHAR(50) NOT NULL UNIQUE',
+            'department_id': 'INTEGER NULL',
+            'stock_quantity': 'INTEGER NOT NULL DEFAULT 0',
+            'reorder_level': 'INTEGER NOT NULL DEFAULT 0',
+        },
+        'inventory_service': {
+            # Item fields
+            'name': 'VARCHAR(100) NOT NULL',
+            'description': 'TEXT NULL',
+            'price': 'DECIMAL(10, 2) NOT NULL DEFAULT 0',
+            'is_for_sale': 'BOOLEAN NOT NULL DEFAULT TRUE',
+            'is_for_rent': 'BOOLEAN NOT NULL DEFAULT FALSE',
+            'salestax': 'DECIMAL(5, 2) NOT NULL DEFAULT 0',
+            'created_at': 'TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()',
+            'updated_at': 'TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()',
+            'height': 'DECIMAL(10, 2) NULL',
+            'width': 'DECIMAL(10, 2) NULL',
+            'height_unit': 'VARCHAR(10) NOT NULL DEFAULT \'cm\'',
+            'width_unit': 'VARCHAR(10) NOT NULL DEFAULT \'cm\'',
+            'weight': 'DECIMAL(10, 2) NULL',
+            'weight_unit': 'VARCHAR(10) NOT NULL DEFAULT \'kg\'',
+            'charge_period': 'VARCHAR(10) NOT NULL DEFAULT \'day\'',
+            'charge_amount': 'DECIMAL(10, 2) NOT NULL DEFAULT 0',
+            
+            # Service specific fields
+            'service_code': 'VARCHAR(50) NOT NULL UNIQUE',
+            'duration': 'INTERVAL NULL',
+            'is_recurring': 'BOOLEAN NOT NULL DEFAULT FALSE',
+        },
+        'custom_auth_user': {
+            'id': 'UUID PRIMARY KEY',
+            'password': 'VARCHAR(128) NOT NULL',
+            'last_login': 'TIMESTAMP WITH TIME ZONE NULL',
+            'is_superuser': 'BOOLEAN NOT NULL',
+            'email': 'VARCHAR(254) NOT NULL UNIQUE',
+            'first_name': 'VARCHAR(100) NOT NULL DEFAULT \'\'',
+            'last_name': 'VARCHAR(100) NOT NULL DEFAULT \'\'',
+            'is_active': 'BOOLEAN NOT NULL DEFAULT TRUE',
+            'is_staff': 'BOOLEAN NOT NULL DEFAULT FALSE',
+            'date_joined': 'TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()',
+            'email_confirmed': 'BOOLEAN NOT NULL DEFAULT FALSE',
+            'confirmation_token': 'UUID NOT NULL DEFAULT gen_random_uuid()',
+            'is_onboarded': 'BOOLEAN NOT NULL DEFAULT FALSE',
+            'stripe_customer_id': 'VARCHAR(255) NULL',
+            'role': 'VARCHAR(20) NOT NULL DEFAULT \'OWNER\'',
+            'occupation': 'VARCHAR(50) NOT NULL DEFAULT \'OWNER\'',
+            'tenant_id': 'UUID NULL',
+            'cognito_sub': 'VARCHAR(36) NULL'
+        }
+    }
+    
+    for table_name, expected_columns in model_tables.items():
+        # Check if table exists
+        cursor.execute(f"""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = %s
+                AND table_name = %s
+            )
+        """, [schema_name, table_name])
+        
+        table_exists = cursor.fetchone()[0]
+        if not table_exists:
+            logger.warning(f"Table {table_name} does not exist in schema {schema_name}")
+            continue
+        
+        # Get existing columns
+        cursor.execute(f"""
+            SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale
+            FROM information_schema.columns 
+            WHERE table_schema = %s 
+            AND table_name = %s
+        """, [schema_name, table_name])
+        
+        existing_columns = {row[0].lower(): row for row in cursor.fetchall()}
+        
+        # Add missing columns
+        for column_name, definition in expected_columns.items():
+            if column_name.lower() not in existing_columns:
+                try:
+                    logger.info(f"Adding missing column {column_name} to {table_name}")
+                    cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
+                except Exception as e:
+                    logger.warning(f"Error adding column {column_name} to {table_name}: {str(e)}")
+    
+    logger.info(f"Schema verification completed for {schema_name}")
+
+
+def create_core_tables(schema_name, cursor):
+    """Create all core tables for the tenant schema using model definitions"""
+    from django.apps import apps
+    
+    # Set search path to tenant schema
+    cursor.execute(f"SET search_path TO {schema_name}")
+    
+    # Create django infrastructure tables
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS django_migrations (
+        id SERIAL PRIMARY KEY,
+        app VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        applied TIMESTAMP WITH TIME ZONE NOT NULL
+    );
+    
+    CREATE TABLE IF NOT EXISTS django_content_type (
+        id SERIAL PRIMARY KEY,
+        app_label VARCHAR(100) NOT NULL,
+        model VARCHAR(100) NOT NULL,
+        CONSTRAINT django_content_type_app_label_model_key UNIQUE (app_label, model)
+    );
+    
+    CREATE TABLE IF NOT EXISTS django_session (
+        session_key VARCHAR(40) PRIMARY KEY,
+        session_data TEXT NOT NULL,
+        expire_date TIMESTAMP WITH TIME ZONE NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS django_session_expire_date_idx ON django_session (expire_date);
+    """)
+    
+    # Get models from all installed apps
+    for app_config in apps.get_app_configs():
+        for model in app_config.get_models():
+            # Skip abstract models and proxy models
+            if model._meta.abstract or model._meta.proxy:
+                continue
+                
+            # Skip non-tenant models
+            if not getattr(model, 'is_tenant_model', True):
+                continue
+                
+            try:
+                create_table_from_model(cursor, schema_name, model)
+            except Exception as e:
+                logger.warning(f"Error creating table for model {model.__name__}: {str(e)}")
+    
+    # Create primary key and foreign key constraints
+    for app_config in apps.get_app_configs():
+        for model in app_config.get_models():
+            if model._meta.abstract or model._meta.proxy:
+                continue
+                
+            if not getattr(model, 'is_tenant_model', True):
+                continue
+                
+            table_name = model._meta.db_table
+            
+            # Add foreign key constraints
+            for field in model._meta.fields:
+                if isinstance(field, models.ForeignKey) or isinstance(field, models.OneToOneField):
+                    rel_to = field.remote_field.model
+                    rel_table = rel_to._meta.db_table
+                    rel_field = rel_to._meta.pk.column
+                    
+                    constraint_name = f"fk_{table_name}_{field.column}_refs_{rel_table}"
+                    
+                    try:
+                        cursor.execute(f"""
+                        ALTER TABLE {table_name} 
+                        ADD CONSTRAINT {constraint_name}
+                        FOREIGN KEY ({field.column}) 
+                        REFERENCES {rel_table}({rel_field}) 
+                        DEFERRABLE INITIALLY DEFERRED;
+                        """)
+                    except Exception as e:
+                        logger.warning(f"Error adding foreign key constraint {constraint_name}: {str(e)}")
+    
+    # Verify and fix any schema discrepancies
+    verify_tenant_schema(schema_name, cursor)
+    
+    return True
+
+
+@shared_task(
+    name='verify_all_tenant_schemas',
+    bind=True
+)
+def verify_all_tenant_schemas(self):
+    """
+    Verify and fix schema issues across all tenant schemas.
+    This task should be scheduled to run periodically.
+    """
+    from custom_auth.models import Tenant
+    from django.db import connection
+    
+    results = {}
+    
+    try:
+        # Get all active tenants
+        tenants = Tenant.objects.filter(is_active=True)
+        logger.info(f"Verifying schemas for {tenants.count()} active tenants")
+        
+        for tenant in tenants:
+            try:
+                schema_name = tenant.schema_name
+                logger.info(f"Verifying schema for tenant: {schema_name}")
+                
+                with connection.cursor() as cursor:
+                    verify_tenant_schema(schema_name, cursor)
+                    
+                # Update tenant's last health check time
+                tenant.last_health_check = timezone.now()
+                tenant.save(update_fields=['last_health_check'])
+                
+                results[schema_name] = "verified"
+            except Exception as e:
+                logger.error(f"Error verifying schema for tenant {tenant.schema_name}: {str(e)}")
+                results[tenant.schema_name] = f"error: {str(e)}"
+        
+        return {
+            "status": "success",
+            "verified_count": sum(1 for result in results.values() if result == "verified"),
+            "error_count": sum(1 for result in results.values() if result.startswith("error")),
+            "results": results
+        }
+    except Exception as e:
+        logger.error(f"Error in verify_all_tenant_schemas task: {str(e)}")
+        return {
+            "status": "error",
+            "error": str(e)
+        }

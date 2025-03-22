@@ -1,6 +1,7 @@
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/components/steps/Payment/Payment.js
 'use client';
 
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
   Box,
@@ -29,6 +30,7 @@ import PaymentsIcon from '@mui/icons-material/Payments';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import SecurityIcon from '@mui/icons-material/Security';
 import GroupsIcon from '@mui/icons-material/Groups';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
 
 // Pricing function
 const getPricing = (plan, billingCycle = 'monthly') => {
@@ -50,6 +52,17 @@ const PaymentComponent = ({ metadata }) => {
   const subscriptionPlan = user?.subscriptionPlan;
   const billingCycle = user?.preferences?.billingCycle || 'monthly';
   const businessCountry = user?.businessCountry || 'US';
+  const paymentMethod = user?.paymentMethod || 'credit_card';
+
+  // Redirect if payment method is not credit_card
+  useEffect(() => {
+    if (paymentMethod !== 'credit_card') {
+      logger.info('[Payment] Redirecting to dashboard for non-credit card payment method:', { 
+        paymentMethod
+      });
+      window.location.replace('/dashboard');
+    }
+  }, [paymentMethod]);
 
   const steps = [
     {
@@ -85,7 +98,21 @@ const PaymentComponent = ({ metadata }) => {
       // Here you would typically integrate with your payment provider (e.g., Stripe)
       // For now, we'll simulate a successful payment
       const paymentId = `pay_${Date.now()}`;
+      
+      // Store setup info for dashboard
+      sessionStorage.setItem('pendingSchemaSetup', JSON.stringify({
+        plan: subscriptionPlan,
+        paymentMethod: 'credit_card',
+        timestamp: new Date().toISOString(),
+        status: 'pending'
+      }));
+      
       await handlePaymentSuccess(paymentId);
+      
+      // Success message
+      logger.info('[Payment] Payment successful, redirecting to dashboard');
+      
+      // Redirect will be handled by usePaymentForm
     } catch (error) {
       logger.error('Payment submission failed:', error);
       setCheckoutError(error.message || 'Failed to process payment');
@@ -286,6 +313,18 @@ const PaymentComponent = ({ metadata }) => {
     );
   }
 
+  // Verify payment method is credit_card
+  if (paymentMethod !== 'credit_card') {
+    return (
+      <Container maxWidth="sm">
+        <Alert severity="info" sx={{ mt: 2 }}>
+          Redirecting to dashboard...
+        </Alert>
+        <CircularProgress sx={{ mt: 2 }} />
+      </Container>
+    );
+  }
+
   return (
     <Container maxWidth="sm">
       <StepProgress steps={steps} />
@@ -336,6 +375,16 @@ const PaymentComponent = ({ metadata }) => {
             </Box>
             
             <Divider sx={{ mb: 2 }} />
+            
+            {/* Payment Method Section */}
+            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Chip 
+                icon={<CreditCardIcon />} 
+                label="Credit/Debit Card" 
+                color="primary"
+                sx={{ mb: 1 }}
+              />
+            </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2, flexWrap: 'wrap' }}>
               {getPlanChips()}

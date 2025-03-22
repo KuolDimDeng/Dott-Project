@@ -1,10 +1,12 @@
 #/Users/kuoldeng/projectx/backend/pyfactor/analysis/models.py
+
+import uuid
 from django.db import models
 
-# Create your models here.
-from django.db import models
+
 
 class FinancialData(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     date = models.DateField()
     sales = models.DecimalField(max_digits=10, decimal_places=2)
     expenses = models.DecimalField(max_digits=10, decimal_places=2)
@@ -12,6 +14,7 @@ class FinancialData(models.Model):
     # Add more fields as needed
 
 class ChartConfiguration(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
     x_axis = models.CharField(max_length=50)
     y_axis = models.CharField(max_length=50)

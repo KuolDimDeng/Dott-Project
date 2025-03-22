@@ -492,11 +492,14 @@ class Command(BaseCommand):
     def reset_all_sequences(self):
         logger.info("Resetting all sequences...")
         with connection.cursor() as cursor:
+            # First, get all sequences
             cursor.execute("""
-                SELECT 'SELECT SETVAL(' ||
-                    quote_literal(quote_ident(PGT.schemaname) || '.' || quote_ident(S.relname)) ||
-                    ', COALESCE(MAX(' ||quote_ident(C.attname)|| '), 1) ) FROM ' ||
-                    quote_ident(PGT.schemaname)|| '.'||quote_ident(T.relname)|| ';'
+                SELECT 
+                    PGT.schemaname,
+                    S.relname AS sequence_name,
+                    T.relname AS table_name,
+                    C.attname AS column_name,
+                    pg_catalog.format_type(C.atttypid, NULL) AS column_type
                 FROM pg_class AS S,
                     pg_depend AS D,
                     pg_class AS T,
@@ -510,11 +513,32 @@ class Command(BaseCommand):
                     AND T.relname = PGT.tablename
                 ORDER BY S.relname;
             """)
-            statements = cursor.fetchall()
-            for stmt in statements:
-                cursor.execute(stmt[0])
+            sequence_data = cursor.fetchall()
+            
+            for schema, seq_name, table_name, column_name, column_type in sequence_data:
+                # Skip UUID columns - they don't need sequences
+                if 'uuid' in column_type.lower():
+                    logger.info(f"Skipping sequence {seq_name} for UUID column {column_name} in table {table_name}")
+                    continue
+                    
+                # For integer-based columns, reset the sequence
+                if 'int' in column_type.lower() or column_type.lower() in ('smallint', 'bigint'):
+                    try:
+                        sql = f"""
+                            SELECT SETVAL(
+                                '{schema}.{seq_name}', 
+                                COALESCE((SELECT MAX({column_name}) FROM {schema}.{table_name}), 1), 
+                                false
+                            );
+                        """
+                        cursor.execute(sql)
+                        logger.info(f"Reset sequence {seq_name} for table {table_name}")
+                    except Exception as e:
+                        logger.warning(f"Error resetting sequence {seq_name}: {e}")
+        
         logger.info("All sequences reset.")
 
+        
     def drop_all_views(self):
         logger.info("Dropping all views...")
         with connection.cursor() as cursor:
@@ -554,7 +578,7 @@ class Command(BaseCommand):
             # Core Django tables
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS django_migrations (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 app VARCHAR(255) NOT NULL,
                 name VARCHAR(255) NOT NULL,
                 applied TIMESTAMP WITH TIME ZONE NOT NULL
@@ -564,7 +588,7 @@ class Command(BaseCommand):
             
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS django_content_type (
-                id SERIAL PRIMARY KEY,
+                id BIGSERIAL PRIMARY KEY,
                 app_label VARCHAR(100) NOT NULL,
                 model VARCHAR(100) NOT NULL,
                 name VARCHAR(100) NULL,
@@ -573,14 +597,15 @@ class Command(BaseCommand):
             """)
             logger.info("Created django_content_type table")
             
+            # Create django_site table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS django_site (
-                id SERIAL PRIMARY KEY,
+                id BIGSERIAL PRIMARY KEY,
                 domain VARCHAR(100) NOT NULL,
                 name VARCHAR(50) NOT NULL,
                 CONSTRAINT django_site_domain_key UNIQUE (domain)
             );
-            INSERT INTO django_site (id, domain, name) VALUES (1, 'example.com', 'example.com')
+            INSERT INTO django_site (domain, name) VALUES ('example.com', 'example.com')
             ON CONFLICT DO NOTHING;
             """)
             logger.info("Created django_site table")
@@ -590,7 +615,7 @@ class Command(BaseCommand):
             # Auth group table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS auth_group (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(150) NOT NULL UNIQUE
             );
             """)
@@ -599,7 +624,7 @@ class Command(BaseCommand):
             # Create account type table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_accounttype (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(100) NOT NULL UNIQUE,
                 description TEXT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -611,7 +636,7 @@ class Command(BaseCommand):
             # Create account category table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_accountcategory (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(100) NOT NULL,
                 description TEXT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -623,7 +648,7 @@ class Command(BaseCommand):
             # Create inventory category table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS inventory_category (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(100) NOT NULL,
                 description TEXT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -635,7 +660,7 @@ class Command(BaseCommand):
             # Create inventory location table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS inventory_location (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(100) NOT NULL,
                 address TEXT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -647,7 +672,7 @@ class Command(BaseCommand):
             # Create inventory supplier table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS inventory_supplier (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(100) NOT NULL,
                 contact_info TEXT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -659,7 +684,7 @@ class Command(BaseCommand):
             # Create inventory department table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS inventory_department (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(100) NOT NULL,
                 description TEXT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -671,7 +696,7 @@ class Command(BaseCommand):
             # Create HR role table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS hr_role (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 title VARCHAR(100) NOT NULL,
                 description TEXT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -683,7 +708,7 @@ class Command(BaseCommand):
             # Create taxes state table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS taxes_state (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 code VARCHAR(2) NOT NULL UNIQUE,
                 name VARCHAR(100) NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -695,10 +720,11 @@ class Command(BaseCommand):
             # Create custom charge plan table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS inventory_customchargeplan (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(100) NOT NULL,
                 description TEXT NULL,
                 rate DECIMAL(10, 2) NOT NULL,
+                quantity INTEGER NOT NULL DEFAULT 1,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -706,11 +732,12 @@ class Command(BaseCommand):
             logger.info("Created inventory_customchargeplan table")
             
             # Create auth_permission table after content_type but before user permissions
+            # Use BIGINT for permission id to match Django's default
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS auth_permission (
-                id SERIAL PRIMARY KEY,
+                id BIGSERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
-                content_type_id INTEGER NOT NULL,
+                content_type_id BIGINT NOT NULL,
                 codename VARCHAR(100) NOT NULL,
                 CONSTRAINT auth_permission_content_type_id_codename_01ab375a_uniq UNIQUE (content_type_id, codename),
                 CONSTRAINT auth_permission_content_type_id_2f476e4b_fk_django_co FOREIGN KEY (content_type_id)
@@ -849,11 +876,11 @@ class Command(BaseCommand):
             # Create finance_account table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_account (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(255) NOT NULL,
                 account_number VARCHAR(50) NULL,
-                account_type_id INTEGER NOT NULL REFERENCES finance_accounttype(id),
-                parent_account_id INTEGER NULL REFERENCES finance_account(id),
+                account_type_id UUID NOT NULL REFERENCES finance_accounttype(id),
+                parent_account_id UUID NULL REFERENCES finance_account(id),
                 business_id UUID NOT NULL REFERENCES users_business(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -864,12 +891,12 @@ class Command(BaseCommand):
             # Create chart of account table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_chartofaccount (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(255) NOT NULL,
                 code VARCHAR(50) NOT NULL,
                 description TEXT NULL,
-                parent_id INTEGER NULL REFERENCES finance_chartofaccount(id),
-                category_id INTEGER NOT NULL REFERENCES finance_accountcategory(id),
+                parent_id UUID NULL REFERENCES finance_chartofaccount(id),
+                category_id UUID NOT NULL REFERENCES finance_accountcategory(id),
                 is_active BOOLEAN NOT NULL DEFAULT TRUE,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -880,10 +907,10 @@ class Command(BaseCommand):
             # Create finance_costcategory table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_costcategory (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(255) NOT NULL,
                 description TEXT NULL,
-                parent_id INTEGER NULL REFERENCES finance_costcategory(id),
+                parent_id UUID NULL REFERENCES finance_costcategory(id),
                 business_id UUID NOT NULL REFERENCES users_business(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -894,7 +921,7 @@ class Command(BaseCommand):
             # Create banking_bankaccount table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS banking_bankaccount (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 account_number VARCHAR(50) NOT NULL,
                 bank_name VARCHAR(255) NOT NULL,
                 account_type VARCHAR(50) NOT NULL,
@@ -909,13 +936,13 @@ class Command(BaseCommand):
             # Create hr_employee table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS hr_employee (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 first_name VARCHAR(100) NOT NULL,
                 last_name VARCHAR(100) NOT NULL,
                 email VARCHAR(254) NOT NULL,
                 phone VARCHAR(20) NULL,
                 hire_date DATE NOT NULL,
-                supervisor_id INTEGER NULL REFERENCES hr_employee(id),
+                supervisor_id UUID NULL REFERENCES hr_employee(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -925,7 +952,7 @@ class Command(BaseCommand):
             # Create payroll_payrollrun table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS payroll_payrollrun (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 start_date DATE NOT NULL,
                 end_date DATE NOT NULL,
                 payment_date DATE NOT NULL,
@@ -939,7 +966,7 @@ class Command(BaseCommand):
             # Create crm_customer table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS crm_customer (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(255) NOT NULL,
                 email VARCHAR(254) NULL,
                 phone VARCHAR(20) NULL,
@@ -952,14 +979,14 @@ class Command(BaseCommand):
             # Create crm_lead table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS crm_lead (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 first_name VARCHAR(100) NOT NULL,
                 last_name VARCHAR(100) NOT NULL,
                 email VARCHAR(254) NULL,
                 phone VARCHAR(20) NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'new',
                 assigned_to_id UUID NULL REFERENCES custom_auth_user(id),
-                converted_to_id INTEGER NULL REFERENCES crm_customer(id),
+                converted_to_id UUID NULL REFERENCES crm_customer(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -969,12 +996,12 @@ class Command(BaseCommand):
             # Create crm_opportunity table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS crm_opportunity (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(255) NOT NULL,
                 amount DECIMAL(15, 2) NOT NULL,
                 stage VARCHAR(50) NOT NULL DEFAULT 'prospecting',
                 expected_close_date DATE NULL,
-                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
+                customer_id UUID NOT NULL REFERENCES crm_customer(id),
                 assigned_to_id UUID NULL REFERENCES custom_auth_user(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -985,7 +1012,7 @@ class Command(BaseCommand):
             # Create crm_campaign table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS crm_campaign (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(255) NOT NULL,
                 start_date DATE NOT NULL,
                 end_date DATE NULL,
@@ -999,12 +1026,12 @@ class Command(BaseCommand):
             # Create crm_deal table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS crm_deal (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(255) NOT NULL,
                 amount DECIMAL(15, 2) NOT NULL,
                 stage VARCHAR(50) NOT NULL DEFAULT 'negotiation',
-                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
-                opportunity_id INTEGER NULL REFERENCES crm_opportunity(id),
+                customer_id UUID NOT NULL REFERENCES crm_customer(id),
+                opportunity_id UUID NULL REFERENCES crm_opportunity(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1014,13 +1041,13 @@ class Command(BaseCommand):
             # Create crm_contact table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS crm_contact (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 first_name VARCHAR(100) NOT NULL,
                 last_name VARCHAR(100) NOT NULL,
                 email VARCHAR(254) NULL,
                 phone VARCHAR(20) NULL,
                 position VARCHAR(100) NULL,
-                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
+                customer_id UUID NOT NULL REFERENCES crm_customer(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1030,16 +1057,16 @@ class Command(BaseCommand):
             # Create crm_activity table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS crm_activity (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 type VARCHAR(50) NOT NULL,
                 subject VARCHAR(255) NOT NULL,
                 description TEXT NULL,
                 due_date DATE NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'pending',
-                customer_id INTEGER NULL REFERENCES crm_customer(id),
-                lead_id INTEGER NULL REFERENCES crm_lead(id),
-                opportunity_id INTEGER NULL REFERENCES crm_opportunity(id),
-                deal_id INTEGER NULL REFERENCES crm_deal(id),
+                customer_id UUID NULL REFERENCES crm_customer(id),
+                lead_id UUID NULL REFERENCES crm_lead(id),
+                opportunity_id UUID NULL REFERENCES crm_opportunity(id),
+                deal_id UUID NULL REFERENCES crm_deal(id),
                 assigned_to_id UUID NULL REFERENCES custom_auth_user(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -1050,10 +1077,10 @@ class Command(BaseCommand):
             # Create crm_campaignmember table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS crm_campaignmember (
-                id SERIAL PRIMARY KEY,
-                campaign_id INTEGER NOT NULL REFERENCES crm_campaign(id),
-                customer_id INTEGER NULL REFERENCES crm_customer(id),
-                lead_id INTEGER NULL REFERENCES crm_lead(id),
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                campaign_id UUID NOT NULL REFERENCES crm_campaign(id),
+                customer_id UUID NULL REFERENCES crm_customer(id),
+                lead_id UUID NULL REFERENCES crm_lead(id),
                 status VARCHAR(50) NOT NULL DEFAULT 'sent',
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -1064,28 +1091,57 @@ class Command(BaseCommand):
             # Create inventory_product table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS inventory_product (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(255) NOT NULL,
-                sku VARCHAR(50) NOT NULL,
                 description TEXT NULL,
-                price DECIMAL(15, 2) NOT NULL,
-                cost DECIMAL(15, 2) NOT NULL,
-                department_id INTEGER NULL REFERENCES inventory_department(id),
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                price DECIMAL(15, 2) NOT NULL DEFAULT 0,
+                is_for_sale BOOLEAN NOT NULL DEFAULT TRUE,
+                is_for_rent BOOLEAN NOT NULL DEFAULT FALSE,
+                salestax DECIMAL(5, 2) NOT NULL DEFAULT 0,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                product_code VARCHAR(50) NOT NULL UNIQUE,
+                department_id UUID NULL REFERENCES inventory_department(id),
+                stock_quantity INTEGER NOT NULL DEFAULT 0,
+                reorder_level INTEGER NOT NULL DEFAULT 0,
+                height DECIMAL(10, 2) NULL,
+                width DECIMAL(10, 2) NULL,
+                height_unit VARCHAR(10) NOT NULL DEFAULT 'cm',
+                width_unit VARCHAR(10) NOT NULL DEFAULT 'cm',
+                weight DECIMAL(10, 2) NULL,
+                weight_unit VARCHAR(10) NOT NULL DEFAULT 'kg',
+                charge_period VARCHAR(10) NOT NULL DEFAULT 'day',
+                charge_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
+                sku VARCHAR(50) NULL,
+                cost DECIMAL(15, 2) NULL DEFAULT 0
             );
             """)
             logger.info("Created inventory_product table")
-            
+
             # Create inventory_service table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS inventory_service (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(255) NOT NULL,
                 description TEXT NULL,
-                rate DECIMAL(15, 2) NOT NULL,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                price DECIMAL(15, 2) NOT NULL DEFAULT 0,
+                is_for_sale BOOLEAN NOT NULL DEFAULT TRUE,
+                is_for_rent BOOLEAN NOT NULL DEFAULT FALSE,
+                salestax DECIMAL(5, 2) NOT NULL DEFAULT 0,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                service_code VARCHAR(50) NOT NULL UNIQUE,
+                duration INTERVAL NULL,
+                is_recurring BOOLEAN NOT NULL DEFAULT FALSE,
+                height DECIMAL(10, 2) NULL,
+                width DECIMAL(10, 2) NULL,
+                height_unit VARCHAR(10) NOT NULL DEFAULT 'cm',
+                width_unit VARCHAR(10) NOT NULL DEFAULT 'cm',
+                weight DECIMAL(10, 2) NULL,
+                weight_unit VARCHAR(10) NOT NULL DEFAULT 'kg',
+                charge_period VARCHAR(10) NOT NULL DEFAULT 'day',
+                charge_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
+                rate DECIMAL(15, 2) NULL
             );
             """)
             logger.info("Created inventory_service table")
@@ -1093,15 +1149,15 @@ class Command(BaseCommand):
             # Create inventory_inventoryitem table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS inventory_inventoryitem (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(255) NOT NULL,
                 sku VARCHAR(50) NOT NULL,
                 description TEXT NULL,
                 quantity INTEGER NOT NULL DEFAULT 0,
                 reorder_level INTEGER NOT NULL DEFAULT 0,
-                category_id INTEGER NULL REFERENCES inventory_category(id),
-                supplier_id INTEGER NULL REFERENCES inventory_supplier(id),
-                location_id INTEGER NULL REFERENCES inventory_location(id),
+                category_id UUID NULL REFERENCES inventory_category(id),
+                supplier_id UUID NULL REFERENCES inventory_supplier(id),
+                location_id UUID NULL REFERENCES inventory_location(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1111,11 +1167,11 @@ class Command(BaseCommand):
             # Create inventory_inventorytransaction table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS inventory_inventorytransaction (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 transaction_type VARCHAR(50) NOT NULL,
                 quantity INTEGER NOT NULL,
                 transaction_date TIMESTAMP WITH TIME ZONE NOT NULL,
-                item_id INTEGER NOT NULL REFERENCES inventory_inventoryitem(id),
+                item_id UUID NOT NULL REFERENCES inventory_inventoryitem(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1125,25 +1181,47 @@ class Command(BaseCommand):
             # Create inventory_producttypefields table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS inventory_producttypefields (
-                id SERIAL PRIMARY KEY,
-                product_id INTEGER NOT NULL REFERENCES inventory_product(id),
-                field_name VARCHAR(100) NOT NULL,
-                field_value TEXT NULL,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                product_id UUID NOT NULL REFERENCES inventory_product(id) ON DELETE CASCADE,
+                category VARCHAR(100) NULL,
+                subcategory VARCHAR(100) NULL,
+                material VARCHAR(100) NULL,
+                brand VARCHAR(100) NULL,
+                condition VARCHAR(50) NULL,
+                ingredients TEXT NULL,
+                allergens TEXT NULL,
+                nutritional_info TEXT NULL,
+                size VARCHAR(20) NULL,
+                color VARCHAR(50) NULL,
+                gender VARCHAR(20) NULL,
+                vehicle_type VARCHAR(100) NULL,
+                load_capacity DECIMAL(10, 2) NULL,
+                extra_fields JSONB NOT NULL DEFAULT '{}'::jsonb,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
             );
             """)
             logger.info("Created inventory_producttypefields table")
-            
+
             # Create inventory_servicetypefields table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS inventory_servicetypefields (
-                id SERIAL PRIMARY KEY,
-                service_id INTEGER NOT NULL REFERENCES inventory_service(id),
-                field_name VARCHAR(100) NOT NULL,
-                field_value TEXT NULL,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                service_id UUID NOT NULL REFERENCES inventory_service(id) ON DELETE CASCADE,
+                category VARCHAR(100) NULL,
+                subcategory VARCHAR(100) NULL,
+                skill_level VARCHAR(50) NULL,
+                certification VARCHAR(100) NULL,
+                experience_years UUID NULL,
+                min_booking_notice INTERVAL NULL,
+                buffer_time INTERVAL NULL,
+                max_capacity UUID NULL,
+                amenities TEXT NULL,
+                service_area VARCHAR(100) NULL,
+                vehicle_requirements TEXT NULL,
+                extra_fields JSONB NOT NULL DEFAULT '{}'::jsonb,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
             );
             """)
             logger.info("Created inventory_servicetypefields table")
@@ -1151,9 +1229,9 @@ class Command(BaseCommand):
             # Create inventory_product_custom_charge_plans table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS inventory_product_custom_charge_plans (
-                id SERIAL PRIMARY KEY,
-                product_id INTEGER NOT NULL REFERENCES inventory_product(id),
-                customchargeplan_id INTEGER NOT NULL REFERENCES inventory_customchargeplan(id),
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                product_id UUID NOT NULL REFERENCES inventory_product(id),
+                customchargeplan_id UUID NOT NULL REFERENCES inventory_customchargeplan(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1163,9 +1241,9 @@ class Command(BaseCommand):
             # Create inventory_service_custom_charge_plans table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS inventory_service_custom_charge_plans (
-                id SERIAL PRIMARY KEY,
-                service_id INTEGER NOT NULL REFERENCES inventory_service(id),
-                customchargeplan_id INTEGER NOT NULL REFERENCES inventory_customchargeplan(id),
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                service_id UUID NOT NULL REFERENCES inventory_service(id),
+                customchargeplan_id UUID NOT NULL REFERENCES inventory_customchargeplan(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1175,7 +1253,7 @@ class Command(BaseCommand):
             # Create purchases_vendor table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS purchases_vendor (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(255) NOT NULL,
                 contact_name VARCHAR(100) NULL,
                 email VARCHAR(254) NULL,
@@ -1190,12 +1268,12 @@ class Command(BaseCommand):
             # Create purchases_purchaseorder table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS purchases_purchaseorder (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 order_number VARCHAR(50) NOT NULL,
                 order_date DATE NOT NULL,
                 expected_delivery_date DATE NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'draft',
-                vendor_id INTEGER NOT NULL REFERENCES purchases_vendor(id),
+                vendor_id UUID NOT NULL REFERENCES purchases_vendor(id),
                 created_by_id UUID NULL REFERENCES custom_auth_user(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -1206,11 +1284,11 @@ class Command(BaseCommand):
             # Create purchases_purchaseorderitem table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS purchases_purchaseorderitem (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 quantity INTEGER NOT NULL,
                 unit_price DECIMAL(15, 2) NOT NULL,
-                product_id INTEGER NOT NULL REFERENCES inventory_product(id),
-                purchase_order_id INTEGER NOT NULL REFERENCES purchases_purchaseorder(id),
+                product_id UUID NOT NULL REFERENCES inventory_product(id),
+                purchase_order_id UUID NOT NULL REFERENCES purchases_purchaseorder(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1220,11 +1298,11 @@ class Command(BaseCommand):
             # Create purchases_purchasereturn table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS purchases_purchasereturn (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 return_number VARCHAR(50) NOT NULL,
                 return_date DATE NOT NULL,
                 reason TEXT NULL,
-                purchase_order_id INTEGER NOT NULL REFERENCES purchases_purchaseorder(id),
+                purchase_order_id UUID NOT NULL REFERENCES purchases_purchaseorder(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1234,10 +1312,10 @@ class Command(BaseCommand):
             # Create purchases_purchasereturnitem table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS purchases_purchasereturnitem (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 quantity INTEGER NOT NULL,
-                product_id INTEGER NOT NULL REFERENCES inventory_product(id),
-                purchase_return_id INTEGER NOT NULL REFERENCES purchases_purchasereturn(id),
+                product_id UUID NOT NULL REFERENCES inventory_product(id),
+                purchase_return_id UUID NOT NULL REFERENCES purchases_purchasereturn(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1247,13 +1325,13 @@ class Command(BaseCommand):
             # Create purchases_bill table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS purchases_bill (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 bill_number VARCHAR(50) NOT NULL,
                 bill_date DATE NOT NULL,
                 due_date DATE NOT NULL,
                 amount DECIMAL(15, 2) NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'unpaid',
-                vendor_id INTEGER NOT NULL REFERENCES purchases_vendor(id),
+                vendor_id UUID NOT NULL REFERENCES purchases_vendor(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1263,11 +1341,11 @@ class Command(BaseCommand):
             # Create purchases_billitem table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS purchases_billitem (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 description TEXT NOT NULL,
                 quantity INTEGER NOT NULL,
                 unit_price DECIMAL(15, 2) NOT NULL,
-                bill_id INTEGER NOT NULL REFERENCES purchases_bill(id),
+                bill_id UUID NOT NULL REFERENCES purchases_bill(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1277,11 +1355,11 @@ class Command(BaseCommand):
             # Create purchases_procurement table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS purchases_procurement (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 procurement_number VARCHAR(50) NOT NULL,
                 procurement_date DATE NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'pending',
-                vendor_id INTEGER NOT NULL REFERENCES purchases_vendor(id),
+                vendor_id UUID NOT NULL REFERENCES purchases_vendor(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1291,11 +1369,11 @@ class Command(BaseCommand):
             # Create purchases_procurementitem table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS purchases_procurementitem (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 quantity INTEGER NOT NULL,
                 unit_price DECIMAL(15, 2) NOT NULL,
-                product_id INTEGER NOT NULL REFERENCES inventory_product(id),
-                procurement_id INTEGER NOT NULL REFERENCES purchases_procurement(id),
+                product_id UUID NOT NULL REFERENCES inventory_product(id),
+                procurement_id UUID NOT NULL REFERENCES purchases_procurement(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1305,11 +1383,11 @@ class Command(BaseCommand):
             # Create finance_accountreconciliation table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_accountreconciliation (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 reconciliation_date DATE NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'pending',
-                account_id INTEGER NOT NULL REFERENCES finance_account(id),
-                bank_account_id INTEGER NOT NULL REFERENCES banking_bankaccount(id),
+                account_id UUID NOT NULL REFERENCES finance_account(id),
+                bank_account_id UUID NOT NULL REFERENCES banking_bankaccount(id),
                 business_id UUID NOT NULL REFERENCES users_business(id),
                 completed_by_id UUID NULL REFERENCES custom_auth_user(id),
                 reviewed_by_id UUID NULL REFERENCES custom_auth_user(id),
@@ -1323,18 +1401,18 @@ class Command(BaseCommand):
             # Create finance_financetransaction table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_financetransaction (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 transaction_type VARCHAR(50) NOT NULL,
                 amount DECIMAL(15, 2) NOT NULL,
                 transaction_date DATE NOT NULL,
                 description TEXT NULL,
-                account_id INTEGER NOT NULL REFERENCES finance_account(id),
+                account_id UUID NOT NULL REFERENCES finance_account(id),
                 business_id UUID NOT NULL REFERENCES users_business(id),
                 created_by_id UUID NULL REFERENCES custom_auth_user(id),
                 posted_by_id UUID NULL REFERENCES custom_auth_user(id),
-                bill_id INTEGER NULL REFERENCES purchases_bill(id),
-                invoice_id INTEGER NULL,
-                reconciliation_id INTEGER NULL REFERENCES finance_accountreconciliation(id),
+                bill_id UUID NULL REFERENCES purchases_bill(id),
+                invoice_id UUID NULL,
+                reconciliation_id UUID NULL REFERENCES finance_accountreconciliation(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1344,19 +1422,19 @@ class Command(BaseCommand):
             #Create sales_invoice table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS sales_invoice (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 invoice_number VARCHAR(50) NOT NULL,
                 invoice_date DATE NOT NULL,
                 due_date DATE NOT NULL,
                 amount DECIMAL(15, 2) NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'unpaid',
-                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
-                transaction_id INTEGER NULL REFERENCES finance_financetransaction(id),
-                accounts_receivable_id INTEGER NULL REFERENCES finance_account(id),
-                sales_revenue_id INTEGER NULL REFERENCES finance_account(id),
-                sales_tax_payable_id INTEGER NULL REFERENCES finance_account(id),
-                inventory_id INTEGER NULL REFERENCES finance_account(id),
-                cost_of_goods_sold_id INTEGER NULL REFERENCES finance_account(id),
+                customer_id UUID NOT NULL REFERENCES crm_customer(id),
+                transaction_id UUID NULL REFERENCES finance_financetransaction(id),
+                accounts_receivable_id UUID NULL REFERENCES finance_account(id),
+                sales_revenue_id UUID NULL REFERENCES finance_account(id),
+                sales_tax_payable_id UUID NULL REFERENCES finance_account(id),
+                inventory_id UUID NULL REFERENCES finance_account(id),
+                cost_of_goods_sold_id UUID NULL REFERENCES finance_account(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1369,13 +1447,13 @@ class Command(BaseCommand):
             # Create sales_sale table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS sales_sale (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 sale_date DATE NOT NULL,
                 amount DECIMAL(15, 2) NOT NULL,
                 payment_method VARCHAR(50) NOT NULL,
-                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
-                product_id INTEGER NULL REFERENCES inventory_product(id),
-                invoice_id INTEGER NULL REFERENCES sales_invoice(id),
+                customer_id UUID NOT NULL REFERENCES crm_customer(id),
+                product_id UUID NULL REFERENCES inventory_product(id),
+                invoice_id UUID NULL REFERENCES sales_invoice(id),
                 created_by_id UUID NULL REFERENCES custom_auth_user(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -1386,12 +1464,12 @@ class Command(BaseCommand):
             # Create banking_banktransaction table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS banking_banktransaction (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 transaction_date DATE NOT NULL,
                 amount DECIMAL(15, 2) NOT NULL,
                 description TEXT NULL,
                 transaction_type VARCHAR(50) NOT NULL,
-                account_id INTEGER NOT NULL REFERENCES banking_bankaccount(id),
+                account_id UUID NOT NULL REFERENCES banking_bankaccount(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1401,9 +1479,9 @@ class Command(BaseCommand):
             # Create finance_cashaccount table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_cashaccount (
-                id SERIAL PRIMARY KEY,
-                account_id INTEGER NOT NULL REFERENCES finance_account(id),
-                transaction_id INTEGER NULL REFERENCES finance_financetransaction(id),
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                account_id UUID NOT NULL REFERENCES finance_account(id),
+                transaction_id UUID NULL REFERENCES finance_financetransaction(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1413,12 +1491,12 @@ class Command(BaseCommand):
             # Create finance_reconciliationitem table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_reconciliationitem (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 match_date DATE NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'pending',
-                reconciliation_id INTEGER NOT NULL REFERENCES finance_accountreconciliation(id),
-                finance_transaction_id INTEGER NULL REFERENCES finance_financetransaction(id),
-                bank_transaction_id INTEGER NULL REFERENCES banking_banktransaction(id),
+                reconciliation_id UUID NOT NULL REFERENCES finance_accountreconciliation(id),
+                finance_transaction_id UUID NULL REFERENCES finance_financetransaction(id),
+                bank_transaction_id UUID NULL REFERENCES banking_banktransaction(id),
                 matched_by_id UUID NULL REFERENCES custom_auth_user(id),
                 reviewed_by_id UUID NULL REFERENCES custom_auth_user(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -1430,9 +1508,9 @@ class Command(BaseCommand):
             # Create finance_revenueaccount table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_revenueaccount (
-                id SERIAL PRIMARY KEY,
-                account_type_id INTEGER NOT NULL REFERENCES finance_accounttype(id),
-                transaction_id INTEGER NOT NULL REFERENCES finance_financetransaction(id),
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                account_type_id UUID NOT NULL REFERENCES finance_accounttype(id),
+                transaction_id UUID NOT NULL REFERENCES finance_financetransaction(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1442,8 +1520,8 @@ class Command(BaseCommand):
             # Create finance_salestaxaccount table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_salestaxaccount (
-                id SERIAL PRIMARY KEY,
-                transaction_id INTEGER NOT NULL REFERENCES finance_financetransaction(id),
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                transaction_id UUID NOT NULL REFERENCES finance_financetransaction(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1453,8 +1531,8 @@ class Command(BaseCommand):
             # Create finance_income table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_income (
-                id SERIAL PRIMARY KEY,
-                transaction_id INTEGER NOT NULL REFERENCES finance_financetransaction(id),
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                transaction_id UUID NOT NULL REFERENCES finance_financetransaction(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1464,11 +1542,11 @@ class Command(BaseCommand):
             # Create finance_generalledgerentry table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_generalledgerentry (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 entry_date DATE NOT NULL,
                 debit DECIMAL(15, 2) NOT NULL DEFAULT 0,
                 credit DECIMAL(15, 2) NOT NULL DEFAULT 0,
-                account_id INTEGER NOT NULL REFERENCES finance_chartofaccount(id),
+                account_id UUID NOT NULL REFERENCES finance_chartofaccount(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1478,7 +1556,7 @@ class Command(BaseCommand):
             # Create finance_journalentry table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_journalentry (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 entry_date DATE NOT NULL,
                 description TEXT NULL,
                 reference VARCHAR(100) NULL,
@@ -1495,12 +1573,12 @@ class Command(BaseCommand):
             # Create finance_journalentryline table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_journalentryline (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 description TEXT NULL,
                 debit DECIMAL(15, 2) NOT NULL DEFAULT 0,
                 credit DECIMAL(15, 2) NOT NULL DEFAULT 0,
-                account_id INTEGER NOT NULL REFERENCES finance_chartofaccount(id),
-                journal_entry_id INTEGER NOT NULL REFERENCES finance_journalentry(id),
+                account_id UUID NOT NULL REFERENCES finance_chartofaccount(id),
+                journal_entry_id UUID NOT NULL REFERENCES finance_journalentry(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1510,7 +1588,7 @@ class Command(BaseCommand):
             # Create finance_intercompanyaccount table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_intercompanyaccount (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 account_name VARCHAR(255) NOT NULL,
                 business_id UUID NOT NULL REFERENCES users_business(id),
                 created_by_id UUID NULL REFERENCES custom_auth_user(id),
@@ -1523,7 +1601,7 @@ class Command(BaseCommand):
             # Create finance_intercompanytransaction table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_intercompanytransaction (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 transaction_date DATE NOT NULL,
                 amount DECIMAL(15, 2) NOT NULL,
                 description TEXT NULL,
@@ -1541,7 +1619,7 @@ class Command(BaseCommand):
             # Create finance_monthendclosing table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_monthendclosing (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 closing_month DATE NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'pending',
                 business_id UUID NOT NULL REFERENCES users_business(id),
@@ -1557,10 +1635,10 @@ class Command(BaseCommand):
             # Create finance_monthendtask table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_monthendtask (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 task_name VARCHAR(255) NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'pending',
-                closing_id INTEGER NOT NULL REFERENCES finance_monthendclosing(id),
+                closing_id UUID NOT NULL REFERENCES finance_monthendclosing(id),
                 completed_by_id UUID NULL REFERENCES custom_auth_user(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -1571,8 +1649,8 @@ class Command(BaseCommand):
             # Create finance_budget table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_budget (
-                id SERIAL PRIMARY KEY,
-                budget_year INTEGER NOT NULL,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                budget_year UUID NOT NULL,
                 budget_name VARCHAR(255) NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'draft',
                 business_id UUID NOT NULL REFERENCES users_business(id),
@@ -1589,11 +1667,11 @@ class Command(BaseCommand):
             # Create finance_budgetitem table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_budgetitem (
-                id SERIAL PRIMARY KEY,
-                month INTEGER NOT NULL,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                month UUID NOT NULL,
                 amount DECIMAL(15, 2) NOT NULL,
-                budget_id INTEGER NOT NULL REFERENCES finance_budget(id),
-                account_id INTEGER NOT NULL REFERENCES finance_chartofaccount(id),
+                budget_id UUID NOT NULL REFERENCES finance_budget(id),
+                account_id UUID NOT NULL REFERENCES finance_chartofaccount(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1603,11 +1681,11 @@ class Command(BaseCommand):
             # Create finance_fixedasset table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_fixedasset (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 asset_name VARCHAR(255) NOT NULL,
                 acquisition_date DATE NOT NULL,
                 acquisition_cost DECIMAL(15, 2) NOT NULL,
-                useful_life_years INTEGER NOT NULL,
+                useful_life_years UUID NOT NULL,
                 residual_value DECIMAL(15, 2) NOT NULL DEFAULT 0,
                 business_id UUID NOT NULL REFERENCES users_business(id),
                 created_by_id UUID NULL REFERENCES custom_auth_user(id),
@@ -1620,12 +1698,12 @@ class Command(BaseCommand):
             # Create finance_costentry table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_costentry (
-                cost_id SERIAL PRIMARY KEY,
+                cost_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 entry_date DATE NOT NULL,
                 amount DECIMAL(15, 2) NOT NULL,
                 description TEXT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'draft',
-                category_id INTEGER NOT NULL REFERENCES finance_costcategory(id),
+                category_id UUID NOT NULL REFERENCES finance_costcategory(id),
                 business_id UUID NOT NULL REFERENCES users_business(id),
                 created_by_id UUID NULL REFERENCES custom_auth_user(id),
                 posted_by_id UUID NULL REFERENCES custom_auth_user(id),
@@ -1639,11 +1717,11 @@ class Command(BaseCommand):
             # Create finance_costallocation table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_costallocation (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 allocation_date DATE NOT NULL,
                 amount DECIMAL(15, 2) NOT NULL,
                 description TEXT NULL,
-                cost_entry_id INTEGER NOT NULL REFERENCES finance_costentry(cost_id),
+                cost_entry_id UUID NOT NULL REFERENCES finance_costentry(cost_id),
                 created_by_id UUID NULL REFERENCES custom_auth_user(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -1654,7 +1732,7 @@ class Command(BaseCommand):
             # Create finance_financialstatement table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_financialstatement (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 statement_type VARCHAR(50) NOT NULL,
                 statement_date DATE NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'draft',
@@ -1662,7 +1740,7 @@ class Command(BaseCommand):
                 generated_by_id UUID NULL REFERENCES custom_auth_user(id),
                 reviewed_by_id UUID NULL REFERENCES custom_auth_user(id),
                 approved_by_id UUID NULL REFERENCES custom_auth_user(id),
-                previous_version_id INTEGER NULL REFERENCES finance_financialstatement(id),
+                previous_version_id UUID NULL REFERENCES finance_financialstatement(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1672,7 +1750,7 @@ class Command(BaseCommand):
             # Create finance_audittrail table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS finance_audittrail (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 action VARCHAR(50) NOT NULL,
                 entity_type VARCHAR(100) NOT NULL,
                 entity_id VARCHAR(100) NOT NULL,
@@ -1688,10 +1766,10 @@ class Command(BaseCommand):
             # Create hr_accesspermission table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS hr_accesspermission (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 module VARCHAR(100) NOT NULL,
                 permission_level VARCHAR(50) NOT NULL,
-                role_id INTEGER NOT NULL REFERENCES hr_role(id),
+                role_id UUID NOT NULL REFERENCES hr_role(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1701,9 +1779,9 @@ class Command(BaseCommand):
             # Create hr_employeerole table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS hr_employeerole (
-                id SERIAL PRIMARY KEY,
-                employee_id INTEGER NOT NULL REFERENCES hr_employee(id),
-                role_id INTEGER NOT NULL REFERENCES hr_role(id),
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                employee_id UUID NOT NULL REFERENCES hr_employee(id),
+                role_id UUID NOT NULL REFERENCES hr_role(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1713,7 +1791,7 @@ class Command(BaseCommand):
             # Create hr_preboardingform table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS hr_preboardingform (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(255) NOT NULL,
                 form_data JSONB NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -1725,11 +1803,11 @@ class Command(BaseCommand):
             # Create payroll_timesheet table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS payroll_timesheet (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 start_date DATE NOT NULL,
                 end_date DATE NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'pending',
-                employee_id INTEGER NOT NULL REFERENCES hr_employee(id),
+                employee_id UUID NOT NULL REFERENCES hr_employee(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1739,11 +1817,11 @@ class Command(BaseCommand):
             # Create payroll_timesheetentry table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS payroll_timesheetentry (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 entry_date DATE NOT NULL,
                 hours DECIMAL(5, 2) NOT NULL,
                 description TEXT NULL,
-                timesheet_id INTEGER NOT NULL REFERENCES payroll_timesheet(id),
+                timesheet_id UUID NOT NULL REFERENCES payroll_timesheet(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1753,13 +1831,13 @@ class Command(BaseCommand):
             # Create payroll_payrolltransaction table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS payroll_payrolltransaction (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 transaction_date DATE NOT NULL,
                 gross_amount DECIMAL(15, 2) NOT NULL,
                 tax_deductions DECIMAL(15, 2) NOT NULL,
                 net_amount DECIMAL(15, 2) NOT NULL,
-                employee_id INTEGER NOT NULL REFERENCES hr_employee(id),
-                payroll_run_id INTEGER NOT NULL REFERENCES payroll_payrollrun(id),
+                employee_id UUID NOT NULL REFERENCES hr_employee(id),
+                payroll_run_id UUID NOT NULL REFERENCES payroll_payrollrun(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1769,11 +1847,11 @@ class Command(BaseCommand):
             # Create payroll_taxform table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS payroll_taxform (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 form_type VARCHAR(50) NOT NULL,
-                tax_year INTEGER NOT NULL,
+                tax_year UUID NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'pending',
-                employee_id INTEGER NOT NULL REFERENCES hr_employee(id),
+                employee_id UUID NOT NULL REFERENCES hr_employee(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1783,12 +1861,12 @@ class Command(BaseCommand):
             # Create taxes_incometaxrate table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS taxes_incometaxrate (
-                id SERIAL PRIMARY KEY,
-                tax_year INTEGER NOT NULL,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                tax_year UUID NOT NULL,
                 income_bracket_lower DECIMAL(15, 2) NOT NULL,
                 income_bracket_upper DECIMAL(15, 2) NULL,
                 rate DECIMAL(5, 2) NOT NULL,
-                state_id INTEGER NULL REFERENCES taxes_state(id),
+                state_id UUID NULL REFERENCES taxes_state(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1798,12 +1876,12 @@ class Command(BaseCommand):
             # Create taxes_payrolltaxfiling table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS taxes_payrolltaxfiling (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 filing_period_start DATE NOT NULL,
                 filing_period_end DATE NOT NULL,
                 due_date DATE NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'pending',
-                state_id INTEGER NOT NULL REFERENCES taxes_state(id),
+                state_id UUID NOT NULL REFERENCES taxes_state(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1813,12 +1891,12 @@ class Command(BaseCommand):
             # Create taxes_taxapitransaction table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS taxes_taxapitransaction (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 transaction_type VARCHAR(50) NOT NULL,
                 request_data JSONB NULL,
                 response_data JSONB NULL,
                 status VARCHAR(50) NOT NULL,
-                state_id INTEGER NULL REFERENCES taxes_state(id),
+                state_id UUID NULL REFERENCES taxes_state(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1828,11 +1906,11 @@ class Command(BaseCommand):
             # Create taxes_taxfilinginstruction table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS taxes_taxfilinginstruction (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 tax_type VARCHAR(50) NOT NULL,
                 filing_frequency VARCHAR(50) NOT NULL,
                 instructions TEXT NULL,
-                state_id INTEGER NOT NULL REFERENCES taxes_state(id),
+                state_id UUID NOT NULL REFERENCES taxes_state(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1842,10 +1920,10 @@ class Command(BaseCommand):
             # Create taxes_taxform table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS taxes_taxform (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 form_type VARCHAR(50) NOT NULL,
                 form_number VARCHAR(50) NOT NULL,
-                tax_year INTEGER NOT NULL,
+                tax_year UUID NOT NULL,
                 form_data JSONB NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'draft',
                 verified_by_id UUID NULL REFERENCES custom_auth_user(id),
@@ -1858,7 +1936,7 @@ class Command(BaseCommand):
             # Create analysis_chartconfiguration table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS analysis_chartconfiguration (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 chart_type VARCHAR(50) NOT NULL,
                 configuration JSONB NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -1870,7 +1948,7 @@ class Command(BaseCommand):
             # Create analysis_financialdata table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS analysis_financialdata (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 data_type VARCHAR(50) NOT NULL,
                 data_date DATE NOT NULL,
                 data_value DECIMAL(15, 2) NOT NULL,
@@ -1884,7 +1962,7 @@ class Command(BaseCommand):
             # Create transport_driver table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS transport_driver (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 license_number VARCHAR(50) NOT NULL,
                 license_type VARCHAR(50) NOT NULL,
                 expiration_date DATE NOT NULL,
@@ -1898,11 +1976,11 @@ class Command(BaseCommand):
             # Create transport_equipment table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS transport_equipment (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 equipment_type VARCHAR(50) NOT NULL,
                 make VARCHAR(100) NOT NULL,
                 model VARCHAR(100) NOT NULL,
-                year INTEGER NOT NULL,
+                year UUID NOT NULL,
                 vin VARCHAR(17) NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -1913,7 +1991,7 @@ class Command(BaseCommand):
             # Create transport_route table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS transport_route (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 origin VARCHAR(255) NOT NULL,
                 destination VARCHAR(255) NOT NULL,
                 distance DECIMAL(10, 2) NOT NULL,
@@ -1927,13 +2005,13 @@ class Command(BaseCommand):
             # Create transport_compliance table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS transport_compliance (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 document_type VARCHAR(50) NOT NULL,
                 issue_date DATE NOT NULL,
                 expiration_date DATE NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'active',
-                driver_id INTEGER NOT NULL REFERENCES transport_driver(id),
-                equipment_id INTEGER NOT NULL REFERENCES transport_equipment(id),
+                driver_id UUID NOT NULL REFERENCES transport_driver(id),
+                equipment_id UUID NOT NULL REFERENCES transport_equipment(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1943,15 +2021,15 @@ class Command(BaseCommand):
             # Create transport_load table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS transport_load (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 load_number VARCHAR(50) NOT NULL,
                 pickup_date TIMESTAMP WITH TIME ZONE NOT NULL,
                 delivery_date TIMESTAMP WITH TIME ZONE NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'pending',
-                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
-                driver_id INTEGER NOT NULL REFERENCES transport_driver(id),
-                equipment_id INTEGER NOT NULL REFERENCES transport_equipment(id),
-                route_id INTEGER NOT NULL REFERENCES transport_route(id),
+                customer_id UUID NOT NULL REFERENCES crm_customer(id),
+                driver_id UUID NOT NULL REFERENCES transport_driver(id),
+                equipment_id UUID NOT NULL REFERENCES transport_equipment(id),
+                route_id UUID NOT NULL REFERENCES transport_route(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1961,13 +2039,13 @@ class Command(BaseCommand):
             # Create transport_expense table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS transport_expense (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 expense_type VARCHAR(50) NOT NULL,
                 amount DECIMAL(15, 2) NOT NULL,
                 expense_date DATE NOT NULL,
                 description TEXT NULL,
-                equipment_id INTEGER NOT NULL REFERENCES transport_equipment(id),
-                load_id INTEGER NULL REFERENCES transport_load(id),
+                equipment_id UUID NOT NULL REFERENCES transport_equipment(id),
+                load_id UUID NULL REFERENCES transport_load(id),
                 created_by_id UUID NULL REFERENCES custom_auth_user(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -1978,13 +2056,13 @@ class Command(BaseCommand):
             # Create transport_maintenance table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS transport_maintenance (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 maintenance_type VARCHAR(50) NOT NULL,
                 service_date DATE NOT NULL,
                 service_provider VARCHAR(255) NULL,
                 cost DECIMAL(15, 2) NOT NULL,
                 description TEXT NULL,
-                equipment_id INTEGER NOT NULL REFERENCES transport_equipment(id),
+                equipment_id UUID NOT NULL REFERENCES transport_equipment(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -1994,7 +2072,7 @@ class Command(BaseCommand):
             # Create banking_plaiditem table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS banking_plaiditem (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 item_id VARCHAR(255) NOT NULL,
                 access_token VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -2006,7 +2084,7 @@ class Command(BaseCommand):
             # Create banking_tinkitem table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS banking_tinkitem (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 item_id VARCHAR(255) NOT NULL,
                 access_token VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -2018,7 +2096,7 @@ class Command(BaseCommand):
             # Create account_emailaddress table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS account_emailaddress (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 email VARCHAR(254) NOT NULL UNIQUE,
                 verified BOOLEAN NOT NULL DEFAULT FALSE,
                 "primary" BOOLEAN NOT NULL DEFAULT FALSE,
@@ -2032,11 +2110,11 @@ class Command(BaseCommand):
             # Create account_emailconfirmation table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS account_emailconfirmation (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 created TIMESTAMP WITH TIME ZONE NOT NULL,
                 sent TIMESTAMP WITH TIME ZONE NULL,
                 key VARCHAR(64) NOT NULL UNIQUE,
-                email_address_id INTEGER NOT NULL REFERENCES account_emailaddress(id)
+                email_address_id UUID NOT NULL REFERENCES account_emailaddress(id)
             );
             """)
             logger.info("Created account_emailconfirmation table")
@@ -2044,7 +2122,7 @@ class Command(BaseCommand):
             # Create socialaccount_socialapp table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS socialaccount_socialapp (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 provider VARCHAR(30) NOT NULL,
                 name VARCHAR(40) NOT NULL,
                 client_id VARCHAR(191) NOT NULL,
@@ -2059,7 +2137,7 @@ class Command(BaseCommand):
             # Create socialaccount_socialaccount table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS socialaccount_socialaccount (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 provider VARCHAR(30) NOT NULL,
                 uid VARCHAR(191) NOT NULL,
                 last_login TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -2076,9 +2154,9 @@ class Command(BaseCommand):
             # Create socialaccount_socialapp_sites table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS socialaccount_socialapp_sites (
-                id SERIAL PRIMARY KEY,
-                socialapp_id INTEGER NOT NULL REFERENCES socialaccount_socialapp(id),
-                site_id INTEGER NOT NULL REFERENCES django_site(id),
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                socialapp_id UUID NOT NULL REFERENCES socialaccount_socialapp(id),
+                site_id BIGINT NOT NULL REFERENCES django_site(id),
                 UNIQUE (socialapp_id, site_id)
             );
             """)
@@ -2087,12 +2165,12 @@ class Command(BaseCommand):
             # Create socialaccount_socialtoken table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS socialaccount_socialtoken (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 token TEXT NOT NULL,
                 token_secret VARCHAR(200) NOT NULL,
                 expires_at TIMESTAMP WITH TIME ZONE NULL,
-                account_id INTEGER NOT NULL REFERENCES socialaccount_socialaccount(id),
-                app_id INTEGER NOT NULL REFERENCES socialaccount_socialapp(id),
+                account_id UUID NOT NULL REFERENCES socialaccount_socialaccount(id),
+                app_id UUID NOT NULL REFERENCES socialaccount_socialapp(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 UNIQUE (account_id, app_id)
@@ -2122,7 +2200,7 @@ class Command(BaseCommand):
             # Create token_blacklist_outstandingtoken table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS token_blacklist_outstandingtoken (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 token TEXT NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE NOT NULL,
                 expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -2135,9 +2213,9 @@ class Command(BaseCommand):
             # Create token_blacklist_blacklistedtoken table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS token_blacklist_blacklistedtoken (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 blacklisted_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                token_id INTEGER NOT NULL UNIQUE REFERENCES token_blacklist_outstandingtoken(id)
+                token_id UUID NOT NULL REFERENCES token_blacklist_outstandingtoken(id)
             );
             """)
             logger.info("Created token_blacklist_blacklistedtoken table")
@@ -2145,7 +2223,7 @@ class Command(BaseCommand):
             # Create users_subscription table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS users_subscription (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 business_id UUID NOT NULL UNIQUE REFERENCES users_business(id) ON DELETE CASCADE,
                 selected_plan VARCHAR(20) NOT NULL DEFAULT 'free',
                 start_date DATE NOT NULL,
@@ -2174,7 +2252,7 @@ class Command(BaseCommand):
             # Create users_account table (NextAuth.js)
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS users_account (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 user_id UUID NOT NULL REFERENCES custom_auth_user(id) ON DELETE CASCADE,
                 provider VARCHAR(255) NOT NULL,
                 provider_account_id VARCHAR(255) NOT NULL,
@@ -2195,7 +2273,7 @@ class Command(BaseCommand):
             # Create users_session table (NextAuth.js)
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS users_session (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 user_id UUID NOT NULL REFERENCES custom_auth_user(id) ON DELETE CASCADE,
                 expires TIMESTAMP WITH TIME ZONE NOT NULL,
                 session_token VARCHAR(255) UNIQUE NOT NULL,
@@ -2210,7 +2288,7 @@ class Command(BaseCommand):
             # Create reports_report table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS reports_report (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 report_name VARCHAR(255) NOT NULL,
                 report_type VARCHAR(50) NOT NULL,
                 report_data JSONB NOT NULL,
@@ -2225,13 +2303,13 @@ class Command(BaseCommand):
             # Create sales_estimate table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS sales_estimate (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 estimate_number VARCHAR(50) NOT NULL,
                 estimate_date DATE NOT NULL,
                 valid_until DATE NOT NULL,
                 amount DECIMAL(15, 2) NOT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'pending',
-                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
+                customer_id UUID NOT NULL REFERENCES crm_customer(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -2241,12 +2319,12 @@ class Command(BaseCommand):
             # Create sales_estimateitem table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS sales_estimateitem (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 quantity INTEGER NOT NULL,
                 unit_price DECIMAL(15, 2) NOT NULL,
-                estimate_id INTEGER NOT NULL REFERENCES sales_estimate(id),
-                product_id INTEGER NULL REFERENCES inventory_product(id),
-                service_id INTEGER NULL REFERENCES inventory_service(id),
+                estimate_id UUID NOT NULL REFERENCES sales_estimate(id),
+                product_id UUID NULL REFERENCES inventory_product(id),
+                service_id UUID NULL REFERENCES inventory_service(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -2256,10 +2334,10 @@ class Command(BaseCommand):
             # Create sales_estimateattachment table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS sales_estimateattachment (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 file_name VARCHAR(255) NOT NULL,
                 file_path VARCHAR(255) NOT NULL,
-                estimate_id INTEGER NOT NULL REFERENCES sales_estimate(id),
+                estimate_id UUID NOT NULL REFERENCES sales_estimate(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -2269,12 +2347,12 @@ class Command(BaseCommand):
             # Create sales_salesorder table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS sales_salesorder (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 order_number VARCHAR(50) NOT NULL,
                 order_date DATE NOT NULL,
                 expected_delivery_date DATE NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'pending',
-                customer_id INTEGER NOT NULL REFERENCES crm_customer(id),
+                customer_id UUID NOT NULL REFERENCES crm_customer(id),
                 created_by_id UUID NULL REFERENCES custom_auth_user(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -2285,12 +2363,12 @@ class Command(BaseCommand):
             # Create sales_salesorderitem table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS sales_salesorderitem (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 quantity INTEGER NOT NULL,
                 unit_price DECIMAL(15, 2) NOT NULL,
-                sales_order_id INTEGER NOT NULL REFERENCES sales_salesorder(id),
-                product_id INTEGER NULL REFERENCES inventory_product(id),
-                service_id INTEGER NULL REFERENCES inventory_service(id),
+                sales_order_id UUID NOT NULL REFERENCES sales_salesorder(id),
+                product_id UUID NULL REFERENCES inventory_product(id),
+                service_id UUID NULL REFERENCES inventory_service(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -2300,12 +2378,12 @@ class Command(BaseCommand):
             # Create sales_invoiceitem table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS sales_invoiceitem (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 quantity INTEGER NOT NULL,
                 unit_price DECIMAL(15, 2) NOT NULL,
-                invoice_id INTEGER NOT NULL REFERENCES sales_invoice(id),
-                product_id INTEGER NULL REFERENCES inventory_product(id),
-                service_id INTEGER NULL REFERENCES inventory_service(id),
+                invoice_id UUID NOT NULL REFERENCES sales_invoice(id),
+                product_id UUID NULL REFERENCES inventory_product(id),
+                service_id UUID NULL REFERENCES inventory_service(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -2315,11 +2393,11 @@ class Command(BaseCommand):
             # Create sales_refund table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS sales_refund (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 refund_date DATE NOT NULL,
                 amount DECIMAL(15, 2) NOT NULL,
                 reason TEXT NULL,
-                sale_id INTEGER NOT NULL REFERENCES sales_sale(id),
+                sale_id UUID NOT NULL REFERENCES sales_sale(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -2329,11 +2407,11 @@ class Command(BaseCommand):
             # Create sales_refunditem table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS sales_refunditem (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 quantity INTEGER NOT NULL,
                 unit_price DECIMAL(15, 2) NOT NULL,
-                refund_id INTEGER NOT NULL REFERENCES sales_refund(id),
-                product_id INTEGER NOT NULL REFERENCES inventory_product(id),
+                refund_id UUID NOT NULL REFERENCES sales_refund(id),
+                product_id UUID NOT NULL REFERENCES inventory_product(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -2343,11 +2421,11 @@ class Command(BaseCommand):
             # Create sales_saleitem table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS sales_saleitem (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 quantity INTEGER NOT NULL,
                 unit_price DECIMAL(15, 2) NOT NULL,
-                sale_id INTEGER NOT NULL REFERENCES sales_sale(id),
-                product_id INTEGER NOT NULL REFERENCES inventory_product(id),
+                sale_id UUID NOT NULL REFERENCES sales_sale(id),
+                product_id UUID NOT NULL REFERENCES inventory_product(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
@@ -2368,13 +2446,13 @@ class Command(BaseCommand):
             # Create django_admin_log table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS django_admin_log (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 action_time TIMESTAMP WITH TIME ZONE NOT NULL,
                 object_id TEXT NULL,
                 object_repr VARCHAR(200) NOT NULL,
                 action_flag SMALLINT NOT NULL CHECK (action_flag > 0),
                 change_message TEXT NOT NULL,
-                content_type_id INTEGER NULL REFERENCES django_content_type(id) DEFERRABLE INITIALLY DEFERRED,
+                content_type_id BIGINT NULL REFERENCES django_content_type(id) DEFERRABLE INITIALLY DEFERRED,
                 user_id UUID NOT NULL REFERENCES custom_auth_user(id) DEFERRABLE INITIALLY DEFERRED
             );
             """)
@@ -2383,9 +2461,9 @@ class Command(BaseCommand):
             # Create custom_auth_user_groups table (for Django auth)
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS custom_auth_user_groups (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 user_id UUID NOT NULL,
-                group_id INTEGER NOT NULL,
+                group_id UUID NOT NULL,
                 CONSTRAINT auth_user_groups_user_id_group_id_94350c0c_uniq UNIQUE (user_id, group_id),
                 CONSTRAINT auth_user_groups_user_id_6a12ed8b_fk_users_user_id FOREIGN KEY (user_id)
                     REFERENCES custom_auth_user (id) DEFERRABLE INITIALLY DEFERRED,
@@ -2398,9 +2476,9 @@ class Command(BaseCommand):
             # Create auth_user_user_permissions table (for Django auth)
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS auth_user_user_permissions (
-                id SERIAL PRIMARY KEY,
+                id BIGSERIAL PRIMARY KEY,
                 user_id UUID NOT NULL,
-                permission_id INTEGER NOT NULL,
+                permission_id BIGINT NOT NULL,
                 CONSTRAINT auth_user_user_permissions_user_id_permission_id_14a6b632_uniq UNIQUE (user_id, permission_id),
                 CONSTRAINT auth_user_user_permissions_user_id_a95ead1b_fk_users_user_id FOREIGN KEY (user_id)
                     REFERENCES custom_auth_user (id) DEFERRABLE INITIALLY DEFERRED,
@@ -2413,9 +2491,9 @@ class Command(BaseCommand):
             # Create auth_group_permissions table (for Django auth)
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS auth_group_permissions (
-                id SERIAL PRIMARY KEY,
-                group_id INTEGER NOT NULL,
-                permission_id INTEGER NOT NULL,
+                id BIGSERIAL PRIMARY KEY,
+                group_id UUID NOT NULL,
+                permission_id BIGINT NOT NULL,
                 CONSTRAINT auth_group_permissions_group_id_permission_id_0cd325b0_uniq UNIQUE (group_id, permission_id),
                 CONSTRAINT auth_group_permissions_group_id_b120cbf9_fk_auth_group_id FOREIGN KEY (group_id)
                     REFERENCES auth_group (id) DEFERRABLE INITIALLY DEFERRED,
@@ -2559,7 +2637,8 @@ class Command(BaseCommand):
             os.environ['ALLOW_TENANT_MIGRATIONS_IN_PUBLIC'] = 'True'
             try:
                 logger.info("Applying all migrations with --fake...")
-                django.core.management.call_command('migrate', '--fake')
+                # Use safe_migrate with disconnected permission signals and create permissions
+                django.core.management.call_command('safe_migrate', '--fake', '--create-permissions')
                 using_fake = True
             finally:
                 # Reset the environment variable
@@ -2613,7 +2692,7 @@ class Command(BaseCommand):
     def check_and_apply_remaining_changes(self):
         logger.info("Checking for any remaining model changes...")
         django.core.management.call_command('makemigrations')
-        django.core.management.call_command('migrate')
+        django.core.management.call_command('safe_migrate', '--create-permissions')
         logger.info("Any remaining changes have been captured and applied.")
 
     def clear_inventory_data(self, cursor):
@@ -2773,11 +2852,11 @@ class Command(BaseCommand):
             
             # Then fake apply all other migrations
             logger.info("6. Applying remaining migrations with --fake...")
-            django.core.management.call_command('migrate', '--fake')
+            django.core.management.call_command('safe_migrate', '--fake')
             
             # Finally apply real migrations
-            logger.info("7. Applying all migrations normally...")
-            django.core.management.call_command('migrate')
+            logger.info("7. Applying all migrations normally with safe migrate...")
+            django.core.management.call_command('safe_migrate', '--create-permissions')
             
         except Exception as e:
             logger.error(f"Error during migration: {e}")
@@ -2807,8 +2886,8 @@ class Command(BaseCommand):
             
             # Try a regular migrate to apply any remaining migrations
             try:
-                logger.info("Applying all migrations normally...")
-                django.core.management.call_command('migrate')
+                logger.info("Applying all migrations normally with safe migrate...")
+                django.core.management.call_command('safe_migrate', '--create-permissions')
             except Exception as migrate_error:
                 logger.error(f"Error during final migration: {migrate_error}")
         
