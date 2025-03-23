@@ -1,7 +1,9 @@
-import { apiService } from './apiService';
 import { logger } from '@/utils/logger';
+import { apiService, fetchData } from './apiService';
 import { inventoryCache } from '@/utils/enhancedCache';
 import { checkAndFixTenantId } from '@/utils/fixTenantId';
+import { axiosInstance } from '@/lib/axiosConfig';
+import { userService } from './userService';
 
 /**
  * InventoryService - Consolidated service for inventory-related operations
@@ -85,81 +87,79 @@ export const getMockProducts = () => {
  * @returns {Promise<Object>} Paginated list of products
  */
 export const getProducts = async (options = {}, fetchOptions = {}) => {
-  const {
-    page = 1,
-    is_for_sale,
-    min_stock,
-    search,
-    department,
-    view_mode = 'standard'
-  } = options;
-  
-  // Build query parameters
-  const params = { page };
-  if (is_for_sale !== undefined) params.is_for_sale = is_for_sale;
-  if (min_stock !== undefined) params.min_stock = min_stock;
-  if (search) params.search = search;
-  if (department) params.department = department;
-  
-  // Determine endpoint based on view mode
-  let endpoint;
-  let cacheTTL = CACHE_CONFIG.LIST_TTL;
-  
-  switch (view_mode) {
-    case 'ultra':
-      endpoint = '/api/inventory/ultra/products/';
-      break;
-    case 'detailed':
-      endpoint = '/api/inventory/products/';  // Ensure trailing slash is present
-      cacheTTL = CACHE_CONFIG.DETAIL_TTL; // Longer TTL for detailed data
-      break;
-    case 'with_department':
-      endpoint = '/api/inventory/ultra/products/with-department/';
-      break;
-    default:
-      endpoint = '/api/inventory/products/'; // Default to standard endpoint
-  }
-  
-  // Set up fetch options
-  const defaultFetchOptions = {
-    useCache: true,
-    cacheTTL,
-    fallbackData: { results: [], count: 0 },
-    ...fetchOptions
-  };
-  
   try {
-    // Fetch data using the centralized API service
-    const response = await apiService.fetch(endpoint, {
-      params,
-      ...defaultFetchOptions
+    // Configure optimal fetch options
+    const defaultFetchOptions = {
+      useCache: true,
+      cacheTTL: 300, // 5 minutes
+      handleErrors: true,
+      timeout: 15000, // 15 second timeout
+      notify: false,
+    };
+
+    const mergedOptions = { ...defaultFetchOptions, ...fetchOptions };
+    logger.debug('Fetching inventory products with options:', { options, fetchOptions: mergedOptions });
+
+    // Try the ultra-optimized endpoint first for faster loading
+    let response = await fetchData('/api/inventory/ultra/products/', {
+      ...mergedOptions,
+      customMessage: 'Unable to load products from ultra-fast API. Trying standard API...'
     });
-    
-    // Store for offline use if successful
-    if (response && response.results && response.results.length > 0) {
-      storeProductsOffline(response.results);
+
+    // If ultra endpoint returns proper data, use it
+    if (response && Array.isArray(response) && response.length > 0) {
+      logger.info(`Retrieved ${response.length} products from ultra-fast API`);
+      storeProductsOffline(response);
+      return response;
     }
-    
-    return response;
+
+    // If ultra endpoint failed or returned empty, try standard API endpoint
+    logger.info('Ultra endpoint returned no data, trying standard endpoint');
+    response = await fetchData('/api/inventory/products/', {
+      ...mergedOptions,
+      customMessage: 'Unable to load products from standard API. Trying offline data...'
+    });
+
+    // Verify response integrity
+    if (response && Array.isArray(response)) {
+      if (response.length === 0) {
+        logger.warn('API returned empty products array');
+      } else {
+        logger.info(`Retrieved ${response.length} products from standard API`);
+        storeProductsOffline(response);
+        return response;
+      }
+    } else if (response && response.detail && response.detail.includes('Resolver404')) {
+      // This is the specific error from Django URL resolver
+      logger.error('API endpoint not found (Resolver404), likely a tenant schema issue');
+      throw new Error('API endpoint not found. Products list might be unavailable in your tenant schema.');
+    } else {
+      logger.warn('Invalid response format from API:', response);
+    }
+
+    // Try to get offline data
+    const offlineData = getOfflineProducts();
+    if (offlineData && offlineData.length > 0) {
+      logger.info(`Retrieved ${offlineData.length} products from offline storage`);
+      return offlineData;
+    }
+
+    // If all else fails, return mock data
+    logger.info('No data available, using mock data');
+    return getMockProducts();
   } catch (error) {
     logger.error('Error fetching products:', error);
     
-    // Try to get offline data
-    const offlineProducts = getOfflineProducts();
-    if (offlineProducts.length > 0) {
-      logger.info('Using offline product data');
-      return {
-        results: offlineProducts,
-        count: offlineProducts.length
-      };
+    // Try to get offline data first
+    const offlineData = getOfflineProducts();
+    if (offlineData && offlineData.length > 0) {
+      logger.info(`Retrieved ${offlineData.length} products from offline storage after error`);
+      return offlineData;
     }
     
-    // Fall back to mock data
-    logger.info('Using mock product data');
-    return {
-      results: MOCK_PRODUCTS,
-      count: MOCK_PRODUCTS.length
-    };
+    // If no offline data, use mock data as last resort
+    logger.info('No offline data available after error, using mock data');
+    return getMockProducts();
   }
 };
 
@@ -280,91 +280,48 @@ export const getProductByCode = async (code, options = {}) => {
  */
 export const createProduct = async (productData) => {
   try {
-    logger.debug('[InventoryService] Creating product with data:', {
-      productName: productData.name,
-      productCode: productData.product_code
-    });
+    logger.info('Creating product:', productData);
     
-    // Force the correct tenant ID to be used 
-    const correctTenantId = 'b7fee399-ffca-4151-b636-94ccb65b3cd0';
-    
-    // Log current tenant context before changing
-    const beforeContext = await apiService.verifyTenantContext();
-    logger.info('[InventoryService] Tenant context before creating product:', beforeContext);
-    
-    // Set the tenant ID in all storage mechanisms to ensure consistency
-    try {
-      await apiService.setTenantId(correctTenantId);
-      logger.info(`[InventoryService] Forced tenant ID to ${correctTenantId}`);
-      
-      // Verify tenant context was properly set
-      const afterContext = await apiService.verifyTenantContext();
-      logger.info('[InventoryService] Tenant context after setting ID:', afterContext);
-    } catch (error) {
-      logger.error('[InventoryService] Error setting tenant ID:', error);
+    // Ensure product_code is generated if not provided
+    if (!productData.product_code) {
+      productData.product_code = generateProductCode(productData.name);
     }
     
-    // Generate schema name consistently
-    const schemaName = `tenant_${correctTenantId.replace(/-/g, '_')}`;
-    logger.info(`[InventoryService] Using schema name: ${schemaName}`);
-    
-    // Add explicit tenant headers to the request
-    const headers = {
-      'X-Tenant-ID': correctTenantId,
-      'X-Schema-Name': schemaName,
-      'X-Business-ID': correctTenantId  // Include business ID as well
-    };
-    
-    logger.info('[InventoryService] Sending request with headers:', headers);
-    
-    const result = await apiService.post('/api/inventory/products/create/', productData, {
-      invalidateCache: ['products', 'ultra/products', 'stats'],
-      headers: headers
+    const response = await apiService.post('/api/inventory/products/', productData, {
+      invalidateCache: ['/api/inventory/products/', '/api/inventory/ultra/products/']
     });
     
-    logger.info('[InventoryService] Product created successfully');
-    return result;
+    return response;
   } catch (error) {
-    logger.error('[InventoryService] Error creating product:', {
-      error: error.message || error,
-      status: error.response?.status,
-      details: error.details,
-      requestDetails: error.requestDetails
-    });
+    logger.error('Error creating product:', error);
     throw error;
   }
 };
 
 /**
- * Update a product
+ * Update an existing product
  * @param {string} id - Product ID
  * @param {Object} productData - Updated product data
  * @returns {Promise<Object>} Updated product
  */
 export const updateProduct = async (id, productData) => {
+  if (!id) {
+    logger.error('Product ID is required for update');
+    throw new Error('Product ID is required for update');
+  }
+  
   try {
-    // Force the correct tenant ID to be used 
-    const correctTenantId = 'b7fee399-ffca-4151-b636-94ccb65b3cd0';
+    logger.info(`Updating product ${id}:`, productData);
     
-    // Set the tenant ID in all storage mechanisms to ensure consistency
-    try {
-      await apiService.setTenantId(correctTenantId);
-      logger.debug(`[InventoryService] Forced tenant ID to ${correctTenantId} for update`);
-    } catch (error) {
-      logger.error('[InventoryService] Error setting tenant ID for update:', error);
-    }
-    
-    // Add explicit tenant headers to the request
-    const result = await apiService.put(`/api/inventory/products/${id}/`, productData, {
-      invalidateCache: ['products', 'ultra/products', 'stats'],
-      headers: {
-        'X-Tenant-ID': correctTenantId,
-        'X-Schema-Name': `tenant_${correctTenantId.replace(/-/g, '_')}`
-      }
+    const response = await apiService.put(`/api/inventory/products/${id}/`, productData, {
+      invalidateCache: [
+        '/api/inventory/products/',
+        '/api/inventory/ultra/products/',
+        `/api/inventory/products/${id}/`
+      ]
     });
     
-    logger.info(`Product ${id} updated successfully`);
-    return result;
+    return response;
   } catch (error) {
     logger.error(`Error updating product ${id}:`, error);
     throw error;
@@ -377,12 +334,23 @@ export const updateProduct = async (id, productData) => {
  * @returns {Promise<void>}
  */
 export const deleteProduct = async (id) => {
+  if (!id) {
+    logger.error('Product ID is required for deletion');
+    throw new Error('Product ID is required for deletion');
+  }
+  
   try {
+    logger.info(`Deleting product ${id}`);
+    
     await apiService.delete(`/api/inventory/products/${id}/`, {
-      invalidateCache: ['products', 'ultra/products', 'stats']
+      invalidateCache: [
+        '/api/inventory/products/',
+        '/api/inventory/ultra/products/',
+        `/api/inventory/products/${id}/`
+      ]
     });
     
-    logger.info(`Product ${id} deleted successfully`);
+    return true;
   } catch (error) {
     logger.error(`Error deleting product ${id}:`, error);
     throw error;
@@ -424,51 +392,38 @@ export const prefetchEssentialData = async () => {
 };
 
 /**
- * Store products in localStorage for offline access
- * @param {Array} products - Products to store
+ * Store products for offline use
+ * @param {Array} products - List of products to store
  */
 export const storeProductsOffline = (products) => {
-  if (!Array.isArray(products) || products.length === 0) {
+  if (!products || !Array.isArray(products) || products.length === 0) {
     return;
   }
   
   try {
-    const offlineData = {
-      timestamp: Date.now(),
-      products: products
-    };
-    
-    localStorage.setItem('offline_products', JSON.stringify(offlineData));
+    const offlineProducts = JSON.stringify(products);
+    localStorage.setItem('offline_products', offlineProducts);
     logger.debug(`Stored ${products.length} products for offline use`);
   } catch (error) {
-    logger.error('Error storing products offline:', error);
+    logger.error('Failed to store products for offline use:', error);
   }
 };
 
 /**
- * Get products from offline storage
- * @returns {Array} Products from offline storage
+ * Get products stored for offline use
+ * @returns {Array} List of products stored offline
  */
 export const getOfflineProducts = () => {
   try {
-    const offlineDataStr = localStorage.getItem('offline_products');
-    if (!offlineDataStr) {
-      return [];
+    const offlineProducts = localStorage.getItem('offline_products');
+    if (offlineProducts) {
+      return JSON.parse(offlineProducts);
     }
-    
-    const offlineData = JSON.parse(offlineDataStr);
-    
-    // Check if data is stale (older than 24 hours)
-    const isStale = Date.now() - offlineData.timestamp > 24 * 60 * 60 * 1000;
-    if (isStale) {
-      logger.warn('Offline product data is stale (>24h old)');
-    }
-    
-    return offlineData.products || [];
   } catch (error) {
-    logger.error('Error retrieving offline products:', error);
-    return [];
+    logger.error('Failed to get offline products:', error);
   }
+  
+  return [];
 };
 
 /**
@@ -518,6 +473,111 @@ export const generateStatsFromProducts = (products) => {
   };
 };
 
+/**
+ * Generate and print a barcode for a product
+ * @param {string} productId - ID of the product
+ * @returns {Promise<Blob>} Barcode image as a Blob
+ */
+export const printProductBarcode = async (productId) => {
+  try {
+    logger.debug(`[InventoryService] Printing barcode for product ID: ${productId}`);
+    
+    // Get user and tenant context from userService
+    const user = await userService.getCurrentUser({
+      forceFresh: false,
+      withTenant: true
+    });
+    
+    logger.debug('[InventoryService] User context for barcode generation:', {
+      userId: user?.sub,
+      email: user?.email,
+      hasTenant: !!user?.tenant
+    });
+    
+    let correctTenantId = null;
+    
+    // Get tenant ID from user data if available
+    if (user?.tenant?.id) {
+      correctTenantId = user.tenant.id;
+      logger.debug(`[InventoryService] Using tenant ID from user data for barcode: ${correctTenantId}`);
+    } else {
+      // Fall back to previous tenant detection methods
+      const beforeContext = await apiService.verifyTenantContext();
+      logger.info('[InventoryService] Fallback tenant context for barcode:', beforeContext);
+      
+      correctTenantId = beforeContext?.fromContext?.tenantId || 
+                      beforeContext?.fromCookie || 
+                      beforeContext?.fromLocalStorage;
+    
+      if (!correctTenantId) {
+        // Try to get tenant from API
+        try {
+          const tenantResponse = await apiService.getCurrentTenant();
+          
+          if (tenantResponse && tenantResponse.id) {
+            correctTenantId = tenantResponse.id;
+            logger.info(`[InventoryService] Found tenant ID from API for barcode: ${correctTenantId}`);
+          }
+        } catch (tenantError) {
+          logger.error('[InventoryService] Error getting tenant for barcode:', tenantError);
+        }
+      }
+    }
+    
+    // Set the tenant ID in all storage mechanisms to ensure consistency
+    if (correctTenantId) {
+      try {
+        await apiService.setTenantId(correctTenantId);
+        logger.info(`[InventoryService] Set tenant ID to ${correctTenantId} for barcode printing`);
+      } catch (error) {
+        logger.error('[InventoryService] Error setting tenant ID for barcode:', error);
+      }
+    } else {
+      logger.error('[InventoryService] No tenant ID available for barcode printing, operation may fail');
+    }
+    
+    // Generate schema name consistently if we have a tenant ID
+    const schemaName = correctTenantId ? 
+      `tenant_${correctTenantId.replace(/-/g, '_')}` : 
+      null;
+    
+    // Get auth tokens
+    const tokens = await apiService.getAuthTokens();
+    if (!tokens || !tokens.accessToken) {
+      throw new Error('Authentication required to print barcode');
+    }
+    
+    // Add explicit tenant headers to the request
+    const headers = {
+      'Authorization': `Bearer ${tokens.accessToken}`
+    };
+    
+    if (correctTenantId) {
+      headers['X-Tenant-ID'] = correctTenantId;
+      
+      if (schemaName) {
+        headers['X-Schema-Name'] = schemaName;
+      }
+      
+      headers['X-Business-ID'] = correctTenantId;
+    }
+    
+    const response = await axiosInstance.get(`/api/inventory/products/${productId}/print-barcode/`, {
+      responseType: 'blob',
+      headers: headers
+    });
+    
+    logger.info('[InventoryService] Barcode generated successfully');
+    return response.data;
+  } catch (error) {
+    logger.error('[InventoryService] Error printing barcode:', {
+      error: error.message || error,
+      productId
+    });
+    throw error;
+  }
+};
+
 // Export a default object with all methods
 export const inventoryService = {
   getProducts,
@@ -531,7 +591,8 @@ export const inventoryService = {
   clearInventoryCache,
   storeProductsOffline,
   getOfflineProducts,
-  getMockProducts
+  getMockProducts,
+  printProductBarcode
 };
 
 export default inventoryService;

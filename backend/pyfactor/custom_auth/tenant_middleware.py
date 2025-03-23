@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from onboarding.utils import create_tenant_schema
 from custom_auth.models import Tenant
 from custom_auth.connection_utils import get_connection_for_schema, set_current_schema, get_current_schema
+from custom_auth.middleware import verify_auth_tables_in_schema
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +178,13 @@ class EnhancedTenantMiddleware:
                 if schema_exists:
                     logger.info(f"[TENANT-{request_id}] Schema {schema_name} already exists in database")
                     
+                    # Ensure auth tables exist in this schema
+                    try:
+                        from custom_auth.utils import ensure_auth_tables_in_schema
+                        ensure_auth_tables_in_schema(schema_name)
+                    except Exception as e:
+                        logger.error(f"[TENANT-{request_id}] Error ensuring auth tables in schema: {str(e)}")
+                    
                     # List all schemas to check for potential issues
                     cursor.execute("""
                         SELECT schema_name
@@ -203,6 +211,11 @@ class EnhancedTenantMiddleware:
             try:
                 # Set the search path for this connection
                 self.set_schema_with_transaction_handling(schema_name)
+                
+                # Verify auth tables exist in the schema for authentication to work
+                verify_result = verify_auth_tables_in_schema(schema_name)
+                if not verify_result:
+                    logger.error(f"[TENANT-{request_id}] Failed to verify or create auth tables in schema {schema_name}")
                 
                 # Verify the current search path
                 with connection.cursor() as cursor:

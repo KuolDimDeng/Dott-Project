@@ -1,5 +1,6 @@
 import { logger } from './logger';
 import useAuthStore from '@/store/authStore';
+import { getTenantId, forceValidateTenantId, validateTenantIdFormat } from './tenantUtils';
 
 /**
  * TenantContext - Single source of truth for tenant information
@@ -14,7 +15,18 @@ import useAuthStore from '@/store/authStore';
 export const getTenantContext = () => {
   // Get tenant ID from auth store as the single source of truth
   const authState = useAuthStore.getState();
-  const tenantId = authState.user?.businessId || null;
+  let tenantId = authState.user?.businessId || null;
+  
+  // If not in auth store, try to get from tenantUtils
+  if (!tenantId) {
+    tenantId = getTenantId();
+    
+    // If we found a tenant ID from tenantUtils, update the auth store
+    if (tenantId) {
+      logger.debug(`[TenantContext] Updated tenant in auth store from tenantUtils: ${tenantId}`);
+      setTenantContext(tenantId);
+    }
+  }
   
   // Generate schema name if tenant ID exists
   const schemaName = tenantId ? `tenant_${tenantId.replace(/-/g, '_')}` : null;
@@ -136,38 +148,35 @@ export const extractTenantFromResponse = (response) => {
  * Initialize tenant context from available sources
  * Should be called during app initialization
  */
-export const initializeTenantContext = () => {
+export const initializeTenantContext = async () => {
   // Only run on client
   if (typeof window === 'undefined') return;
   
   logger.debug('[TenantContext] Initializing tenant context');
   
-  // Try to get from auth store first (should be initialized from user session)
-  const authState = useAuthStore.getState();
-  let tenantId = authState.user?.businessId;
-  
-  // If not in auth store, try localStorage
-  if (!tenantId) {
-    tenantId = localStorage.getItem('tenantId');
-  }
-  
-  // If not in localStorage, try cookies
-  if (!tenantId) {
-    const cookies = document.cookie.split(';');
-    const tenantCookie = cookies.find(cookie => cookie.trim().startsWith('tenantId='));
-    if (tenantCookie) {
-      tenantId = tenantCookie.split('=')[1].trim();
+  try {
+    // Reset tenant cache
+    logger.info('[TenantContext] Initializing tenant context');
+    
+    // Find a valid tenant ID
+    const validatedId = await forceValidateTenantId();
+    
+    if (validatedId) {
+      // Update tenant ID in UI
+      setTenantContext(validatedId);
+      logger.info(`[TenantContext] Tenant context initialized with ID: ${validatedId}`);
+    } else {
+      logger.warn('[TenantContext] No valid tenant ID found during initialization');
     }
-  }
-  
-  // If not in cookies, try URL params
-  if (!tenantId) {
-    const urlParams = new URLSearchParams(window.location.search);
-    tenantId = urlParams.get('businessId') || urlParams.get('tenantId');
-  }
-  
-  // If found in any source, set it in the auth store
-  if (tenantId) {
-    setTenantContext(tenantId);
+    
+    return validatedId;
+  } catch (error) {
+    logger.error('[TenantContext] Error getting tenant context:', error);
+    
+    // Last resort - use fallback tenant
+    const fallbackTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
+    logger.warn(`[TenantContext] Error during initialization, using fallback: ${fallbackTenantId}`);
+    setTenantContext(fallbackTenantId);
+    return fallbackTenantId;
   }
 };

@@ -499,22 +499,8 @@ def create_product(request):
                     )
                     logger.debug(f"Saved product type fields: {type_fields_data}")
 
-                # Create corresponding inventory item
-                inventory_data = {
-                    'name': product.name,
-                    'sku': product.product_code,
-                    'description': product.description,
-                    'quantity': product.stock_quantity,
-                    'reorder_level': product.reorder_level,
-                    'unit_price': product.price
-                }
-                inventory_serializer = InventoryItemSerializer(data=inventory_data, context={'database_name': database_name})
-                if inventory_serializer.is_valid():
-                    inventory_item = inventory_serializer.save()
-                    logger.info(f"Inventory item created: {inventory_item.id} - {inventory_item.name}")
-                else:
-                    logger.error(f"Error creating inventory item: {inventory_serializer.errors}")
-                    raise ValidationError(inventory_serializer.errors)
+                # No longer create corresponding inventory item
+                # The inventory_product table is the single source of truth
 
                 logger.info(f"Product created: {product.id} - {product.name}")
                 return Response(ProductSerializer(product).data, status=status.HTTP_201_CREATED)
@@ -780,20 +766,6 @@ def update_product(request, pk):
                     setattr(type_fields, key, value)
                 type_fields.save(using=database_name)
                 
-                # Update corresponding inventory item if it exists
-                try:
-                    from inventory.models import InventoryItem
-                    inventory_item = InventoryItem.objects.using(database_name).get(sku=product.product_code)
-                    inventory_item.name = product.name
-                    inventory_item.description = product.description
-                    inventory_item.quantity = product.stock_quantity
-                    inventory_item.reorder_level = product.reorder_level
-                    inventory_item.unit_price = product.price
-                    inventory_item.save(using=database_name)
-                    logger.info(f"Inventory item updated: {inventory_item.id} - {inventory_item.name}")
-                except:
-                    logger.warning(f"No inventory item found for product {product.id} - {product.name}")
-
                 logger.info(f"Product updated: {product.id} - {product.name}")
                 return Response(ProductSerializer(product).data)
             else:

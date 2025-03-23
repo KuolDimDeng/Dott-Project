@@ -7,6 +7,7 @@ import { isPublicRoute } from '@/lib/authUtils';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { refreshUserSession } from '@/utils/refreshUserSession';
 import { initializeTenant } from '@/utils/tenantUtils';
+import { initializeTenantContext } from '@/utils/tenantContext';
 // These providers are now handled in providers.js
 import AuthErrorBoundary from '@/components/ErrorBoundary';
 import LoadingFallback from '@/components/ClientOnly/LoadingFallback';
@@ -132,6 +133,25 @@ export default function ClientLayout({ children }) {
               // Let the original error handler show it, but also log it safely
             }
             
+            // Handle Django Resolver404 errors specially
+            const isUrlResolverError = errorString && (
+              errorString.includes('Resolver404') || 
+              errorString.includes('endpoint not found') ||
+              errorString.includes('URL pattern not found')
+            );
+            
+            if (isUrlResolverError) {
+              logger.warn('[ClientLayout] Caught URL resolver error - this might indicate a tenant schema issue', {
+                errorString
+              });
+              
+              // If it's a tenant schema issue, don't log it to the console to reduce noise
+              // Instead, we'll handle it in the component
+              if (errorString.includes('tenant schema')) {
+                return; // Skip console.error to reduce noise
+              }
+            }
+            
             // Only call original error handler if it's not a max update depth error
             // This prevents infinite loops
             if (!isMaxUpdateDepthError) {
@@ -224,11 +244,20 @@ export default function ClientLayout({ children }) {
         if (isValid && !tenantInitialized) {
           try {
             // Initialize tenant if we have a valid session
-            await initializeTenant(tokens.idToken);
+            await initializeTenantContext();
             setTenantInitialized(true);
+            logger.info('[ClientLayout] Tenant context initialized successfully');
           } catch (error) {
-            logger.error('[ClientLayout] Failed to initialize tenant:', error);
-            // Don't fail the session check if tenant init fails
+            logger.error('[ClientLayout] Failed to initialize tenant context:', error);
+            // Fallback to old initialization method
+            try {
+              await initializeTenant(tokens.idToken);
+              setTenantInitialized(true);
+              logger.info('[ClientLayout] Fallback tenant initialization successful');
+            } catch (fallbackError) {
+              logger.error('[ClientLayout] Fallback tenant initialization also failed:', fallbackError);
+              // Don't fail the session check if tenant init fails
+            }
           }
         }
 

@@ -36,10 +36,14 @@ import { logger } from '@/utils/logger';
 import PrintIcon from '@mui/icons-material/Print';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import { inventoryService } from '@/services/inventoryService';
+import { userService } from '@/services/userService';
+import { useUser } from '@/contexts/UserContext';
 
 const ProductForm = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { user, loading: userLoading } = useUser();
   const [product, setProduct] = useState({
     name: '',
     description: '',
@@ -61,6 +65,15 @@ const ProductForm = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    // Initialize tenant context from user data
+    if (user?.tenant?.id) {
+      console.log(`Product form initialized with tenant from context: ${user.tenant.id}`);
+    } else if (!userLoading) {
+      console.warn('No tenant context available in user data');
+    }
+  }, [user, userLoading]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -133,16 +146,16 @@ const ProductForm = () => {
     try {
       logger.info('Product data:', product);
       
-      // Using the new API endpoint from the inventory module
-      const response = await axiosInstance.post('/api/inventory/products/create/', product);
-      logger.info('Product created successfully', response.data);
+      // Using inventoryService to ensure proper tenant context and authentication
+      const response = await inventoryService.createProduct(product);
+      logger.info('Product created successfully', response);
 
       // Set the success message
       setSnackbarSeverity('success');
-      setSnackbarMessage(`Product "${response.data.name}" created successfully`);
+      setSnackbarMessage(`Product "${response.name}" created successfully`);
       setOpenSnackbar(true);
 
-      setProduct(response.data);
+      setProduct(response);
       setOpenPrintDialog(true);
     } catch (error) {
       logger.error('Error creating product', error);
@@ -199,12 +212,10 @@ const ProductForm = () => {
         return;
       }
 
-      // Using the new API endpoint from the inventory module
-      const response = await axiosInstance.get(`/api/inventory/products/${product.id}/print-barcode/`, {
-        responseType: 'blob',
-      });
-
-      const blob = new Blob([response.data], { type: 'image/png' });
+      // Using inventoryService to ensure proper tenant context and authentication
+      const barcodeData = await inventoryService.printProductBarcode(product.id);
+      
+      const blob = new Blob([barcodeData], { type: 'image/png' });
 
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);

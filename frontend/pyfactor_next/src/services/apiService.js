@@ -16,7 +16,7 @@ import { dataCache } from '@/utils/enhancedCache';
  * @returns {Object} Standardized error object
  */
 export const handleApiError = (error, options = {}) => {
-  const { fallbackData = null, showNotification = true, rethrow = false } = options;
+  const { fallbackData = null, showNotification = true, rethrow = false, customMessage = null } = options;
   
   // Extract request details
   const requestDetails = {
@@ -37,62 +37,51 @@ export const handleApiError = (error, options = {}) => {
   logger.error('[ApiService] Request failed:', requestDetails);
   
   // Categorize errors for better user feedback
-  let userMessage = 'An error occurred while processing your request.';
+  let userMessage = customMessage || 'An error occurred while processing your request.';
   let errorType = 'error';
   
-  if (error.response) {
-    // Server responded with an error status
+  if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+    userMessage = customMessage || 'Request timed out. The server is taking too long to respond.';
+    errorType = 'warning';
+  } else if (error.response) {
+    // The request was made and the server responded with a status code
+    // that falls out of the range of 2xx
     if (error.response.status === 401 || error.response.status === 403) {
-      userMessage = 'You do not have permission to access this resource.';
-      errorType = 'permission';
+      userMessage = customMessage || 'Authentication error. Please login again.';
+      errorType = 'warning';
     } else if (error.response.status === 404) {
-      userMessage = 'The requested resource was not found.';
-      errorType = 'not_found';
-    } else if (error.response.status === 409) {
-      userMessage = 'A conflict occurred with your request.';
-      errorType = 'conflict';
+      userMessage = customMessage || 'Resource not found.';
+      errorType = 'info';
     } else if (error.response.status >= 500) {
-      userMessage = 'A server error occurred. Please try again later.';
-      errorType = 'server';
-    }
-    
-    // Use error message from response if available
-    if (error.response.data && error.response.data.message) {
-      userMessage = error.response.data.message;
-    } else if (error.response.data && error.response.data.error) {
-      userMessage = error.response.data.error;
+      userMessage = customMessage || 'Server error. Please try again later.';
+      errorType = 'error';
     }
   } else if (error.request) {
-    // Request was made but no response received
-    userMessage = 'No response received from server. Please check your connection.';
-    errorType = 'network';
+    // The request was made but no response was received
+    userMessage = customMessage || 'No response received from server. Please check your connection.';
+    errorType = 'warning';
   }
   
   // Show notification if enabled
-  if (showNotification && typeof window !== 'undefined') {
-    // Use a notification system if available
-    if (window.notifyUser) {
-      window.notifyUser(userMessage, 'error');
-    } else {
-      console.error(userMessage);
-    }
+  if (showNotification) {
+    // Implementation of notification display depends on the notification system used
+    // This could be calling a toast notification service, Redux action, etc.
+    // For now, we just log it
+    logger.warn(userMessage);
   }
   
-  // Create standardized error object
-  const standardError = {
-    message: userMessage,
-    type: errorType,
-    original: error,
-    details: requestDetails
-  };
+  // If fallback data is provided, return it instead of throwing
+  if (fallbackData !== null) {
+    return fallbackData;
+  }
   
-  // Rethrow if requested
+  // Rethrow the error if requested
   if (rethrow) {
-    throw standardError;
+    throw error;
   }
   
-  // Return fallback data or error object
-  return fallbackData !== null ? fallbackData : standardError;
+  // Default return null
+  return null;
 };
 
 /**
@@ -110,7 +99,7 @@ export const fetchData = async (endpoint, options = {}) => {
     cacheKey = null,
     fallbackData = null,
     showErrorNotification = true,
-    timeout = 8000
+    timeout = 15000 // Increased from 8000 to 15000ms
   } = options;
   
   // Generate cache key if caching is enabled
@@ -151,6 +140,17 @@ export const fetchData = async (endpoint, options = {}) => {
     
     return response.data;
   } catch (error) {
+    // For timeout errors, add a more specific message
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      logger.error(`[ApiService] Request to ${endpoint} timed out after ${timeout}ms`);
+      return handleApiError(error, {
+        fallbackData,
+        showNotification: showErrorNotification,
+        rethrow: !fallbackData,
+        customMessage: `Request timed out after ${timeout/1000} seconds. Using fallback data.`
+      });
+    }
+    
     return handleApiError(error, {
       fallbackData,
       showNotification: showErrorNotification,
@@ -561,6 +561,102 @@ export const setTenantId = async (tenantId) => {
   }
 };
 
+/**
+ * Get current authentication tokens
+ * @returns {Object|null} Object containing accessToken and idToken, or null if not available
+ */
+export const getAuthTokens = async () => {
+  try {
+    // First try to get tokens from localStorage
+    let accessToken = null;
+    let idToken = null;
+    
+    if (typeof window !== 'undefined') {
+      // Try different possible storage keys
+      accessToken = localStorage.getItem('accessToken') || 
+                    localStorage.getItem('pyfactor_access_token') || 
+                    localStorage.getItem('access_token');
+                    
+      idToken = localStorage.getItem('idToken') || 
+                localStorage.getItem('pyfactor_id_token') || 
+                localStorage.getItem('id_token');
+      
+      // Log what we found (without revealing the full tokens)
+      if (accessToken) {
+        logger.debug('[ApiService] Found access token in localStorage');
+      }
+      
+      if (idToken) {
+        logger.debug('[ApiService] Found ID token in localStorage');
+      }
+    }
+    
+    // If not in localStorage, try cookies
+    if ((!accessToken || !idToken) && typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';');
+      for (const cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'accessToken' || name === 'pyfactor_access_token' || name === 'access_token') {
+          accessToken = value;
+          logger.debug('[ApiService] Found access token in cookies');
+        } else if (name === 'idToken' || name === 'pyfactor_id_token' || name === 'id_token') {
+          idToken = value;
+          logger.debug('[ApiService] Found ID token in cookies');
+        }
+      }
+    }
+    
+    // Return tokens if we found them
+    if (accessToken) {
+      return {
+        accessToken,
+        idToken
+      };
+    }
+    
+    // Last resort: try to refresh tokens
+    try {
+      // Assuming there's a refresh function already implemented
+      if (typeof refreshTokens === 'function') {
+        logger.debug('[ApiService] Attempting to refresh tokens');
+        await refreshTokens();
+        
+        // Try again after refresh
+        return await getAuthTokens();
+      }
+    } catch (refreshError) {
+      logger.error('[ApiService] Error refreshing tokens:', refreshError);
+    }
+    
+    logger.warn('[ApiService] No authentication tokens found');
+    return null;
+  } catch (error) {
+    logger.error('[ApiService] Error getting auth tokens:', error);
+    return null;
+  }
+};
+
+/**
+ * Get current tenant for the authenticated user
+ * @returns {Promise<Object>} Current tenant information
+ */
+export const getCurrentTenant = async () => {
+  try {
+    logger.debug('[ApiService] Getting current tenant for user');
+    
+    const response = await axiosInstance.get('/api/tenant/current/');
+    logger.debug('[ApiService] Retrieved current tenant:', {
+      id: response.data?.id,
+      hasSchema: !!response.data?.schema_name
+    });
+    
+    return response.data;
+  } catch (error) {
+    logger.error('[ApiService] Error getting current tenant:', error);
+    return null;
+  }
+};
+
 // Export a default object with all methods
 export const apiService = {
   fetch: fetchData,
@@ -572,7 +668,9 @@ export const apiService = {
   checkTaskStatus,
   getTenantHeaders: getDebugTenantHeaders, // Use the renamed function
   verifyTenantContext,
-  setTenantId
+  setTenantId,
+  getAuthTokens,
+  getCurrentTenant
 };
 
 export default apiService;

@@ -13,8 +13,188 @@ from onboarding.utils import tenant_schema_context, create_tenant_schema
 from custom_auth.models import Tenant
 from django.db import IntegrityError
 from custom_auth.utils import consolidate_user_tenants, acquire_user_lock, release_user_lock
+from django.http import JsonResponse
+from django.utils.deprecation import MiddlewareMixin
 
 logger = logging.getLogger(__name__)
+
+def verify_auth_tables_in_schema(schema_name):
+    """
+    Verify that auth tables exist in the specified schema and create them if needed.
+    This is critical for authentication to work properly when switching schemas.
+    
+    Args:
+        schema_name: Name of the schema to check
+        
+    Returns:
+        bool: True if tables exist or were created, False if failed
+    """
+    request_id = str(uuid.uuid4())[:8]
+    logger.info(f"[SCHEMA-AUTH-{request_id}] Verifying auth tables in schema {schema_name}")
+    
+    try:
+        with connection.cursor() as cursor:
+            # Check if custom_auth_user table exists
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables 
+                    WHERE table_schema = %s AND table_name = 'custom_auth_user'
+                )
+            """, [schema_name])
+            
+            table_exists = cursor.fetchone()[0]
+            if table_exists:
+                logger.debug(f"[SCHEMA-AUTH-{request_id}] Auth tables exist in schema {schema_name}")
+                return True
+            
+            # Tables don't exist, create them
+            logger.warning(f"[SCHEMA-AUTH-{request_id}] Auth tables missing in schema {schema_name}, creating them")
+            
+            # Temporarily store current search path
+            cursor.execute('SHOW search_path')
+            original_path = cursor.fetchone()[0]
+            
+            # Set search path to tenant schema
+            cursor.execute(f'SET search_path TO "{schema_name}"')
+            
+            # Create auth tables in tenant schema
+            cursor.execute(f"""
+                -- Create auth tables
+                CREATE TABLE IF NOT EXISTS custom_auth_user (
+                    id UUID PRIMARY KEY,
+                    password VARCHAR(128) NOT NULL,
+                    last_login TIMESTAMP WITH TIME ZONE NULL,
+                    is_superuser BOOLEAN NOT NULL,
+                    email VARCHAR(254) NOT NULL UNIQUE,
+                    first_name VARCHAR(100) NOT NULL DEFAULT '',
+                    last_name VARCHAR(100) NOT NULL DEFAULT '',
+                    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                    is_staff BOOLEAN NOT NULL DEFAULT FALSE,
+                    date_joined TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                    email_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
+                    confirmation_token UUID NOT NULL DEFAULT gen_random_uuid(),
+                    is_onboarded BOOLEAN NOT NULL DEFAULT FALSE,
+                    stripe_customer_id VARCHAR(255) NULL,
+                    role VARCHAR(20) NOT NULL DEFAULT 'OWNER',
+                    occupation VARCHAR(50) NOT NULL DEFAULT 'OWNER',
+                    tenant_id UUID NULL,
+                    cognito_sub VARCHAR(36) NULL
+                );
+                
+                CREATE INDEX IF NOT EXISTS custom_auth_user_email_key ON custom_auth_user (email);
+                CREATE INDEX IF NOT EXISTS idx_user_tenant ON custom_auth_user (tenant_id);
+                
+                -- Auth User Permissions
+                CREATE TABLE IF NOT EXISTS custom_auth_user_user_permissions (
+                    id SERIAL PRIMARY KEY,
+                    user_id UUID NOT NULL REFERENCES custom_auth_user(id),
+                    permission_id INTEGER NOT NULL,
+                    CONSTRAINT custom_auth_user_user_permissions_user_id_permission_id_key UNIQUE (user_id, permission_id)
+                );
+                
+                -- Auth User Groups
+                CREATE TABLE IF NOT EXISTS custom_auth_user_groups (
+                    id SERIAL PRIMARY KEY,
+                    user_id UUID NOT NULL REFERENCES custom_auth_user(id),
+                    group_id INTEGER NOT NULL,
+                    CONSTRAINT custom_auth_user_groups_user_id_group_id_key UNIQUE (user_id, group_id)
+                );
+                
+                -- Tenant table
+                CREATE TABLE IF NOT EXISTS custom_auth_tenant (
+                    id UUID PRIMARY KEY,
+                    schema_name VARCHAR(63) NOT NULL UNIQUE,
+                    name VARCHAR(100) NOT NULL,
+                    created_on TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                    setup_status VARCHAR(20) NOT NULL,
+                    setup_task_id VARCHAR(255) NULL,
+                    last_setup_attempt TIMESTAMP WITH TIME ZONE NULL,
+                    setup_error_message TEXT NULL,
+                    last_health_check TIMESTAMP WITH TIME ZONE NULL,
+                    storage_quota_bytes BIGINT NOT NULL DEFAULT 2147483648,
+                    owner_id UUID NOT NULL
+                );
+            """)
+            
+            # Copy existing user and tenant data from public schema
+            try:
+                # Find tenant in public schema
+                cursor.execute('SET search_path TO public')
+                cursor.execute("""
+                    SELECT id, owner_id FROM custom_auth_tenant WHERE schema_name = %s
+                """, [schema_name])
+                
+                tenant_data = cursor.fetchone()
+                if tenant_data:
+                    tenant_id, owner_id = tenant_data
+                    
+                    # Get complete tenant data
+                    cursor.execute("""
+                        SELECT id, schema_name, name, created_on, is_active, setup_status, 
+                               setup_task_id, last_setup_attempt, setup_error_message,
+                               last_health_check, storage_quota_bytes, owner_id
+                        FROM custom_auth_tenant
+                        WHERE id = %s
+                    """, [tenant_id])
+                    
+                    complete_tenant_data = cursor.fetchone()
+                    
+                    # Get owner data
+                    cursor.execute("""
+                        SELECT id, password, last_login, is_superuser, email, first_name, last_name, 
+                               is_active, is_staff, date_joined, email_confirmed, confirmation_token, 
+                               is_onboarded, stripe_customer_id, role, occupation, tenant_id, cognito_sub
+                        FROM custom_auth_user
+                        WHERE id = %s
+                    """, [owner_id])
+                    
+                    owner_data = cursor.fetchone()
+                    
+                    # Insert owner into tenant schema first
+                    if owner_data:
+                        cursor.execute(f'SET search_path TO "{schema_name}"')
+                        cursor.execute(f"""
+                            INSERT INTO custom_auth_user 
+                            (id, password, last_login, is_superuser, email, first_name, last_name, 
+                             is_active, is_staff, date_joined, email_confirmed, confirmation_token, 
+                             is_onboarded, stripe_customer_id, role, occupation, tenant_id, cognito_sub)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (id) DO NOTHING
+                        """, owner_data)
+                        
+                        # Now insert tenant data
+                        if complete_tenant_data:
+                            cursor.execute(f"""
+                                INSERT INTO custom_auth_tenant
+                                (id, schema_name, name, created_on, is_active, setup_status, 
+                                 setup_task_id, last_setup_attempt, setup_error_message,
+                                 last_health_check, storage_quota_bytes, owner_id)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                ON CONFLICT (id) DO NOTHING
+                            """, complete_tenant_data)
+            except Exception as copy_error:
+                logger.error(f"[SCHEMA-AUTH-{request_id}] Error copying data to schema: {str(copy_error)}")
+            
+            # Restore original search path
+            cursor.execute(f'SET search_path TO {original_path}')
+            
+            # Verify tables were created
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables 
+                    WHERE table_schema = %s AND table_name = 'custom_auth_user'
+                )
+            """, [schema_name])
+            
+            verify_table_exists = cursor.fetchone()[0]
+            logger.info(f"[SCHEMA-AUTH-{request_id}] Auth table in {schema_name} exists: {verify_table_exists}")
+            
+            return verify_table_exists
+            
+    except Exception as e:
+        logger.error(f"[SCHEMA-AUTH-{request_id}] Error verifying/creating auth tables in {schema_name}: {str(e)}")
+        return False
 
 class CustomCORSMiddleware:
     """
@@ -297,7 +477,7 @@ class TenantMiddleware:
         tenant_id = None
         schema_name = None
         
-        # Try to get tenant ID from headers first
+        # Try to get tenant ID from headers first (highest priority)
         tenant_id_header = request.headers.get('X-Tenant-ID')
         schema_name_header = request.headers.get('X-Schema-Name')
         
@@ -385,6 +565,22 @@ class TenantMiddleware:
                 # Store the tenant in the request
                 if tenant:
                     request.tenant = tenant
+                    
+                    # CRITICAL FIX: Set the tenant schema in thread local storage for database routing
+                    from pyfactor.db_routers import TenantSchemaRouter, local
+                    setattr(local, 'tenant_schema', tenant.schema_name)
+                    self.logger.debug(f"[TENANT-MW-{request_id}] Set thread local tenant schema to: {tenant.schema_name}")
+                    
+                    # Explicitly set the search path for this connection if we have a tenant
+                    try:
+                        from django.db import connection
+                        if not connection.in_atomic_block:  # Only if not already in a transaction
+                            with connection.cursor() as cursor:
+                                cursor.execute(f'SET search_path TO "{tenant.schema_name}",public')
+                                self.logger.debug(f"[TENANT-MW-{request_id}] Set database search path to: {tenant.schema_name}")
+                    except Exception as e:
+                        self.logger.error(f"[TENANT-MW-{request_id}] Error setting search path: {str(e)}")
+                        
             except Exception as e:
                 self.logger.error(f"[TENANT-MW-{request_id}] Error finding tenant: {str(e)}")
         
@@ -393,7 +589,7 @@ class TenantMiddleware:
             self.logger.debug(f"[TENANT-MW-{request_id}] Dashboard request detected, may need schema setup")
             # Continue with normal request processing (schema setup handled by views)
         
-        # Process the request
+        # Process the request with tenant context established
         response = self.get_response(request)
         
         # Add tenant headers to the response for client tracking

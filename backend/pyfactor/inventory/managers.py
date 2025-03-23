@@ -33,33 +33,74 @@ class OptimizedProductManager(models.Manager):
         
         # Set search path directly without transaction
         # This ensures the search path is maintained for the entire connection
-        with connection.cursor() as cursor:
-            # First verify schema exists
-            cursor.execute("""
-                SELECT 1 FROM information_schema.schemata
-                WHERE schema_name = %s
-            """, [schema_name])
+        try:
+            with connection.cursor() as cursor:
+                # First verify schema exists
+                cursor.execute("""
+                    SELECT 1 FROM information_schema.schemata
+                    WHERE schema_name = %s
+                """, [schema_name])
+                
+                result = cursor.fetchone()
+                if not result:
+                    logger.error(f"Schema {schema_name} does not exist in database")
+                    # Return empty queryset if schema doesn't exist
+                    return self.get_queryset().none()
+                
+                # Set search path globally for this connection
+                # Using double quotes to handle schemas with underscores and dashes
+                cursor.execute(f'SET search_path TO "{schema_name}",public')
+                
+                # Verify search path was set
+                cursor.execute('SHOW search_path')
+                current_path = cursor.fetchone()[0]
+                logger.debug(f"Set search path to: {current_path}")
+                
+                if schema_name not in current_path:
+                    logger.error(f"Failed to set search_path to {schema_name}, got: {current_path}")
+                    # Return empty queryset if search path couldn't be set
+                    return self.get_queryset().none()
             
-            if not cursor.fetchone():
-                logger.error(f"Schema {schema_name} does not exist")
-                # Return empty queryset if schema doesn't exist
-                return self.get_queryset().none()
+            # Return queryset using the current connection with the schema set
+            return self.get_queryset()
             
-            # Set search path globally for this connection
-            cursor.execute(f'SET search_path TO "{schema_name}",public')
-            
-            # Verify search path was set
-            cursor.execute('SHOW search_path')
-            current_path = cursor.fetchone()[0]
-            logger.debug(f"Set search path to: {current_path}")
-            
-            if schema_name not in current_path:
-                logger.error(f"Failed to set search_path to {schema_name}")
-                # Return empty queryset if search path couldn't be set
-                return self.get_queryset().none()
+        except Exception as e:
+            logger.error(f"Error setting tenant context for schema {schema_name}: {str(e)}", exc_info=True)
+            # In case of errors, return empty queryset
+            return self.get_queryset().none()
+    
+    # Added utility method to help with direct schema queries
+    def execute_in_schema(self, schema_name, sql, params=None):
+        """
+        Execute raw SQL in a specific schema context
         
-        # Return optimized queryset
-        return self.get_queryset()
+        Args:
+            schema_name (str): The tenant schema name
+            sql (str): SQL query to execute
+            params (list, optional): Query parameters
+            
+        Returns:
+            list: Result rows or None on error
+        """
+        if not schema_name:
+            logger.error("No schema name provided for execute_in_schema")
+            return None
+            
+        try:
+            with connection.cursor() as cursor:
+                # Set schema context
+                cursor.execute(f'SET search_path TO "{schema_name}",public')
+                
+                # Execute the query
+                cursor.execute(sql, params or [])
+                
+                # Fetch results
+                columns = [col[0] for col in cursor.description]
+                return [dict(zip(columns, row)) for row in cursor.fetchall()]
+                
+        except Exception as e:
+            logger.error(f"Error executing SQL in schema {schema_name}: {str(e)}", exc_info=True)
+            return None
     
     def with_inventory_stats(self):
         """

@@ -31,8 +31,8 @@ if __name__ == "__main__":
 # Now we can import Django models
 from django.db import connection, transaction
 from django.db.models import Count, Q
-from pyfactor.custom_auth.models import User, Tenant
-from pyfactor.custom_auth.utils import consolidate_user_tenants
+from custom_auth.models import User, Tenant
+from custom_auth.utils import consolidate_user_tenants
 
 # Configure logging
 logging.basicConfig(

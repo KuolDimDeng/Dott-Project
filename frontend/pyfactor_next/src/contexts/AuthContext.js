@@ -15,6 +15,7 @@ import {
 import { createSafeContext, useSafeContext } from '@/utils/ContextFix';
 import { logMemoryUsage, trackMemory, detectMemorySpike, clearMemoryTracking } from '@/utils/memoryDebug';
 import { setTokens } from '@/utils/tenantUtils';
+import { initializeTenantContext } from '@/utils/tenantContext';
 
 // Create a minimal initial state object
 const initialState = {
@@ -138,6 +139,14 @@ export function AuthProvider({ children }) {
         if (tokens?.accessToken && tokens?.idToken) {
           setTokens(tokens);
           logger.debug('[Auth] Tokens stored in tenantUtils');
+          
+          // Initialize tenant context after tokens are available
+          try {
+            await initializeTenantContext();
+            logger.info('[Auth] Tenant context initialized after authentication');
+          } catch (tenantError) {
+            logger.error('[Auth] Error initializing tenant context:', tenantError);
+          }
         }
         
         // Track memory after auth session fetch

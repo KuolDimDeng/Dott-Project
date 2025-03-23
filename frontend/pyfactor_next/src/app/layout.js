@@ -6,6 +6,7 @@ import Providers from '@/providers';
 import LanguageProvider from '@/components/LanguageProvider/LanguageProvider.jsx';
 import DynamicComponents from '@/components/DynamicComponents';
 import './globals.css';
+import { UserProvider } from '@/contexts/UserContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -22,15 +23,17 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ThemeRegistry>
-          <Providers>
-            <LanguageProvider>
-              <ClientLayout>{children}</ClientLayout>
-              {/* DynamicComponents will be loaded client-side by ClientLayout */}
-              <DynamicComponents isAuthenticated={false} />
-            </LanguageProvider>
-          </Providers>
-        </ThemeRegistry>
+        <UserProvider>
+          <ThemeRegistry>
+            <Providers>
+              <LanguageProvider>
+                <ClientLayout>{children}</ClientLayout>
+                {/* DynamicComponents will be loaded client-side by ClientLayout */}
+                <DynamicComponents isAuthenticated={false} />
+              </LanguageProvider>
+            </Providers>
+          </ThemeRegistry>
+        </UserProvider>
       </body>
     </html>
   );

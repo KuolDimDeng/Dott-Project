@@ -186,51 +186,103 @@ def ultra_fast_products(request):
     tenant = getattr(request, 'tenant', None)
     schema_name = tenant.schema_name if tenant else None
     
+    # Get tenant info from headers as backup if not in request object
+    if not schema_name:
+        tenant_id = request.headers.get('X-Tenant-ID')
+        schema_header = request.headers.get('X-Schema-Name')
+        
+        if schema_header:
+            schema_name = schema_header
+            logger.debug(f"Using schema from header: {schema_name}")
+        elif tenant_id:
+            schema_name = f"tenant_{tenant_id.replace('-', '_')}"
+            logger.debug(f"Generated schema from tenant ID header: {schema_name}")
+    
+    if not schema_name:
+        return Response(
+            {"error": "No tenant schema context found", "detail": "Please specify tenant in headers"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    logger.debug(f"Processing ultra_fast_products with schema: {schema_name}")
+    
     # Use a transaction with a timeout
-    with transaction.atomic():
-        # Set timeout for the transaction
-        with connection.cursor() as cursor:
-            cursor.execute('SET LOCAL statement_timeout = 5000')  # 5 seconds
-        
-        # Get ultra-fast products
-        products = Product.optimized.for_tenant(schema_name).get_ultra_fast(request.query_params)
-        
-        # Set up pagination
-        paginator = OptimizedPagination()
-        paginator.page_size = 50  # Larger page size for ultra-fast endpoint
-        page = paginator.paginate_queryset(products, request)
-        
-        if page is not None:
-            # Use a minimal serializer for better performance
-            data = [{
-                'id': str(p.id),
-                'name': p.name,
-                'product_code': p.product_code,
-                'stock_quantity': p.stock_quantity,
-                'reorder_level': p.reorder_level,
-                'price': float(p.price),
-                'is_for_sale': p.is_for_sale
-            } for p in page]
+    try:
+        with transaction.atomic():
+            # Set timeout for the transaction
+            with connection.cursor() as cursor:
+                cursor.execute('SET LOCAL statement_timeout = 5000')  # 5 seconds
+                
+                # EXPLICITLY set the search path for this connection
+                cursor.execute(f'SET search_path TO "{schema_name}",public')
             
-            response = paginator.get_paginated_response(data)
+            # Get ultra-fast products
+            products = Product.optimized.for_tenant(schema_name).get_ultra_fast(request.query_params)
+            
+            # Set up pagination
+            paginator = OptimizedPagination()
+            paginator.page_size = 50  # Larger page size for ultra-fast endpoint
+            page = paginator.paginate_queryset(products, request)
+            
+            if page is not None:
+                # Use optimized serialization for better performance
+                result = []
+                for product in page:
+                    result.append({
+                        'id': str(product.id),
+                        'name': product.name,
+                        'product_code': product.product_code,
+                        'unit_price': product.unit_price,
+                        'stock_quantity': product.stock_quantity,
+                        'is_for_sale': product.is_for_sale,
+                        'department_id': str(product.department_id) if product.department_id else None,
+                        'department_name': product.department.dept_name if product.department else None,
+                    })
+                
+                response = paginator.get_paginated_response(result)
+            else:
+                # Handle case with no pagination
+                result = []
+                for product in products:
+                    result.append({
+                        'id': str(product.id),
+                        'name': product.name,
+                        'product_code': product.product_code,
+                        'unit_price': product.unit_price,
+                        'stock_quantity': product.stock_quantity,
+                        'is_for_sale': product.is_for_sale,
+                        'department_id': str(product.department_id) if product.department_id else None,
+                        'department_name': product.department.dept_name if product.department else None,
+                    })
+                
+                response = Response(result)
+            
+            # Log performance metrics
+            elapsed_time = time.time() - start_time
+            logger.debug(f"Ultra-fast products fetched in {elapsed_time:.4f}s")
+            
+            # Add schema info to response headers
+            response['X-Schema-Used'] = schema_name
+            
+            return response
+    except Exception as e:
+        logger.error(f"Error in ultra_fast_products with schema {schema_name}: {str(e)}", exc_info=True)
+        
+        if "permission denied" in str(e).lower() or "does not exist" in str(e).lower():
+            return Response(
+                {"error": f"Schema error with {schema_name}", "detail": str(e)},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        elif "timeout" in str(e).lower():
+            return Response(
+                {"error": "Database operation timed out", "detail": str(e)},
+                status=status.HTTP_504_GATEWAY_TIMEOUT
+            )
         else:
-            data = [{
-                'id': str(p.id),
-                'name': p.name,
-                'product_code': p.product_code,
-                'stock_quantity': p.stock_quantity,
-                'reorder_level': p.reorder_level,
-                'price': float(p.price),
-                'is_for_sale': p.is_for_sale
-            } for p in products]
-            
-            response = Response(data)
-        
-        # Log performance metrics
-        elapsed_time = time.time() - start_time
-        logger.debug(f"Ultra-fast products fetched in {elapsed_time:.4f}s")
-        
-        return response
+            return Response(
+                {"error": "Internal server error", "detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

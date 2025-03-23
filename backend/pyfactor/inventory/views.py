@@ -19,6 +19,7 @@ from io import BytesIO
 from barcode import Code128
 from barcode.writer import ImageWriter
 from custom_auth.utils import ensure_single_tenant_per_business
+from custom_auth.middleware import verify_auth_tables_in_schema
 
 class InventoryItemViewSet(viewsets.ModelViewSet):
     serializer_class = InventoryItemSerializer
@@ -297,6 +298,7 @@ def create_product(request):
     from rest_framework import status
     from rest_framework.response import Response
     from .serializers import ProductSerializer
+    from custom_auth.middleware import verify_auth_tables_in_schema
     
     logger = logging.getLogger(__name__)
     
@@ -316,11 +318,45 @@ def create_product(request):
             cookie_tenant_id = value
             logger.info(f"[CREATE-PRODUCT-{request_id}] Found tenant ID in cookie: {key}={value}")
     
+    # Check if we need to use the public schema for authentication
+    should_use_public = False
+    with connection.cursor() as cursor:
+        # First check if we're already in the public schema
+        cursor.execute('SHOW search_path')
+        current_path = cursor.fetchone()[0]
+        logger.info(f"[CREATE-PRODUCT-{request_id}] Current search path at start: {current_path}")
+        
+        # If we're in a tenant schema, check if it has the auth tables
+        if 'public' not in current_path.split(',')[0]:
+            schema_name = current_path.split(',')[0].strip('"')
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables 
+                    WHERE table_schema = %s AND table_name = 'custom_auth_user'
+                )
+            """, [schema_name])
+            has_auth_table = cursor.fetchone()[0]
+            logger.info(f"[CREATE-PRODUCT-{request_id}] Schema {schema_name} has custom_auth_user table: {has_auth_table}")
+            
+            if not has_auth_table:
+                should_use_public = True
+                logger.warning(f"[CREATE-PRODUCT-{request_id}] Schema {schema_name} missing auth tables, will use public schema for auth")
+    
+    # Temporarily switch to public schema for authentication if needed
+    if should_use_public:
+        with connection.cursor() as cursor:
+            cursor.execute('SET search_path TO public')
+            logger.info(f"[CREATE-PRODUCT-{request_id}] Temporarily switched to public schema for authentication")
+    
     # Get the tenant for this request
     tenant = getattr(request, 'tenant', None)
     
     if tenant:
         logger.info(f"[CREATE-PRODUCT-{request_id}] Request has tenant: {tenant.schema_name}, ID: {tenant.id}")
+        
+        # Ensure auth tables exist in tenant schema
+        tables_verified = verify_auth_tables_in_schema(tenant.schema_name)
+        logger.info(f"[CREATE-PRODUCT-{request_id}] Auth tables verified in {tenant.schema_name}: {tables_verified}")
     else:
         logger.warning(f"[CREATE-PRODUCT-{request_id}] No tenant found in request, attempting to find or use existing tenant")
         
@@ -329,6 +365,7 @@ def create_product(request):
         logger.info(f"[CREATE-PRODUCT-{request_id}] Extracted business ID: {business_id}")
         
         # Use our failsafe to get the correct tenant
+        from custom_auth.utils import ensure_single_tenant_per_business
         tenant, should_create = ensure_single_tenant_per_business(request.user, business_id)
         
         if tenant:
