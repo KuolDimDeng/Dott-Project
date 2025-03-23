@@ -288,6 +288,8 @@ def create_product(request):
     import logging
     import time
     import uuid
+    import sys
+    import traceback
     
     from django.db import connection
     from pyfactor.db_routers import TenantSchemaRouter
@@ -300,23 +302,37 @@ def create_product(request):
     
     start_time = time.time()
     request_id = str(uuid.uuid4())[:8]
-    logger.debug(f"[CREATE-PRODUCT-{request_id}] Starting product creation for user {request.user.email}")
+    logger.info(f"[CREATE-PRODUCT-{request_id}] Starting product creation for user {request.user.email}")
+    
+    # Log any existing tenant headers
+    tenant_id_header = request.headers.get('X-Tenant-ID')
+    schema_name_header = request.headers.get('X-Schema-Name')
+    logger.info(f"[CREATE-PRODUCT-{request_id}] Request headers - Tenant ID: {tenant_id_header}, Schema Name: {schema_name_header}")
+    
+    # Log cookie information
+    cookie_tenant_id = None
+    for key, value in request.COOKIES.items():
+        if 'tenant' in key.lower():
+            cookie_tenant_id = value
+            logger.info(f"[CREATE-PRODUCT-{request_id}] Found tenant ID in cookie: {key}={value}")
     
     # Get the tenant for this request
     tenant = getattr(request, 'tenant', None)
     
-    # If no tenant is found in the request, ensure the user has a tenant using our failsafe
-    if not tenant:
+    if tenant:
+        logger.info(f"[CREATE-PRODUCT-{request_id}] Request has tenant: {tenant.schema_name}, ID: {tenant.id}")
+    else:
         logger.warning(f"[CREATE-PRODUCT-{request_id}] No tenant found in request, attempting to find or use existing tenant")
         
-        # Get business ID from headers or user data
-        business_id = request.headers.get('X-Business-ID') or getattr(request.user, 'custom', {}).get('businessid')
+        # Get business ID from headers, user data, or cookies
+        business_id = request.headers.get('X-Business-ID') or getattr(request.user, 'custom', {}).get('businessid') or cookie_tenant_id
+        logger.info(f"[CREATE-PRODUCT-{request_id}] Extracted business ID: {business_id}")
         
         # Use our failsafe to get the correct tenant
-        tenant, _ = ensure_single_tenant_per_business(request.user, business_id)
+        tenant, should_create = ensure_single_tenant_per_business(request.user, business_id)
         
         if tenant:
-            logger.info(f"[CREATE-PRODUCT-{request_id}] Found tenant {tenant.schema_name} for user {request.user.email}")
+            logger.info(f"[CREATE-PRODUCT-{request_id}] Found tenant {tenant.schema_name} (ID: {tenant.id}) for user {request.user.email}")
             # Add tenant to request for middleware and other components
             request.tenant = tenant
         else:
@@ -329,21 +345,29 @@ def create_product(request):
     # Ensure we're in the correct schema context
     try:
         # Clear connection cache to ensure clean state
-        logger.debug(f"[CREATE-PRODUCT-{request_id}] Clearing connection cache")
+        logger.info(f"[CREATE-PRODUCT-{request_id}] Clearing connection cache")
         TenantSchemaRouter.clear_connection_cache()
         
         # Get optimized connection for tenant schema
         if tenant:
-            logger.debug(f"[CREATE-PRODUCT-{request_id}] Getting connection for schema: {tenant.schema_name}")
+            logger.info(f"[CREATE-PRODUCT-{request_id}] Getting connection for schema: {tenant.schema_name} (ID: {tenant.id})")
             TenantSchemaRouter.get_connection_for_schema(tenant.schema_name)
+            
+            # Verify schema context
+            with connection.cursor() as cursor:
+                cursor.execute('SHOW search_path')
+                current_path = cursor.fetchone()[0]
+                logger.info(f"[CREATE-PRODUCT-{request_id}] Current search path: {current_path}")
+                if tenant.schema_name not in current_path:
+                    logger.error(f"[CREATE-PRODUCT-{request_id}] SCHEMA MISMATCH: Expected {tenant.schema_name} but got {current_path}")
         
         # Log request data for debugging
-        logger.debug(f"[CREATE-PRODUCT-{request_id}] Product data: {request.data}")
+        logger.info(f"[CREATE-PRODUCT-{request_id}] Product data: {request.data}")
         
         # Validate the data
         serializer = ProductSerializer(data=request.data)
         if serializer.is_valid():
-            logger.debug(f"[CREATE-PRODUCT-{request_id}] Product data validated successfully: {serializer.validated_data}")
+            logger.info(f"[CREATE-PRODUCT-{request_id}] Product data validated successfully: {serializer.validated_data}")
             
             # Use a transaction to ensure atomicity
             from django.db import transaction
@@ -351,12 +375,19 @@ def create_product(request):
                 # Set timeout for the transaction
                 with connection.cursor() as cursor:
                     cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds
-                    logger.debug(f"[CREATE-PRODUCT-{request_id}] Set transaction timeout to 10 seconds")
+                    logger.info(f"[CREATE-PRODUCT-{request_id}] Set transaction timeout to 10 seconds")
                 
                 # Save the product
-                logger.debug("[CREATE-PRODUCT-{request_id}] Attempting to save product")
+                logger.info(f"[CREATE-PRODUCT-{request_id}] Attempting to save product in schema {tenant.schema_name}")
                 product = serializer.save()
                 logger.info(f"[CREATE-PRODUCT-{request_id}] Successfully created product: {product.name} with ID {product.id} in {time.time() - start_time:.4f}s")
+                
+                # Verify final schema context after save
+                with connection.cursor() as cursor:
+                    cursor.execute('SHOW search_path')
+                    final_path = cursor.fetchone()[0]
+                    logger.info(f"[CREATE-PRODUCT-{request_id}] Final search path after save: {final_path}")
+                
                 return Response(ProductSerializer(product).data, status=status.HTTP_201_CREATED)
         else:
             logger.warning(f"[CREATE-PRODUCT-{request_id}] Product validation failed: {serializer.errors}")
@@ -403,7 +434,7 @@ def create_product(request):
                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     finally:
         # Reset connection cache
-        logger.debug("[CREATE-PRODUCT-{request_id}] Resetting connection cache")
+        logger.info(f"[CREATE-PRODUCT-{request_id}] Resetting connection cache")
         TenantSchemaRouter.clear_connection_cache()
 
 @api_view(['POST'])

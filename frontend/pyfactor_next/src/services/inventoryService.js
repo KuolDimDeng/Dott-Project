@@ -288,21 +288,38 @@ export const createProduct = async (productData) => {
     // Force the correct tenant ID to be used 
     const correctTenantId = 'b7fee399-ffca-4151-b636-94ccb65b3cd0';
     
+    // Log current tenant context before changing
+    const beforeContext = await apiService.verifyTenantContext();
+    logger.info('[InventoryService] Tenant context before creating product:', beforeContext);
+    
     // Set the tenant ID in all storage mechanisms to ensure consistency
     try {
       await apiService.setTenantId(correctTenantId);
-      logger.debug(`[InventoryService] Forced tenant ID to ${correctTenantId}`);
+      logger.info(`[InventoryService] Forced tenant ID to ${correctTenantId}`);
+      
+      // Verify tenant context was properly set
+      const afterContext = await apiService.verifyTenantContext();
+      logger.info('[InventoryService] Tenant context after setting ID:', afterContext);
     } catch (error) {
       logger.error('[InventoryService] Error setting tenant ID:', error);
     }
     
+    // Generate schema name consistently
+    const schemaName = `tenant_${correctTenantId.replace(/-/g, '_')}`;
+    logger.info(`[InventoryService] Using schema name: ${schemaName}`);
+    
     // Add explicit tenant headers to the request
+    const headers = {
+      'X-Tenant-ID': correctTenantId,
+      'X-Schema-Name': schemaName,
+      'X-Business-ID': correctTenantId  // Include business ID as well
+    };
+    
+    logger.info('[InventoryService] Sending request with headers:', headers);
+    
     const result = await apiService.post('/api/inventory/products/create/', productData, {
       invalidateCache: ['products', 'ultra/products', 'stats'],
-      headers: {
-        'X-Tenant-ID': correctTenantId,
-        'X-Schema-Name': `tenant_${correctTenantId.replace(/-/g, '_')}`
-      }
+      headers: headers
     });
     
     logger.info('[InventoryService] Product created successfully');
