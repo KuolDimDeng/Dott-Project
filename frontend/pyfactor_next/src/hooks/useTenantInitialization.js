@@ -112,6 +112,7 @@ export function useTenantInitialization() {
       // Always verify with backend first, regardless of local storage
       let tenantId = null;
       let tenantSource = 'none';
+      let userEmail = user?.attributes?.email || null;
 
       // If we have an authenticated user, verify/create tenant with backend
       if (user) {
@@ -176,7 +177,8 @@ export function useTenantInitialization() {
             hasAccessToken: !!tokens.accessToken, 
             hasIdToken: !!tokens.idToken,
             tenantId,
-            userId: user.userId
+            userId: user.userId,
+            userEmail
           });
 
           const response = await fetch('/api/auth/verify-tenant', {
@@ -191,7 +193,7 @@ export function useTenantInitialization() {
             body: JSON.stringify({ 
               tenantId,
               userId: user.userId,
-              email: user.attributes?.email,
+              email: userEmail,
               username: user.username
             })
           });

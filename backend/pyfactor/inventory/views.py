@@ -18,6 +18,7 @@ from django.views.decorators.csrf import csrf_exempt
 from io import BytesIO
 from barcode import Code128
 from barcode.writer import ImageWriter
+from custom_auth.utils import ensure_single_tenant_per_business
 
 class InventoryItemViewSet(viewsets.ModelViewSet):
     serializer_class = InventoryItemSerializer
@@ -286,57 +287,63 @@ class CustomChargePlanViewSet(viewsets.ModelViewSet):
 def create_product(request):
     import logging
     import time
-    import traceback
-    import sys
-    import threading
+    import uuid
+    
+    from django.db import connection
+    from pyfactor.db_routers import TenantSchemaRouter
+    from django.conf import settings
+    from rest_framework import status
+    from rest_framework.response import Response
+    from .serializers import ProductSerializer
+    
     logger = logging.getLogger(__name__)
     
     start_time = time.time()
+    request_id = str(uuid.uuid4())[:8]
+    logger.debug(f"[CREATE-PRODUCT-{request_id}] Starting product creation for user {request.user.email}")
     
-    # Log detailed request information
-    logger.info(f"[PyFactor] Product creation request received: {request.data}")
-    
-    # Log thread information
-    current_thread = threading.current_thread()
-    logger.debug(f"[PyFactor] Running in thread: {current_thread.name} (ID: {current_thread.ident}, Main: {current_thread is threading.main_thread()})")
-    
-    # Log the current database connection and schema
-    from django.db import connection
-    from pyfactor.db_routers import TenantSchemaRouter
-    
-    # Get optimized connection for the current schema
-    with connection.cursor() as cursor:
-        cursor.execute('SHOW search_path')
-        current_schema = cursor.fetchone()[0]
-        logger.debug(f"[PyFactor] Creating product in schema: {current_schema}, using connection: {connection.alias}")
-    
-    # Log tenant information if available
+    # Get the tenant for this request
     tenant = getattr(request, 'tenant', None)
-    if tenant:
-        logger.debug(f"[PyFactor] Request has tenant: {tenant.schema_name} (Status: {tenant.database_status})")
-        # Log additional tenant details
-        logger.debug(f"[PyFactor] Tenant details - ID: {tenant.id}, Created: {tenant.created_on}, User: {getattr(tenant, 'user_id', 'Unknown')}")
-    else:
-        logger.warning("[PyFactor] No tenant found in request")
+    
+    # If no tenant is found in the request, ensure the user has a tenant using our failsafe
+    if not tenant:
+        logger.warning(f"[CREATE-PRODUCT-{request_id}] No tenant found in request, attempting to find or use existing tenant")
+        
+        # Get business ID from headers or user data
+        business_id = request.headers.get('X-Business-ID') or getattr(request.user, 'custom', {}).get('businessid')
+        
+        # Use our failsafe to get the correct tenant
+        tenant, _ = ensure_single_tenant_per_business(request.user, business_id)
+        
+        if tenant:
+            logger.info(f"[CREATE-PRODUCT-{request_id}] Found tenant {tenant.schema_name} for user {request.user.email}")
+            # Add tenant to request for middleware and other components
+            request.tenant = tenant
+        else:
+            logger.error(f"[CREATE-PRODUCT-{request_id}] No tenant found for user {request.user.email}, cannot create product")
+            return Response(
+                {"error": "No tenant found for this user. Please complete onboarding first."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
     # Ensure we're in the correct schema context
     try:
         # Clear connection cache to ensure clean state
-        logger.debug("[PyFactor] Clearing connection cache")
+        logger.debug(f"[CREATE-PRODUCT-{request_id}] Clearing connection cache")
         TenantSchemaRouter.clear_connection_cache()
         
         # Get optimized connection for tenant schema
         if tenant:
-            logger.debug(f"[PyFactor] Getting connection for schema: {tenant.schema_name}")
+            logger.debug(f"[CREATE-PRODUCT-{request_id}] Getting connection for schema: {tenant.schema_name}")
             TenantSchemaRouter.get_connection_for_schema(tenant.schema_name)
         
         # Log request data for debugging
-        logger.debug(f"[PyFactor] Product data: {request.data}")
+        logger.debug(f"[CREATE-PRODUCT-{request_id}] Product data: {request.data}")
         
         # Validate the data
         serializer = ProductSerializer(data=request.data)
         if serializer.is_valid():
-            logger.debug(f"[PyFactor] Product data validated successfully: {serializer.validated_data}")
+            logger.debug(f"[CREATE-PRODUCT-{request_id}] Product data validated successfully: {serializer.validated_data}")
             
             # Use a transaction to ensure atomicity
             from django.db import transaction
@@ -344,30 +351,30 @@ def create_product(request):
                 # Set timeout for the transaction
                 with connection.cursor() as cursor:
                     cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds
-                    logger.debug("[PyFactor] Set transaction timeout to 10 seconds")
+                    logger.debug(f"[CREATE-PRODUCT-{request_id}] Set transaction timeout to 10 seconds")
                 
                 # Save the product
-                logger.debug("[PyFactor] Attempting to save product")
+                logger.debug("[CREATE-PRODUCT-{request_id}] Attempting to save product")
                 product = serializer.save()
-                logger.info(f"[PyFactor] Successfully created product: {product.name} with ID {product.id} in {time.time() - start_time:.4f}s")
+                logger.info(f"[CREATE-PRODUCT-{request_id}] Successfully created product: {product.name} with ID {product.id} in {time.time() - start_time:.4f}s")
                 return Response(ProductSerializer(product).data, status=status.HTTP_201_CREATED)
         else:
-            logger.warning(f"[PyFactor] Product validation failed: {serializer.errors}")
+            logger.warning(f"[CREATE-PRODUCT-{request_id}] Product validation failed: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         # Get detailed exception information
         exc_type, exc_value, exc_traceback = sys.exc_info()
         stack_trace = traceback.format_exception(exc_type, exc_value, exc_traceback)
         
-        logger.error(f"[PyFactor] Error creating product: {str(e)}", exc_info=True)
-        logger.error(f"[PyFactor] Stack trace: {''.join(stack_trace)}")
+        logger.error(f"[CREATE-PRODUCT-{request_id}] Error creating product: {str(e)}", exc_info=True)
+        logger.error(f"[CREATE-PRODUCT-{request_id}] Stack trace: {''.join(stack_trace)}")
         
         # Log database connection state
         try:
             with connection.cursor() as cursor:
                 cursor.execute('SHOW search_path')
                 current_path = cursor.fetchone()[0]
-                logger.error(f"[PyFactor] Current search_path at error: {current_path}")
+                logger.error(f"[CREATE-PRODUCT-{request_id}] Current search_path at error: {current_path}")
                 
                 # Check if schema exists
                 if tenant:
@@ -376,9 +383,9 @@ def create_product(request):
                         WHERE schema_name = %s
                     """, [tenant.schema_name])
                     schema_exists = cursor.fetchone() is not None
-                    logger.error(f"[PyFactor] Schema {tenant.schema_name} exists: {schema_exists}")
+                    logger.error(f"[CREATE-PRODUCT-{request_id}] Schema {tenant.schema_name} exists: {schema_exists}")
         except Exception as conn_error:
-            logger.error(f"[PyFactor] Error checking connection state: {str(conn_error)}")
+            logger.error(f"[CREATE-PRODUCT-{request_id}] Error checking connection state: {str(conn_error)}")
         
         # Provide more specific error messages based on the exception type
         if "timeout" in str(e).lower():
@@ -396,7 +403,7 @@ def create_product(request):
                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     finally:
         # Reset connection cache
-        logger.debug("[PyFactor] Resetting connection cache")
+        logger.debug("[CREATE-PRODUCT-{request_id}] Resetting connection cache")
         TenantSchemaRouter.clear_connection_cache()
 
 @api_view(['POST'])

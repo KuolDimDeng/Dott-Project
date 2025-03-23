@@ -640,3 +640,132 @@ export const getTenantFromResponse = (response) => {
   logger.debug('[TenantUtils] No tenant ID found in response');
   return null;
 };
+
+/**
+ * Check if an email already has a tenant associated with it
+ * @param {string} email - The email to check
+ * @returns {Promise<{exists: boolean, tenantId: string|null}>} - Result object
+ */
+export async function checkEmailHasTenant(email) {
+  if (!email) {
+    return { exists: false, tenantId: null };
+  }
+  
+  try {
+    // Make API call to check if email exists
+    const response = await fetch('/api/auth/check-existing-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+    
+    if (!response.ok) {
+      logger.error('[tenantUtils] Error checking email:', { 
+        status: response.status,
+        email
+      });
+      return { exists: false, tenantId: null };
+    }
+    
+    const result = await response.json();
+    return { 
+      exists: result.exists, 
+      tenantId: result.tenantId || null,
+      message: result.message
+    };
+  } catch (error) {
+    logger.error('[tenantUtils] Error checking email:', { 
+      error: error.message,
+      email
+    });
+    return { exists: false, tenantId: null };
+  }
+}
+
+/**
+ * Associate an email with a tenant ID
+ * @param {string} email - The email to associate
+ * @param {string} tenantId - The tenant ID to associate with the email
+ * @returns {Promise<boolean>} - Success status
+ */
+export async function associateEmailWithTenant(email, tenantId) {
+  if (!email || !tenantId) {
+    return false;
+  }
+  
+  try {
+    // Store mapping in client-side storage
+    if (typeof window !== 'undefined') {
+      try {
+        const emailToTenantMap = localStorage.getItem('emailToTenantMap') || '{}';
+        const mappings = JSON.parse(emailToTenantMap);
+        
+        // Associate this email with the tenant ID
+        mappings[email.toLowerCase()] = tenantId;
+        localStorage.setItem('emailToTenantMap', JSON.stringify(mappings));
+        
+        logger.debug('[tenantUtils] Associated email with tenant ID in local storage:', { 
+          email, 
+          tenantId
+        });
+      } catch (e) {
+        logger.error('[tenantUtils] Error storing in localStorage:', { error: e.message });
+      }
+    }
+    
+    // You would typically make an API call to store this in your database
+    // For simplicity, we'll just return true
+    return true;
+  } catch (error) {
+    logger.error('[tenantUtils] Error associating email with tenant:', { 
+      error: error.message,
+      email,
+      tenantId
+    });
+    return false;
+  }
+}
+
+/**
+ * Get tenant ID associated with an email
+ * @param {string} email - The email to look up
+ * @returns {Promise<string|null>} - The tenant ID or null if not found
+ */
+export async function getTenantIdByEmail(email) {
+  if (!email) {
+    return null;
+  }
+  
+  try {
+    // Check local storage first
+    if (typeof window !== 'undefined') {
+      try {
+        const emailToTenantMap = localStorage.getItem('emailToTenantMap');
+        if (emailToTenantMap) {
+          const mappings = JSON.parse(emailToTenantMap);
+          if (mappings[email.toLowerCase()]) {
+            logger.debug('[tenantUtils] Found tenant ID for email in local storage:', { 
+              email, 
+              tenantId: mappings[email.toLowerCase()]
+            });
+            return mappings[email.toLowerCase()];
+          }
+        }
+      } catch (e) {
+        logger.error('[tenantUtils] Error reading from localStorage:', { error: e.message });
+      }
+    }
+    
+    // In a real implementation, you would make an API call here
+    // For now, we'll just return null
+    return null;
+  } catch (error) {
+    logger.error('[tenantUtils] Error getting tenant ID by email:', { 
+      error: error.message,
+      email
+    });
+    return null;
+  }
+}

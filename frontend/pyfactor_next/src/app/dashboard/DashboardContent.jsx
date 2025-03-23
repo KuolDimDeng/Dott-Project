@@ -136,15 +136,60 @@ function DashboardContent() {
       
       logger.debug('Dashboard User data:', { currentUser, attributes });
       
+      // Get subscription plan and normalize it
+      // Check multiple possible sources with fallbacks
+      const cognitoSubplan = attributes['custom:subplan'];
+      const profileSubscription = attributes.subscription_plan;
+      const cookieSubscription = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('subscriptionPlan='))
+        ?.split('=')[1];
+        
+      let subscriptionPlan = cognitoSubplan || profileSubscription || cookieSubscription || 'free';
+      
+      // Ensure subscription plan is correctly formatted for display
+      // This handles case inconsistencies between backend and frontend
+      const originalPlan = subscriptionPlan;
+      subscriptionPlan = typeof subscriptionPlan === 'string' ? subscriptionPlan.toLowerCase() : 'free';
+      
+      // Get onboarding status with similar fallback approach
+      const cognitoOnboarding = attributes['custom:onboarding'] || 'NOT_STARTED';
+      const cookieOnboarding = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('onboardedStatus='))
+        ?.split('=')[1];
+      
+      const onboardingStatus = cookieOnboarding || cognitoOnboarding;
+      
+      // Additional debug for subscription plan
+      logger.debug('Subscription plan debug:', {
+        rawValue: attributes['custom:subplan'],
+        normalizedValue: subscriptionPlan,
+        originalValue: originalPlan,
+        fromAttributes: !!attributes['custom:subplan'],
+        fromCookie: !!cookieSubscription,
+        onboardingStatus,
+        cognitoOnboarding,
+        cookieOnboarding
+      });
+      
       const userData = {
         ...currentUser,
         ...attributes,
         first_name: attributes.given_name || attributes.email?.split('@')[0],
         last_name: attributes.family_name || '',
         full_name: `${attributes.given_name || ''} ${attributes.family_name || ''}`.trim(),
-        subscription_type: attributes['custom:subplan'] || 'free',
+        subscription_type: subscriptionPlan,
+        original_subscription_type: originalPlan, // Keep original for debugging
         business_name: attributes['custom:businessname'] || 'My Business',
+        onboarding_status: onboardingStatus
       };
+      
+      logger.debug('Normalized user data:', { 
+        subscriptionPlan,
+        originalPlan: attributes['custom:subplan'],
+        onboardingStatus
+      });
       
       setUserData(userData);
       
@@ -155,7 +200,7 @@ function DashboardContent() {
       logger.error('Error fetching user data:', error);
       router.push('/auth/signin');
     }
-  }, [router, setUserData, setShowKPIDashboard, setShowMainDashboard, setShowHome]);
+  }, [router, setUserData, setShowHome]);
 
   const handleDrawerToggle = useCallback(() => {
     setDrawerOpen(!drawerOpen);

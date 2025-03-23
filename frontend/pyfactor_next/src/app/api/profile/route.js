@@ -44,11 +44,23 @@ export async function GET(request) {
         subscription_plan: decoded['custom:subplan'] || 'FREE'
       };
       
+      // Normalize subscription plan for consistency
+      if (profile.subscription_plan) {
+        // Ensure it's properly cased regardless of how it's stored in Cognito
+        const planVal = profile.subscription_plan.toString().toUpperCase();
+        logger.debug('[Profile-API] Raw subscription plan value:', { 
+          raw: profile.subscription_plan,
+          normalized: planVal
+        });
+        profile.subscription_plan = planVal;
+      }
+      
       logger.debug('[Profile-API] Returning user profile', { 
         requestId,
         userId: user.userId,
         isOnboarded: profile.is_onboarded,
-        onboardingStatus: profile.onboarding_status
+        onboardingStatus: profile.onboarding_status,
+        subscriptionPlan: profile.subscription_plan
       });
       
       return NextResponse.json(profile);

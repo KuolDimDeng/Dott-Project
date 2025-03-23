@@ -28,6 +28,7 @@ export default function VerifyEmail() {
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [initialCodeSent, setInitialCodeSent] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
 
   const handleResendCode = useCallback(async () => {
     if (!email) {
@@ -38,20 +39,71 @@ export default function VerifyEmail() {
     setError('');
     setSuccess('');
     setResendDisabled(true);
-    setCountdown(30); // Reduced from 60 to 30 seconds
+    setCountdown(30); // Start with 30 seconds cooldown
+    setSendingCode(true);
 
     try {
-      logger.debug('Resending verification code to:', email);
-      await resendVerificationCode(email);
-      setSuccess('A new verification code has been sent to your email');
-      logger.debug('Verification code resent successfully');
+      logger.debug('[VerifyEmail] Resending verification code to:', email);
+      const result = await resendVerificationCode(email);
+      
+      if (result.success) {
+        setSuccess('A new verification code has been sent to your email');
+        logger.debug('[VerifyEmail] Verification code resent successfully');
+      } else if (result.code === 'LimitExceededException') {
+        logger.info('[VerifyEmail] Rate limit exceeded for verification code');
+        setSuccess('You have recently requested a verification code. Please check your email inbox, including spam folder.');
+        // Set a longer cooldown since we hit the rate limit
+        setCountdown(120); // 2 minutes cooldown when rate limited
+      } else {
+        logger.error('[VerifyEmail] Failed to resend verification code:', result.error);
+        setError(result.error || 'Failed to resend verification code');
+        setResendDisabled(false);
+        setCountdown(0);
+      }
     } catch (error) {
-      logger.error('Failed to resend verification code:', error);
-      setError(error.message || 'Failed to resend verification code');
+      logger.error('[VerifyEmail] Unexpected error resending verification code:', error);
+      setError('An unexpected error occurred. Please try again later.');
       setResendDisabled(false);
       setCountdown(0);
+    } finally {
+      setSendingCode(false);
     }
   }, [email, resendVerificationCode]);
+
+  // Separate function for initial code sending
+  const sendInitialCode = useCallback(async () => {
+    if (!email) return;
+    
+    setError('');
+    setSuccess('');
+    setSendingCode(true);
+
+    try {
+      logger.debug('[VerifyEmail] Sending initial verification code to:', email);
+      const result = await resendVerificationCode(email);
+      
+      if (result.success) {
+        setSuccess('Verification code has been sent to your email');
+        logger.debug('[VerifyEmail] Initial verification code sent successfully');
+      } else if (result.code === 'LimitExceededException') {
+        // For rate limiting, show a success message instead of an error
+        logger.info('[VerifyEmail] Rate limit hit for initial verification code');
+        setSuccess('Please check your email for the verification code or wait a few minutes before requesting another');
+      } else if (result.error?.includes('already confirmed')) {
+        logger.info('[VerifyEmail] User already confirmed:', email);
+        router.push('/dashboard');
+      } else {
+        logger.error('[VerifyEmail] Error sending initial verification code:', result.error);
+        setError(result.error || 'Failed to send verification code');
+      }
+    } catch (error) {
+      logger.error('[VerifyEmail] Unexpected error sending initial verification code:', error);
+      setError('Failed to send verification code. Please try again later.');
+    } finally {
+      setSendingCode(false);
+      setInitialCodeSent(true);
+    }
+  }, [email, resendVerificationCode, router]);
 
   useEffect(() => {
     const emailParam = searchParams.get('email');
@@ -59,15 +111,15 @@ export default function VerifyEmail() {
       const decodedEmail = decodeURIComponent(emailParam);
       setEmail(decodedEmail);
       
-      if (!initialCodeSent && !resendDisabled && !countdown) {
-        handleResendCode();
-        setInitialCodeSent(true);
+      // Always send verification code when email parameter is present
+      if (!initialCodeSent) {
+        sendInitialCode();
       }
     } else {
       // If no email parameter, log for debugging
-      logger.debug('No email parameter in URL, user will need to enter email manually');
+      logger.debug('[VerifyEmail] No email parameter in URL, user will need to enter email manually');
     }
-  }, [searchParams, resendDisabled, countdown, handleResendCode, initialCodeSent]);
+  }, [searchParams, sendInitialCode, initialCodeSent]);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -78,25 +130,29 @@ export default function VerifyEmail() {
     }
   }, [countdown]);
 
-  const handleSubmit = async (e) => {
+  const handleVerifyEmail = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
-
     if (!email || !code) {
       setError('Please provide both email and verification code');
       return;
     }
 
+    setError('');
+    setSuccess('');
+
     try {
-      logger.debug('Attempting to verify email:', email);
+      logger.debug('[VerifyEmail] Confirming sign up for:', email);
       await confirmSignUp(email, code);
-      setSuccess('Email verified successfully! You will be redirected to sign in in 5 seconds...');
-      logger.debug('Email verification successful');
-      setTimeout(() => router.push('/auth/signin'), 5000); // Increased from 2 to 5 seconds
+      logger.debug('[VerifyEmail] Sign up confirmed successfully, redirecting to dashboard');
+      setSuccess('Email verified successfully! Redirecting to dashboard...');
+      
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
     } catch (error) {
-      logger.error('Email verification failed:', error);
-      setError(error.message || 'Failed to verify email');
+      logger.error('[VerifyEmail] Failed to confirm sign up:', error);
+      setError(error.message || 'Failed to verify email. Please try again.');
     }
   };
 
@@ -137,16 +193,31 @@ export default function VerifyEmail() {
           </Typography>
 
           {email ? (
-            <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 3 }}>
-              We've sent a verification code to:<br />
-              <strong>{email}</strong>
-            </Typography>
+            <>
+              <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: sendingCode ? 1 : 3 }}>
+                We've sent a verification code to:
+              </Typography>
+              <Typography variant="body1" fontWeight="bold" align="center" sx={{ mb: sendingCode ? 1 : 3 }}>
+                {email}
+              </Typography>
+              {sendingCode && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                  <CircularProgress size={24} />
+                  <Typography variant="body2" component="span" sx={{ ml: 1 }}>
+                    Sending verification code...
+                  </Typography>
+                </Box>
+              )}
+            </>
           ) : (
-            <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 3 }}>
-              Please enter the email address you used to sign up and the verification code you received.
-              <br />
-              <strong>If you were redirected here from sign-in, you may need to check your email for the verification code.</strong>
-            </Typography>
+            <>
+              <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 1 }}>
+                Please enter the email address you used to sign up and the verification code you received.
+              </Typography>
+              <Typography variant="body1" fontWeight="bold" align="center" sx={{ mb: 3 }}>
+                If you were redirected here from sign-in, you may need to check your email for the verification code.
+              </Typography>
+            </>
           )}
 
           {error && (
@@ -161,7 +232,7 @@ export default function VerifyEmail() {
             </Alert>
           )}
 
-          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+          <Box component="form" onSubmit={handleVerifyEmail} sx={{ width: '100%' }}>
             <TextField
               margin="normal"
               required
@@ -194,7 +265,7 @@ export default function VerifyEmail() {
                 inputMode: 'numeric',
               }}
               helperText="Enter the 6-digit code from your email"
-              autoFocus
+              autoFocus={!!searchParams.get('email')}
             />
 
             <Button
@@ -211,13 +282,13 @@ export default function VerifyEmail() {
               <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                 Didn't receive the verification code?
               </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
                 1. Check your spam/junk folder
               </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
                 2. Make sure the email address above is correct
               </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
                 3. Click the button below to request a new code
               </Typography>
               
@@ -226,17 +297,17 @@ export default function VerifyEmail() {
                 variant="contained"
                 color="secondary"
                 onClick={handleResendCode}
-                disabled={resendDisabled || isLoading || !email}
+                disabled={resendDisabled || isLoading || !email || sendingCode}
                 sx={{ mt: 2 }}
               >
                 {countdown > 0
                   ? `Resend Code (${countdown}s)`
-                  : 'Resend Verification Code'}
+                  : sendingCode ? <CircularProgress size={20} sx={{ mr: 1 }} /> : 'Resend Verification Code'}
               </Button>
             </Box>
 
             <Box sx={{ mt: 2, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" component="div">
                 Need to use a different email?{' '}
                 <Link
                   href="/auth/signin"

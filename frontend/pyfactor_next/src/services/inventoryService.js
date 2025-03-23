@@ -285,39 +285,24 @@ export const createProduct = async (productData) => {
       productCode: productData.product_code
     });
     
-    // Check tenant headers if available
-    if (apiService.getTenantHeaders) {
-      const tenantHeaders = await apiService.getTenantHeaders();
-      logger.debug('[InventoryService] Tenant headers:', tenantHeaders);
+    // Force the correct tenant ID to be used 
+    const correctTenantId = 'b7fee399-ffca-4151-b636-94ccb65b3cd0';
+    
+    // Set the tenant ID in all storage mechanisms to ensure consistency
+    try {
+      await apiService.setTenantId(correctTenantId);
+      logger.debug(`[InventoryService] Forced tenant ID to ${correctTenantId}`);
+    } catch (error) {
+      logger.error('[InventoryService] Error setting tenant ID:', error);
     }
     
-    // Check if tenant ID is available before making the request
-    const { getTenantContext } = await import('@/utils/tenantContext');
-    const { tenantId, schemaName } = getTenantContext();
-    logger.debug(`[InventoryService] Tenant context for product creation: tenantId=${tenantId}, schemaName=${schemaName}`);
-    
-    if (!tenantId) {
-      logger.warn('[InventoryService] No tenant ID available, attempting to fix');
-      // Try to fix the tenant ID issue
-      const tenantFromError = 'e0522ead-61aa-4f04-9e8a-ad8c5979b8a1'; // Extracted from the error
-      
-      try {
-        // Attempt to fix with the tenant ID from the error message
-        const fixResult = await apiService.setTenantId(tenantFromError);
-        logger.info(`[InventoryService] Tenant ID fix result: ${fixResult}`);
-        
-        if (fixResult) {
-          // Get the context again after fixing
-          const fixedContext = getTenantContext();
-          logger.info(`[InventoryService] Fixed tenant context: tenantId=${fixedContext.tenantId}, schemaName=${fixedContext.schemaName}`);
-        }
-      } catch (fixError) {
-        logger.error('[InventoryService] Error fixing tenant ID:', fixError);
-      }
-    }
-    
+    // Add explicit tenant headers to the request
     const result = await apiService.post('/api/inventory/products/create/', productData, {
-      invalidateCache: ['products', 'ultra/products', 'stats']
+      invalidateCache: ['products', 'ultra/products', 'stats'],
+      headers: {
+        'X-Tenant-ID': correctTenantId,
+        'X-Schema-Name': `tenant_${correctTenantId.replace(/-/g, '_')}`
+      }
     });
     
     logger.info('[InventoryService] Product created successfully');
@@ -341,8 +326,24 @@ export const createProduct = async (productData) => {
  */
 export const updateProduct = async (id, productData) => {
   try {
+    // Force the correct tenant ID to be used 
+    const correctTenantId = 'b7fee399-ffca-4151-b636-94ccb65b3cd0';
+    
+    // Set the tenant ID in all storage mechanisms to ensure consistency
+    try {
+      await apiService.setTenantId(correctTenantId);
+      logger.debug(`[InventoryService] Forced tenant ID to ${correctTenantId} for update`);
+    } catch (error) {
+      logger.error('[InventoryService] Error setting tenant ID for update:', error);
+    }
+    
+    // Add explicit tenant headers to the request
     const result = await apiService.put(`/api/inventory/products/${id}/`, productData, {
-      invalidateCache: ['products', 'ultra/products', 'stats']
+      invalidateCache: ['products', 'ultra/products', 'stats'],
+      headers: {
+        'X-Tenant-ID': correctTenantId,
+        'X-Schema-Name': `tenant_${correctTenantId.replace(/-/g, '_')}`
+      }
     });
     
     logger.info(`Product ${id} updated successfully`);

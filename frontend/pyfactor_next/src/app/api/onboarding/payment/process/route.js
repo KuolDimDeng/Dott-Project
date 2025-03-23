@@ -28,19 +28,36 @@ export async function POST(request) {
       tenant_id: 'b7fee399-ffca-4151-b636-94ccb65b3cd0'
     });
 
-    // Set cookies to update the onboarding step
-    response.cookies.set('onboardingStep', 'SETUP', {
+    // Get normalized plan value
+    const normalizedPlan = (data.plan || 'professional').toUpperCase();
+    
+    // Set cookies to update the onboarding step to COMPLETE
+    response.cookies.set('onboardingStep', 'COMPLETE', {
       path: '/',
       maxAge: 60 * 60 * 24 * 7, // 1 week
       httpOnly: false,
       sameSite: 'lax'
     });
     
-    response.cookies.set('onboardedStatus', 'SUBSCRIPTION', {
+    response.cookies.set('onboardedStatus', 'COMPLETE', {
       path: '/',
       maxAge: 60 * 60 * 24 * 7, // 1 week
       httpOnly: false,
       sameSite: 'lax'
+    });
+    
+    // Also set subscription plan cookie
+    response.cookies.set('subscriptionPlan', normalizedPlan, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      httpOnly: false,
+      sameSite: 'lax'
+    });
+
+    logger.debug('[API] Payment processing complete, cookies set:', {
+      onboardingStep: 'COMPLETE',
+      onboardedStatus: 'COMPLETE',
+      subscriptionPlan: normalizedPlan
     });
 
     return response;

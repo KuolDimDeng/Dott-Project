@@ -3,7 +3,7 @@ import uuid
 import traceback
 import psycopg2
 from django.utils import timezone
-from django.db import transaction, connection
+from django.db import transaction, connection, DatabaseError
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -14,10 +14,13 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from celery.result import AsyncResult
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from datetime import datetime
 
 from custom_auth.authentication import CognitoAuthentication
 from custom_auth.cognito import cognito_client
 from custom_auth.models import Tenant
+from custom_auth.utils import consolidate_user_tenants
 from users.models import UserProfile, Business
 from ..models import OnboardingProgress
 from ..tasks import setup_user_schema_task
@@ -125,91 +128,49 @@ class DashboardSchemaSetupView(APIView):
                     'request_id': request_id
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-            # Check session for pending schema setup first
-            pending_setup = request.session.get('pending_schema_setup')
-            source = 'session'
-            
-            # If not in session, check user profile metadata
-            if not pending_setup:
-                try:
-                    profile = UserProfile.objects.filter(user=request.user).first()
-                    
-                    if profile and hasattr(profile, 'metadata') and isinstance(profile.metadata, dict):
-                        profile_setup = profile.metadata.get('pending_schema_setup')
-                        if profile_setup:
-                            pending_setup = profile_setup
-                            source = 'profile'
-                            
-                            logger.info("Found pending schema setup in profile", extra={
-                                'request_id': request_id,
-                                'profile_id': str(profile.id),
-                                'deferred': profile_setup.get('deferred', False)
-                            })
-                except Exception as e:
-                    logger.warning("Error checking profile metadata", extra={
-                        'request_id': request_id,
-                        'error': str(e)
-                    })
-            
-            # Auto-create setup data if needed or if forced
-            if not pending_setup or force_setup:
-                # Get business ID from tenant ID or from profile
-                business_id = request.headers.get('X-Tenant-ID')
-                
-                if not business_id:
-                    try:
-                        profile = UserProfile.objects.select_related('business').filter(user=request.user).first()
-                        if profile and profile.business:
-                            business_id = str(profile.business.id)
-                    except Exception as profile_error:
-                        logger.warning(f"Error fetching profile: {str(profile_error)}", extra={
-                            'request_id': request_id,
-                            'error': str(profile_error)
-                        })
-                
-                if business_id:
-                    # Create minimal pending setup data
-                    pending_setup = {
-                        'user_id': str(request.user.id),
-                        'business_id': business_id,
-                        'tenant_id': business_id,
-                        'minimal_schema_created': True,
-                        'deferred': True,
-                        'force_setup': force_setup,
-                        'plan': 'free',  # Default plan
-                        'timestamp': timezone.now().isoformat()
-                    }
-                    source = 'auto_created'
-                    
-                    logger.info("Auto-created pending schema setup", extra={
-                        'request_id': request_id,
-                        'business_id': business_id,
-                        'force_setup': force_setup
-                    })
-            
-            # If still no pending setup found, return error
-            if not pending_setup:
-                logger.error("No pending schema setup could be found or created", extra={
-                    'request_id': request_id,
-                    'user_id': str(request.user.id),
-                    'tenant_id': request.headers.get('X-Tenant-ID')
-                })
-                
-                return Response({
-                    'status': 'error',
-                    'message': 'No pending schema setup found',
-                    'request_id': request_id
-                }, status=status.HTTP_404_NOT_FOUND)
-            
             # Check if tenant exists for this user or create one using direct connection
             tenant = None
             try:
+                # Consolidate any duplicate tenants that might exist for this user
+                try:
+                    consolidated_tenant = consolidate_user_tenants(request.user)
+                    if consolidated_tenant:
+                        logger.info(f"[DASHBOARD-SETUP] Found consolidated tenant: {consolidated_tenant.schema_name}")
+                except Exception as e:
+                    logger.error(f"[DASHBOARD-SETUP] Error consolidating tenants: {str(e)}")
+                    
+                # Initialize pending_setup with default values
+                pending_setup = {
+                    'business_name': request.data.get('business_name', 'New Business'),
+                    'tenant_id': None,
+                    'schema_name': None,
+                    'setup_time': timezone.now().isoformat(),
+                    'business_id': request.headers.get('X-Tenant-ID')
+                }
+                
+                # Check session for pending schema setup first
+                session_pending_setup = request.session.get('pending_schema_setup')
+                if session_pending_setup:
+                    pending_setup.update(session_pending_setup)
+                    logger.info(f"[DASHBOARD-SETUP] Found pending setup in session")
+                
                 with direct_conn.cursor() as cursor:
-                    # Check if tenant exists
+                    # IMPROVED: Check if tenant exists - check both owner_id and regular user association
                     cursor.execute("""
+                        -- First check if user owns any tenant
                         SELECT id, schema_name FROM custom_auth_tenant
                         WHERE owner_id = %s
-                    """, [str(request.user.id)])
+                        
+                        UNION
+                        
+                        -- Then check if user is associated with any tenant
+                        SELECT t.id, t.schema_name 
+                        FROM custom_auth_tenant t
+                        JOIN custom_auth_user u ON u.tenant_id = t.id
+                        WHERE u.id = %s
+                        
+                        LIMIT 1
+                    """, [str(request.user.id), str(request.user.id)])
                     
                     tenant_record = cursor.fetchone()
                     
@@ -219,7 +180,17 @@ class DashboardSchemaSetupView(APIView):
                             'id': tenant_id,
                             'schema_name': schema_name
                         }
-                        logger.info(f"Found existing tenant: {tenant_id}")
+                        logger.info(f"Found existing tenant: {tenant_id} for user {request.user.email}")
+                        
+                        # Make sure user is properly linked to the tenant if not already
+                        cursor.execute("""
+                            UPDATE custom_auth_user 
+                            SET tenant_id = %s
+                            WHERE id = %s AND (tenant_id IS NULL OR tenant_id != %s)
+                        """, [tenant_id, str(request.user.id), tenant_id])
+                        
+                        if cursor.rowcount > 0:
+                            logger.info(f"Updated user {request.user.email} to link with existing tenant {tenant_id}")
                     else:
                         # Get business name
                         business_name = "Default Tenant"
@@ -240,6 +211,24 @@ class DashboardSchemaSetupView(APIView):
                         schema_name = f"tenant_{tenant_id.replace('-', '_')}"
                         created_on = timezone.now().isoformat()
                         
+                        # First create the schema itself - this was missing before
+                        cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
+                        
+                        # Verify schema was created
+                        cursor.execute("""
+                            SELECT schema_name FROM information_schema.schemata
+                            WHERE schema_name = %s
+                        """, [schema_name])
+                        schema_exists = cursor.fetchone() is not None
+                        logger.info(f"Schema creation verified: {schema_exists}")
+                        
+                        # Set up permissions
+                        db_user = connection.settings_dict['USER']
+                        cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {db_user}')
+                        cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {db_user}')
+                        cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {db_user}')
+                        
+                        # Create the tenant record in the database
                         cursor.execute("""
                             INSERT INTO custom_auth_tenant (
                                 id, schema_name, name, created_on, owner_id, setup_status, 
@@ -253,12 +242,19 @@ class DashboardSchemaSetupView(APIView):
                             str(request.user.id), 'not_started', 'not_created'
                         ])
                         
+                        # Also update the user to link to this tenant
+                        cursor.execute("""
+                            UPDATE custom_auth_user
+                            SET tenant_id = %s
+                            WHERE id = %s
+                        """, [tenant_id, str(request.user.id)])
+                        
                         tenant = {
                             'id': tenant_id,
                             'schema_name': schema_name
                         }
-                        logger.info(f"Created new tenant: {tenant_id} with schema {schema_name}")
-                        
+                        logger.info(f"Created new tenant: {tenant_id} with schema {schema_name} for user {request.user.email}")
+                    
                 # Update pending_setup with tenant information
                 pending_setup['tenant_id'] = str(tenant['id'])
                 pending_setup['schema_name'] = tenant['schema_name']
@@ -356,6 +352,9 @@ class DashboardSchemaSetupView(APIView):
                 pending_setup['task_id'] = task_id
                 pending_setup['setup_triggered_at'] = timezone.now().isoformat()
                 pending_setup['force_setup'] = force_setup
+                
+                # Set default source if not defined
+                source = "session"
                 
                 # Save to session
                 try:

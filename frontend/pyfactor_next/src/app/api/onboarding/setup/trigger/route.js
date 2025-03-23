@@ -19,30 +19,52 @@ export async function POST(request) {
     // Get force_setup parameter from request, default to true for dashboard
     const forceSetup = requestBody.force_setup !== undefined ? requestBody.force_setup : true;
     
-    // Use validateServerSession to get user data and tokens
-    const { tokens, user } = await validateServerSession();
+    // Try to get auth session but don't fail if it's not available
+    let tokens = null;
+    let user = null;
+    let tenantId = null;
     
-    if (!tokens?.accessToken || !tokens?.idToken) {
-      logger.warn('[SetupTriggerAPI] Authentication required - missing tokens');
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+    try {
+      // Use validateServerSession to get user data and tokens
+      const session = await validateServerSession();
+      tokens = session.tokens;
+      user = session.user;
+      
+      // Get tenant ID from user attributes
+      tenantId = user?.attributes?.['custom:businessid'];
+      
+      logger.debug('[SetupTriggerAPI] Auth session retrieved:', {
+        hasTokens: !!tokens,
+        hasUser: !!user,
+        hasTenantId: !!tenantId
+      });
+    } catch (authError) {
+      logger.warn('[SetupTriggerAPI] Auth session retrieval failed:', authError.message);
+      // Continue without auth info, the backend might handle this case
     }
     
-    // Get tenant ID from user attributes
-    const tenantId = user.attributes['custom:businessid'];
+    // Use tenant ID from request body if not available from session
+    if (!tenantId && requestBody.tenant_id) {
+      tenantId = requestBody.tenant_id;
+      logger.debug('[SetupTriggerAPI] Using tenant ID from request body:', tenantId);
+    }
     
     if (!tenantId) {
       logger.warn('[SetupTriggerAPI] Tenant ID not found');
-      return NextResponse.json(
-        { error: 'Tenant ID not found' },
-        { status: 400 }
-      );
+      // Return 400 only if tenant ID is actually required
+      if (!forceSetup || requestBody.require_tenant_id) {
+        return NextResponse.json(
+          { error: 'Tenant ID not found' },
+          { status: 400 }
+        );
+      }
     }
     
-    // Check the setupDone attribute - only proceed if FALSE
-    const setupDone = user.attributes['custom:setupdone']?.toUpperCase() === 'TRUE';
+    // Check the setupDone attribute if available
+    let setupDone = false;
+    if (user?.attributes?.['custom:setupdone']) {
+      setupDone = user.attributes['custom:setupdone']?.toUpperCase() === 'TRUE';
+    }
     
     if (setupDone && !forceSetup) {
       logger.info('[SetupTriggerAPI] Schema setup already completed for tenant:', tenantId);
@@ -58,7 +80,8 @@ export async function POST(request) {
       tenantId: tenantId,
       setupDone: setupDone,
       forceSetup: forceSetup,
-      apiUrl: API_URL
+      apiUrl: API_URL,
+      hasTokens: !!tokens?.accessToken
     });
     
     console.log('[SetupTriggerAPI] Making request to backend:', `${API_URL}/api/onboarding/setup/trigger/`);
@@ -66,21 +89,33 @@ export async function POST(request) {
     // Generate a request ID for tracking
     const requestId = crypto.randomUUID();
     
+    // Prepare headers with available authentication
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Request-Id': requestId
+    };
+    
+    // Add auth headers if available
+    if (tokens?.accessToken) {
+      headers['Authorization'] = `Bearer ${tokens.accessToken}`;
+    }
+    if (tokens?.idToken) {
+      headers['X-Id-Token'] = tokens.idToken;
+    }
+    if (tenantId) {
+      headers['X-Tenant-ID'] = tenantId;
+    }
+    
     // Make request to backend with the setupDone info in body
     const response = await fetch(`${API_URL}/api/onboarding/setup/trigger/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${tokens.accessToken}`,
-        'X-Id-Token': tokens.idToken,
-        'X-Tenant-ID': tenantId,
-        'X-Request-Id': requestId
-      },
+      headers,
       body: JSON.stringify({
-        tenant_id: tenantId,
+        tenant_id: tenantId || requestBody.tenant_id || 'unknown',
         setup_done: setupDone,
         force_setup: forceSetup, // Use the value from request or default
-        request_id: requestId
+        request_id: requestId,
+        source: 'auto_created'
       }),
       credentials: 'include',
       cache: 'no-store'

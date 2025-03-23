@@ -21,6 +21,13 @@ const PUBLIC_ROUTES = [
   '/about'  // Added About page to public routes
 ];
 
+// Public API routes that don't require authentication
+const PUBLIC_API_ROUTES = [
+  '/api/auth/check-existing-email',
+  '/api/onboarding/setup/trigger',
+  '/api/onboarding/setup/status'
+];
+
 // Onboarding routes and their order
 const ONBOARDING_ROUTES = [
   '/onboarding/business-info',
@@ -36,6 +43,10 @@ export function middleware(request) {
   // CRITICAL: Immediately bypass middleware for verify-email routes
   if (pathname === '/auth/verify-email' || pathname.startsWith('/auth/verify-email')) {
     console.log(`[Middleware] BYPASSING ALL CHECKS for verify-email route: ${pathname}`);
+    
+    // Add some useful debugging information
+    console.log(`[Middleware] Verify-email access: pathname=${pathname}, cookies=${request.cookies.getAll().length}, params=${request.nextUrl.searchParams.toString()}`);
+    
     return NextResponse.next();
   }
   
@@ -116,82 +127,86 @@ export function middleware(request) {
   
   // First check if it's a public route
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname) || pathname === '/';
-  if (isPublicRoute) {
+  // Check if it's a public API route
+  const isPublicApiRoute = PUBLIC_API_ROUTES.some(route => pathname === route);
+  
+  if (isPublicRoute || isPublicApiRoute) {
     console.log(`[Middleware] Public route detected: ${pathname}`);
     return response;
   }
-// Then check auth for protected routes
-const idToken = request.cookies.get('idToken')?.value;
-const accessToken = request.cookies.get('accessToken')?.value;
-const onboardingStep = request.cookies.get('onboardingStep')?.value;
-const onboardedStatus = request.cookies.get('onboardedStatus')?.value;
 
-console.log(`[Middleware] Auth check: idToken=${!!idToken}, accessToken=${!!accessToken}, onboardingStep=${onboardingStep}, onboardedStatus=${onboardedStatus}`);
+  // Then check auth for protected routes
+  const idToken = request.cookies.get('idToken')?.value;
+  const accessToken = request.cookies.get('accessToken')?.value;
+  const onboardingStep = request.cookies.get('onboardingStep')?.value;
+  const onboardedStatus = request.cookies.get('onboardedStatus')?.value;
 
-// In development mode, be more lenient with authentication
-if (process.env.NODE_ENV !== 'production' && pathname.startsWith('/onboarding/')) {
-  console.log(`[Middleware] Development mode: Bypassing strict auth for onboarding route: ${pathname}`);
-  
-  // If we're in development and this is an onboarding route, allow access
-  // This helps with testing the onboarding flow without valid tokens
-  if (!idToken || !accessToken) {
-    console.log(`[Middleware] Development mode: Setting dummy cookies for onboarding route`);
+  console.log(`[Middleware] Auth check: idToken=${!!idToken}, accessToken=${!!accessToken}, onboardingStep=${onboardingStep}, onboardedStatus=${onboardedStatus}`);
+
+  // In development mode, be more lenient with authentication
+  if (process.env.NODE_ENV !== 'production' && pathname.startsWith('/onboarding/')) {
+    console.log(`[Middleware] Development mode: Bypassing strict auth for onboarding route: ${pathname}`);
     
-    // Set dummy cookies for development
-    response.cookies.set('onboardingStep', 'business-info', {
-      path: '/',
-      maxAge: 24 * 60 * 60
-    });
-    
-    response.cookies.set('onboardedStatus', 'NOT_STARTED', {
-      path: '/',
-      maxAge: 24 * 60 * 60
-    });
-    
-    // For business-info page, allow access in development
-    if (pathname === '/onboarding/business-info') {
-      console.log(`[Middleware] Development mode: Allowing access to business-info page without auth`);
-      return response;
+    // If we're in development and this is an onboarding route, allow access
+    // This helps with testing the onboarding flow without valid tokens
+    if (!idToken || !accessToken) {
+      console.log(`[Middleware] Development mode: Setting dummy cookies for onboarding route`);
+      
+      // Set dummy cookies for development
+      response.cookies.set('onboardingStep', 'business-info', {
+        path: '/',
+        maxAge: 24 * 60 * 60
+      });
+      
+      response.cookies.set('onboardedStatus', 'NOT_STARTED', {
+        path: '/',
+        maxAge: 24 * 60 * 60
+      });
+      
+      // For business-info page, allow access in development
+      if (pathname === '/onboarding/business-info') {
+        console.log(`[Middleware] Development mode: Allowing access to business-info page without auth`);
+        return response;
+      }
     }
   }
-}
 
-if (!idToken || !accessToken) {
-  // For API routes, return 401 instead of redirecting
-  if (pathname.startsWith('/api/')) {
-    console.log(`[Middleware] API route without auth, returning 401`);
-    return new NextResponse(
-      JSON.stringify({ error: 'Authentication required' }),
-      {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+  if (!idToken || !accessToken) {
+    // For API routes, return 401 instead of redirecting
+    if (pathname.startsWith('/api/') && !isPublicApiRoute) {
+      console.log(`[Middleware] API route without auth, returning 401`);
+      return new NextResponse(
+        JSON.stringify({ error: 'Authentication required' }),
+        {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    // For other routes, redirect to signin
+    const signinUrl = new URL('/auth/signin', request.url);
+    signinUrl.searchParams.set('callbackUrl', pathname);
+    // Add language parameter
+    signinUrl.searchParams.set('lng', lng);
+    console.log(`[Middleware] Route without auth, redirecting to: ${signinUrl}`);
+    return NextResponse.redirect(signinUrl);
   }
-  // For other routes, redirect to signin
-  const signinUrl = new URL('/auth/signin', request.url);
-  signinUrl.searchParams.set('callbackUrl', pathname);
-  // Add language parameter
-  signinUrl.searchParams.set('lng', lng);
-  console.log(`[Middleware] Route without auth, redirecting to: ${signinUrl}`);
-  return NextResponse.redirect(signinUrl);
-}
 
-// Check if user has completed onboarding - if so, redirect to dashboard
-// This needs to be checked BEFORE the onboardingStep check
-if (onboardedStatus === 'COMPLETE' && !pathname.startsWith('/api/') && pathname !== '/dashboard') {
-  console.log(`[Middleware] User has COMPLETE onboarding status, redirecting to dashboard`);
-  return NextResponse.redirect(new URL('/dashboard', request.url));
-}
+  // Check if user has completed onboarding - if so, redirect to dashboard
+  // This needs to be checked BEFORE the onboardingStep check
+  if (onboardedStatus === 'COMPLETE' && !pathname.startsWith('/api/') && pathname !== '/dashboard') {
+    console.log(`[Middleware] User has COMPLETE onboarding status, redirecting to dashboard`);
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
 
-// Check if user needs to be redirected to onboarding
-// Only redirect if onboardedStatus is not COMPLETE
-if (!onboardingStep && !pathname.startsWith('/onboarding/') && !pathname.startsWith('/api/') && onboardedStatus !== 'COMPLETE') {
-  console.log(`[Middleware] Authenticated user without onboarding step, redirecting to onboarding`);
-  const redirectUrl = new URL('/onboarding/business-info', request.url);
-  redirectUrl.searchParams.set('lng', lng);
-  return NextResponse.redirect(redirectUrl);
-}
+  // Check if user needs to be redirected to onboarding
+  // Only redirect if onboardedStatus is not COMPLETE
+  if (!onboardingStep && !pathname.startsWith('/onboarding/') && !pathname.startsWith('/api/') && onboardedStatus !== 'COMPLETE') {
+    console.log(`[Middleware] Authenticated user without onboarding step, redirecting to onboarding`);
+    const redirectUrl = new URL('/onboarding/business-info', request.url);
+    redirectUrl.searchParams.set('lng', lng);
+    return NextResponse.redirect(redirectUrl);
+  }
 
   // Add auth tokens to API request headers
   if (pathname.startsWith('/api/')) {

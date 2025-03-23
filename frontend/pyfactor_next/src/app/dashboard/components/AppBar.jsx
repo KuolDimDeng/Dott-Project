@@ -71,6 +71,47 @@ const AppBar = ({
     subscription_type: userData?.subscription_type,
     full_data: JSON.stringify(userData, null, 2)
   });
+  
+  // Define getSubscriptionLabel function before using it
+  const getSubscriptionLabel = (type) => {
+    if (!type) return 'Free Plan';
+    
+    // Normalize the type to handle case variations
+    const normalizedType = typeof type === 'string' ? type.toString().toLowerCase() : 'free';
+    
+    console.log('Normalized subscription type:', normalizedType);
+    
+    // Enhanced matching to handle more variations
+    if (normalizedType.includes('pro')) {
+      return 'Professional Plan';
+    } else if (normalizedType.includes('ent')) {
+      return 'Enterprise Plan';
+    } else if (normalizedType.includes('basic')) {
+      return 'Basic Plan';
+    } else {
+      return 'Free Plan';
+    }
+  };
+  
+  // Add enhanced logging for subscription data sources
+  const userSubscriptionType = userData?.subscription_type;
+  const cognitoSubplan = userData?.['custom:subplan'];
+  const profileSubscription = userData?.subscription_plan;
+  
+  // Try multiple sources for the subscription plan with fallbacks
+  const subscriptionType = userSubscriptionType || cognitoSubplan || profileSubscription || 'free';
+  const displayLabel = getSubscriptionLabel(subscriptionType);
+  
+  console.log('Subscription debug info:', {
+    userData_subscription_type: userSubscriptionType,
+    cognito_subplan: cognitoSubplan,
+    profile_subscription: profileSubscription,
+    derived_type: subscriptionType,
+    normalized_type: subscriptionType ? subscriptionType.toLowerCase() : null,
+    display_label: displayLabel,
+    user_full_data: userData
+  });
+  
   const [subscriptionMenuOpen, setSubscriptionMenuOpen] = useState(false);
   const [subscriptionAnchorEl, setSubscriptionAnchorEl] = useState(null);
   const [isSubscriptionMenuOpen, setIsSubscriptionMenuOpen] = useState(false);
@@ -88,26 +129,15 @@ const AppBar = ({
 
   const subscriptionOpen = Boolean(subscriptionAnchorEl);
 
-  const getSubscriptionLabel = (type) => {
-    switch (type) {
-      case 'professional':
-        return 'Professional Plan';
-      case 'basic':
-        return 'Basic Plan';
-      default:
-        return 'Free Plan';
-    }
-  };
-
   return (
     <MuiAppBar
       position="fixed"
       elevation={0}
       sx={{
         zIndex: (theme) => theme.zIndex.drawer + 1,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#0d47a1',
         height: '60px',
-        color: textAppColor,
+        color: '#ffffff',
         borderBottom: '2px solid #bbdefb',
       }}
     >
@@ -141,15 +171,15 @@ const AppBar = ({
                 pr: 0.5,
                 py: 0.5,
                 ml: -0.5,
-                backgroundColor: '#ffffff',
-                border: '#1976d2',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
                 borderRadius: '5px',
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography
                 variant="h6"
-                sx={{ whiteSpace: 'nowrap', color: textAppColor, lineHeight: 1, mr: 1 }}
+                sx={{ whiteSpace: 'nowrap', color: '#ffffff', lineHeight: 1, mr: 1 }}
               >
                 {userData?.business_name || 'Business Name'}
               </Typography>
@@ -160,18 +190,18 @@ const AppBar = ({
                     cursor: userData?.subscription_type !== 'professional' ? 'pointer' : 'default',
                     padding: '4px 8px',
                     borderRadius: '4px',
-                    backgroundColor: '#90caf9',
+                    backgroundColor: '#4169E1',
                   }}
                   onClick={handleSubscriptionClick}
                 >
                   <Typography
                     variant="caption"
-                    sx={{ color: textAppColor, lineHeight: 2, pr: 0.5 }}
+                    sx={{ color: '#ffffff', lineHeight: 2, pr: 0.5 }}
                   >
-                    {getSubscriptionLabel(userData?.subscription_type)}
+                    {displayLabel}
                   </Typography>
                   {userData?.subscription_type !== 'professional' && (
-                    <IconButton size="small" sx={{ padding: 0, ml: 0.5, color: textAppColor }}>
+                    <IconButton size="small" sx={{ padding: 0, ml: 0.5, color: '#ffffff' }}>
                       {subscriptionOpen ? (
                         <ExpandLessIcon fontSize="small" />
                       ) : (
@@ -199,7 +229,7 @@ const AppBar = ({
           )}
           <Tooltip title="Open and close menu">
             <IconButton
-              sx={{ display: 'flex', alignItems: 'center', height: '100%', color: textAppColor }}
+              sx={{ display: 'flex', alignItems: 'center', height: '100%', color: '#ffffff' }}
               aria-label="open drawer"
               edge="start"
               onClick={handleDrawerToggle}
@@ -214,7 +244,7 @@ const AppBar = ({
           
           <Tooltip title="Help">
             <IconButton
-              sx={{ display: 'flex', alignItems: 'center', height: '100%', color: textAppColor }}
+              sx={{ display: 'flex', alignItems: 'center', height: '100%', color: '#ffffff' }}
               onClick={handleHelpClick}
             >
               <HelpOutlineIcon />
@@ -222,7 +252,7 @@ const AppBar = ({
           </Tooltip>
           <Tooltip title="Settings">
             <IconButton
-              sx={{ display: 'flex', alignItems: 'center', height: '100%', color: textAppColor }}
+              sx={{ display: 'flex', alignItems: 'center', height: '100%', color: '#ffffff' }}
               onClick={handleSettingsClick}
             >
               <SettingsIcon />
@@ -234,7 +264,7 @@ const AppBar = ({
             aria-controls={openMenu ? 'user-menu' : undefined}
             aria-haspopup="true"
             aria-expanded={openMenu ? 'true' : undefined}
-            sx={{ display: 'flex', alignItems: 'center', height: '100%', color: textAppColor }}
+            sx={{ display: 'flex', alignItems: 'center', height: '100%', color: '#ffffff' }}
           >
             <Avatar
               sx={{
@@ -242,8 +272,8 @@ const AppBar = ({
                 height: 28,
                 fontSize: 14,
                 bgcolor: mainBackground,
-                color: textAppColor,
-                border: `2px solid ${textAppColor}`,
+                color: '#000080',
+                border: `2px solid #ffffff`,
               }}
             >
               {initials}

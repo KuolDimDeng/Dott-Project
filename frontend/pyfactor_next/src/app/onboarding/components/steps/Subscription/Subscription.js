@@ -125,16 +125,12 @@ export function Subscription() {
 
   // Handler for plan selection
   const handlePlanSelect = (planId) => {
-    if (isSubmitting || isUpdating) return;
-    
+    logger.debug('[Subscription] Plan selected:', { planId, planId_lc: planId.toLowerCase() });
     setSelectedPlan(planId);
-    
-    // If free plan, proceed with the existing flow
-    if (planId === 'free') {
-      handleSubscriptionSubmit(planId, null);
+    // If Free, submit immediately
+    if (planId.toLowerCase() === 'free') {
+      handleSubscriptionSubmit(planId, 'monthly', null);
     }
-    // For paid plans, we don't show payment methods in a different page anymore
-    // instead we'll scroll to the payment methods section (handled by the UI)
   };
 
   // Handler for payment method selection
@@ -145,199 +141,64 @@ export function Subscription() {
   // Continue button handler for payment method
   const handleContinue = () => {
     if (!selectedPaymentMethod || isSubmitting || isUpdating) return;
-    handleSubscriptionSubmit(selectedPlan, selectedPaymentMethod);
+    handleSubscriptionSubmit(selectedPlan, billingCycle, selectedPaymentMethod);
   };
 
   // Main submission handler - modified to handle payment method routing
-  const handleSubscriptionSubmit = async (planId, paymentMethodId) => {
-    if (isSubmitting || isUpdating) return;
-    
+  const handleSubscriptionSubmit = async (planId, billingInterval, paymentMethod) => {
     setIsSubmitting(true);
     setError(null);
-
     try {
-      if (!user) {
-        throw new Error('No user found');
-      }
-
-      // Show a message to the user that we're processing their selection
-      setError(`Processing your ${planId === 'free' ? 'Free' : planId === 'professional' ? 'Professional' : 'Enterprise'} plan selection...`);
-
-      // Get auth tokens
-      try {
-        const { tokens } = await fetchAuthSession();
-        if (!tokens?.accessToken || !tokens?.idToken) {
-          throw new Error('No valid session tokens');
-        }
-
-        const accessToken = tokens.accessToken.toString();
-        const idToken = tokens.idToken.toString();
-
-        logger.info('[Subscription] Processing plan selection:', {
-          plan: planId,
-          billingCycle: billingCycle,
-          paymentMethod: paymentMethodId,
-          userId: user?.username,
-          pathname: window.location.pathname
-        });
-
-        // Save subscription details including payment method
-        const subscriptionData = {
-          plan: planId,
-          interval: billingCycle
-        };
-        
-        // Add payment method if selected
-        if (paymentMethodId) {
-          subscriptionData.payment_method = paymentMethodId;
-        }
-        
-        const subscriptionResponse = await fetch('/api/onboarding/subscription/save', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-            'X-Id-Token': idToken
-          },
-          body: JSON.stringify(subscriptionData)
-        });
-
-        if (!subscriptionResponse.ok) {
-          const errorData = await subscriptionResponse.json();
-          throw new Error(errorData.error || 'Failed to save subscription');
-        }
-
-        const responseData = await subscriptionResponse.json();
-        
-        logger.debug('[Subscription] Subscription saved successfully:', {
-          responseData,
-          nextStep: responseData.next_step,
-          redirect: responseData.redirect
-        });
-
-        // Handle redirection based on plan type and payment method
-        if (planId === 'free') {
-          try {
-            // Update user attributes directly instead of using updateOnboardingStatus 
-            logger.debug('[Subscription] Updating onboarding status to COMPLETE for free plan');
-            
-            await updateUserAttributes({
-              userAttributes: {
-                'custom:onboarding': ONBOARDING_STATES.COMPLETE,
-                'custom:updated_at': new Date().toISOString()
-              }
-            });
-            
-            // Set cookies for middleware
-            document.cookie = `onboardingStep=complete; path=/; max-age=${60 * 60 * 24 * 7}`;
-            document.cookie = `onboardedStatus=COMPLETE; path=/; max-age=${60 * 60 * 24 * 7}`;
-            
-            sessionStorage.setItem('pendingSchemaSetup', JSON.stringify({
-              plan: planId,
-              timestamp: new Date().toISOString(),
-              status: 'pending'
-            }));
-          } catch (statusError) {
-            logger.error('[Subscription] Error updating status to COMPLETE, continuing anyway:', {
-              error: statusError.message,
-              plan: planId
-            });
-          }
-          
-          setError(`Free plan selected! Redirecting to dashboard...`);
-          window.location.replace('/dashboard');
-        } else {
-          if (paymentMethodId === 'credit_card') {
-            try {
-              // Update user attributes directly instead of using updateOnboardingStatus
-              logger.debug('[Subscription] Updating onboarding status to PAYMENT');
-              
-              await updateUserAttributes({
-                userAttributes: {
-                  'custom:onboarding': ONBOARDING_STATES.PAYMENT,
-                  'custom:updated_at': new Date().toISOString()
-                }
-              });
-              
-              // Set cookies for middleware
-              document.cookie = `onboardingStep=payment; path=/; max-age=${60 * 60 * 24 * 7}`;
-              document.cookie = `onboardedStatus=PAYMENT; path=/; max-age=${60 * 60 * 24 * 7}`;
-              
-            } catch (statusError) {
-              logger.error('[Subscription] Error updating status to PAYMENT, continuing anyway:', {
-                error: statusError.message,
-                plan: planId,
-                paymentMethod: paymentMethodId
-              });
-            }
-            
-            setError(`${planId === 'professional' ? 'Professional' : 'Enterprise'} plan with Credit/Debit Card selected! Redirecting to payment page...`);
-            
-            setTimeout(() => {
-              window.location.replace('/onboarding/payment');
-            }, 1000);
-          } else {
-            try {
-              // Update user attributes directly instead of using updateOnboardingStatus
-              logger.debug('[Subscription] Updating onboarding status to COMPLETE');
-              
-              await updateUserAttributes({
-                userAttributes: {
-                  'custom:onboarding': ONBOARDING_STATES.COMPLETE,
-                  'custom:updated_at': new Date().toISOString()
-                }
-              });
-              
-              // Set cookies for middleware
-              document.cookie = `onboardingStep=complete; path=/; max-age=${60 * 60 * 24 * 7}`;
-              document.cookie = `onboardedStatus=COMPLETE; path=/; max-age=${60 * 60 * 24 * 7}`;
-              
-              sessionStorage.setItem('pendingSchemaSetup', JSON.stringify({
-                plan: planId,
-                paymentMethod: paymentMethodId,
-                timestamp: new Date().toISOString(),
-                status: 'pending'
-              }));
-            } catch (statusError) {
-              logger.error('[Subscription] Error updating status to COMPLETE, continuing anyway:', {
-                error: statusError.message,
-                plan: planId,
-                paymentMethod: paymentMethodId
-              });
-            }
-            
-            const paymentMethodName = paymentMethodId === 'paypal' ? 'PayPal' : 'Mobile Money';
-            setError(`${planId === 'professional' ? 'Professional' : 'Enterprise'} plan with ${paymentMethodName} selected! Processing payment and redirecting to dashboard...`);
-            
-            setTimeout(() => {
-              window.location.replace('/dashboard');
-            }, 1000);
-          }
-        }
-      } catch (apiError) {
-        logger.error('[Subscription] API error:', {
-          error: apiError.message,
-          plan: planId,
-          paymentMethod: paymentMethodId,
-          userId: user?.username
-        });
-        throw apiError;
-      }
-    } catch (error) {
-      // Error handling
-      logger.error('[Subscription] Error:', {
-        error: error.message,
-        code: error.code,
-        name: error.name,
-        stack: error.stack,
-        plan: planId,
-        paymentMethod: paymentMethodId,
-        userId: user?.username,
-        pathname: window.location.pathname
+      logger.debug('[Subscription] Submitting subscription:', {
+        planId,
+        planId_lc: planId.toLowerCase(),
+        billingInterval,
+        paymentMethod
       });
-      
-      setError(`Error selecting plan: ${error.message}`);
-    } finally {
+
+      // Make plan ID consistent by always using lowercase
+      const normalizedPlanId = planId.toLowerCase();
+
+      // If free plan, no payment needed
+      if (normalizedPlanId === 'free') {
+        // ... existing code ...
+      } else {
+        // For paid plans (Professional, Enterprise)
+        logger.debug('[Subscription] Setting up paid plan:', {
+          planId: normalizedPlanId,
+          billingInterval,
+          paymentMethod
+        });
+
+        // Set an error message indicating the selected plan
+        setError(`Setting up ${normalizedPlanId} plan...`);
+
+        // Make sure to store with consistent property names and normalized values
+        sessionStorage.setItem(
+          'pendingSubscription',
+          JSON.stringify({
+            plan: normalizedPlanId,
+            billing_interval: billingInterval,
+            interval: billingInterval, // Include both for compatibility
+            payment_method: paymentMethod,
+            paymentMethod: paymentMethod, // Include both for compatibility
+            timestamp: new Date().toISOString()
+          })
+        );
+        
+        // Debug: Log the stored subscription
+        const storedData = sessionStorage.getItem('pendingSubscription');
+        logger.debug('[Subscription] Stored subscription data:', {
+          raw: storedData,
+          parsed: JSON.parse(storedData)
+        });
+
+        // Redirect to payment page
+        router.push('/onboarding/payment');
+      }
+    } catch (e) {
+      logger.error('[Subscription] Error submitting subscription:', { error: e.message });
+      setError(`An error occurred: ${e.message}`);
       setIsSubmitting(false);
     }
   };

@@ -79,6 +79,60 @@ export default function SignUp() {
     }
 
     try {
+      // First, check if the email already exists
+      logger.debug('Checking if email already exists:', { email: formData.email });
+      
+      // Email check in separate try-catch to handle specific errors
+      try {
+        const emailCheckResponse = await fetch('/api/auth/check-existing-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: formData.email }),
+        });
+        
+        logger.debug('Email check response status:', { 
+          status: emailCheckResponse.status,
+          ok: emailCheckResponse.ok
+        });
+        
+        if (!emailCheckResponse.ok) {
+          if (emailCheckResponse.status === 401) {
+            logger.error('Email check failed - authentication required:', { 
+              status: emailCheckResponse.status 
+            });
+            throw new Error('Email verification service requires authentication. Please try again later.');
+          } else {
+            logger.error('Email check failed with status:', { 
+              status: emailCheckResponse.status 
+            });
+            throw new Error(`Failed to check email (status ${emailCheckResponse.status}). Please try again.`);
+          }
+        }
+        
+        const emailCheckResult = await emailCheckResponse.json();
+        
+        logger.debug('Email check result:', emailCheckResult);
+        
+        if (emailCheckResult.exists) {
+          // Email already exists - inform user and redirect to sign in
+          setError('An account with this email already exists. Redirecting to sign in page...');
+          setTimeout(() => {
+            router.push('/auth/signin?email=' + encodeURIComponent(formData.email));
+          }, 3000);
+          return;
+        }
+      } catch (emailCheckError) {
+        logger.error('Error checking email:', { 
+          error: emailCheckError.message,
+          stack: emailCheckError.stack
+        });
+        setError(emailCheckError.message || 'Failed to check if email exists. Please try again.');
+        return;
+      }
+      
+      // Email doesn't exist, proceed with sign up
       const { getDefaultAttributes } = await import('@/utils/userAttributes');
       const timestamp = new Date().toISOString();
       
@@ -100,6 +154,23 @@ export default function SignUp() {
         'custom:payverified': 'FALSE',
         
       };
+      
+      // Store the email in localStorage to remember it was registered
+      try {
+        if (typeof window !== 'undefined') {
+          const storedEmails = localStorage.getItem('existingEmails') || '[]';
+          const emailsList = JSON.parse(storedEmails);
+          
+          if (!emailsList.includes(formData.email.toLowerCase())) {
+            emailsList.push(formData.email.toLowerCase());
+            localStorage.setItem('existingEmails', JSON.stringify(emailsList));
+            logger.debug('Added email to local storage:', { email: formData.email });
+          }
+        }
+      } catch (e) {
+        logger.error('Error storing email in localStorage:', { error: e.message });
+        // Continue with signup even if local storage fails
+      }
 
       logger.debug('Signing up with attributes:', {
         ...initialAttributes,
@@ -127,10 +198,10 @@ export default function SignUp() {
       if (result.success) {
         // Always redirect to verify-email after signup
         setError('');
-        setSuccess('Account created successfully! Check your email for verification code. You will be redirected to the verification page in 10 seconds...');
-        setTimeout(() => {
-          router.push('/auth/verify-email?email=' + encodeURIComponent(formData.email));
-        }, 10000); // Increased to 10 seconds to give user more time
+        setSuccess('Account created successfully! Redirecting to email verification page...');
+        
+        // Use string URL format which is more reliable
+        router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
       } else {
         throw new Error(result.error || 'Failed to sign up');
       }

@@ -3,7 +3,7 @@ from django.db import connections, transaction, DatabaseError, IntegrityError
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-from .utils import create_tenant_schema_for_user
+from .utils import create_tenant_schema_for_user, consolidate_user_tenants, ensure_single_tenant_per_business
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.contrib.sites.shortcuts import get_current_site
@@ -35,12 +35,14 @@ from asgiref.sync import sync_to_async
 import requests
 
 from users.models import UserProfile
-from .models import User
+from .models import User, Tenant
 from .serializers import (
     CustomRegisterSerializer, 
     CustomAuthTokenSerializer, 
-    SocialLoginSerializer
+    SocialLoginSerializer,
+    CustomTokenObtainPairSerializer
 )
+from onboarding.models import OnboardingProgress
 from .tokens import account_activation_token
 from users.utils import initial_user_registration
 from pyfactor.logging_config import get_logger
@@ -206,9 +208,13 @@ class SessionView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
+        
         if response.status_code == 200:
+            # Set refresh token cookie
             refresh_token = response.data.get('refresh')
             if refresh_token:
                 response.set_cookie(
@@ -221,6 +227,19 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                     domain=settings.SIMPLE_JWT.get('AUTH_COOKIE_DOMAIN'),
                     path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/')
                 )
+            
+            try:
+                # Get the user from the payload
+                username = request.data.get('email')
+                user = User.objects.get(email=username)
+                
+                # Consolidate any duplicate tenants that might exist for this user
+                consolidate_user_tenants(user)
+                
+                logger.info(f"[LOGIN] User {user.email} successfully logged in")
+            except Exception as e:
+                logger.error(f"[LOGIN] Error handling tenant consolidation: {str(e)}")
+        
         return response
 
 class CustomAuthToken(ObtainAuthToken):
@@ -297,17 +316,35 @@ class SocialLoginView(APIView):
                     user = self.get_or_create_user(user_info)
                     logger.debug(f"User created or retrieved: {user}")
                     if user:
-                        # Create tenant schema if user doesn't have one
-                        if not hasattr(user, 'tenant') or user.tenant is None:
-                            logger.info(f"Creating tenant schema for user {user.email} during social login")
-                            try:
-                                # Create tenant schema
-                                tenant = create_tenant_schema_for_user(user)
-                                logger.info(f"Tenant schema created successfully: {tenant.schema_name}")
-                            except Exception as e:
-                                logger.error(f"Failed to create tenant schema: {str(e)}")
-                                # Continue with authentication even if tenant creation fails
-                                # We'll retry on subsequent requests
+                        # Consolidate any duplicate tenants that might exist for this user
+                        consolidate_user_tenants(user)
+                        
+                        # Now continue with tenant check/creation as before
+                        logger.info(f"[SOCIAL_LOGIN] Checking for tenant for user {user.email}")
+                        if user.tenant_id is None:
+                            # Check if the user already has an owned tenant that's not properly linked
+                            owned_tenant = Tenant.objects.filter(owner=user).first()
+                            if owned_tenant:
+                                logger.info(f"[SOCIAL_LOGIN] Found owned tenant {owned_tenant.schema_name} for user {user.email}")
+                                user.tenant = owned_tenant
+                                user.save(update_fields=['tenant'])
+                            else:
+                                # Check for any tenant where user is the owner
+                                tenant = Tenant.objects.filter(owner=user).first()
+                                if tenant:
+                                    logger.info(f"[SOCIAL_LOGIN] Found existing tenant {tenant.schema_name} for user {user.email}")
+                                    user.tenant = tenant
+                                    user.save(update_fields=['tenant'])
+                                else:
+                                    # Create a tenant schema for the user
+                                    logger.info(f"[SOCIAL_LOGIN] Creating new tenant schema for user {user.email}")
+                                    try:
+                                        create_tenant_schema_for_user(user)
+                                        logger.info(f"[SOCIAL_LOGIN] Successfully created tenant schema for user {user.email}")
+                                    except Exception as e:
+                                        logger.error(f"[SOCIAL_LOGIN] Failed to create tenant schema for user {user.email}: {str(e)}")
+                        else:
+                            logger.info(f"[SOCIAL_LOGIN] User {user.email} already has a tenant {user.tenant.schema_name}")
 
                         refresh = RefreshToken.for_user(user)
                         response_data = {
@@ -436,9 +473,14 @@ class SignUpView(APIView):
                         user.save()
 
                         # Create profile with explicit ID
-                        profile = UserProfile.objects.create(
+                        profile, _ = UserProfile.objects.get_or_create(
                             user=user,
-                            user_id=user.id  # Explicitly set user_id to match user.id
+                            defaults={
+                                'setup_complete': False,
+                                'is_active': False,
+                                'setup_status': 'not_started',
+                                'created_at': timezone.now()
+                            }
                         )
                         logger.info(f"User and profile created: {user.email}")
                         
@@ -537,17 +579,51 @@ class ActivateAccountView(APIView):
             user = None
 
         if user is not None and default_token_generator.check_token(user, token):
+            # Mark user as active
             user.is_active = True
-            user.save()
+            user.save(update_fields=['is_active'])
+            logger.info(f"[ACTIVATION] User {user.email} successfully activated")
             
-            # Create tenant schema if user doesn't have one
+            # Consolidate any duplicate tenants for this user
+            try:
+                consolidate_user_tenants(user)
+            except Exception as e:
+                logger.error(f"[ACTIVATION] Error consolidating tenants: {str(e)}")
+            
+            # Check if user has a tenant, if not create one
+            logger.info(f"[ACTIVATION] Checking for tenant for user {user.email}")
             tenant = None
             if not hasattr(user, 'tenant') or user.tenant is None:
-                logger.info(f"Creating tenant schema for user {user.email} during account activation")
+                logger.info(f"Checking for existing tenant for user {user.email} during account activation")
                 try:
-                    # Create tenant schema
-                    tenant = create_tenant_schema_for_user(user)
-                    logger.info(f"Tenant schema created successfully: {tenant.schema_name}")
+                    # First check if user has an owned tenant that might not be properly linked
+                    owned_tenant = None
+                    try:
+                        if hasattr(user, 'owned_tenant'):
+                            owned_tenant = user.owned_tenant
+                            logger.info(f"Found owned tenant {owned_tenant.schema_name} for user {user.email}")
+                    except Exception as tenant_lookup_error:
+                        logger.debug(f"No owned tenant found: {str(tenant_lookup_error)}")
+                    
+                    # If user has an owned tenant but no tenant association, link it
+                    if owned_tenant and not user.tenant:
+                        user.tenant = owned_tenant
+                        user.save(update_fields=['tenant'])
+                        logger.info(f"Linked user {user.email} to their owned tenant {owned_tenant.schema_name}")
+                        tenant = owned_tenant
+                    else:
+                        # Check for any tenant where user is the owner
+                        tenant_by_owner = Tenant.objects.filter(owner=user).first()
+                        if tenant_by_owner:
+                            logger.info(f"Found tenant by owner relationship: {tenant_by_owner.schema_name}")
+                            user.tenant = tenant_by_owner
+                            user.save(update_fields=['tenant'])
+                            tenant = tenant_by_owner
+                        else:
+                            # No existing tenant found, create a new one
+                            logger.info(f"No existing tenant found, creating new tenant schema for user {user.email}")
+                            tenant = create_tenant_schema_for_user(user)
+                            logger.info(f"Tenant schema created successfully: {tenant.schema_name}")
                 except Exception as e:
                     logger.error(f"Failed to create tenant schema during activation: {str(e)}")
                     # Continue with activation even if tenant creation fails
@@ -756,6 +832,7 @@ class SignupAPIView(APIView):
             email = request.data.get('email')
             cognito_id = request.data.get('cognitoId')
             user_role = request.data.get('userRole', 'OWNER')
+            business_id = request.data.get('businessId') or request.data.get('custom:businessid')
 
             if not email or not cognito_id:
                 logger.error("Missing required fields in signup request")
@@ -763,6 +840,40 @@ class SignupAPIView(APIView):
                     {"error": "Missing required fields"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+
+            # First check if a user with this email already exists and has a tenant
+            existing_user = User.objects.filter(email=email).first()
+            if existing_user:
+                logger.info(f"[SIGNUP] User {email} already exists, checking for existing tenant")
+                
+                # Use our failsafe to check for existing tenant
+                existing_tenant, should_create = ensure_single_tenant_per_business(
+                    existing_user, business_id)
+                
+                if existing_tenant:
+                    # Update user Cognito ID if needed
+                    if existing_user.cognito_sub != cognito_id:
+                        existing_user.cognito_sub = cognito_id
+                        existing_user.save(update_fields=['cognito_sub'])
+                        logger.info(f"[SIGNUP] Updated Cognito ID for existing user {email}")
+                        
+                    # Update role if different
+                    if existing_user.role != user_role:
+                        existing_user.role = user_role
+                        existing_user.save(update_fields=['role'])
+                        logger.info(f"[SIGNUP] Updated role for existing user {email}")
+                    
+                    response_data = {
+                        "status": "success",
+                        "message": "User already exists and has a tenant",
+                        "userId": str(existing_user.id),
+                        "email": existing_user.email,
+                        "isOnboarded": existing_user.is_onboarded,
+                        "tenantId": str(existing_tenant.id),
+                        "schemaName": existing_tenant.schema_name
+                    }
+                    logger.info(f"[SIGNUP] Returning existing user and tenant info for {email}")
+                    return Response(response_data)
 
             with transaction.atomic():
                 # Create or update user
@@ -784,38 +895,52 @@ class SignupAPIView(APIView):
                     user.role = user_role
                     user.save(update_fields=['cognito_sub', 'is_active', 'email_verified', 'role'])
 
-                # Create user profile
-                profile, _ = UserProfile.objects.get_or_create(
-                    user=user,
-                    defaults={
-                        'setup_complete': False,
-                        'is_active': False,
-                        'setup_status': 'not_started',
-                        'created_at': timezone.now()
-                    }
-                )
-
-                # Create onboarding progress
-                progress, _ = OnboardingProgress.objects.get_or_create(
-                    user=user,
-                    defaults={
-                        'onboarding_status': 'business-info',
-                        'current_step': 'business-info',
-                        'next_step': 'subscription',
-                        'created_at': timezone.now()
-                    }
-                )
+                # Use the failsafe to check for tenant or create a new one if needed
+                tenant, should_create = ensure_single_tenant_per_business(user, business_id)
                 
-                # Create tenant schema immediately
-                tenant = None
+                if not tenant and should_create:
+                    # Only OWNER users should create new tenants
+                    if user_role == 'OWNER':
+                        try:
+                            # Create new tenant with proper locking
+                            tenant = create_tenant_schema_for_user(user)
+                            logger.info(f"[SIGNUP] Created tenant schema {tenant.schema_name} for user {email}")
+                        except Exception as e:
+                            logger.error(f"[SIGNUP] Failed to create tenant schema for user {email}: {str(e)}")
+                    else:
+                        logger.warning(f"[SIGNUP] Non-OWNER user {email} cannot create a tenant")
+                elif tenant:
+                    logger.info(f"[SIGNUP] Using existing tenant {tenant.schema_name} for user {email}")
+                
+                # Create user profile
                 try:
-                    tenant = create_tenant_schema_for_user(user)
-                    logger.info(f"Tenant schema created successfully during signup: {tenant.schema_name}")
+                    # Create profile if doesn't exist
+                    profile, _ = UserProfile.objects.get_or_create(
+                        user=user,
+                        defaults={
+                            'setup_complete': False,
+                            'is_active': False,
+                            'setup_status': 'not_started',
+                            'created_at': timezone.now()
+                        }
+                    )
                 except Exception as e:
-                    logger.error(f"Failed to create tenant schema during signup: {str(e)}")
-                    # Continue with signup even if tenant creation fails
-                    # We'll retry on subsequent requests
-
+                    logger.error(f"[SIGNUP] Failed to create user profile: {str(e)}")
+                
+                # Create onboarding progress
+                try:
+                    progress, _ = OnboardingProgress.objects.get_or_create(
+                        user=user,
+                        defaults={
+                            'onboarding_status': 'business-info',
+                            'current_step': 'business-info',
+                            'next_step': 'subscription',
+                            'created_at': timezone.now()
+                        }
+                    )
+                except Exception as e:
+                    logger.error(f"[SIGNUP] Failed to create onboarding progress: {str(e)}")
+                
                 response_data = {
                     "status": "success",
                     "userId": str(user.id),

@@ -31,6 +31,8 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import SecurityIcon from '@mui/icons-material/Security';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
+import { useUser } from '@/hooks/useUser';
+import { useRouter } from 'next/navigation';
 
 // Pricing function
 const getPricing = (plan, billingCycle = 'monthly') => {
@@ -45,25 +47,145 @@ const getPricing = (plan, billingCycle = 'monthly') => {
 const PaymentComponent = ({ metadata }) => {
   const { handlePaymentSuccess, handleBack, isLoading, user } =
     usePaymentForm();
-
-  const { currentStep, isStepCompleted } = useOnboarding();
-  const [checkoutError, setCheckoutError] = useState(null);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const subscriptionPlan = user?.subscriptionPlan;
-  const billingCycle = user?.preferences?.billingCycle || 'monthly';
-  const businessCountry = user?.businessCountry || 'US';
-  const paymentMethod = user?.paymentMethod || 'credit_card';
-
-  // Redirect if payment method is not credit_card
+  const { currentStep, isStepCompleted, getOnboardingState } = useOnboarding();
+  const { user: userData } = useUser();
+  const router = useRouter();
+  
+  // Get the updateOnboardingStatus function from the hook
+  const { updateOnboardingStatus } = useOnboarding();
+  
+  // Log onboarding status on mount and update step if needed
   useEffect(() => {
-    if (paymentMethod !== 'credit_card') {
-      logger.info('[Payment] Redirecting to dashboard for non-credit card payment method:', { 
-        paymentMethod
+    try {
+      const onboardingState = getOnboardingState ? getOnboardingState() : 'unknown';
+      const onboardingStepCookie = document.cookie.split(';').find(cookie => cookie.trim().startsWith('onboardingStep='));
+      const onboardingStatusCookie = document.cookie.split(';').find(cookie => cookie.trim().startsWith('onboardedStatus='));
+      
+      // If current step is not 'payment', try to update it
+      if (currentStep !== 'payment' && updateOnboardingStatus) {
+        logger.debug('[Payment Component] Attempting to update step to payment from component');
+        try {
+          updateOnboardingStatus('PAYMENT');
+        } catch (updateErr) {
+          logger.error('[Payment Component] Failed to update step from component:', { error: updateErr.message });
+        }
+      }
+      
+      logger.debug('[Payment Component] Onboarding status check:', {
+        currentStep,
+        onboardingState,
+        cookies: {
+          onboardingStep: onboardingStepCookie ? onboardingStepCookie.split('=')[1] : 'not found',
+          onboardedStatus: onboardingStatusCookie ? onboardingStatusCookie.split('=')[1] : 'not found', 
+        },
+        completedSteps: {
+          businessInfo: isStepCompleted('businessinfo'),
+          subscription: isStepCompleted('subscription'),
+          payment: isStepCompleted('payment'),
+          setup: isStepCompleted('setup'),
+        }
       });
-      window.location.replace('/dashboard');
+    } catch (err) {
+      logger.error('[Payment Component] Error logging onboarding state:', { error: err.message });
     }
-  }, [paymentMethod]);
-
+  }, [currentStep, isStepCompleted, getOnboardingState]);
+  
+  // Checkout state
+  const [checkoutError, setCheckoutError] = useState(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(true);
+  const [subscriptionData, setSubscriptionData] = useState(null);
+  
+  // Load subscription data from sessionStorage - no router calls
+  useEffect(() => {
+    try {
+      const pendingSubscription = sessionStorage.getItem('pendingSubscription');
+      if (pendingSubscription) {
+        const data = JSON.parse(pendingSubscription);
+        logger.debug('[Payment Component] Loaded subscription data:', { data });
+        
+        // Validate the subscription plan
+        const plan = data.plan?.toLowerCase();
+        if (!plan || !['professional', 'enterprise'].includes(plan)) {
+          logger.error('[Payment Component] Invalid subscription plan:', { 
+            plan,
+            fullData: data
+          });
+          setCheckoutError('Invalid subscription plan. Payment is only required for Professional and Enterprise tiers.');
+          return;
+        }
+        
+        setSubscriptionData(data);
+      } else {
+        logger.error('[Payment Component] No pending subscription found in sessionStorage');
+        setCheckoutError('No subscription data found. Please select a plan first.');
+      }
+    } catch (e) {
+      logger.error('[Payment Component] Error loading subscription data:', { error: e.message });
+      setCheckoutError('Error loading subscription data');
+    } finally {
+      setCheckoutLoading(false);
+    }
+  }, []);
+  
+  // If not a paid plan, set error flag
+  useEffect(() => {
+    if (!checkoutLoading && subscriptionData && subscriptionData.plan) {
+      const normalizedPlan = subscriptionData.plan.toLowerCase();
+      if (normalizedPlan !== 'professional' && normalizedPlan !== 'enterprise') {
+        logger.error('[Payment Component] Not a paid plan:', { normalizedPlan });
+        setCheckoutError('Invalid subscription plan. Payment is only required for Professional and Enterprise tiers.');
+      }
+    }
+  }, [checkoutLoading, subscriptionData]);
+  
+  // If not credit card payment method, set flag for redirection
+  useEffect(() => {
+    if (!checkoutLoading && subscriptionData && subscriptionData.payment_method && subscriptionData.payment_method !== 'credit_card') {
+      logger.debug('[Payment Component] Non-credit card payment method selected, setting redirect flag:', { 
+        paymentMethod: subscriptionData.payment_method 
+      });
+      setCheckoutError('Non-credit card payment method selected');
+    }
+  }, [checkoutLoading, subscriptionData]);
+  
+  // Centralized redirect handler for all redirection scenarios
+  useEffect(() => {
+    if (checkoutError && !checkoutLoading) {
+      if (checkoutError.includes('Invalid subscription plan') || 
+          checkoutError.includes('No subscription data found')) {
+        router.replace('/onboarding/subscription');
+      } else if (checkoutError.includes('Non-credit card payment method')) {
+        router.replace('/dashboard');
+      }
+    }
+  }, [checkoutError, checkoutLoading, router]);
+  
+  // Get subscription details from stored data or user data - ensure we're using the proper plan
+  // Prioritize session storage data over user attributes
+  const subscriptionPlan = (subscriptionData && subscriptionData.plan) ? 
+                           subscriptionData.plan.toLowerCase() : 
+                           (userData?.attributes?.['custom:subscription_plan']?.toLowerCase() || 'professional');
+                          
+  // Check both billing_interval and interval properties since they might be inconsistent
+  const billingCycle = subscriptionData?.billing_interval || 
+                       subscriptionData?.interval ||
+                       userData?.attributes?.['custom:billing_cycle'] || 
+                       'monthly';
+                       
+  const paymentMethod = subscriptionData?.payment_method || 'credit_card';
+  
+  // Debug subscription info
+  useEffect(() => {
+    logger.debug('[Payment Component] Using subscription details:', {
+      subscriptionPlan,
+      billingCycle,
+      paymentMethod,
+      fromSessionStorage: !!subscriptionData,
+      rawSubscriptionData: subscriptionData,
+      fromUserAttributes: !!userData?.attributes?.['custom:subscription_plan']
+    });
+  }, [subscriptionPlan, billingCycle, paymentMethod, subscriptionData, userData]);
+  
   const steps = [
     {
       label: 'Business Info',
@@ -124,7 +246,7 @@ const PaymentComponent = ({ metadata }) => {
   // Get region-specific payment methods
   const getRegionalPaymentMethods = () => {
     // Africa
-    if (['GH', 'KE', 'NG', 'ZA', 'TZ', 'UG', 'RW'].includes(businessCountry)) {
+    if (['GH', 'KE', 'NG', 'ZA', 'TZ', 'UG', 'RW'].includes(userData?.businessCountry || 'US')) {
       return (
         <>
           <Chip 
@@ -143,7 +265,7 @@ const PaymentComponent = ({ metadata }) => {
       );
     }
     // North America
-    else if (['US', 'CA'].includes(businessCountry)) {
+    else if (['US', 'CA'].includes(userData?.businessCountry || 'US')) {
       return (
         <Chip 
           size="small" 
@@ -289,18 +411,51 @@ const PaymentComponent = ({ metadata }) => {
     return chips;
   };
 
-  // Verify tier and step access
-  if ((subscriptionPlan !== 'professional' && subscriptionPlan !== 'enterprise') || currentStep !== 'payment') {
-    logger.warn('Invalid payment page access:', {
+  // Verify tier and step access with enhanced logging
+  logger.debug('[Payment Component] Verifying payment access:', {
+    subscriptionPlanCheck: {
+      subscriptionPlan,
+      isValidPlan: subscriptionPlan === 'professional' || subscriptionPlan === 'enterprise',
+      rawSubscriptionData: subscriptionData,
+    },
+    stepCheck: {
+      currentStep,
+      isValidStep: currentStep === 'payment',
+    },
+    userData: {
+      hasUserData: !!userData,
+      userAttrs: userData?.attributes || {},
+    },
+    sessionPlan: subscriptionData?.plan || 'none',
+  });
+  
+  // Only check plan type, not step since the step might be in transition
+  if (subscriptionPlan !== 'professional' && subscriptionPlan !== 'enterprise') {
+    logger.warn('[Payment Component] Invalid payment page access - wrong plan:', {
       subscriptionPlan,
       currentStep,
+      reason: `Invalid plan: ${subscriptionPlan}`,
+      userDataExists: !!userData,
+      sessionStorageData: JSON.parse(sessionStorage.getItem('pendingSubscription') || 'null'),
     });
 
     return (
       <Container maxWidth="sm">
         <Alert severity="error" sx={{ mt: 2 }}>
-          Payment is only required for Professional and Enterprise tiers
+          Payment is only available for Professional and Enterprise tiers
         </Alert>
+        <Typography variant="body1" sx={{ mt: 2 }}>
+          You selected the <strong>{subscriptionPlan}</strong> plan, which doesn't require payment. 
+          Please return to plan selection and choose either Professional or Enterprise tier if you'd like to proceed with payment.
+        </Typography>
+        <Box sx={{ mt: 2, mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+          <Typography variant="body2" component="pre" sx={{ whiteSpace: 'pre-wrap', fontSize: '0.75rem' }}>
+            Debug Info:
+            Plan: {subscriptionPlan}
+            Step: {currentStep}
+            Session Storage: {sessionStorage.getItem('pendingSubscription') || 'null'}
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           onClick={handleBack}
@@ -433,6 +588,49 @@ const PaymentComponent = ({ metadata }) => {
               )}
             </Box>
           </PaymentSummary>
+          
+          {/* Mock Credit Card Form */}
+          <Box sx={{ mt: 3, mb: 4, width: '100%', border: '1px solid #e0e0e0', borderRadius: 1, p: 2 }}>
+            <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
+              Payment Details
+            </Typography>
+            
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>Card Number</Typography>
+              <Box 
+                sx={{ 
+                  border: '1px solid #ccc', 
+                  borderRadius: 1, 
+                  p: 1.5, 
+                  display: 'flex',
+                  alignItems: 'center',
+                  bgcolor: '#fafafa'
+                }}
+              >
+                <CreditCardIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                <Typography sx={{ color: 'text.secondary' }}>4242 4242 4242 4242</Typography>
+              </Box>
+            </Box>
+            
+            <Box sx={{ display: 'flex', mb: 2 }}>
+              <Box sx={{ flex: 1, mr: 1 }}>
+                <Typography variant="body2" sx={{ mb: 1 }}>Expiry Date</Typography>
+                <Box sx={{ border: '1px solid #ccc', borderRadius: 1, p: 1.5, bgcolor: '#fafafa' }}>
+                  <Typography sx={{ color: 'text.secondary' }}>12/29</Typography>
+                </Box>
+              </Box>
+              <Box sx={{ flex: 1, ml: 1 }}>
+                <Typography variant="body2" sx={{ mb: 1 }}>CVC</Typography>
+                <Box sx={{ border: '1px solid #ccc', borderRadius: 1, p: 1.5, bgcolor: '#fafafa' }}>
+                  <Typography sx={{ color: 'text.secondary' }}>123</Typography>
+                </Box>
+              </Box>
+            </Box>
+            
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              This is a demo payment form. In production, a secure Stripe payment form would be displayed.
+            </Typography>
+          </Box>
         </PaymentDetails>
 
         <Button

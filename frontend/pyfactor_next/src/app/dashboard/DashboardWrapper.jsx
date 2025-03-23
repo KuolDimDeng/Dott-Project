@@ -24,13 +24,49 @@ const DashboardWrapper = () => {
         logger.debug('[Dashboard] Triggering schema setup...');
         console.log('[Dashboard] About to call fetch');
         
+        // Try to get tenant ID from cookies or localStorage for passing to the API
+        let tenantId = null;
+        try {
+          // Try to get from localStorage first
+          tenantId = localStorage.getItem('tenantId');
+          
+          // If not in localStorage, try cookies
+          if (!tenantId) {
+            const cookies = document.cookie.split(';');
+            for (const cookie of cookies) {
+              const [name, value] = cookie.trim().split('=');
+              if (name === 'tenantId') {
+                tenantId = value;
+                break;
+              }
+            }
+          }
+          
+          // Get user info from localStorage if available
+          const userDataStr = localStorage.getItem('userData');
+          const userData = userDataStr ? JSON.parse(userDataStr) : null;
+          
+          logger.debug('[Dashboard] Tenant ID for setup:', { 
+            tenantId,
+            hasUserData: !!userData,
+            source: tenantId ? 'found' : 'missing'
+          });
+        } catch (e) {
+          logger.warn('[Dashboard] Error getting tenant ID:', e);
+        }
+        
+        // Make the API call with available data
         const response = await fetch('/api/onboarding/setup/trigger/', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
             'X-Request-Id': crypto.randomUUID()
           },
-          body: JSON.stringify({ force_setup: true }), // Add force_setup parameter
+          body: JSON.stringify({ 
+            force_setup: true,
+            tenant_id: tenantId,
+            source: 'dashboard' 
+          }),
           credentials: 'include' // This ensures cookies are sent with the request
         });
         

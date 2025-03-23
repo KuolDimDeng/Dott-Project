@@ -614,13 +614,19 @@ export async function POST(request) {
 
     // Update onboarding status in Cognito with tokens
     try {
+      // Normalize the plan value to uppercase for consistency in Cognito
+      const normalizedPlan = body.plan.toUpperCase();
+      
       const attributesToUpdate = {
-        'custom:subplan': body.plan,
+        'custom:subplan': normalizedPlan,
         'custom:subscriptioninterval': body.interval,
         'custom:requirespayment': (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') && 
                                  (!body.payment_method || body.payment_method.toLowerCase() === 'credit_card') ? 'TRUE' : 'FALSE',
         'custom:setupdone': 'FALSE' // Indicate setup is pending
       };
+      
+      // Log the attributes being updated
+      logger.debug('[Subscription] Updating Cognito attributes:', attributesToUpdate);
       
       // Add payment method if provided
       if (body.payment_method) {

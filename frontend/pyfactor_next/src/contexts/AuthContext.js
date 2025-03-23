@@ -275,6 +275,11 @@ export function AuthProvider({ children }) {
           await signOut();
           
           const pathname = window.location.pathname;
+          // Don't redirect away from verify-email page
+          if (pathname === '/auth/verify-email' || pathname.startsWith('/auth/verify-email')) {
+            logger.debug('[Auth] Staying on verify-email page despite token refresh failure');
+            break;
+          }
           if (!isPublicRoute(pathname) && pathname !== '/') {
             router.push('/auth/signin');
           }

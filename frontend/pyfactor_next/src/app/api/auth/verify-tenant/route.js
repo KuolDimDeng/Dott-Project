@@ -1,39 +1,286 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
+import { getAccessToken } from '@/utils/tokenUtils';
+import { getAuthHeaders } from '@/utils/authHeaders';
+import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
+import { cookies } from 'next/headers';
+
+/**
+ * Server-safe method to get email-to-tenant mapping
+ * @param {string} email - Email to check
+ * @returns {string|null} Tenant ID if found or null
+ */
+async function getEmailToTenantMapping(email) {
+  try {
+    // For server-side, we can only check the backend API
+    // We can't use localStorage here since it's server-side code
+    const accessToken = await getAccessToken();
+    const headers = await getAuthHeaders();
+    
+    try {
+      const emailCheckResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/check-email`, {
+        email
+      }, {
+        headers: {
+          ...headers,
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+      
+      if (emailCheckResponse.data && emailCheckResponse.data.tenantId) {
+        return emailCheckResponse.data.tenantId;
+      }
+    } catch (e) {
+      logger.debug('[verify-tenant] Backend email check failed:', e.message);
+    }
+    
+    return null;
+  } catch (e) {
+    logger.error('[verify-tenant] Error checking email-to-tenant mapping:', e.message);
+    return null;
+  }
+}
 
 /**
  * Verify tenant ID API route
- * This is a simplified version that always returns success with the provided tenant ID
+ * This checks for existing tenants before creating a new one
  */
 export async function POST(request) {
   try {
-    const data = await request.json();
-    const { tenantId, userId, email } = data;
-    
-    logger.debug('[API] Verify tenant request:', {
-      tenantId,
+    // Get tenant ID and user info from request body
+    const body = await request.json();
+    const { tenantId, userId, email } = body;
+
+    logger.debug('[verify-tenant] Verifying tenant:', { 
+      tenantId, 
       userId,
-      email
+      email,
+      hasEmail: !!email
     });
 
-    // In this simplified implementation, we always verify the tenant ID
-    // In a production environment, this would verify with the backend
-    const correctTenantId = tenantId || 'b7fee399-ffca-4151-b636-94ccb65b3cd0';
+    // Get auth headers for backend requests
+    const authHeaders = await getAuthHeaders();
+    const accessToken = await getAccessToken();
+
+    // First check if a tenant already exists for this user on the backend
+    try {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/current`, {
+        headers: {
+          ...authHeaders,
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+
+      // If user already has a tenant, use it
+      if (response.data && response.data.id) {
+        const existingTenantId = response.data.id;
+        logger.info('[verify-tenant] Found existing tenant for user:', { 
+          userId, 
+          tenantId: existingTenantId
+        });
+      
+        return NextResponse.json({
+          success: true,
+          message: 'Using existing tenant for user',
+          tenantId: existingTenantId,
+          correctTenantId: existingTenantId,
+          schemaName: response.data.schema_name || `tenant_${existingTenantId.replace(/-/g, '_')}`,
+          source: 'user_lookup'
+        });
+      }
+    } catch (error) {
+      // If the API returns 404, it means no tenant exists for this user
+      if (error.response && error.response.status !== 404) {
+        logger.error('[verify-tenant] Error checking for existing tenant:', { 
+          error: error.message,
+          status: error.response?.status
+        });
+      } else {
+        logger.info('[verify-tenant] No existing tenant found for user');
+      }
+    }
+
+    // Check email-to-tenant mapping as a fallback
+    let existingTenantId = null;
     
-    return NextResponse.json({
-      success: true,
-      status: 'verified',
-      message: 'Tenant ID verified successfully',
-      correctTenantId,
-      schemaName: `tenant_${correctTenantId.replace(/-/g, '_')}`
-    });
+    if (email) {
+      existingTenantId = await getEmailToTenantMapping(email);
+      
+      if (existingTenantId) {
+        logger.info('[verify-tenant] Found existing tenant for email:', {
+          email,
+          existingTenantId
+        });
+      }
+    }
+    
+    // If a tenant was found for this email, return it
+    if (existingTenantId) {
+      logger.info('[verify-tenant] Using existing tenant for email:', { 
+        email, 
+        tenantId: existingTenantId
+      });
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Tenant verified by email',
+        tenantId: existingTenantId,
+        correctTenantId: existingTenantId,
+        schemaName: `tenant_${existingTenantId.replace(/-/g, '_')}`,
+        source: 'email_lookup'
+      });
+    }
+    
+    // If a valid tenant ID was provided and no existing tenant was found
+    if (tenantId) {
+      logger.info('[verify-tenant] Using provided tenant ID:', { tenantId });
+      
+      // Verify this tenant exists and isn't assigned to another user
+      try {
+        const tenantCheckResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/exists`, {
+          tenantId
+        }, {
+          headers: {
+            ...authHeaders,
+            Authorization: `Bearer ${accessToken}`
+          }
+        });
+        
+        // If the tenant exists but belongs to another user
+        if (tenantCheckResponse.data.exists && tenantCheckResponse.data.correctTenantId) {
+          logger.warn('[verify-tenant] Tenant belongs to another user, using correct tenant ID:', { 
+            providedTenantId: tenantId,
+            correctTenantId: tenantCheckResponse.data.correctTenantId
+          });
+          
+          return NextResponse.json({
+            success: true,
+            message: 'Using correct tenant for user',
+            tenantId: tenantCheckResponse.data.correctTenantId,
+            correctTenantId: tenantCheckResponse.data.correctTenantId,
+            schemaName: `tenant_${tenantCheckResponse.data.correctTenantId.replace(/-/g, '_')}`,
+            source: 'tenant_correction'
+          });
+        }
+      } catch (e) {
+        logger.error('[verify-tenant] Error checking tenant existence:', { error: e.message });
+      }
+      
+      // Store the mapping for future reference in the backend
+      if (email) {
+        try {
+          // Instead of using localStorage which isn't available on server,
+          // make an API call to associate the email with the tenant
+          await axios.post(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/associate-email`, {
+            email,
+            tenantId
+          }, {
+            headers: {
+              ...authHeaders,
+              Authorization: `Bearer ${accessToken}`
+            }
+          });
+          
+          logger.debug('[verify-tenant] Associated email with tenant ID in backend:', { 
+            email, 
+            tenantId
+          });
+        } catch (e) {
+          logger.error('[verify-tenant] Error associating email with tenant in backend:', { error: e.message });
+        }
+      }
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Tenant verified',
+        tenantId: tenantId,
+        schemaName: `tenant_${tenantId.replace(/-/g, '_')}`,
+        source: 'provided'
+      });
+    }
+    
+    // Create a new tenant for the user if no existing tenant was found
+    try {
+      logger.info('[verify-tenant] Creating new tenant for user on backend');
+      
+      // Generate a UUID for the new tenant (will be replaced by backend)
+      const tempTenantId = uuidv4();
+      
+      // Call backend API to create a new tenant
+      const createResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/${tempTenantId}`, {
+        // Any additional tenant data can go here
+      }, {
+        headers: {
+          ...authHeaders,
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+      
+      if (createResponse.data && createResponse.data.success) {
+        const newTenantId = createResponse.data.data.id;
+        const schemaName = createResponse.data.data.schema_name;
+        
+        logger.info('[verify-tenant] Successfully created new tenant on backend:', {
+          tenantId: newTenantId,
+          schemaName
+        });
+        
+        // Store the mapping for future reference in the backend
+        if (email) {
+          try {
+            // Make an API call to associate the email with the tenant
+            await axios.post(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/associate-email`, {
+              email,
+              tenantId: newTenantId
+            }, {
+              headers: {
+                ...authHeaders,
+                Authorization: `Bearer ${accessToken}`
+              }
+            });
+            
+            logger.debug('[verify-tenant] Associated email with new tenant ID in backend:', { 
+              email, 
+              tenantId: newTenantId
+            });
+          } catch (e) {
+            logger.error('[verify-tenant] Error associating email with new tenant in backend:', { error: e.message });
+          }
+        }
+        
+        return NextResponse.json({
+          success: true,
+          message: 'New tenant created',
+          tenantId: newTenantId,
+          schemaName: schemaName,
+          source: 'created_new'
+        });
+      } else {
+        throw new Error('Failed to create tenant: Invalid response from backend');
+      }
+    } catch (createError) {
+      logger.error('[verify-tenant] Error creating tenant on backend:', { 
+        error: createError.message,
+        response: createError.response?.data
+      });
+      
+      return NextResponse.json({
+        success: false,
+        message: 'Failed to create tenant',
+        error: createError.message
+      }, { status: 500 });
+    }
   } catch (error) {
-    logger.error('[API] Error verifying tenant:', error);
+    logger.error('[verify-tenant] Unexpected error in verify-tenant API:', { 
+      error: error.message,
+      stack: error.stack
+    });
     
     return NextResponse.json({
       success: false,
-      error: 'Failed to verify tenant',
-      message: error.message
+      message: 'Unexpected error in verify-tenant API',
+      error: error.message
     }, { status: 500 });
   }
 } 

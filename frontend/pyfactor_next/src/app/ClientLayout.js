@@ -209,6 +209,13 @@ export default function ClientLayout({ children }) {
           setIsVerifying(false);
           return true;
         }
+        
+        // Special handling for verify-email route - always allow access
+        if (pathname === '/auth/verify-email' || pathname.startsWith('/auth/verify-email')) {
+          logger.debug('[ClientLayout] Allowing access to verify-email route without auth check');
+          setIsVerifying(false);
+          return true;
+        }
 
         // Get current session
         const { tokens } = await fetchAuthSession();

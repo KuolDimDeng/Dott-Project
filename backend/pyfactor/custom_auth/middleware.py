@@ -12,6 +12,7 @@ from rest_framework import status
 from onboarding.utils import tenant_schema_context, create_tenant_schema
 from custom_auth.models import Tenant
 from django.db import IntegrityError
+from custom_auth.utils import consolidate_user_tenants, acquire_user_lock, release_user_lock
 
 logger = logging.getLogger(__name__)
 
@@ -295,11 +296,68 @@ class TenantMiddleware:
         is_dashboard_request = '/dashboard' in request.path or '/api/dashboard' in request.path
         
         if is_dashboard_request and hasattr(request, 'user') and request.user.is_authenticated:
+            # First, ensure no duplicate tenants exist for this user
+            if request.user.email:
+                try:
+                    # Use the consolidation function to check and fix any duplicate tenants
+                    logger.info(f"[DASHBOARD] Checking for duplicate tenants for user {request.user.email}")
+                    primary_tenant = consolidate_user_tenants(request.user)
+                    
+                    if primary_tenant:
+                        logger.info(f"[DASHBOARD] User {request.user.email} has primary tenant: {primary_tenant.schema_name}")
+                        
+                        # Ensure user.tenant points to the primary tenant
+                        if not request.user.tenant or request.user.tenant.id != primary_tenant.id:
+                            request.user.tenant = primary_tenant
+                            request.user.save(update_fields=['tenant'])
+                            logger.info(f"[DASHBOARD] Updated user.tenant to match primary tenant for {request.user.email}")
+                except Exception as e:
+                    logger.error(f"[DASHBOARD] Error checking/consolidating tenants: {str(e)}")
+            else:
+                logger.warning(f"[DASHBOARD] User ID {request.user.id} has no email address, cannot check for duplicate tenants")
+                
             # Check if we have pending schema setup
             pending_setup = request.session.get('pending_schema_setup', {})
             
             if pending_setup and pending_setup.get('deferred', False):
                 logger.info(f"Dashboard access detected, triggering deferred schema setup for user {request.user.id}")
+                
+                # Double-check user doesn't already have a tenant before proceeding
+                existing_tenant = None
+                
+                try:
+                    from custom_auth.models import Tenant
+                    
+                    # First check if user.tenant is set
+                    if hasattr(request.user, 'tenant') and request.user.tenant:
+                        existing_tenant = request.user.tenant
+                        logger.info(f"[DASHBOARD] User already has tenant {existing_tenant.schema_name} assigned")
+                    
+                    # Also check for any owned tenants
+                    if not existing_tenant:
+                        owned_tenant = Tenant.objects.filter(owner=request.user).first()
+                        if owned_tenant:
+                            logger.info(f"[DASHBOARD] Found owned tenant {owned_tenant.schema_name} for user {request.user.email}")
+                            
+                            # Update user.tenant reference
+                            request.user.tenant = owned_tenant
+                            request.user.save(update_fields=['tenant'])
+                    
+                    # If we found a tenant, update pending_setup to use this tenant
+                    if existing_tenant:
+                        pending_setup['tenant_id'] = str(existing_tenant.id)
+                        pending_setup['schema_name'] = existing_tenant.schema_name
+                        pending_setup['deferred'] = False  # No need to defer setup since tenant exists
+                        pending_setup['found_existing'] = True
+                        request.session['pending_schema_setup'] = pending_setup
+                        request.session.modified = True
+                        
+                        logger.info(f"[DASHBOARD] Updated pending_setup to use existing tenant {existing_tenant.schema_name}")
+                        
+                        # Skip the task creation below since we found an existing tenant
+                        return self.get_response(request)
+                except Exception as e:
+                    logger.error(f"[DASHBOARD] Error checking for existing tenant: {str(e)}")
                 
                 # Get business ID from pending setup
                 business_id = pending_setup.get('business_id')
@@ -393,31 +451,130 @@ class TenantMiddleware:
                 logger.debug(f"Processing tenant request - ID: {tenant_id}, User: {getattr(request.user, 'id', None)}")
                 
                 try:
-                    # First check if user already has a tenant
-                    existing_tenant = Tenant.objects.filter(owner_id=request.user.id).first()
-                    if existing_tenant:
-                        logger.debug(f"Using existing tenant for user: {existing_tenant.schema_name}")
-                        tenant = existing_tenant
+                    # COMPREHENSIVE CHECK 1: First check if user already has a tenant (as owner)
+                    from custom_auth.models import Tenant
+                    from custom_auth.utils import acquire_user_lock, release_user_lock
+                    
+                    # Acquire lock to prevent concurrent tenant creation
+                    lock_acquired = acquire_user_lock(request.user.id, timeout=10)
+                    if lock_acquired:
+                        try:
+                            # Multiple comprehensive checks for existing tenants
+                            existing_tenant = None
+                            
+                            # 1. Check if user already has a tenant assigned
+                            if hasattr(request.user, 'tenant') and request.user.tenant:
+                                existing_tenant = request.user.tenant
+                                logger.debug(f"Found tenant {existing_tenant.schema_name} assigned to user {request.user.email}")
+                            
+                            # 2. If not found, check for owned tenants
+                            if not existing_tenant:
+                                owned_tenant = Tenant.objects.filter(owner=request.user).first()
+                                if owned_tenant:
+                                    existing_tenant = owned_tenant
+                                    logger.debug(f"Found owned tenant {existing_tenant.schema_name} for user {request.user.email}")
+                                    
+                                    # Update user.tenant reference if it doesn't match
+                                    if not request.user.tenant or request.user.tenant.id != owned_tenant.id:
+                                        request.user.tenant = owned_tenant
+                                        request.user.save(update_fields=['tenant'])
+                                        logger.debug(f"Updated user.tenant to {owned_tenant.schema_name}")
+                            
+                            # 3. If not found, check for tenants where user is a member
+                            if not existing_tenant:
+                                member_tenant = Tenant.objects.filter(users=request.user).first()
+                                if member_tenant:
+                                    existing_tenant = member_tenant
+                                    logger.debug(f"Found member tenant {existing_tenant.schema_name} for user {request.user.email}")
+                                    
+                                    # Update user.tenant reference if it doesn't match
+                                    if not request.user.tenant or request.user.tenant.id != member_tenant.id:
+                                        request.user.tenant = member_tenant
+                                        request.user.save(update_fields=['tenant'])
+                                        logger.debug(f"Updated user.tenant to {member_tenant.schema_name}")
+                            
+                            # 4. If not found, check if tenant exists with the provided schema name
+                            if not existing_tenant:
+                                schema_tenant = Tenant.objects.filter(schema_name=tenant_id).first()
+                                if schema_tenant:
+                                    existing_tenant = schema_tenant
+                                    logger.debug(f"Found tenant with schema name {tenant_id}")
+                                    
+                                    # Link this tenant to the user if not already linked
+                                    if schema_tenant.owner is None:
+                                        schema_tenant.owner = request.user
+                                        schema_tenant.save(update_fields=['owner'])
+                                        logger.debug(f"Set user {request.user.email} as owner of tenant {schema_tenant.schema_name}")
+                                    
+                                    # Update user.tenant reference if it doesn't match
+                                    if not request.user.tenant or request.user.tenant.id != schema_tenant.id:
+                                        request.user.tenant = schema_tenant
+                                        request.user.save(update_fields=['tenant'])
+                                        logger.debug(f"Updated user.tenant to {schema_tenant.schema_name}")
+                            
+                            if existing_tenant:
+                                tenant = existing_tenant
+                                logger.debug(f"Using existing tenant: {tenant.schema_name}")
+                            elif request.user.is_authenticated:
+                                # COMPREHENSIVE CHECK 2: Double-check no tenant was created in parallel
+                                # Check one more time in case a tenant was created by another process
+                                last_check_tenant = Tenant.objects.filter(owner=request.user).first()
+                                if last_check_tenant:
+                                    tenant = last_check_tenant
+                                    logger.warning(f"Found tenant {tenant.schema_name} created in parallel for user {request.user.email}")
+                                    
+                                    # Update user.tenant reference
+                                    request.user.tenant = tenant
+                                    request.user.save(update_fields=['tenant'])
+                                else:
+                                    # Create new tenant only if all checks pass and we're certain no tenant exists
+                                    logger.debug(f"Creating new tenant with schema {tenant_id} for user {request.user.email}")
+                                    try:
+                                        from django.utils.text import slugify
+                                        
+                                        # Create a proper name for the tenant
+                                        tenant_name = f"{getattr(request.user, 'full_name', request.user.email)}'s Workspace"
+                                        
+                                        tenant = Tenant.objects.create(
+                                            schema_name=tenant_id,
+                                            name=tenant_name,
+                                            is_active=True,
+                                            database_status='not_created',
+                                            owner=request.user
+                                        )
+                                        
+                                        # Immediately link tenant to user to prevent race conditions
+                                        request.user.tenant = tenant
+                                        request.user.save(update_fields=['tenant'])
+                                        
+                                        logger.debug(f"Successfully created tenant: {tenant.schema_name}")
+                                    except IntegrityError:
+                                        logger.warning("Duplicate tenant creation attempt detected")
+                                        # Get existing tenant if race condition occurred
+                                        tenant = Tenant.objects.filter(owner=request.user).first() or Tenant.objects.filter(schema_name=tenant_id).first()
+                                        
+                                        if not tenant:
+                                            logger.error("Failed to create tenant and no existing tenant found")
+                                            release_user_lock(request.user.id)
+                                            return self.get_response(request)
+                            elif not tenant:
+                                logger.error("Cannot create tenant - no authenticated user")
+                                release_user_lock(request.user.id)
+                                return self.get_response(request)
+                        finally:
+                            # Always release the lock
+                            release_user_lock(request.user.id)
                     else:
-                        # Try to get tenant by schema name
-                        tenant = Tenant.objects.filter(schema_name=tenant_id).first()
+                        # If we couldn't acquire the lock, try to find existing tenant
+                        logger.warning(f"Could not acquire lock for tenant creation for user {request.user.id}")
                         
-                        if not tenant and request.user.is_authenticated:
-                            logger.debug(f"Creating new tenant for authenticated user: {request.user.id}")
-                            try:
-                                tenant = Tenant.objects.create(
-                                    schema_name=tenant_id,
-                                    is_active=True,
-                                    database_status='not_created',
-                                    owner_id=request.user.id
-                                )
-                                logger.debug(f"Successfully created tenant: {tenant.schema_name}")
-                            except IntegrityError:
-                                logger.warning("Duplicate tenant creation attempt detected")
-                                # Get existing tenant if race condition occurred
-                                tenant = Tenant.objects.get(owner_id=request.user.id)
-                        elif not tenant:
-                            logger.error("Cannot create tenant - no authenticated user")
+                        # Try to find any existing tenant for this user
+                        existing_tenant = Tenant.objects.filter(owner=request.user).first()
+                        if existing_tenant:
+                            tenant = existing_tenant
+                            logger.debug(f"Using existing tenant without lock: {tenant.schema_name}")
+                        else:
+                            logger.error("Could not acquire lock and no existing tenant found")
                             return self.get_response(request)
                 except Exception as e:
                     logger.error(f"Error handling tenant: {str(e)}")
@@ -494,8 +651,49 @@ class TenantMiddleware:
                 
                 # Fallback to user's tenant if header-based lookup failed
                 if not tenant and hasattr(request, 'user') and request.user.is_authenticated:
-                    tenant = getattr(request.user, 'tenant', None)
-                    logger.debug(f"User tenant: {tenant}")
+                    # COMPREHENSIVE CHECK 3: Try all possible ways to find a tenant for this user
+                    try:
+                        from custom_auth.models import Tenant
+                        
+                        # Check if user.tenant is set
+                        if hasattr(request.user, 'tenant') and request.user.tenant:
+                            tenant = request.user.tenant
+                            logger.debug(f"Found tenant in user.tenant: {tenant.schema_name}")
+                        
+                        # If not found, check for owned tenants
+                        if not tenant:
+                            owned_tenant = Tenant.objects.filter(owner=request.user).first()
+                            if owned_tenant:
+                                tenant = owned_tenant
+                                logger.debug(f"Found owned tenant for user: {tenant.schema_name}")
+                                
+                                # Update user.tenant reference
+                                request.user.tenant = tenant
+                                request.user.save(update_fields=['tenant'])
+                        
+                        # If still not found, check for tenants where user is a member
+                        if not tenant:
+                            member_tenant = Tenant.objects.filter(users=request.user).first()
+                            if member_tenant:
+                                tenant = member_tenant
+                                logger.debug(f"Found tenant where user is a member: {tenant.schema_name}")
+                                
+                                # Update user.tenant reference
+                                request.user.tenant = tenant
+                                request.user.save(update_fields=['tenant'])
+                        
+                        # Final resort - try to consolidate any duplicate tenants
+                        if not tenant:
+                            try:
+                                from custom_auth.utils import consolidate_user_tenants
+                                consolidated_tenant = consolidate_user_tenants(request.user)
+                                if consolidated_tenant:
+                                    tenant = consolidated_tenant
+                                    logger.info(f"Found consolidated tenant for user: {tenant.schema_name}")
+                            except Exception as e:
+                                logger.error(f"Error consolidating tenants: {str(e)}")
+                    except Exception as e:
+                        logger.error(f"Error finding tenant for user: {str(e)}")
                 
                     if tenant and tenant.is_active and tenant.schema_name:
                         # Store tenant in request for views

@@ -592,16 +592,8 @@ export function useAuth() {
       logger.debug('[Auth] Resending verification code to:', email);
       
       try {
-        const resendResponse = await authResendSignUpCode({ username: email });
-        
-        logger.debug('[Auth] Resend verification code response:', {
-          success: resendResponse.success,
-          hasError: !!resendResponse.error
-        });
-        
-        if (!resendResponse.success) {
-          throw new Error(resendResponse.error || 'Failed to resend verification code');
-        }
+        // Call the Amplify resendSignUpCode function
+        await authResendSignUpCode({ username: email });
         
         logger.debug('[Auth] Verification code resent successfully');
         return { success: true };
@@ -611,6 +603,19 @@ export function useAuth() {
           code: apiError.code,
           name: apiError.name
         });
+        
+        // Convert API errors to a standard format but don't throw
+        if (apiError.name === 'LimitExceededException' || 
+            apiError.message?.includes('Attempt limit exceeded')) {
+          logger.info('[Auth] Rate limit exceeded for verification code');
+          return { 
+            success: false, 
+            error: 'Too many code resend attempts. Please try again later.',
+            code: 'LimitExceededException',
+            name: apiError.name
+          };
+        }
+        
         throw apiError;
       }
     } catch (error) {
@@ -635,10 +640,22 @@ export function useAuth() {
         userFriendlyMessage = 'We couldn\'t find an account with this email address.';
       } else if (errorMessage.includes('network') || errorCode === 'NetworkError') {
         userFriendlyMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (errorCode === 'CodeDeliveryFailureException') {
+        userFriendlyMessage = 'We couldn\'t deliver the verification code. Please check your email address.';
+      } else if (errorMessage.includes('not confirmed')) {
+        // This is actually expected behavior since we're verifying an unconfirmed user
+        logger.debug('[Auth] User not confirmed, which is expected during verification');
+        return { success: true };
       }
       
       setError(userFriendlyMessage);
-      return { success: false, error: userFriendlyMessage, code: errorCode };
+      // Return error object instead of throwing
+      return { 
+        success: false, 
+        error: userFriendlyMessage, 
+        code: errorCode,
+        name: error.name
+      };
     } finally {
       setIsLoading(false);
     }
