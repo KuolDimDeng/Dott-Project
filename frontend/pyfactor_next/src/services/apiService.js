@@ -85,43 +85,71 @@ export const handleApiError = (error, options = {}) => {
 };
 
 /**
- * Make a GET request with tenant context
+ * Ensure endpoint has a trailing slash for Django
+ * @param {string} endpoint - API endpoint
+ * @returns {string} - Endpoint with trailing slash
+ */
+const normalizeEndpoint = (endpoint) => {
+  // Don't add trailing slash to URLs with file extensions, download or print URLs
+  const skipTrailingSlash = endpoint.includes('.') || 
+                          endpoint.includes('download') || 
+                          endpoint.includes('print');
+  
+  if (skipTrailingSlash || endpoint.endsWith('/')) {
+    return endpoint;
+  }
+  
+  return `${endpoint}/`;
+};
+
+/**
+ * Fetch data from an API endpoint with caching and tenant context
  * @param {string} endpoint - API endpoint
  * @param {Object} options - Request options
  * @returns {Promise<any>} Response data
  */
 export const fetchData = async (endpoint, options = {}) => {
   const {
+    useCache = true,
+    cacheTTL = null,
     params = {},
     headers = {},
-    useCache = true,
-    cacheTTL = 5 * 60 * 1000, // 5 minutes
-    cacheKey = null,
     fallbackData = null,
     showErrorNotification = true,
-    timeout = 15000 // Increased from 8000 to 15000ms
+    timeout = 15000,
+    forceRefresh = false,
+    tenantOverride = null,
+    customMessage,
+    notify = true
   } = options;
   
-  // Generate cache key if caching is enabled
-  const effectiveCacheKey = cacheKey || endpoint;
-  
-  // Try to get from cache first if enabled
-  if (useCache) {
-    const cachedData = dataCache.get(effectiveCacheKey, params);
-    if (cachedData) {
-      logger.debug(`[ApiService] Cache hit for ${endpoint}`);
-      return cachedData;
-    }
-  }
-  
   try {
-    logger.debug(`[ApiService] Fetching ${endpoint}`, { params });
+    // Ensure endpoint ends with trailing slash for Django
+    const normalizedEndpoint = normalizeEndpoint(endpoint);
+    
+    logger.debug(`[ApiService] Fetching ${normalizedEndpoint}`, { 
+      useCache, 
+      forceRefresh,
+      tenantOverride: tenantOverride ? 'custom' : 'default'
+    });
+    
+    // Get data from cache first if allowed
+    if (useCache && !forceRefresh) {
+      const cachedData = dataCache.get(normalizedEndpoint, params);
+      if (cachedData) {
+        logger.debug(`[ApiService] Cache hit for ${normalizedEndpoint}`);
+        return cachedData;
+      }
+      logger.debug(`[ApiService] Cache miss for ${normalizedEndpoint}`);
+    }
     
     // Add tenant headers
-    const tenantHeaders = getRequestTenantHeaders();
+    const tenantHeaders = tenantOverride 
+      ? { 'X-Tenant-ID': tenantOverride }
+      : getRequestTenantHeaders();
     
     // Make the request
-    const response = await axiosInstance.get(endpoint, {
+    const response = await axiosInstance.get(normalizedEndpoint, {
       params,
       headers: {
         ...tenantHeaders,
@@ -130,23 +158,24 @@ export const fetchData = async (endpoint, options = {}) => {
       timeout
     });
     
-    // Extract tenant info from response if available
+    // Extract tenant info from response
     extractTenantFromResponse(response);
     
-    // Cache successful responses if enabled
-    if (useCache && response.data) {
-      dataCache.set(effectiveCacheKey, response.data, params, cacheTTL);
+    // Cache the data if needed
+    if (useCache) {
+      dataCache.set(normalizedEndpoint, params, response.data, cacheTTL);
     }
     
     return response.data;
   } catch (error) {
-    // For timeout errors, add a more specific message
-    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-      logger.error(`[ApiService] Request to ${endpoint} timed out after ${timeout}ms`);
-      return handleApiError(error, {
-        fallbackData,
-        showNotification: showErrorNotification,
-        rethrow: !fallbackData,
+    if (customMessage && error.message && notify) {
+      logger.warn(customMessage, error.message);
+    }
+    
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      logger.warn('Request timed out', {
+        endpoint,
+        timeout: `${timeout/1000}s`,
         customMessage: `Request timed out after ${timeout/1000} seconds. Using fallback data.`
       });
     }
@@ -176,13 +205,24 @@ export const postData = async (endpoint, data = {}, options = {}) => {
   } = options;
   
   try {
-    logger.debug(`[ApiService] Posting to ${endpoint}`, { dataKeys: Object.keys(data) });
+    // Ensure endpoint ends with trailing slash for Django
+    const originalEndpoint = endpoint;
+    const normalizedEndpoint = normalizeEndpoint(endpoint);
+    
+    logger.debug(`[ApiService] Posting to ${normalizedEndpoint}`, { 
+      originalUrl: originalEndpoint,
+      normalizedUrl: normalizedEndpoint,
+      dataKeys: Object.keys(data),
+      endpointLength: endpoint.length,
+      normalizedLength: normalizedEndpoint.length,
+      endsWithSlash: endpoint.endsWith('/')
+    });
     
     // Add tenant headers
     const tenantHeaders = getRequestTenantHeaders();
     
     // Make the request
-    const response = await axiosInstance.post(endpoint, data, {
+    const response = await axiosInstance.post(normalizedEndpoint, data, {
       headers: {
         ...tenantHeaders,
         ...headers
@@ -202,6 +242,13 @@ export const postData = async (endpoint, data = {}, options = {}) => {
     
     return response.data;
   } catch (error) {
+    logger.error('[ApiService] POST request failed:', {
+      endpoint,
+      error: error.message,
+      status: error.response?.status,
+      data: error.response?.data
+    });
+    
     return handleApiError(error, {
       fallbackData,
       showNotification: showErrorNotification,
@@ -227,13 +274,16 @@ export const putData = async (endpoint, data = {}, options = {}) => {
   } = options;
   
   try {
-    logger.debug(`[ApiService] Putting to ${endpoint}`, { dataKeys: Object.keys(data) });
+    // Ensure endpoint ends with trailing slash for Django
+    const normalizedEndpoint = normalizeEndpoint(endpoint);
+    
+    logger.debug(`[ApiService] Putting to ${normalizedEndpoint}`, { dataKeys: Object.keys(data) });
     
     // Add tenant headers
     const tenantHeaders = getRequestTenantHeaders();
     
     // Make the request
-    const response = await axiosInstance.put(endpoint, data, {
+    const response = await axiosInstance.put(normalizedEndpoint, data, {
       headers: {
         ...tenantHeaders,
         ...headers
@@ -244,7 +294,7 @@ export const putData = async (endpoint, data = {}, options = {}) => {
     // Extract tenant info from response if available
     extractTenantFromResponse(response);
     
-    // Invalidate cache patterns if specified
+    // Invalidate cache if specified
     if (invalidateCache.length > 0) {
       invalidateCache.forEach(pattern => {
         dataCache.invalidatePattern(pattern);
@@ -270,7 +320,6 @@ export const putData = async (endpoint, data = {}, options = {}) => {
 export const deleteData = async (endpoint, options = {}) => {
   const {
     headers = {},
-    params = {},
     invalidateCache = [],
     fallbackData = null,
     showErrorNotification = true,
@@ -278,22 +327,24 @@ export const deleteData = async (endpoint, options = {}) => {
   } = options;
   
   try {
-    logger.debug(`[ApiService] Deleting ${endpoint}`);
+    // Ensure endpoint ends with trailing slash for Django
+    const normalizedEndpoint = normalizeEndpoint(endpoint);
+    
+    logger.debug(`[ApiService] Deleting ${normalizedEndpoint}`);
     
     // Add tenant headers
     const tenantHeaders = getRequestTenantHeaders();
     
     // Make the request
-    const response = await axiosInstance.delete(endpoint, {
+    const response = await axiosInstance.delete(normalizedEndpoint, {
       headers: {
         ...tenantHeaders,
         ...headers
       },
-      params,
       timeout
     });
     
-    // Invalidate cache patterns if specified
+    // Invalidate cache if specified
     if (invalidateCache.length > 0) {
       invalidateCache.forEach(pattern => {
         dataCache.invalidatePattern(pattern);

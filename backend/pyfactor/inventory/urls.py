@@ -30,18 +30,24 @@ urlpatterns = [
     # Standard API endpoints
     path('', include(router.urls)),
     
+    # Explicit patterns for products without trailing slash
+    path('products', views.ProductViewSet.as_view({'get': 'list', 'post': 'create'}), name='product-list-no-slash'),
+    path('products/<uuid:pk>', views.ProductViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='product-detail-no-slash'),
+    
     # Optimized API endpoints
     path('optimized/', include(optimized_router.urls)),
     path('optimized/', include(optimized_service_router.urls)),
     
     # Ultra-optimized product endpoints
     path('ultra/products/', api_views.ultra_fast_products, name='ultra-fast-products'),
+    path('ultra/products', api_views.ultra_fast_products, name='ultra-fast-products-no-slash'),
     path('ultra/products/with-department/', api_views.products_with_department, name='products-with-department'),
     path('ultra/products/stats/', api_views.product_stats, name='product-stats'),
     path('ultra/products/code/<str:code>/', api_views.product_by_code, name='product-by-code'),
     
     # Ultra-optimized service endpoints
     path('ultra/services/', service_api_views.ultra_fast_services, name='ultra-fast-services'),
+    path('ultra/services', service_api_views.ultra_fast_services, name='ultra-fast-services-no-slash'),
     path('ultra/services/stats/', service_api_views.service_stats, name='service-stats'),
     path('ultra/services/code/<str:code>/', service_api_views.service_by_code, name='service-by-code'),
     

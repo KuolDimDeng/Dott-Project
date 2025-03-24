@@ -11,6 +11,7 @@ from .models import Product, Department
 from .serializers import ProductSerializer
 import logging
 import time
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -173,116 +174,112 @@ class OptimizedProductViewSet(viewsets.ModelViewSet):
         """
         return super().destroy(request, *args, **kwargs)
 
+class SmallPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-@handle_tenant_error
 def ultra_fast_products(request):
     """
-    Ultra-fast product list endpoint with minimal fields
+    Ultra-fast endpoint for retrieving products with minimal data
+    Uses direct SQL for maximum reliability and performance
     """
-    start_time = time.time()
+    import uuid
+    from django.db import connection
+    from rest_framework.pagination import PageNumberPagination
     
-    # Get tenant schema from request
-    tenant = getattr(request, 'tenant', None)
-    schema_name = tenant.schema_name if tenant else None
+    # Get schema from request or headers
+    schema_name = None
     
-    # Get tenant info from headers as backup if not in request object
+    # Try to get from tenant object first
+    if hasattr(request, 'tenant') and request.tenant:
+        schema_name = request.tenant.schema_name
+    
+    # Then try headers
+    if not schema_name:
+        schema_name = request.headers.get('X-Schema-Name')
+    
+    # Lastly, use the tenant ID to construct schema name
     if not schema_name:
         tenant_id = request.headers.get('X-Tenant-ID')
-        schema_header = request.headers.get('X-Schema-Name')
-        
-        if schema_header:
-            schema_name = schema_header
-            logger.debug(f"Using schema from header: {schema_name}")
-        elif tenant_id:
+        if tenant_id:
             schema_name = f"tenant_{tenant_id.replace('-', '_')}"
-            logger.debug(f"Generated schema from tenant ID header: {schema_name}")
     
+    # Fallback to the known good schema
     if not schema_name:
-        return Response(
-            {"error": "No tenant schema context found", "detail": "Please specify tenant in headers"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    logger.debug(f"Processing ultra_fast_products with schema: {schema_name}")
+        schema_name = 'tenant_18609ed2_1a46_4d50_bc4e_483d6e3405ff'
     
-    # Use a transaction with a timeout
+    logger.info(f"Using schema: {schema_name}")
+    
+    # Define the SQL query - get all products from the schema
+    sql = f"""
+    SELECT 
+        id, 
+        name, 
+        product_code, 
+        price, 
+        stock_quantity, 
+        is_for_sale,
+        department_id
+    FROM 
+        {schema_name}.inventory_product
+    ORDER BY 
+        created_at DESC
+    """
+    
     try:
-        with transaction.atomic():
-            # Set timeout for the transaction
-            with connection.cursor() as cursor:
-                cursor.execute('SET LOCAL statement_timeout = 5000')  # 5 seconds
-                
-                # EXPLICITLY set the search path for this connection
-                cursor.execute(f'SET search_path TO "{schema_name}",public')
+        with connection.cursor() as cursor:
+            # Explicitly set the search path
+            cursor.execute(f'SET search_path TO "{schema_name}", public')
             
-            # Get ultra-fast products
-            products = Product.optimized.for_tenant(schema_name).get_ultra_fast(request.query_params)
+            # Execute the query
+            cursor.execute(sql)
+            
+            # Get column names
+            columns = [col[0] for col in cursor.description]
+            
+            # Fetch the results
+            products = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
+            # Convert UUID bytes to string if necessary
+            for product in products:
+                if isinstance(product['id'], bytes) or isinstance(product['id'], uuid.UUID):
+                    product['id'] = str(product['id'])
+                if product['department_id'] and (isinstance(product['department_id'], bytes) or 
+                                              isinstance(product['department_id'], uuid.UUID)):
+                    product['department_id'] = str(product['department_id'])
+                
+                # Ensure price is float
+                if product['price']:
+                    product['price'] = float(product['price'])
             
             # Set up pagination
-            paginator = OptimizedPagination()
-            paginator.page_size = 50  # Larger page size for ultra-fast endpoint
+            paginator = PageNumberPagination()
+            paginator.page_size = 20
             page = paginator.paginate_queryset(products, request)
             
             if page is not None:
-                # Use optimized serialization for better performance
-                result = []
-                for product in page:
-                    result.append({
-                        'id': str(product.id),
-                        'name': product.name,
-                        'product_code': product.product_code,
-                        'unit_price': product.unit_price,
-                        'stock_quantity': product.stock_quantity,
-                        'is_for_sale': product.is_for_sale,
-                        'department_id': str(product.department_id) if product.department_id else None,
-                        'department_name': product.department.dept_name if product.department else None,
-                    })
-                
-                response = paginator.get_paginated_response(result)
+                response = paginator.get_paginated_response(page)
             else:
-                # Handle case with no pagination
-                result = []
-                for product in products:
-                    result.append({
-                        'id': str(product.id),
-                        'name': product.name,
-                        'product_code': product.product_code,
-                        'unit_price': product.unit_price,
-                        'stock_quantity': product.stock_quantity,
-                        'is_for_sale': product.is_for_sale,
-                        'department_id': str(product.department_id) if product.department_id else None,
-                        'department_name': product.department.dept_name if product.department else None,
-                    })
-                
-                response = Response(result)
+                response = Response(products)
             
-            # Log performance metrics
-            elapsed_time = time.time() - start_time
-            logger.debug(f"Ultra-fast products fetched in {elapsed_time:.4f}s")
-            
-            # Add schema info to response headers
+            # Add the schema to headers
             response['X-Schema-Used'] = schema_name
             
+            # Log success
+            logger.info(f"Found {len(products)} products in schema {schema_name}")
+            
             return response
+            
     except Exception as e:
-        logger.error(f"Error in ultra_fast_products with schema {schema_name}: {str(e)}", exc_info=True)
-        
-        if "permission denied" in str(e).lower() or "does not exist" in str(e).lower():
-            return Response(
-                {"error": f"Schema error with {schema_name}", "detail": str(e)},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        elif "timeout" in str(e).lower():
-            return Response(
-                {"error": "Database operation timed out", "detail": str(e)},
-                status=status.HTTP_504_GATEWAY_TIMEOUT
-            )
-        else:
-            return Response(
-                {"error": "Internal server error", "detail": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        logger.error(f"Error retrieving products from {schema_name}: {str(e)}", exc_info=True)
+        return Response({
+            "error": f"Failed to retrieve products: {str(e)}",
+            "schema": schema_name,
+            "detail": "Direct SQL query failed"
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

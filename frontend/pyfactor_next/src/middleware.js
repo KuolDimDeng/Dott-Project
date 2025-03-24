@@ -25,7 +25,8 @@ const PUBLIC_ROUTES = [
 const PUBLIC_API_ROUTES = [
   '/api/auth/check-existing-email',
   '/api/onboarding/setup/trigger',
-  '/api/onboarding/setup/status'
+  '/api/onboarding/setup/status',
+  '/api/auth/set-cookies'
 ];
 
 // Onboarding routes and their order
@@ -130,8 +131,13 @@ export function middleware(request) {
   // Check if it's a public API route
   const isPublicApiRoute = PUBLIC_API_ROUTES.some(route => pathname === route);
   
-  if (isPublicRoute || isPublicApiRoute) {
+  if (isPublicRoute) {
     console.log(`[Middleware] Public route detected: ${pathname}`);
+    return response;
+  }
+
+  if (isPublicApiRoute) {
+    console.log(`[Middleware] Public API route detected: ${pathname}, bypassing auth check`);
     return response;
   }
 

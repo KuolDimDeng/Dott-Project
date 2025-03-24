@@ -6,6 +6,24 @@ import { axiosInstance } from '@/lib/axiosConfig';
 import { userService } from './userService';
 
 /**
+ * Generates a product code based on product name
+ * @param {string} productName - The name of the product
+ * @returns {string} Generated product code
+ */
+export const generateProductCode = (productName) => {
+  if (!productName) return 'PROD-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+  
+  // Extract first 4 characters from product name (or fewer if name is shorter)
+  const prefix = productName.substring(0, 4).toUpperCase();
+  
+  // Generate a random 6-character string
+  const randomId = Math.random().toString(36).substr(2, 6).toUpperCase();
+  
+  // Combine to create product code
+  return `${prefix}-${randomId}`;
+};
+
+/**
  * InventoryService - Consolidated service for inventory-related operations
  * This service replaces the previous inventoryService and ultraOptimizedInventoryService
  * with a single, consistent interface for all inventory operations.

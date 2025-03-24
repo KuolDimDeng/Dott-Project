@@ -1,0 +1,15 @@
+{
+  "include": [
+    "backend"
+  ],
+  "extraPaths": [
+    "./backend",
+    "."
+  ],
+  "typeCheckingMode": "basic",
+  "reportMissingImports": false,
+  "reportMissingModuleSource": false,
+  "pythonVersion": "3.12",
+  "venvPath": ".",
+  "venv": ".venv"
+} 

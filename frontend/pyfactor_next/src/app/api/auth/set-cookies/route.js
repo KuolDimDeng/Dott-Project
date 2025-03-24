@@ -7,13 +7,24 @@ export async function POST(request) {
     const { idToken, accessToken, refreshToken, onboardingStep, onboardedStatus, setupCompleted } = await request.json();
     
     if (!idToken || !accessToken) {
+      logger.error('[API] Missing required tokens for set-cookies:', { 
+        hasIdToken: !!idToken, 
+        hasAccessToken: !!accessToken 
+      });
       return NextResponse.json(
         { error: 'Missing required tokens' },
         { status: 400 }
       );
     }
 
-    logger.debug('[API] Setting auth cookies');
+    logger.debug('[API] Setting auth cookies', {
+      hasIdToken: !!idToken,
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+      onboardingStep,
+      onboardedStatus,
+      setupCompleted
+    });
     
     const isDev = process.env.NODE_ENV === 'development';
     const cookieOptions = {
