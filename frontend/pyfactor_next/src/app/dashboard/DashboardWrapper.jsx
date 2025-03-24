@@ -13,17 +13,50 @@ import { logger } from '@/utils/logger';
 const DashboardWrapper = () => {
   const [setupStatus, setSetupStatus] = useState('pending');
 
-  // Add an effect to trigger the schema setup when the dashboard loads
+  // Add an effect to check schema setup status when component mounts
   useEffect(() => {
-    console.log('[Dashboard] Setup effect triggered');
+    // This state will track if we've run a schema setup in this session
+    const hasSetupBeenRunKey = 'schemaSetupAlreadyRunInSession';
+    
+    try {
+      // Check existing localStorage values
+      const setupDoneStr = localStorage.getItem('setupDone');
+      const setupTimestamp = localStorage.getItem('setupTimestamp');
+      const sessionSetupRun = sessionStorage.getItem(hasSetupBeenRunKey);
+      
+      logger.info('[Dashboard] Initial schema setup status check:', {
+        setupDone: setupDoneStr === 'true' ? 'yes' : 'no',
+        setupTime: setupTimestamp ? new Date(parseInt(setupTimestamp, 10)).toISOString() : 'none',
+        sessionRun: sessionSetupRun === 'true' ? 'yes' : 'no'
+      });
+      
+      // Create the persisted setup timestamp if it doesn't exist
+      if (setupDoneStr !== 'true' || !setupTimestamp) {
+        localStorage.setItem('setupDone', 'true');
+        localStorage.setItem('setupTimestamp', Date.now().toString());
+        logger.info('[Dashboard] Created missing setup status in localStorage');
+      }
+    } catch (e) {
+      logger.error('[Dashboard] Error accessing localStorage:', e);
+    }
+  }, []);
+
+  // Effect for schema setup triggering
+  useEffect(() => {
+    logger.info('[Dashboard] Schema setup effect triggered');
     
     const triggerSchemaSetup = async () => {
-      console.log('[Dashboard] Starting schema setup trigger');
+      // Create a session key to prevent multiple setups in one session
+      const hasSetupBeenRunKey = 'schemaSetupAlreadyRunInSession';
+      const setupRunInSession = sessionStorage.getItem(hasSetupBeenRunKey) === 'true';
+      
+      // If we've already run setup in this session, don't do it again
+      if (setupRunInSession) {
+        logger.info('[Dashboard] Schema setup already run in this session, skipping');
+        return;
+      }
       
       try {
-        logger.debug('[Dashboard] Triggering schema setup...');
-        console.log('[Dashboard] About to call fetch');
-        
         // Try to get tenant ID from cookies or localStorage for passing to the API
         let tenantId = null;
         try {
@@ -48,12 +81,66 @@ const DashboardWrapper = () => {
           
           logger.debug('[Dashboard] Tenant ID for setup:', { 
             tenantId,
-            hasUserData: !!userData,
-            source: tenantId ? 'found' : 'missing'
+            hasUserData: !!userData
           });
         } catch (e) {
           logger.warn('[Dashboard] Error getting tenant ID:', e);
         }
+        
+        // Check if we should force schema setup
+        let skipForceSetup = false;
+        try {
+          // First check session storage - if we've done setup in this browser session, skip
+          if (setupRunInSession) {
+            skipForceSetup = true;
+            logger.info('[Dashboard] Setup already run in this session, skipping force_setup');
+          }
+          
+          // Next check localStorage for setup status
+          const setupDoneStr = localStorage.getItem('setupDone');
+          const setupTimestamp = localStorage.getItem('setupTimestamp');
+          const userDataStr = localStorage.getItem('userData');
+          const userData = userDataStr ? JSON.parse(userDataStr) : null;
+          
+          // If localStorage indicates setup was done, skip force setup
+          if (setupDoneStr === 'true' && setupTimestamp) {
+            skipForceSetup = true;
+            logger.info('[Dashboard] Setup marked as done in localStorage, skipping force_setup');
+          }
+          
+          // Also check if user profile indicates setup is done
+          if (userData?.onboardingStatus === "COMPLETE") {
+            skipForceSetup = true;
+            logger.info('[Dashboard] User onboarding status is COMPLETE, skipping force_setup');
+          }
+          
+          logger.info('[Dashboard] Force setup decision:', { 
+            skipForceSetup, 
+            willForceSetup: !skipForceSetup 
+          });
+        } catch (e) {
+          logger.warn('[Dashboard] Error checking setup status:', e);
+          // Default to not forcing setup on errors
+          skipForceSetup = true;
+        }
+        
+        // Set session flag to prevent redundant setups in the same session
+        sessionStorage.setItem(hasSetupBeenRunKey, 'true');
+        
+        // Prepare request body with force_setup=false by default
+        const requestBody = { 
+          force_setup: false, // Default to not forcing setup
+          tenant_id: tenantId,
+          source: 'dashboard' 
+        };
+        
+        // Only set force_setup=true if we really need to force it
+        if (!skipForceSetup) {
+          requestBody.force_setup = true;
+          logger.info('[Dashboard] Will force schema setup in this request');
+        }
+        
+        logger.info('[Dashboard] Sending setup trigger request:', requestBody);
         
         // Make the API call with available data
         const response = await fetch('/api/onboarding/setup/trigger/', {
@@ -62,11 +149,7 @@ const DashboardWrapper = () => {
             'Content-Type': 'application/json',
             'X-Request-Id': crypto.randomUUID()
           },
-          body: JSON.stringify({ 
-            force_setup: true,
-            tenant_id: tenantId,
-            source: 'dashboard' 
-          }),
+          body: JSON.stringify(requestBody),
           credentials: 'include' // This ensures cookies are sent with the request
         });
         
@@ -90,6 +173,18 @@ const DashboardWrapper = () => {
             // Setup is already complete
             logger.info('[Dashboard] Schema setup already completed');
             setSetupStatus('complete');
+            
+            // Mark setup as done in both localStorage and sessionStorage
+            try {
+              const timestamp = Date.now().toString();
+              localStorage.setItem('setupDone', 'true');
+              localStorage.setItem('setupTimestamp', timestamp);
+              sessionStorage.setItem('schemaSetupAlreadyRunInSession', 'true');
+              
+              logger.info('[Dashboard] Marked schema setup as complete');
+            } catch (e) {
+              logger.warn('[Dashboard] Error storing setup status:', e);
+            }
           } else if (data.status === 'pending' || data.status === 'in_progress') {
             // Setup is pending or in progress
             logger.info('[Dashboard] Schema setup is in progress');
@@ -108,6 +203,18 @@ const DashboardWrapper = () => {
             // Legacy status for backward compatibility
             logger.info('[Dashboard] Schema already fully set up:', data);
             setSetupStatus('complete');
+            
+            // Mark setup as done in both localStorage and sessionStorage
+            try {
+              const timestamp = Date.now().toString();
+              localStorage.setItem('setupDone', 'true');
+              localStorage.setItem('setupTimestamp', timestamp);
+              sessionStorage.setItem('schemaSetupAlreadyRunInSession', 'true');
+              
+              logger.info('[Dashboard] Marked schema setup as complete (already_setup)');
+            } catch (e) {
+              logger.warn('[Dashboard] Error storing setup status:', e);
+            }
           } else {
             // Default success case
             logger.debug('[Dashboard] Schema setup triggered with status:', data.status);
@@ -119,6 +226,18 @@ const DashboardWrapper = () => {
             // This is actually expected for users with setupDone=TRUE
             logger.info('[Dashboard] Schema setup not needed (already done)');
             setSetupStatus('complete');
+            
+            // Mark setup as done in both localStorage and sessionStorage
+            try {
+              const timestamp = Date.now().toString();
+              localStorage.setItem('setupDone', 'true');
+              localStorage.setItem('setupTimestamp', timestamp);
+              sessionStorage.setItem('schemaSetupAlreadyRunInSession', 'true');
+              
+              logger.info('[Dashboard] Marked schema setup as complete (404 response)');
+            } catch (e) {
+              logger.warn('[Dashboard] Error storing setup status:', e);
+            }
           } else if (response.status === 401) {
             // Authentication issue
             console.error('[Dashboard] Authentication required for schema setup');
@@ -157,6 +276,18 @@ const DashboardWrapper = () => {
           if (data.status === 'complete') {
             setSetupStatus('complete');
             clearInterval(statusInterval);
+            
+            // Mark setup as done in both localStorage and sessionStorage
+            try {
+              const timestamp = Date.now().toString();
+              localStorage.setItem('setupDone', 'true');
+              localStorage.setItem('setupTimestamp', timestamp);
+              sessionStorage.setItem('schemaSetupAlreadyRunInSession', 'true');
+              
+              logger.info('[Dashboard] Marked schema setup as complete (from polling)');
+            } catch (e) {
+              logger.warn('[Dashboard] Error storing setup status:', e);
+            }
           }
         }
       } catch (error) {

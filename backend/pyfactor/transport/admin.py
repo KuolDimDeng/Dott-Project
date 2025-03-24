@@ -24,6 +24,13 @@ class EquipmentAdmin(admin.ModelAdmin):
             'fields': ('notes', 'created_at', 'updated_at')
         }),
     )
+    
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = super().get_fieldsets(request, obj)
+        # Rename the fieldset title
+        fieldsets = list(fieldsets)
+        fieldsets[0] = ('Vehicle Information', fieldsets[0][1])
+        return fieldsets
 
 @admin.register(Driver)
 class DriverAdmin(admin.ModelAdmin):

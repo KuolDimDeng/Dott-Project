@@ -2,7 +2,7 @@ import React from 'react';
 import { Drawer as MuiDrawer, Box } from '@mui/material';
 import MainListItems from './lists/listItems';
 
-const drawerWidth = 220;
+const drawerWidth = 260; // Increased from 220px to 260px
 
 const Drawer = ({
   drawerOpen,
@@ -32,22 +32,34 @@ const Drawer = ({
 
   return (
     <MuiDrawer
-      variant="persistent"
+      variant={{ xs: 'temporary', sm: 'persistent' }}
       open={drawerOpen}
+      onClose={handleDrawerToggle}
+      ModalProps={{
+        keepMounted: true, // Better performance on mobile
+      }}
+      BackdropProps={{
+        sx: {
+          display: { xs: 'block', sm: 'none' }, // Only show backdrop on mobile
+          backgroundColor: 'rgba(0, 0, 0, 0.3)', // Lighter backdrop
+        }
+      }}
       sx={{
         width: drawerWidth,
         flexShrink: 0,
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',
-          overflowX: 'hidden', // Prevent horizontal scrollbar
-          overflowY: 'hidden', // Allow vertical scrollbar
+          overflowX: 'hidden',
+          overflowY: 'auto',
+          display: { xs: drawerOpen ? 'block' : 'none', sm: 'block' },
+          visibility: { xs: drawerOpen ? 'visible' : 'hidden', sm: 'visible' },
         },
       }}
     >
       <Box
         sx={{
-          overflowY: 'hidden',
+          overflowY: 'auto', // Changed from 'hidden' to 'auto' to allow scrolling
           overflowX: 'hidden',
           mt: '60px',
           height: 'calc(100% - 60px)',

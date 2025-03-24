@@ -466,8 +466,31 @@ export const checkTaskStatus = async (taskId, options = {}) => {
 const getRequestTenantHeaders = () => {
   // Get tenant context directly
   try {
+    // First try to get from explicit context
     const context = getTenantContext();
-    const { tenantId, schemaName } = context;
+    let { tenantId, schemaName } = context;
+    
+    // If not found in context, try localStorage
+    if (!tenantId && typeof window !== 'undefined') {
+      tenantId = localStorage.getItem('tenantId');
+      logger.debug('[ApiService] Found tenant ID in localStorage:', tenantId);
+    }
+    
+    // If not found in localStorage, try cookies
+    if (!tenantId && typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';');
+      const tenantCookie = cookies.find(cookie => cookie.trim().startsWith('tenantId='));
+      if (tenantCookie) {
+        tenantId = tenantCookie.split('=')[1].trim();
+        logger.debug('[ApiService] Found tenant ID in cookie:', tenantId);
+      }
+    }
+    
+    // Generate schema name if we have tenant ID but no schema name
+    if (tenantId && !schemaName) {
+      schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
+      logger.debug('[ApiService] Generated schema name from tenant ID:', schemaName);
+    }
     
     logger.debug('[ApiService] Getting tenant headers:', { 
       tenantId: tenantId || 'null', 
@@ -484,9 +507,34 @@ const getRequestTenantHeaders = () => {
       headers['X-Schema-Name'] = schemaName;
     }
     
+    // Also add business ID header for compatibility
+    if (tenantId) {
+      headers['X-Business-ID'] = tenantId;
+    }
+    
     return headers;
   } catch (error) {
     logger.error('[ApiService] Error getting tenant headers:', error);
+    
+    // Fallback approach - try to get from localStorage directly
+    try {
+      if (typeof window !== 'undefined') {
+        const tenantId = localStorage.getItem('tenantId');
+        if (tenantId) {
+          const schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
+          logger.debug('[ApiService] Fallback: Using tenant ID from localStorage:', tenantId);
+          
+          return {
+            'X-Tenant-ID': tenantId,
+            'X-Schema-Name': schemaName,
+            'X-Business-ID': tenantId
+          };
+        }
+      }
+    } catch (e) {
+      logger.error('[ApiService] Fallback tenant header retrieval failed:', e);
+    }
+    
     return {};
   }
 };

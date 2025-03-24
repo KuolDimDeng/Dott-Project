@@ -245,15 +245,20 @@ export default function AppBar() {
           display: 'flex',
           alignItems: 'center',
           cursor: 'pointer',
+          height: 80,
+          width: 'auto',
+          justifyContent: 'center',
+          mr: 2,
         }}
         onClick={() => router.push('/')}
       >
         <Image
-          src="/static/images/Pyfactor.png"
+          src="/static/images/PyfactorLandingpage.png"
           alt="Pyfactor Logo"
           width={140}
-          height={100}
+          height={120}
           priority
+          style={{ objectFit: 'contain' }}
         />
       </Box>
 

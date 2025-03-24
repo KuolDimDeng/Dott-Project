@@ -18,7 +18,7 @@ class Equipment(models.Model):
         ('forklift', 'Forklift'),
         ('container', 'Container'),
         ('other', 'Other')
-    ])
+    ], verbose_name="Vehicle Type")
     make = models.CharField(max_length=100, blank=True, null=True)
     model = models.CharField(max_length=100, blank=True, null=True)
     year = models.IntegerField(blank=True, null=True)
@@ -39,6 +39,10 @@ class Equipment(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.equipment_type})"
+
+    class Meta:
+        verbose_name = "Vehicle"
+        verbose_name_plural = "Vehicles"
 
 class Driver(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

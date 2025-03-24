@@ -2,6 +2,7 @@
 
 import React, { Suspense, lazy } from 'react';
 import { Box, Button, CircularProgress, Typography, Tabs, Tab } from '@mui/material';
+import { TransportDashboard, VehicleManagement } from './transport';
 
 // Empty loading component (removed spinner)
 const LoadingComponent = () => null;
@@ -12,11 +13,30 @@ const ContentWrapper = ({ children }) => (
     sx={{
       flexGrow: 1,
       width: '100%',
-      maxWidth: '1200px',
+      maxWidth: '100%',
       height: '100%',
       margin: '0',
+      padding: { xs: '0.5rem', sm: '0.75rem', md: '1rem' },
       display: 'flex',
       flexDirection: 'column',
+      boxSizing: 'border-box',
+      overflowX: 'hidden',
+      '& .MuiContainer-root': {
+        paddingLeft: { xs: '0.5rem', sm: '1rem' },
+        paddingRight: { xs: '0.5rem', sm: '1rem' },
+      },
+      '& .MuiTable-root': {
+        minWidth: { xs: '100%', sm: '650px' },
+      },
+      '& .MuiTableCell-root': {
+        padding: { xs: '0.5rem', sm: '1rem' },
+      },
+      '& .MuiCardContent-root': {
+        padding: { xs: '0.75rem', sm: '1rem', md: '1.25rem' },
+      },
+      '& .MuiInputBase-root': {
+        width: '100%',
+      },
     }}
   >
     {children}
@@ -95,6 +115,20 @@ const MainDashboard = lazy(() => import('./dashboards/MainDashboard'));
 const BankTransactions = lazy(() => import('./forms/BankTransactionPage'));
 const InventoryManagement = lazy(() => import('@/app/inventory/components/InventoryManagement.jsx'));
 const Home = lazy(() => import('./Home'));
+const HRDashboard = lazy(() => import('./forms/HRDashboard.jsx'));
+
+// CRM Components
+const CRMDashboard = lazy(() => import('./crm/CRMDashboard'));
+const ContactsManagement = lazy(() => import('./crm/ContactsManagement'));
+const LeadsManagement = lazy(() => import('./crm/LeadsManagement'));
+const OpportunitiesManagement = lazy(() => import('./crm').then(m => ({ default: m.OpportunitiesManagement })));
+const DealsManagement = lazy(() => import('./crm').then(m => ({ default: m.DealsManagement })));
+const ActivitiesManagement = lazy(() => import('./crm').then(m => ({ default: m.ActivitiesManagement })));
+const CampaignsManagement = lazy(() => import('./crm').then(m => ({ default: m.CampaignsManagement })));
+const ReportsManagement = lazy(() => import('./crm').then(m => ({ default: m.ReportsManagement })));
+
+// Analytics Components
+const AIQueryPage = lazy(() => import('./forms/AIQueryPage.jsx'));
 
 /**
  * Renders the main content of the dashboard based on the current view
@@ -185,6 +219,8 @@ function RenderMainContent({
   showBankTransactions,
   showInventoryManagement,
   showHome,
+  // CRM view states
+  view,
 }) {
   const [selectedTab, setSelectedTab] = React.useState(0);
 
@@ -249,42 +285,94 @@ function RenderMainContent({
       return renderSettingsTabs();
     }
 
+    // CRM view handling
+    if (view && view.startsWith('crm-')) {
+      return (
+        <Suspense fallback={<LoadingComponent />}>
+          <ContentWrapper>
+            {view === 'crm-dashboard' && <CRMDashboard />}
+            {view === 'crm-contacts' && <ContactsManagement />}
+            {view === 'crm-leads' && <LeadsManagement />}
+            {view === 'crm-opportunities' && <OpportunitiesManagement />}
+            {view === 'crm-deals' && <DealsManagement />}
+            {view === 'crm-activities' && <ActivitiesManagement />}
+            {view === 'crm-campaigns' && <CampaignsManagement />}
+            {view === 'crm-reports' && <ReportsManagement />}
+          </ContentWrapper>
+        </Suspense>
+      );
+    }
+
+    // Analytics view handling
+    if (view && view.startsWith('analytics-') || view === 'ai-query') {
+      return (
+        <Suspense fallback={<LoadingComponent />}>
+          <ContentWrapper>
+            {view === 'analytics-dashboard' && <KPIDashboard userData={userData} />}
+            {view === 'ai-query' && <AIQueryPage userData={userData} />}
+          </ContentWrapper>
+        </Suspense>
+      );
+    }
+
+    // Transport view handling
+    if (view && view.startsWith('transport-')) {
+      return (
+        <Suspense fallback={<LoadingComponent />}>
+          <ContentWrapper>
+            {view === 'transport-dashboard' && <TransportDashboard />}
+            {view === 'transport-equipment' && <VehicleManagement />}
+            {view === 'transport-loads' && <div>Loads Management Component Coming Soon</div>}
+            {view === 'transport-routes' && <div>Routes Management Component Coming Soon</div>}
+            {view === 'transport-expenses' && <div>Transport Expenses Component Coming Soon</div>}
+            {view === 'transport-maintenance' && <div>Maintenance Management Component Coming Soon</div>}
+            {view === 'transport-compliance' && <div>Compliance Management Component Coming Soon</div>}
+            {view === 'transport-reports' && <div>Transport Reports Component Coming Soon</div>}
+          </ContentWrapper>
+        </Suspense>
+      );
+    }
+
     return (
       <Suspense fallback={<LoadingComponent />}>
+        {showEmployeeManagement && (
+          <ContentWrapper>
+            <EmployeeManagement />
+          </ContentWrapper>
+        )}
+        {showHRDashboard && (
+          <ContentWrapper>
+            <HRDashboard section={hrSection} />
+          </ContentWrapper>
+        )}
         {showUserProfileSettings && <UserProfileSettings userData={userData} onUpdate={handleUserProfileUpdate} />}
         {showIntegrationSettings && <IntegrationSettings />}
+        {showMainDashboard && <MainDashboard userData={userData} />}
+        {showKPIDashboard && <KPIDashboard />}
+        {showTransactionForm && <TransactionForm />}
+        {showInvoiceBuilder && <InvoiceTemplateBuilder onClose={handleCloseInvoiceBuilder} />}
+        {showCustomerList && <CustomerList onCreateCustomer={handleCreateCustomer} onSelectCustomer={handleCustomerSelect} />}
+        {showCustomerDetails && selectedCustomer && <CustomerDetails customer={selectedCustomer} onBack={handleBackToCustomerDetails} />}
+        {selectedInvoiceId && <InvoiceDetails invoiceId={selectedInvoiceId} onBack={handleBackFromInvoice} />}
         {showProductManagement && <ProductManagement />}
         {showServiceManagement && <ServiceManagement />}
-        {showConnectBank && <ConnectBank />}
-        {showInventoryItems && <InventoryItems />}
-        {showPayrollReport && <PayrollReport />}
-        {showBankReport && <BankReport />}
-        {showMainDashboard && <MainDashboard userData={userData} />}
         {showEstimateManagement && <EstimateManagement />}
         {showSalesOrderManagement && <SalesOrderManagement />}
         {showInvoiceManagement && <InvoiceManagement />}
         {showVendorManagement && <VendorManagement />}
         {showBillManagement && <BillManagement />}
         {showPurchaseOrderManagement && <PurchaseOrderManagement />}
-        {showTermsAndConditions && <TermsAndConditions />}
-        {showBankRecon && <BankReconciliation />}
-        {showInventoryManagement && <InventoryManagement />}
-        {showPrivacyPolicy && <PrivacyPolicy />}
         {showExpensesManagement && <ExpensesManagement />}
         {showPurchaseReturnManagement && <PurchaseReturnsManagement />}
         {showProcurementManagement && <ProcurementManagement />}
-        {showPayrollManagement && <PayrollManagement />}
-        {showPayrollTransactions && <PayrollTransactions />}
-        {showDownloadTransactions && <DownloadTransactions />}
-        {showTimesheetManagement && <TimesheetManagement />}
         {showChartOfAccounts && <ChartOfAccountsManagement />}
+        {showJournalEntryManagement && <JournalEntryManagement />}
         {showGeneralLedgerManagement && <GeneralLedgerManagement />}
         {showAccountReconManagement && <AccountReconManagement />}
         {showMonthEndManagement && <MonthEndManagement />}
         {showFinancialStatements && <FinancialManagement />}
         {showFixedAssetManagement && <FixedAssetManagement />}
         {showBudgetManagement && <BudgetManagement />}
-        {showBankTransactions && <BankTransactions />}
         {showCostAccountingManagement && <CostAccountingManagement />}
         {showIntercompanyManagement && <IntercompanyManagement />}
         {showAuditTrailManagement && <AuditTrailManagement />}
@@ -298,39 +386,27 @@ function RenderMainContent({
         {showTrialBalances && <TrialBalances />}
         {showProfitAndLossAnalysis && <ProfitAndLossAnalysis />}
         {showBalanceSheetAnalysis && <BalanceSheetAnalysis />}
-        {showHelpCenter && <HelpCenter />}
         {showCashFlowAnalysis && <CashFlowAnalysis />}
         {showBudgetVsActualAnalysis && <BudgetVsActualAnalysis />}
         {showSalesAnalysis && <SalesAnalysis />}
-        {showDeviceSettings && <DeviceSettings />}
         {showExpenseAnalysis && <ExpenseAnalysis />}
-        {showKPIDashboard && <KPIDashboard userData={userData} />}
-        {showEmployeeManagement && <EmployeeManagement />}
-        {showJournalEntryManagement && <JournalEntryManagement />}
-        {selectedInvoiceId !== null && <InvoiceDetails invoiceId={selectedInvoiceId} onBack={handleBackFromInvoice} />}
-        {showCustomerDetails && selectedCustomer && <CustomerDetails customer={selectedCustomer} onInvoiceSelect={handleInvoiceSelect} onBack={handleBackToCustomerDetails} />}
-        {showAnalysisPage && <AnalysisPage />}
-        {showCustomerList && <CustomerList onCreateCustomer={handleCreateCustomer} onInvoiceSelect={handleInvoiceSelect} onCustomerSelect={handleCustomerSelect} />}
         {showReports && selectedReport && <ReportDisplay reportType={selectedReport} />}
         {showBankingDashboard && <BankingDashboard />}
-        {showHRDashboard && <div>HR Dashboard content goes here</div>}
         {showPayrollDashboard && <div>Payroll Dashboard content goes here</div>}
+        {showAnalysisPage && <AnalysisPage />}
+        {showHelpCenter && <HelpCenter />}
+        {showPrivacyPolicy && <PrivacyPolicy />}
+        {showTermsAndConditions && <TermsAndConditions />}
+        {showDownloadTransactions && <DownloadTransactions />}
+        {showConnectBank && <ConnectBank />}
+        {showPayrollTransactions && <PayrollTransactions />}
+        {showBankRecon && <BankReconciliation />}
+        {showPayrollReport && <PayrollReport />}
+        {showBankReport && <BankReport />}
+        {showInventoryItems && <InventoryItems />}
+        {showBankTransactions && <BankTransactions />}
+        {showInventoryManagement && <InventoryManagement />}
         {showHome && <Home userData={userData} />}
-        {showAccountPage && (
-          <Box>
-            <Button variant="contained" color="error" onClick={handleDeleteAccount}>
-              Delete Account
-            </Button>
-          </Box>
-        )}
-        {showTransactionForm && (
-          <>
-            <TransactionForm />
-            <TransactionList />
-          </>
-        )}
-        {showInvoiceBuilder && <InvoiceTemplateBuilder handleClose={handleCloseInvoiceBuilder} userData={userData} />}
-        {showCreateOptions && <RenderForm selectedOption={selectedOption} userData={userData} />}
       </Suspense>
     );
   };

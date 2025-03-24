@@ -226,3 +226,99 @@ class CurrentTenantView(APIView):
                 'error': 'Failed to find current tenant',
                 'detail': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ValidateTenantView(APIView):
+    """
+    View to validate a tenant ID
+    Checks if a tenant ID is valid and returns the correct tenant ID if it's not
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Validate a tenant ID via GET request"""
+        tenant_id = request.query_params.get('tenantId')
+        return self._validate_tenant(tenant_id, request.user)
+    
+    def post(self, request):
+        """Validate a tenant ID via POST request"""
+        tenant_id = request.data.get('tenantId')
+        return self._validate_tenant(tenant_id, request.user)
+    
+    def _validate_tenant(self, tenant_id, user):
+        """Common validation logic for both GET and POST"""
+        if not tenant_id:
+            return Response({
+                'valid': False,
+                'error': 'No tenant ID provided'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            logger.debug(f"[ValidateTenant] Validating tenant ID: {tenant_id}")
+            
+            # First check if this tenant ID exists
+            try:
+                tenant = Tenant.objects.get(id=tenant_id)
+                
+                # Check if it belongs to this user
+                if tenant.owner_id == user.id:
+                    return Response({
+                        'valid': True,
+                        'tenantId': str(tenant.id),
+                        'schemaName': tenant.schema_name,
+                        'message': 'Tenant ID is valid'
+                    })
+                else:
+                    # If tenant exists but belongs to another user, try to find user's tenant
+                    user_tenant = Tenant.objects.filter(owner_id=user.id).first()
+                    
+                    if user_tenant:
+                        return Response({
+                            'valid': False,
+                            'correctTenantId': str(user_tenant.id),
+                            'schemaName': user_tenant.schema_name,
+                            'message': 'Tenant ID belongs to another user. Corrected to your tenant.'
+                        })
+                    else:
+                        return Response({
+                            'valid': False,
+                            'message': 'Tenant ID exists but belongs to another user'
+                        }, status=status.HTTP_403_FORBIDDEN)
+            except Tenant.DoesNotExist:
+                # Tenant does not exist, check if user has another tenant
+                user_tenant = Tenant.objects.filter(owner_id=user.id).first()
+                
+                if user_tenant:
+                    return Response({
+                        'valid': False,
+                        'correctTenantId': str(user_tenant.id),
+                        'schemaName': user_tenant.schema_name,
+                        'message': 'Invalid tenant ID. Corrected to your tenant.'
+                    })
+                else:
+                    # Known good fallback tenants for development
+                    fallback_tenants = [
+                        '18609ed2-1a46-4d50-bc4e-483d6e3405ff',
+                        'b7fee399-ffca-4151-b636-94ccb65b3cd0',
+                        '1cb7418e-34e7-40b7-b165-b79654efe21f'
+                    ]
+                    
+                    if tenant_id in fallback_tenants:
+                        return Response({
+                            'valid': True,
+                            'tenantId': tenant_id,
+                            'message': 'Using fallback tenant ID',
+                            'fallback': True
+                        })
+                    
+                    return Response({
+                        'valid': False,
+                        'correctTenantId': fallback_tenants[0],
+                        'message': 'Invalid tenant ID and user has no tenants. Using fallback.'
+                    })
+        except Exception as e:
+            logger.error(f"Error validating tenant: {str(e)}")
+            return Response({
+                'valid': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

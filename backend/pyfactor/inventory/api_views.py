@@ -189,29 +189,113 @@ def ultra_fast_products(request):
     import uuid
     from django.db import connection
     from rest_framework.pagination import PageNumberPagination
+    from custom_auth.utils import ensure_single_tenant_per_business
     
     # Get schema from request or headers
     schema_name = None
+    tenant_id = None
     
-    # Try to get from tenant object first
+    # Log all available headers and request properties for debugging
+    logger.info(f"Request headers: {dict(request.headers)}")
+    logger.info(f"Request tenant: {getattr(request, 'tenant', None)}")
+    logger.info(f"Request user: {request.user.email if hasattr(request, 'user') and request.user else 'None'}")
+    
+    # Try to get from tenant object first (set by middleware)
     if hasattr(request, 'tenant') and request.tenant:
         schema_name = request.tenant.schema_name
+        tenant_id = str(request.tenant.id)
+        logger.info(f"Using tenant from request.tenant: {schema_name} (ID: {tenant_id})")
     
     # Then try headers
     if not schema_name:
         schema_name = request.headers.get('X-Schema-Name')
+        if schema_name:
+            logger.info(f"Using schema from X-Schema-Name header: {schema_name}")
     
-    # Lastly, use the tenant ID to construct schema name
-    if not schema_name:
+    # Try to get tenant ID from headers
+    if not tenant_id:
         tenant_id = request.headers.get('X-Tenant-ID')
         if tenant_id:
-            schema_name = f"tenant_{tenant_id.replace('-', '_')}"
+            logger.info(f"Using tenant ID from X-Tenant-ID header: {tenant_id}")
+            # If we have tenant ID but no schema name, construct it
+            if not schema_name:
+                schema_name = f"tenant_{tenant_id.replace('-', '_')}"
+                logger.info(f"Generated schema name from tenant ID: {schema_name}")
     
-    # Fallback to the known good schema
+    # Try to get business ID from headers as a fallback
+    if not tenant_id:
+        business_id = request.headers.get('X-Business-ID')
+        if business_id:
+            logger.info(f"Using business ID as tenant ID: {business_id}")
+            tenant_id = business_id
+            if not schema_name:
+                schema_name = f"tenant_{business_id.replace('-', '_')}"
+                logger.info(f"Generated schema name from business ID: {schema_name}")
+    
+    # If we still don't have a tenant ID but have a user, try to find their tenant
+    if not tenant_id and request.user and request.user.is_authenticated:
+        try:
+            # Use the failsafe function to ensure we get a tenant
+            tenant, _ = ensure_single_tenant_per_business(request.user, None)
+            if tenant:
+                tenant_id = str(tenant.id)
+                schema_name = tenant.schema_name
+                logger.info(f"Retrieved tenant for user {request.user.email}: {schema_name} (ID: {tenant_id})")
+                # Add tenant to request for future use
+                request.tenant = tenant
+        except Exception as tenant_error:
+            logger.error(f"Error finding tenant for user: {str(tenant_error)}")
+    
+    # If we still don't have a schema name, check if the tenant schema exists
+    if tenant_id and not schema_name:
+        # Generate schema name from tenant ID
+        schema_name = f"tenant_{tenant_id.replace('-', '_')}"
+        logger.info(f"Generated schema name from tenant ID: {schema_name}")
+        
+        # Verify schema exists
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.schemata
+                    WHERE schema_name = %s
+                )
+            """, [schema_name])
+            schema_exists = cursor.fetchone()[0]
+            
+            if not schema_exists:
+                logger.warning(f"Generated schema {schema_name} does not exist in database")
+    
+    # Final fallback to a known schema (for development/testing only)
     if not schema_name:
-        schema_name = 'tenant_18609ed2_1a46_4d50_bc4e_483d6e3405ff'
+        schema_name = 'public'
+        logger.warning("No schema identified, falling back to public schema as last resort")
     
-    logger.info(f"Using schema: {schema_name}")
+    logger.info(f"Final decision: Using schema: {schema_name}")
+    
+    # Define the SQL query - get all products from the schema
+    # First check if the table exists in the schema
+    table_check_sql = f"""
+    SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = '{schema_name}' 
+        AND table_name = 'inventory_product'
+    )
+    """
+    
+    # Log the table check for debugging
+    logger.info(f"Checking if inventory_product table exists in schema {schema_name}")
+    
+    with connection.cursor() as cursor:
+        cursor.execute(table_check_sql)
+        table_exists = cursor.fetchone()[0]
+        
+    if not table_exists:
+        logger.error(f"Table inventory_product does not exist in schema {schema_name}")
+        return Response({
+            "error": f"Table inventory_product does not exist in schema {schema_name}",
+            "schema": schema_name,
+            "tenant_id": tenant_id
+        }, status=status.HTTP_404_NOT_FOUND)
     
     # Define the SQL query - get all products from the schema
     sql = f"""
@@ -265,8 +349,10 @@ def ultra_fast_products(request):
             else:
                 response = Response(products)
             
-            # Add the schema to headers
+            # Add the schema and tenant info to headers for debugging
             response['X-Schema-Used'] = schema_name
+            if tenant_id:
+                response['X-Tenant-ID'] = tenant_id
             
             # Log success
             logger.info(f"Found {len(products)} products in schema {schema_name}")
@@ -278,6 +364,9 @@ def ultra_fast_products(request):
         return Response({
             "error": f"Failed to retrieve products: {str(e)}",
             "schema": schema_name,
+            "tenant_id": tenant_id,
+            "user": request.user.email if hasattr(request, 'user') and request.user else None,
+            "headers": dict(request.headers),
             "detail": "Direct SQL query failed"
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

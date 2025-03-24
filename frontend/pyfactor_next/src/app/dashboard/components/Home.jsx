@@ -9,7 +9,7 @@ import { Box, Typography, Paper, Grid, Button } from '@mui/material';
  */
 function Home({ userData }) {
   return (
-    <Box sx={{ p: 1 }}>
+    <Box sx={{ pt: 1.5, pb: 2 }}>
       <Typography variant="h4" gutterBottom>
         Home
       </Typography>

@@ -16,8 +16,23 @@ export async function POST(request) {
       logger.debug('[SetupTriggerAPI] No request body or invalid JSON');
     }
     
-    // Get force_setup parameter from request, default to true for dashboard
-    const forceSetup = requestBody.force_setup !== undefined ? requestBody.force_setup : true;
+    // Get force_setup parameter from request, strictly defaulting to false
+    // This ensures we don't trigger unnecessary setups
+    let forceSetup = false;
+    
+    // Only set to true if explicitly sent as true (not just truthy)
+    if (requestBody.force_setup === true) {
+      forceSetup = true;
+      logger.info('[SetupTriggerAPI] Received explicit force_setup=true from client');
+    } else {
+      logger.info('[SetupTriggerAPI] Using default force_setup=false');
+    }
+    
+    logger.debug('[SetupTriggerAPI] force_setup decision:', {
+      rawValue: requestBody.force_setup,
+      finalValue: forceSetup,
+      source: requestBody.source || 'unknown'
+    });
     
     // Try to get auth session but don't fail if it's not available
     let tokens = null;
@@ -106,17 +121,26 @@ export async function POST(request) {
       headers['X-Tenant-ID'] = tenantId;
     }
     
+    // Prepare backend request body - explicitly include force_setup as a boolean
+    const backendRequestBody = {
+      tenant_id: tenantId || requestBody.tenant_id || 'unknown',
+      setup_done: setupDone === true, // Ensure boolean
+      force_setup: forceSetup === true, // Ensure boolean
+      request_id: requestId,
+      source: requestBody.source || 'dashboard'
+    };
+    
+    logger.info('[SetupTriggerAPI] Sending to backend:', {
+      force_setup: backendRequestBody.force_setup,
+      setup_done: backendRequestBody.setup_done,
+      source: backendRequestBody.source
+    });
+    
     // Make request to backend with the setupDone info in body
     const response = await fetch(`${API_URL}/api/onboarding/setup/trigger/`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        tenant_id: tenantId || requestBody.tenant_id || 'unknown',
-        setup_done: setupDone,
-        force_setup: forceSetup, // Use the value from request or default
-        request_id: requestId,
-        source: 'auto_created'
-      }),
+      body: JSON.stringify(backendRequestBody),
       credentials: 'include',
       cache: 'no-store'
     });

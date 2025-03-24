@@ -32,7 +32,7 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Image from 'next/image';
 
-const MENU_WIDTH = 228;
+const MENU_WIDTH = 258; // Increased to match the drawer width (260px, leaving 2px for borders)
 
 const MainListItems = ({
   handleMainDashboardClick,
@@ -49,6 +49,7 @@ const MainListItems = ({
   handleTaxesClick,
   handleCRMClick,
   handleTransportClick,
+  handleHRClick,
   handleShowCreateOptions,
   borderRightColor = '#bbdefb',
   borderRightWidth = '2px',
@@ -60,6 +61,10 @@ const MainListItems = ({
   const [hoveredItem, setHoveredItem] = useState(null);
   const [hoveredCreateOption, setHoveredCreateOption] = useState(null);
 
+  // Custom colors for menu items
+  const navyBlue = '#001f3f';  // Navy blue color for text
+  const hoverBgColor = '#f5f8ff'; // Light blue background for hover highlight
+
   useEffect(() => {
     if (paperRef.current) {
       const paperWidth = paperRef.current.offsetWidth;
@@ -69,6 +74,16 @@ const MainListItems = ({
 
   const handleMenuToggle = (menuName) => {
     setOpenMenu((prevOpenMenu) => (prevOpenMenu === menuName ? '' : menuName));
+    
+    // Add a setTimeout to allow the DOM to update before scrolling
+    setTimeout(() => {
+      // Find the clicked menu item
+      const menuItem = document.querySelector(`[data-menu-label="${menuName}"]`);
+      if (menuItem) {
+        // Scroll the menu item into view to ensure submenu is visible
+        menuItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
   };
 
   const handleCreateClick = (event) => {
@@ -90,12 +105,6 @@ const MainListItems = ({
   const theme = useTheme();
 
   const menuItems = [
-    {
-      icon: <HomeOutlinedIcon />,
-      label: 'Home',
-      onClick: handleHomeClick,
-    },
-
     {
       icon: <DashboardCustomizeIcon />,
       label: 'Dashboard',
@@ -148,7 +157,7 @@ const MainListItems = ({
       subItems: [
         { label: 'Dashboard', onClick: handleTransportClick, value: 'dashboard' },
         { label: 'Loads/Jobs', onClick: handleTransportClick, value: 'loads' },
-        { label: 'Equipment', onClick: handleTransportClick, value: 'equipment' },
+        { label: 'Vehicle', onClick: handleTransportClick, value: 'equipment' },
         { label: 'Routes', onClick: handleTransportClick, value: 'routes' },
         { label: 'Expenses', onClick: handleTransportClick, value: 'expenses' },
         { label: 'Maintenance', onClick: handleTransportClick, value: 'maintenance' },
@@ -220,13 +229,12 @@ const MainListItems = ({
       icon: <PeopleOutlineIcon />,
       label: 'HR',
       subItems: [
-        { label: 'Dashboard', onClick: handlePayrollClick, value: 'dashboard' },
-        { label: 'Employees', onClick: handlePayrollClick, value: 'employees' },
-        { label: 'Timesheets', onClick: handlePayrollClick, value: 'timesheets' },
-        { label: 'Taxes', onClick: handlePayrollClick, value: 'taxes' },
-        { label: 'Benefits', onClick: handlePayrollClick, value: 'benefits' },
-        { label: 'Reports', onClick: handlePayrollClick, value: 'reports' },
-
+        { label: 'Dashboard', onClick: handleHRClick, value: 'dashboard' },
+        { label: 'Employees', onClick: handleHRClick, value: 'employees' },
+        { label: 'Timesheets', onClick: handleHRClick, value: 'timesheets' },
+        { label: 'Taxes', onClick: handleHRClick, value: 'taxes' },
+        { label: 'Benefits', onClick: handleHRClick, value: 'benefits' },
+        { label: 'Reports', onClick: handleHRClick, value: 'reports' },
       ],
     },
     {
@@ -278,19 +286,21 @@ const MainListItems = ({
       icon: <AnalyticsIcon />,
       label: 'Analytics',
       subItems: [
-        { label: 'KPI Dashboard', onClick: handleAnalysisClick, value: 'kpi-data' },
-        { label: 'Sales Analysis', onClick: handleAnalysisClick, value: 'sales-analysis' },
-        { label: 'Expense Analysis', onClick: handleAnalysisClick, value: 'expenses-analysis' },
-        { label: 'Profit & Loss', onClick: handleAnalysisClick, value: 'profit-loss-analysis' },
-        { label: 'Cash Flow', onClick: handleAnalysisClick, value: 'cash-flow' },
-        { label: 'Budget vs. Actual', onClick: handleAnalysisClick, value: 'budget-vs-actual' },
+        { label: 'Dashboard', onClick: handleAnalysisClick, value: 'kpi-data' },
+        { label: 'A.I Query', onClick: handleAnalysisClick, value: 'ai-query' },
       ],
     },
   ];
 
   const createOptions = [
     { label: 'Transaction', onClick: handleShowCreateOptions, value: 'Transaction' },
-    { label: 'Product', onClick: handleShowCreateOptions, value: 'Product' },
+    { 
+      label: 'Product', 
+      onClick: () => {
+        window.location.href = '/inventory?action=create';
+      }, 
+      value: 'Product' 
+    },
     { label: 'Service', onClick: handleShowCreateOptions, value: 'Service' },
     { label: 'Invoice', onClick: handleShowCreateOptions, value: 'Invoice' },
     { label: 'Bill', onClick: handleShowCreateOptions, value: 'Bill' },
@@ -322,23 +332,25 @@ const MainListItems = ({
           <ListItemButton
             key={index}
             sx={{
-              pl: 8,
-              color: 'menu.text',
+              pl: 4,
               '&:hover': {
-                backgroundColor: 'menu.backgroundHover',
-                color: 'menu.textHover',
-                '& .MuiListItemText-primary': {
-                  fontWeight: 'bold',
-                },
+                backgroundColor: hoverBgColor,
               },
-              '& .MuiListItemText-primary': {
-                fontSize: '0.9rem',
-                fontWeight: 'normal',
-              },
+              backgroundColor: hoveredItem === `${parentMenu}-${item.value}` ? hoverBgColor : 'inherit',
             }}
-            onClick={() => item.onClick(item.value)}
+            onClick={() => item.onClick && item.onClick(item.value)}
+            onMouseEnter={() => handleMouseEnter(`${parentMenu}-${item.value}`)}
+            onMouseLeave={handleMouseLeave}
           >
-            <ListItemText primary={item.label} />
+            <ListItemText 
+              primary={item.label} 
+              primaryTypographyProps={{ 
+                sx: { 
+                  color: navyBlue, 
+                  fontSize: '0.85rem' 
+                } 
+              }} 
+            />
           </ListItemButton>
         ))}
       </List>
@@ -353,44 +365,44 @@ const MainListItems = ({
         onClick={handleCreateClick}
         sx={{
           justifyContent: 'flex-start',
-          pl: 2,
-          py: 1,
-          mb: 2,
-          mx: 1,
+          pl: 2.5, // Reduced left padding
+          py: 0.5, // Reduced top/bottom padding
+          mb: 1.5, // Reduced bottom margin
+          mx: 0.5, // Reduced side margins
           textTransform: 'none',
-          border: '2px solid',
-          borderColor: isCreateOpen ? 'primary.dark' : 'primary.main',
-          borderRadius: '50px',
-          maxWidth: '160px', // Adjust this value as needed
+          border: '2px solid', // Reduced from 2px to 1px
+          borderColor: isCreateOpen ? navyBlue : navyBlue,
+          borderRadius: '50px', // Reduced from 50px to 25px for smaller rounded corners
+          maxWidth: '150px', // Widened to fit the new drawer width
           width: `${buttonWidth}px`,
-          color: isCreateOpen ? 'primary.dark' : 'menu.text',
-          backgroundColor: isCreateOpen ? '#ffffff' : '#ffffff', // Changed from #e3f2fd to white
-          fontSize: '16px',
+          color: navyBlue,
+          backgroundColor: '#ffffff', // White background
+          fontSize: '18px',
           fontWeight: isCreateOpen ? 'bold' : 'normal',
           transition: 'all 0.3s ease',
           '&:hover, &.Mui-focusVisible': {
-            backgroundColor: '#ffffff', // Changed hover state to white as well
-            borderColor: 'primary.dark',
-            color: 'primary.dark',
+            backgroundColor: hoverBgColor,
+            borderColor: navyBlue,
+            color: navyBlue,
             fontWeight: 'bold',
             '& .MuiSvgIcon-root': {
-              color: 'primary.dark',
+              color: navyBlue,
             },
           },
         }}
       >
         <ListItemIcon
           sx={{
-            minWidth: 25,
-            mr: 1,
+            minWidth: 25, // Reduced from 25px
+            mr: 0.5, // Reduced from 1
             '& .MuiSvgIcon-root': {
-              fontSize: '24px',
-              color: isCreateOpen ? 'primary.dark' : 'menu.icon',
+              fontSize: '18px', // Smaller icon
+              color: navyBlue,
               transition: 'color 0.3s ease',
             },
             '$:hover &, .Mui-focusVisible &': {
               '& .MuiSvgIcon-root': {
-                color: 'primary.dark',
+                color: navyBlue,
               },
             },
           }}
@@ -399,9 +411,11 @@ const MainListItems = ({
         </ListItemIcon>
         <ListItemText
           primary="New"
-          sx={{
-            '& .MuiListItemText-primary': {
+          primaryTypographyProps={{
+            sx: {
+              color: navyBlue,
               fontWeight: 'inherit',
+              fontSize: '0.9rem', // Smaller font size
             },
           }}
         />
@@ -411,115 +425,78 @@ const MainListItems = ({
 
   return (
     <ThemeProvider theme={menuTheme}>
-      <Paper
-        ref={paperRef}
-        elevation={0}
+      <Box
         sx={{
-          width: MENU_WIDTH,
-          height: '100vh',
-          background: '#ffffff', // Changed from #fafafa to white
-          borderRight: `${borderRightWidth} solid ${borderRightColor}`,
-
-          overflowY: 'auto',
+          width: '100%',
+          height: '100%',
           overflowX: 'hidden',
-          '&::-webkit-scrollbar': {
-            width: '5px',
+          overflowY: 'auto',
+          borderRight: `${borderRightWidth} solid ${borderRightColor}`,
+          '.MuiListItemIcon-root': {
+            minWidth: '36px',
+            color: navyBlue, // Set icons to navy blue
           },
-          '&::-webkit-scrollbar-track': {
-            background: scrollTrackColor,
-          },
-          '&::-webkit-scrollbar-thumb': {
-            background: scrollThumbColor,
-            borderRadius: '5px',
-          },
-          '&::-webkit-scrollbar-thumb:hover': {
-            background: '#81d4fa',
-          },
-          scrollbarWidth: 'thin',
-          scrollbarColor: `${scrollThumbColor} ${scrollTrackColor}`,
         }}
       >
-        <Box sx={{ overflow: 'auto', height: '100%', pt: 3 }}>
-          <CreateNewButton />
-          <List component="nav" aria-label="main mailbox folders">
+        <Paper
+          ref={paperRef}
+          elevation={0}
+          sx={{
+            width: MENU_WIDTH,
+            background: 'transparent',
+          }}
+        >
+          <Box sx={{ pt: 2, pb: 1 }}>
+            <CreateNewButton />
+          </Box>
+          
+          <List
+            component="nav"
+            aria-labelledby="navigation-subheader"
+            sx={{
+              width: '100%',
+            }}
+          >
             {menuItems.map((item, index) => (
               <React.Fragment key={index}>
                 <ListItemButton
-                  onClick={() =>
-                    item.subItems ? handleMenuToggle(item.label) : item.onClick && item.onClick()
+                  onClick={
+                    item.subItems
+                      ? () => handleMenuToggle(item.label)
+                      : () => item.onClick && item.onClick()
                   }
                   onMouseEnter={() => handleMouseEnter(item.label)}
                   onMouseLeave={handleMouseLeave}
+                  data-menu-label={item.label}
                   sx={{
-                    color: 'menu.text',
-                    position: 'relative',
-                    pr: 7,
-                    backgroundColor:
-                      openMenu === item.label ? 'menu.backgroundHover' : 'transparent',
-                    '&:hover, &.Mui-selected': {
-                      backgroundColor: 'menu.backgroundHover',
-                      color: 'menu.textHover',
-                      '& .MuiListItemIcon-root': {
-                        color: 'menu.iconHover',
-                      },
-                      '& .MuiListItemText-primary': {
-                        fontWeight: 'bold',
-                      },
+                    '&:hover': {
+                      backgroundColor: hoverBgColor,
                     },
+                    backgroundColor: hoveredItem === item.label ? hoverBgColor : 'inherit',
                   }}
-                  selected={openMenu === item.label}
                 >
-                  <ListItemIcon
-                    sx={{
-                      color: 'menu.icon',
-                      minWidth: 40,
-                      '& .MuiSvgIcon-root': {
-                        color:
-                          openMenu === item.label || hoveredItem === item.label
-                            ? 'menu.iconHover'
-                            : 'menu.icon',
-                      },
-                    }}
-                  >
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={item.label}
-                    sx={{
-                      '& .MuiListItemText-primary': {
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        fontWeight:
-                          openMenu === item.label || hoveredItem === item.label ? 'bold' : 'normal',
-                      },
-                    }}
+                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemText 
+                    primary={item.label} 
+                    primaryTypographyProps={{ 
+                      sx: { 
+                        color: navyBlue, 
+                        fontWeight: openMenu === item.label ? 600 : 400 
+                      } 
+                    }} 
                   />
                   {item.subItems && (
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        right: 16,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        opacity: hoveredItem === item.label || openMenu === item.label ? 1 : 0,
-                        transition: 'opacity 0.2s',
-                        color:
-                          openMenu === item.label || hoveredItem === item.label
-                            ? 'menu.iconHover'
-                            : 'menu.icon',
-                      }}
-                    >
-                      {openMenu === item.label ? <ExpandLess /> : <ExpandMore />}
-                    </Box>
+                    openMenu === item.label ? 
+                    <ExpandLess sx={{ color: navyBlue }} /> : 
+                    <ExpandMore sx={{ color: navyBlue }} />
                   )}
                 </ListItemButton>
                 {item.subItems && renderSubMenu(item.subItems, item.label)}
               </React.Fragment>
             ))}
           </List>
-        </Box>
-      </Paper>
+        </Paper>
+      </Box>
       <Popover
         open={createOpen}
         anchorEl={createAnchorEl}
@@ -536,7 +513,7 @@ const MainListItems = ({
           paper: {
             sx: {
               marginTop: '70px',
-              marginLeft: '220px',
+              marginLeft: '260px', // Updated to match the new drawer width
               backgroundColor: '#ffffff', // Set the background to a solid color (white in this case)
               boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)', // Optional: Add a shadow for better visibility
               borderRadius: '8px', // Optional: Add rounded corners
@@ -561,10 +538,10 @@ const MainListItems = ({
                 onMouseLeave={() => setHoveredCreateOption(null)}
                 sx={{
                   py: 0.2,
-                  color: menuTheme.palette.menu.text,
+                  color: navyBlue,
                   '&:hover': {
-                    backgroundColor: menuTheme.palette.menu.backgroundHover,
-                    color: menuTheme.palette.menu.textHover,
+                    backgroundColor: hoverBgColor,
+                    color: navyBlue,
                   },
                 }}
               >
@@ -573,6 +550,7 @@ const MainListItems = ({
                   primaryTypographyProps={{
                     fontSize: '0.9rem',
                     fontWeight: hoveredCreateOption === option.value ? 'bold' : 'normal',
+                    color: navyBlue,
                   }}
                 />
               </ListItemButton>

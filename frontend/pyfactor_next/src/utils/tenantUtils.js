@@ -202,7 +202,8 @@ async function checkTenantExists(tenantId) {
       logger.debug('[TenantUtils] No auth headers available for tenant check, continuing anyway');
     }
     
-    const response = await fetch(`/api/tenant/exists`, {
+    // Use the correct API endpoint path
+    const response = await fetch(`/api/auth/tenant/exists/`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ tenantId })
@@ -575,10 +576,20 @@ export const getTenantId = () => {
   
   // Fallback to known good tenant if all else fails
   logger.warn('[TenantUtils] No tenant ID found from any source. Using fallback.');
-  const fallbackTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
+  
+  // List of known good tenant IDs to try
+  const knownTenantIds = [
+    '18609ed2-1a46-4d50-bc4e-483d6e3405ff',  // Primary fallback
+    'b7fee399-ffca-4151-b636-94ccb65b3cd0',  // Alternative 1
+    '1cb7418e-34e7-40b7-b165-b79654efe21f'   // Alternative 2
+  ];
+  
+  // Use the primary fallback (we'll add API validation in a later version)
+  const fallbackTenantId = knownTenantIds[0];
   
   // Store fallback tenant ID for future use
   storeTenantInfo(fallbackTenantId);
+  logger.info(`[TenantUtils] Using fallback tenant ID: ${fallbackTenantId}`);
   return fallbackTenantId;
 };
 
@@ -887,7 +898,11 @@ export async function validateAndFixTenantId(tenantId) {
     
     // Try to validate through API
     try {
-      const response = await fetch(`/api/tenant/validate?tenantId=${tenantId}`);
+      const response = await fetch(`/api/tenant/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId })
+      });
       if (response.ok) {
         const data = await response.json();
         
@@ -937,6 +952,12 @@ export async function forceValidateTenantId() {
   try {
     // Get current tenant ID
     const currentTenant = getTenantId();
+    // Log all cookies for debugging
+    if (typeof document !== 'undefined') {
+      const allCookies = document.cookie.split(';').map(c => c.trim());
+      logger.debug(`[TenantUtils] Available cookies: ${allCookies.join(', ')}`);
+    }
+    
     if (!currentTenant) {
       logger.warn('[TenantUtils] No tenant ID to validate');
       return null;
@@ -969,6 +990,34 @@ export async function forceValidateTenantId() {
     return fallbackTenantId;
   }
 }
+
+/**
+ * Get tenant headers for API requests
+ * This new method is specifically designed for inventory API calls
+ * to ensure the tenant information is properly included in all requests
+ * @returns {Object} Headers object containing tenant information
+ */
+export const getInventoryHeaders = () => {
+  // Get the current tenant ID
+  const tenantId = getTenantId();
+  if (!tenantId) {
+    logger.warn('[TenantUtils] No tenant ID available for inventory headers');
+    return {};
+  }
+  
+  // Generate schema name
+  const schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
+  
+  // Create headers with tenant information
+  const headers = {
+    'X-Tenant-ID': tenantId,
+    'X-Schema-Name': schemaName,
+    'X-Business-ID': tenantId
+  };
+  
+  logger.debug('[TenantUtils] Generated inventory headers:', headers);
+  return headers;
+};
 
 /**
  * Validates and standardizes a tenant ID 

@@ -26,7 +26,20 @@ const LoadingComponent = () => null;
 const theme = createTheme({
   palette: {
     primary: { main: '#b3e5fc' }, // Navy blue color
-    secondary: { main: '#81d4fa' } // Light blue color
+    secondary: { main: '#81d4fa' }, // Light blue color
+    background: {
+      default: '#ffffff', // Pure white background
+      paper: '#ffffff',   // White paper elements
+    },
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          backgroundColor: '#ffffff', // Ensure body background is also white
+        },
+      },
+    },
   },
 });
 
@@ -66,6 +79,11 @@ function DashboardContent() {
     showInventoryItems: false, // Added for inventory items
     showInventoryManagement: false, // Added for inventory management
     
+    // HR section visibility
+    showHRDashboard: false,
+    showEmployeeManagement: false,
+    hrSection: 'dashboard',
+    
     // Form visibility
     showForm: false,
     formOption: null,
@@ -77,7 +95,8 @@ function DashboardContent() {
     selectedOption, selectedReport, selectedInvoiceId, selectedCustomer,
     selectedInvoice, selectedCustomerId, selectedAnalysis, selectedSettingsOption,
     products, services, showKPIDashboard, showMainDashboard, showHome,
-    showInventoryItems, showInventoryManagement, showForm, formOption
+    showInventoryItems, showInventoryManagement, showForm, formOption,
+    showHRDashboard, showEmployeeManagement, hrSection
   } = uiState;
   
   // Computed values
@@ -117,12 +136,15 @@ function DashboardContent() {
       // Keep other state values
       anchorEl: null,
       settingsAnchorEl: null,
+      showHRDashboard: false,
+      showEmployeeManagement: false,
+      hrSection: 'dashboard',
     };
     
     updateState(resetState);
   }, [updateState]);
 
-  const drawerWidth = 220; // Match the width in Drawer.jsx
+  const drawerWidth = 260; // Match the increased width in Drawer.jsx
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -259,6 +281,56 @@ function DashboardContent() {
     }
   }, [resetAllStates, updateState]);
 
+  // Add HR click handler
+  const handleHRClick = useCallback((value) => {
+    resetAllStates();
+    console.log('HR option selected:', value);
+    
+    switch(value) {
+      case 'dashboard':
+        updateState({ 
+          showHRDashboard: true,
+          hrSection: 'dashboard'
+        });
+        break;
+      case 'employees':
+        updateState({ 
+          showEmployeeManagement: true,
+          hrSection: 'employees'
+        });
+        break;
+      case 'timesheets':
+        updateState({ 
+          showHRDashboard: true,
+          hrSection: 'timesheets'
+        });
+        break;
+      case 'taxes':
+        updateState({ 
+          showHRDashboard: true,
+          hrSection: 'taxes'
+        });
+        break;
+      case 'benefits':
+        updateState({ 
+          showHRDashboard: true,
+          hrSection: 'benefits'
+        });
+        break;
+      case 'reports':
+        updateState({ 
+          showHRDashboard: true,
+          hrSection: 'reports'
+        });
+        break;
+      default:
+        updateState({ 
+          showHRDashboard: true,
+          hrSection: 'dashboard'
+        });
+    }
+  }, [resetAllStates, updateState]);
+
   // Handler for Transport options
   const handleTransportClick = useCallback((value) => {
     resetAllStates();
@@ -302,15 +374,15 @@ function DashboardContent() {
     // Implement navigation or state changes based on the selected inventory option
     console.log('Inventory option selected:', value);
     
+    // For the products view, redirect to our new unified inventory page
+    if (value === 'items') {
+      window.location.href = '/inventory';
+      return;
+    }
+    
     switch(value) {
       case 'inventorydashboard':
         updateState({ view: 'inventory-dashboard' });
-        break;
-      case 'items':
-        updateState({
-          view: 'inventory-items',
-          showInventoryItems: true
-        });
         break;
       case 'stock-adjustments':
         updateState({ view: 'inventory-stock-adjustments' });
@@ -344,6 +416,23 @@ function DashboardContent() {
     logger.debug(`Selected create option: ${option}`);
   }, [resetAllStates, setShowForm, setFormOption]);
 
+  // Handler for Analysis options
+  const handleAnalysisClick = useCallback((value) => {
+    resetAllStates();
+    console.log('Analysis option selected:', value);
+    
+    switch(value) {
+      case 'kpi-data':
+        updateState({ view: 'analytics-dashboard' });
+        break;
+      case 'ai-query':
+        updateState({ view: 'ai-query' });
+        break;
+      default:
+        updateState({ view: 'analytics-dashboard' });
+    }
+  }, [resetAllStates, updateState]);
+
   // Load user data on mount
   useEffect(() => {
     fetchUserData();
@@ -368,6 +457,7 @@ function DashboardContent() {
             settingsMenuOpen={settingsMenuOpen}
             handleSettingsClick={setSettingsAnchorEl}
             handleSettingsClose={() => setSettingsAnchorEl(null)}
+            handleHomeClick={handleHomeClick}
           />
           
           <Drawer
@@ -382,9 +472,9 @@ function DashboardContent() {
             handleShowTransactionForm={() => {}}
             handleReportClick={() => {}}
             handleBankingClick={() => {}}
-            handleHRClick={() => {}}
+            handleHRClick={handleHRClick}
             handlePayrollClick={() => {}}
-            handleAnalysisClick={() => {}}
+            handleAnalysisClick={handleAnalysisClick}
             showCustomerList={false}
             setShowCustomerList={() => {}}
             handleCreateCustomer={() => {}}
@@ -399,13 +489,32 @@ function DashboardContent() {
           <Box
             component="main"
             sx={{
-              marginLeft: drawerOpen ? `${drawerWidth}px` : '0px',
-              width: drawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%',
+              marginLeft: drawerOpen ? { xs: '0', sm: `${drawerWidth}px` } : '0px',
+              width: drawerOpen ? { xs: '100%', sm: `calc(100% - ${drawerWidth}px)` } : '100%',
               transition: 'margin-left 0.3s ease, width 0.3s ease',
-              padding: 0, // No padding
-              paddingTop: '66px',
+              padding: { xs: '1rem', sm: '1.5rem' },
+              paddingTop: { xs: '80px', sm: '86px' },
               height: '100vh',
               overflow: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-start',
+              maxWidth: '100vw',
+              boxSizing: 'border-box',
+              overflowX: 'hidden',
+              backgroundColor: 'background.default', // Ensure consistent background color
+              position: 'relative',
+              // Remove any overlay/backdrop that might be causing the dark shade
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'transparent', // Ensure no overlay
+                zIndex: -1,
+              },
             }}
           >
             <Suspense fallback={<LoadingComponent />}>
@@ -421,6 +530,10 @@ function DashboardContent() {
                     showInventoryItems={showInventoryItems}
                     showInventoryManagement={showInventoryManagement}
                     userData={userData}
+                    showHRDashboard={showHRDashboard}
+                    hrSection={hrSection}
+                    showEmployeeManagement={showEmployeeManagement}
+                    view={view}
                   />
                 )
               )}

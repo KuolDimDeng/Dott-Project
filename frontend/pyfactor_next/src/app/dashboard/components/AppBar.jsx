@@ -20,7 +20,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PersonIcon from '@mui/icons-material/Person';
 import Image from 'next/image';
-import logoPath from '/public/static/images/Pyfactor.png';
+import logoPath from '/public/static/images/PyfactorDashboard.png';
 import SettingsMenu from './components/SettingsMenu';
 import HomeIcon from '@mui/icons-material/Home';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -56,6 +56,7 @@ const AppBar = ({
   handleTermsClick,
   mainBackground,
   textAppColor,
+  handleHomeClick,
 }) => {
   // Generate initials from the first and last name
   const getInitials = (name) => {
@@ -148,16 +149,17 @@ const AppBar = ({
           alignItems: 'center',
           height: '60px',
           minHeight: '60px',
-          paddingLeft: '8px',
+          paddingLeft: { xs: '4px', sm: '8px' },
+          paddingRight: { xs: '4px', sm: '8px' },
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
           <Image
             src={logoPath}
             alt="PyFactor Logo"
-            width={90}
-            height={80}
-            style={{ marginLeft: '-20px' }}
+            width={100}
+            height={40}
+            style={{ marginLeft: '-10px', objectFit: 'contain' }}
           />
         </Box>
 
@@ -166,14 +168,15 @@ const AppBar = ({
             <Paper
               elevation={0}
               sx={{
-                mr: 2,
-                pl: 1.5,
-                pr: 0.5,
+                mr: { xs: 0.5, sm: 2 },
+                pl: { xs: 1, sm: 1.5 },
+                pr: { xs: 0.5, sm: 0.5 },
                 py: 0.5,
                 ml: -0.5,
                 backgroundColor: 'rgba(255, 255, 255, 0.15)',
                 border: '1px solid rgba(255, 255, 255, 0.3)',
                 borderRadius: '5px',
+                display: { xs: 'none', md: 'block' }, // Hide on small screens
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -227,9 +230,30 @@ const AppBar = ({
               Connected to Shopify
             </Typography>
           )}
+          <Tooltip title="Home">
+            <IconButton
+              sx={{ 
+                display: { xs: 'none', sm: 'flex' }, // Hide on mobile 
+                alignItems: 'center', 
+                height: '100%', 
+                color: '#ffffff', 
+                mr: 1 
+              }}
+              onClick={handleHomeClick}
+            >
+              <HomeIcon />
+            </IconButton>
+          </Tooltip>
+          
           <Tooltip title="Open and close menu">
             <IconButton
-              sx={{ display: 'flex', alignItems: 'center', height: '100%', color: '#ffffff' }}
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                height: '100%', 
+                color: '#ffffff',
+                mr: { xs: 0.5, sm: 1 }
+              }}
               aria-label="open drawer"
               edge="start"
               onClick={handleDrawerToggle}
@@ -238,7 +262,7 @@ const AppBar = ({
             </IconButton>
           </Tooltip>
 
-          <Box sx={{ mr: 1 }}>
+          <Box sx={{ mr: { xs: 0.5, sm: 1 }, display: { xs: 'none', sm: 'block' } }}>
             <DashboardLanguageSelector />
           </Box>
           

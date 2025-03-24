@@ -24,6 +24,13 @@ import {
   Alert,
   Snackbar,
   useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Chip,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { countries } from 'countries-list';
@@ -34,8 +41,11 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import SecurityIcon from '@mui/icons-material/Security';
 import { axiosInstance } from '@/lib/axiosConfig';
-import { format, parseISO } from 'date-fns'; // Add this import
+import { format, parseISO } from 'date-fns';
+import EmployeePermissions from './EmployeePermissions';
 
 const EmployeeManagement = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -45,6 +55,8 @@ const EmployeeManagement = () => {
   const [payrollProgress, setPayrollProgress] = useState(10);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const theme = useTheme();
+  const [openDialog, setOpenDialog] = useState(false);
+  const [openPermissionsDialog, setOpenPermissionsDialog] = useState(false);
 
   const [newEmployee, setNewEmployee] = useState({
     first_name: '',
@@ -69,6 +81,9 @@ const EmployeeManagement = () => {
     direct_deposit: false,
     department: '',
     job_title: '',
+    role: '',
+    phone_number: '',
+    address: '',
   });
 
   const countryList = Object.entries(countries).map(([code, country]) => ({
@@ -196,6 +211,9 @@ const EmployeeManagement = () => {
         direct_deposit: false,
         department: '',
         job_title: '',
+        role: '',
+        phone_number: '',
+        address: '',
       });
     } catch (error) {
       console.error('Error creating employee:', error);
@@ -227,7 +245,7 @@ const EmployeeManagement = () => {
   };
 
   const validateForm = () => {
-    const requiredFields = ['first_name', 'last_name', 'email', 'dob', 'date_joined', 'email'];
+    const requiredFields = ['first_name', 'last_name', 'email', 'dob', 'date_joined', 'role'];
     const missingFields = requiredFields.filter((field) => !newEmployee[field]);
     if (missingFields.length > 0) {
       setSnackbar({
@@ -238,6 +256,139 @@ const EmployeeManagement = () => {
       return false;
     }
     return true;
+  };
+
+  const handleOpenDialog = (employee = null) => {
+    if (employee) {
+      setSelectedEmployee(employee);
+      setNewEmployee(employee);
+    } else {
+      setSelectedEmployee(null);
+      setNewEmployee({
+        first_name: '',
+        middle_name: '',
+        last_name: '',
+        dob: null,
+        gender: '',
+        marital_status: '',
+        nationality: '',
+        street: '',
+        postcode: '',
+        city: '',
+        country: '',
+        email: '',
+        security_number_type: 'SSN',
+        security_number: '',
+        invite_to_onboard: false,
+        date_joined: null,
+        wage_type: 'salary',
+        salary: '',
+        wage_rate: '',
+        direct_deposit: false,
+        department: '',
+        job_title: '',
+        role: '',
+        phone_number: '',
+        address: '',
+      });
+    }
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedEmployee(null);
+  };
+
+  const handleOpenPermissionsDialog = (employee) => {
+    setSelectedEmployee(employee);
+    setOpenPermissionsDialog(true);
+  };
+
+  const handleClosePermissionsDialog = () => {
+    setOpenPermissionsDialog(false);
+    setSelectedEmployee(null);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
+    setSnackbar({ open: false, message: '', severity: 'success' });
+    try {
+      const formattedEmployee = {
+        ...newEmployee,
+        dob: formatDate(newEmployee.dob),
+        date_joined: formatDate(newEmployee.date_joined),
+      };
+
+      console.log('Sending employee data:', formattedEmployee);
+      const response = await axiosInstance.post('/api/hr/employees/create/', formattedEmployee);
+      console.log('Employee created:', response.data);
+
+      fetchEmployees();
+      setActiveTab(2);
+      setPayrollProgress(20); // Increase progress when employee is added
+      setSnackbar({ open: true, message: 'Employee created successfully', severity: 'success' });
+
+      // Reset the form
+      setNewEmployee({
+        first_name: '',
+        middle_name: '',
+        last_name: '',
+        email: '',
+        dob: null,
+        gender: '',
+        marital_status: '',
+        nationality: '',
+        street: '',
+        postcode: '',
+        city: '',
+        country: '',
+        security_number_type: 'SSN',
+        security_number: '',
+        invite_to_onboard: false,
+        date_joined: null,
+        wage_type: 'salary',
+        salary: '',
+        wage_rate: '',
+        direct_deposit: false,
+        department: '',
+        job_title: '',
+        role: '',
+        phone_number: '',
+        address: '',
+      });
+    } catch (error) {
+      console.error('Error creating employee:', error);
+      let errorMessage = 'Failed to create employee. Please try again.';
+      if (error.response && error.response.data) {
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        } else if (typeof error.response.data === 'object') {
+          errorMessage = Object.entries(error.response.data)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join(', ');
+        }
+      }
+      setSnackbar({ open: true, message: errorMessage, severity: 'error' });
+    }
+  };
+
+  const handleDelete = async (employeeId) => {
+    if (window.confirm('Are you sure you want to delete this employee?')) {
+      try {
+        const response = await axiosInstance.delete(`/api/hr/employees/${employeeId}/`);
+        if (response.ok) {
+          fetchEmployees();
+        } else {
+          console.error('Error deleting employee:', await response.json());
+        }
+      } catch (error) {
+        console.error('Error deleting employee:', error);
+      }
+    }
   };
 
   return (
@@ -602,11 +753,10 @@ const EmployeeManagement = () => {
                         label="Email"
                         name="email"
                         type="email"
-                        value={newEmployee.email}
+                        value={selectedEmployee.email}
                         onChange={handleInputChange}
                         fullWidth
                         margin="normal"
-                        required
                       />
                       <TextField
                         label="Gender"
@@ -738,7 +888,10 @@ const EmployeeManagement = () => {
                           <IconButton onClick={() => handleEmployeeSelect(employee)}>
                             <EditIcon />
                           </IconButton>
-                          <IconButton>
+                          <IconButton onClick={() => handleOpenPermissionsDialog(employee)}>
+                            <SecurityIcon />
+                          </IconButton>
+                          <IconButton onClick={() => handleDelete(employee.id)}>
                             <DeleteIcon />
                           </IconButton>
                         </TableCell>
@@ -763,6 +916,131 @@ const EmployeeManagement = () => {
           </Alert>
         </Snackbar>
       </Box>
+
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+        <DialogTitle>
+          {selectedEmployee ? 'Edit Employee' : 'Add New Employee'}
+        </DialogTitle>
+        <DialogContent>
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="First Name"
+                  name="first_name"
+                  value={newEmployee.first_name}
+                  onChange={handleInputChange}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Last Name"
+                  name="last_name"
+                  value={newEmployee.last_name}
+                  onChange={handleInputChange}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  name="email"
+                  type="email"
+                  value={newEmployee.email}
+                  onChange={handleInputChange}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth required>
+                  <InputLabel>Role</InputLabel>
+                  <Select
+                    name="role"
+                    value={newEmployee.role}
+                    onChange={handleInputChange}
+                    label="Role"
+                  >
+                    <MenuItem value="ADMIN">Admin</MenuItem>
+                    <MenuItem value="EMPLOYEE">Employee</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Department"
+                  name="department"
+                  value={newEmployee.department}
+                  onChange={handleInputChange}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Phone Number"
+                  name="phone_number"
+                  value={newEmployee.phone_number}
+                  onChange={handleInputChange}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Address"
+                  name="address"
+                  value={newEmployee.address}
+                  onChange={handleInputChange}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  label="City"
+                  name="city"
+                  value={newEmployee.city}
+                  onChange={handleInputChange}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  label="Country"
+                  name="country"
+                  value={newEmployee.country}
+                  onChange={handleInputChange}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  label="Postcode"
+                  name="postcode"
+                  value={newEmployee.postcode}
+                  onChange={handleInputChange}
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button onClick={handleSubmit} variant="contained" color="primary">
+            {selectedEmployee ? 'Update' : 'Add'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {selectedEmployee && (
+        <EmployeePermissions
+          employee={selectedEmployee}
+          open={openPermissionsDialog}
+          onClose={handleClosePermissionsDialog}
+        />
+      )}
     </LocalizationProvider>
   );
 };

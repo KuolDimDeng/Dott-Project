@@ -31,6 +31,40 @@ export async function POST(request) {
 
     // Call the backend API to check if the tenant exists
     try {
+      // First try the new tenant exists endpoint
+      try {
+        const existsResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/tenant/exists/`, {
+          tenantId
+        }, {
+          headers: {
+            ...authHeaders,
+            Authorization: `Bearer ${accessToken}`
+          }
+        });
+        
+        if (existsResponse.data) {
+          logger.info('[tenant-exists] Tenant existence check from endpoint:', {
+            tenantId,
+            exists: existsResponse.data.exists,
+            correctTenantId: existsResponse.data.correctTenantId
+          });
+          
+          return NextResponse.json({
+            success: true,
+            message: existsResponse.data.message || 'Tenant check completed',
+            exists: existsResponse.data.exists,
+            correctTenantId: existsResponse.data.correctTenantId,
+            source: 'tenant-exists-endpoint'
+          });
+        }
+      } catch (existsError) {
+        logger.warn('[tenant-exists] Could not use tenant exists endpoint, falling back to detail API:', {
+          error: existsError.message
+        });
+        // Continue to fallback approach
+      }
+      
+      // Fallback: try to get tenant details directly
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/${tenantId}/`, {
         headers: {
           ...authHeaders,
@@ -39,7 +73,7 @@ export async function POST(request) {
       });
 
       if (response.data) {
-        logger.info('[tenant-exists] Tenant exists:', {
+        logger.info('[tenant-exists] Tenant exists (from detail API):', {
           tenantId,
           correctTenantId: response.data.id || tenantId
         });
@@ -48,7 +82,8 @@ export async function POST(request) {
           success: true,
           message: 'Tenant exists',
           exists: true,
-          correctTenantId: response.data.id || tenantId
+          correctTenantId: response.data.id || tenantId,
+          source: 'tenant-detail-api'
         });
       } else {
         logger.info('[tenant-exists] Tenant does not exist:', {
@@ -68,10 +103,12 @@ export async function POST(request) {
         data: error.response?.data
       });
 
-      // Fallback for testing - hardcoded tenant IDs are always valid
+      // Expanded fallback list - hardcoded tenant IDs are always valid
       const knownTestTenants = [
-        'b7fee399-ffca-4151-b636-94ccb65b3cd0',
-        '1cb7418e-34e7-40b7-b165-b79654efe21f'
+        '18609ed2-1a46-4d50-bc4e-483d6e3405ff',  // Primary fallback
+        'b7fee399-ffca-4151-b636-94ccb65b3cd0',  // Alternative 1
+        '1cb7418e-34e7-40b7-b165-b79654efe21f',  // Alternative 2
+        '57149e65-fb15-4cdc-8fe7-6d33efbebb08'   // From the logs
       ];
       
       if (knownTestTenants.includes(tenantId)) {

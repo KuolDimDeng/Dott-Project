@@ -7,6 +7,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from phonenumber_field.modelfields import PhoneNumberField
 from decimal import Decimal
 from django.conf import settings
+from django.contrib.auth.models import AbstractUser
 
 
 def get_current_datetime():
@@ -15,7 +16,25 @@ def get_current_datetime():
 def default_due_datetime():
     return get_current_datetime() + datetime.timedelta(days=30)
 
-class Employee(models.Model):
+class Employee(AbstractUser):
+    # Add related_name arguments to fix reverse accessor clashes
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to.',
+        related_name='employee_set',
+        related_query_name='employee'
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name='employee_set',
+        related_query_name='employee'
+    )
+
     EMPLOYMENT_TYPE_CHOICES = [
         ('FT', 'Full-time'),
         ('PT', 'Part-time'),
@@ -91,8 +110,11 @@ class Employee(models.Model):
     date_joined = models.DateField(default=get_current_datetime)
     last_work_date = models.DateField(null=True, blank=True)
     active = models.BooleanField(default=True)
-    role = models.CharField(max_length=100, blank=True, null=True)
-    site_access_privileges = models.TextField(blank=True, null=True)
+    role = models.CharField(max_length=20, choices=[
+        ('ADMIN', 'Administrator'),
+        ('EMPLOYEE', 'Employee')
+    ], default='EMPLOYEE')
+    site_access_privileges = models.JSONField(default=list)
     email = models.EmailField(unique=True, blank=False, null=False, default='')
     phone_number = PhoneNumberField(null=True, blank=True)
     department = models.CharField(max_length=100, null=True, blank=True)
@@ -156,6 +178,7 @@ class Employee(models.Model):
     #         blank=True
     #     )
     business_id = models.UUIDField(null=True, blank=True)  # Store the UUID of the business
+    password_setup_token = models.CharField(max_length=100, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.employee_number:

@@ -15,6 +15,9 @@ from .serializers import (
 )
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from django.core.mail import send_mail
+from django.conf import settings
+import uuid
 
 from pyfactor.logging_config import get_logger
 
@@ -23,150 +26,148 @@ logger = get_logger()
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def employee_list(request):
-    query = request.GET.get('q', '')
-    employees = Employee.objects.filter(
-        Q(first_name__icontains=query) | 
-        Q(last_name__icontains=query) | 
-        Q(employee_number__icontains=query)
-    )
+    """Get list of employees with role-based filtering"""
+    user_role = request.user.role
+    if user_role == 'ADMIN':
+        employees = Employee.objects.all()
+    else:
+        employees = Employee.objects.filter(business_id=request.user.business_id)
+    
     serializer = EmployeeSerializer(employees, many=True)
     return Response(serializer.data)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_employee(request):
-    logger.info(f"Received employee data: {request.data}")
-    
-    # Get sensitive data before passing to serializer
-    security_number = request.data.pop('security_number', None)
-    bank_account_number = request.data.pop('bank_account_number', None)
-    routing_number = request.data.pop('routing_number', None)
-    
-    serializer = EmployeeSerializer(data=request.data, context={'request': request})
+    """Create a new employee and send invitation email"""
+    if request.user.role != 'ADMIN':
+        return Response(
+            {"error": "Only administrators can create employees"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    serializer = EmployeeSerializer(data=request.data)
     if serializer.is_valid():
+        employee = serializer.save()
+        
+        # Generate a unique token for password setup
+        token = str(uuid.uuid4())
+        employee.password_setup_token = token
+        employee.save()
+
+        # Send invitation email
+        subject = 'Welcome to Our Platform - Set Up Your Account'
+        message = f"""
+        Hello {employee.first_name},
+
+        You have been invited to join our platform. Please click the link below to set up your account:
+
+        {settings.FRONTEND_URL}/setup-password?token={token}
+
+        Best regards,
+        Your Team
+        """
+        
         try:
-            employee = serializer.save()
-            
-            # Handle sensitive data with Stripe Connect
-            if security_number:
-                try:
-                    employee.save_ssn_to_stripe(security_number)
-                    logger.info(f"SSN stored in Stripe for employee: {employee.id}")
-                except Exception as e:
-                    logger.error(f"Error storing SSN in Stripe: {str(e)}")
-                    # Continue processing - we don't want to fail the entire creation
-            
-            if bank_account_number and routing_number:
-                try:
-                    employee.save_bank_account_to_stripe(bank_account_number, routing_number)
-                    logger.info(f"Bank account stored in Stripe for employee: {employee.id}")
-                except Exception as e:
-                    logger.error(f"Error storing bank account in Stripe: {str(e)}")
-            
-            logger.info(f"Employee created successfully: {employee}")
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [employee.email],
+                fail_silently=False,
+            )
         except Exception as e:
-            logger.error(f"Error creating employee: {str(e)}")
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    logger.error(f"Invalid data: {serializer.errors}")
+            # Log the error but don't fail the request
+            print(f"Error sending email: {str(e)}")
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def employee_detail(request, pk):
+    """Get, update or delete an employee"""
     employee = get_object_or_404(Employee, pk=pk)
+    
+    # Check permissions
+    if request.user.role != 'ADMIN' and request.user.business_id != employee.business_id:
+        return Response(
+            {"error": "You don't have permission to access this employee"},
+            status=status.HTTP_403_FORBIDDEN
+        )
 
     if request.method == 'GET':
         serializer = EmployeeSerializer(employee)
         return Response(serializer.data)
 
     elif request.method == 'PUT':
-        # Get sensitive data before passing to serializer
-        security_number = request.data.pop('security_number', None)
-        bank_account_number = request.data.pop('bank_account_number', None)
-        routing_number = request.data.pop('routing_number', None)
-        
         serializer = EmployeeSerializer(employee, data=request.data, partial=True)
         if serializer.is_valid():
-            updated_employee = serializer.save()
-            
-            # Update sensitive data in Stripe if provided
-            if security_number:
-                try:
-                    updated_employee.save_ssn_to_stripe(security_number)
-                    logger.info(f"SSN updated in Stripe for employee: {updated_employee.id}")
-                except Exception as e:
-                    logger.error(f"Error updating SSN in Stripe: {str(e)}")
-            
-            if bank_account_number and routing_number:
-                try:
-                    updated_employee.save_bank_account_to_stripe(bank_account_number, routing_number)
-                    logger.info(f"Bank account updated in Stripe for employee: {updated_employee.id}")
-                except Exception as e:
-                    logger.error(f"Error updating bank account in Stripe: {str(e)}")
-            
+            serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == 'DELETE':
-        # You might want to add code to delete the Stripe person record as well
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Only administrators can delete employees"},
+                status=status.HTTP_403_FORBIDDEN
+            )
         employee.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-@api_view(['PUT'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def update_employee(request, pk):
-    employee = get_object_or_404(Employee, pk=pk)
-    
-    # Get sensitive data before passing to serializer
-    security_number = request.data.pop('security_number', None)
-    bank_account_number = request.data.pop('bank_account_number', None)
-    routing_number = request.data.pop('routing_number', None)
-    
-    serializer = EmployeeSerializer(employee, data=request.data, partial=True)
-    if serializer.is_valid():
-        updated_employee = serializer.save()
-        
-        # Update sensitive data in Stripe if provided
-        if security_number:
-            try:
-                updated_employee.save_ssn_to_stripe(security_number)
-                logger.info(f"SSN updated in Stripe for employee: {updated_employee.id}")
-            except Exception as e:
-                logger.error(f"Error updating SSN in Stripe: {str(e)}")
-        
-        if bank_account_number and routing_number:
-            try:
-                updated_employee.save_bank_account_to_stripe(bank_account_number, routing_number)
-                logger.info(f"Bank account updated in Stripe for employee: {updated_employee.id}")
-            except Exception as e:
-                logger.error(f"Error updating bank account in Stripe: {str(e)}")
-        
-        logger.info(f"Employee updated successfully. Employee ID: {employee.id}")
-        return Response(serializer.data)
-    logger.error(f"Employee update failed. Errors: {serializer.errors}")
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+def set_employee_permissions(request, pk):
+    """Set menu access permissions for an employee"""
+    if request.user.role != 'ADMIN':
+        return Response(
+            {"error": "Only administrators can set permissions"},
+            status=status.HTTP_403_FORBIDDEN
+        )
 
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
-def delete_employee(request, pk):
     employee = get_object_or_404(Employee, pk=pk)
+    permissions = request.data.get('permissions', [])
     
-    # Optionally delete the Stripe person record if it exists
-    if employee.stripe_person_id and employee.stripe_account_id:
-        try:
-            import stripe
-            stripe.Account.delete_person(
-                employee.stripe_account_id,
-                employee.stripe_person_id
-            )
-            logger.info(f"Deleted Stripe person record for employee: {pk}")
-        except Exception as e:
-            logger.error(f"Error deleting Stripe person record: {str(e)}")
+    # Update employee's access privileges
+    employee.site_access_privileges = permissions
+    employee.save()
     
-    employee.delete()
-    logger.info(f"Employee deleted successfully. Employee ID: {pk}")
-    return Response(status=status.HTTP_204_NO_CONTENT)
+    return Response({"message": "Permissions updated successfully"})
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_available_permissions(request):
+    """Get list of available menu options for permission setting"""
+    menu_options = [
+        {'id': 'hr', 'name': 'HR Management'},
+        {'id': 'inventory', 'name': 'Inventory'},
+        {'id': 'sales', 'name': 'Sales'},
+        {'id': 'purchases', 'name': 'Purchases'},
+        {'id': 'accounting', 'name': 'Accounting'},
+        {'id': 'reports', 'name': 'Reports'},
+        {'id': 'settings', 'name': 'Settings'},
+    ]
+    return Response(menu_options)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def setup_employee_password(request):
+    """Handle employee password setup"""
+    token = request.data.get('token')
+    password = request.data.get('password')
+    
+    try:
+        employee = Employee.objects.get(password_setup_token=token)
+        employee.set_password(password)
+        employee.password_setup_token = None
+        employee.save()
+        return Response({"message": "Password set successfully"})
+    except Employee.DoesNotExist:
+        return Response(
+            {"error": "Invalid or expired token"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
