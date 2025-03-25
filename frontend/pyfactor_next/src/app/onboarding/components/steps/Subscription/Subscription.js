@@ -161,7 +161,68 @@ export function Subscription() {
 
       // If free plan, no payment needed
       if (normalizedPlanId === 'free') {
-        // ... existing code ...
+        // Set loading/status message
+        setError('Setting up free plan...');
+        
+        try {
+          // Store in sessionStorage with consistent property names
+          sessionStorage.setItem(
+            'pendingSubscription',
+            JSON.stringify({
+              plan: normalizedPlanId,
+              billing_interval: billingInterval,
+              interval: billingInterval,
+              timestamp: new Date().toISOString()
+            })
+          );
+          
+          // Submit to API
+          const response = await fetch('/api/onboarding/subscription/save', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              plan: normalizedPlanId,
+              interval: billingInterval,
+            }),
+          });
+          
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to save subscription');
+          }
+          
+          logger.debug('[Subscription] Free plan setup successful:', data);
+          
+          // Set pending schema setup in sessionStorage for the dashboard to pick up
+          sessionStorage.setItem('pendingSchemaSetup', JSON.stringify({
+            plan: 'free',
+            timestamp: new Date().toISOString(),
+            source: 'subscription_page'
+          }));
+          
+          // Update Cognito attributes via the API
+          await updateUserAttributes({
+            userAttributes: {
+              'custom:subplan': 'free',
+              'custom:onboarding': 'SUBSCRIPTION'
+            }
+          });
+          
+          // Set success message
+          setError('Redirecting to dashboard...');
+          
+          // Redirect to dashboard
+          setTimeout(() => {
+            router.push('/dashboard');
+          }, 1000);
+        } catch (e) {
+          logger.error('[Subscription] Free plan setup failed:', e);
+          setError(`Failed to set up free plan: ${e.message}`);
+          setIsSubmitting(false);
+        }
       } else {
         // For paid plans (Professional, Enterprise)
         logger.debug('[Subscription] Setting up paid plan:', {

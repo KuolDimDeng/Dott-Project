@@ -88,6 +88,10 @@ function DashboardContent({ setupStatus, customContent }) {
     // Form visibility
     showForm: false,
     formOption: null,
+    
+    // User menu options visibility
+    showMyAccount: false,
+    showHelpCenter: false,
   });
   
   // Destructure state for easier access
@@ -97,7 +101,7 @@ function DashboardContent({ setupStatus, customContent }) {
     selectedInvoice, selectedCustomerId, selectedAnalysis, selectedSettingsOption,
     products, services, showKPIDashboard, showMainDashboard, showHome,
     showInventoryItems, showInventoryManagement, showForm, formOption,
-    showHRDashboard, showEmployeeManagement, hrSection
+    showHRDashboard, showEmployeeManagement, hrSection, showMyAccount, showHelpCenter
   } = uiState;
   
   // Computed values
@@ -120,6 +124,9 @@ function DashboardContent({ setupStatus, customContent }) {
   const setShowHome = useCallback((value) => updateState({ showHome: value }), [updateState]);
   const setShowForm = useCallback((value) => updateState({ showForm: value }), [updateState]);
   const setFormOption = useCallback((value) => updateState({ formOption: value }), [updateState]);
+  const setShowMyAccount = useCallback((value) => updateState({ showMyAccount: value }), [updateState]);
+  const setShowHelpCenter = useCallback((value) => updateState({ showHelpCenter: value }), [updateState]);
+  const setSelectedSettingsOption = useCallback((value) => updateState({ selectedSettingsOption: value }), [updateState]);
   
   const router = useRouter();
 
@@ -140,6 +147,8 @@ function DashboardContent({ setupStatus, customContent }) {
       showHRDashboard: false,
       showEmployeeManagement: false,
       hrSection: 'dashboard',
+      showMyAccount: false,
+      showHelpCenter: false,
     };
     
     updateState(resetState);
@@ -149,91 +158,121 @@ function DashboardContent({ setupStatus, customContent }) {
 
   const fetchUserData = useCallback(async () => {
     try {
-      // Check if we have pending schema setup
-      const pendingSetupStr = sessionStorage.getItem('pendingSchemaSetup');
-      const isPendingSetup = !!pendingSetupStr;
-      
-      // Get user data
-      const currentUser = await getCurrentUser();
-      const attributes = await fetchUserAttributes();
-      
-      logger.debug('Dashboard User data:', { currentUser, attributes });
-      
-      // Get subscription plan and normalize it
-      // Check multiple possible sources with fallbacks
-      const cognitoSubplan = attributes['custom:subplan'];
-      const profileSubscription = attributes.subscription_plan;
-      const cookieSubscription = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('subscriptionPlan='))
-        ?.split('=')[1];
+      // Check for authentication first to handle sign-out cases properly
+      try {
+        // Check if we have pending schema setup
+        const pendingSetupStr = sessionStorage.getItem('pendingSchemaSetup');
+        const isPendingSetup = !!pendingSetupStr;
         
-      let subscriptionPlan = cognitoSubplan || profileSubscription || cookieSubscription || 'free';
-      
-      // Ensure subscription plan is correctly formatted for display
-      // This handles case inconsistencies between backend and frontend
-      const originalPlan = subscriptionPlan;
-      subscriptionPlan = typeof subscriptionPlan === 'string' ? subscriptionPlan.toLowerCase() : 'free';
-      
-      // Get onboarding status with similar fallback approach
-      const cognitoOnboarding = attributes['custom:onboarding'] || 'NOT_STARTED';
-      const cookieOnboarding = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('onboardedStatus='))
-        ?.split('=')[1];
-      
-      const onboardingStatus = cookieOnboarding || cognitoOnboarding;
-      
-      // Check if subscription expired (from login token)
-      // Extract from sessionStorage if available
-      const authData = JSON.parse(sessionStorage.getItem('authData') || '{}');
-      const subscriptionExpired = authData?.subscription_expired || false;
-      const previousPlan = authData?.previous_plan || '';
-      
-      // Additional debug for subscription plan
-      logger.debug('Subscription plan debug:', {
-        rawValue: attributes['custom:subplan'],
-        normalizedValue: subscriptionPlan,
-        originalValue: originalPlan,
-        fromAttributes: !!attributes['custom:subplan'],
-        fromCookie: !!cookieSubscription,
-        onboardingStatus,
-        cognitoOnboarding,
-        cookieOnboarding,
-        subscriptionExpired,
-        previousPlan
-      });
-      
-      const userData = {
-        ...currentUser,
-        ...attributes,
-        first_name: attributes.given_name || attributes.email?.split('@')[0],
-        last_name: attributes.family_name || '',
-        full_name: `${attributes.given_name || ''} ${attributes.family_name || ''}`.trim(),
-        subscription_type: subscriptionPlan,
-        original_subscription_type: originalPlan, // Keep original for debugging
-        business_name: attributes['custom:businessname'] || 'My Business',
-        onboarding_status: onboardingStatus,
-        subscription_expired: subscriptionExpired,
-        previous_plan: previousPlan
-      };
-      
-      logger.debug('Normalized user data:', { 
-        subscriptionPlan,
-        originalPlan: attributes['custom:subplan'],
-        onboardingStatus,
-        subscriptionExpired,
-        previousPlan
-      });
-      
-      setUserData(userData);
-      
-      // Always load the Home page, regardless of setup status
-      // This ensures the dashboard is visible while setup happens in the background
-      setShowHome(true);
+        // Get user data with try/catch to handle auth errors
+        let currentUser, attributes;
+        
+        try {
+          currentUser = await getCurrentUser();
+          attributes = await fetchUserAttributes();
+        } catch (authError) {
+          // Authentication error - redirect to sign-in
+          logger.debug('Authentication check failed:', authError);
+          throw new Error('User not authenticated');
+        }
+        
+        if (!currentUser || !attributes) {
+          throw new Error('Failed to get user data');
+        }
+        
+        logger.debug('Dashboard User data:', { currentUser, attributes });
+        
+        // Get subscription plan and normalize it
+        // Check multiple possible sources with fallbacks
+        const cognitoSubplan = attributes['custom:subplan'];
+        const profileSubscription = attributes.subscription_plan;
+        const cookieSubscription = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('subscriptionPlan='))
+          ?.split('=')[1];
+          
+        let subscriptionPlan = cognitoSubplan || profileSubscription || cookieSubscription || 'free';
+        
+        // Ensure subscription plan is correctly formatted for display
+        // This handles case inconsistencies between backend and frontend
+        const originalPlan = subscriptionPlan;
+        subscriptionPlan = typeof subscriptionPlan === 'string' ? subscriptionPlan.toLowerCase() : 'free';
+        
+        // Get onboarding status with similar fallback approach
+        const cognitoOnboarding = attributes['custom:onboarding'] || 'NOT_STARTED';
+        const cookieOnboarding = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('onboardedStatus='))
+          ?.split('=')[1];
+        
+        const onboardingStatus = cookieOnboarding || cognitoOnboarding;
+        
+        // Check if subscription expired (from login token)
+        // Extract from sessionStorage if available
+        const authData = JSON.parse(sessionStorage.getItem('authData') || '{}');
+        const subscriptionExpired = authData?.subscription_expired || false;
+        const previousPlan = authData?.previous_plan || '';
+        
+        // Additional debug for subscription plan
+        logger.debug('Subscription plan debug:', {
+          rawValue: attributes['custom:subplan'],
+          normalizedValue: subscriptionPlan,
+          originalValue: originalPlan,
+          fromAttributes: !!attributes['custom:subplan'],
+          fromCookie: !!cookieSubscription,
+          onboardingStatus,
+          cognitoOnboarding,
+          cookieOnboarding,
+          subscriptionExpired,
+          previousPlan
+        });
+        
+        const userData = {
+          ...currentUser,
+          ...attributes,
+          first_name: attributes.given_name || attributes.email?.split('@')[0],
+          last_name: attributes.family_name || '',
+          full_name: `${attributes.given_name || ''} ${attributes.family_name || ''}`.trim(),
+          subscription_type: subscriptionPlan,
+          original_subscription_type: originalPlan, // Keep original for debugging
+          business_name: attributes['custom:businessname'] || 'My Business',
+          onboarding_status: onboardingStatus,
+          subscription_expired: subscriptionExpired,
+          previous_plan: previousPlan
+        };
+        
+        logger.debug('Normalized user data:', { 
+          subscriptionPlan,
+          originalPlan: attributes['custom:subplan'],
+          onboardingStatus,
+          subscriptionExpired,
+          previousPlan
+        });
+        
+        setUserData(userData);
+        
+        // Always load the Home page, regardless of setup status
+        // This ensures the dashboard is visible while setup happens in the background
+        setShowHome(true);
+        
+      } catch (innerError) {
+        // Any authentication or data retrieval error should redirect
+        throw innerError;
+      }
     } catch (error) {
       logger.error('Error fetching user data:', error);
-      router.push('/auth/signin');
+      
+      // If this is an authentication error, redirect
+      if (error.message === 'User not authenticated' || 
+          error.message.includes('authenticate') ||
+          error.name === 'UserUnAuthenticatedException') {
+        router.push('/auth/signin');
+      } else {
+        // For other errors, still redirect but with a delay
+        setTimeout(() => {
+          router.push('/auth/signin');
+        }, 100);
+      }
     }
   }, [router, setUserData, setShowHome]);
 
@@ -478,31 +517,116 @@ function DashboardContent({ setupStatus, customContent }) {
     }
   }, [resetAllStates, updateState]);
 
-  // Load user data on mount
+  // Handler for My Account click
+  const handleMyAccountClick = useCallback(() => {
+    resetAllStates();
+    setShowMyAccount(true);
+    console.log('My Account clicked');
+  }, [resetAllStates, setShowMyAccount]);
+
+  // Handler for Settings click
+  const handleSettingsClick = useCallback(() => {
+    resetAllStates();
+    setSelectedSettingsOption('Profile Settings');
+    console.log('Settings clicked');
+  }, [resetAllStates, setSelectedSettingsOption]);
+
+  // Handler for Help Center click
+  const handleHelpCenterClick = useCallback(() => {
+    resetAllStates();
+    setShowHelpCenter(true);
+    console.log('Help Center clicked');
+  }, [resetAllStates, setShowHelpCenter]);
+
+  // Load user data on mount with auth check
   useEffect(() => {
-    fetchUserData();
-  }, [fetchUserData]);
+    let isMounted = true;
+    
+    const checkAuthAndFetchData = async () => {
+      try {
+        // Check if the user is logged in before fetching data
+        const auth = await import('aws-amplify/auth');
+        
+        try {
+          // Try getting the current session first as a lightweight check
+          await auth.getCurrentUser();
+          
+          // If the above didn't throw, fetch the user data
+          if (isMounted) {
+            fetchUserData();
+          }
+        } catch (authError) {
+          // User is not authenticated, redirect to sign in
+          logger.debug('User not authenticated, redirecting to sign-in page');
+          if (isMounted) {
+            router.push('/auth/signin');
+          }
+        }
+      } catch (error) {
+        logger.error('Error checking auth state:', error);
+        // Redirect on error as a fallback
+        if (isMounted) {
+          router.push('/auth/signin');
+        }
+      }
+    };
+    
+    checkAuthAndFetchData();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchUserData, router]);
   
   // Handle sign out
   const handleSignOut = useCallback(async () => {
     try {
       logger.debug('Signing out user');
       
-      // Import auth hooks and functions dynamically to avoid circular dependencies
-      const { signOut } = await import('@/hooks/auth');
+      // First clear all storage before sign-out to prevent fetch loops and orphaned state
+      sessionStorage.clear();
+      localStorage.removeItem('lastAuthUser');
       
-      // Sign out the user
-      await signOut();
+      // Clear cookies that might be related to auth
+      document.cookie.split(';').forEach(c => {
+        document.cookie = c
+          .replace(/^ +/, '')
+          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      });
       
-      // Clear session storage
-      sessionStorage.removeItem('authData');
+      // Set a variable to prevent fetch data attempts after signout
+      window.isSigningOut = true;
       
-      // Redirect to sign in page
-      router.push('/auth/signin');
+      try {
+        // Import auth hooks and functions dynamically to avoid circular dependencies
+        const authModule = await import('@/hooks/auth');
+        
+        // Access the signOut function from the module
+        if (typeof authModule.signOut === 'function') {
+          // Sign out the user
+          await authModule.signOut();
+        } else {
+          // Fallback to using Amplify directly
+          const { signOut } = await import('aws-amplify/auth');
+          await signOut();
+        }
+      } catch (signOutError) {
+        logger.error('Error during sign out operation:', signOutError);
+        // Continue with redirect even if signOut fails
+      }
+      
+      // Delay briefly to allow state cleanup
+      setTimeout(() => {
+        // Use direct location change for most reliable navigation after sign-out
+        window.location.href = '/auth/signin';
+      }, 50);
     } catch (error) {
-      logger.error('Error signing out:', error);
+      logger.error('Error in sign out process:', error);
+      // Fallback redirect even if there's an error - use direct location for page reload
+      window.location.href = '/auth/signin';
     }
-  }, [router]);
+  }, []);
 
   return (
     <ErrorBoundary>
@@ -521,10 +645,12 @@ function DashboardContent({ setupStatus, customContent }) {
             handleClose={() => setAnchorEl(null)}
             settingsAnchorEl={settingsAnchorEl}
             settingsMenuOpen={settingsMenuOpen}
-            handleSettingsClick={setSettingsAnchorEl}
+            handleSettingsClick={handleSettingsClick}
             handleSettingsClose={() => setSettingsAnchorEl(null)}
             handleHomeClick={handleHomeClick}
             handleLogout={handleSignOut}
+            handleUserProfileClick={handleMyAccountClick}
+            handleHelpClick={handleHelpCenterClick}
           />
           
           <Drawer
@@ -604,6 +730,9 @@ function DashboardContent({ setupStatus, customContent }) {
                     hrSection={hrSection}
                     showEmployeeManagement={showEmployeeManagement}
                     view={view}
+                    showMyAccount={showMyAccount}
+                    showHelpCenter={showHelpCenter}
+                    selectedSettingsOption={selectedSettingsOption}
                   />
                 )
               )}

@@ -10,6 +10,46 @@ const TermsOfUse = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const router = useRouter();
+  
+  // Check if user came from dashboard to show proper back button
+  const [fromDashboard, setFromDashboard] = React.useState(false);
+  
+  React.useEffect(() => {
+    // Check for referrer on client side
+    if (typeof window !== 'undefined') {
+      try {
+        const referer = document.referrer;
+        const isFromDashboard = referer.includes('/dashboard') || sessionStorage.getItem('fromDashboard') === 'true';
+        setFromDashboard(isFromDashboard);
+        
+        // Save the fact that we're in terms from dashboard
+        if (isFromDashboard) {
+          sessionStorage.setItem('fromDashboard', 'true');
+        }
+      } catch (error) {
+        console.error("Error checking referrer:", error);
+      }
+    }
+  }, []);
+  
+  const handleBackClick = () => {
+    try {
+      if (fromDashboard) {
+        // Clear the fromDashboard flag
+        sessionStorage.removeItem('fromDashboard');
+        
+        // Use direct location navigation which is more reliable for going back to dashboard
+        window.location.href = '/dashboard';
+      } else {
+        // For non-dashboard returns, router.push is fine
+        router.push('/');
+      }
+    } catch (error) {
+      console.error("Navigation error:", error);
+      // Fallback navigation using direct location method
+      window.location.href = fromDashboard ? '/dashboard' : '/';
+    }
+  };
 
   const SectionTitle = ({ children }) => (
     <Typography
@@ -60,20 +100,20 @@ const TermsOfUse = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 4 }}>
         <Button 
           startIcon={<ArrowBackIcon />} 
-          onClick={() => router.push('/')}
+          onClick={handleBackClick}
           variant="outlined"
           sx={{ mb: 2 }}
         >
-          Back to Home
+          {fromDashboard ? 'Back to Dashboard' : 'Back to Home'}
         </Button>
         
         <Box 
-          onClick={() => router.push('/')} 
+          onClick={handleBackClick} 
           sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
         >
           <Image
             src="/static/images/PyfactorLandingpage.png"
-            alt="Pyfactor Logo"
+            alt="Dott Logo"
             width={120}
             height={50}
             style={{ objectFit: 'contain' }}

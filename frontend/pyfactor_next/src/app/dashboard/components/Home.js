@@ -164,7 +164,7 @@ function Home({ userData }) {
       </Typography>
       
       <Typography variant="body1" paragraph>
-        Welcome to your home page, {userData?.first_name || 'User'}!
+        Welcome to your Dott dashboard, {userData?.first_name || 'User'}!
       </Typography>
       
       {/* Subscription Expired Banner */}

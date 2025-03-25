@@ -96,12 +96,13 @@ const KPIDashboard = lazy(() => import('./dashboards/KPIDashboard'));
 const BalanceSheetAnalysis = lazy(() => import('./forms/BalanceSheetAnalysis.js'));
 const IntegrationSettings = lazy(() => import('../../Settings/integrations/components/IntegrationSettings.js'));
 const UserProfileSettings = lazy(() => import('@/app/Settings/UserProfile/components/UserProfileSettings'));
-const ProfileSettings = lazy(() => import('@/app/Settings/components/ProfileSettings'));
-const BusinessSettings = lazy(() => import('@/app/Settings/components/BusinessSettings'));
-const AccountingSettings = lazy(() => import('@/app/Settings/components/AccountingSettings'));
-const PayrollSettings = lazy(() => import('@/app/Settings/components/PayrollSettings'));
-const DeviceSettings = lazy(() => import('@/app/Settings/components/DeviceSettings'));
-const HelpCenter = lazy(() => import('@/app/helpcenter/components/HelpCenter'));
+const ProfileSettings = lazy(() => import('@/app/settings/components/ProfileSettings'));
+const BusinessSettings = lazy(() => import('@/app/settings/components/BusinessSettings'));
+const AccountingSettings = lazy(() => import('@/app/settings/components/AccountingSettings'));
+const PayrollSettings = lazy(() => import('@/app/settings/components/PayrollSettings'));
+const DeviceSettings = lazy(() => import('@/app/settings/components/DeviceSettings'));
+const MyAccount = lazy(() => import('@/app/settings/components/MyAccount'));
+const HelpCenter = lazy(() => import('@/app/settings/components/HelpCenter'));
 const TermsAndConditions = lazy(() => import('@/app/Terms&Privacy/components/TermsOfUse'));
 const PrivacyPolicy = lazy(() => import('@/app/Terms&Privacy/components/PrivacyPolicy'));
 const DownloadTransactions = lazy(() => import('./forms/DownloadTransactions'));
@@ -207,6 +208,7 @@ function RenderMainContent({
   showDeviceSettings,
   selectedSettingsOption,
   showHelpCenter,
+  showMyAccount,
   showPrivacyPolicy,
   showTermsAndConditions,
   showDownloadTransactions,
@@ -360,6 +362,7 @@ function RenderMainContent({
           </ContentWrapper>
         )}
         {showUserProfileSettings && <UserProfileSettings userData={userData} onUpdate={handleUserProfileUpdate} />}
+        {showMyAccount && <MyAccount userData={userData} />}
         {showIntegrationSettings && <IntegrationSettings />}
         {showMainDashboard && <MainDashboard userData={userData} />}
         {showKPIDashboard && <KPIDashboard />}

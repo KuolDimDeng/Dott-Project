@@ -615,7 +615,7 @@ class Command(BaseCommand):
             # Auth group table
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS auth_group (
-                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                id SERIAL PRIMARY KEY,
                 name VARCHAR(150) NOT NULL UNIQUE
             );
             """)
@@ -2463,7 +2463,7 @@ class Command(BaseCommand):
             CREATE TABLE IF NOT EXISTS custom_auth_user_groups (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 user_id UUID NOT NULL,
-                group_id UUID NOT NULL,
+                group_id INTEGER NOT NULL,
                 CONSTRAINT auth_user_groups_user_id_group_id_94350c0c_uniq UNIQUE (user_id, group_id),
                 CONSTRAINT auth_user_groups_user_id_6a12ed8b_fk_users_user_id FOREIGN KEY (user_id)
                     REFERENCES custom_auth_user (id) DEFERRABLE INITIALLY DEFERRED,
@@ -2492,7 +2492,7 @@ class Command(BaseCommand):
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS auth_group_permissions (
                 id BIGSERIAL PRIMARY KEY,
-                group_id UUID NOT NULL,
+                group_id INTEGER NOT NULL,
                 permission_id BIGINT NOT NULL,
                 CONSTRAINT auth_group_permissions_group_id_permission_id_0cd325b0_uniq UNIQUE (group_id, permission_id),
                 CONSTRAINT auth_group_permissions_group_id_b120cbf9_fk_auth_group_id FOREIGN KEY (group_id)

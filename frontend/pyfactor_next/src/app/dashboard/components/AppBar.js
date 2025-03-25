@@ -37,8 +37,9 @@ import LockIcon from '@mui/icons-material/Lock';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import logoPath from '/public/static/images/PyfactorDashboard.png';
-import SettingsMenu from './components/SettingsMenu';
+// Removed SettingsMenu import as it's no longer used
 import HomeIcon from '@mui/icons-material/Home';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -139,6 +140,7 @@ const AppBar = ({
   
   // State for window width to handle menu positioning
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const router = useRouter();
   
   // Update window width on resize for responsive menu positioning
   React.useEffect(() => {
@@ -163,11 +165,9 @@ const AppBar = ({
   };
 
   const handleSubscriptionClick = (event) => {
-    if (userData?.subscription_type !== 'professional' && 
-        userData?.subscription_type !== 'enterprise') {
-      setIsSubscriptionMenuOpen(!isSubscriptionMenuOpen);
-      setSubscriptionAnchorEl(subscriptionAnchorEl ? null : event.currentTarget);
-    }
+    // Make it work for all subscription types, not just free
+    setIsSubscriptionMenuOpen(!isSubscriptionMenuOpen);
+    setSubscriptionAnchorEl(subscriptionAnchorEl ? null : event.currentTarget);
   };
 
   const handleSubscriptionClose = () => {
@@ -244,7 +244,7 @@ const AppBar = ({
         <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
           {userData && (
             <Paper
-              elevation={3}
+              elevation={0}
               sx={{
                 display: 'flex', 
                 alignItems: 'center', 
@@ -254,7 +254,8 @@ const AppBar = ({
                 height: 'auto',
                 backgroundColor: '#0a3977',
                 color: '#ffffff',
-                borderBottom: '2px solid #041e42',
+                border: 'none',
+                boxShadow: 'none',
                 borderRadius: '4px'
               }}
             >
@@ -270,8 +271,7 @@ const AppBar = ({
                     display: 'flex',
                     alignItems: 'center',
                     flexDirection: 'column',
-                    cursor: userData?.subscription_type !== 'professional' && 
-                           userData?.subscription_type !== 'enterprise' ? 'pointer' : 'default',
+                    cursor: 'pointer',
                     padding: '4px 8px',
                     borderRadius: '4px',
                     backgroundColor: '#1a5bc0', // Standard blue instead of light blue
@@ -284,29 +284,6 @@ const AppBar = ({
                   >
                     {displayLabel}
                   </Typography>
-                  {userData?.subscription_type === 'free' && (
-                    <Typography
-                      variant="caption"
-                      sx={{ 
-                        color: '#ffffff', 
-                        fontSize: '0.65rem',
-                        textDecoration: 'underline',
-                        cursor: 'pointer',
-                        mb: 0.5
-                      }}
-                    >
-                      Upgrade to Professional or Enterprise
-                    </Typography>
-                  )}
-                  {(userData?.subscription_type === 'free') && (
-                    <IconButton size="small" sx={{ padding: 0, ml: 0.5, color: '#ffffff' }}>
-                      {subscriptionOpen ? (
-                        <ExpandLessIcon fontSize="small" />
-                      ) : (
-                        <ExpandMoreIcon fontSize="small" />
-                      )}
-                    </IconButton>
-                  )}
                 </Box>
               </Box>
             </Paper>
@@ -361,31 +338,7 @@ const AppBar = ({
             <DashboardLanguageSelector />
           </Box>
           
-          <Tooltip title="Help">
-            <IconButton
-              sx={{ display: 'flex', alignItems: 'center', height: '100%', color: '#ffffff' }}
-              onClick={handleHelpClick}
-            >
-              <HelpOutlineIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Settings">
-            <IconButton
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                height: '100%', 
-                color: '#ffffff',
-                p: 0.5,
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                }
-              }}
-              onClick={handleSettingsClick}
-            >
-              <SettingsIcon />
-            </IconButton>
-          </Tooltip>
+          {/* Help and Settings icons removed as they are now in the user menu */}
 
           <IconButton
             onClick={handleClick}
@@ -474,8 +427,14 @@ const AppBar = ({
                     backgroundColor: '#e3f2fd',
                     p: 1,
                     borderRadius: 1,
-                    mt: 1
-                  }}>
+                    mt: 1,
+                    cursor: 'pointer'
+                  }}
+                  onClick={(e) => {
+                    handleClose();
+                    handleSubscriptionClick(e);
+                  }}
+                  >
                     <Typography variant="caption" fontWeight="medium" color="primary.main">
                       {displayLabel}
                     </Typography>
@@ -498,7 +457,12 @@ const AppBar = ({
                 
                 {/* Menu items */}
                 <MenuItem
-                  onClick={handleUserProfileClick || handleClose}
+                  onClick={() => {
+                    handleClose();
+                    if (handleUserProfileClick) {
+                      handleUserProfileClick();
+                    }
+                  }}
                   sx={{
                     py: 1.5,
                     '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.08)' },
@@ -509,7 +473,12 @@ const AppBar = ({
                 </MenuItem>
                 
                 <MenuItem
-                  onClick={handleSettingsClick}
+                  onClick={() => {
+                    handleClose();
+                    if (handleSettingsClick) {
+                      handleSettingsClick();
+                    }
+                  }}
                   sx={{
                     py: 1.5,
                     '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.08)' },
@@ -520,7 +489,12 @@ const AppBar = ({
                 </MenuItem>
                 
                 <MenuItem
-                  onClick={handleHelpClick}
+                  onClick={() => {
+                    handleClose();
+                    if (handleHelpClick) {
+                      handleHelpClick();
+                    }
+                  }}
                   sx={{
                     py: 1.5,
                     '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.08)' },
@@ -538,7 +512,59 @@ const AppBar = ({
                     color="primary"
                     fullWidth
                     startIcon={<LogoutIcon />}
-                    onClick={handleLogout}
+                    onClick={async () => {
+                      handleClose(); // Close the menu first
+                      try {
+                        // Clear any cached data first regardless of what happens next
+                        sessionStorage.clear();
+                        localStorage.removeItem('lastAuthUser');
+                        
+                        // Clear cookies that might be related to auth
+                        document.cookie.split(';').forEach(c => {
+                          document.cookie = c
+                            .replace(/^ +/, '')
+                            .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+                        });
+                        
+                        // Set a flag to prevent fetch loops
+                        window.isSigningOut = true;
+                        
+                        if (handleLogout) {
+                          // Call the provided logout handler (preferred method)
+                          try {
+                            await handleLogout();
+                          } catch (e) {
+                            console.error('Handler logout error:', e);
+                            // Continue execution even if the handler fails
+                          }
+                        } else {
+                          // Fallback if no handler provided
+                          try {
+                            // Try to import and use auth module directly
+                            const authModule = await import('@/hooks/auth');
+                            if (typeof authModule.signOut === 'function') {
+                              await authModule.signOut();
+                            } else {
+                              // Use Amplify directly
+                              const { signOut } = await import('aws-amplify/auth');
+                              await signOut();
+                            }
+                          } catch (e) {
+                            console.error('Error during sign out:', e);
+                          }
+                        }
+                        
+                        // Use setTimeout to ensure state has time to update
+                        setTimeout(() => {
+                          // Use direct window location for most reliable redirect after sign-out
+                          window.location.href = '/auth/signin';
+                        }, 50);
+                      } catch (error) {
+                        console.error('Logout error:', error);
+                        // Still redirect on error
+                        window.location.href = '/auth/signin';
+                      }
+                    }}
                     size="medium"
                     sx={{
                       textTransform: 'none',
@@ -562,27 +588,77 @@ const AppBar = ({
                   borderBottomRightRadius: '8px',
                 }}>
                   <Link 
-                    href="#" 
+                    href="/privacy" 
                     color="inherit" 
                     underline="hover" 
                     variant="caption"
                     onClick={(e) => {
+                      // Always prevent default to handle navigation ourselves
                       e.preventDefault();
+                      // First close the menu
                       handleClose();
-                      handlePrivacyClick();
+                      
+                      try {
+                        // Store flag in sessionStorage to indicate we're coming from dashboard
+                        // This helps the Privacy page know to show a "Back to Dashboard" button
+                        sessionStorage.setItem('fromDashboard', 'true');
+                        
+                        // If a custom handler is provided, try to use it first
+                        if (handlePrivacyClick) {
+                          try {
+                            handlePrivacyClick();
+                            return; // Exit if handler succeeds
+                          } catch (handlerError) {
+                            console.warn("Handler error, falling back to direct navigation:", handlerError);
+                            // Continue to fallback if handler fails
+                          }
+                        }
+                        
+                        // Direct navigation as fallback or primary method when no handler
+                        window.location.href = '/privacy';
+                      } catch (error) {
+                        console.error("Error navigating to Privacy:", error);
+                        // Ultimate fallback - should always work
+                        window.location.href = '/privacy';
+                      }
                     }}
                   >
                     Privacy
                   </Link>
                   <Link 
-                    href="#" 
+                    href="/terms" 
                     color="inherit" 
                     underline="hover" 
                     variant="caption"
                     onClick={(e) => {
+                      // Always prevent default to handle navigation ourselves
                       e.preventDefault();
+                      // First close the menu
                       handleClose();
-                      handleTermsClick();
+                      
+                      try {
+                        // Store flag in sessionStorage to indicate we're coming from dashboard
+                        // This helps the Terms page know to show a "Back to Dashboard" button
+                        sessionStorage.setItem('fromDashboard', 'true');
+                        
+                        // If a custom handler is provided, try to use it first
+                        if (handleTermsClick) {
+                          try {
+                            handleTermsClick();
+                            return; // Exit if handler succeeds
+                          } catch (handlerError) {
+                            console.warn("Handler error, falling back to direct navigation:", handlerError);
+                            // Continue to fallback if handler fails
+                          }
+                        }
+                        
+                        // Direct navigation as fallback or primary method when no handler
+                        window.location.href = '/terms';
+                      } catch (error) {
+                        console.error("Error navigating to Terms:", error);
+                        // Ultimate fallback - should always work
+                        window.location.href = '/terms';
+                      }
                     }}
                   >
                     Terms
@@ -593,16 +669,7 @@ const AppBar = ({
           </Menu>
         </Box>
       </Toolbar>
-      <SettingsMenu
-        anchorEl={settingsAnchorEl}
-        open={settingsMenuOpen}
-        onClose={handleSettingsClose}
-        onIntegrationsClick={handleIntegrationsClick}
-        onDeviceSettingsClick={handleDeviceSettingsClick}
-        onOptionSelect={handleSettingsOptionSelect}
-        selectedOption={selectedSettingsOption}
-        backgroundColor={menuBackgroundColor}
-      />
+      {/* Settings menu removed since settings is now only accessible from the user menu */}
 
       <Popover
         open={subscriptionOpen}
@@ -678,6 +745,21 @@ const AppBar = ({
                       fullWidth
                       variant="contained"
                       color="primary"
+                      onClick={() => {
+                        handleSubscriptionClose();
+                        // Store the selected plan in sessionStorage
+                        sessionStorage.setItem(
+                          'pendingSubscription',
+                          JSON.stringify({
+                            plan: plan.id.toLowerCase(),
+                            billing_interval: 'monthly',
+                            interval: 'monthly',
+                            timestamp: new Date().toISOString()
+                          })
+                        );
+                        // Redirect to the onboarding subscription page
+                        router.push('/onboarding/subscription');
+                      }}
                     >
                       Select {plan.name}
                     </Button>
@@ -781,7 +863,32 @@ const AppBar = ({
           )}
           
           <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-            <Button variant="contained" color="primary">
+            <Button 
+              variant="contained" 
+              color="primary"
+              onClick={() => {
+                handleSubscriptionClose();
+                
+                // Get the selected plan (assuming the first one if none explicitly selected)
+                const selectedPlan = PLANS[0]; // Default to first plan
+                
+                // Store payment information in sessionStorage
+                sessionStorage.setItem(
+                  'pendingSubscription',
+                  JSON.stringify({
+                    plan: selectedPlan.id.toLowerCase(),
+                    billing_interval: 'monthly',
+                    interval: 'monthly',
+                    payment_method: paymentTab === 0 ? 'credit_card' : 
+                                   paymentTab === 1 ? 'paypal' : 'mobile_money',
+                    timestamp: new Date().toISOString()
+                  })
+                );
+                
+                // Redirect to the payment page
+                router.push('/onboarding/payment');
+              }}
+            >
               Complete Upgrade
             </Button>
           </Box>

@@ -838,15 +838,16 @@ DATABASES = {
     }
 }
 
-# Database pool arguments
+# Database pool arguments optimized for better connection management
 DATABASE_POOL_ARGS = {
-    "pre_ping": True,
-    "echo": False,
-    "timeout": 20,           # Reduced from 30
-    "recycle": 300,
-    "pool_size": 5,          # Reduced from 20
-    "max_overflow": 2,       # Reduced from 10
-    "autocommit": True,
+    "pre_ping": True,         # Enable connection validation before use
+    "echo": False,            # Disable SQL echo for production
+    "timeout": 10,            # Further reduced timeout to 10 seconds
+    "recycle": 300,           # Recycle connections after 5 minutes
+    "pool_size": 5,           # Maintain 5 connections in the pool
+    "max_overflow": 2,        # Allow 2 additional connections when pool is full
+    "autocommit": True,       # Use autocommit mode
+    "reset_on_return": True,  # Reset transaction state on connection return
 }
 # Database performance settings to be applied after connection
 DATABASE_PERFORMANCE_SETTINGS = {
@@ -895,24 +896,32 @@ DATABASE_SCHEMA_MIGRATIONS = {
 
 TENANT_CACHE_KEY_PREFIX = 'tenant_{}'
 TENANT_CACHE_TIMEOUT = 3600  # 1 hour
+# Further optimized connection pool settings for lower resource usage
 DB_POOL_OPTIONS = {
-    'MIN_CONNS': 5,
-    'MAX_CONNS': 20,
-    'MAX_QUERIES': 50000,
-    'MAX_IDLE_TIME': 300,  # 5 minutes
-    'CONN_LIFETIME': 3600,  # 1 hour
+    'MIN_CONNS': 3,              # Reduced from 5
+    'MAX_CONNS': 15,             # Reduced from 20
+    'MAX_QUERIES': 5000,         # Reduced from 50000
+    'MAX_IDLE_TIME': 180,        # Reduced from 300 (3 minutes)
+    'CONN_LIFETIME': 1800,       # Reduced from 3600 (30 minutes)
     'RETRY_ATTEMPTS': 3,
     'RETRY_DELAY': 0.5,
+    'CONNECTION_CHECK_INTERVAL': 60, # Check connection health every minute
     'METRICS_ENABLED': True
 }
 
+# Enhanced connection pool configuration with optimized values 
 DATABASE_CONNECTION_POOL = {
-    'MAX_CONNS': 10,          # Reduced from 50
-    'MIN_CONNS': 3,           # Reduced from 10
-    'CONN_LIFETIME': 60,      # Reduced from 120
-    'CONN_TIMEOUT': 10,       # Reduced from 20
-    'MAX_QUERIES_PER_CONN': 500, # Reduced from 1000
-    'SCHEMA_CACHE_TTL': 300,
+    'MAX_CONNS': 10,             # Max concurrent connections
+    'MIN_CONNS': 2,              # Minimum connections to keep in pool
+    'CONN_LIFETIME': 300,        # 5 minutes max lifetime for a connection
+    'IDLE_TIMEOUT': 60,          # Close idle connections after 1 minute
+    'CONN_TIMEOUT': 5,           # 5 second connection timeout
+    'MAX_QUERIES_PER_CONN': 500, # Recycle connections after 500 operations
+    'STATEMENT_TIMEOUT': 30000,  # 30 seconds statement timeout
+    'LOCK_TIMEOUT': 5000,        # 5 seconds lock timeout
+    'MONITOR_INTERVAL': 60,      # Check connections every minute
+    'METRICS_ENABLED': True,     # Enable connection metrics
+    'SCHEMA_CACHE_TTL': 300,     # Cache schema info for 5 minutes
 }
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

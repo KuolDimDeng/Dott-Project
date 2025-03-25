@@ -33,14 +33,28 @@ class Tenant(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     schema_name = models.CharField(max_length=63, unique=True)
     name = models.CharField(max_length=100)
-    # Replace OneToOneField with UUID field to break circular dependency
-    owner = models.OneToOneField(
-        'custom_auth.User',  # String reference to avoid import
-        on_delete=models.SET_NULL,
-        related_name='owned_tenant',
-        null=True,
-        blank=True
-    )    
+    # Use UUID field directly to completely break circular dependency
+    owner_id = models.UUIDField(null=True, blank=True)
+    # This is a property to maintain API compatibility
+    @property
+    def owner(self):
+        if not self.owner_id:
+            return None
+        # Import here to avoid circular import
+        from django.apps import apps
+        User = apps.get_model('custom_auth', 'User')
+        try:
+            return User.objects.get(id=self.owner_id)
+        except User.DoesNotExist:
+            return None
+    
+    @owner.setter
+    def owner(self, user_obj):
+        if user_obj is None:
+            self.owner_id = None
+        else:
+            self.owner_id = user_obj.id
+            
     created_on = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     
@@ -121,13 +135,28 @@ class User(AbstractBaseUser, PermissionsMixin):
     stripe_customer_id = models.CharField(max_length=255, blank=True, null=True)  # Optional, for payment integration
     cognito_sub = models.CharField(max_length=36, unique=True, null=True, blank=True)  # Cognito user ID
 
-    tenant = models.ForeignKey(
-        'custom_auth.Tenant',  # String reference to avoid import
-        on_delete=models.CASCADE,
-        related_name='users',
-        null=True,
-        blank=True
-    )
+    # Store tenant_id directly instead of using a ForeignKey
+    tenant_id = models.UUIDField(null=True, blank=True)
+    
+    # Property to maintain API compatibility
+    @property
+    def tenant(self):
+        if not self.tenant_id:
+            return None
+        # Import here to avoid circular import
+        from django.apps import apps
+        Tenant = apps.get_model('custom_auth', 'Tenant')
+        try:
+            return Tenant.objects.get(id=self.tenant_id)
+        except Tenant.DoesNotExist:
+            return None
+    
+    @tenant.setter
+    def tenant(self, tenant_obj):
+        if tenant_obj is None:
+            self.tenant_id = None
+        else:
+            self.tenant_id = tenant_obj.id
 
 
     USERNAME_FIELD = 'email'
