@@ -12,13 +12,20 @@ const PUBLIC_ROUTES = [
   '/auth/signup',
   '/auth/forgot',
   '/auth/reset',
+  '/auth/forgot-password',
+  '/auth/reset-password',
   '/auth/verify',
   '/auth/verify-email',
   '/auth/callback',
   '/privacy',
   '/terms',
+  '/cookies',  // Added Cookie Policy to public routes
   '/contact',
-  '/about'  // Added About page to public routes
+  '/about',  // Added About page to public routes
+  '/careers', // Added Careers page to public routes
+  '/press',   // Added Press page to public routes
+  '/blog',    // Added Blog to public routes for future use
+  '/favicon.ico' // Added favicon.ico to bypass middleware
 ];
 
 // Public API routes that don't require authentication
@@ -26,7 +33,8 @@ const PUBLIC_API_ROUTES = [
   '/api/auth/check-existing-email',
   '/api/onboarding/setup/trigger',
   '/api/onboarding/setup/status',
-  '/api/auth/set-cookies'
+  '/api/auth/set-cookies',
+  '/api/auth/callback'
 ];
 
 // Onboarding routes and their order

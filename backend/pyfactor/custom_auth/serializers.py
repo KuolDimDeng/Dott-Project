@@ -157,6 +157,22 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data['user_id'] = self.user.id
         data['email'] = self.user.email
         data['is_onboarded'] = self.user.is_onboarded
+        
+        # Check subscription status on login
+        from users.utils import check_subscription_status
+        try:
+            is_expired, previous_plan = check_subscription_status(self.user)
+            if is_expired:
+                logger.info(f"Subscription expired for user {self.user.email}, was on {previous_plan} plan")
+                data['subscription_expired'] = True
+                data['previous_plan'] = previous_plan
+            else:
+                data['subscription_expired'] = False
+                data['current_plan'] = previous_plan  # Not expired, so this is the current plan
+        except Exception as e:
+            logger.error(f"Error checking subscription on login: {str(e)}")
+            data['subscription_expired'] = False
+            
         return data
     
 class CustomAuthTokenSerializer(serializers.Serializer):

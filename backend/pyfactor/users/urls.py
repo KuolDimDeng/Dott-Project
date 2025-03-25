@@ -15,6 +15,7 @@ from .business_views import (
     CreateCheckoutSessionView
 )
 from .api.checkout.checkout_session import create_checkout_session
+from .api.subscription_views import subscription_status
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -32,4 +33,5 @@ urlpatterns = [
     path('checkout/create-session/', create_checkout_session, name='create_checkout_session'),
     path('update-subscription/', update_subscription_plan, name='update_subscription_plan'),
     path('webhook/stripe/', stripe_webhook, name='stripe_webhook'),
+    path('api/subscription/status/', subscription_status, name='subscription_status'),
 ]

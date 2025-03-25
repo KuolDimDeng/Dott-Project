@@ -30,6 +30,7 @@ from django.db.models.functions import Coalesce
 from dateutil.relativedelta import relativedelta
 from pyfactor.logging_config import get_logger
 from users.models import UserProfile
+from users.utils import get_tenant_database
 
 logger = get_logger()
 
@@ -103,9 +104,11 @@ def get_chart_data(request):
         end_date = datetime.now().date()
         start_date = end_date - timedelta(days=30*time_granularity)
 
-        # Get the user's database name from the request
+        # Get the database name using the tenant-aware utility
         user = request.user
-        database_name = user.profile.database_name
+        database_name = get_tenant_database(user)
+        if not database_name:
+            return JsonResponse({'error': 'Could not determine database for user'}, status=400)
 
         # Use the correct database
         with connections[database_name].cursor() as cursor:
@@ -140,7 +143,9 @@ def get_balance_sheet_data(request):
     start_date = end_date - timedelta(days=30*time_granularity)
 
     user = request.user
-    database_name = user.profile.database_name
+    database_name = get_tenant_database(user)
+    if not database_name:
+        return JsonResponse({'error': 'Could not determine database for user'}, status=400)
 
     data = []
     current_date = start_date
@@ -178,7 +183,9 @@ def get_cash_flow_data(request):
     start_date = end_date - timedelta(days=30*time_granularity)
 
     user = request.user
-    database_name = user.profile.database_name
+    database_name = get_tenant_database(user)
+    if not database_name:
+        return JsonResponse({'error': 'Could not determine database for user'}, status=400)
 
     data = []
     current_date = start_date
@@ -216,7 +223,9 @@ def get_budget_vs_actual_data(request):
     start_date = end_date - timedelta(days=30*time_range)
 
     user = request.user
-    database_name = user.profile.database_name
+    database_name = get_tenant_database(user)
+    if not database_name:
+        return JsonResponse({'error': 'Could not determine database for user'}, status=400)
 
     budget = Budget.objects.using(database_name).filter(
         start_date__lte=end_date,
@@ -251,7 +260,11 @@ def get_sales_analysis_data(request):
         start_date = end_date - timedelta(days=30*time_range)
 
         user = request.user
-        database_name = user.profile.database_name
+        
+        # Get the database name using the tenant-aware utility
+        database_name = get_tenant_database(user)
+        if not database_name:
+            return JsonResponse({'error': 'Could not determine database for user'}, status=400)
 
         logger.info(f"Fetching sales data for user {user.id} from database {database_name}")
 
@@ -299,7 +312,11 @@ def get_expense_analysis_data(request):
         start_date = end_date - timedelta(days=30*time_range)
 
         user = request.user
-        database_name = user.profile.database_name
+        
+        # Get the database name using the tenant-aware utility
+        database_name = get_tenant_database(user)
+        if not database_name:
+            return JsonResponse({'error': 'Could not determine database for user'}, status=400)
 
         logger.info(f"Fetching expense data for user {user.id} from database {database_name}")
 

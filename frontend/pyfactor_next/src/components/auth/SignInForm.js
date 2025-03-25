@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/utils/logger';
+import { signInWithSocialProvider } from '@/utils/auth';
 import {
   signIn,
   fetchAuthSession,
@@ -153,8 +154,8 @@ export default function SignInForm() {
     try {
       logger.debug('[SignInForm] Attempting sign in:', { email });
 
-      // Use the tenant-aware login function
-      const result = await login(email, password);
+      // Use the tenant-aware login function with rememberMe option
+      const result = await login(email, password, rememberMe);
       
       if (!result.success) {
         throw new Error(result.error || 'Login failed');
@@ -188,12 +189,38 @@ export default function SignInForm() {
     setIsLoading(true);
 
     try {
-      logger.debug('[SignInForm] Google sign in not implemented yet');
-      setError('Google sign in coming soon');
+      logger.debug('[SignInForm] Initiating Google sign in');
+      
+      setError("Google Sign-in is coming soon! Please use email login for now.");
+      setIsLoading(false);
+      return;
+
+      /* 
+      // GOOGLE SIGN-IN IMPLEMENTATION 
+      // Temporarily disabled until Cognito is properly configured for OAuth
+      
+      // Proper implementation below:
+      const { signInWithRedirect } = await import('@aws-amplify/auth');
+      
+      // Initialize Amplify with proper configuration
+      const { Amplify } = await import('aws-amplify');
+      const { amplifyConfig } = await import('@/config/amplifyUnified');
+      
+      // Make sure config has been applied
+      Amplify.configure(amplifyConfig);
+      
+      logger.debug('[SignInForm] Redirecting to Google sign-in');
+      
+      // Redirect to Google sign-in
+      await signInWithRedirect({ provider: 'Google' });
+      
+      // Browser will redirect, no code after this will execute
+      */
     } catch (error) {
       logger.error('[SignInForm] Google sign in failed:', error);
-      setError('Failed to sign in with Google');
-    } finally {
+      
+      // User-friendly error message
+      setError('Google sign-in is not available at this moment. Please use email login.');
       setIsLoading(false);
     }
   };
@@ -217,10 +244,15 @@ export default function SignInForm() {
           <button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed relative"
           >
-            <img src="/google.svg" alt="Google" className="w-5 h-5" />
-            <span>Continue with Google</span>
+            <div className="flex items-center justify-center gap-3">
+              <img src="/google.svg" alt="Google" className="w-5 h-5" />
+              <span>Continue with Google</span>
+            </div>
+            <div className="absolute top-0 right-0 bg-yellow-500 text-xs text-white px-1 rounded-bl-md rounded-tr-md">
+              Coming Soon
+            </div>
           </button>
         </div>
 
@@ -229,13 +261,13 @@ export default function SignInForm() {
             <div className="w-full border-t border-gray-300" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            <span className="px-4 bg-white text-gray-500 text-center">Or continue with email</span>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email address
             </label>
             <input
@@ -244,14 +276,14 @@ export default function SignInForm() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
               placeholder="Enter your email"
               disabled={isLoading}
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               Password
             </label>
             <input
@@ -260,7 +292,7 @@ export default function SignInForm() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
               placeholder="Enter your password"
               disabled={isLoading}
             />
@@ -281,7 +313,7 @@ export default function SignInForm() {
             </div>
 
             <div className="text-sm">
-              <Link href="/auth/forgot" className="font-medium text-indigo-600 hover:text-indigo-500">
+              <Link href="/auth/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
                 Forgot your password?
               </Link>
             </div>
@@ -297,23 +329,23 @@ export default function SignInForm() {
             </div>
           )}
 
-          <div className="text-center mt-4">
-            <p className="text-sm text-gray-600">
-              Already signed up but need to verify your email?{' '}
-              <Link href="/auth/verify-email" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Enter verification code
-              </Link>
-            </p>
-          </div>
-
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-center"
           >
-            {isLoading ? 'Signing in...' : 'Sign in'}
+            <span className="mx-auto">{isLoading ? 'Signing in...' : 'Sign in'}</span>
           </button>
         </form>
+        
+        <div className="text-center mt-6">
+          <p className="text-sm text-gray-600">
+            Already signed up but need to verify your email?{' '}
+            <Link href="/auth/verify-email" className="font-medium text-indigo-600 hover:text-indigo-500">
+              Enter verification code
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

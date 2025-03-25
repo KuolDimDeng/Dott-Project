@@ -12,6 +12,9 @@ import {
   Alert,
   Chip,
   Divider,
+  Paper,
+  Fade,
+  Zoom,
 } from '@mui/material';
 import Image from 'next/image';
 import { StepHeader } from '@/app/onboarding/components/shared/StepHeader';
@@ -22,6 +25,10 @@ import {
   LogoContainer,
   PaymentDetails,
   PaymentSummary,
+  CardDetailsSection,
+  CardField,
+  PricingSummary,
+  PaymentActionButton,
 } from './Payment.styles';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { logger } from '@/utils/logger';
@@ -31,6 +38,9 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import SecurityIcon from '@mui/icons-material/Security';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import LockIcon from '@mui/icons-material/Lock';
 import { useUser } from '@/hooks/useUser';
 import { useRouter } from 'next/navigation';
 
@@ -88,12 +98,13 @@ const PaymentComponent = ({ metadata }) => {
     } catch (err) {
       logger.error('[Payment Component] Error logging onboarding state:', { error: err.message });
     }
-  }, [currentStep, isStepCompleted, getOnboardingState]);
+  }, [currentStep, isStepCompleted, getOnboardingState, updateOnboardingStatus]);
   
   // Checkout state
   const [checkoutError, setCheckoutError] = useState(null);
   const [checkoutLoading, setCheckoutLoading] = useState(true);
   const [subscriptionData, setSubscriptionData] = useState(null);
+  const [processingPayment, setProcessingPayment] = useState(false);
   
   // Load subscription data from sessionStorage - no router calls
   useEffect(() => {
@@ -214,6 +225,7 @@ const PaymentComponent = ({ metadata }) => {
   ];
 
   const handlePaymentSubmit = async () => {
+    setProcessingPayment(true);
     setCheckoutLoading(true);
     setCheckoutError(null);
     try {
@@ -238,6 +250,7 @@ const PaymentComponent = ({ metadata }) => {
     } catch (error) {
       logger.error('Payment submission failed:', error);
       setCheckoutError(error.message || 'Failed to process payment');
+      setProcessingPayment(false);
     } finally {
       setCheckoutLoading(false);
     }
@@ -254,7 +267,6 @@ const PaymentComponent = ({ metadata }) => {
             icon={<PaymentsIcon />} 
             label="Mobile Money Support" 
             color="primary" 
-            variant="outlined"
             sx={{ my: 1, mr: 1 }}
           />
           <Typography variant="body2" color="text.secondary">
@@ -272,7 +284,6 @@ const PaymentComponent = ({ metadata }) => {
           icon={<PaymentsIcon />} 
           label={subscriptionPlan === 'enterprise' ? "Advanced Invoice Factoring" : "Invoice Factoring Available"} 
           color="primary" 
-          variant="outlined"
           sx={{ my: 1 }}
         />
       );
@@ -284,52 +295,52 @@ const PaymentComponent = ({ metadata }) => {
   const getPlanFeatures = () => {
     if (subscriptionPlan === 'professional') {
       return (
-        <Box component="ul" sx={{ pl: 2 }}>
-          <Box component="li" sx={{ mb: 0.5 }}>
+        <Box component="ul">
+          <Box component="li">
             <Typography variant="body2">Up to 3 users</Typography>
           </Box>
-          <Box component="li" sx={{ mb: 0.5 }}>
+          <Box component="li">
             <Typography variant="body2">Advanced inventory management with forecasting</Typography>
           </Box>
-          <Box component="li" sx={{ mb: 0.5 }}>
+          <Box component="li">
             <Typography variant="body2">Global payments with reduced transaction fees</Typography>
           </Box>
-          <Box component="li" sx={{ mb: 0.5 }}>
+          <Box component="li">
             <Typography variant="body2">15 GB of storage</Typography>
           </Box>
-          <Box component="li" sx={{ mb: 0.5 }}>
+          <Box component="li">
             <Typography variant="body2">Advanced reporting and analytics</Typography>
           </Box>
-          <Box component="li" sx={{ mb: 0.5 }}>
+          <Box component="li">
             <Typography variant="body2">AI-powered business insights</Typography>
           </Box>
-          <Box component="li" sx={{ mb: 0.5 }}>
+          <Box component="li">
             <Typography variant="body2">Priority support</Typography>
           </Box>
         </Box>
       );
     } else if (subscriptionPlan === 'enterprise') {
       return (
-        <Box component="ul" sx={{ pl: 2 }}>
-          <Box component="li" sx={{ mb: 0.5 }}>
+        <Box component="ul">
+          <Box component="li">
             <Typography variant="body2">Unlimited users</Typography>
           </Box>
-          <Box component="li" sx={{ mb: 0.5 }}>
+          <Box component="li">
             <Typography variant="body2">Everything in Professional plan</Typography>
           </Box>
-          <Box component="li" sx={{ mb: 0.5 }}>
+          <Box component="li">
             <Typography variant="body2">Preferential transaction fees</Typography>
           </Box>
-          <Box component="li" sx={{ mb: 0.5 }}>
+          <Box component="li">
             <Typography variant="body2">Unlimited storage</Typography>
           </Box>
-          <Box component="li" sx={{ mb: 0.5 }}>
+          <Box component="li">
             <Typography variant="body2">Custom roles & permissions</Typography>
           </Box>
-          <Box component="li" sx={{ mb: 0.5 }}>
+          <Box component="li">
             <Typography variant="body2">Dedicated account manager</Typography>
           </Box>
-          <Box component="li" sx={{ mb: 0.5 }}>
+          <Box component="li">
             <Typography variant="body2">Advanced security features</Typography>
           </Box>
         </Box>
@@ -342,22 +353,22 @@ const PaymentComponent = ({ metadata }) => {
   const getPlanAddOns = () => {
     if (subscriptionPlan === 'professional') {
       return (
-        <Box component="ul" sx={{ pl: 2 }}>
-          <Box component="li" sx={{ mb: 0.5 }}>
+        <Box component="ul">
+          <Box component="li">
             <Typography variant="body2">Payroll & Tax processing</Typography>
           </Box>
-          <Box component="li" sx={{ mb: 0.5 }}>
+          <Box component="li">
             <Typography variant="body2">HR & CRM modules</Typography>
           </Box>
         </Box>
       );
     } else if (subscriptionPlan === 'enterprise') {
       return (
-        <Box component="ul" sx={{ pl: 2 }}>
-          <Box component="li" sx={{ mb: 0.5 }}>
+        <Box component="ul">
+          <Box component="li">
             <Typography variant="body2">Full Payroll & Tax processing included</Typography>
           </Box>
-          <Box component="li" sx={{ mb: 0.5 }}>
+          <Box component="li">
             <Typography variant="body2">Integrated HR & CRM modules</Typography>
           </Box>
         </Box>
@@ -375,7 +386,7 @@ const PaymentComponent = ({ metadata }) => {
         label="Global Business Solution" 
         color="primary" 
         variant="outlined"
-        sx={{ mx: 1, mb: 1 }}
+        sx={{ m: 0.5 }}
       />,
       <Chip 
         key="inventory"
@@ -383,7 +394,7 @@ const PaymentComponent = ({ metadata }) => {
         label="Advanced Inventory" 
         color="primary" 
         variant="outlined"
-        sx={{ mx: 1, mb: 1 }}
+        sx={{ m: 0.5 }}
       />
     ];
     
@@ -395,7 +406,7 @@ const PaymentComponent = ({ metadata }) => {
           label="Enhanced Security" 
           color="primary" 
           variant="outlined"
-          sx={{ mx: 1, mb: 1 }}
+          sx={{ m: 0.5 }}
         />,
         <Chip 
           key="teams"
@@ -403,7 +414,7 @@ const PaymentComponent = ({ metadata }) => {
           label="Unlimited Users" 
           color="primary" 
           variant="outlined"
-          sx={{ mx: 1, mb: 1 }}
+          sx={{ m: 0.5 }}
         />
       );
     }
@@ -441,29 +452,47 @@ const PaymentComponent = ({ metadata }) => {
 
     return (
       <Container maxWidth="sm">
-        <Alert severity="error" sx={{ mt: 2 }}>
+        <Alert 
+          severity="error" 
+          sx={{ 
+            mt: 4, 
+            mb: 3, 
+            borderRadius: 2, 
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+          }}
+        >
           Payment is only available for Professional and Enterprise tiers
         </Alert>
-        <Typography variant="body1" sx={{ mt: 2 }}>
-          You selected the <strong>{subscriptionPlan}</strong> plan, which doesn't require payment. 
-          Please return to plan selection and choose either Professional or Enterprise tier if you'd like to proceed with payment.
-        </Typography>
-        <Box sx={{ mt: 2, mb: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-          <Typography variant="body2" component="pre" sx={{ whiteSpace: 'pre-wrap', fontSize: '0.75rem' }}>
-            Debug Info:
-            Plan: {subscriptionPlan}
-            Step: {currentStep}
-            Session Storage: {sessionStorage.getItem('pendingSubscription') || 'null'}
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          onClick={handleBack}
-          disabled={isLoading || checkoutLoading}
-          sx={{ mt: 2 }}
+        <Paper
+          elevation={2}
+          sx={{
+            p: 4,
+            borderRadius: 3,
+            mb: 4
+          }}
         >
-          Back to Plan Selection
-        </Button>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Plan Selection Issue
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 3 }}>
+            You selected the <strong>{subscriptionPlan}</strong> plan, which doesn't require payment. 
+            Please return to plan selection and choose either Professional or Enterprise tier if you'd like to proceed with payment.
+          </Typography>
+          
+          <Button
+            variant="contained"
+            onClick={handleBack}
+            disabled={isLoading || checkoutLoading}
+            fullWidth
+            sx={{ 
+              py: 1.5, 
+              borderRadius: 2,
+              fontWeight: 500
+            }}
+          >
+            Back to Plan Selection
+          </Button>
+        </Paper>
       </Container>
     );
   }
@@ -472,23 +501,32 @@ const PaymentComponent = ({ metadata }) => {
   if (paymentMethod !== 'credit_card') {
     return (
       <Container maxWidth="sm">
-        <Alert severity="info" sx={{ mt: 2 }}>
-          Redirecting to dashboard...
+        <Alert 
+          severity="info" 
+          sx={{ 
+            mt: 4,
+            borderRadius: 2, 
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Typography>Redirecting to dashboard...</Typography>
+            <CircularProgress size={20} sx={{ ml: 2 }} />
+          </Box>
         </Alert>
-        <CircularProgress sx={{ mt: 2 }} />
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="sm">
+    <Container maxWidth="md">
       <StepProgress steps={steps} />
 
       <PaymentContainer>
         <LogoContainer>
           <Image
             src="/static/images/Pyfactor.png"
-            alt="Pyfactor Logo"
+            alt="Dott Logo"
             width={150}
             height={50}
             priority
@@ -503,59 +541,89 @@ const PaymentComponent = ({ metadata }) => {
         </LogoContainer>
 
         {checkoutError && (
-          <Alert severity="error" sx={{ mb: 2, width: '100%' }}>
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 3, 
+              width: '100%', 
+              borderRadius: 2,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+            }}
+          >
             {checkoutError}
           </Alert>
         )}
 
-        <PaymentDetails>
-          <PaymentSummary>
-            <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <Typography variant="h5" fontWeight="bold" sx={{ mb: 1 }}>
+        <PaymentDetails tier={subscriptionPlan}>
+          <PaymentSummary tier={subscriptionPlan}>
+            <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Typography variant="h4" fontWeight="bold" sx={{ mb: 1 }}>
                 {subscriptionPlan === 'professional' ? 'Professional' : 'Enterprise'} Plan
               </Typography>
               <Chip 
                 label={billingCycle === 'monthly' ? 'Monthly Billing' : 'Annual Billing'}
                 color="primary"
-                sx={{ mb: 1 }}
+                sx={{ 
+                  mb: 1, 
+                  px: 2,
+                  borderRadius: 4,
+                  fontWeight: 'medium'
+                }}
               />
               {billingCycle === 'annual' && (
                 <Chip 
                   size="small" 
                   label="Save 17%" 
                   color="success"
-                  sx={{ mb: 1 }}
+                  variant="outlined"
+                  sx={{ 
+                    fontWeight: 'bold',
+                    borderRadius: 4,
+                  }}
                 />
               )}
             </Box>
             
-            <Divider sx={{ mb: 2 }} />
+            <Divider sx={{ mb: 3 }} />
             
             {/* Payment Method Section */}
-            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Chip 
-                icon={<CreditCardIcon />} 
-                label="Credit/Debit Card" 
-                color="primary"
-                sx={{ mb: 1 }}
-              />
-            </Box>
+            <Fade in={true} timeout={800}>
+              <Box sx={{ 
+                mb: 3, 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                p: 2, 
+                borderRadius: 2,
+                bgcolor: 'rgba(25, 118, 210, 0.04)',
+              }}>
+                <Typography variant="subtitle1" fontWeight="medium" sx={{ mb: 1 }}>
+                  Payment Method
+                </Typography>
+                <Chip 
+                  icon={<CreditCardIcon />} 
+                  label="Credit/Debit Card" 
+                  color="primary"
+                  sx={{ fontWeight: 'medium' }}
+                />
+              </Box>
+            </Fade>
 
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3, flexWrap: 'wrap' }}>
               {getPlanChips()}
             </Box>
 
             {getRegionalPaymentMethods()}
 
-            <Box sx={{ mb: 3, mt: 2 }}>
-              <Typography variant="body2" color="text.secondary" fontWeight="bold">
+            <Box sx={{ mb: 4, mt: 3 }}>
+              <Typography variant="subtitle1" fontWeight="medium" sx={{ mb: 2 }}>
                 Your {subscriptionPlan === 'professional' ? 'Professional' : 'Enterprise'} plan includes:
               </Typography>
               {getPlanFeatures()}
             </Box>
 
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="text.secondary" fontWeight="bold">
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle1" fontWeight="medium" sx={{ mb: 2 }}>
                 {subscriptionPlan === 'professional' 
                   ? 'Available add-ons at discounted rates:' 
                   : 'Included add-ons:'}
@@ -563,96 +631,135 @@ const PaymentComponent = ({ metadata }) => {
               {getPlanAddOns()}
             </Box>
 
-            <Divider sx={{ mb: 2, mt: 2 }} />
+            <Divider sx={{ mb: 3, mt: 3 }} />
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                {billingCycle === 'monthly' ? 'Monthly subscription' : 'Annual subscription'}
-              </Typography>
-              <Typography variant="h6" fontWeight="bold">
-                ${getPricing(subscriptionPlan, billingCycle)}
-              </Typography>
-            </Box>
-
-            <Box sx={{ bgcolor: '#f5f5f5', p: 2, borderRadius: 1 }}>
-              <Typography variant="h5" fontWeight="bold" align="center">
-                Total: ${getPricing(subscriptionPlan, billingCycle)}{' '}
-                {billingCycle === 'monthly' ? '/month' : '/year'}
-              </Typography>
-              {billingCycle === 'annual' && (
-                <Typography variant="body2" color="success.main" align="center">
-                  You save ${subscriptionPlan === 'professional' 
-                    ? ((15 * 12) - 150) 
-                    : ((45 * 12) - 450)} per year
+            <PricingSummary>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="h4" fontWeight="bold" sx={{ color: 'primary.main', mb: 1 }}>
+                  ${getPricing(subscriptionPlan, billingCycle)}{' '}
+                  <Typography component="span" variant="h6" sx={{ fontWeight: 'normal' }}>
+                    {billingCycle === 'monthly' ? '/month' : '/year'}
+                  </Typography>
                 </Typography>
-              )}
-            </Box>
+                <Typography variant="subtitle1" color="text.secondary">
+                  {billingCycle === 'monthly' ? 'Monthly subscription' : 'Annual subscription'}
+                </Typography>
+                {billingCycle === 'annual' && (
+                  <Typography variant="subtitle2" color="success.main" sx={{ mt: 1, fontWeight: 'medium' }}>
+                    You save ${subscriptionPlan === 'professional' 
+                      ? ((15 * 12) - 150) 
+                      : ((45 * 12) - 450)} per year
+                  </Typography>
+                )}
+              </Box>
+            </PricingSummary>
+            
+            <Zoom in={true} timeout={500}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', mt: 2 }}>
+                <Chip 
+                  icon={<LockIcon />}
+                  label="Secure Payment"
+                  variant="outlined"
+                  size="small"
+                  sx={{ m: 0.5 }}
+                />
+                <Chip 
+                  icon={<CheckCircleOutlineIcon />}
+                  label="Cancel Anytime"
+                  variant="outlined"
+                  size="small"
+                  sx={{ m: 0.5 }}
+                />
+                <Chip 
+                  icon={<AccountBalanceIcon />}
+                  label="Invoice Available"
+                  variant="outlined"
+                  size="small"
+                  sx={{ m: 0.5 }}
+                />
+              </Box>
+            </Zoom>
           </PaymentSummary>
           
-          {/* Mock Credit Card Form */}
-          <Box sx={{ mt: 3, mb: 4, width: '100%', border: '1px solid #e0e0e0', borderRadius: 1, p: 2 }}>
-            <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
-              Payment Details
-            </Typography>
-            
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" sx={{ mb: 1 }}>Card Number</Typography>
-              <Box 
-                sx={{ 
-                  border: '1px solid #ccc', 
-                  borderRadius: 1, 
-                  p: 1.5, 
-                  display: 'flex',
-                  alignItems: 'center',
-                  bgcolor: '#fafafa'
-                }}
-              >
-                <CreditCardIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                <Typography sx={{ color: 'text.secondary' }}>4242 4242 4242 4242</Typography>
-              </Box>
-            </Box>
-            
-            <Box sx={{ display: 'flex', mb: 2 }}>
-              <Box sx={{ flex: 1, mr: 1 }}>
-                <Typography variant="body2" sx={{ mb: 1 }}>Expiry Date</Typography>
-                <Box sx={{ border: '1px solid #ccc', borderRadius: 1, p: 1.5, bgcolor: '#fafafa' }}>
-                  <Typography sx={{ color: 'text.secondary' }}>12/29</Typography>
+          {/* Credit Card Form - Enhanced */}
+          <Fade in={true} timeout={1000}>
+            <CardDetailsSection>
+              <Typography variant="h6" fontWeight="medium" sx={{ mb: 3 }}>
+                Payment Details
+              </Typography>
+              
+              <CardField>
+                <CreditCardIcon sx={{ mr: 2, color: 'primary.main' }} />
+                <Typography sx={{ fontWeight: 'medium' }}>4242 4242 4242 4242</Typography>
+              </CardField>
+              
+              <Box sx={{ display: 'flex', mb: 1 }}>
+                <Box sx={{ flex: 1, mr: 2 }}>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>Expiry Date</Typography>
+                  <CardField>
+                    <Typography>12/29</Typography>
+                  </CardField>
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>CVC</Typography>
+                  <CardField>
+                    <Typography>123</Typography>
+                  </CardField>
                 </Box>
               </Box>
-              <Box sx={{ flex: 1, ml: 1 }}>
-                <Typography variant="body2" sx={{ mb: 1 }}>CVC</Typography>
-                <Box sx={{ border: '1px solid #ccc', borderRadius: 1, p: 1.5, bgcolor: '#fafafa' }}>
-                  <Typography sx={{ color: 'text.secondary' }}>123</Typography>
-                </Box>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 2 }}>
+                <LockIcon sx={{ color: 'success.main', fontSize: '0.9rem', mr: 1 }} />
+                <Typography variant="caption" color="text.secondary">
+                  This is a demo payment form. In production, a secure Stripe payment form would be displayed.
+                </Typography>
               </Box>
-            </Box>
-            
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-              This is a demo payment form. In production, a secure Stripe payment form would be displayed.
-            </Typography>
-          </Box>
+            </CardDetailsSection>
+          </Fade>
         </PaymentDetails>
 
-        <Button
-          variant="contained"
-          color="primary"
-          size="large"
-          onClick={handlePaymentSubmit}
-          disabled={isLoading || checkoutLoading}
-          sx={{ minWidth: 200, py: 1.5, fontSize: '1.1rem', fontWeight: 'bold' }}
-        >
-          {isLoading || checkoutLoading ? (
-            <CircularProgress size={24} />
-          ) : (
-            'Complete Payment'
-          )}
-        </Button>
+        <PaymentActionButton>
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            onClick={handlePaymentSubmit}
+            disabled={isLoading || checkoutLoading}
+            sx={{ 
+              minWidth: 250, 
+              py: 1.5, 
+              px: 4,
+              fontSize: '1.1rem', 
+              fontWeight: 'bold',
+              borderRadius: 3,
+              boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.15)',
+              }
+            }}
+          >
+            {(isLoading || checkoutLoading) ? (
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <CircularProgress size={24} sx={{ mr: 1 }} />
+                {processingPayment ? 'Processing...' : 'Loading...'}
+              </Box>
+            ) : (
+              'Complete Payment'
+            )}
+          </Button>
+        </PaymentActionButton>
 
         <Button
-          variant="text"
+          variant="outlined"
           onClick={handleBack}
           disabled={isLoading || checkoutLoading}
-          sx={{ mt: 2 }}
+          sx={{ 
+            mt: 1, 
+            borderRadius: 2,
+            px: 3,
+          }}
         >
           Back to Plan Selection
         </Button>

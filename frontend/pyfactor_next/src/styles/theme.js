@@ -4,9 +4,9 @@ const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#1976d2',
-      light: '#42a5f5',
-      dark: '#1565c0',
+      main: '#0a3977',
+      light: '#1a5bc0',
+      dark: '#041e42',
       contrastText: '#fff',
     },
     secondary: {
@@ -56,8 +56,8 @@ const theme = createTheme({
       A700: '#616161',
     },
     text: {
-      primary: 'rgba(0, 0, 0, 0.87)',
-      secondary: 'rgba(0, 0, 0, 0.6)',
+      primary: '#000000',
+      secondary: '#0a3977',
       disabled: 'rgba(0, 0, 0, 0.38)',
     },
     background: {

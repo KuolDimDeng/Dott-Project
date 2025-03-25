@@ -36,17 +36,27 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import InvoiceDetails from './InvoiceDetails';
 import { ErrorBoundary } from 'next/dist/client/components/error-boundary';
 
-const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
+const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustomer = false }) => {
   const [customer, setCustomer] = useState(null);
-  const [tabValue, setTabValue] = useState(0);
+  const [tabValue, setTabValue] = useState(newCustomer ? 0 : 0);
   const [invoices, setInvoices] = useState([]);
   const [transactions, setTransactions] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!newCustomer);
   const [error, setError] = useState(null);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [userDatabase, setUserDatabase] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedCustomer, setEditedCustomer] = useState(null);
+  const [isEditing, setIsEditing] = useState(newCustomer);
+  const [editedCustomer, setEditedCustomer] = useState(newCustomer ? {
+    customerName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: '',
+    notes: ''
+  } : null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const fetchUserProfile = useCallback(async () => {
@@ -88,10 +98,10 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
   }, [fetchUserProfile]);
 
   useEffect(() => {
-    if (customerId && userDatabase) {
+    if (customerId && userDatabase && !newCustomer) {
       fetchCustomer();
     }
-  }, [customerId, userDatabase, fetchCustomer]);
+  }, [customerId, userDatabase, fetchCustomer, newCustomer]);
 
   const fetchInvoices = useCallback(async () => {
     if (!customer) return;
@@ -164,6 +174,23 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
     }
   };
 
+  const handleCreateCustomer = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await axiosInstance.post('/api/customers/create/', editedCustomer);
+      logger.info('Customer created successfully:', response.data);
+      setCustomer(response.data);
+      setIsEditing(false);
+      setEditedCustomer(null);
+    } catch (error) {
+      logger.error('Error creating customer:', error);
+      setError('Failed to create customer. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleDelete = () => {
     // Implement delete functionality
     logger.info('Delete customer:', customer.id);
@@ -206,6 +233,126 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
       const { name, value } = event.target;
       setEditedCustomer({ ...editedCustomer, [name]: value });
     };
+
+    if (newCustomer) {
+      return (
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <Paper sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Create New Customer
+              </Typography>
+              <TextField
+                fullWidth
+                label="Customer Name"
+                name="customerName"
+                value={editedCustomer.customerName || ''}
+                onChange={handleInputChange}
+                margin="normal"
+                required
+              />
+              <TextField
+                fullWidth
+                label="First Name"
+                name="first_name"
+                value={editedCustomer.first_name || ''}
+                onChange={handleInputChange}
+                margin="normal"
+              />
+              <TextField
+                fullWidth
+                label="Last Name"
+                name="last_name"
+                value={editedCustomer.last_name || ''}
+                onChange={handleInputChange}
+                margin="normal"
+              />
+              <TextField
+                fullWidth
+                label="Email"
+                name="email"
+                value={editedCustomer.email || ''}
+                onChange={handleInputChange}
+                margin="normal"
+                required
+              />
+              <TextField
+                fullWidth
+                label="Phone"
+                name="phone"
+                value={editedCustomer.phone || ''}
+                onChange={handleInputChange}
+                margin="normal"
+                required
+              />
+              <TextField
+                fullWidth
+                label="Street"
+                name="street"
+                value={editedCustomer.street || ''}
+                onChange={handleInputChange}
+                margin="normal"
+              />
+              <TextField
+                fullWidth
+                label="City"
+                name="city"
+                value={editedCustomer.city || ''}
+                onChange={handleInputChange}
+                margin="normal"
+              />
+              <TextField
+                fullWidth
+                label="State"
+                name="state"
+                value={editedCustomer.state || ''}
+                onChange={handleInputChange}
+                margin="normal"
+              />
+              <TextField
+                fullWidth
+                label="Postcode"
+                name="postcode"
+                value={editedCustomer.postcode || ''}
+                onChange={handleInputChange}
+                margin="normal"
+              />
+              <TextField
+                fullWidth
+                label="Country"
+                name="country"
+                value={editedCustomer.country || ''}
+                onChange={handleInputChange}
+                margin="normal"
+              />
+              <Box mt={2}>
+                <Button 
+                  variant="contained" 
+                  color="primary" 
+                  onClick={handleCreateCustomer}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Creating...' : 'Create Customer'}
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  color="secondary" 
+                  onClick={onBackToList} 
+                  sx={{ ml: 2 }}
+                >
+                  Cancel
+                </Button>
+              </Box>
+              {error && (
+                <Box mt={2}>
+                  <Typography color="error">{error}</Typography>
+                </Box>
+              )}
+            </Paper>
+          </Grid>
+        </Grid>
+      );
+    }
 
     return (
       <Grid container spacing={2}>
@@ -508,53 +655,44 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
     </TableContainer>
   );
 
-  if (isLoading) {
-    return <CircularProgress />;
-  }
-
-  if (error) {
+  if (isLoading && !newCustomer) {
     return (
-      <Box>
-        <Typography color="error">{error}</Typography>
-        <Button onClick={onBackToList}>Back to Customer List</Button>
+      <Box display="flex" justifyContent="center" alignItems="center" height="400px">
+        <CircularProgress />
       </Box>
     );
   }
 
-  if (!customer) {
+  if (error && !newCustomer) {
     return (
-      <Box>
-        <Typography>No customer data available.</Typography>
-        <IconButton onClick={onBackToList}>
-          <ArrowBackIcon />
-        </IconButton>
+      <Box p={3}>
+        <Typography color="error">{error}</Typography>
+        <Button startIcon={<ArrowBackIcon />} onClick={onBackToList} sx={{ mt: 2 }}>
+          Back to List
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!customer && !newCustomer) {
+    return (
+      <Box p={3}>
+        <Typography>No customer data found</Typography>
+        <Button startIcon={<ArrowBackIcon />} onClick={onBackToList} sx={{ mt: 2 }}>
+          Back to List
+        </Button>
       </Box>
     );
   }
 
   if (selectedInvoice) {
     return (
-      <Box>
-        <Button
-          onClick={handleBackToCustomerDetails}
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
-          sx={{
-            mr: 1,
-            mb: 2,
-            '&:hover': {
-              backgroundColor: 'primary.main',
-              color: 'white',
-            },
-          }}
-        >
-          Back to Customer Details
-        </Button>
+      <ErrorBoundary FallbackComponent={() => <div>Error loading invoice details</div>}>
         <InvoiceDetails
           invoiceId={selectedInvoice}
-          onBackToCustomerDetails={handleBackToCustomerDetails}
+          onBack={handleBackToCustomerDetails}
         />
-      </Box>
+      </ErrorBoundary>
     );
   }
 
@@ -697,6 +835,46 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
             </>
           )}
         </Box>
+        {isEditing ? (
+          <Grid item xs={12}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<SaveIcon />}
+              onClick={newCustomer ? handleCreateCustomer : handleSaveEdit}
+              style={{ marginRight: 8 }}
+            >
+              {newCustomer ? 'Create Customer' : 'Save Changes'}
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<CancelIcon />}
+              onClick={handleCancelEdit}
+            >
+              Cancel
+            </Button>
+          </Grid>
+        ) : (
+          <Grid item xs={12}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<EditIcon />}
+              onClick={handleEdit}
+              style={{ marginRight: 8 }}
+            >
+              Edit
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<DeleteIcon />}
+              onClick={handleDelete}
+            >
+              Delete
+            </Button>
+          </Grid>
+        )}
       </Box>
       <Dialog
         open={deleteDialogOpen}
@@ -728,9 +906,17 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect }) => {
 };
 
 CustomerDetails.propTypes = {
-  customerId: PropTypes.string.isRequired,
-  onBackToList: PropTypes.func.isRequired,
-  onInvoiceSelect: PropTypes.func.isRequired,
+  customerId: PropTypes.string,
+  onBackToList: PropTypes.func,
+  onInvoiceSelect: PropTypes.func,
+  newCustomer: PropTypes.bool,
+};
+
+CustomerDetails.defaultProps = {
+  customerId: '',
+  onBackToList: () => {},
+  onInvoiceSelect: () => {},
+  newCustomer: false,
 };
 
 export default CustomerDetails;

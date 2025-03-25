@@ -3,11 +3,24 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import LoadingSpinner from '@/components/LoadingSpinner'; // Create this if you haven't
+import { Box, CircularProgress } from '@mui/material';
 
-// Dynamically import SignUp component
+// Simple loading component for dynamic import
+const LoadingFallback = () => (
+  <Box sx={{ 
+    display: 'flex',
+    justifyContent: 'center', 
+    alignItems: 'center',
+    height: '100vh',
+    width: '100vw'
+  }}>
+    <CircularProgress />
+  </Box>
+);
+
+// Dynamically import SignUp component with improved loading state
 const SignUp = dynamic(() => import('./component/SignUp'), {
-  loading: () => <LoadingSpinner />
+  loading: () => <LoadingFallback />
 });
 
 export default function SignUpPage() {

@@ -6,7 +6,7 @@ const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#1976d2',
+      main: '#0a3977',
     },
     secondary: {
       main: '#dc004e',
@@ -14,6 +14,10 @@ const theme = createTheme({
     background: {
       default: '#f5f5f5',
       paper: '#ffffff',
+    },
+    text: {
+      primary: '#000000',
+      secondary: '#0a3977',
     },
   },
   typography: {

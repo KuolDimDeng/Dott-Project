@@ -1,41 +1,14 @@
-import { createTheme } from '@mui/material/styles';
 import { styled } from '@mui/material/styles';
-import { Box } from '@mui/material';
+import { Box, Paper } from '@mui/material';
 
-export const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-      contrastText: '#ffffff',
-    },
-    background: {
-      default: '#f5f5f5',
-      paper: '#ffffff',
-    },
-    tier: {
-      free: '#4caf50',
-      professional: '#1976d2',
-      enterprise: '#673ab7'  // Added enterprise color
-    }
-  },
-  shape: {
-    borderRadius: 8,
-  }
-});
-
-export const PaymentContainer = styled(Box)(({ theme, tier }) => ({
-  minHeight: '100vh',
+// Enhanced modern styling
+export const PaymentContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
   alignItems: 'center',
   padding: theme.spacing(3),
-  backgroundColor: tier === 'professional' ? 
-    theme.palette.background.default : 
-    tier === 'enterprise' ?
-    theme.palette.background.default :
-    theme.palette.background.paper
+  width: '100%'
 }));
 
 export const LogoContainer = styled(Box)(({ theme }) => ({
@@ -44,48 +17,127 @@ export const LogoContainer = styled(Box)(({ theme }) => ({
   width: '100%',
 }));
 
-export const PaymentDetails = styled(Box)(({ theme, tier }) => ({
+export const PaymentDetails = styled(Paper)(({ theme, tier }) => ({
   width: '100%',
   marginBottom: theme.spacing(4),
-  backgroundColor: theme.palette.background.paper,
-  borderRadius: theme.shape.borderRadius,
-  boxShadow: tier === 'professional' || tier === 'enterprise' ? 
-    theme.shadows[2] : 
-    theme.shadows[1]
+  borderRadius: 16,
+  overflow: 'hidden',
+  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
 }));
 
 export const PaymentSummary = styled(Box)(({ theme, tier }) => ({
-  border: `1px solid ${theme.palette.divider}`,
-  borderRadius: theme.shape.borderRadius,
-  padding: theme.spacing(3),
-  marginBottom: theme.spacing(3),
+  padding: theme.spacing(4),
   backgroundColor: theme.palette.background.paper,
-  boxShadow: theme.shadows[1],
-  ...(tier === 'enterprise' && {
-    borderTop: '4px solid',
-    borderTopColor: theme.palette.tier.enterprise,
+  position: 'relative',
+  
+  // Conditional styling based on subscription tier
+  ...(tier === 'professional' && {
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '4px',
+      background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+    },
   }),
+  
+  ...(tier === 'enterprise' && {
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '4px',
+      background: 'linear-gradient(90deg, #673ab7 0%, #9575cd 100%)',
+    },
+  }),
+  
   '& ul': {
     paddingLeft: theme.spacing(2),
     marginBottom: theme.spacing(2),
+    listStyleType: 'none',
   },
   '& li': {
-    marginBottom: theme.spacing(0.5),
-    color: theme.palette.text.secondary
+    marginBottom: theme.spacing(1.2),
+    position: 'relative',
+    paddingLeft: theme.spacing(3),
+    color: theme.palette.text.secondary,
+    '&::before': {
+      content: '"✓"',
+      position: 'absolute',
+      left: 0,
+      color: theme.palette.success.main,
+      fontWeight: 'bold',
+    }
   }
 }));
 
-export const PricingBox = styled(Box)(({ theme, tier }) => ({
-  backgroundColor: tier === 'professional' ? 
-    theme.palette.tier.professional : 
-    tier === 'enterprise' ?
-    theme.palette.tier.enterprise :
-    theme.palette.background.paper,
-  color: (tier === 'professional' || tier === 'enterprise') ? 
-    theme.palette.primary.contrastText : 
-    theme.palette.text.primary,
-  padding: theme.spacing(2),
-  borderRadius: theme.shape.borderRadius,
+export const PaymentMethodPaper = styled(Paper)(({ theme, selected }) => ({
+  marginBottom: theme.spacing(2),
+  padding: theme.spacing(2.5),
+  border: selected ? '2px solid' : '1px solid',
+  borderColor: selected ? theme.palette.primary.main : theme.palette.divider,
+  borderRadius: 12,
+  transition: 'all 0.2s ease-in-out',
+  boxShadow: selected ? '0 4px 12px rgba(0,0,0,0.08)' : 'none',
+  '&:hover': {
+    borderColor: selected ? theme.palette.primary.main : theme.palette.primary.light,
+    transform: 'translateY(-2px)',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+  }
+}));
+
+export const CardDetailsSection = styled(Box)(({ theme }) => ({
+  borderRadius: 12,
+  padding: theme.spacing(3),
+  backgroundColor: '#fafafa',
+  border: '1px solid #e0e0e0',
+  marginTop: theme.spacing(3),
+  marginBottom: theme.spacing(3),
+  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+  position: 'relative',
+  overflow: 'hidden',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '4px',
+    background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+  }
+}));
+
+export const CardField = styled(Box)(({ theme }) => ({
+  border: '1px solid #e0e0e0',
+  borderRadius: 8,
+  padding: theme.spacing(1.5),
+  display: 'flex',
+  alignItems: 'center',
+  backgroundColor: theme.palette.background.paper,
+  marginBottom: theme.spacing(2),
+  transition: 'border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+  '&:hover': {
+    borderColor: theme.palette.primary.light,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+  }
+}));
+
+export const PricingSummary = styled(Box)(({ theme }) => ({
+  backgroundColor: '#f0f7ff',
+  borderRadius: 12,
+  padding: theme.spacing(3),
+  marginTop: theme.spacing(2),
+  marginBottom: theme.spacing(3),
+  boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.05)',
+}));
+
+export const PaymentActionButton = styled(Box)(({ theme }) => ({
+  width: '100%',
   textAlign: 'center',
-  marginBottom: theme.spacing(3)
+  marginBottom: theme.spacing(2),
 }));

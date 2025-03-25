@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google';
 import ClientLayout from './ClientLayout';
 import ThemeRegistry from '@/components/ThemeRegistry/ThemeRegistry';
 import Providers from '@/providers';
-import LanguageProvider from '@/components/LanguageProvider/LanguageProvider.jsx';
+import LanguageProvider from '@/components/LanguageProvider/LanguageProvider.js';
 import DynamicComponents from '@/components/DynamicComponents';
 import './globals.css';
 import { UserProvider } from '@/contexts/UserContext';
@@ -14,7 +14,12 @@ export const metadata = {
   title: 'Dott: Small Business Software',
   description: 'Dott- Business Management Platform',
   icons: {
-    icon: '/static/images/favicon.png',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/static/images/favicon.png', type: 'image/png' }
+    ],
+    apple: { url: '/static/images/favicon.png', type: 'image/png' },
+    shortcut: { url: '/static/images/favicon.png', type: 'image/png' }
   },
 };
 

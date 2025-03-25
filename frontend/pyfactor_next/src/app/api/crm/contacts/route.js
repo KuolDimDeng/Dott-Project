@@ -31,15 +31,23 @@ export async function GET(request) {
     
     // Fetch contacts from backend API
     const response = await fetch(
-      `${process.env.BACKEND_API_URL}/crm/contacts/?${queryParams.toString()}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/crm/contacts/?${queryParams.toString()}`,
       {
         headers: { Authorization: authHeader }
       }
     );
     
     if (!response.ok) {
-      const errorData = await response.json();
-      return NextResponse.json(errorData, { status: response.status });
+      try {
+        const errorData = await response.json();
+        return NextResponse.json(errorData, { status: response.status });
+      } catch (e) {
+        // If response is not JSON, return a generic error
+        return NextResponse.json({ 
+          error: 'Internal Server Error',
+          message: await response.text()
+        }, { status: response.status });
+      }
     }
     
     const data = await response.json();
@@ -65,7 +73,7 @@ export async function POST(request) {
     const body = await request.json();
     
     // Create contact in backend API
-    const response = await fetch(`${process.env.BACKEND_API_URL}/crm/contacts/`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/crm/contacts/`, {
       method: 'POST',
       headers: { 
         'Authorization': authHeader,

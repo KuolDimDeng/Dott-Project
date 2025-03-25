@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Box, CircularProgress, Typography, Alert } from '@mui/material';
-import { handleRedirectSignIn } from 'aws-amplify/auth';
+import { handleAuthResponse } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 
 export default function Callback() {
@@ -14,8 +14,22 @@ export default function Callback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Handle the OAuth callback
-        const { tokens } = await handleRedirectSignIn();
+        logger.debug('Auth callback page loaded, handling response');
+        
+        // Handle the OAuth callback with better error handling
+        let tokens;
+        try {
+          const authResponse = await handleAuthResponse();
+          tokens = authResponse?.tokens;
+          logger.debug('Auth response handled:', { 
+            hasTokens: !!tokens,
+            isSignedIn: authResponse?.isSignedIn
+          });
+        } catch (authError) {
+          logger.error('Error handling auth response:', authError);
+          setError('Authentication failed: ' + (authError.message || 'Unknown error'));
+          return;
+        }
         
         if (tokens) {
           logger.debug('OAuth callback successful');

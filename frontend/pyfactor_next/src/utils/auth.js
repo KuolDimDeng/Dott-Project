@@ -1,4 +1,4 @@
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession, signInWithRedirect } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 import { jwtDecode } from 'jwt-decode';
 
@@ -131,5 +131,59 @@ export function isTokenExpired(token) {
   } catch (error) {
     logger.error('[Auth] Error checking token expiration:', error);
     return true; // Assume expired if we can't decode
+  }
+}
+
+/**
+ * Initiates sign in with social provider
+ * @param {string} provider - The OAuth provider (e.g., 'Google', 'Facebook', 'Apple')
+ * @returns {Promise<void>} - Returns a promise that resolves when the redirect is initiated
+ */
+export const signInWithSocialProvider = async (provider) => {
+  try {
+    logger.debug(`[Auth] Initiating sign in with ${provider}`);
+    
+    // Create options object for the social provider
+    const options = {
+      provider: provider
+    };
+    
+    // Initiate the redirect to the OAuth provider
+    await signInWithRedirect(options);
+    
+    // Note: Code execution will not continue here as the browser will redirect
+  } catch (error) {
+    logger.error(`[Auth] ${provider} sign in failed:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Utility function to extract user information from the Cognito user object
+ * @param {Object} user - The Cognito user object
+ * @returns {Object} - A simplified user object with essential information
+ */
+export const extractUserInfo = (user) => {
+  if (!user) return null;
+  
+  try {
+    const attributes = user.attributes || {};
+    
+    return {
+      id: user.userId || attributes.sub,
+      email: attributes.email,
+      emailVerified: attributes.email_verified === 'true',
+      firstName: attributes.given_name || '',
+      lastName: attributes.family_name || '',
+      onboardingStatus: attributes['custom:onboarding'] || 'NOT_STARTED',
+      tenantId: attributes['custom:tenant_id'] || null,
+      provider: attributes.identities ? JSON.parse(attributes.identities)[0]?.providerName : 'Cognito'
+    };
+  } catch (error) {
+    logger.error('[Auth] Error extracting user info:', error);
+    return {
+      id: user.userId,
+      provider: 'Cognito'
+    };
   }
 }

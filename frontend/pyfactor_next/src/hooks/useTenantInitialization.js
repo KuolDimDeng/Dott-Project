@@ -259,11 +259,14 @@ export function useTenantInitialization() {
    * Handle user login
    * @param {string} username - The username
    * @param {string} password - The password
+   * @param {boolean} rememberMe - Whether to persist the session
    */
-  const handleLogin = useCallback(async (username, password) => {
+  const handleLogin = useCallback(async (username, password, rememberMe = false) => {
     try {
+      logger.debug('[TenantInit] Attempting login with rememberMe:', rememberMe);
+      
       // Use the auth.signIn function directly
-      const result = await auth.signIn(username, password);
+      const result = await auth.signIn(username, password, rememberMe);
       
       if (result.success) {
         try {

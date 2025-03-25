@@ -44,7 +44,7 @@ from .serializers import (
 )
 from onboarding.models import OnboardingProgress
 from .tokens import account_activation_token
-from users.utils import initial_user_registration
+from users.utils import initial_user_registration, check_subscription_status
 from pyfactor.logging_config import get_logger
 from django.urls import path, re_path
 

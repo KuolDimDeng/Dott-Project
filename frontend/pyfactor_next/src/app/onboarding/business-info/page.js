@@ -232,56 +232,54 @@ export default function BusinessInfoPage() {
   }
 
   return (
-    <Container maxWidth="sm">
-      <Box
+    <Container maxWidth="md">
+      <Paper
+        elevation={2}
         sx={{
-          minHeight: '100vh',
-          py: 4,
+          p: { xs: 3, sm: 5 },
           display: 'flex',
           flexDirection: 'column',
-          gap: 4
+          gap: 3,
+          borderRadius: 2,
+          backgroundColor: 'white',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
         }}
       >
-        <Paper
-          elevation={3}
+        {(error || formError) && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error || formError}
+          </Alert>
+        )}
+
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
           sx={{
-            p: 4,
             display: 'flex',
             flexDirection: 'column',
             gap: 3
           }}
         >
-          <Typography variant="h5" component="h1" gutterBottom align="center">
-            Business Information
-          </Typography>
-
-          {(error || formError) && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error || formError}
-            </Alert>
-          )}
-
-          <Box
-            component="form"
-            onSubmit={handleSubmit}
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 3
+          {/* Business name field with improved styling */}
+          <TextField
+            required
+            fullWidth
+            id="businessName"
+            name="businessName"
+            label="Business Name"
+            value={formData.businessName}
+            onChange={handleChange}
+            disabled={submitting}
+            variant="outlined"
+            helperText="The official name of your business"
+            InputProps={{
+              sx: { borderRadius: 1.5 }
             }}
-          >
-            <TextField
-              required
-              fullWidth
-              id="businessName"
-              name="businessName"
-              label="Business Name"
-              value={formData.businessName}
-              onChange={handleChange}
-              disabled={submitting}
-            />
+          />
 
-            <FormControl fullWidth required>
+          {/* Organize form into 2-column layout on larger screens */}
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
+            <FormControl fullWidth required variant="outlined">
               <InputLabel id="businessType-label">Business Type</InputLabel>
               <Select
                 labelId="businessType-label"
@@ -291,6 +289,7 @@ export default function BusinessInfoPage() {
                 onChange={handleChange}
                 disabled={submitting}
                 label="Business Type"
+                sx={{ borderRadius: 1.5 }}
               >
                 {businessTypes.map((type) => (
                   <MenuItem key={type} value={type}>
@@ -300,9 +299,7 @@ export default function BusinessInfoPage() {
               </Select>
             </FormControl>
 
-            {/* Business Subtypes field removed as requested */}
-
-            <FormControl fullWidth required>
+            <FormControl fullWidth required variant="outlined">
               <InputLabel id="country-label">Country</InputLabel>
               <Select
                 labelId="country-label"
@@ -312,6 +309,7 @@ export default function BusinessInfoPage() {
                 onChange={handleChange}
                 disabled={submitting}
                 label="Country"
+                sx={{ borderRadius: 1.5 }}
               >
                 {countries.map((country) => (
                   <MenuItem key={country.value} value={country.value}>
@@ -320,10 +318,10 @@ export default function BusinessInfoPage() {
                 ))}
               </Select>
             </FormControl>
+          </Box>
 
-            {/* Business State field removed as requested */}
-
-            <FormControl fullWidth required>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
+            <FormControl fullWidth required variant="outlined">
               <InputLabel id="legalStructure-label">Legal Structure</InputLabel>
               <Select
                 labelId="legalStructure-label"
@@ -332,7 +330,8 @@ export default function BusinessInfoPage() {
                 value={formData.legalStructure}
                 onChange={handleChange}
                 disabled={submitting}
-                label="Legal Structure"
+                label="Legal Structure" 
+                sx={{ borderRadius: 1.5 }}
               >
                 {legalStructures.map((structure) => (
                   <MenuItem key={structure} value={structure}>
@@ -355,28 +354,47 @@ export default function BusinessInfoPage() {
               InputLabelProps={{
                 shrink: true,
               }}
+              variant="outlined"
+              sx={{ borderRadius: 1.5 }}
+              InputProps={{
+                sx: { borderRadius: 1.5 }
+              }}
             />
+          </Box>
 
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
             <Button
               type="submit"
               variant="contained"
               color="primary"
               size="large"
               disabled={submitting}
-              sx={{ mt: 2 }}
+              sx={{ 
+                mt: 2,
+                py: 1.5, 
+                px: 4,
+                borderRadius: 2,
+                textTransform: 'none',
+                fontSize: '1rem',
+                fontWeight: 500,
+                boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                '&:hover': {
+                  boxShadow: '0 6px 15px rgba(0,0,0,0.15)',
+                }
+              }}
             >
               {submitting ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CircularProgress size={20} color="inherit" />
-                  Saving...
+                  <CircularProgress size={24} color="inherit" />
+                  <span>Saving...</span>
                 </Box>
               ) : (
-                'Continue'
+                'Continue to Next Step'
               )}
             </Button>
           </Box>
-        </Paper>
-      </Box>
+        </Box>
+      </Paper>
     </Container>
   );
 }

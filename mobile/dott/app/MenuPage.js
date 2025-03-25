@@ -54,12 +54,33 @@ export default function MenuPage() {
           <Text style={styles.menuButtonText}>Sales History</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.menuButton, styles.bottomButton]}
+          style={styles.menuButton}
           onPress={() => router.push('/bluetoothSettings')}
         >
           <Ionicons name="bluetooth-outline" size={24} color={BLUE} />
           <Text style={styles.menuButtonText}>Bluetooth Settings</Text>
         </TouchableOpacity>
+        
+        <View style={styles.footerButtons}>
+          <TouchableOpacity
+            style={[styles.menuButton, styles.bottomButton]}
+            onPress={() => router.push('/about')}
+          >
+            <Ionicons name="information-circle-outline" size={24} color={BLUE} />
+            <Text style={styles.menuButtonText}>About Dott</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.menuButton, styles.bottomButton, styles.logoutButton]}
+            onPress={async () => {
+              await AsyncStorage.clear();
+              router.replace('/');
+            }}
+          >
+            <Ionicons name="log-out-outline" size={24} color="#e74c3c" />
+            <Text style={[styles.menuButtonText, {color: '#e74c3c'}]}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -115,6 +136,15 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
   bottomButton: {
+    marginTop: 10,
+  },
+  footerButtons: {
     marginTop: 'auto',
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  logoutButton: {
+    backgroundColor: '#fff8f8',
   },
 });

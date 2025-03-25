@@ -34,6 +34,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.core.paginator import Paginator
 from .account_types import ACCOUNT_TYPES
 from django.utils import timezone
+from users.utils import get_tenant_database
 
 # views.py
 from rest_framework import status
@@ -194,22 +195,17 @@ def handle_unauthenticated_user():
     return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
 
 def get_user_database(user):
-    try:
-        user_profile = UserProfile.objects.using('default').get(user=user)
-    except UserProfile.DoesNotExist:
-        logger.error("UserProfile does not exist for user: %s", user)
-        return None
-
-    database_name = user_profile.database_name
-    if not database_name:
-        logger.error("Database name is None for user: %s", user)
-        return None  # Or handle it as you see fit
+    """
+    Get the database associated with a user. Uses the tenant-aware function from users.utils.
+    """
+    database_name = get_tenant_database(user)
     
-    logger.debug("Fetched user profile. Database name: %s", database_name)
-    
-    router = UserDatabaseRouter()
-    router.create_dynamic_database(database_name)
-    
+    # Make sure we log the result for debugging
+    if database_name:
+        logger.debug(f"Retrieved database name: {database_name} for user {user.id}")
+    else:
+        logger.error(f"Failed to get database name for user {user.id}")
+        
     return database_name
 
 

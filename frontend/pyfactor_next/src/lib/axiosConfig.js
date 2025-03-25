@@ -50,7 +50,15 @@ axiosInstance.interceptors.request.use(
       
       if (!accessToken || !idToken) {
         logger.warn('[AxiosConfig] Missing required tokens in session');
-        throw new Error('No valid session');
+        // Check if we're in a server context first
+        if (typeof window === 'undefined') {
+          // In server context, return a generic error that won't break API routes
+          logger.warn('[AxiosConfig] Server-side request with missing tokens');
+          throw new Error('No valid session');
+        } else {
+          // In client context, throw a more descriptive error
+          throw new Error('No valid session - user authentication required');
+        }
       }
       
       // Check if token is expired or about to expire (within 5 minutes)

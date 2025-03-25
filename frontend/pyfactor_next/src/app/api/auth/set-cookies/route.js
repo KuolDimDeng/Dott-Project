@@ -4,7 +4,7 @@ import { parseJwt } from '@/lib/authUtils';
 
 export async function POST(request) {
   try {
-    const { idToken, accessToken, refreshToken, onboardingStep, onboardedStatus, setupCompleted } = await request.json();
+    const { idToken, accessToken, refreshToken, onboardingStep, onboardedStatus, setupCompleted, rememberMe, maxAge } = await request.json();
     
     if (!idToken || !accessToken) {
       logger.error('[API] Missing required tokens for set-cookies:', { 
@@ -23,16 +23,23 @@ export async function POST(request) {
       hasRefreshToken: !!refreshToken,
       onboardingStep,
       onboardedStatus,
-      setupCompleted
+      setupCompleted,
+      rememberMe,
+      customMaxAge: maxAge
     });
     
     const isDev = process.env.NODE_ENV === 'development';
+    // Use provided maxAge or determine based on rememberMe flag
+    const defaultMaxAge = rememberMe ? 
+      30 * 24 * 60 * 60 : // 30 days for rememberMe
+      24 * 60 * 60;      // 24 hours for standard session
+      
     const cookieOptions = {
       path: '/',
       httpOnly: true,
       secure: !isDev,
       sameSite: isDev ? 'lax' : 'strict',
-      maxAge: 3600 // 1 hour
+      maxAge: maxAge || defaultMaxAge // Use provided maxAge or calculate based on rememberMe
     };
 
     const response = NextResponse.json({ success: true });
@@ -42,9 +49,14 @@ export async function POST(request) {
     response.cookies.set('accessToken', accessToken, cookieOptions);
     
     if (refreshToken) {
+      // For refresh token, always use a longer expiry - either the rememberMe duration or at least 7 days
+      const refreshTokenMaxAge = rememberMe ? 
+        30 * 24 * 60 * 60 : // 30 days for rememberMe
+        7 * 24 * 60 * 60;  // 7 days for standard session
+        
       response.cookies.set('refreshToken', refreshToken, {
         ...cookieOptions,
-        maxAge: 86400 // 24 hours
+        maxAge: refreshTokenMaxAge
       });
     }
     

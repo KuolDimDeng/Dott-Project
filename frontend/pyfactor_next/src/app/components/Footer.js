@@ -50,7 +50,6 @@ const footerLinks = [
     title: 'Product',
     links: [
       { name: 'Features', url: '#features' },
-      { name: 'Testimonials', url: '#testimonials' },
       { name: 'Highlights', url: '#highlights' },
       { name: 'Pricing', url: '#pricing' },
       { name: 'FAQs', url: '#faq' },

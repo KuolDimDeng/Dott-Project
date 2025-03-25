@@ -1,5 +1,5 @@
-// src/components/ErrorDisplay/ErrorDisplay.jsx
-// src/components/ErrorDisplay/ErrorDisplay.jsx
+// src/components/ErrorDisplay/ErrorDisplay.js
+// src/components/ErrorDisplay/ErrorDisplay.js
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 import PropTypes from 'prop-types';

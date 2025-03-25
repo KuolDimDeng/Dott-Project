@@ -31,7 +31,22 @@ app.conf.update(
     task_routes={
         'setup_user_schema_task': {'queue': 'setup'},
         'send_websocket_notification': {'queue': 'default'},
-        'onboarding.*': {'queue': 'onboarding'}
+        'onboarding.*': {'queue': 'onboarding'},
+        'users.tasks.check_expired_subscriptions': {'queue': 'default'}
+    },
+    
+    # Scheduled tasks
+    beat_schedule={
+        'check-expired-subscriptions': {
+            'task': 'users.tasks.check_expired_subscriptions',
+            'schedule': 86400.0,  # Run daily (86400 seconds)
+            'options': {'queue': 'default'}
+        },
+        'cleanup-stale-schemas': {
+            'task': 'users.utils.cleanup_stale_schemas',
+            'schedule': 604800.0,  # Run weekly (604800 seconds)
+            'options': {'queue': 'default'}
+        }
     }
 )
 

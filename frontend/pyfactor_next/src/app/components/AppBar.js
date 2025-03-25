@@ -274,13 +274,6 @@ export default function AppBar() {
       >
         <Button
           color="inherit"
-          component="a"
-          href="/about"
-        >
-          {t('about')}
-        </Button>
-        <Button
-          color="inherit"
           onClick={() => router.push('/#features')}
         >
           {t('features')}
@@ -290,6 +283,12 @@ export default function AppBar() {
           onClick={() => router.push('/#pricing')}
         >
           {t('pricing')}
+        </Button>
+        <Button
+          color="inherit"
+          onClick={() => router.push('/blog')}
+        >
+          Blog
         </Button>
         <Button
           color="inherit"

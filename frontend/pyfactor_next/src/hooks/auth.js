@@ -49,9 +49,11 @@ export function useAuth() {
     }
   };
 
-  const handleSignIn = useCallback(async (username, password) => {
+  const handleSignIn = useCallback(async (username, password, rememberMe = false) => {
     setIsLoading(true);
     setError(null);
+    
+    logger.debug('[Auth] Sign in with rememberMe:', rememberMe);
 
     try {
       // First check if there's an existing signed-in user
@@ -84,7 +86,8 @@ export function useAuth() {
           username,
           password,
           options: {
-            authFlowType: 'USER_PASSWORD_AUTH'
+            authFlowType: 'USER_PASSWORD_AUTH',
+            keepSignedIn: rememberMe // Add rememberMe setting here
           }
         });
         logger.debug('[Auth] Direct sign in successful:', {
@@ -115,6 +118,28 @@ export function useAuth() {
           hasIdToken: !!sessionResponse.tokens?.idToken,
           hasAccessToken: !!sessionResponse.tokens?.accessToken
         });
+        
+        // Store the auth data in sessionStorage for subscription expiration check
+        // Extract this from the token payload or API response
+        if (signInResponse.authFlowSuccess?.authFlowResponse?.AuthenticationResult?.additionalData) {
+          const responseData = signInResponse.authFlowSuccess.authFlowResponse.AuthenticationResult.additionalData;
+          
+          // Log to see what we have available (but not the actual tokens)
+          logger.debug('[Auth] Storing auth data from response:', {
+            hasSubscriptionExpired: !!responseData.subscription_expired,
+            previousPlan: responseData.previous_plan || 'N/A'
+          });
+          
+          // Store in sessionStorage for the dashboard to access
+          sessionStorage.setItem('authData', JSON.stringify({
+            subscription_expired: responseData.subscription_expired || false,
+            previous_plan: responseData.previous_plan || '',
+            current_plan: responseData.current_plan || 'free'
+          }));
+        } else {
+          logger.debug('[Auth] No additional data in auth response, clearing authData');
+          sessionStorage.removeItem('authData');
+        }
       } catch (sessionError) {
         logger.error('[Auth] Error fetching session:', sessionError);
         throw new Error('Failed to fetch session after sign in');
@@ -142,7 +167,13 @@ export function useAuth() {
 
       // Set up cookies via API route instead of using refreshSession
       try {
-        logger.debug('[Auth] Setting cookies via API');
+        logger.debug('[Auth] Setting cookies via API with rememberMe:', rememberMe);
+        
+        // Calculate cookie expiration based on rememberMe option
+        const cookieMaxAge = rememberMe ? 
+          30 * 24 * 60 * 60 : // 30 days for rememberMe
+          24 * 60 * 60;      // 1 day for standard session
+        
         const response = await fetch('/api/auth/set-cookies', {
           method: 'POST',
           headers: {
@@ -151,7 +182,9 @@ export function useAuth() {
           body: JSON.stringify({
             idToken: sessionResponse.tokens.idToken.toString(),
             accessToken: sessionResponse.tokens.accessToken.toString(),
-            refreshToken: sessionResponse.tokens.refreshToken ? sessionResponse.tokens.refreshToken.toString() : undefined
+            refreshToken: sessionResponse.tokens.refreshToken ? sessionResponse.tokens.refreshToken.toString() : undefined,
+            rememberMe: rememberMe,
+            maxAge: cookieMaxAge
           })
         });
 
@@ -661,6 +694,167 @@ export function useAuth() {
     }
   }, []);
 
+  // Handle password reset request (forgot password)
+  const resetPassword = useCallback(async (email) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      logger.debug('[Auth] Starting password reset for:', email);
+      
+      const result = await retryOperation(async () => {
+        try {
+          // Call the Amplify resetPassword function
+          const response = await authResetPassword({
+            username: email
+          });
+          
+          logger.debug('[Auth] Reset password code sent successfully:', {
+            nextStep: response.nextStep?.resetPasswordStep
+          });
+          
+          return {
+            success: true,
+            result: response
+          };
+        } catch (apiError) {
+          logger.error('[Auth] API error sending reset password code:', {
+            message: apiError.message,
+            code: apiError.code,
+            name: apiError.name
+          });
+          
+          return {
+            success: false,
+            error: apiError.message,
+            code: apiError.code,
+            name: apiError.name
+          };
+        }
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send reset code');
+      }
+
+      // Redirect to reset-password page with email
+      router.push(`/auth/reset-password?email=${encodeURIComponent(email)}`);
+      
+      return { success: true };
+    } catch (error) {
+      // Extract more detailed error information
+      const errorMessage = error.message || 'Failed to send reset code';
+      const errorCode = error.code || 'unknown_error';
+      
+      logger.error('[Auth] Reset password request failed:', {
+        error: errorMessage,
+        code: errorCode,
+        email,
+        name: error.name,
+        stack: error.stack
+      });
+      
+      // Set a more user-friendly error message based on the error code
+      let userFriendlyMessage = errorMessage;
+      
+      if (errorCode === 'LimitExceededException') {
+        userFriendlyMessage = 'Too many reset password attempts. Please try again later.';
+      } else if (errorCode === 'UserNotFoundException') {
+        userFriendlyMessage = 'We couldn\'t find an account with this email address.';
+      } else if (errorMessage.includes('network') || errorCode === 'NetworkError') {
+        userFriendlyMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (errorCode === 'InvalidParameterException') {
+        userFriendlyMessage = 'Please enter a valid email address.';
+      }
+      
+      setError(userFriendlyMessage);
+      return { success: false, error: userFriendlyMessage, code: errorCode };
+    } finally {
+      setIsLoading(false);
+    }
+  }, [router, retryOperation]);
+
+  // Handle confirming password reset with code
+  const confirmPasswordReset = useCallback(async (email, code, newPassword) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      logger.debug('[Auth] Confirming password reset for:', email);
+      
+      const result = await retryOperation(async () => {
+        try {
+          // Call the Amplify confirmResetPassword function
+          await authConfirmResetPassword({
+            username: email,
+            confirmationCode: code,
+            newPassword
+          });
+          
+          logger.debug('[Auth] Password reset confirmed successfully');
+          
+          return {
+            success: true
+          };
+        } catch (apiError) {
+          logger.error('[Auth] API error confirming password reset:', {
+            message: apiError.message,
+            code: apiError.code,
+            name: apiError.name
+          });
+          
+          return {
+            success: false,
+            error: apiError.message,
+            code: apiError.code,
+            name: apiError.name
+          };
+        }
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to confirm password reset');
+      }
+
+      // Password reset successful, redirect to sign in page
+      router.push('/auth/signin');
+      
+      return { success: true };
+    } catch (error) {
+      // Extract more detailed error information
+      const errorMessage = error.message || 'Failed to reset password';
+      const errorCode = error.code || 'unknown_error';
+      
+      logger.error('[Auth] Confirm password reset failed:', {
+        error: errorMessage,
+        code: errorCode,
+        email,
+        name: error.name,
+        stack: error.stack
+      });
+      
+      // Set a more user-friendly error message based on the error code
+      let userFriendlyMessage = errorMessage;
+      
+      if (errorCode === 'CodeMismatchException') {
+        userFriendlyMessage = 'The verification code is incorrect. Please check and try again.';
+      } else if (errorCode === 'ExpiredCodeException') {
+        userFriendlyMessage = 'The verification code has expired. Please request a new code.';
+      } else if (errorCode === 'LimitExceededException') {
+        userFriendlyMessage = 'Too many attempts. Please try again later.';
+      } else if (errorMessage.includes('network') || errorCode === 'NetworkError') {
+        userFriendlyMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (errorCode === 'InvalidPasswordException' || errorMessage.includes('password')) {
+        userFriendlyMessage = 'Password does not meet requirements. Please ensure it has at least 8 characters including uppercase, lowercase, numbers, and special characters.';
+      }
+      
+      setError(userFriendlyMessage);
+      return { success: false, error: userFriendlyMessage, code: errorCode };
+    } finally {
+      setIsLoading(false);
+    }
+  }, [router, retryOperation]);
+
   return {
     isLoading,
     error,
@@ -670,5 +864,7 @@ export function useAuth() {
     signUp: handleSignUp,
     confirmSignUp: handleConfirmSignUp,
     resendVerificationCode: handleResendVerificationCode,
+    resetPassword,
+    confirmPasswordReset
   };
 }

@@ -1,4 +1,4 @@
-// src/app/dashboard/components/MockRouterProvider.jsx
+// src/app/dashboard/components/MockRouterProvider.js
 import React from 'react';
 import { useRouter } from 'next/router';
 

@@ -11,6 +11,9 @@ const COGNITO_CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mr
 const COGNITO_USER_POOL_ID = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_JPL8vGfb6';
 const AWS_REGION = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
 
+// Get Google OAuth credentials
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '732436158712-76jfo78t3g4tsa80ka462u2uoielvpof.apps.googleusercontent.com';
+
 // Single source of truth for Amplify configuration
 // Using the correct structure for Amplify v6
 export const amplifyConfig = {
@@ -19,11 +22,21 @@ export const amplifyConfig = {
       userPoolId: COGNITO_USER_POOL_ID,
       userPoolClientId: COGNITO_CLIENT_ID,
       region: AWS_REGION,
-      // Optional: Add loginWith configuration if needed
+      // Login options
       loginWith: {
-        username: true
+        username: true,
+        email: true,
+        phone: false,
       }
     }
+  },
+  // OAuth config at root level for Amplify v6
+  oauth: {
+    domain: process.env.NEXT_PUBLIC_COGNITO_OAUTH_DOMAIN || 'us-east-1jpl8vgfb6.auth.us-east-1.amazoncognito.com',
+    scope: ['email', 'profile', 'openid'],
+    redirectSignIn: ['http://localhost:3000/auth/callback'],
+    redirectSignOut: ['http://localhost:3000'],
+    responseType: 'code' 
   }
 };
 
@@ -41,7 +54,13 @@ try {
   // Apply the new configuration
   Amplify.configure(amplifyConfig, { ssr: true });
   
-  logger.debug('[amplifyUnified] Amplify configured successfully');
+  // Explicit log of OAuth configuration to ensure it's being set correctly
+  logger.debug('[amplifyUnified] Amplify configured successfully with OAuth:', {
+    domain: amplifyConfig.oauth?.domain,
+    scope: amplifyConfig.oauth?.scope,
+    redirectSignIn: amplifyConfig.oauth?.redirectSignIn,
+    responseType: amplifyConfig.oauth?.responseType
+  });
 } catch (error) {
   logger.error('[amplifyUnified] Error configuring Amplify:', error);
 }

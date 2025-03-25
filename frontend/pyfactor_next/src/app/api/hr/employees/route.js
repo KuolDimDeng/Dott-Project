@@ -2,13 +2,24 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getTenantId } from '@/lib/tenantUtils';
 import { axiosInstance } from '@/lib/axiosConfig';
+import { validateServerSession } from '@/utils/serverUtils';
 
 export async function GET(request) {
   try {
-    // For now, we'll skip auth check and assume the request is authenticated
-    // In a production environment, you would verify the session/token here
+    // Validate the session and get tokens
+    let session;
+    try {
+      session = await validateServerSession();
+      if (!session || !session.tokens || !session.tokens.accessToken) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      }
+    } catch (authError) {
+      console.error('Authentication error:', authError);
+      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
+    }
     
-    const tenantId = await getTenantId(request);
+    // Get tenant ID from request or session
+    const tenantId = await getTenantId(request) || session.user?.attributes?.['custom:businessid'];
     if (!tenantId) {
       return NextResponse.json({ error: 'Tenant ID not found' }, { status: 400 });
     }
@@ -16,10 +27,14 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
 
-    const response = await axiosInstance.get(`/api/hr/employees/?q=${query}`, {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    const response = await axiosInstance.get(`${API_URL}/api/hr/employees/?q=${query}`, {
       headers: {
+        'Authorization': `Bearer ${session.tokens.accessToken}`,
+        'X-Id-Token': session.tokens.idToken,
         'X-Tenant-ID': tenantId,
         'X-Schema-Name': `tenant_${tenantId.replace(/-/g, '_')}`,
+        'X-Business-ID': tenantId,
       },
     });
 
@@ -35,19 +50,33 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    // For now, we'll skip auth check and assume the request is authenticated
-    // In a production environment, you would verify the session/token here
+    // Validate the session and get tokens
+    let session;
+    try {
+      session = await validateServerSession();
+      if (!session || !session.tokens || !session.tokens.accessToken) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      }
+    } catch (authError) {
+      console.error('Authentication error:', authError);
+      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
+    }
     
-    const tenantId = await getTenantId(request);
+    // Get tenant ID from request or session
+    const tenantId = await getTenantId(request) || session.user?.attributes?.['custom:businessid'];
     if (!tenantId) {
       return NextResponse.json({ error: 'Tenant ID not found' }, { status: 400 });
     }
 
     const body = await request.json();
-    const response = await axiosInstance.post('/api/hr/employees/create/', body, {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    const response = await axiosInstance.post(`${API_URL}/api/hr/employees/create/`, body, {
       headers: {
+        'Authorization': `Bearer ${session.tokens.accessToken}`,
+        'X-Id-Token': session.tokens.idToken,
         'X-Tenant-ID': tenantId,
         'X-Schema-Name': `tenant_${tenantId.replace(/-/g, '_')}`,
+        'X-Business-ID': tenantId,
       },
     });
 

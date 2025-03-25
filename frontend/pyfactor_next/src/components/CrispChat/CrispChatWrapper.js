@@ -1,4 +1,4 @@
-// src/components/CrispChat/CrispChatWrapper.jsx
+// src/components/CrispChat/CrispChatWrapper.js
 'use client';
 
 import { useEffect, useState } from 'react';

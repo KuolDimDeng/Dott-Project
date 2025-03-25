@@ -1,10 +1,15 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/Terms&Privacy/components/TermsOfUse.jsx
+'use client';
+
 import React from 'react';
-import { Typography, Box, Container, Paper, Divider, useTheme, useMediaQuery } from '@mui/material';
+import { Typography, Box, Container, Paper, Divider, useTheme, useMediaQuery, Button } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 const TermsOfUse = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const router = useRouter();
 
   const SectionTitle = ({ children }) => (
     <Typography
@@ -52,10 +57,34 @@ const TermsOfUse = () => {
 
   return (
     <Container maxWidth="md">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 4 }}>
+        <Button 
+          startIcon={<ArrowBackIcon />} 
+          onClick={() => router.push('/')}
+          variant="outlined"
+          sx={{ mb: 2 }}
+        >
+          Back to Home
+        </Button>
+        
+        <Box 
+          onClick={() => router.push('/')} 
+          sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+        >
+          <Image
+            src="/static/images/PyfactorLandingpage.png"
+            alt="Pyfactor Logo"
+            width={120}
+            height={50}
+            style={{ objectFit: 'contain' }}
+          />
+        </Box>
+      </Box>
+      
       <Paper
         elevation={3}
         sx={{
-          mt: 5,
+          mt: 2,
           mb: 5,
           p: isMobile ? 3 : 5,
           borderRadius: 2,

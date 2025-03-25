@@ -217,137 +217,216 @@ export function Subscription() {
 
   return (
     <Container maxWidth="lg">
-      <Box sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom align="center">
-          Choose Your Plan
-        </Typography>
-        <Typography variant="body1" color="text.secondary" paragraph align="center">
-          Select the plan that best fits your business needs
-        </Typography>
-
-        {/* Billing Cycle Toggle */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-          <Paper elevation={0} sx={{ p: 0.5, display: 'inline-flex' }}>
-            <ToggleButtonGroup
-              value={billingCycle}
-              exclusive
-              onChange={handleBillingCycleChange}
-              aria-label="billing cycle"
-              color="primary"
-              sx={{ width: '100%' }}
-            >
-              <ToggleButton value="monthly" aria-label="monthly billing">
-                Monthly
-              </ToggleButton>
-              <ToggleButton value="annual" aria-label="annual billing">
-                Annual <Box component="span" sx={{ ml: 1, color: 'success.main', fontSize: '0.75rem', fontWeight: 'bold' }}>Save 17%</Box>
-              </ToggleButton>
-            </ToggleButtonGroup>
-          </Paper>
-        </Box>
-
-        {error && (
-          <Alert
-            severity={error.includes('Processing') || error.includes('Redirecting') ? 'info' : 'error'}
-            sx={{ mb: 3, '& .MuiAlert-message': { whiteSpace: 'pre-line' } }}
+      {/* Billing Cycle Toggle */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 5 }}>
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: 0.5, 
+            display: 'inline-flex', 
+            borderRadius: 3,
+            backgroundColor: '#f0f4f8',
+            border: '1px solid',
+            borderColor: 'divider'
+          }}
+        >
+          <ToggleButtonGroup
+            value={billingCycle}
+            exclusive
+            onChange={handleBillingCycleChange}
+            aria-label="billing cycle"
+            color="primary"
+            sx={{ 
+              width: '100%',
+              '& .MuiToggleButtonGroup-grouped': {
+                borderRadius: 3,
+                fontWeight: 500,
+                py: 1,
+                px: 3
+              }
+            }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="subtitle1" component="div" gutterBottom>
-                {error}
-              </Typography>
-              {(error.includes('Processing') || error.includes('Redirecting')) && (
-                <CircularProgress size={20} />
-              )}
-            </Box>
-          </Alert>
-        )}
+            <ToggleButton value="monthly" aria-label="monthly billing">
+              Monthly
+            </ToggleButton>
+            <ToggleButton value="annual" aria-label="annual billing">
+              Annual <Box component="span" sx={{ ml: 1, color: 'success.main', fontSize: '0.75rem', fontWeight: 'bold' }}>Save 17%</Box>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Paper>
+      </Box>
 
-        {/* Plan selection cards */}
-        <Grid container spacing={4} justifyContent="center" sx={{ mt: 2 }}>
-          {PLANS.map((plan) => (
-            <Grid item xs={12} sm={6} md={4} key={plan.id}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  position: 'relative',
-                  ...(selectedPlan === plan.id && {
-                    border: '2px solid',
-                    borderColor: 'primary.main',
-                  }),
-                  ...(plan.id === 'enterprise' && {
-                    borderTop: '4px solid',
-                    borderTopColor: 'primary.main',
-                  }),
-                }}
-              >
-                {plan.id === 'enterprise' && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: -12,
-                      right: 20,
-                      backgroundColor: 'primary.main',
-                      color: 'white',
-                      px: 2,
-                      py: 0.5,
-                      borderRadius: 1,
-                    }}
-                  >
-                    <Typography variant="caption" fontWeight="bold">
-                      BEST VALUE
-                    </Typography>
-                  </Box>
-                )}
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography gutterBottom variant="h5" component="h2">
-                    {plan.name}
+      {error && (
+        <Alert
+          severity={error.includes('Setting up') || error.includes('Processing') || error.includes('Redirecting') ? 'info' : 'error'}
+          sx={{ 
+            mb: 4, 
+            '& .MuiAlert-message': { whiteSpace: 'pre-line' },
+            borderRadius: 2,
+            boxShadow: '0 2px 10px rgba(0,0,0,0.08)'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="subtitle1" component="div">
+              {error}
+            </Typography>
+            {(error.includes('Setting up') || error.includes('Processing') || error.includes('Redirecting')) && (
+              <CircularProgress size={20} />
+            )}
+          </Box>
+        </Alert>
+      )}
+
+      {/* Plan selection cards */}
+      <Grid container spacing={4} justifyContent="center">
+        {PLANS.map((plan) => (
+          <Grid item xs={12} sm={6} md={4} key={plan.id}>
+            <Card
+              sx={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative',
+                borderRadius: 3,
+                overflow: 'visible', // Allow elements to overflow for the badge
+                boxShadow: selectedPlan === plan.id 
+                  ? '0 8px 24px rgba(0,0,0,0.12)' 
+                  : '0 2px 12px rgba(0,0,0,0.08)',
+                transition: 'all 0.3s ease',
+                transform: selectedPlan === plan.id ? 'translateY(-8px)' : 'none',
+                '&:hover': {
+                  transform: 'translateY(-5px)',
+                  boxShadow: '0 8px 28px rgba(0,0,0,0.15)',
+                },
+                ...(selectedPlan === plan.id && {
+                  border: '2px solid',
+                  borderColor: 'primary.main',
+                }),
+              }}
+            >
+              {/* Popular badge */}
+              {plan.id === 'professional' && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: -12,
+                    right: 24,
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                    px: 2,
+                    py: 0.5,
+                    borderRadius: 10,
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                    zIndex: 1
+                  }}
+                >
+                  <Typography variant="caption" fontWeight="bold">
+                    POPULAR
                   </Typography>
-                  <Typography variant="h4" color="primary" gutterBottom>
-                    ${plan.price[billingCycle]}
-                    <Typography
-                      component="span"
-                      variant="subtitle1"
-                      color="text.secondary"
+                </Box>
+              )}
+              
+              {/* Best value badge */}
+              {plan.id === 'enterprise' && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: -12,
+                    right: 24,
+                    backgroundColor: 'primary.dark',
+                    color: 'white',
+                    px: 2,
+                    py: 0.5,
+                    borderRadius: 10,
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                    zIndex: 1
+                  }}
+                >
+                  <Typography variant="caption" fontWeight="bold">
+                    BEST VALUE
+                  </Typography>
+                </Box>
+              )}
+              
+              <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                <Typography gutterBottom variant="h5" component="h2" fontWeight={600}>
+                  {plan.name}
+                </Typography>
+                <Typography variant="h4" color="primary" gutterBottom fontWeight={700}>
+                  ${plan.price[billingCycle]}
+                  <Typography
+                    component="span"
+                    variant="subtitle1"
+                    color="text.secondary"
+                    sx={{ ml: 0.5, fontWeight: 400 }}
+                  >
+                    {billingCycle === 'monthly' ? '/month' : '/year'}
+                  </Typography>
+                </Typography>
+                
+                <Divider sx={{ my: 2 }} />
+                
+                <Box sx={{ mt: 2 }}>
+                  {plan.features.map((feature) => (
+                    <Box 
+                      key={feature}
+                      sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        py: 0.75,
+                        borderBottom: '1px solid',
+                        borderColor: 'rgba(0,0,0,0.06)',
+                        '&:last-child': {
+                          borderBottom: 'none'
+                        }
+                      }}
                     >
-                      {billingCycle === 'monthly' ? '/month' : '/year'}
-                    </Typography>
-                  </Typography>
-                  <Box sx={{ mt: 2 }}>
-                    {plan.features.map((feature) => (
-                      <Typography
-                        key={feature}
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ py: 0.5 }}
+                      <Box 
+                        sx={{ 
+                          color: 'success.main', 
+                          display: 'flex', 
+                          mr: 1.5,
+                          fontSize: '1.2rem',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
                       >
-                        ✓ {feature}
+                        ✓
+                      </Box>
+                      <Typography variant="body2" color="text.primary">
+                        {feature}
                       </Typography>
-                    ))}
-                  </Box>
-                </CardContent>
-                <CardActions>
-                  <Button
-                    fullWidth
-                    variant={
-                      selectedPlan === plan.id ? 'contained' : 'outlined'
-                    }
-                    onClick={() => handlePlanSelect(plan.id)}
-                    disabled={isSubmitting || isUpdating}
-                    color={plan.id === 'enterprise' ? 'primary' : 'primary'}
-                  >
-                    {(isSubmitting || isUpdating) && selectedPlan === plan.id ? (
-                      <CircularProgress size={24} />
-                    ) : (
-                      'Select Plan'
-                    )}
-                  </Button>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                    </Box>
+                  ))}
+                </Box>
+              </CardContent>
+              <CardActions sx={{ p: 3, pt: 0 }}>
+                <Button
+                  fullWidth
+                  variant={selectedPlan === plan.id ? 'contained' : 'outlined'}
+                  onClick={() => handlePlanSelect(plan.id)}
+                  disabled={isSubmitting || isUpdating}
+                  color="primary"
+                  sx={{ 
+                    py: 1.2,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    boxShadow: selectedPlan === plan.id ? '0 4px 10px rgba(0,0,0,0.15)' : 'none'
+                  }}
+                >
+                  {(isSubmitting || isUpdating) && selectedPlan === plan.id ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    'Select Plan'
+                  )}
+                </Button>
+              </CardActions>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
 
         {/* Payment Method Selection - Only show for paid plans and animate appearance */}
         <Collapse in={isPaidPlanSelected}>
@@ -429,8 +508,7 @@ export function Subscription() {
             </Box>
           </Fade>
         </Collapse>
-      </Box>
-    </Container>
+      </Container>
   );
 }
 

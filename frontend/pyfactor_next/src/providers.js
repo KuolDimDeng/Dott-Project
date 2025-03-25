@@ -11,6 +11,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { AmplifyProvider } from '@/providers/AmplifyProvider';
 import AuthWrapper from '@/app/AuthWrapper/AuthWrapper';
 import { logger } from '@/utils/logger';
+import { ToastProvider } from '@/components/Toast/ToastProvider';
 
 // Create a new QueryClient instance with error logging
 const queryClient = new QueryClient({
@@ -96,24 +97,26 @@ function Providers({ children }) {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          {/* Always use AmplifyProvider for auth routes, regardless of public status */}
-          {pathname.startsWith('/auth/') ? (
-            <AmplifyProvider>
+          <ToastProvider>
+            {/* Always use AmplifyProvider for auth routes, regardless of public status */}
+            {pathname.startsWith('/auth/') ? (
+              <AmplifyProvider>
+                <AuthProvider>
+                  {children}
+                </AuthProvider>
+              </AmplifyProvider>
+            ) : !isPublic ? (
+              <AmplifyProvider>
+                <AuthProvider>
+                  <AuthWrapper>{children}</AuthWrapper>
+                </AuthProvider>
+              </AmplifyProvider>
+            ) : (
               <AuthProvider>
                 {children}
               </AuthProvider>
-            </AmplifyProvider>
-          ) : !isPublic ? (
-            <AmplifyProvider>
-              <AuthProvider>
-                <AuthWrapper>{children}</AuthWrapper>
-              </AuthProvider>
-            </AmplifyProvider>
-          ) : (
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          )}
+            )}
+          </ToastProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </StyledEngineProvider>

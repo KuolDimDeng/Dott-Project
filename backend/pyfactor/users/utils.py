@@ -644,3 +644,116 @@ def validate_user_state(user):
             'reason': 'validation_error',
             'error': str(e)
         }
+
+def check_subscription_status(user):
+    """
+    Check if the user's subscription has expired and update accordingly.
+    Returns a tuple of (is_expired, previously_plan) if expired, otherwise (False, current_plan).
+    """
+    from users.models import Subscription, UserProfile
+    from custom_auth.cognito import update_user_attributes
+    
+    logger.debug(f"Checking subscription status for user {user.email}")
+    
+    try:
+        # Get the user profile with business
+        profile = UserProfile.objects.select_related('business').get(user=user)
+        
+        if not profile.business:
+            logger.debug(f"No business found for user {user.email}")
+            return False, "free"
+            
+        # Find the active subscription
+        subscription = Subscription.objects.filter(
+            business=profile.business,
+            is_active=True
+        ).first()
+        
+        if not subscription:
+            logger.debug(f"No active subscription found for user {user.email}, assuming free plan")
+            return False, "free"
+            
+        # Check if subscription has an end date and if it has passed
+        if subscription.end_date and subscription.end_date < timezone.now().date():
+            logger.info(f"Subscription expired for user {user.email}, downgrading from {subscription.selected_plan} to free")
+            
+            # Remember the previous plan
+            previous_plan = subscription.selected_plan
+            
+            # Update subscription in database
+            subscription.is_active = False
+            subscription.save()
+            
+            # Update Cognito attribute
+            try:
+                update_user_attributes(user.username, {
+                    'custom:subplan': 'free'
+                })
+                logger.info(f"Updated Cognito attributes for user {user.username}")
+            except Exception as e:
+                logger.error(f"Failed to update Cognito attributes: {str(e)}")
+            
+            return True, previous_plan
+        
+        # Subscription is still active
+        logger.debug(f"Subscription is active for user {user.email}, plan: {subscription.selected_plan}")
+        return False, subscription.selected_plan
+        
+    except UserProfile.DoesNotExist:
+        logger.error(f"UserProfile does not exist for user: {user.email}")
+        return False, "free"
+    except Exception as e:
+        logger.error(f"Error checking subscription status: {str(e)}")
+        return False, "free"
+
+
+def get_tenant_database(user):
+    """
+    Synchronous helper function to get the correct tenant/schema name
+    for a user, considering all possible storage locations.
+    """
+    try:
+        if not user:
+            return None
+            
+        from users.models import UserProfile
+        
+        # Get the user profile
+        user_profile = UserProfile.objects.using('default').get(user=user)
+        
+        # Get the database name from the tenant
+        database_name = None
+        
+        # First try tenant relationship - new approach
+        if user_profile.tenant and user_profile.tenant.schema_name:
+            database_name = user_profile.tenant.schema_name
+            
+        # Then try schema_name directly on profile - new approach
+        elif user_profile.schema_name:
+            database_name = user_profile.schema_name
+            
+        # Next try database_name - legacy approach
+        elif hasattr(user_profile, 'database_name') and user_profile.database_name:
+            database_name = user_profile.database_name
+            
+        # Fallback to a deterministic name based on user ID
+        else:
+            database_name = f"tenant_{user.id}".replace('-', '_')
+            
+        # Initialize the database connection
+        from django.db import connections
+        if database_name and database_name not in connections:
+            # Initialize the database connection if not already done
+            from django.db.utils import ConnectionRouter
+            router = ConnectionRouter()
+            db_config = get_database_config(database_name)
+            connections.databases[database_name] = db_config
+            
+        return database_name
+            
+    except UserProfile.DoesNotExist:
+        logger.error(f"UserProfile does not exist for user: {user}")
+        return None
+    except Exception as e:
+        logger.error(f"Error getting tenant database: {str(e)}")
+        return None
