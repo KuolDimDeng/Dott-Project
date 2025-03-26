@@ -27,6 +27,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import HistoryIcon from '@mui/icons-material/History';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useRouter } from 'next/navigation';
+import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 
 const MyAccount = ({ userData }) => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -38,6 +39,10 @@ const MyAccount = ({ userData }) => {
   
   const handleUpgradeClick = () => {
     router.push('/onboarding/subscription');
+  };
+
+  const getPlanColor = (planId) => {
+    return getSubscriptionPlanColor(planId);
   };
 
   const renderAccountInfo = () => {
@@ -169,6 +174,7 @@ const MyAccount = ({ userData }) => {
     };
 
     const currentPlanFeatures = getPlanFeatures(userData?.subscription_type);
+    const currentPlanType = userData?.subscription_type || 'free';
 
     return (
       <Box>
@@ -176,10 +182,10 @@ const MyAccount = ({ userData }) => {
           Current Subscription
         </Typography>
         
-        <Card sx={{ mb: 3 }}>
+        <Card sx={{ mb: 3, border: '1px solid', borderColor: getPlanColor(currentPlanType) }}>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h5">
+              <Typography variant="h5" sx={{ color: getPlanColor(currentPlanType) }}>
                 {userData?.subscription_type === 'enterprise' 
                   ? 'Enterprise Plan' 
                   : userData?.subscription_type === 'professional' 
@@ -188,8 +194,10 @@ const MyAccount = ({ userData }) => {
               </Typography>
               <Chip 
                 label="Active" 
-                color="success" 
-                variant="outlined"
+                sx={{ 
+                  bgcolor: getPlanColor(currentPlanType),
+                  color: 'white',
+                }}
                 size="small"
               />
             </Box>
@@ -202,7 +210,7 @@ const MyAccount = ({ userData }) => {
               {currentPlanFeatures.map((feature, index) => (
                 <Grid item xs={12} sm={6} key={index}>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <CheckCircleIcon color="primary" fontSize="small" sx={{ mr: 1 }} />
+                    <CheckCircleIcon sx={{ mr: 1, color: getPlanColor(currentPlanType) }} fontSize="small" />
                     <Typography variant="body2">{feature}</Typography>
                   </Box>
                 </Grid>
@@ -213,7 +221,10 @@ const MyAccount = ({ userData }) => {
             {userData?.subscription_type === 'free' ? (
               <Button 
                 variant="contained" 
-                color="primary" 
+                sx={{ 
+                  bgcolor: getPlanColor('professional'),
+                  '&:hover': { bgcolor: getPlanColor('professional') }
+                }}
                 fullWidth
                 onClick={handleUpgradeClick}
               >
@@ -221,7 +232,13 @@ const MyAccount = ({ userData }) => {
               </Button>
             ) : (
               <>
-                <Button variant="outlined" color="primary">
+                <Button 
+                  variant="outlined" 
+                  sx={{ 
+                    color: getPlanColor(currentPlanType),
+                    borderColor: getPlanColor(currentPlanType),
+                  }}
+                >
                   Manage Subscription
                 </Button>
                 <Button variant="outlined" color="secondary" sx={{ ml: 1 }}>
@@ -235,17 +252,17 @@ const MyAccount = ({ userData }) => {
         {userData?.subscription_type === 'free' && (
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
-              <Card>
+              <Card sx={{ border: '1px solid', borderColor: getPlanColor('professional') }}>
                 <CardContent>
                   <Typography variant="h6">Professional Plan</Typography>
-                  <Typography variant="h4" color="primary.main" sx={{ my: 2 }}>
+                  <Typography variant="h4" sx={{ my: 2, color: getPlanColor('professional') }}>
                     $19.99<Typography variant="caption">/mo</Typography>
                   </Typography>
                   <List dense>
                     {getPlanFeatures('professional').map((feature, index) => (
                       <ListItem key={index} disablePadding sx={{ py: 0.5 }}>
                         <ListItemIcon sx={{ minWidth: 32 }}>
-                          <CheckCircleIcon color="primary" fontSize="small" />
+                          <CheckCircleIcon sx={{ color: getPlanColor('professional') }} fontSize="small" />
                         </ListItemIcon>
                         <ListItemText primary={feature} />
                       </ListItem>
@@ -255,7 +272,10 @@ const MyAccount = ({ userData }) => {
                 <CardActions>
                   <Button 
                     variant="contained" 
-                    color="primary" 
+                    sx={{ 
+                      bgcolor: getPlanColor('professional'),
+                      '&:hover': { bgcolor: getPlanColor('professional') }
+                    }}
                     fullWidth
                     onClick={handleUpgradeClick}
                   >
@@ -265,17 +285,17 @@ const MyAccount = ({ userData }) => {
               </Card>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Card>
+              <Card sx={{ border: '1px solid', borderColor: getPlanColor('enterprise') }}>
                 <CardContent>
                   <Typography variant="h6">Enterprise Plan</Typography>
-                  <Typography variant="h4" color="primary.main" sx={{ my: 2 }}>
+                  <Typography variant="h4" sx={{ my: 2, color: getPlanColor('enterprise') }}>
                     $49.99<Typography variant="caption">/mo</Typography>
                   </Typography>
                   <List dense>
                     {getPlanFeatures('enterprise').map((feature, index) => (
                       <ListItem key={index} disablePadding sx={{ py: 0.5 }}>
                         <ListItemIcon sx={{ minWidth: 32 }}>
-                          <CheckCircleIcon color="primary" fontSize="small" />
+                          <CheckCircleIcon sx={{ color: getPlanColor('enterprise') }} fontSize="small" />
                         </ListItemIcon>
                         <ListItemText primary={feature} />
                       </ListItem>
@@ -285,7 +305,10 @@ const MyAccount = ({ userData }) => {
                 <CardActions>
                   <Button 
                     variant="contained" 
-                    color="primary" 
+                    sx={{ 
+                      bgcolor: getPlanColor('enterprise'),
+                      '&:hover': { bgcolor: getPlanColor('enterprise') }
+                    }}
                     fullWidth
                     onClick={handleUpgradeClick}
                   >

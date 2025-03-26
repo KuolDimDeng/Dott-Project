@@ -96,13 +96,13 @@ const KPIDashboard = lazy(() => import('./dashboards/KPIDashboard'));
 const BalanceSheetAnalysis = lazy(() => import('./forms/BalanceSheetAnalysis.js'));
 const IntegrationSettings = lazy(() => import('../../Settings/integrations/components/IntegrationSettings.js'));
 const UserProfileSettings = lazy(() => import('@/app/Settings/UserProfile/components/UserProfileSettings'));
-const ProfileSettings = lazy(() => import('@/app/settings/components/ProfileSettings'));
-const BusinessSettings = lazy(() => import('@/app/settings/components/BusinessSettings'));
-const AccountingSettings = lazy(() => import('@/app/settings/components/AccountingSettings'));
-const PayrollSettings = lazy(() => import('@/app/settings/components/PayrollSettings'));
-const DeviceSettings = lazy(() => import('@/app/settings/components/DeviceSettings'));
-const MyAccount = lazy(() => import('@/app/settings/components/MyAccount'));
-const HelpCenter = lazy(() => import('@/app/settings/components/HelpCenter'));
+const ProfileSettings = lazy(() => import('@/app/Settings/components/ProfileSettings'));
+const BusinessSettings = lazy(() => import('@/app/Settings/components/BusinessSettings'));
+const AccountingSettings = lazy(() => import('@/app/Settings/components/AccountingSettings'));
+const PayrollSettings = lazy(() => import('@/app/Settings/components/PayrollSettings'));
+const DeviceSettings = lazy(() => import('@/app/Settings/components/DeviceSettings'));
+const MyAccount = lazy(() => import('@/app/Settings/components/MyAccount'));
+const HelpCenter = lazy(() => import('@/app/Settings/components/HelpCenter'));
 const TermsAndConditions = lazy(() => import('@/app/Terms&Privacy/components/TermsOfUse'));
 const PrivacyPolicy = lazy(() => import('@/app/Terms&Privacy/components/PrivacyPolicy'));
 const DownloadTransactions = lazy(() => import('./forms/DownloadTransactions'));
@@ -312,6 +312,25 @@ function RenderMainContent({
           <ContentWrapper>
             {view === 'analytics-dashboard' && <KPIDashboard userData={userData} />}
             {view === 'ai-query' && <AIQueryPage userData={userData} />}
+          </ContentWrapper>
+        </Suspense>
+      );
+    }
+
+    // Additional case for createOptions
+    if (showCreateOptions) {
+      return (
+        <Suspense fallback={<LoadingComponent />}>
+          <ContentWrapper>
+            {selectedOption === 'Transaction' && <TransactionForm />}
+            {selectedOption === 'Product' && <ProductManagement mode="create" />}
+            {selectedOption === 'Service' && <ServiceManagement mode="create" />}
+            {selectedOption === 'Invoice' && <InvoiceManagement mode="create" />}
+            {selectedOption === 'Bill' && <BillManagement mode="create" />}
+            {selectedOption === 'Estimate' && <EstimateManagement mode="create" />}
+            {selectedOption === 'Customer' && <CustomerList mode="create" onCreateCustomer={handleCreateCustomer} />}
+            {selectedOption === 'Vendor' && <VendorManagement mode="create" />}
+            {/* Add other create options as needed */}
           </ContentWrapper>
         </Suspense>
       );

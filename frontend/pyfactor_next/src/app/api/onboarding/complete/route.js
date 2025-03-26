@@ -2,135 +2,150 @@ import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { validateServerSession } from '@/utils/serverUtils';
 
+/**
+ * API endpoint to mark onboarding as complete
+ * This calls the backend to ensure the user's onboarding status is updated
+ */
 export async function POST(request) {
   try {
-    // Validate session using server utils
-    const { tokens, user } = await validateServerSession();
-
-    const accessToken = tokens.accessToken.toString();
-    const idToken = tokens.idToken.toString();
-    const userId = user.userId;
-
-    // Get user attributes
-    const attributes = user.attributes || {};
-    const onboardingStatus = attributes['custom:onboarding'] || 'NOT_STARTED';
-
-    // Verify current status is SETUP before proceeding
-    if (onboardingStatus !== 'SETUP') {
-      logger.error('[Complete] Invalid onboarding status:', {
-        currentStatus: onboardingStatus,
-        expectedStatus: 'SETUP',
-        userId
-      });
+    // Validate the user's session
+    const { user, tokens } = await validateServerSession();
+    
+    if (!user || !tokens?.idToken) {
       return NextResponse.json(
-        { error: 'Invalid onboarding status. Must complete setup first.' },
-        { status: 400 }
+        { error: 'Authentication required' },
+        { status: 401 }
       );
     }
-
-    // Update onboarding status to COMPLETE
-    const statusResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/status`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Id-Token': idToken,
-          'X-User-ID': userId,
-          'X-Request-ID': crypto.randomUUID(),
-          'X-Onboarding-Status': onboardingStatus
-        },
-        body: JSON.stringify({
-          current_status: onboardingStatus,
-          next_status: 'COMPLETE',
-          lastStep: 'SETUP',
-          userId,
-          attributes: {
-            'custom:onboarding': 'COMPLETE',
-            'custom:setupdone': 'TRUE',
-            'custom:updated_at': new Date().toISOString()
-          }
-        }),
-      }
-    );
-
-    if (!statusResponse.ok) {
-      throw new Error(
-        `Failed to update onboarding status: ${statusResponse.status}`
-      );
-    }
-
-    const statusData = await statusResponse.json();
-
-    // Mark setup as complete in backend
-    const completeResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/complete/`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Id-Token': idToken,
-          'X-User-ID': userId,
-          'X-Request-ID': crypto.randomUUID(),
-          'X-Onboarding-Status': 'COMPLETE'
-        },
-        body: JSON.stringify({
-          userId,
-          setupCompleted: true,
-          completedAt: new Date().toISOString()
-        }),
-      }
-    );
-
-    if (!completeResponse.ok) {
-      throw new Error(
-        `Failed to mark setup as complete: ${completeResponse.status}`
-      );
-    }
-
-    const completeData = await completeResponse.json();
-
-    logger.debug('[Complete] Onboarding completed successfully:', {
-      userId,
-      statusUpdate: statusData,
-      setupComplete: completeData
-    });
-
-    // Create response with updated cookies
-    const cookieOptions = {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
-    };
-
-    // Create response
-    const jsonResponse = NextResponse.json({
-      success: true,
-      message: 'Onboarding completed successfully',
-      nextStep: 'DASHBOARD',
-      setupCompleted: true
-    });
-
-    // Set cookies in response
-    jsonResponse.cookies.set('accessToken', accessToken, cookieOptions);
-    jsonResponse.cookies.set('idToken', idToken, cookieOptions);
-    jsonResponse.cookies.set('onboardingStep', 'complete', cookieOptions);
-
-    return jsonResponse;
-
-  } catch (error) {
-    logger.error('[Complete] Error completing onboarding:', {
-      error: error.message,
-      stack: error.stack,
-    });
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Failed to complete onboarding',
+    
+    // Get the backend API URL from environment variables
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    const endpoint = `/api/onboarding/complete/`;
+    const requestUrl = `${backendUrl}${endpoint}`;
+    
+    // Make the request to the backend
+    const response = await fetch(requestUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${tokens.accessToken}`,
+        'X-Id-Token': tokens.idToken,
       },
+      body: JSON.stringify({
+        force_complete: true,
+        attributes: {
+          'custom:onboarding': 'COMPLETE',
+          'custom:setupdone': 'TRUE'
+        }
+      })
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      logger.info('[API] Onboarding completed successfully via backend');
+      
+      // Also update the user's cookies
+      const cookieResponse = NextResponse.json({
+        success: true,
+        message: 'Onboarding completed successfully',
+        data
+      });
+      
+      // Set cookies to reflect the updated onboarding status
+      cookieResponse.cookies.set('onboardingStep', 'COMPLETE', {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+        httpOnly: false,
+        sameSite: 'lax'
+      });
+      
+      cookieResponse.cookies.set('onboardedStatus', 'COMPLETE', {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+        httpOnly: false,
+        sameSite: 'lax'
+      });
+      
+      cookieResponse.cookies.set('setupCompleted', 'true', {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+        httpOnly: false,
+        sameSite: 'lax'
+      });
+      
+      return cookieResponse;
+    } else {
+      // If backend request fails, try to update attributes directly
+      try {
+        // Create a simple API call to the update-attributes endpoint
+        const attributeResponse = await fetch('/api/user/update-attributes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokens.accessToken}`
+          },
+          body: JSON.stringify({
+            attributes: {
+              'custom:onboarding': 'COMPLETE',
+              'custom:setupdone': 'TRUE',
+              'custom:updated_at': new Date().toISOString()
+            },
+            forceUpdate: true
+          })
+        });
+        
+        if (attributeResponse.ok) {
+          logger.info('[API] Onboarding completed via attributes update');
+          
+          // Also update the user's cookies
+          const cookieResponse = NextResponse.json({
+            success: true,
+            message: 'Onboarding completed via attributes update'
+          });
+          
+          // Set cookies to reflect the updated onboarding status
+          cookieResponse.cookies.set('onboardingStep', 'COMPLETE', {
+            path: '/',
+            maxAge: 60 * 60 * 24 * 7, // 1 week
+            httpOnly: false,
+            sameSite: 'lax'
+          });
+          
+          cookieResponse.cookies.set('onboardedStatus', 'COMPLETE', {
+            path: '/',
+            maxAge: 60 * 60 * 24 * 7, // 1 week
+            httpOnly: false,
+            sameSite: 'lax'
+          });
+          
+          cookieResponse.cookies.set('setupCompleted', 'true', {
+            path: '/',
+            maxAge: 60 * 60 * 24 * 7, // 1 week
+            httpOnly: false,
+            sameSite: 'lax'
+          });
+          
+          return cookieResponse;
+        } else {
+          throw new Error('Failed to update attributes directly');
+        }
+      } catch (attributeError) {
+        logger.error('[API] Error in attribute update fallback:', attributeError);
+        
+        return NextResponse.json(
+          { 
+            error: 'Failed to complete onboarding', 
+            message: 'Both backend and direct update methods failed' 
+          },
+          { status: 500 }
+        );
+      }
+    }
+  } catch (error) {
+    logger.error('[API] Error in onboarding/complete endpoint:', error);
+    
+    return NextResponse.json(
+      { error: 'Internal server error', message: error.message },
       { status: 500 }
     );
   }

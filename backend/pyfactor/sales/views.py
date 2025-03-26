@@ -2,6 +2,7 @@
 import base64
 from decimal import Decimal
 import decimal
+import uuid
 from django.shortcuts import get_object_or_404, render
 from psycopg2 import IntegrityError
 from rest_framework import generics, status, serializers, viewsets, status
@@ -43,11 +44,6 @@ from barcode import generate
 from barcode.writer import ImageWriter
 from io import BytesIO
 
-
-
-
-import uuid
-
 logger = get_logger()
 
 
@@ -70,36 +66,83 @@ def list_custom_charge_plans(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_invoice(request):
-    logger.debug("Create Invoice: Received request data: %s", request.data)
+    """Create a new invoice with dynamic table creation tracking"""
+    # Generate a unique request ID for tracking
+    request_id = uuid.uuid4().hex[:8]
+    
+    logger.info(f"[DYNAMIC-INVOICE-{request_id}] Create Invoice requested by user {request.user.id}")
+    logger.debug(f"[DYNAMIC-INVOICE-{request_id}] Received request data: {request.data}")
+    
     user = request.user
-
     if not user.is_authenticated:
+        logger.warning(f"[DYNAMIC-INVOICE-{request_id}] Unauthenticated user attempted to create invoice")
         return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
 
     try:
+        # Get database information
         database_name = get_user_database(user)
+        logger.info(f"[DYNAMIC-INVOICE-{request_id}] Using database {database_name} for invoice creation")
+        
+        # Check if invoice table exists before we try to use it
+        with connections['default'].cursor() as cursor:
+            # Extract schema name from database
+            schema_name = database_name.split('_')[0]
+            logger.info(f"[DYNAMIC-INVOICE-{request_id}] Checking if sales_invoice table exists in schema {schema_name}")
+            
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables 
+                    WHERE table_schema = %s AND table_name = 'sales_invoice'
+                )
+            """, [schema_name])
+            
+            table_exists = cursor.fetchone()[0]
+            logger.info(f"[DYNAMIC-INVOICE-{request_id}] Invoice table exists: {table_exists}")
+            
+            if not table_exists:
+                logger.info(f"[DYNAMIC-INVOICE-{request_id}] Invoice table will be created dynamically")
+                
+            # Also check for invoice items table
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables 
+                    WHERE table_schema = %s AND table_name = 'sales_invoiceitem'
+                )
+            """, [schema_name])
+            
+            items_table_exists = cursor.fetchone()[0]
+            logger.info(f"[DYNAMIC-INVOICE-{request_id}] Invoice Items table exists: {items_table_exists}")
+        
         ensure_database_exists(database_name)
-        ensure_accounts_exist(database_name)
-
-        accounts_receivable = get_or_create_chart_account(database_name, 'Accounts Receivable', 'Current Asset')
-        sales_revenue = get_or_create_chart_account(database_name, 'Sales Revenue', 'Revenue')
-        sales_tax_payable = get_or_create_chart_account(database_name, 'Sales Tax Payable', 'Current Liability')
-        inventory = get_or_create_chart_account(database_name, 'Inventory', 'Current Asset')
-        cost_of_goods_sold = get_or_create_chart_account(database_name, 'Cost of Goods Sold (COGS)', 'Cost of Goods Sold')
+        
+        # Set up accounts
+        logger.debug(f"[DYNAMIC-INVOICE-{request_id}] Setting up finance accounts")
+        accounts_receivable = get_or_create_account(database_name, 'Accounts Receivable', 'Asset')
+        sales_revenue = get_or_create_account(database_name, 'Sales Revenue', 'Revenue')
+        sales_tax_payable = get_or_create_account(database_name, 'Sales Tax Payable', 'Liability')
+        inventory = get_or_create_account(database_name, 'Inventory', 'Asset')
+        cost_of_goods_sold = get_or_create_account(database_name, 'Cost of Goods Sold', 'Expense')
 
         with db_transaction.atomic(using=database_name):
+            # Log the start of the transaction
+            logger.debug(f"[DYNAMIC-INVOICE-{request_id}] Started database transaction")
+            
             serializer = InvoiceSerializer(data=request.data, context={'database_name': database_name})
             if serializer.is_valid():
+                # Log that we're about to save the invoice, which may trigger table creation
+                logger.info(f"[DYNAMIC-INVOICE-{request_id}] Invoice data valid, creating invoice object")
+                
                 invoice = serializer.save()
                 total_amount = Decimal(str(invoice.totalAmount))
                 
                 try:
                     tax_amount = Decimal(str(invoice.sales_tax_payable)) if invoice.sales_tax_payable else Decimal('0')
                 except decimal.InvalidOperation:
-                    logger.warning(f"Invalid sales tax value for invoice {invoice.invoice_num}: {invoice.sales_tax_payable}")
+                    logger.warning(f"[DYNAMIC-INVOICE-{request_id}] Invalid sales tax value for invoice {invoice.invoice_num}: {invoice.sales_tax_payable}")
                     tax_amount = Decimal('0')
 
                 subtotal = total_amount - tax_amount
+                logger.debug(f"[DYNAMIC-INVOICE-{request_id}] Invoice amounts - Total: {total_amount}, Tax: {tax_amount}, Subtotal: {subtotal}")
 
                 # Accounts Receivable (Debit)
                 create_general_ledger_entry(database_name, accounts_receivable, total_amount, 'debit', f"Invoice {invoice.invoice_num} created")
@@ -110,38 +153,40 @@ def create_invoice(request):
                 # Sales Tax Payable (Credit)
                 if tax_amount > 0:
                     create_general_ledger_entry(database_name, sales_tax_payable, tax_amount, 'credit', f"Sales tax for Invoice {invoice.invoice_num}")
-
-                # Handle inventory and COGS
-                for item in invoice.items.all():
-                    if item.product:
-                        try:
-                            quantity = Decimal(str(item.quantity))
-                            cost_price = Decimal(str(item.product.price))  # Assuming this is the cost price
-                            cost = quantity * cost_price
-
-                            # Inventory (Credit)
-                            create_general_ledger_entry(database_name, inventory, cost, 'credit', f"Inventory reduction for Invoice {invoice.invoice_num}")
-                            
-                            # Cost of Goods Sold (Debit)
-                            create_general_ledger_entry(database_name, cost_of_goods_sold, cost, 'debit', f"COGS for Invoice {invoice.invoice_num}")
-                        except decimal.InvalidOperation as e:
-                            logger.error(f"Invalid decimal value for item in invoice {invoice.invoice_num}: {e}")
-                            # You might want to handle this error, perhaps by skipping this item or rolling back the transaction
-
-                # Generate updated financial statements
-                generate_financial_statements(database_name)
-
+                
+                logger.info(f"[DYNAMIC-INVOICE-{request_id}] Invoice created successfully with ID {invoice.id}")
+                
+                # Check again if the tables were created
+                with connections['default'].cursor() as cursor:
+                    cursor.execute("""
+                        SELECT EXISTS (
+                            SELECT 1 FROM information_schema.tables 
+                            WHERE table_schema = %s AND table_name = 'sales_invoice'
+                        )
+                    """, [schema_name])
+                    
+                    table_exists_after = cursor.fetchone()[0]
+                    if not table_exists and table_exists_after:
+                        logger.info(f"[DYNAMIC-INVOICE-{request_id}] Confirmed dynamic creation of sales_invoice table")
+                    
+                    cursor.execute("""
+                        SELECT EXISTS (
+                            SELECT 1 FROM information_schema.tables 
+                            WHERE table_schema = %s AND table_name = 'sales_invoiceitem'
+                        )
+                    """, [schema_name])
+                    
+                    items_table_exists_after = cursor.fetchone()[0]
+                    if not items_table_exists and items_table_exists_after:
+                        logger.info(f"[DYNAMIC-INVOICE-{request_id}] Confirmed dynamic creation of sales_invoiceitem table")
+                
                 return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
             else:
-                logger.error("Validation errors: %s", serializer.errors)
+                logger.error(f"[DYNAMIC-INVOICE-{request_id}] Validation errors: {serializer.errors}")
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    except UserProfile.DoesNotExist:
-        logger.error("UserProfile does not exist for user: %s", user)
-        return Response({'error': 'User profile not found.'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        logger.exception("Unexpected error creating invoice: %s", str(e))
-        return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.exception(f"[DYNAMIC-INVOICE-{request_id}] Unexpected error: {str(e)}")
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 def ensure_database_exists(database_name):
     logger.debug("Creating dynamic database if it doesn't exist: %s", database_name)
@@ -222,33 +267,82 @@ def invoice_detail(request, pk):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_customer(request):
-    logger.debug("Create Customer: Received request data: %s", request.data)
+    """Create a new customer with dynamic table creation tracking"""
+    # Generate a unique request ID for tracking
+    request_id = uuid.uuid4().hex[:8]
+    
+    logger.info(f"[DYNAMIC-CUSTOMER-{request_id}] Create Customer requested by user {request.user.id}")
+    logger.debug(f"[DYNAMIC-CUSTOMER-{request_id}] Received request data: {request.data}")
+    
     user = request.user
 
     if not user.is_authenticated:
+        logger.warning(f"[DYNAMIC-CUSTOMER-{request_id}] Unauthenticated user attempted to create customer")
         return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
 
     try:
+        # Get database information
         database_name = get_user_database(user)
+        logger.info(f"[DYNAMIC-CUSTOMER-{request_id}] Using database {database_name} for customer creation")
+        
+        # Check if customer table exists before we try to use it
+        with connections['default'].cursor() as cursor:
+            # Extract schema name from database
+            schema_name = database_name.split('_')[0]
+            logger.info(f"[DYNAMIC-CUSTOMER-{request_id}] Checking if crm_customer table exists in schema {schema_name}")
+            
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables 
+                    WHERE table_schema = %s AND table_name = 'crm_customer'
+                )
+            """, [schema_name])
+            
+            table_exists = cursor.fetchone()[0]
+            logger.info(f"[DYNAMIC-CUSTOMER-{request_id}] Customer table exists: {table_exists}")
+            
+            if not table_exists:
+                logger.info(f"[DYNAMIC-CUSTOMER-{request_id}] Customer table will be created dynamically")
+        
         ensure_database_exists(database_name)
 
         with db_transaction.atomic(using=database_name):
+            # Log the start of the transaction
+            logger.debug(f"[DYNAMIC-CUSTOMER-{request_id}] Started database transaction")
+            
             serializer = CustomerSerializer(data=request.data, context={'database_name': database_name})
             if serializer.is_valid():
+                # Log that we're about to save the customer, which may trigger table creation
+                logger.info(f"[DYNAMIC-CUSTOMER-{request_id}] Customer data valid, creating customer object")
+                
                 customer = serializer.save()
-                logger.debug("Customer created: %s", serializer.data)
+                logger.info(f"[DYNAMIC-CUSTOMER-{request_id}] Customer created successfully with ID {customer.id}")
+                
+                # Check again if the table was created
+                with connections['default'].cursor() as cursor:
+                    cursor.execute("""
+                        SELECT EXISTS (
+                            SELECT 1 FROM information_schema.tables 
+                            WHERE table_schema = %s AND table_name = 'crm_customer'
+                        )
+                    """, [schema_name])
+                    
+                    table_exists_after = cursor.fetchone()[0]
+                    if not table_exists and table_exists_after:
+                        logger.info(f"[DYNAMIC-CUSTOMER-{request_id}] Confirmed dynamic creation of crm_customer table")
+                
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
-                logger.error("Validation errors: %s", serializer.errors)
+                logger.error(f"[DYNAMIC-CUSTOMER-{request_id}] Validation errors: {serializer.errors}")
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except ValueError as e:
-        logger.error("ValueError in create_customer: %s", str(e))
+        logger.error(f"[DYNAMIC-CUSTOMER-{request_id}] ValueError: {str(e)}")
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except IntegrityError as e:
-        logger.error("IntegrityError in create_customer: %s", str(e))
+        logger.error(f"[DYNAMIC-CUSTOMER-{request_id}] IntegrityError: {str(e)}")
         return Response({'error': 'Data integrity error occurred.'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
-        logger.exception("Unexpected error creating customer: %s", str(e))
+        logger.exception(f"[DYNAMIC-CUSTOMER-{request_id}] Unexpected error: {str(e)}")
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

@@ -53,6 +53,38 @@ export const SUBSCRIPTION_INTERVALS = {
   YEARLY: 'YEARLY'
 };
 
+/**
+ * Color definitions for subscription plans
+ * These can be used consistently across the application
+ */
+export const SUBSCRIPTION_PLAN_COLORS = {
+  FREE: '#757575',        // Grey for Free plan
+  PROFESSIONAL: '#1a5bc0', // Blue for Professional plan
+  ENTERPRISE: '#673ab7',   // Purple for Enterprise plan
+  // Fallback
+  DEFAULT: '#757575'      // Default to grey
+};
+
+/**
+ * Get the color for a subscription plan
+ * @param {string} plan - The plan name/id ('free', 'professional', 'enterprise')
+ * @returns {string} The color code for the plan
+ */
+export const getSubscriptionPlanColor = (plan) => {
+  if (!plan) return SUBSCRIPTION_PLAN_COLORS.DEFAULT;
+  
+  // Normalize the plan name
+  const normalizedPlan = typeof plan === 'string' ? plan.toUpperCase() : 'FREE';
+  
+  // Check if it includes one of our plan names (for flexibility)
+  if (normalizedPlan.includes('FREE')) return SUBSCRIPTION_PLAN_COLORS.FREE;
+  if (normalizedPlan.includes('PRO')) return SUBSCRIPTION_PLAN_COLORS.PROFESSIONAL;
+  if (normalizedPlan.includes('ENT')) return SUBSCRIPTION_PLAN_COLORS.ENTERPRISE;
+  
+  // Default
+  return SUBSCRIPTION_PLAN_COLORS.DEFAULT;
+};
+
 export async function getUserAttributes() {
   try {
     // Get current session using v6 API

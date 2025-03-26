@@ -480,7 +480,8 @@ export function useAuth() {
         const userData = {
           email: email,
           cognitoId: result.userId,
-          userRole: 'OWNER'
+          userRole: 'OWNER',
+          is_already_verified: true  // Add this flag to indicate no need for another verification code
         };
         
         logger.debug('[Auth] Sending user data to backend:', userData);

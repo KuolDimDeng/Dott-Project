@@ -43,6 +43,17 @@ axiosInstance.interceptors.request.use(
         config.retryCount = config.retryCount || 0;
       }
       
+      // Enhanced logging for product-related requests
+      if (config.url?.includes('/api/inventory/products')) {
+        logger.debug('[AxiosConfig] PRODUCT API REQUEST:', {
+          url: config.url,
+          method: config.method,
+          data: config.data ? JSON.stringify(config.data).substring(0, 200) : undefined,
+          params: config.params,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
       // Get tokens from Amplify session
       let { tokens, userSub } = await fetchAuthSession();
       let accessToken = tokens?.accessToken?.toString();
@@ -50,14 +61,46 @@ axiosInstance.interceptors.request.use(
       
       if (!accessToken || !idToken) {
         logger.warn('[AxiosConfig] Missing required tokens in session');
-        // Check if we're in a server context first
-        if (typeof window === 'undefined') {
-          // In server context, return a generic error that won't break API routes
-          logger.warn('[AxiosConfig] Server-side request with missing tokens');
-          throw new Error('No valid session');
+        
+        // For product-related endpoints, we need to handle this more gracefully
+        if (config.url?.includes('/api/inventory/products')) {
+          logger.warn('[AxiosConfig] Product API called with missing tokens, attempting to refresh');
+          try {
+            const refreshResult = await fetchAuthSession({ forceRefresh: true });
+            accessToken = refreshResult.tokens?.accessToken?.toString();
+            idToken = refreshResult.tokens?.idToken?.toString();
+            
+            if (!accessToken || !idToken) {
+              logger.error('[AxiosConfig] Token refresh failed for product API');
+              
+              // Check if we're in a server context
+              if (typeof window === 'undefined') {
+                throw new Error('No valid session');
+              } else {
+                // In browser, redirect to login if possible
+                if (typeof window !== 'undefined' && window.location) {
+                  window.location.href = '/auth/signin?error=session_expired';
+                  return Promise.reject(new Error('Session expired, redirecting to login'));
+                } else {
+                  throw new Error('No valid session - user authentication required');
+                }
+              }
+            }
+          } catch (refreshError) {
+            logger.error('[AxiosConfig] Failed to refresh tokens for product API:', refreshError);
+            throw new Error('Authentication required - please log in again');
+          }
         } else {
-          // In client context, throw a more descriptive error
-          throw new Error('No valid session - user authentication required');
+          // For other endpoints, maintain existing behavior
+          // Check if we're in a server context first
+          if (typeof window === 'undefined') {
+            // In server context, return a generic error that won't break API routes
+            logger.warn('[AxiosConfig] Server-side request with missing tokens');
+            throw new Error('No valid session');
+          } else {
+            // In client context, throw a more descriptive error
+            throw new Error('No valid session - user authentication required');
+          }
         }
       }
       
@@ -150,6 +193,18 @@ axiosInstance.interceptors.response.use(
       headers: response.headers
     });
     
+    // Additional detailed logging for product-related responses
+    if (response.config.url?.includes('/api/inventory/products')) {
+      logger.debug('[AxiosConfig] PRODUCT API RESPONSE:', {
+        url: response.config.url,
+        status: response.status,
+        data: response.data ? (typeof response.data === 'string' ? 
+              response.data.substring(0, 200) : 
+              JSON.stringify(response.data).substring(0, 200)) : undefined,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
     // Check for tenant information in the response
     const tenantId = getTenantFromResponse(response);
     if (tenantId) {
@@ -169,6 +224,16 @@ axiosInstance.interceptors.response.use(
       name: error.name || 'Unknown error',
       stack: error.stack ? error.stack.split('\n').slice(0, 3).join('\n') : 'No stack trace'
     };
+    
+    // Enhanced logging for product-related errors
+    if (originalRequest?.url?.includes('/api/inventory/products')) {
+      logger.error('[AxiosConfig] PRODUCT API ERROR:', {
+        ...errorDetails,
+        requestData: originalRequest?.data ? JSON.stringify(originalRequest.data).substring(0, 200) : undefined,
+        responseData: error.response?.data ? JSON.stringify(error.response.data).substring(0, 500) : undefined,
+        timestamp: new Date().toISOString()
+      });
+    }
     
     // Add request info if available
     if (originalRequest) {

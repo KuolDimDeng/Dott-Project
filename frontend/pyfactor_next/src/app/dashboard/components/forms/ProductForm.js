@@ -105,28 +105,13 @@ const ProductForm = () => {
   // Handle authentication errors
   const handleAuthError = () => {
     setSnackbarSeverity('error');
-    setSnackbarMessage('Authentication error. Please refresh the page and try again.');
+    setSnackbarMessage('Your session has expired. Please sign in again.');
     setOpenSnackbar(true);
     
-    // For demo purposes, use mock data instead of making API calls
-    const mockProductId = 'mock-' + Date.now();
-    const mockProduct = {
-      ...product,
-      id: mockProductId,
-      product_code: 'DEMO-' + Math.floor(Math.random() * 10000),
-      created_at: new Date().toISOString(),
-    };
-    
-    logger.info('Using mock product data due to authentication issues:', mockProduct);
-    setProduct(mockProduct);
-    
-    // Show success message for better user experience
+    // Redirect to login page after a short delay
     setTimeout(() => {
-      setSnackbarSeverity('success');
-      setSnackbarMessage('Product created successfully (demo mode)');
-      setOpenSnackbar(true);
-      setOpenPrintDialog(true);
-    }, 1000);
+      window.location.href = '/auth/signin?error=session_expired';
+    }, 2000);
   };
 
   const handleSubmit = async (e) => {
@@ -161,17 +146,54 @@ const ProductForm = () => {
       logger.error('Error creating product', error);
       
       // Check for authentication errors
-      if (error.response && error.response.status === 401) {
-        handleAuthError();
-        return;
+      if (error.response?.status === 401 || 
+          error.message?.includes('session') || 
+          error.message?.includes('Authentication required') ||
+          error.response?.data?.code === 'session_expired') {
+        
+        // Try to refresh the session automatically
+        try {
+          const { refreshUserSession } = await import('@/utils/refreshUserSession');
+          const refreshed = await refreshUserSession();
+          
+          if (refreshed) {
+            // Session was refreshed successfully, try submitting again
+            logger.info('Session refreshed successfully, retrying submission');
+            setSnackbarSeverity('info');
+            setSnackbarMessage('Session refreshed. Retrying submission...');
+            setOpenSnackbar(true);
+            
+            // Short delay before retrying
+            setTimeout(() => {
+              handleSubmit(e);
+            }, 1000);
+            return;
+          } else {
+            // Refresh failed, redirect to login
+            handleAuthError();
+            return;
+          }
+        } catch (refreshError) {
+          logger.error('Failed to refresh session:', refreshError);
+          handleAuthError();
+          return;
+        }
       }
       
       if (error.response) {
         logger.error('Error response data:', error.response.data);
       }
       
+      // Provide more specific error messages based on the error
+      let errorMessage = 'Error creating product';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setSnackbarSeverity('error');
-      setSnackbarMessage('Error creating product');
+      setSnackbarMessage(errorMessage);
       setOpenSnackbar(true);
     } finally {
       setIsSubmitting(false);

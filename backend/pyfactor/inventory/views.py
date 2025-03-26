@@ -20,6 +20,11 @@ from barcode import Code128
 from barcode.writer import ImageWriter
 from custom_auth.utils import ensure_single_tenant_per_business
 from custom_auth.middleware import verify_auth_tables_in_schema
+import uuid
+import logging
+
+# Get logger
+logger = logging.getLogger(__name__)
 
 class InventoryItemViewSet(viewsets.ModelViewSet):
     serializer_class = InventoryItemSerializer
@@ -286,261 +291,96 @@ class CustomChargePlanViewSet(viewsets.ModelViewSet):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_product(request):
-    import logging
-    import time
-    import uuid
-    import sys
-    import traceback
+    """Create a new product with dynamic table creation tracking"""
+    request_id = uuid.uuid4().hex[:8]
+    user = request.user
+    logger.info(f"[DYNAMIC-CREATEOPT-{request_id}] Product creation requested by user {user.id}")
     
-    from django.db import connection
-    from pyfactor.db_routers import TenantSchemaRouter
-    from django.conf import settings
-    from rest_framework import status
-    from rest_framework.response import Response
-    from .serializers import ProductSerializer
-    from custom_auth.middleware import verify_auth_tables_in_schema
-    
-    logger = logging.getLogger(__name__)
-    
-    start_time = time.time()
-    request_id = str(uuid.uuid4())[:8]
-    logger.info(f"[CREATE-PRODUCT-{request_id}] Starting product creation for user {request.user.email}")
-    
-    # Log any existing tenant headers
-    tenant_id_header = request.headers.get('X-Tenant-ID')
-    schema_name_header = request.headers.get('X-Schema-Name')
-    logger.info(f"[CREATE-PRODUCT-{request_id}] Request headers - Tenant ID: {tenant_id_header}, Schema Name: {schema_name_header}")
-    
-    # Log cookie information
-    cookie_tenant_id = None
-    for key, value in request.COOKIES.items():
-        if 'tenant' in key.lower():
-            cookie_tenant_id = value
-            logger.info(f"[CREATE-PRODUCT-{request_id}] Found tenant ID in cookie: {key}={value}")
-    
-    # Check if we need to use the public schema for authentication
-    should_use_public = False
-    with connection.cursor() as cursor:
-        # First check if we're already in the public schema
-        cursor.execute('SHOW search_path')
-        current_path = cursor.fetchone()[0]
-        logger.info(f"[CREATE-PRODUCT-{request_id}] Current search path at start: {current_path}")
+    # Get database information
+    try:
+        from finance.views import get_user_database
+        database_name = get_user_database(user)
+        logger.info(f"[DYNAMIC-CREATEOPT-{request_id}] Using database {database_name} for product creation")
         
-        # If we're in a tenant schema, check if it has the auth tables
-        if 'public' not in current_path.split(',')[0]:
-            schema_name = current_path.split(',')[0].strip('"')
+        # Check if product table exists
+        from django.db import connections
+        with connections['default'].cursor() as cursor:
             cursor.execute("""
                 SELECT EXISTS (
                     SELECT 1 FROM information_schema.tables 
-                    WHERE table_schema = %s AND table_name = 'custom_auth_user'
+                    WHERE table_schema = %s AND table_name = 'inventory_product'
                 )
-            """, [schema_name])
-            has_auth_table = cursor.fetchone()[0]
-            logger.info(f"[CREATE-PRODUCT-{request_id}] Schema {schema_name} has custom_auth_user table: {has_auth_table}")
+            """, [database_name.split('_')[0]])  # Extract schema name from database name
             
-            if not has_auth_table:
-                should_use_public = True
-                logger.warning(f"[CREATE-PRODUCT-{request_id}] Schema {schema_name} missing auth tables, will use public schema for auth")
-    
-    # Temporarily switch to public schema for authentication if needed
-    if should_use_public:
-        with connection.cursor() as cursor:
-            cursor.execute('SET search_path TO public')
-            logger.info(f"[CREATE-PRODUCT-{request_id}] Temporarily switched to public schema for authentication")
-    
-    # Get the tenant for this request
-    tenant = getattr(request, 'tenant', None)
-    
-    if tenant:
-        logger.info(f"[CREATE-PRODUCT-{request_id}] Request has tenant: {tenant.schema_name}, ID: {tenant.id}")
-        
-        # Ensure auth tables exist in tenant schema
-        tables_verified = verify_auth_tables_in_schema(tenant.schema_name)
-        logger.info(f"[CREATE-PRODUCT-{request_id}] Auth tables verified in {tenant.schema_name}: {tables_verified}")
-    else:
-        logger.warning(f"[CREATE-PRODUCT-{request_id}] No tenant found in request, attempting to find or use existing tenant")
-        
-        # Get business ID from headers, user data, or cookies
-        business_id = request.headers.get('X-Business-ID') or getattr(request.user, 'custom', {}).get('businessid') or cookie_tenant_id
-        logger.info(f"[CREATE-PRODUCT-{request_id}] Extracted business ID: {business_id}")
-        
-        # Use our failsafe to get the correct tenant
-        from custom_auth.utils import ensure_single_tenant_per_business
-        tenant, should_create = ensure_single_tenant_per_business(request.user, business_id)
-        
-        if tenant:
-            logger.info(f"[CREATE-PRODUCT-{request_id}] Found tenant {tenant.schema_name} (ID: {tenant.id}) for user {request.user.email}")
-            # Add tenant to request for middleware and other components
-            request.tenant = tenant
-        else:
-            logger.error(f"[CREATE-PRODUCT-{request_id}] No tenant found for user {request.user.email}, cannot create product")
-            return Response(
-                {"error": "No tenant found for this user. Please complete onboarding first."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-    
-    # Ensure we're in the correct schema context
-    try:
-        # Clear connection cache to ensure clean state
-        logger.info(f"[CREATE-PRODUCT-{request_id}] Clearing connection cache")
-        TenantSchemaRouter.clear_connection_cache()
-        
-        # Get optimized connection for tenant schema
-        if tenant:
-            logger.info(f"[CREATE-PRODUCT-{request_id}] Getting connection for schema: {tenant.schema_name} (ID: {tenant.id})")
-            TenantSchemaRouter.get_connection_for_schema(tenant.schema_name)
+            table_exists = cursor.fetchone()[0]
+            logger.info(f"[DYNAMIC-CREATEOPT-{request_id}] Product table exists: {table_exists}")
             
-            # Verify schema context
-            with connection.cursor() as cursor:
-                cursor.execute('SHOW search_path')
-                current_path = cursor.fetchone()[0]
-                logger.info(f"[CREATE-PRODUCT-{request_id}] Current search path: {current_path}")
-                if tenant.schema_name not in current_path:
-                    logger.error(f"[CREATE-PRODUCT-{request_id}] SCHEMA MISMATCH: Expected {tenant.schema_name} but got {current_path}")
-        
-        # Log request data for debugging
-        logger.info(f"[CREATE-PRODUCT-{request_id}] Product data: {request.data}")
-        
-        # Validate the data
-        serializer = ProductSerializer(data=request.data)
-        if serializer.is_valid():
-            logger.info(f"[CREATE-PRODUCT-{request_id}] Product data validated successfully: {serializer.validated_data}")
-            
-            # Use a transaction to ensure atomicity
-            from django.db import transaction
-            with transaction.atomic():
-                # Set timeout for the transaction
-                with connection.cursor() as cursor:
-                    cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds
-                    logger.info(f"[CREATE-PRODUCT-{request_id}] Set transaction timeout to 10 seconds")
-                
-                # Save the product
-                logger.info(f"[CREATE-PRODUCT-{request_id}] Attempting to save product in schema {tenant.schema_name}")
-                product = serializer.save()
-                logger.info(f"[CREATE-PRODUCT-{request_id}] Successfully created product: {product.name} with ID {product.id} in {time.time() - start_time:.4f}s")
-                
-                # Verify final schema context after save
-                with connection.cursor() as cursor:
-                    cursor.execute('SHOW search_path')
-                    final_path = cursor.fetchone()[0]
-                    logger.info(f"[CREATE-PRODUCT-{request_id}] Final search path after save: {final_path}")
-                
-                return Response(ProductSerializer(product).data, status=status.HTTP_201_CREATED)
-        else:
-            logger.warning(f"[CREATE-PRODUCT-{request_id}] Product validation failed: {serializer.errors}")
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            if not table_exists:
+                logger.info(f"[DYNAMIC-CREATEOPT-{request_id}] Product table will be created dynamically")
     except Exception as e:
-        # Get detailed exception information
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        stack_trace = traceback.format_exception(exc_type, exc_value, exc_traceback)
-        
-        logger.error(f"[CREATE-PRODUCT-{request_id}] Error creating product: {str(e)}", exc_info=True)
-        logger.error(f"[CREATE-PRODUCT-{request_id}] Stack trace: {''.join(stack_trace)}")
-        
-        # Log database connection state
+        logger.error(f"[DYNAMIC-CREATEOPT-{request_id}] Error checking product table: {str(e)}")
+    
+    # Process product creation
+    serializer = ProductSerializer(data=request.data, context={'database_name': database_name})
+    
+    if serializer.is_valid():
         try:
-            with connection.cursor() as cursor:
-                cursor.execute('SHOW search_path')
-                current_path = cursor.fetchone()[0]
-                logger.error(f"[CREATE-PRODUCT-{request_id}] Current search_path at error: {current_path}")
-                
-                # Check if schema exists
-                if tenant:
-                    cursor.execute("""
-                        SELECT schema_name FROM information_schema.schemata
-                        WHERE schema_name = %s
-                    """, [tenant.schema_name])
-                    schema_exists = cursor.fetchone() is not None
-                    logger.error(f"[CREATE-PRODUCT-{request_id}] Schema {tenant.schema_name} exists: {schema_exists}")
-        except Exception as conn_error:
-            logger.error(f"[CREATE-PRODUCT-{request_id}] Error checking connection state: {str(conn_error)}")
-        
-        # Provide more specific error messages based on the exception type
-        if "timeout" in str(e).lower():
-            return Response({"error": "Database operation timed out. Please try again."},
-                           status=status.HTTP_504_GATEWAY_TIMEOUT)
-        elif "duplicate key" in str(e).lower():
-            return Response({"error": "A product with this code already exists."},
-                           status=status.HTTP_409_CONFLICT)
-        elif "schema" in str(e).lower():
-            return Response({"error": "Database schema error. Please try again or contact support.",
-                            "details": str(e)},
-                           status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            return Response({"error": str(e), "details": "See server logs for more information"},
-                           status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    finally:
-        # Reset connection cache
-        logger.info(f"[CREATE-PRODUCT-{request_id}] Resetting connection cache")
-        TenantSchemaRouter.clear_connection_cache()
+            product = serializer.save()
+            logger.info(f"[DYNAMIC-CREATEOPT-{request_id}] Product created successfully with ID {product.id}")
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(f"[DYNAMIC-CREATEOPT-{request_id}] Error creating product: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        logger.warning(f"[DYNAMIC-CREATEOPT-{request_id}] Invalid product data: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_service(request):
-    import logging
-    import time
-    logger = logging.getLogger(__name__)
+    """Create a new service with dynamic table creation tracking"""
+    request_id = uuid.uuid4().hex[:8]
+    user = request.user
+    logger.info(f"[DYNAMIC-CREATEOPT-{request_id}] Service creation requested by user {user.id}")
     
-    start_time = time.time()
-    
-    # Log the current database connection and schema
-    from django.db import connection
-    from pyfactor.db_routers import TenantSchemaRouter
-    
-    # Get optimized connection for the current schema
-    with connection.cursor() as cursor:
-        cursor.execute('SHOW search_path')
-        current_schema = cursor.fetchone()[0]
-        logger.debug(f"Creating service in schema: {current_schema}, using connection: {connection.alias}")
-    
-    # Log tenant information if available
-    tenant = getattr(request, 'tenant', None)
-    if tenant:
-        logger.debug(f"Request has tenant: {tenant.schema_name} (Status: {tenant.database_status})")
-    else:
-        logger.warning("No tenant found in request")
-    
-    # Ensure we're in the correct schema context
+    # Get database information
     try:
-        # Clear connection cache to ensure clean state
-        TenantSchemaRouter.clear_connection_cache()
+        from finance.views import get_user_database
+        database_name = get_user_database(user)
+        logger.info(f"[DYNAMIC-CREATEOPT-{request_id}] Using database {database_name} for service creation")
         
-        # Get optimized connection for tenant schema
-        if tenant:
-            TenantSchemaRouter.get_connection_for_schema(tenant.schema_name)
-        
-        # Validate the data
-        serializer = ServiceSerializer(data=request.data)
-        if serializer.is_valid():
-            # Use a transaction to ensure atomicity
-            from django.db import transaction
-            with transaction.atomic():
-                # Set timeout for the transaction
-                with connection.cursor() as cursor:
-                    cursor.execute('SET LOCAL statement_timeout = 10000')  # 10 seconds
-                
-                # Save the service
-                service = serializer.save()
-                logger.debug(f"Successfully created service: {service.name} with ID {service.id} in {time.time() - start_time:.4f}s")
-                return Response(ServiceSerializer(service).data, status=status.HTTP_201_CREATED)
-        else:
-            logger.warning(f"Service validation failed: {serializer.errors}")
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Check if service table exists
+        from django.db import connections
+        with connections['default'].cursor() as cursor:
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables 
+                    WHERE table_schema = %s AND table_name = 'inventory_service'
+                )
+            """, [database_name.split('_')[0]])  # Extract schema name from database name
+            
+            table_exists = cursor.fetchone()[0]
+            logger.info(f"[DYNAMIC-CREATEOPT-{request_id}] Service table exists: {table_exists}")
+            
+            if not table_exists:
+                logger.info(f"[DYNAMIC-CREATEOPT-{request_id}] Service table will be created dynamically")
     except Exception as e:
-        logger.error(f"Error creating service: {str(e)}", exc_info=True)
-        
-        # Provide more specific error messages based on the exception type
-        if "timeout" in str(e).lower():
-            return Response({"error": "Database operation timed out. Please try again."},
-                           status=status.HTTP_504_GATEWAY_TIMEOUT)
-        elif "duplicate key" in str(e).lower():
-            return Response({"error": "A service with this code already exists."},
-                           status=status.HTTP_409_CONFLICT)
-        else:
+        logger.error(f"[DYNAMIC-CREATEOPT-{request_id}] Error checking service table: {str(e)}")
+    
+    # Process service creation
+    serializer = ServiceSerializer(data=request.data, context={'database_name': database_name})
+    
+    if serializer.is_valid():
+        try:
+            service = serializer.save()
+            logger.info(f"[DYNAMIC-CREATEOPT-{request_id}] Service created successfully with ID {service.id}")
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(f"[DYNAMIC-CREATEOPT-{request_id}] Error creating service: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    finally:
-        # Reset connection cache
-        TenantSchemaRouter.clear_connection_cache()
+    else:
+        logger.warning(f"[DYNAMIC-CREATEOPT-{request_id}] Invalid service data: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

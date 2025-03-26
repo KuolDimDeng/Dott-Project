@@ -31,6 +31,7 @@ import {
 } from '@mui/material';
 import { logger } from '@/utils/logger';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 
 const PLANS = [
   {
@@ -176,8 +177,28 @@ export function Subscription() {
             })
           );
           
-          // Submit to API
-          const response = await fetch('/api/onboarding/subscription/save', {
+          // Set pending schema setup in sessionStorage for the dashboard to pick up
+          // The dashboard will handle showing content while setup happens in background
+          sessionStorage.setItem('pendingSchemaSetup', JSON.stringify({
+            plan: 'free',
+            timestamp: new Date().toISOString(),
+            source: 'subscription_page',
+            backgroundSetup: true // Flag indicating setup should happen in background
+          }));
+          
+          // Update Cognito attributes via the API with more comprehensive set of attributes
+          await updateUserAttributes({
+            userAttributes: {
+              'custom:subplan': 'free',
+              'custom:onboarding': 'SUBSCRIPTION',
+              'custom:setupdone': 'FALSE',
+              'custom:updated_at': new Date().toISOString()
+            }
+          });
+          
+          // Start schema setup in background by submitting to API
+          // Use a non-blocking fetch that doesn't await
+          fetch('/api/onboarding/subscription/save', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -185,39 +206,21 @@ export function Subscription() {
             body: JSON.stringify({
               plan: normalizedPlanId,
               interval: billingInterval,
+              background_setup: true
             }),
-          });
-          
-          const data = await response.json();
-          
-          if (!response.ok) {
-            throw new Error(data.error || 'Failed to save subscription');
-          }
-          
-          logger.debug('[Subscription] Free plan setup successful:', data);
-          
-          // Set pending schema setup in sessionStorage for the dashboard to pick up
-          sessionStorage.setItem('pendingSchemaSetup', JSON.stringify({
-            plan: 'free',
-            timestamp: new Date().toISOString(),
-            source: 'subscription_page'
-          }));
-          
-          // Update Cognito attributes via the API
-          await updateUserAttributes({
-            userAttributes: {
-              'custom:subplan': 'free',
-              'custom:onboarding': 'SUBSCRIPTION'
-            }
+          }).then(response => {
+            return response.json();
+          }).then(data => {
+            logger.debug('[Subscription] Free plan background setup initiated:', data);
+          }).catch(e => {
+            logger.error('[Subscription] Free plan background setup error:', e);
           });
           
           // Set success message
           setError('Redirecting to dashboard...');
           
-          // Redirect to dashboard
-          setTimeout(() => {
-            router.push('/dashboard');
-          }, 1000);
+          // Redirect to dashboard immediately without waiting for setup completion
+          router.push('/dashboard');
         } catch (e) {
           logger.error('[Subscription] Free plan setup failed:', e);
           setError(`Failed to set up free plan: ${e.message}`);
@@ -262,6 +265,11 @@ export function Subscription() {
       setError(`An error occurred: ${e.message}`);
       setIsSubmitting(false);
     }
+  };
+
+  // Function to get plan color based on id
+  const getPlanColor = (planId) => {
+    return getSubscriptionPlanColor(planId);
   };
 
   // Loading state (existing code)
@@ -361,7 +369,7 @@ export function Subscription() {
                 },
                 ...(selectedPlan === plan.id && {
                   border: '2px solid',
-                  borderColor: 'primary.main',
+                  borderColor: getPlanColor(plan.id),
                 }),
               }}
             >
@@ -372,7 +380,7 @@ export function Subscription() {
                     position: 'absolute',
                     top: -12,
                     right: 24,
-                    backgroundColor: 'primary.main',
+                    backgroundColor: getPlanColor('professional'),
                     color: 'white',
                     px: 2,
                     py: 0.5,
@@ -394,7 +402,7 @@ export function Subscription() {
                     position: 'absolute',
                     top: -12,
                     right: 24,
-                    backgroundColor: 'primary.dark',
+                    backgroundColor: getPlanColor('enterprise'),
                     color: 'white',
                     px: 2,
                     py: 0.5,
@@ -413,7 +421,7 @@ export function Subscription() {
                 <Typography gutterBottom variant="h5" component="h2" fontWeight={600}>
                   {plan.name}
                 </Typography>
-                <Typography variant="h4" color="primary" gutterBottom fontWeight={700}>
+                <Typography variant="h4" sx={{ color: getPlanColor(plan.id) }} gutterBottom fontWeight={700}>
                   ${plan.price[billingCycle]}
                   <Typography
                     component="span"
@@ -467,14 +475,20 @@ export function Subscription() {
                   variant={selectedPlan === plan.id ? 'contained' : 'outlined'}
                   onClick={() => handlePlanSelect(plan.id)}
                   disabled={isSubmitting || isUpdating}
-                  color="primary"
                   sx={{ 
                     py: 1.2,
                     borderRadius: 2,
                     textTransform: 'none',
                     fontSize: '1rem',
                     fontWeight: 500,
-                    boxShadow: selectedPlan === plan.id ? '0 4px 10px rgba(0,0,0,0.15)' : 'none'
+                    ...(selectedPlan === plan.id ? {
+                      bgcolor: getPlanColor(plan.id),
+                      '&:hover': { bgcolor: getPlanColor(plan.id) },
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.15)'
+                    } : {
+                      color: getPlanColor(plan.id),
+                      borderColor: getPlanColor(plan.id)
+                    })
                   }}
                 >
                   {(isSubmitting || isUpdating) && selectedPlan === plan.id ? (

@@ -31,6 +31,7 @@ import ContactsIcon from '@mui/icons-material/Contacts';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Image from 'next/image';
+import DescriptionIcon from '@mui/icons-material/Description';
 
 const MENU_WIDTH = 258; // Increased to match the drawer width (260px, leaving 2px for borders)
 
@@ -88,6 +89,15 @@ const MainListItems = ({
   };
 
   const handleCreateClick = (event) => {
+    // Handle case where event is undefined (when called directly from menu item)
+    if (!event || typeof event !== 'object') {
+      // If no event provided, use a dummy reference element instead
+      const dummyElement = document.getElementById('main-menu-container') || document.body;
+      setCreateAnchorEl(dummyElement);
+      return;
+    }
+    
+    // Normal case with event
     setCreateAnchorEl(event.currentTarget);
   };
 
@@ -106,6 +116,34 @@ const MainListItems = ({
   const theme = useTheme();
 
   const menuItems = [
+    {
+      icon: <AddCircleOutlineIcon />,
+      label: 'Create New',
+      onClick: (e) => handleCreateClick(e),
+      customStyle: {
+        pl: 2,
+        py: 0.5,
+        mb: 0.5,
+        mt: 0.5,
+        textTransform: 'none',
+        border: 'none',
+        borderRadius: 0,
+        maxWidth: '100%',
+        width: '100%',
+        color: navyBlue,
+        backgroundColor: '#e6ebf5',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        position: 'relative',
+        zIndex: 10,
+        boxShadow: 'none !important',
+        overflow: 'visible',
+        '&:hover': {
+          backgroundColor: '#d8e1f3',
+        },
+      },
+      isSpecial: true,
+    },
     {
       icon: <DashboardCustomizeIcon />,
       label: 'Dashboard',
@@ -295,58 +333,73 @@ const MainListItems = ({
   const createOptions = [
     { 
       label: 'Transaction', 
+      icon: <PaymentsIcon fontSize="small" />,
       onClick: () => {
-        // Use Next.js router or link to navigate
-        window.location.href = '/dashboard/transactions/new';
+        // Update state instead of navigating to a new URL
+        handleShowCreateOptions('Transaction');
       }, 
       value: 'Transaction' 
     },
     { 
       label: 'Product', 
+      icon: <Inventory2OutlinedIcon fontSize="small" />,
       onClick: () => {
-        window.location.href = '/dashboard/products/new';
+        // Update state instead of navigating to a new URL
+        handleShowCreateOptions('Product');
       }, 
       value: 'Product' 
     },
     { 
       label: 'Service', 
+      icon: <ReceiptLongIcon fontSize="small" />,
       onClick: () => {
-        window.location.href = '/dashboard/services/new';
+        // Update state instead of navigating to a new URL
+        handleShowCreateOptions('Service');
       }, 
       value: 'Service' 
     },
     { 
       label: 'Invoice', 
+      icon: <DescriptionIcon fontSize="small" />,
       onClick: () => {
-        window.location.href = '/dashboard/invoices/new';
+        // Update state instead of navigating to a new URL
+        handleShowCreateOptions('Invoice');
       }, 
       value: 'Invoice' 
     },
     { 
       label: 'Bill', 
+      icon: <ShoppingCartIcon fontSize="small" />,
       onClick: () => {
-        window.location.href = '/dashboard/bills/new';
+        // Update state instead of navigating to a new URL
+        handleShowCreateOptions('Bill');
       }, 
       value: 'Bill' 
     },
     { 
       label: 'Estimate', 
+      icon: <AssessmentIcon fontSize="small" />,
       onClick: () => {
-        window.location.href = '/dashboard/estimates/new';
+        // Update state instead of navigating to a new URL
+        handleShowCreateOptions('Estimate');
       }, 
       value: 'Estimate' 
     },
     { 
       label: 'Customer', 
+      icon: <PeopleOutlineIcon fontSize="small" />,
       onClick: () => {
-        window.location.href = '/dashboard/customers/new';
+        // Update state instead of navigating to a new URL
+        handleShowCreateOptions('Customer');
       }, 
       value: 'Customer' 
     },
     { 
       label: 'Vendor', 
+      icon: <ContactsIcon fontSize="small" />,
       onClick: () => {
-        window.location.href = '/dashboard/vendors/new';
+        // Update state instead of navigating to a new URL
+        handleShowCreateOptions('Vendor');
       }, 
       value: 'Vendor' 
     },
@@ -361,6 +414,22 @@ const MainListItems = ({
         iconHover: '#0a3977', // Navy blue for icon hover
         background: '#ffffff', // White background
         backgroundHover: '#f0f3f9', // Very light gray with slight blue tint
+      },
+    },
+    components: {
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            boxShadow: 'none', // Remove shadow from all Paper components
+          },
+        },
+      },
+      MuiListItemButton: {
+        styleOverrides: {
+          root: {
+            boxShadow: 'none', // Remove shadow from all ListItemButton components
+          },
+        },
       },
     },
   });
@@ -381,7 +450,13 @@ const MainListItems = ({
               },
               backgroundColor: hoveredItem === `${parentMenu}-${item.value}` ? hoverBgColor : 'inherit',
             }}
-            onClick={() => item.onClick && item.onClick(item.value)}
+            onClick={(event) => {
+              if (item.subItems) {
+                handleMenuToggle(item.label);
+              } else if (item.onClick) {
+                item.onClick(event);
+              }
+            }}
             onMouseEnter={() => handleMouseEnter(`${parentMenu}-${item.value}`)}
             onMouseLeave={handleMouseLeave}
           >
@@ -400,75 +475,10 @@ const MainListItems = ({
     </Collapse>
   );
 
-  const CreateNewButton = () => {
-    const isCreateOpen = Boolean(createAnchorEl);
-
-    return (
-      <ListItemButton
-        onClick={handleCreateClick}
-        sx={{
-          justifyContent: 'flex-start',
-          pl: 2.5, // Reduced left padding
-          py: 0.5, // Reduced top/bottom padding
-          mb: 1.5, // Reduced bottom margin
-          mx: 0.5, // Reduced side margins
-          textTransform: 'none',
-          border: '2px solid', // Reduced from 2px to 1px
-          borderColor: isCreateOpen ? navyBlue : navyBlue,
-          borderRadius: '50px', // Reduced from 50px to 25px for smaller rounded corners
-          maxWidth: '150px', // Widened to fit the new drawer width
-          width: `${buttonWidth}px`,
-          color: navyBlue,
-          backgroundColor: '#ffffff', // White background
-          fontSize: '18px',
-          fontWeight: isCreateOpen ? 'bold' : 'normal',
-          transition: 'all 0.3s ease',
-          '&:hover, &.Mui-focusVisible': {
-            backgroundColor: hoverBgColor,
-            borderColor: navyBlue,
-            color: navyBlue,
-            fontWeight: 'bold',
-            '& .MuiSvgIcon-root': {
-              color: navyBlue,
-            },
-          },
-        }}
-      >
-        <ListItemIcon
-          sx={{
-            minWidth: 25, // Reduced from 25px
-            mr: 0.5, // Reduced from 1
-            '& .MuiSvgIcon-root': {
-              fontSize: '18px', // Smaller icon
-              color: navyBlue,
-              transition: 'color 0.3s ease',
-            },
-            '$:hover &, .Mui-focusVisible &': {
-              '& .MuiSvgIcon-root': {
-                color: navyBlue,
-              },
-            },
-          }}
-        >
-          <AddCircleOutlineIcon />
-        </ListItemIcon>
-        <ListItemText
-          primary="New"
-          primaryTypographyProps={{
-            sx: {
-              color: navyBlue,
-              fontWeight: 'inherit',
-              fontSize: '0.9rem', // Smaller font size
-            },
-          }}
-        />
-      </ListItemButton>
-    );
-  };
-
   return (
     <ThemeProvider theme={menuTheme}>
       <Box
+        id="main-menu-container"
         sx={{
           width: '100%',
           height: '100%',
@@ -479,60 +489,95 @@ const MainListItems = ({
             minWidth: '36px',
             color: navyBlue, // Set icons to navy blue
           },
+          // Remove shadows from all elements
+          '& .MuiPaper-root, & .MuiList-root, & .MuiListItem-root, & .MuiListItemButton-root, & .MuiCollapse-root': {
+            boxShadow: 'none !important',
+          },
+          position: 'relative',
+          zIndex: 0,
         }}
       >
+        {/* Single container for all menu items */}
         <Paper
           ref={paperRef}
           elevation={0}
           sx={{
             width: MENU_WIDTH,
             background: 'transparent',
+            boxShadow: 'none',
+            '&.MuiPaper-root': {
+              boxShadow: 'none',
+              backgroundImage: 'none',
+            },
+            '& > *': {
+              boxShadow: 'none',
+            },
+            position: 'relative',
+            zIndex: 1,
+            pt: 2, // Add padding top to give space at the top
           }}
         >
-          <Box sx={{ pt: 2, pb: 1 }}>
-            <CreateNewButton />
-          </Box>
-          
           <List
             component="nav"
             aria-labelledby="navigation-subheader"
             sx={{
               width: '100%',
+              pt: 0,
+              mt: 0,
+              position: 'relative',
+              zIndex: 1,
+              boxShadow: 'none',
+              '& .MuiListItem-root, & .MuiListItemButton-root, & .MuiCollapse-root': {
+                boxShadow: 'none !important'
+              },
+              '& .MuiListItemButton-root:last-of-type, & .MuiListItemButton-root:first-of-type': {
+                boxShadow: 'none !important',
+                '&::after, &::before': {
+                  display: 'none',
+                },
+              },
             }}
           >
+            {/* Regular menu items, including the New button as first item */}
             {menuItems.map((item, index) => (
               <React.Fragment key={index}>
                 <ListItemButton
-                  onClick={
-                    item.subItems
-                      ? () => handleMenuToggle(item.label)
-                      : () => item.onClick && item.onClick()
-                  }
+                  onClick={(event) => {
+                    if (item.subItems) {
+                      handleMenuToggle(item.label);
+                    } else if (item.onClick) {
+                      item.onClick(event);
+                    }
+                  }}
                   onMouseEnter={() => handleMouseEnter(item.label)}
                   onMouseLeave={handleMouseLeave}
                   data-menu-label={item.label}
                   sx={{
-                    '&:hover': {
-                      backgroundColor: hoverBgColor,
-                    },
-                    backgroundColor: hoveredItem === item.label ? hoverBgColor : 'inherit',
+                    ...(item.isSpecial ? item.customStyle : {
+                      '&:hover': {
+                        backgroundColor: hoverBgColor,
+                      },
+                      backgroundColor: hoveredItem === item.label ? hoverBgColor : 'inherit',
+                    }),
                   }}
                 >
-                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemIcon sx={item.isSpecial ? {
+                    minWidth: '25px',
+                    color: navyBlue,
+                    '& .MuiSvgIcon-root': {
+                      fontSize: '18px',
+                    }
+                  } : {}}>{item.icon}</ListItemIcon>
                   <ListItemText 
                     primary={item.label} 
                     primaryTypographyProps={{ 
                       sx: { 
                         color: navyBlue, 
-                        fontWeight: openMenu === item.label ? 600 : 400 
+                        fontWeight: item.isSpecial ? 600 : (openMenu === item.label ? 600 : 400),
+                        fontSize: item.isSpecial ? '0.9rem' : 'inherit'
                       } 
                     }} 
                   />
-                  {item.subItems && (
-                    openMenu === item.label ? 
-                    <ExpandLess sx={{ color: navyBlue }} /> : 
-                    <ExpandMore sx={{ color: navyBlue }} />
-                  )}
                 </ListItemButton>
                 {item.subItems && renderSubMenu(item.subItems, item.label)}
               </React.Fragment>
@@ -544,6 +589,8 @@ const MainListItems = ({
         open={createOpen}
         anchorEl={createAnchorEl}
         onClose={handleCreateClose}
+        disablePortal={false}
+        disableRestoreFocus
         anchorOrigin={{
           vertical: 'top',
           horizontal: 'right',
@@ -552,26 +599,35 @@ const MainListItems = ({
           vertical: 'top',
           horizontal: 'left',
         }}
-        slotProps={{
-          paper: {
-            sx: {
-              marginTop: '70px',
-              marginLeft: '260px', // Updated to match the new drawer width
-              backgroundColor: '#ffffff', // Set the background to a solid color (white in this case)
-              boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)', // Optional: Add a shadow for better visibility
-              borderRadius: '8px', // Optional: Add rounded corners
+        PaperProps={{
+          sx: {
+            position: 'fixed',
+            left: `calc(${MENU_WIDTH}px + 40px)`, // Position it further into content area
+            top: '120px', // Fixed positioning from top
+            width: '280px',
+            backgroundColor: '#ffffff',
+            boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)',
+            borderRadius: '12px',
+            p: 1.5,
+            border: '1px solid #e0e0e0',
+            zIndex: 1300, // Ensure it appears above other elements
+            '@media (max-width: 600px)': {
+              left: '10px', // On mobile, position it differently
+              width: 'calc(100% - 20px)',
             },
           },
         }}
       >
         <Box>
-          <List>
+          <List dense>
             {createOptions.map((option, index) => (
               <ListItemButton
                 key={index}
                 onClick={() => {
                   if (typeof option.onClick === 'function') {
-                    option.onClick(option.value);
+                    // Call the onClick function with the option value
+                    // Don't directly pass the event since it doesn't need it
+                    option.onClick();
                   } else {
                     console.warn(`onClick handler for option "${option.label}" is not a function`);
                   }
@@ -580,18 +636,31 @@ const MainListItems = ({
                 onMouseEnter={() => setHoveredCreateOption(option.value)}
                 onMouseLeave={() => setHoveredCreateOption(null)}
                 sx={{
-                  py: 0.2,
+                  py: 1,
                   color: navyBlue,
+                  borderRadius: '8px',
+                  mb: 0.5,
                   '&:hover': {
                     backgroundColor: hoverBgColor,
                     color: navyBlue,
                   },
                 }}
               >
+                <ListItemIcon 
+                  sx={{ 
+                    minWidth: '30px',
+                    color: navyBlue,
+                    '& .MuiSvgIcon-root': {
+                      fontSize: '1.2rem',
+                    }
+                  }}
+                >
+                  {option.icon}
+                </ListItemIcon>
                 <ListItemText
                   primary={option.label}
                   primaryTypographyProps={{
-                    fontSize: '0.9rem',
+                    fontSize: '0.95rem',
                     fontWeight: hoveredCreateOption === option.value ? 'bold' : 'normal',
                     color: navyBlue,
                   }}

@@ -44,6 +44,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DashboardLanguageSelector from './LanguageSelector';
+import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 
 // Colors for menu and theme
 const menuBackgroundColor = '#f0f3f9'; // Very light gray with blue tint
@@ -79,12 +80,41 @@ const AppBar = ({
 }) => {
   // Generate initials from the first and last name
   const getInitials = (name) => {
-    if (!name) return '';
-    const [firstName, lastName] = name.split(' ');
-    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+    if (!name || typeof name !== 'string') return '';
+    
+    // Trim the name and handle multiple spaces
+    const cleanedName = name.trim().replace(/\s+/g, ' ');
+    
+    // Log the name being processed for debugging
+    console.log('Processing name for initials:', cleanedName);
+    
+    if (!cleanedName) return '';
+    
+    // Split by space to get all name parts
+    const nameParts = cleanedName.split(' ');
+    
+    // If only one part, use first character
+    if (nameParts.length === 1) {
+      return nameParts[0].charAt(0).toUpperCase();
+    }
+    
+    // If multiple parts, use first character of first and last parts
+    const firstName = nameParts[0];
+    const lastName = nameParts[nameParts.length - 1];
+    
+    return `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`.toUpperCase();
   };
 
   const initials = userData ? getInitials(`${userData?.first_name || ''} ${userData?.last_name || ''}`) : '';
+  
+  // Log the generated initials and input data for debugging
+  console.log('Generated initials:', {
+    initials,
+    first_name: userData?.first_name,
+    last_name: userData?.last_name,
+    full_name: userData?.full_name
+  });
+  
   console.log('userData in AppBar:', {
     userData,
     business_name: userData?.business_name,
@@ -106,8 +136,6 @@ const AppBar = ({
       return 'Professional Plan';
     } else if (normalizedType.includes('ent')) {
       return 'Enterprise Plan';
-    } else if (normalizedType.includes('basic')) {
-      return 'Basic Plan';
     } else {
       return 'Free Plan';
     }
@@ -208,6 +236,11 @@ const AppBar = ({
     },
   ];
 
+  // Add the function to get subscription plan color
+  const getPlanColor = (planName) => {
+    return getSubscriptionPlanColor(planName);
+  };
+
   return (
     <MuiAppBar
       position="fixed"
@@ -266,25 +299,27 @@ const AppBar = ({
               >
                 {userData?.business_name || 'Business Name'}
               </Typography>
-                <Box
+                <Paper
+                  onClick={handleSubscriptionClick}
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    flexDirection: 'column',
+                    p: 1,
+                    pr: 1.5,
+                    ml: 2,
                     cursor: 'pointer',
-                    padding: '4px 8px',
+                    bgcolor: getPlanColor(userData?.subscription_type || 'free'),
+                    color: 'white',
                     borderRadius: '4px',
-                    backgroundColor: '#1a5bc0', // Standard blue instead of light blue
+                    '&:hover': {
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    }
                   }}
-                  onClick={handleSubscriptionClick}
                 >
-                  <Typography
-                    variant="caption"
-                    sx={{ color: '#ffffff', lineHeight: 2, pr: 0.5 }}
-                  >
+                  <Typography variant="body2" fontWeight="medium">
                     {displayLabel}
                   </Typography>
-                </Box>
+                </Paper>
               </Box>
             </Paper>
           )}
@@ -424,9 +459,9 @@ const AppBar = ({
                   <Box sx={{ 
                     display: 'flex',
                     alignItems: 'center',
-                    backgroundColor: '#e3f2fd',
+                    backgroundColor: getPlanColor(userData?.subscription_type || 'free'),
                     p: 1,
-                    borderRadius: 1,
+                    borderRadius: '4px',
                     mt: 1,
                     cursor: 'pointer'
                   }}
@@ -435,15 +470,22 @@ const AppBar = ({
                     handleSubscriptionClick(e);
                   }}
                   >
-                    <Typography variant="caption" fontWeight="medium" color="primary.main">
+                    <Typography variant="caption" fontWeight="medium" color="#ffffff">
                       {displayLabel}
                     </Typography>
                     {userData?.subscription_type === 'free' && (
                       <Button 
                         size="small" 
-                        variant="text" 
-                        color="primary" 
-                        sx={{ ml: 'auto', fontSize: '0.7rem', p: 0.5 }}
+                        variant="contained"
+                        sx={{ 
+                          ml: 'auto', 
+                          fontSize: '0.7rem', 
+                          p: 0.5, 
+                          color: '#ffffff', 
+                          bgcolor: getPlanColor('professional'),
+                          '&:hover': { bgcolor: getPlanColor('professional') },
+                          borderRadius: '4px'
+                        }}
                         onClick={(e) => {
                           handleClose();
                           handleSubscriptionClick(e);
@@ -709,7 +751,7 @@ const AppBar = ({
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    borderColor: plan.id === 'enterprise' ? '#0a3977' : '#1a5bc0',
+                    borderColor: getPlanColor(plan.id),
                     boxShadow: plan.id === 'enterprise' ? 2 : 0,
                   }}
                 >
@@ -717,7 +759,7 @@ const AppBar = ({
                     <Typography gutterBottom variant="h6" component="h2">
                       {plan.name}
                     </Typography>
-                    <Typography variant="h5" color="primary" gutterBottom>
+                    <Typography variant="h5" sx={{ color: getPlanColor(plan.id) }} gutterBottom>
                       ${plan.price}
                       <Typography
                         component="span"
@@ -733,9 +775,19 @@ const AppBar = ({
                           key={feature}
                           variant="body2"
                           color="text.secondary"
-                          sx={{ py: 0.5 }}
+                          sx={{ py: 0.5, display: 'flex', alignItems: 'center' }}
                         >
-                          ✓ {feature}
+                          <Box 
+                            component="span" 
+                            sx={{ 
+                              color: getPlanColor(plan.id),
+                              mr: 1,
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            ✓
+                          </Box>
+                          {feature}
                         </Typography>
                       ))}
                     </Box>
@@ -744,7 +796,10 @@ const AppBar = ({
                     <Button
                       fullWidth
                       variant="contained"
-                      color="primary"
+                      sx={{ 
+                        bgcolor: getPlanColor(plan.id),
+                        '&:hover': { bgcolor: getPlanColor(plan.id) }
+                      }}
                       onClick={() => {
                         handleSubscriptionClose();
                         // Store the selected plan in sessionStorage
@@ -775,7 +830,19 @@ const AppBar = ({
             Payment Method
           </Typography>
           
-          <Tabs value={paymentTab} onChange={handlePaymentTabChange} sx={{ mb: 2 }}>
+          <Tabs 
+            value={paymentTab} 
+            onChange={handlePaymentTabChange} 
+            sx={{ 
+              mb: 2,
+              '& .MuiTabs-indicator': {
+                backgroundColor: getPlanColor('professional'),
+              },
+              '& .Mui-selected': {
+                color: `${getPlanColor('professional')} !important`,
+              }
+            }}
+          >
             <Tab label="Credit/Debit Card" />
             <Tab label="PayPal" />
             <Tab label="Mobile Money" />
@@ -790,6 +857,14 @@ const AppBar = ({
                     label="Card Number"
                     placeholder="1234 5678 9012 3456"
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: getPlanColor('professional'),
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: getPlanColor('professional'),
+                      }
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -798,6 +873,14 @@ const AppBar = ({
                     label="Expiry Date"
                     placeholder="MM/YY"
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: getPlanColor('professional'),
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: getPlanColor('professional'),
+                      }
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -806,6 +889,14 @@ const AppBar = ({
                     label="CVV"
                     placeholder="123"
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: getPlanColor('professional'),
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: getPlanColor('professional'),
+                      }
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -814,6 +905,14 @@ const AppBar = ({
                     label="Cardholder Name"
                     placeholder="John Doe"
                     variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: getPlanColor('professional'),
+                      },
+                      '& .MuiInputLabel-root.Mui-focused': {
+                        color: getPlanColor('professional'),
+                      }
+                    }}
                   />
                 </Grid>
               </Grid>
@@ -834,6 +933,11 @@ const AppBar = ({
                 <RadioGroup
                   value={selectedPaymentMethod}
                   onChange={handlePaymentMethodChange}
+                  sx={{
+                    '& .MuiRadio-root.Mui-checked': {
+                      color: getPlanColor('professional')
+                    }
+                  }}
                 >
                   <FormControlLabel 
                     value="mobile_money_mtn" 
@@ -857,7 +961,15 @@ const AppBar = ({
                 label="Mobile Number"
                 placeholder="Enter your mobile number"
                 variant="outlined"
-                sx={{ mt: 2 }}
+                sx={{ 
+                  mt: 2,
+                  '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: getPlanColor('professional'),
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: getPlanColor('professional'),
+                  }
+                }}
               />
             </Box>
           )}
@@ -865,7 +977,10 @@ const AppBar = ({
           <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
             <Button 
               variant="contained" 
-              color="primary"
+              sx={{ 
+                bgcolor: getPlanColor('professional'),
+                '&:hover': { bgcolor: getPlanColor('professional') }
+              }}
               onClick={() => {
                 handleSubscriptionClose();
                 

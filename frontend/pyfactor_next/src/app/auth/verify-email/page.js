@@ -49,6 +49,12 @@ export default function VerifyEmail() {
       if (result.success) {
         setSuccess('A new verification code has been sent to your email');
         logger.debug('[VerifyEmail] Verification code resent successfully');
+        // Store the timestamp when the code was sent
+        try {
+          sessionStorage.setItem('verificationCodeSentAt', Date.now().toString());
+        } catch (storageError) {
+          logger.debug('[VerifyEmail] Error saving to session storage:', storageError);
+        }
       } else if (result.code === 'LimitExceededException') {
         logger.info('[VerifyEmail] Rate limit exceeded for verification code');
         setSuccess('You have recently requested a verification code. Please check your email inbox, including spam folder.');
@@ -74,6 +80,27 @@ export default function VerifyEmail() {
   const sendInitialCode = useCallback(async () => {
     if (!email) return;
     
+    // Check if a code was recently sent (in the last 2 minutes)
+    try {
+      const lastCodeSentTime = sessionStorage.getItem('verificationCodeSentAt');
+      const now = Date.now();
+      
+      if (lastCodeSentTime) {
+        const timeSinceLastCode = now - parseInt(lastCodeSentTime);
+        const twoMinutesInMs = 2 * 60 * 1000;
+        
+        if (timeSinceLastCode < twoMinutesInMs) {
+          logger.debug('[VerifyEmail] Code was recently sent, skipping automatic resend');
+          setSuccess('Please use the verification code sent to your email');
+          setInitialCodeSent(true);
+          return;
+        }
+      }
+    } catch (storageError) {
+      // Ignore storage errors
+      logger.debug('[VerifyEmail] Error checking session storage:', storageError);
+    }
+    
     setError('');
     setSuccess('');
     setSendingCode(true);
@@ -85,6 +112,12 @@ export default function VerifyEmail() {
       if (result.success) {
         setSuccess('Verification code has been sent to your email');
         logger.debug('[VerifyEmail] Initial verification code sent successfully');
+        // Store the timestamp when the code was sent
+        try {
+          sessionStorage.setItem('verificationCodeSentAt', Date.now().toString());
+        } catch (storageError) {
+          logger.debug('[VerifyEmail] Error saving to session storage:', storageError);
+        }
       } else if (result.code === 'LimitExceededException') {
         // For rate limiting, show a success message instead of an error
         logger.info('[VerifyEmail] Rate limit hit for initial verification code');

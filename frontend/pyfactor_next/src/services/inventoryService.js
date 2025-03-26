@@ -601,6 +601,39 @@ export const createProduct = async (productData) => {
   } catch (error) {
     logger.error('Error creating product:', error);
     
+    // Check for authentication errors
+    if (error.response?.status === 401 || 
+        error.message?.includes('No valid session') || 
+        error.message?.includes('Authentication required') ||
+        error.response?.data?.code === 'session_expired') {
+      
+      logger.error('Authentication error when creating product:', error);
+      
+      // Attempt to refresh the session
+      try {
+        const { refreshUserSession } = await import('@/utils/refreshUserSession');
+        const refreshed = await refreshUserSession();
+        
+        if (refreshed) {
+          // If refresh successful, try the operation again
+          logger.info('Session refreshed successfully, retrying product creation');
+          return createProduct(productData);
+        } else {
+          // If refresh failed, throw an authentication error
+          throw new Error('Authentication required - please log in again');
+        }
+      } catch (refreshError) {
+        logger.error('Failed to refresh session:', refreshError);
+        
+        // Redirect to login if in browser context
+        if (typeof window !== 'undefined' && window.location) {
+          window.location.href = '/auth/signin?error=session_expired';
+        }
+        
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+    }
+    
     // Check if error is related to missing table or schema issues
     const errorMessage = error.response?.data?.detail || error.message;
     if (error.response?.status === 500 && 

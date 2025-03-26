@@ -1,4 +1,4 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/DashboardContent.js
+// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/DashboardContent.js
 'use client';
 
 import React, { useState, useCallback, useEffect, lazy, Suspense } from 'react';
@@ -213,6 +213,19 @@ function DashboardContent({ setupStatus, customContent }) {
         const subscriptionExpired = authData?.subscription_expired || false;
         const previousPlan = authData?.previous_plan || '';
         
+        // Process name attributes properly for display and avatar initials
+        const givenName = attributes.given_name ? attributes.given_name.trim() : '';
+        const familyName = attributes.family_name ? attributes.family_name.trim() : '';
+        
+        // Add extra logging to debug name extraction
+        logger.debug('User name attributes:', {
+          given_name: attributes.given_name,
+          family_name: attributes.family_name,
+          processed_given_name: givenName,
+          processed_family_name: familyName,
+          email: attributes.email
+        });
+        
         // Additional debug for subscription plan
         logger.debug('Subscription plan debug:', {
           rawValue: attributes['custom:subplan'],
@@ -230,9 +243,9 @@ function DashboardContent({ setupStatus, customContent }) {
         const userData = {
           ...currentUser,
           ...attributes,
-          first_name: attributes.given_name || attributes.email?.split('@')[0],
-          last_name: attributes.family_name || '',
-          full_name: `${attributes.given_name || ''} ${attributes.family_name || ''}`.trim(),
+          first_name: givenName || attributes.email?.split('@')[0]?.trim(),
+          last_name: familyName || '',
+          full_name: `${givenName || ''} ${familyName || ''}`.trim(),
           subscription_type: subscriptionPlan,
           original_subscription_type: originalPlan, // Keep original for debugging
           business_name: attributes['custom:businessname'] || 'My Business',
@@ -714,8 +727,6 @@ function DashboardContent({ setupStatus, customContent }) {
               {customContent ? (
                 // Render the custom content that was passed as children
                 customContent
-              ) : showForm && formOption ? (
-                renderForm(formOption, userData)
               ) : (
                 view !== 'invoiceDetails' && view !== 'customerDetails' &&
                 view !== 'productList' && view !== 'serviceList' && RenderMainContent && (
@@ -733,6 +744,8 @@ function DashboardContent({ setupStatus, customContent }) {
                     showMyAccount={showMyAccount}
                     showHelpCenter={showHelpCenter}
                     selectedSettingsOption={selectedSettingsOption}
+                    showCreateOptions={showForm}
+                    selectedOption={formOption}
                   />
                 )
               )}

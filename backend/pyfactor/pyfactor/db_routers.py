@@ -77,6 +77,9 @@ class TenantSchemaRouter:
         Route read operations to the appropriate schema.
         Tenant-specific models go to tenant schema, shared models to public schema.
         """
+        # Added detailed debug logging for dynamic table creation
+        logger.debug(f"[DYNAMIC-TABLE] db_for_read: Checking table for {model._meta.app_label}.{model._meta.model_name}")
+        
         # Always use public schema for onboarding-related models and business models
         if model._meta.app_label in ['onboarding', 'business'] and not getattr(model, 'is_tenant_specific', False):
             logger.debug(f"Routing read for {model._meta.app_label}.{model._meta.model_name} to public schema")
@@ -87,7 +90,10 @@ class TenantSchemaRouter:
         if self._is_tenant_model(model):
             # Get current tenant schema
             schema = self._get_tenant_schema()
-            logger.debug(f"Routing read for tenant model {model._meta.app_label}.{model._meta.model_name} to schema {schema}")
+            logger.debug(f"[DYNAMIC-TABLE] Routing read for tenant model {model._meta.app_label}.{model._meta.model_name} to schema {schema}")
+            
+            # Check if table exists in tenant schema and create it if needed
+            self._ensure_table_exists(schema, model)
             
             # Use optimized connection with tenant schema
             if schema != 'public':
@@ -108,6 +114,9 @@ class TenantSchemaRouter:
         Route write operations to the appropriate schema.
         Tenant-specific models go to tenant schema, shared models to public schema.
         """
+        # Added detailed debug logging for dynamic table creation
+        logger.debug(f"[DYNAMIC-TABLE] db_for_write: Checking table for {model._meta.app_label}.{model._meta.model_name}")
+        
         # Always use public schema for onboarding-related models and business models
         if model._meta.app_label in ['onboarding', 'business'] and not getattr(model, 'is_tenant_specific', False):
             logger.debug(f"Routing write for {model._meta.app_label}.{model._meta.model_name} to public schema")
@@ -118,7 +127,10 @@ class TenantSchemaRouter:
         if self._is_tenant_model(model):
             # Get current tenant schema
             schema = self._get_tenant_schema()
-            logger.debug(f"Routing write for tenant model {model._meta.app_label}.{model._meta.model_name} to schema {schema}")
+            logger.debug(f"[DYNAMIC-TABLE] Routing write for tenant model {model._meta.app_label}.{model._meta.model_name} to schema {schema}")
+            
+            # Check if table exists in tenant schema and create it if needed
+            self._ensure_table_exists(schema, model)
             
             # Use optimized connection with tenant schema
             if schema != 'public':
@@ -134,24 +146,61 @@ class TenantSchemaRouter:
         logger.debug(f"No specific routing for {model._meta.app_label}.{model._meta.model_name}, using default schema")
         return 'default'
     
+    def _ensure_table_exists(self, schema_name, model):
+        """
+        Ensure that the table exists in the given schema for the model.
+        If it doesn't exist, create it dynamically.
+        """
+        if schema_name == 'public':
+            # No need to create tables in public schema, they should be there already
+            return
+            
+        # Generate a request ID for tracking in logs
+        request_id = os.urandom(4).hex()
+        
+        # Get table name
+        table_name = model._meta.db_table
+        
+        # Check if table exists
+        try:
+            connection = connections['default']
+            with connection.cursor() as cursor:
+                logger.debug(f"[DYNAMIC-TABLE-{request_id}] Checking if table {table_name} exists in schema {schema_name}")
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT 1 FROM information_schema.tables 
+                        WHERE table_schema = %s AND table_name = %s
+                    )
+                """, [schema_name, table_name])
+                
+                table_exists = cursor.fetchone()[0]
+                
+                if not table_exists:
+                    logger.info(f"[DYNAMIC-TABLE-{request_id}] Table {table_name} does not exist in schema {schema_name}, creating it dynamically")
+                    
+                    # Import here to avoid circular import
+                    from onboarding.utils import create_table_from_model
+                    
+                    # Set schema context
+                    cursor.execute(f'SET search_path TO "{schema_name}"')
+                    
+                    # Create table
+                    try:
+                        create_table_from_model(cursor, schema_name, model)
+                        logger.info(f"[DYNAMIC-TABLE-{request_id}] Successfully created table {table_name} in schema {schema_name}")
+                    except Exception as e:
+                        logger.error(f"[DYNAMIC-TABLE-{request_id}] Error creating table {table_name} in schema {schema_name}: {str(e)}")
+                else:
+                    logger.debug(f"[DYNAMIC-TABLE-{request_id}] Table {table_name} already exists in schema {schema_name}")
+        except Exception as e:
+            logger.error(f"[DYNAMIC-TABLE-{request_id}] Error checking/creating table {table_name} in schema {schema_name}: {str(e)}")
+    
     def allow_relation(self, obj1, obj2, **hints):
         """
-        Allow relations between models in the same schema or between shared models.
+        Allow relations between objects in the same schema.
+        For multi-tenant, we need to determine if objects are in the same schema.
         """
-        # Allow relations between shared models
-        if self._is_shared_model(obj1.__class__) and self._is_shared_model(obj2.__class__):
-            return True
-            
-        # Allow relations between tenant models in the same schema
-        if self._is_tenant_model(obj1.__class__) and self._is_tenant_model(obj2.__class__):
-            return True
-            
-        # Allow relations between tenant and shared models
-        if (self._is_tenant_model(obj1.__class__) and self._is_shared_model(obj2.__class__)) or \
-           (self._is_shared_model(obj1.__class__) and self._is_tenant_model(obj2.__class__)):
-            return True
-            
-        return None
+        return True
     
     def allow_migrate(self, db, app_label, model_name=None, **hints):
         """
@@ -161,6 +210,8 @@ class TenantSchemaRouter:
         applied to a specific database connection. For tenant apps, migrations
         should only be applied to tenant schemas, not to the public schema.
         """
+        from django.conf import settings
+        
         # Skip migration checks for problematic apps
         # Return None to let Django's default behavior handle these apps
         if app_label in ['business', 'finance', 'hr', 'crm', 'transport', 'auth']:  # Added 'auth' here
@@ -180,39 +231,23 @@ class TenantSchemaRouter:
             # Allow django_migrations table to be created in all schemas
             return True
         
-        # For tenant apps
+        # Handle tenant-specific apps
         if app_label in tenant_apps:
-            # If we're in a tenant schema, allow tenant app migrations
-            if current_schema != 'public' and current_schema.startswith('tenant_'):
-                logger.debug(f"Allowing migration for tenant app {app_label} in tenant schema {current_schema}")
-                return True
-            
-            # If we're in the public schema, check if we should allow tenant app migrations
+            # Always allow migrations for initial tables, but not for dynamic ones 
+            # when migrating in public schema
             if current_schema == 'public':
-                # Check for environment variable to temporarily allow tenant migrations in public schema
-                if os.environ.get('ALLOW_TENANT_MIGRATIONS_IN_PUBLIC') == 'True':
-                    logger.debug(f"Temporarily allowing migration for tenant app {app_label} in public schema")
-                    return True
-                else:
-                    logger.debug(f"Blocking migration for tenant app {app_label} in public schema")
-                    return False
-        
-        # For shared apps
-        if app_label in shared_apps:
-            # Allow shared app migrations in the public schema
-            if current_schema == 'public':
-                logger.debug(f"Allowing migration for shared app {app_label} in public schema")
-                return True
+                logger.debug(f"Not allowing migration for {app_label} in {current_schema}")
+                return False
             
-            # Also allow shared app migrations in tenant schemas
-            # This is important for apps like 'auth' that are needed in both schemas
-            if current_schema != 'public' and current_schema.startswith('tenant_'):
-                logger.debug(f"Allowing migration for shared app {app_label} in tenant schema {current_schema}")
-                return True
+            # For tenant schema, only allow initial migrations, not dynamic ones
+            # This will be handled by the _ensure_table_exists method
+            is_initial_migration = hints.get('is_initial', False)
+            logger.debug(f"Migration for tenant app {app_label} in schema {current_schema}: {is_initial_migration}")
+            return is_initial_migration
         
-        # Special case for users app - always allow in tenant schemas
-        if app_label == 'users' and current_schema != 'public' and current_schema.startswith('tenant_'):
-            logger.debug(f"Allowing migration for users app in tenant schema {current_schema}")
+        # Allow migrations for shared apps in public schema
+        if app_label in shared_apps and current_schema == 'public':
+            logger.debug(f"Allowing migration for shared app {app_label} in {current_schema}")
             return True
         
         # Default behavior for other apps

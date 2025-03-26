@@ -49,6 +49,42 @@ export function middleware(request) {
   // Get the pathname from the URL
   const { pathname } = request.nextUrl;
   
+  // DETAILED LOGGING: Log all requests with cookies and headers for debugging
+  console.log(`[Middleware] Request: ${pathname}`, { 
+    cookieCount: request.cookies.getAll().length,
+    hasIdToken: !!request.cookies.get('idToken')?.value,
+    hasAccessToken: !!request.cookies.get('accessToken')?.value,
+    hasTenantId: !!request.cookies.get('tenantId')?.value,
+    method: request.method,
+    referer: request.headers.get('referer')
+  });
+  
+  // PRODUCT CREATION DEBUGGING: Add special handling for product routes
+  if (pathname.startsWith('/dashboard/products/') || pathname === '/dashboard/products/new') {
+    console.log(`[Middleware] 🔍 PRODUCT ROUTE DETECTED: ${pathname}`);
+    console.log(`[Middleware] 🔍 Product Route Details:`, {
+      tenantId: request.cookies.get('tenantId')?.value || 'Not set',
+      idToken: request.cookies.get('idToken')?.value ? 'Present (truncated)' : 'Not present',
+      allCookies: request.cookies.getAll().map(c => c.name),
+      headers: {
+        referer: request.headers.get('referer'),
+        accept: request.headers.get('accept'),
+        'user-agent': request.headers.get('user-agent')
+      }
+    });
+    
+    // Ensure we have the tenantId cookie for product operations
+    if (!request.cookies.get('tenantId')?.value) {
+      console.log(`[Middleware] ⚠️ WARNING: tenantId cookie missing for product route: ${pathname}`);
+    }
+    
+    // Allow product routes to pass through even in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[Middleware] 🔧 Development mode: Bypassing strict checks for product route: ${pathname}`);
+      return NextResponse.next();
+    }
+  }
+  
   // CRITICAL: Immediately bypass middleware for verify-email routes
   if (pathname === '/auth/verify-email' || pathname.startsWith('/auth/verify-email')) {
     console.log(`[Middleware] BYPASSING ALL CHECKS for verify-email route: ${pathname}`);
@@ -61,15 +97,25 @@ export function middleware(request) {
   
   // CRITICAL: Allow direct access to dashboard after subscription
   // This ensures users can access the dashboard after selecting a plan
-  if (pathname === '/dashboard') {
+  if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
+    console.log(`[Middleware] 🏠 Dashboard route accessed: ${pathname}`);
     const onboardingStep = request.cookies.get('onboardingStep')?.value;
     const onboardedStatus = request.cookies.get('onboardedStatus')?.value;
+    const tenantId = request.cookies.get('tenantId')?.value;
+    
+    console.log(`[Middleware] 🏠 Dashboard route details:`, {
+      tenantId: tenantId || 'Not set',
+      onboardingStep: onboardingStep || 'Not set',
+      onboardedStatus: onboardedStatus || 'Not set',
+      isAuthenticated: !!(request.cookies.get('idToken')?.value && request.cookies.get('accessToken')?.value)
+    });
     
     // If we have any indication that the user has completed subscription, allow dashboard access
     // Use a simplified check to reduce processing overhead
     if (onboardingStep?.toUpperCase() === 'SETUP' ||
         onboardedStatus?.toUpperCase() === 'SUBSCRIPTION' ||
-        onboardedStatus?.toUpperCase() === 'SETUP') {
+        onboardedStatus?.toUpperCase() === 'SETUP' ||
+        onboardedStatus?.toUpperCase() === 'COMPLETE') {
       console.log(`[Middleware] BYPASSING CHECKS for dashboard after subscription: step=${onboardingStep}, status=${onboardedStatus}`);
       return NextResponse.next();
     }

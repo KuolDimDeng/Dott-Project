@@ -30,7 +30,65 @@ export async function completeOnboarding() {
     // Track memory before updating user attributes
     trackMemory('completeOnboarding', 'before-updateUserAttributes');
     
-    await updateUserAttributes({ userAttributes });
+    let attributeUpdateSuccess = false;
+    
+    try {
+      // First attempt: Use Amplify updateUserAttributes
+      await updateUserAttributes({ userAttributes });
+      attributeUpdateSuccess = true;
+      logger.debug('[Onboarding] Attributes updated via Amplify');
+    } catch (updateError) {
+      logger.error(`[Onboarding] Amplify update failed: ${updateError.message}`);
+      
+      // If Amplify update fails, try the direct API call as a backup
+      try {
+        // Get current session for authentication
+        const { tokens } = await fetchAuthSession();
+        
+        // Make direct API call to update attributes
+        const response = await fetch('/api/user/update-attributes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokens.accessToken}`
+          },
+          body: JSON.stringify({
+            attributes: {
+              'custom:onboarding': 'COMPLETE',
+              'custom:setupdone': 'TRUE',
+              'custom:updated_at': new Date().toISOString()
+            },
+            forceUpdate: true
+          })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          attributeUpdateSuccess = true;
+          logger.debug('[Onboarding] Attributes updated via direct API call:', result);
+        } else {
+          throw new Error(`API returned status ${response.status}`);
+        }
+      } catch (apiError) {
+        logger.error(`[Onboarding] Direct API update failed: ${apiError.message}`);
+        // Third fallback: Try server-side update
+        try {
+          const response = await fetch('/api/onboarding/complete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            attributeUpdateSuccess = true;
+            logger.debug('[Onboarding] Attributes updated via server endpoint');
+          }
+        } catch (serverError) {
+          logger.error(`[Onboarding] Server-side update failed: ${serverError.message}`);
+        }
+      }
+    }
     
     // Track memory after updating user attributes
     trackMemory('completeOnboarding', 'after-updateUserAttributes');
@@ -97,7 +155,7 @@ export async function completeOnboarding() {
     trackMemory('completeOnboarding', 'end-success');
     logMemoryUsage('completeOnboarding', 'end-success');
     
-    return true;
+    return attributeUpdateSuccess;
   } catch (error) {
     // Track memory on exception
     trackMemory('completeOnboarding', 'exception');

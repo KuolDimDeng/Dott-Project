@@ -37,6 +37,7 @@ import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import ApiIcon from '@mui/icons-material/Api';
 import SecurityIcon from '@mui/icons-material/Security';
+import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 
 /**
  * Home Component
@@ -155,6 +156,11 @@ function Home({ userData }) {
     if (feature.includes('API')) return featureIcons.api;
     if (feature.includes('security')) return featureIcons.security;
     return <CheckCircleOutlineIcon />;
+  };
+
+  // Function to get plan color
+  const getPlanColor = (planId) => {
+    return getSubscriptionPlanColor(planId);
   };
 
   return (
@@ -408,7 +414,7 @@ function Home({ userData }) {
                       height: '100%',
                       display: 'flex',
                       flexDirection: 'column',
-                      borderColor: plan.id === 'enterprise' ? 'primary.main' : 'divider',
+                      borderColor: getPlanColor(plan.id),
                       boxShadow: plan.id === 'enterprise' ? 2 : 0,
                     }}
                   >
@@ -416,7 +422,7 @@ function Home({ userData }) {
                       <Typography gutterBottom variant="h6" component="h2">
                         {plan.name}
                       </Typography>
-                      <Typography variant="h5" color="primary" gutterBottom>
+                      <Typography variant="h5" sx={{ color: getPlanColor(plan.id) }} gutterBottom>
                         ${plan.price}
                         <Typography
                           component="span"
@@ -455,7 +461,7 @@ function Home({ userData }) {
                       <Button
                         fullWidth
                         variant="contained"
-                        color="primary"
+                        sx={{ bgcolor: getPlanColor(plan.id), '&:hover': { bgcolor: getPlanColor(plan.id) } }}
                       >
                         Select {plan.name}
                       </Button>
@@ -471,7 +477,7 @@ function Home({ userData }) {
                       height: '100%',
                       display: 'flex',
                       flexDirection: 'column',
-                      borderColor: 'primary.main',
+                      borderColor: getPlanColor('enterprise'),
                       boxShadow: 2,
                     }}
                   >
@@ -517,7 +523,7 @@ function Home({ userData }) {
                           <Button
                             fullWidth
                             variant="contained"
-                            color="primary"
+                            sx={{ bgcolor: getPlanColor('enterprise'), '&:hover': { bgcolor: getPlanColor('enterprise') } }}
                           >
                             Upgrade to Enterprise
                           </Button>

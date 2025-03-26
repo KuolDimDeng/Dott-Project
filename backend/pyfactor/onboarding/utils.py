@@ -1,4 +1,3 @@
-
 #/Users/kuoldeng/projectx/backend/pyfactor/onboarding/utils.py
 import re
 import time
@@ -33,7 +32,10 @@ class DurationSafeFormatter(logging.Formatter):
 # Configure Django's logger to use our custom formatter
 for handler in logging.getLogger('django').handlers:
     if isinstance(handler, logging.StreamHandler):
-        handler.setFormatter(DurationSafeFormatter(handler.formatter._fmt))
+        if hasattr(handler, 'formatter') and handler.formatter is not None:
+            handler.setFormatter(DurationSafeFormatter(handler.formatter._fmt))
+        else:
+            handler.setFormatter(DurationSafeFormatter('%(levelname)s - %(message)s'))
 
 logger = get_logger()
 
@@ -114,7 +116,8 @@ def validate_schema_creation(cursor, schema_name):
             # Try to access the schema using context manager
             with tenant_schema_context(cursor, schema_name):
                 cursor.execute('SHOW search_path')
-                current_path = cursor.fetchone()[0]
+                result = cursor.fetchone()
+                current_path = result[0] if result else ''
                 # Check if schema_name is in the current path
                 # Sometimes the schema might exist but not be in the search path
                 # In that case, we'll try to add it to the search path
@@ -127,7 +130,8 @@ def validate_schema_creation(cursor, schema_name):
                         # Try to add the schema to the search path
                         cursor.execute(f'SET search_path TO "{schema_name}",public')
                         cursor.execute('SHOW search_path')
-                        updated_path = cursor.fetchone()[0]
+                        result = cursor.fetchone()
+                        updated_path = result[0] if result else ''
                         
                         if schema_name in updated_path:
                             logger.info(f"Successfully added schema {schema_name} to search path")
@@ -228,7 +232,8 @@ def create_tenant_schema(cursor, schema_name, user_id):
             
         # Save current search path
         cursor.execute('SHOW search_path')
-        original_search_path = cursor.fetchone()[0]
+        result = cursor.fetchone()
+        original_search_path = result[0] if result else 'public'
         
         try:
             # Check if schema already exists
@@ -569,7 +574,8 @@ def create_tenant_schema(cursor, schema_name, user_id):
             # Verify schema exists and is accessible using context manager
             with tenant_schema_context(cursor, schema_name):
                 cursor.execute('SHOW search_path')
-                current_path = cursor.fetchone()[0]
+                result = cursor.fetchone()
+                current_path = result[0] if result else ''
                 if schema_name_sql not in current_path:
                     raise Exception(f"Schema {schema_name} is not accessible")
             
@@ -693,17 +699,23 @@ def tenant_schema_context(cursor, schema_name, preserve_context=False):
         # Verify our connection is really in autocommit mode
         try:
             cursor.execute("SHOW transaction_isolation")
-            isolation = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            isolation = result[0] if result else 'unknown'
+            
             cursor.execute("SHOW default_transaction_isolation")
-            default_isolation = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            default_isolation = result[0] if result else 'unknown'
+            
             cursor.execute("SELECT pg_is_in_recovery()")
-            in_recovery = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            in_recovery = result[0] if result else False
             
             logger.info(f"[TRANSACTION DEBUG] Connection state: isolation={isolation}, default={default_isolation}, in_recovery={in_recovery}")
             
             # Additional check to verify no transaction is in progress
             cursor.execute("SELECT pg_current_xact_id_if_assigned()")
-            current_txid = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            current_txid = result[0] if result else None
             if current_txid:
                 logger.warning(f"[TRANSACTION DEBUG] Transaction ID still assigned ({current_txid}) despite autocommit mode!")
             else:
@@ -727,7 +739,8 @@ def tenant_schema_context(cursor, schema_name, preserve_context=False):
         
         # Verify search path was set correctly
         cursor.execute('SHOW search_path')
-        current_path = cursor.fetchone()[0]
+        result = cursor.fetchone()
+        current_path = result[0] if result else ''
         logger.info(f"[TRANSACTION DEBUG] Current search_path: {current_path}")
         
         if schema_name not in current_path:
@@ -735,7 +748,8 @@ def tenant_schema_context(cursor, schema_name, preserve_context=False):
             logger.warning(f"[TRANSACTION DEBUG] Schema {schema_name} not in search path: {current_path}, retrying")
             cursor.execute(f'SET search_path TO "{schema_name}",public')
             cursor.execute('SHOW search_path')
-            fixed_path = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            fixed_path = result[0] if result else ''
             logger.info(f"[TRANSACTION DEBUG] Updated search_path: {fixed_path}")
             
             if schema_name not in fixed_path:
@@ -827,7 +841,8 @@ def set_tenant_schema(cursor, schema_name):
             
             # Verify search path was set
             cursor.execute('SHOW search_path')
-            current_path = cursor.fetchone()[0]
+            result = cursor.fetchone()
+            current_path = result[0] if result else ''
             logger.debug(f"Current search_path: {current_path} (set in {time.time() - start_time:.4f}s)")
             
             if schema_name not in current_path:
@@ -836,7 +851,8 @@ def set_tenant_schema(cursor, schema_name):
                 
                 # Check again
                 cursor.execute('SHOW search_path')
-                current_path = cursor.fetchone()[0]
+                result = cursor.fetchone()
+                current_path = result[0] if result else ''
                 if schema_name not in current_path:
                     raise Exception(f"Failed to set search_path to {schema_name}")
                 
@@ -868,12 +884,14 @@ def cleanup_schema(schema_name):
         # Ensure schema name is properly formatted for SQL identifiers
         schema_name = re.sub(r'[^a-zA-Z0-9_]', '_', schema_name)
         
-        with get_connection() as conn:
+        conn = get_connection()
+        if conn is not None:
             conn.autocommit = True
             with conn.cursor() as cursor:
                 # Save current search path
                 cursor.execute('SHOW search_path')
-                original_search_path = cursor.fetchone()[0]
+                result = cursor.fetchone()
+                original_search_path = result[0] if result else 'public'
                 
                 try:
                     # Switch to public schema for cleanup
@@ -891,6 +909,10 @@ def cleanup_schema(schema_name):
 
 def save_to_schemas(request, business_data, tenant_schema=None):
     """Save business info to both public and tenant schemas if available"""
+    # Import here to avoid circular imports
+    from pyfactor.business.models import Business
+    from django.db import connection
+    
     # Save to public schema first
     business = Business.objects.create(**business_data)
     
@@ -967,9 +989,21 @@ def create_table_from_model(cursor, schema_name, model_class):
     Dynamically create a database table based on a Django model class
     """
     from django.db import models
+    import logging
+    import uuid
+
+    logger = logging.getLogger(__name__)
+    
+    # Generate a unique request ID for tracking in logs
+    request_id = uuid.uuid4().hex[:8]
     
     table_name = model_class._meta.db_table
+    logger.info(f"[DYNAMIC-CREATE-{request_id}] Creating table {table_name} in schema {schema_name} for model {model_class.__name__}")
+    
     field_definitions = []
+    
+    # Log the fields that will be created
+    logger.debug(f"[DYNAMIC-CREATE-{request_id}] Model {model_class.__name__} has {len(model_class._meta.fields)} fields to process")
     
     # Process all fields
     for field in model_class._meta.fields:
@@ -977,7 +1011,10 @@ def create_table_from_model(cursor, schema_name, model_class):
         
         # Skip fields from parent models that will be created separately
         if isinstance(field, models.OneToOneField) and field.primary_key:
+            logger.debug(f"[DYNAMIC-CREATE-{request_id}] Skipping parent model field: {field_name}")
             continue
+            
+        logger.debug(f"[DYNAMIC-CREATE-{request_id}] Processing field {field_name} of type {field.__class__.__name__}")
             
         # Generate SQL definition based on field type
         if isinstance(field, models.CharField):
@@ -1031,6 +1068,7 @@ def create_table_from_model(cursor, schema_name, model_class):
             field_def += " UNIQUE"
             
         field_definitions.append(field_def)
+        logger.debug(f"[DYNAMIC-CREATE-{request_id}] Field definition for {field_name}: {field_def}")
     
     # Create the table
     create_sql = f"""
@@ -1039,13 +1077,28 @@ def create_table_from_model(cursor, schema_name, model_class):
     );
     """
     
-    cursor.execute(create_sql)
+    logger.debug(f"[DYNAMIC-CREATE-{request_id}] Executing SQL: {create_sql}")
     
-    # Add indexes
-    for index in model_class._meta.indexes:
-        index_name = f"idx_{table_name}_{'_'.join(index.fields)}"
-        index_fields = ', '.join(index.fields)
-        cursor.execute(f"""
-        CREATE INDEX IF NOT EXISTS {index_name} 
-        ON {table_name} ({index_fields});
-        """)
+    try:
+        cursor.execute(create_sql)
+        logger.info(f"[DYNAMIC-CREATE-{request_id}] Successfully created table {table_name} in schema {schema_name}")
+        
+        # Add indexes
+        for index in model_class._meta.indexes:
+            index_name = f"idx_{table_name}_{'_'.join(index.fields)}"
+            index_fields = ', '.join(index.fields)
+            index_sql = f"""
+            CREATE INDEX IF NOT EXISTS {index_name} 
+            ON {table_name} ({index_fields});
+            """
+            
+            logger.debug(f"[DYNAMIC-CREATE-{request_id}] Creating index {index_name} on fields {index_fields}")
+            cursor.execute(index_sql)
+            
+        # Log success
+        logger.info(f"[DYNAMIC-CREATE-{request_id}] Table {table_name} and its indexes successfully created in schema {schema_name}")
+        
+        return True
+    except Exception as e:
+        logger.error(f"[DYNAMIC-CREATE-{request_id}] Error creating table {table_name} in schema {schema_name}: {str(e)}")
+        raise
