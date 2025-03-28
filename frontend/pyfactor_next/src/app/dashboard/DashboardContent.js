@@ -4,7 +4,7 @@
 import React, { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { useStore } from '@/store/authStore';
 import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
-import { CssBaseline, Box, Container, Typography, CircularProgress } from '@mui/material';
+import { Box, Container, Typography, CircularProgress } from '@/components/ui/TailwindComponents';
 import AppBar from './components/AppBar';
 import Drawer from './components/Drawer';
 import { logger } from '@/utils/logger';
@@ -12,6 +12,10 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
 import renderForm from './components/RenderForm';
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
+import Link from 'next/link';
+import { fetchAuthSession } from '@aws-amplify/auth';
 
 // Lazy load components to reduce initial memory usage
 const RenderMainContent = lazy(() =>
@@ -644,8 +648,7 @@ function DashboardContent({ setupStatus, customContent }) {
   return (
     <ErrorBoundary>
       <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Box sx={{ display: 'flex' }}>
+        <Box sx={{ display: 'flex', width: '100vw', overflow: 'hidden' }}>
           <AppBar 
             mainBackground="#ffffff"
             textAppColor="#0a3977"

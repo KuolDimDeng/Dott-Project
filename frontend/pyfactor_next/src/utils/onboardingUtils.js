@@ -197,24 +197,137 @@ export async function updateOnboardingStep(step, additionalAttributes = {}, toke
 
 export async function completeOnboarding() {
   try {
-    // Validate session first
-    await validateSession();
-
-    // Update user attributes using v6 API with string values
-    await updateUserAttributes({
-      userAttributes: {
-        'custom:onboarding': 'COMPLETE',
-        'custom:setupdone': 'TRUE',
-        'custom:updated_at': new Date().toISOString()
-      }
+    // Track performance and attempt status
+    const startTime = performance.now();
+    let attributeUpdateSuccess = false;
+    const requestId = crypto.randomUUID();
+    
+    logger.debug('[OnboardingUtils] Starting onboarding completion', {
+      requestId,
+      timestamp: new Date().toISOString()
     });
-
-    logger.debug('[OnboardingUtils] Onboarding completed successfully');
-    return true;
+    
+    // Define attributes to update
+    const userAttributes = {
+      'custom:onboarding': 'COMPLETE',
+      'custom:setupdone': 'TRUE',
+      'custom:updated_at': new Date().toISOString(),
+      'custom:onboardingCompletedAt': new Date().toISOString()
+    };
+    
+    try {
+      // First attempt: Use Amplify updateUserAttributes
+      await updateUserAttributes({ userAttributes });
+      attributeUpdateSuccess = true;
+      
+      logger.debug('[OnboardingUtils] Attributes updated via Amplify', {
+        requestId,
+        method: 'direct_amplify',
+        elapsedMs: performance.now() - startTime
+      });
+    } catch (updateError) {
+      logger.error('[OnboardingUtils] Amplify update failed', {
+        requestId,
+        error: updateError.message,
+        code: updateError.code,
+        elapsedMs: performance.now() - startTime
+      });
+      
+      // If Amplify update fails, try the direct API call as a backup
+      try {
+        // Get current session for authentication
+        const { tokens } = await fetchAuthSession();
+        
+        // Make direct API call to update attributes
+        const response = await fetch('/api/user/update-attributes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokens.accessToken}`,
+            'X-Request-ID': requestId
+          },
+          body: JSON.stringify({
+            attributes: userAttributes,
+            forceUpdate: true
+          })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          attributeUpdateSuccess = true;
+          
+          logger.debug('[OnboardingUtils] Attributes updated via API call', {
+            requestId,
+            method: 'api_call',
+            result,
+            elapsedMs: performance.now() - startTime
+          });
+        } else {
+          throw new Error(`API returned status ${response.status}`);
+        }
+      } catch (apiError) {
+        logger.error('[OnboardingUtils] API update failed', {
+          requestId,
+          error: apiError.message,
+          elapsedMs: performance.now() - startTime
+        });
+        
+        // Final attempt: Try using the onboarding complete endpoint
+        try {
+          const completeResponse = await fetch('/api/onboarding/complete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Request-ID': requestId
+            }
+          });
+          
+          if (completeResponse.ok) {
+            attributeUpdateSuccess = true;
+            
+            logger.debug('[OnboardingUtils] Completion via dedicated endpoint succeeded', {
+              requestId,
+              method: 'complete_endpoint',
+              elapsedMs: performance.now() - startTime
+            });
+          } else {
+            throw new Error(`Complete endpoint returned status ${completeResponse.status}`);
+          }
+        } catch (completeError) {
+          logger.error('[OnboardingUtils] All update methods failed', {
+            requestId,
+            completeError: completeError.message,
+            elapsedMs: performance.now() - startTime
+          });
+          throw new Error('Failed to complete onboarding after multiple attempts');
+        }
+      }
+    }
+    
+    // Set cookies for immediate client-side status update
+    if (attributeUpdateSuccess) {
+      document.cookie = `onboardingStep=COMPLETE; path=/; max-age=${60*60*24*7}`;
+      document.cookie = `onboardedStatus=COMPLETE; path=/; max-age=${60*60*24*7}`;
+      document.cookie = `setupCompleted=true; path=/; max-age=${60*60*24*7}`;
+      
+      logger.debug('[OnboardingUtils] Updated cookies for immediate status change', {
+        requestId,
+        elapsedMs: performance.now() - startTime
+      });
+    }
+    
+    logger.debug('[OnboardingUtils] Onboarding completion process finished', {
+      requestId,
+      success: attributeUpdateSuccess,
+      elapsedMs: performance.now() - startTime
+    });
+    
+    return attributeUpdateSuccess;
   } catch (error) {
     logger.error('[OnboardingUtils] Failed to complete onboarding:', {
       error: error.message,
-      code: error.code
+      code: error.code,
+      stack: error.stack
     });
     throw error;
   }

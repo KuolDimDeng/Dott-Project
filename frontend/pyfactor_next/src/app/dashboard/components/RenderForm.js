@@ -1,6 +1,6 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/RenderForm.js
 import React from 'react';
-import ProductForm from './forms/ProductForm';
+import ProductManagement from './forms/ProductManagement';
 import ServiceForm from './forms/ServiceForm';
 import logger from '@/utils/logger';
 import CustomerForm from './forms/CustomerForm';
@@ -16,7 +16,7 @@ const renderForm = (option, userData) => {
     case 'Transaction':
       return <TransactionForm />;
     case 'Product':
-      return <ProductForm />;
+      return <ProductManagement isNewProduct={true} />;
     case 'Service':
       return <ServiceForm />;
     case 'Customer':

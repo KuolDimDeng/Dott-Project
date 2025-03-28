@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Box, Button, TextField, Typography, Link, Alert, CircularProgress, Container, Paper, Divider } from '@mui/material';
 import { useAuth } from '@/hooks/auth';
 import { logger } from '@/utils/logger';
 import ConfigureAmplify from '@/components/ConfigureAmplify';
+import NextLink from 'next/link';
+import { Box, Button, TextField, Typography, Alert, CircularProgress, Container, Paper, Divider } from '@/components/ui/TailwindComponents';
 
 const REDIRECT_DELAY = 1500; // Delay before redirect after successful signup
 
@@ -224,12 +225,25 @@ export default function SignUp() {
       });
       
       logger.debug('[SignUp] Calling signUp function with user data');
-      const result = await signUp({
+      
+      // Add a timeout to prevent UI from getting stuck indefinitely
+      const signUpPromise = signUp({
         email: formData.email,
+        username: formData.email,
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName
       });
+      
+      // Create a timeout promise that rejects after 15 seconds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Sign up request timed out. Please try again.'));
+        }, 15000); // 15 seconds timeout
+      });
+      
+      // Race the signUp promise against the timeout
+      const result = await Promise.race([signUpPromise, timeoutPromise]);
       
       logger.debug('[SignUp] SignUp function returned result:', {
         success: result.success,
@@ -244,228 +258,165 @@ export default function SignUp() {
         setSuccess('Account created successfully! Redirecting to email verification page...');
         setIsRedirecting(true);
         
+        // Set a flag to indicate that a verification code was sent during signup
+        try {
+          localStorage.setItem('signupCodeSent', 'true');
+          localStorage.setItem('signupCodeTimestamp', Date.now().toString());
+          logger.debug('[SignUp] Set verification code flags in localStorage');
+        } catch (e) {
+          logger.error('[SignUp] Error setting verification code flags:', e.message);
+        }
+        
         // Delay to show success message
         setTimeout(() => {
           // Use string URL format which is more reliable
           router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
         }, REDIRECT_DELAY);
       } else {
-        throw new Error(result.error || 'Failed to sign up');
+        // Handle error
+        if (result.code === 'UsernameExistsException') {
+          setError('An account with this email already exists. Please sign in or reset your password.');
+        } else {
+          setError(result.error || 'Failed to create account. Please try again.');
+        }
+        setIsRedirecting(false);
       }
     } catch (error) {
-      logger.error('[SignUp] Sign up error:', {
-        message: error.message,
-        code: error.code,
-        name: error.name,
-        stack: error.stack
-      });
-      
-      // Check for specific error types
-      let errorMessage = 'Failed to sign up. Please try again or contact support if the problem persists.';
-      
-      if (error.code === 'UsernameExistsException' || error.message?.includes('already exists')) {
-        errorMessage = 'An account with this email already exists. Please try signing in instead.';
-      } else if (error.code === 'InvalidParameterException' && error.message?.includes('password')) {
-        errorMessage = 'Password does not meet requirements. Please ensure it has at least 8 characters including uppercase, lowercase, numbers, and special characters.';
-      } else if (error.code === 'InvalidParameterException') {
-        errorMessage = 'One or more fields contain invalid values. Please check your information and try again.';
-      } else if (error.code === 'LimitExceededException') {
-        errorMessage = 'Too many attempts. Please try again later.';
-      } else if (error.message?.includes('network') || error.code === 'NetworkError') {
-        errorMessage = 'Network error. Please check your internet connection and try again.';
-      } else if (error.message) {
-        // Use the original error message if available
-        errorMessage = error.message;
-      }
-      
-      setError(errorMessage);
-      
-      // Log the user-friendly error message
-      logger.debug('[SignUp] Displaying error to user:', errorMessage);
+      logger.error('[SignUp] Error during sign-up:', { error: error.message, stack: error.stack });
+      setError(error.message || 'An unexpected error occurred. Please try again.');
+      setIsRedirecting(false);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const isLoading = authLoading || isSubmitting || isRedirecting;
-
   return (
-    <>
-      <ConfigureAmplify />
-      <Container maxWidth="sm">
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
-            width: '100%',
-            maxWidth: 500,
-            mx: 'auto',
-            p: 3,
-            pt: 6,
-            mb: 4
-          }}
-        >
-          <Typography variant="h4" component="h1" gutterBottom align="center">
-            Create Your Account
+    <Container maxWidth="sm">
+      <Box className="min-h-screen py-12 flex flex-col justify-center">
+        <ConfigureAmplify />
+        
+        <div className="text-center mb-8">
+          <Typography variant="h4" component="h1" className="mb-2">
+            Create your account
           </Typography>
-          
-          <Typography variant="body1" align="center" color="text.secondary" gutterBottom>
-            Join Dott and take control of your business operations
+          <Typography variant="body1" color="textSecondary">
+            Start your business journey with us
           </Typography>
-
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          {success && (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              {success}
-            </Alert>
-          )}
-
-          <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
-            <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
+        </div>
+        
+        <Paper className="p-8 rounded-lg">
+          {isRedirecting && success ? (
+            <div className="text-center py-6">
+              <CircularProgress size="large" className="mb-4" />
+              <Typography variant="body1" className="text-green-600">
+                {success}
+              </Typography>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && <Alert severity="error">{error}</Alert>}
+              {success && <Alert severity="success">{success}</Alert>}
+              
+              <div className="flex flex-col md:flex-row gap-4">
                 <TextField
-                  required
-                  fullWidth
-                  id="firstName"
-                  name="firstName"
                   label="First Name"
-                  type="text"
-                  autoComplete="given-name"
+                  name="firstName"
                   value={formData.firstName}
                   onChange={handleChange}
-                  disabled={isLoading}
-                  autoFocus
-                  inputProps={{
-                    maxLength: 256,
-                  }}
-                />
-
-                <TextField
                   required
+                  disabled={isSubmitting}
                   fullWidth
-                  id="lastName"
-                  name="lastName"
+                />
+                
+                <TextField
                   label="Last Name"
-                  type="text"
-                  autoComplete="family-name"
+                  name="lastName"
                   value={formData.lastName}
                   onChange={handleChange}
-                  disabled={isLoading}
-                  inputProps={{
-                    maxLength: 256,
-                  }}
+                  required
+                  disabled={isSubmitting}
+                  fullWidth
                 />
-              </Box>
-
+              </div>
+              
               <TextField
-                required
-                fullWidth
-                id="email"
-                name="email"
                 label="Email Address"
+                name="email"
                 type="email"
-                autoComplete="email"
                 value={formData.email}
                 onChange={handleChange}
-                disabled={isLoading}
-                sx={{ mb: 2 }}
-              />
-
-              <TextField
                 required
+                disabled={isSubmitting}
                 fullWidth
-                id="password"
-                name="password"
+              />
+              
+              <TextField
                 label="Password"
+                name="password"
                 type="password"
-                autoComplete="new-password"
                 value={formData.password}
                 onChange={handleChange}
-                disabled={isLoading}
-                helperText="Must be at least 8 characters with uppercase, lowercase, number, and special character"
-                sx={{ mb: 2 }}
-              />
-
-              <TextField
                 required
+                disabled={isSubmitting}
                 fullWidth
-                id="confirmPassword"
-                name="confirmPassword"
+                helperText="At least 8 characters with uppercase, lowercase, number and special character"
+              />
+              
+              <TextField
                 label="Confirm Password"
+                name="confirmPassword"
                 type="password"
-                autoComplete="new-password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                disabled={isLoading}
-                sx={{ mb: 3 }}
+                required
+                disabled={isSubmitting}
+                fullWidth
               />
-
+              
               <Button
                 type="submit"
-                fullWidth
                 variant="contained"
                 color="primary"
-                disabled={isLoading}
-                sx={{ 
-                  py: 1.5, 
-                  fontSize: '1rem',
-                  position: 'relative'
-                }}
+                fullWidth
+                disabled={isSubmitting || authLoading}
+                className="py-3"
               >
-                {isLoading ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CircularProgress size={24} color="inherit" />
-                    {isRedirecting ? 'Redirecting...' : 'Creating Account...'}
-                  </Box>
-                ) : (
-                  'Create Account'
-                )}
+                {isSubmitting ? (
+                  <div className="flex items-center justify-center">
+                    <CircularProgress size="small" className="mr-2" />
+                    <span>Creating Account...</span>
+                  </div>
+                ) : 'Create Account'}
               </Button>
-            </Box>
-          </Paper>
+              
+              {/* Add debug info in development only */}
+              {process.env.NODE_ENV === 'development' && isSubmitting && (
+                <Typography variant="caption" className="text-gray-500 mt-2 text-center block">
+                  Processing... Please wait.
+                </Typography>
+              )}
 
-          <Divider sx={{ my: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              or
-            </Typography>
-          </Divider>
-
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="body1" gutterBottom>
-              Already have an account?
-            </Typography>
-            <Link href="/auth/signin" style={{ textDecoration: 'none' }}>
-              <Button 
-                color="secondary" 
-                variant="outlined" 
-                fullWidth 
-                sx={{ mt: 1 }}
-              >
-                Sign In
-              </Button>
-            </Link>
-          </Box>
-
-          <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Typography variant="caption" color="text.secondary">
-              By creating an account, you agree to our{' '}
-              <Link href="/terms" color="primary" underline="hover">
-                Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link href="/privacy" color="primary" underline="hover">
-                Privacy Policy
-              </Link>
-            </Typography>
-          </Box>
-        </Box>
-      </Container>
-    </>
+              <Divider className="my-6" />
+              
+              <div className="text-center">
+                <Typography variant="body2" className="mb-2">
+                  Already have an account?{' '}
+                  <NextLink href="/auth/signin" className="text-primary-main hover:underline">
+                    Sign in
+                  </NextLink>
+                </Typography>
+                
+                <Typography variant="body2">
+                  Need to verify your email?{' '}
+                  <NextLink href="/auth/verify-email" className="text-primary-main hover:underline">
+                    Enter verification code
+                  </NextLink>
+                </Typography>
+              </div>
+            </form>
+          )}
+        </Paper>
+      </Box>
+    </Container>
   );
 }

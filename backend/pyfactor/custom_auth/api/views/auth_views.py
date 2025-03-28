@@ -8,6 +8,9 @@ from django.contrib.auth.hashers import check_password
 from django.shortcuts import get_object_or_404
 from custom_auth.models import Tenant
 from django.utils import timezone
+import uuid
+import json
+from django.db import IntegrityError
 
 logger = logging.getLogger('Pyfactor')
 User = get_user_model()
@@ -38,6 +41,120 @@ class VerifyCredentialsView(APIView):
                 {'error': 'Invalid credentials'}, 
                 status=status.HTTP_401_UNAUTHORIZED
             )
+
+class VerifySessionView(APIView):
+    """
+    Verify the user's session and return session data
+    Required by the frontend to validate authentication
+    """
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        request_id = str(uuid.uuid4())
+        logger.debug(f"Session verification request {request_id}")
+        
+        if not request.user.is_authenticated:
+            logger.debug(f"Session verification failed - user not authenticated {request_id}")
+            return Response({
+                'isLoggedIn': False,
+                'authenticated': False,
+                'requestId': request_id
+            }, status=status.HTTP_200_OK)
+        
+        try:
+            # Return basic user session data
+            logger.debug(f"Session verification successful for user {request.user.id} {request_id}")
+            response_data = {
+                'isLoggedIn': True,
+                'authenticated': True,
+                'user': {
+                    'id': str(request.user.id),
+                    'email': request.user.email,
+                    'lastLogin': request.user.last_login.isoformat() if request.user.last_login else None,
+                },
+                'requestId': request_id
+            }
+            
+            # Add onboarding status if available
+            if hasattr(request.user, 'onboarding_status'):
+                response_data['user']['onboardingStatus'] = request.user.onboarding_status
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error verifying session: {str(e)}")
+            return Response({
+                'isLoggedIn': False,
+                'authenticated': False,
+                'error': str(e),
+                'requestId': request_id
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CheckUserAttributesView(APIView):
+    """
+    Check and return the user's cognito attributes
+    Required by the frontend to determine user state
+    """
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        request_id = str(uuid.uuid4())
+        logger.debug(f"Attribute check request {request_id}")
+        
+        if not request.user.is_authenticated:
+            logger.debug(f"Attribute check failed - user not authenticated {request_id}")
+            return Response({
+                'isLoggedIn': False,
+                'authenticated': False,
+                'requestId': request_id
+            }, status=status.HTTP_200_OK)
+        
+        try:
+            # Gather all user attributes
+            attributes = {}
+            
+            # Map Django User model fields to attribute names
+            if hasattr(request.user, 'email'):
+                attributes['email'] = request.user.email
+                
+            # Custom fields we may have on the User model
+            custom_fields = [
+                'onboarding_status', 'current_step', 'next_step',
+                'selected_plan', 'database_status', 'setup_status'
+            ]
+            
+            for field in custom_fields:
+                if hasattr(request.user, field):
+                    value = getattr(request.user, field)
+                    # Convert to camelCase for frontend
+                    camel_case_field = ''.join([field.split('_')[0]] + 
+                                     [w.capitalize() for w in field.split('_')[1:]])
+                    attributes[camel_case_field] = value
+            
+            # Add basic preferences if not present
+            if 'preferences' not in attributes:
+                attributes['preferences'] = json.dumps({
+                    "notifications": True,
+                    "theme": "light",
+                    "language": "en"
+                })
+                
+            logger.debug(f"Attribute check successful for user {request.user.id} {request_id}")
+            return Response({
+                'isLoggedIn': True,
+                'authenticated': True,
+                'attributes': attributes,
+                'requestId': request_id
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error checking user attributes: {str(e)}")
+            return Response({
+                'isLoggedIn': False,
+                'authenticated': False,
+                'error': str(e),
+                'requestId': request_id
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class VerifyTenantView(APIView):
     permission_classes = [IsAuthenticated]

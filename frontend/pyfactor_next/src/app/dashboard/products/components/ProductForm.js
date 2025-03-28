@@ -1,23 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  Button,
-  Grid,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  InputAdornment,
-  Divider,
-  Alert,
-  CircularProgress,
-} from '@mui/material';
 import { useRouter } from 'next/navigation';
+import { fixInputFields, monitorInputEvents } from '@/utils/inputDebug';
 
 export default function ProductForm({ product, mode = 'create' }) {
   const router = useRouter();
@@ -76,205 +61,262 @@ export default function ProductForm({ product, mode = 'create' }) {
     }
   };
 
+  useEffect(() => {
+    // Fix input fields initially
+    fixInputFields('.product-form');
+    
+    // Monitor input events
+    const cleanup = monitorInputEvents();
+    
+    // Set an interval to periodically reapply fixes (handles dynamically loaded content)
+    const intervalId = setInterval(() => {
+      fixInputFields('.product-form');
+    }, 2000);
+    
+    return () => {
+      cleanup();
+      clearInterval(intervalId);
+    };
+  }, []);
+
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ p: 3 }}>
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h5" sx={{ mb: 3 }}>
+    <form onSubmit={handleSubmit} className="p-3 product-form">
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-semibold mb-6 text-gray-800">
           {mode === 'create' ? 'Add New Product' : 'Edit Product'}
-        </Typography>
+        </h2>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
             {error}
-          </Alert>
+          </div>
         )}
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <TextField
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="col-span-1">
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              Product Name *
+            </label>
+            <input
               required
-              fullWidth
-              label="Product Name"
+              id="name"
               name="name"
+              type="text"
               value={formData.name}
               onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <TextField
+          </div>
+          <div className="col-span-1">
+            <label htmlFor="sku" className="block text-sm font-medium text-gray-700 mb-1">
+              SKU *
+            </label>
+            <input
               required
-              fullWidth
-              label="SKU"
+              id="sku"
               name="sku"
+              type="text"
               value={formData.sku}
               onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Description"
+          </div>
+          <div className="col-span-2">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
-              multiline
-              rows={4}
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <TextField
+              rows="4"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            ></textarea>
+          </div>
+          <div className="col-span-1 md:col-span-1">
+            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+              Price *
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-gray-500">$</span>
+              </div>
+              <input
+                required
+                id="price"
+                name="price"
+                type="number"
+                value={formData.price}
+                onChange={handleChange}
+                className="w-full pl-7 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <div className="col-span-1 md:col-span-1">
+            <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-1">
+              Cost *
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-gray-500">$</span>
+              </div>
+              <input
+                required
+                id="cost"
+                name="cost"
+                type="number"
+                value={formData.cost}
+                onChange={handleChange}
+                className="w-full pl-7 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <div className="col-span-1 md:col-span-1">
+            <label htmlFor="taxRate" className="block text-sm font-medium text-gray-700 mb-1">
+              Tax Rate *
+            </label>
+            <div className="relative">
+              <input
+                required
+                id="taxRate"
+                name="taxRate"
+                type="number"
+                value={formData.taxRate}
+                onChange={handleChange}
+                className="w-full pr-8 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <span className="text-gray-500">%</span>
+              </div>
+            </div>
+          </div>
+          <div className="col-span-1 md:col-span-1">
+            <label htmlFor="stock" className="block text-sm font-medium text-gray-700 mb-1">
+              Current Stock *
+            </label>
+            <input
               required
-              fullWidth
-              label="Price"
-              name="price"
-              type="number"
-              value={formData.price}
-              onChange={handleChange}
-              InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>,
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <TextField
-              required
-              fullWidth
-              label="Cost"
-              name="cost"
-              type="number"
-              value={formData.cost}
-              onChange={handleChange}
-              InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>,
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <TextField
-              required
-              fullWidth
-              label="Tax Rate"
-              name="taxRate"
-              type="number"
-              value={formData.taxRate}
-              onChange={handleChange}
-              InputProps={{
-                endAdornment: <InputAdornment position="end">%</InputAdornment>,
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <TextField
-              required
-              fullWidth
-              label="Current Stock"
+              id="stock"
               name="stock"
               type="number"
               value={formData.stock}
               onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              label="Minimum Stock"
+          </div>
+          <div className="col-span-1 md:col-span-1">
+            <label htmlFor="minStock" className="block text-sm font-medium text-gray-700 mb-1">
+              Minimum Stock
+            </label>
+            <input
+              id="minStock"
               name="minStock"
               type="number"
               value={formData.minStock}
               onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              label="Maximum Stock"
+          </div>
+          <div className="col-span-1 md:col-span-1">
+            <label htmlFor="maxStock" className="block text-sm font-medium text-gray-700 mb-1">
+              Maximum Stock
+            </label>
+            <input
+              id="maxStock"
               name="maxStock"
               type="number"
               value={formData.maxStock}
               onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <InputLabel>Category</InputLabel>
-              <Select
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                label="Category"
-              >
-                <MenuItem value="electronics">Electronics</MenuItem>
-                <MenuItem value="clothing">Clothing</MenuItem>
-                <MenuItem value="food">Food</MenuItem>
-                <MenuItem value="furniture">Furniture</MenuItem>
-                <MenuItem value="other">Other</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <InputLabel>Unit</InputLabel>
-              <Select
-                name="unit"
-                value={formData.unit}
-                onChange={handleChange}
-                label="Unit"
-              >
-                <MenuItem value="piece">Piece</MenuItem>
-                <MenuItem value="kg">Kilogram</MenuItem>
-                <MenuItem value="g">Gram</MenuItem>
-                <MenuItem value="l">Liter</MenuItem>
-                <MenuItem value="m">Meter</MenuItem>
-                <MenuItem value="box">Box</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                label="Status"
-              >
-                <MenuItem value="Active">Active</MenuItem>
-                <MenuItem value="Inactive">Inactive</MenuItem>
-                <MenuItem value="OutOfStock">Out of Stock</MenuItem>
-                <MenuItem value="Discontinued">Discontinued</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-        </Grid>
+          </div>
+          <div className="col-span-1 md:col-span-1">
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
+            <select
+              id="category"
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="">Select a category</option>
+              <option value="electronics">Electronics</option>
+              <option value="clothing">Clothing</option>
+              <option value="food">Food</option>
+              <option value="furniture">Furniture</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div className="col-span-1 md:col-span-1">
+            <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">
+              Unit
+            </label>
+            <select
+              id="unit"
+              name="unit"
+              value={formData.unit}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="piece">Piece</option>
+              <option value="kg">Kilogram</option>
+              <option value="g">Gram</option>
+              <option value="l">Liter</option>
+              <option value="m">Meter</option>
+              <option value="box">Box</option>
+            </select>
+          </div>
+          <div className="col-span-1 md:col-span-1">
+            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
+            <select
+              id="status"
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="OutOfStock">Out of Stock</option>
+              <option value="Discontinued">Discontinued</option>
+            </select>
+          </div>
+        </div>
 
-        <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-          <Button
-            variant="outlined"
+        <div className="mt-8 flex gap-4 justify-end">
+          <button
+            type="button"
             onClick={() => router.push('/dashboard/products')}
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             Cancel
-          </Button>
-          <Button
+          </button>
+          <button
             type="submit"
-            variant="contained"
             disabled={loading}
-            sx={{
-              backgroundColor: '#0a3977',
-              '&:hover': {
-                backgroundColor: '#041e42',
-              },
-            }}
+            className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
           >
             {loading ? (
-              <CircularProgress size={24} color="inherit" />
+              <div className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading...
+              </div>
             ) : mode === 'create' ? (
               'Create Product'
             ) : (
               'Save Changes'
             )}
-          </Button>
-        </Box>
-      </Paper>
-    </Box>
+          </button>
+        </div>
+      </div>
+    </form>
   );
-} 
+}

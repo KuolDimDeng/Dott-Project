@@ -1015,7 +1015,55 @@ export const getInventoryHeaders = () => {
     'X-Business-ID': tenantId
   };
   
-  logger.debug('[TenantUtils] Generated inventory headers:', headers);
+  // Add authentication tokens if available
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const tokensStr = localStorage.getItem('tokens');
+      if (tokensStr) {
+        const tokens = JSON.parse(tokensStr);
+        if (tokens.accessToken) {
+          headers['Authorization'] = `Bearer ${tokens.accessToken}`;
+        }
+        if (tokens.idToken) {
+          headers['X-Id-Token'] = tokens.idToken;
+        }
+      }
+      
+      // Also try to get user ID from Cognito
+      const lastAuthUser = localStorage.getItem('CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.LastAuthUser');
+      if (lastAuthUser) {
+        // Try to get the user ID from local storage based on the last auth user
+        const idTokenKey = `CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.${lastAuthUser}.idToken`;
+        const idToken = localStorage.getItem(idTokenKey);
+        if (idToken && !headers['X-Id-Token']) {
+          headers['X-Id-Token'] = idToken;
+        }
+        
+        // Add user ID if available
+        const userDataKey = `CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.${lastAuthUser}.userData`;
+        const userData = localStorage.getItem(userDataKey);
+        if (userData) {
+          try {
+            const parsedUserData = JSON.parse(userData);
+            if (parsedUserData.UserID) {
+              headers['X-User-ID'] = parsedUserData.UserID;
+            }
+          } catch (userDataError) {
+            logger.warn('[TenantUtils] Error parsing user data:', userDataError);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    logger.warn('[TenantUtils] Error getting auth tokens for headers:', error);
+  }
+  
+  logger.debug('[TenantUtils] Generated inventory headers:', {
+    ...headers,
+    Authorization: headers.Authorization ? 'Bearer [REDACTED]' : undefined,
+    'X-Id-Token': headers['X-Id-Token'] ? '[REDACTED]' : undefined
+  });
+  
   return headers;
 };
 

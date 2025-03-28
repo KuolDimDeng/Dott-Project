@@ -12,6 +12,7 @@ import { useSession } from '@/hooks/useSession';
 import { logger } from '@/utils/logger';
 import { Typography, Box, CircularProgress, Container, Paper, Alert, Button } from '@mui/material';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { useEnhancedOnboarding } from '@/hooks/useEnhancedOnboarding';
 
 const PaymentFallback = () => (
   <div className="flex justify-center items-center min-h-screen">
@@ -23,26 +24,89 @@ const PaymentContent = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { updateOnboardingStatus } = useOnboarding();
+  const { verifyState, updateState, isLoading: isStateLoading, error: stateError } = useEnhancedOnboarding();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [debugInfo, setDebugInfo] = useState({});
   const [subscriptionData, setSubscriptionData] = useState(null);
 
   useEffect(() => {
-    // Set the current step to 'payment' when the page loads
-    try {
-      if (updateOnboardingStatus) {
-        logger.debug('[Payment] Setting current step to payment');
-        updateOnboardingStatus('PAYMENT');
+    async function initPage() {
+      try {
+        // Verify the current state with the enhanced hook
+        const stateVerification = await verifyState('payment');
+        
+        if (!stateVerification.isValid) {
+          logger.warn('[Payment] Invalid state, redirecting to:', stateVerification.redirectUrl);
+          router.replace(stateVerification.redirectUrl);
+          return;
+        }
+        
+        logger.debug('[Payment] State verification successful');
+        
+        // Set the current step to 'payment' when the page loads
+        try {
+          await updateState('payment', {});
+          logger.debug('[Payment] Step updated to payment using enhanced hook');
+        } catch (updateErr) {
+          logger.error('[Payment] Error updating state:', updateErr);
+        }
+      } catch (err) {
+        logger.error('[Payment] Error verifying state:', err);
       }
-    } catch (err) {
-      logger.error('[Payment] Error updating onboarding step:', { error: err.message });
     }
-  }, [updateOnboardingStatus]);
+    
+    initPage();
+  }, [verifyState, updateState, router]);
+
+  // Special check for free plan cookie - redirect immediately to dashboard
+  useEffect(() => {
+    // Check if this is a free plan that shouldn't be on the payment page
+    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      if (key && value) {
+        try {
+          acc[key] = decodeURIComponent(value);
+        } catch (e) {
+          acc[key] = value;
+        }
+      }
+      return acc;
+    }, {});
+    
+    // Check for free plan indicators
+    if (cookies.selectedPlan === 'free' || cookies.freePlanSelected === 'true') {
+      logger.warn('[Payment] Free plan detected but on payment page - redirecting to dashboard');
+      
+      // Force dashboard redirect
+      window.location.replace(`/dashboard?freePlan=true&t=${new Date().getTime()}`);
+      return;
+    }
+  }, []);
 
   useEffect(() => {
     async function loadPaymentInfo() {
       try {
+        // First check if free plan cookie exists - redirect if it does
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=');
+          if (key && value) {
+            try {
+              acc[key] = decodeURIComponent(value);
+            } catch (e) {
+              acc[key] = value;
+            }
+          }
+          return acc;
+        }, {});
+        
+        // Check again for free plan indicators
+        if (cookies.selectedPlan === 'free' || cookies.freePlanSelected === 'true') {
+          logger.warn('[Payment] Free plan detected in cookie - redirecting to dashboard');
+          window.location.replace(`/dashboard?freePlan=true&t=${new Date().getTime()}`);
+          return;
+        }
+        
         const pendingSubscription = sessionStorage.getItem('pendingSubscription');
         const subscriptionData = pendingSubscription ? JSON.parse(pendingSubscription) : null;
         
@@ -60,14 +124,32 @@ const PaymentContent = () => {
           planLowerCase: subscriptionData?.plan?.toLowerCase() || 'none',
           isProfessionalOrEnterprise: ['professional', 'enterprise'].includes(subscriptionData?.plan?.toLowerCase()),
           paymentMethod: subscriptionData?.payment_method,
-          cookies: document.cookie
+          cookies: document.cookie,
+          // Add cookie parsing for more visibility
+          parsedCookies: cookies
         });
 
         // Check if subscription data exists and is valid
         if (!subscriptionData) {
           logger.error('[Payment] No subscription data found');
+          
+          // Last-ditch attempt - check cookies for selectedPlan
+          if (cookies.selectedPlan === 'free') {
+            logger.warn('[Payment] Free plan found in cookies - redirecting to dashboard');
+            window.location.replace(`/dashboard?freePlan=true&t=${new Date().getTime()}`);
+            return;
+          }
+          
           setError('No subscription data found. Please select a plan first.');
           setLoading(false);
+          return;
+        }
+        
+        // Extra safety check - if the plan is 'free', redirect to dashboard
+        if (subscriptionData.plan?.toLowerCase() === 'free' || 
+            subscriptionData.id?.toLowerCase() === 'free') {
+          logger.warn('[Payment] Free plan detected in subscription data - redirecting to dashboard');
+          window.location.replace(`/dashboard?freePlan=true&t=${new Date().getTime()}`);
           return;
         }
         
@@ -159,7 +241,7 @@ const PaymentContent = () => {
     }
   }, [status, router]);
 
-  if (status === 'loading') {
+  if (status === 'loading' || isStateLoading) {
     return <PaymentFallback />;
   }
 
@@ -183,12 +265,12 @@ const PaymentContent = () => {
   }
   
   // Show error state
-  if (error) {
+  if (error || stateError) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Paper elevation={3} sx={{ p: 4 }}>
           <Typography variant="h5" color="error" gutterBottom>Payment Error</Typography>
-          <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>
+          <Alert severity="error" sx={{ my: 2 }}>{error || stateError}</Alert>
           
           {/* Debug information */}
           <Box sx={{ mt: 4, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>

@@ -28,6 +28,7 @@ import {
   RadioGroup,
   Radio
 } from '@mui/material';
+import EmbeddedTestForm from './EmbeddedTestForm';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
@@ -223,6 +224,9 @@ function Home({ userData }) {
           </Button>
         </Paper>
       )}
+      
+      {/* Emergency Test Form */}
+      <EmbeddedTestForm />
       
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>

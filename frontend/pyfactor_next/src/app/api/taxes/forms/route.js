@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getTenantId } from '@/lib/tenantUtils';
-import { axiosInstance } from '@/lib/axiosConfig';
+import { serverAxiosInstance } from '@/lib/axiosConfig';
 
 export async function GET(request) {
   try {
@@ -16,7 +16,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
 
-    const response = await axiosInstance.get(`/api/taxes/forms/?q=${query}`, {
+    const response = await serverAxiosInstance.get(`/api/taxes/forms/?q=${query}`, {
       headers: {
         'X-Tenant-ID': tenantId,
         'X-Schema-Name': `tenant_${tenantId.replace(/-/g, '_')}`,
@@ -45,7 +45,7 @@ export async function POST(request) {
 
     const formData = await request.formData();
     
-    const response = await axiosInstance.post('/api/taxes/forms/', formData, {
+    const response = await serverAxiosInstance.post('/api/taxes/forms/', formData, {
       headers: {
         'X-Tenant-ID': tenantId,
         'X-Schema-Name': `tenant_${tenantId.replace(/-/g, '_')}`,

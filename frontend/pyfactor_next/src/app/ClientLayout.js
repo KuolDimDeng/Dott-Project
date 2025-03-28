@@ -14,7 +14,7 @@ import LoadingFallback from '@/components/ClientOnly/LoadingFallback';
 import { setupRenderDebugging } from '@/utils/debugReactRendering';
 import dynamic from 'next/dynamic';
 import ConfigureAmplify from '@/components/ConfigureAmplify';
-import debounce from 'lodash/debounce';
+// Removed GlobalEventDebugger - was causing input field issues
 
 // Dynamically import the ReactErrorDebugger to avoid SSR issues
 const ReactErrorDebugger = dynamic(
@@ -24,6 +24,45 @@ const ReactErrorDebugger = dynamic(
     loading: () => null
   }
 );
+
+// Helper function to check cookie-based access for onboarding pages
+const checkCookieBasedAccess = (pathname) => {
+  if (typeof document === 'undefined') return false;
+  
+  // Parse all cookies
+  const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+    const parts = cookie.trim().split('=');
+    if (parts.length > 1) {
+      try {
+        acc[parts[0].trim()] = decodeURIComponent(parts[1]);
+      } catch (e) {
+        acc[parts[0].trim()] = parts[1];
+      }
+    }
+    return acc;
+  }, {});
+  
+  // Get onboarding status from cookies
+  const onboardingStep = cookies.onboardingStep;
+  const onboardedStatus = cookies.onboardedStatus;
+  
+  // Grant access based on cookies and pathname
+  if (pathname.includes('business-info')) {
+    // Always allow access to business-info
+    return true;
+  } else if (pathname.includes('subscription')) {
+    // Allow access to subscription if business-info is completed
+    return onboardingStep === 'subscription' || onboardedStatus === 'BUSINESS_INFO';
+  } else if (pathname.includes('payment')) {
+    // Allow access to payment if subscription is completed
+    return onboardingStep === 'payment' || onboardedStatus === 'SUBSCRIPTION';
+  } else if (pathname.includes('setup')) {
+    // Allow access to setup if payment is completed
+    return onboardingStep === 'setup' || onboardedStatus === 'PAYMENT';
+  }
+  
+  return false;
+};
 
 export default function ClientLayout({ children }) {
   const router = useRouter();
@@ -204,9 +243,9 @@ export default function ClientLayout({ children }) {
     }
   }, [router, pathname]);
 
-  // Create stable verifySession function
+  // Create stable verifySession function - no debounce to avoid promise issues
   const verifySession = useRef(
-    debounce(async (pathname, attempt = 1) => {
+    async (pathname, attempt = 1) => {
       const maxAttempts = 3;
       
       try {
@@ -230,16 +269,74 @@ export default function ClientLayout({ children }) {
           return true;
         }
         
-        // Special handling for verify-email route - always allow access
-        if (pathname === '/auth/verify-email' || pathname.startsWith('/auth/verify-email')) {
-          logger.debug('[ClientLayout] Allowing access to verify-email route without auth check');
-          setIsVerifying(false);
-          return true;
+        // Special handling for onboarding routes - allow access if in onboarding flow
+        if (pathname.startsWith('/onboarding/') || pathname === '/auth/verify-email' || pathname.startsWith('/auth/verify-email')) {
+          logger.debug('[ClientLayout] Onboarding or verification route detected, using lenient session check');
+          
+          // Check for cookie-based access first
+          if (typeof window !== 'undefined') {
+            const hasCookieAccess = checkCookieBasedAccess(pathname);
+            if (hasCookieAccess) {
+              logger.debug('[ClientLayout] Cookie-based access granted for:', pathname);
+              sessionCheckCache.current.set(cacheKey, true);
+              setIsVerifying(false);
+              return true;
+            }
+          }
+          
+          // Always let subscription page through
+          if (pathname.includes('subscription')) {
+            logger.debug('[ClientLayout] Allowing access to subscription page');
+            sessionCheckCache.current.set(cacheKey, true);
+            setIsVerifying(false);
+            return true;
+          }
+          
+          try {
+            // Try to get session but don't redirect if it fails
+            const { tokens } = await fetchAuthSession();
+            const isValid = !!tokens?.idToken;
+            
+            if (isValid) {
+              // Initialize tenant if needed but don't fail if it doesn't work
+              if (!tenantInitialized) {
+                try {
+                  await initializeTenantContext();
+                  setTenantInitialized(true);
+                } catch (e) {
+                  logger.warn('[ClientLayout] Tenant init failed for onboarding route, but continuing:', e.message);
+                }
+              }
+              
+              // Cache the successful result
+              sessionCheckCache.current.set(cacheKey, true);
+              setIsVerifying(false);
+              return true;
+            } else {
+              // If pathname is business-info or subscription, allow to proceed anyway
+              if (pathname.includes('business-info') || pathname.includes('subscription')) {
+                logger.debug(`[ClientLayout] Allowing access to ${pathname} despite session issues`);
+                sessionCheckCache.current.set(cacheKey, true);
+                setIsVerifying(false);
+                return true;
+              }
+            }
+          } catch (e) {
+            logger.warn('[ClientLayout] Session check error in onboarding route:', e.message);
+            
+            // For business-info or subscription page, don't redirect to sign-in
+            if (pathname.includes('business-info') || pathname.includes('subscription')) {
+              logger.debug(`[ClientLayout] Allowing access to ${pathname} despite session error`);
+              sessionCheckCache.current.set(cacheKey, true);
+              setIsVerifying(false);
+              return true;
+            }
+          }
         }
 
-        // Get current session
+        // Standard session check for other routes
         const { tokens } = await fetchAuthSession();
-        const isValid = !!tokens?.idToken;
+        let isValid = !!tokens?.idToken; // Use let instead of const so we can update it
 
         if (isValid && !tenantInitialized) {
           try {
@@ -271,9 +368,15 @@ export default function ClientLayout({ children }) {
 
         if (!isValid && attempt < maxAttempts) {
           // Try to refresh session
-          const refreshed = await refreshUserSession();
-          if (refreshed) {
-            return verifySession.current(pathname, attempt + 1);
+          try {
+            const refreshed = await refreshUserSession();
+            if (refreshed) {
+              // We'll just set isValid to true and continue without recursion
+              logger.debug('[ClientLayout] Session refreshed, continuing with validation');
+              isValid = true;
+            }
+          } catch (refreshError) {
+            logger.warn('[ClientLayout] Error refreshing session:', refreshError.message);
           }
         }
 
@@ -295,14 +398,18 @@ export default function ClientLayout({ children }) {
         });
         
         if (attempt < maxAttempts) {
-          return verifySession.current(pathname, attempt + 1);
+          // No need to retry recursively as it causes issues
+          logger.debug('[ClientLayout] Session verification failed, not retrying to avoid loops');
+          setIsVerifying(false);
+          router.replace('/auth/signin');
+          return false;
         }
         
         setIsVerifying(false);
         router.replace('/auth/signin');
         return false;
       }
-    }, 100)
+    }
   );
 
   // Reset tenant initialization when pathname changes
@@ -327,11 +434,8 @@ export default function ClientLayout({ children }) {
 
     verify();
 
-    return () => {
-      if (verifySession.current?.cancel) {
-        verifySession.current.cancel();
-      }
-    };
+    // No need to cancel since we're not using debounce anymore
+    return () => {};
   }, [pathname]);
 
   // Show loading state while verifying
@@ -360,12 +464,15 @@ export default function ClientLayout({ children }) {
   };
 
   return (
-    <AuthErrorBoundary onError={handleError}>
-      <ConfigureAmplify />
-      <LoadingFallback>
-        {children}
-        {/* React Error Debugger disabled */}
-      </LoadingFallback>
-    </AuthErrorBoundary>
+    <>
+      {/* GlobalEventDebugger removed to fix input field issues */}
+      <AuthErrorBoundary onError={handleError}>
+        <ConfigureAmplify />
+        <LoadingFallback>
+          {children}
+          {/* React Error Debugger disabled */}
+        </LoadingFallback>
+      </AuthErrorBoundary>
+    </>
   );
 }

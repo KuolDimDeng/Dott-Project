@@ -17,8 +17,8 @@ import {
 } from '@/config/amplifyUnified';
 import { useSession } from './useSession';
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000;
+const MAX_RETRIES = 5;
+const RETRY_DELAY = 2000;
 
 const AUTH_FLOWS = {
   USER_PASSWORD: 'ALLOW_USER_PASSWORD_AUTH',
@@ -36,10 +36,20 @@ export function useAuth() {
 
   const retryOperation = async (operation, retryCount = 0) => {
     try {
-      return await operation();
+      const result = await operation();
+      logger.debug('[Auth] Operation completed successfully');
+      return result;
     } catch (error) {
+      logger.debug(`[Auth] Operation failed (attempt ${retryCount + 1}/${MAX_RETRIES}):`, {
+        error: error.message,
+        code: error.code,
+        name: error.name
+      });
+      
       if (retryCount < MAX_RETRIES && 
-          (error.message.includes('network') || error.message.includes('timeout'))) {
+          (error.message.includes('network') || 
+           error.message.includes('timeout') ||
+           error.code === 'NetworkError')) {
         const delay = Math.pow(2, retryCount) * RETRY_DELAY;
         logger.debug(`[Auth] Retrying operation after ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -49,173 +59,186 @@ export function useAuth() {
     }
   };
 
-  const handleSignIn = useCallback(async (username, password, rememberMe = false) => {
+  const handleSignIn = useCallback(async (email, password) => {
     setIsLoading(true);
     setError(null);
-    
-    logger.debug('[Auth] Sign in with rememberMe:', rememberMe);
 
     try {
-      // First check if there's an existing signed-in user
+      logger.debug('[Auth] Starting sign in for user:', email);
+      
+      // Try to use enhanced sign in function
       try {
-        try {
-          const signOutResult = await authSignOut();
-          if (signOutResult.success) {
-            logger.debug('[Auth] Signed out existing user');
-          } else {
-            logger.debug('[Auth] Failed to sign out existing user:', signOutResult.error);
-          }
-        } catch (error) {
-          logger.debug('[Auth] Error signing out existing user:', error);
-        }
-      } catch (error) {
-        // Ignore errors here as there might not be a signed-in user
-        logger.debug('[Auth] No existing user to sign out');
-      }
-
-      logger.debug('[Auth] Starting sign in process:', {
-        username,
-        authFlow: 'TRYING_MULTIPLE_FLOWS'
-      });
-
-      // Attempt sign in with our updated auth module - directly pass username and password
-      // The updated signIn function will try multiple auth flows if needed
-      let signInResponse;
-      try {
-        signInResponse = await authSignIn({
-          username,
-          password,
-          options: {
-            authFlowType: 'USER_PASSWORD_AUTH',
-            keepSignedIn: rememberMe // Add rememberMe setting here
-          }
-        });
-        logger.debug('[Auth] Direct sign in successful:', {
-          isSignedIn: signInResponse.isSignedIn,
-          nextStep: signInResponse.nextStep
-        });
-      } catch (signInError) {
-        logger.error('[Auth] Direct sign in failed:', signInError);
-        throw signInError;
-      }
-
-      if (!signInResponse.isSignedIn) {
-        if (signInResponse.nextStep?.signInStep === 'CONFIRM_SIGN_UP') {
-          logger.debug('[Auth] User needs to confirm signup');
-          router.push(`/auth/verify-email?email=${encodeURIComponent(username)}`);
-          return { success: false, nextStep: signInResponse.nextStep };
-        }
-        throw new Error('Sign in failed - user not signed in');
-      }
-
-      logger.debug('[Auth] Sign in successful, fetching session');
-
-      // Get session immediately after sign in
-      let sessionResponse;
-      try {
-        sessionResponse = await authFetchAuthSession({ forceRefresh: true });
-        logger.debug('[Auth] Session fetched successfully:', {
-          hasIdToken: !!sessionResponse.tokens?.idToken,
-          hasAccessToken: !!sessionResponse.tokens?.accessToken
-        });
+        const { enhancedSignIn } = await import('@/config/amplifyUnified');
         
-        // Store the auth data in sessionStorage for subscription expiration check
-        // Extract this from the token payload or API response
-        if (signInResponse.authFlowSuccess?.authFlowResponse?.AuthenticationResult?.additionalData) {
-          const responseData = signInResponse.authFlowSuccess.authFlowResponse.AuthenticationResult.additionalData;
+        if (enhancedSignIn) {
+          logger.debug('[Auth] Using enhanced signIn function');
           
-          // Log to see what we have available (but not the actual tokens)
-          logger.debug('[Auth] Storing auth data from response:', {
-            hasSubscriptionExpired: !!responseData.subscription_expired,
-            previousPlan: responseData.previous_plan || 'N/A'
+          const result = await enhancedSignIn(email, password, {
+            authFlowType: AUTH_FLOWS.USER_SRP
           });
           
-          // Store in sessionStorage for the dashboard to access
-          sessionStorage.setItem('authData', JSON.stringify({
-            subscription_expired: responseData.subscription_expired || false,
-            previous_plan: responseData.previous_plan || '',
-            current_plan: responseData.current_plan || 'free'
-          }));
-        } else {
-          logger.debug('[Auth] No additional data in auth response, clearing authData');
-          sessionStorage.removeItem('authData');
+          logger.debug('[Auth] Enhanced signIn completed successfully:', {
+            isSignedIn: result.isSignedIn,
+            nextStep: result.nextStep?.signInStep
+          });
+          
+          try {
+            // Try to get the user's attributes
+            const userAttributes = await fetchUserAttributes();
+            logger.debug('[Auth] User attributes fetched:', userAttributes);
+            
+            // If we have user attributes, check onboarding status
+            const onboardingStatus = userAttributes['custom:onboarding'] || 'NOT_STARTED';
+            const setupDone = userAttributes['custom:setupdone'] || 'FALSE';
+            
+            logger.debug('[Auth] User onboarding status:', {
+              onboardingStatus,
+              setupDone
+            });
+            
+            // Refresh the session context
+            refreshSession();
+            
+            return {
+              success: true,
+              isComplete: true,
+              userInfo: {
+                attributes: userAttributes,
+                onboardingStatus,
+                setupDone,
+                email: userAttributes.email || email
+              }
+            };
+          } catch (attributesError) {
+            // If we can't get attributes, just return basic success
+            logger.warn('[Auth] Could not fetch user attributes:', attributesError);
+            
+            return {
+              success: true,
+              isComplete: true,
+              nextStep: 'SIGNED_IN'
+            };
+          }
         }
-      } catch (sessionError) {
-        logger.error('[Auth] Error fetching session:', sessionError);
-        throw new Error('Failed to fetch session after sign in');
+      } catch (importError) {
+        logger.debug('[Auth] Failed to import enhancedSignIn, falling back to standard flow:', importError);
+        // If enhancedSignIn isn't available, continue with standard flow
       }
-
-      if (!sessionResponse.tokens?.idToken) {
-        throw new Error('No valid session token after sign in');
-      }
-
-      // Update session state
-      setSession(sessionResponse);
-
-      // Get current user before refreshing session
-      let currentUser;
-      try {
-        currentUser = await authGetCurrentUser();
-        logger.debug('[Auth] Current user fetched successfully:', {
-          username: currentUser.username,
-          userId: currentUser.userId
-        });
-      } catch (userError) {
-        logger.error('[Auth] Error fetching current user:', userError);
-        throw new Error('Failed to get current user after sign in');
-      }
-
-      // Set up cookies via API route instead of using refreshSession
-      try {
-        logger.debug('[Auth] Setting cookies via API with rememberMe:', rememberMe);
-        
-        // Calculate cookie expiration based on rememberMe option
-        const cookieMaxAge = rememberMe ? 
-          30 * 24 * 60 * 60 : // 30 days for rememberMe
-          24 * 60 * 60;      // 1 day for standard session
-        
-        const response = await fetch('/api/auth/set-cookies', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            idToken: sessionResponse.tokens.idToken.toString(),
-            accessToken: sessionResponse.tokens.accessToken.toString(),
-            refreshToken: sessionResponse.tokens.refreshToken ? sessionResponse.tokens.refreshToken.toString() : undefined,
-            rememberMe: rememberMe,
-            maxAge: cookieMaxAge
-          })
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          logger.error('[Auth] Failed to set cookies via API:', errorData);
-          throw new Error(`Failed to set cookies: ${errorData.error || response.statusText}`);
+      
+      // Fall back to standard sign in if enhanced version fails
+      const signInResult = await retryOperation(async () => {
+        try {
+          const result = await authSignIn({
+            username: email,
+            password,
+            options: {
+              authFlowType: AUTH_FLOWS.USER_SRP
+            }
+          });
+          
+          logger.debug('[Auth] Sign in API call succeeded with result:', {
+            isSignedIn: result.isSignedIn,
+            nextStep: result.nextStep?.signInStep
+          });
+          
+          return {
+            success: true,
+            result: result
+          };
+        } catch (error) {
+          logger.error('[Auth] Sign in API call error:', {
+            message: error.message,
+            code: error.code,
+            name: error.name
+          });
+          
+          return {
+            success: false,
+            error: error.message,
+            code: error.code
+          };
         }
-        
-        logger.debug('[Auth] Cookies set successfully via API');
-      } catch (cookieError) {
-        logger.error('[Auth] Error setting cookies:', cookieError);
-        // Continue even if cookie setting fails
+      });
+      
+      if (!signInResult.success) {
+        logger.error('[Auth] Sign in result not successful:', signInResult);
+        throw new Error(signInResult.error || 'Sign in failed');
       }
-
-      logger.debug('[Auth] Session established successfully');
-
-      return { success: true, user: currentUser };
+      
+      const result = signInResult.result;
+      logger.debug('[Auth] Sign in completed successfully, checking session');
+      
+      try {
+        // Try to get the user's attributes
+        const userAttributes = await fetchUserAttributes();
+        logger.debug('[Auth] User attributes fetched:', userAttributes);
+        
+        // If we have user attributes, check onboarding status
+        const onboardingStatus = userAttributes['custom:onboarding'] || 'NOT_STARTED';
+        const setupDone = userAttributes['custom:setupdone'] || 'FALSE';
+        
+        logger.debug('[Auth] User onboarding status:', {
+          onboardingStatus,
+          setupDone
+        });
+        
+        // Refresh the session context
+        refreshSession();
+        
+        return {
+          success: true,
+          isComplete: true,
+          userInfo: {
+            attributes: userAttributes,
+            onboardingStatus,
+            setupDone,
+            email: userAttributes.email || email
+          }
+        };
+      } catch (attributesError) {
+        // If we can't get attributes, just return basic success
+        logger.warn('[Auth] Could not fetch user attributes:', attributesError);
+        
+        return {
+          success: true,
+          isComplete: true,
+          nextStep: 'SIGNED_IN'
+        };
+      }
     } catch (error) {
+      // Extract more detailed error information
+      const errorMessage = error.message || 'Sign in failed';
+      const errorCode = error.code || 'unknown_error';
+      
       logger.error('[Auth] Sign in failed:', {
-        error: error.message,
-        username,
-        code: error.code,
+        error: errorMessage,
+        code: errorCode,
+        email: email, // Log email for debugging
+        name: error.name,
         stack: error.stack
       });
-      setError(error.message);
-      return { success: false, error: error.message };
+      
+      // Set a more user-friendly error message based on the error code
+      let userFriendlyMessage = errorMessage;
+      
+      if (errorCode === 'NotAuthorizedException') {
+        userFriendlyMessage = 'Incorrect username or password';
+      } else if (errorCode === 'UserNotFoundException') {
+        userFriendlyMessage = 'We couldn\'t find an account with this email address';
+      } else if (errorCode === 'UserNotConfirmedException') {
+        userFriendlyMessage = 'Please verify your email address before signing in';
+      } else if (errorMessage.includes('network') || errorCode === 'NetworkError') {
+        userFriendlyMessage = 'Network error. Please check your internet connection and try again';
+      } else if (error.name === 'AbortError' || errorMessage.includes('timed out')) {
+        userFriendlyMessage = 'Sign in timed out. Please try again';
+      }
+      
+      setError(userFriendlyMessage);
+      return { success: false, error: userFriendlyMessage, code: errorCode };
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, [refreshSession]);
 
   const handleSignOut = useCallback(async () => {
     setIsLoading(true);
@@ -244,172 +267,81 @@ export function useAuth() {
     }
   }, [router]);
   
-  const handleSignUp = useCallback(async (userData) => {
+  const handleSignUp = useCallback(async (data) => {
     setIsLoading(true);
     setError(null);
+    
+    // Create an AbortController to handle timeouts
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 15000); // 15 second timeout
 
     try {
-      // First check if there's an existing signed-in user
+      // If username is not provided, use email as username
+      if (!data.username && data.email) {
+        data.username = data.email;
+      }
+
+      logger.debug('[Auth] Starting sign up for user:', data.username);
+      
+      const signUpParams = {
+        username: data.username,
+        password: data.password,
+        attributes: {
+          email: data.email,
+          given_name: data.firstName || '',
+          family_name: data.lastName || '',
+          'custom:onboarding': 'NOT_STARTED'
+        },
+        autoSignIn: {
+          enabled: true
+        }
+      };
+      
+      // Add any additional attributes from the data object
+      for (const key in data) {
+        if (key.startsWith('custom:') && !signUpParams.attributes[key]) {
+          signUpParams.attributes[key] = data[key];
+        }
+      }
+      
+      // Use enhanced sign up for better error handling
+      const { enhancedSignUp } = await import('@/config/amplifyUnified');
+      
       try {
-        const signOutResult = await authSignOut();
-        if (signOutResult.success) {
-          logger.debug('[Auth] Signed out existing user');
-        } else {
-          logger.debug('[Auth] Failed to sign out existing user:', signOutResult.error);
-        }
-      } catch (error) {
-        // Ignore errors here as there might not be a signed-in user
-        logger.debug('[Auth] No existing user to sign out');
-      }
-
-      logger.debug('[Auth] Starting sign up process:', { 
-        email: userData.email,
-        attributes: Object.keys(userData)
-      });
-
-      // Log the signup attempt with sanitized data (no password)
-      logger.debug('[Auth] Attempting sign up with:', {
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        attributeCount: 7, // Count of attributes being sent
-        autoSignIn: true,
-        authFlowType: 'USER_PASSWORD_AUTH'
-      });
-      
-      // Verify Cognito configuration before attempting signup
-      logger.debug('[Auth] Verifying Cognito configuration:', {
-        region: process.env.NEXT_PUBLIC_AWS_REGION,
-        userPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID,
-        clientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID
-      });
-      
-      // Prepare user attributes
-      const userAttributes = {
-        email: userData.email,
-        given_name: userData.firstName,
-        family_name: userData.lastName,
-        'custom:onboarding': 'NOT_STARTED',
-        'custom:setupdone': 'FALSE',
-        'custom:userrole': 'OWNER',
-        'custom:created_at': new Date().toISOString()
-      };
-      
-      logger.debug('[Auth] Prepared user attributes:', {
-        attributeCount: Object.keys(userAttributes).length,
-        attributes: Object.keys(userAttributes)
-      });
-      
-      const signUpResponse = await retryOperation(async () => {
-        try {
-          logger.debug('[Auth] Calling authSignUp with:', {
-            username: userData.email,
-            hasPassword: !!userData.password,
-            attributeCount: Object.keys(userAttributes).length
-          });
-          
-          const response = await authSignUp({
-            username: userData.email,
-            password: userData.password,
-            options: {
-              userAttributes,
-              autoSignIn: {
-                enabled: true,
-                authFlowType: 'USER_PASSWORD_AUTH'
-              }
-            }
-          });
-          
-          logger.debug('[Auth] Sign up API response received:', {
-            success: response.isSignUpComplete !== undefined,
-            isSignUpComplete: response.isSignUpComplete,
-            hasNextStep: !!response.nextStep,
-            nextStep: response.nextStep?.signUpStep,
-            userId: response.userId
-          });
-          
-          return {
-            success: true,
-            result: response
-          };
-        } catch (error) {
-          logger.error('[Auth] Sign up API call error:', {
-            message: error.message,
-            code: error.code,
-            name: error.name,
-            stack: error.stack
-          });
-          
-          return {
-            success: false,
-            error: error.message,
-            code: error.code,
-            name: error.name
-          };
-        }
-      });
-
-      if (!signUpResponse.success) {
-        throw new Error(signUpResponse.error || 'Sign up failed');
-      }
-
-      const signUpResult = signUpResponse.result;
-
-      logger.debug('[Auth] Sign up completed:', {
-        isComplete: signUpResult.isSignUpComplete,
-        nextStep: signUpResult.nextStep?.signUpStep,
-        userId: signUpResult.userId
-      });
-
-      // Don't try to get session or create backend user yet - wait for confirmation
-      if (!signUpResult.isSignUpComplete) {
-        return {
-          success: true,
-          isComplete: false,
-          nextStep: signUpResult.nextStep,
-          userId: signUpResult.userId
+        const result = await (enhancedSignUp ? enhancedSignUp(signUpParams) : authSignUp(signUpParams));
+        
+        logger.debug('[Auth] Sign up result:', {
+          success: result.isSignUpComplete,
+          nextStep: result.nextStep?.signUpStep,
+          userId: result.userId
+        });
+        
+        // Return success and the next step
+        clearTimeout(timeoutId);
+        return { 
+          success: true, 
+          nextStep: result.nextStep?.signUpStep, 
+          userId: result.userId
         };
+      } catch (signUpError) {
+        // If aborted due to timeout
+        if (controller.signal.aborted) {
+          throw new Error('Sign up request timed out. Please try again.');
+        }
+        throw signUpError;
       }
-
-      // Return signup result - backend creation will happen after confirmation
-      return {
-        success: true,
-        isComplete: signUpResult.isSignUpComplete,
-        nextStep: signUpResult.nextStep,
-        userId: signUpResult.userId
-      };
     } catch (error) {
-      // Extract more detailed error information
-      const errorMessage = error.message || 'Sign up failed';
-      const errorCode = error.code || 'unknown_error';
-      
-      // Log detailed error information
-      logger.error('[Auth] Sign up failed:', {
-        error: errorMessage,
-        code: errorCode,
-        email: userData.email,
-        name: error.name,
-        stack: error.stack
-      });
-      
-      // Set a more user-friendly error message based on the error code
-      let userFriendlyMessage = errorMessage;
-      
-      if (errorCode === 'UsernameExistsException' || errorMessage.includes('already exists')) {
-        userFriendlyMessage = 'An account with this email already exists. Please try signing in instead.';
-      } else if (errorCode === 'InvalidParameterException' && errorMessage.includes('password')) {
-        userFriendlyMessage = 'Password does not meet requirements. Please ensure it has at least 8 characters including uppercase, lowercase, numbers, and special characters.';
-      } else if (errorCode === 'InvalidParameterException') {
-        userFriendlyMessage = 'One or more fields contain invalid values. Please check your information and try again.';
-      } else if (errorCode === 'LimitExceededException') {
-        userFriendlyMessage = 'Too many attempts. Please try again later.';
-      } else if (errorMessage.includes('network') || errorCode === 'NetworkError') {
-        userFriendlyMessage = 'Network error. Please check your internet connection and try again.';
-      }
-      
-      setError(userFriendlyMessage);
-      return { success: false, error: userFriendlyMessage, code: errorCode };
+      logger.error('[Auth] Sign up error:', error);
+      setError(error.message || 'An error occurred during sign up');
+      return { 
+        success: false, 
+        error: error.message || 'Failed to sign up',
+        code: error.code
+      };
     } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   }, []);
@@ -424,25 +356,111 @@ export function useAuth() {
         codeLength: code?.length
       });
 
-      // First confirm the signup with Cognito
-      logger.debug('[Auth] Calling authConfirmSignUp');
-      const confirmResponse = await retryOperation(async () => {
-        try {
-          const response = await authConfirmSignUp({
+      // Try to use the enhanced version if available
+      try {
+        const { enhancedConfirmSignUp } = await import('@/config/amplifyUnified');
+        
+        if (enhancedConfirmSignUp) {
+          logger.debug('[Auth] Using enhanced confirmSignUp function');
+          
+          const result = await enhancedConfirmSignUp({
             username: email,
             confirmationCode: code
           });
           
-          logger.debug('[Auth] Confirmation API response received:', {
-            isComplete: response.isSignUpComplete,
-            hasNextStep: !!response.nextStep,
-            nextStep: response.nextStep?.signUpStep
-          });
+          logger.debug('[Auth] Enhanced confirmSignUp result:', result);
           
-          return {
-            success: true,
-            result: response
-          };
+          if (!result.success) {
+            throw new Error(result.error || 'Confirmation failed');
+          }
+          
+          // Create user in Django backend after successful confirmation
+          logger.debug('[Auth] Confirmation successful, creating user in backend');
+          
+          try {
+            // Create user in Django backend
+            const userData = {
+              email: email,
+              cognitoId: result.userId,
+              userRole: 'OWNER',
+              is_already_verified: true  // Add this flag to indicate no need for another verification code
+            };
+            
+            logger.debug('[Auth] Sending user data to backend:', userData);
+            
+            const response = await fetch('/api/auth/signup', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(userData)
+            });
+    
+            if (!response.ok) {
+              const errorData = await response.json();
+              logger.error('[Auth] Backend API error:', {
+                status: response.status,
+                statusText: response.statusText,
+                error: errorData
+              });
+              throw new Error(errorData.message || `Backend API error: ${response.status} ${response.statusText}`);
+            }
+    
+            const backendResult = await response.json();
+            logger.debug('[Auth] Backend user creation completed successfully:', backendResult);
+            
+            return {
+              success: true,
+              isComplete: result.isSignUpComplete,
+              nextStep: result.nextStep,
+              userId: result.userId || backendResult.userId
+            };
+          } catch (backendError) {
+            logger.error('[Auth] Backend user creation failed:', {
+              error: backendError.message,
+              stack: backendError.stack
+            });
+            throw backendError;
+          }
+        }
+      } catch (importError) {
+        logger.debug('[Auth] Failed to import enhancedConfirmSignUp, falling back to standard flow:', importError);
+        // Continue with the standard flow if enhanced function isn't available
+      }
+
+      // Fall back to the standard flow (using authConfirmSignUp directly)
+      logger.debug('[Auth] Using standard confirmation flow');
+      
+      // First confirm the signup with Cognito
+      const confirmResponse = await retryOperation(async () => {
+        try {
+          // Use email as username for confirmation
+          const username = email;
+          
+          // Validate code format first
+          if (!code || code.length !== 6 || !/^\d+$/.test(code)) {
+            throw new Error('Verification code must be 6 digits');
+          }
+          
+          logger.debug('[Auth] Confirming signup for:', { email, username, codeLength: code?.length });
+          
+          try {
+            logger.debug('[Auth] Making raw confirmSignUp API call with:', { 
+              username: username,
+              confirmationCodeLength: code?.length 
+            });
+            
+            const response = await authConfirmSignUp({
+              username: username,
+              confirmationCode: code
+            });
+            
+            logger.debug('[Auth] Raw API call succeeded with response:', response);
+            return response;
+          } catch (apiError) {
+            logger.error('[Auth] Raw API call failed with error:', apiError);
+            throw apiError;
+          }
         } catch (error) {
           logger.error('[Auth] Confirmation API call error:', {
             message: error.message,
@@ -458,16 +476,31 @@ export function useAuth() {
         }
       });
 
-      if (!confirmResponse.success) {
+      logger.debug('[Auth] Confirmation operation returned:', confirmResponse);
+
+      if (!confirmResponse || (typeof confirmResponse === 'object' && !confirmResponse.success && 
+          confirmResponse.error)) {
+        logger.error('[Auth] Confirmation response not successful:', confirmResponse);
         throw new Error(confirmResponse.error || 'Confirmation failed');
       }
 
-      const result = confirmResponse.result;
+      // Handle different response formats
+      let result;
+      if (confirmResponse.success && confirmResponse.result) {
+        result = confirmResponse.result;
+      } else if (confirmResponse.isSignUpComplete !== undefined) {
+        // Direct API response
+        result = confirmResponse;
+      } else {
+        logger.error('[Auth] Unexpected confirmation response format:', confirmResponse);
+        throw new Error('Invalid response format from confirmation API');
+      }
 
       logger.debug('[Auth] Confirmation completed successfully:', {
         isComplete: result.isSignUpComplete,
         nextStep: result.nextStep,
-        email
+        email,
+        userId: result.userId || confirmResponse.userId
       });
 
       // Create user in Django backend directly after confirmation
@@ -518,7 +551,7 @@ export function useAuth() {
         success: true,
         isComplete: result.isSignUpComplete,
         nextStep: result.nextStep,
-        userId: backendResult.userId
+        userId: result.userId || confirmResponse.userId
       };
     } catch (error) {
       // Extract more detailed error information
@@ -619,77 +652,80 @@ export function useAuth() {
   }, [router, refreshSession]);
 
   const handleResendVerificationCode = useCallback(async (email) => {
+    if (!email) {
+      throw new Error('Email is required to resend the verification code');
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      logger.debug('[Auth] Resending verification code to:', email);
+      logger.debug('[Auth] Resending sign up code for:', email);
       
-      try {
-        // Call the Amplify resendSignUpCode function
-        await authResendSignUpCode({ username: email });
-        
-        logger.debug('[Auth] Verification code resent successfully');
-        return { success: true };
-      } catch (apiError) {
-        logger.error('[Auth] API error resending verification code:', {
-          message: apiError.message,
-          code: apiError.code,
-          name: apiError.name
-        });
-        
-        // Convert API errors to a standard format but don't throw
-        if (apiError.name === 'LimitExceededException' || 
-            apiError.message?.includes('Attempt limit exceeded')) {
-          logger.info('[Auth] Rate limit exceeded for verification code');
-          return { 
-            success: false, 
-            error: 'Too many code resend attempts. Please try again later.',
-            code: 'LimitExceededException',
-            name: apiError.name
+      const result = await retryOperation(async () => {
+        try {
+          const response = await authResendSignUpCode({
+            username: email,
+          });
+          
+          logger.debug('[Auth] Resend code API response:', response);
+          
+          return {
+            success: true,
+            result: response
+          };
+        } catch (error) {
+          logger.error('[Auth] Resend code API error:', {
+            message: error.message, 
+            code: error.code,
+            name: error.name
+          });
+          
+          return {
+            success: false,
+            error: error.message,
+            code: error.code
           };
         }
-        
-        throw apiError;
+      });
+
+      if (!result.success) {
+        logger.error('[Auth] Resend code failed:', result);
+        throw new Error(result.error || 'Failed to resend verification code');
       }
-    } catch (error) {
-      // Extract more detailed error information
-      const errorMessage = error.message || 'Failed to resend verification code';
-      const errorCode = error.code || 'unknown_error';
+
+      logger.debug('[Auth] Resend code completed successfully for:', email);
       
-      logger.error('[Auth] Failed to resend verification code:', {
-        error: errorMessage,
-        code: errorCode,
-        email,
-        name: error.name,
-        stack: error.stack
+      return {
+        success: true,
+        email
+      };
+    } catch (error) {
+      logger.error('[Auth] Failed to resend code:', {
+        error: error.message,
+        code: error.code,
+        email
       });
       
-      // Set a more user-friendly error message based on the error code
-      let userFriendlyMessage = errorMessage;
+      // Format user-friendly error message
+      let userMessage = error.message;
       
-      if (errorCode === 'LimitExceededException') {
-        userFriendlyMessage = 'Too many code resend attempts. Please try again later.';
-      } else if (errorCode === 'UserNotFoundException') {
-        userFriendlyMessage = 'We couldn\'t find an account with this email address.';
-      } else if (errorMessage.includes('network') || errorCode === 'NetworkError') {
-        userFriendlyMessage = 'Network error. Please check your internet connection and try again.';
-      } else if (errorCode === 'CodeDeliveryFailureException') {
-        userFriendlyMessage = 'We couldn\'t deliver the verification code. Please check your email address.';
-      } else if (errorMessage.includes('not confirmed')) {
-        // This is actually expected behavior since we're verifying an unconfirmed user
-        logger.debug('[Auth] User not confirmed, which is expected during verification');
-        return { success: true };
+      if (error.code === 'UserNotFoundException') {
+        userMessage = 'No account found with this email address.';
+      } else if (error.code === 'LimitExceededException') {
+        userMessage = 'Too many attempts. Please try again later.';
+      } else if (error.code === 'InvalidParameterException') {
+        if (error.message.includes('already confirmed')) {
+          userMessage = 'Your account is already verified. Please sign in.';
+        } else {
+          userMessage = 'Invalid email address. Please check and try again.';
+        }
+      } else if (error.message.includes('network')) {
+        userMessage = 'Network error. Please check your internet connection and try again.';
       }
       
-      setError(userFriendlyMessage);
-      // Return error object instead of throwing
-      return { 
-        success: false, 
-        error: userFriendlyMessage, 
-        code: errorCode,
-        name: error.name
-      };
+      setError(userMessage);
+      throw new Error(userMessage);
     } finally {
       setIsLoading(false);
     }

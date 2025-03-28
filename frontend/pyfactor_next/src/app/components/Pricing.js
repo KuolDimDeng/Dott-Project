@@ -23,6 +23,14 @@ import { useTranslation } from 'react-i18next';
 import i18nInstance from '../../i18n';
 import { convertCurrency, formatCurrency } from '@/utils/currencyUtils';
 
+// Utility function to safely create translation keys from feature values
+function safeTranslationKey(value) {
+  if (typeof value !== 'string') {
+    return String(value);
+  }
+  return value.replace(/\s+/g, '_').toLowerCase();
+}
+
 // List of developed countries for pricing differentiation
 const developedCountries = [
   'US', 'CA', 'GB', 'DE', 'FR', 'IT', 'ES', 'JP', 'AU', 'NZ', 'KR', 'SG', 'HK', 'NO', 'SE',
@@ -520,7 +528,7 @@ function CompareFeatures() {
               return (
                 <FeatureCategory container key={index}>
                   <Grid item xs={12} md={3}>
-                    <Typography variant="subtitle1">{t(`category_${feature.category.replace(/\s+/g, '_').toLowerCase()}`, feature.category)}</Typography>
+                    <Typography variant="subtitle1">{t(`category_${safeTranslationKey(feature.category)}`, feature.category)}</Typography>
                   </Grid>
                   <Grid item xs={12} sm={4} md={3}></Grid>
                   <Grid item xs={12} sm={4} md={3}></Grid>
@@ -543,26 +551,26 @@ function CompareFeatures() {
                 <Grid item xs={12} md={3}>
                   <Typography variant="body1">
                     {feature.highlight && <span style={{ color: '#FF9800', marginRight: '8px' }}>★</span>}
-                    {t(`feature_${feature.name.replace(/\s+/g, '_').toLowerCase()}`, feature.name)}
+                    {t(`feature_${safeTranslationKey(feature.name)}`, feature.name)}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={4} md={3} align="center">
                   {feature.isText ? (
-                    <Typography variant="body2" fontWeight="medium">{t(`feature_value_${feature.starter.replace(/\s+/g, '_').toLowerCase()}`, feature.starter)}</Typography>
+                    <Typography variant="body2" fontWeight="medium">{t(`feature_value_${safeTranslationKey(feature.starter)}`, feature.starter)}</Typography>
                   ) : (
                     feature.starter ? <FeatureCheck /> : <FeatureClose />
                   )}
                 </Grid>
                 <Grid item xs={12} sm={4} md={3} align="center">
                   {feature.isText ? (
-                    <Typography variant="body2" fontWeight="medium">{t(`feature_value_${feature.pro.replace(/\s+/g, '_').toLowerCase()}`, feature.pro)}</Typography>
+                    <Typography variant="body2" fontWeight="medium">{t(`feature_value_${safeTranslationKey(feature.pro)}`, feature.pro)}</Typography>
                   ) : (
                     feature.pro ? <FeatureCheck /> : <FeatureClose />
                   )}
                 </Grid>
                 <Grid item xs={12} sm={4} md={3} align="center">
                   {feature.isText ? (
-                    <Typography variant="body2" fontWeight="medium">{t(`feature_value_${feature.enterprise.replace(/\s+/g, '_').toLowerCase()}`, feature.enterprise)}</Typography>
+                    <Typography variant="body2" fontWeight="medium">{t(`feature_value_${safeTranslationKey(feature.enterprise)}`, feature.enterprise)}</Typography>
                   ) : (
                     feature.enterprise ? <FeatureCheck /> : <FeatureClose />
                   )}
@@ -893,7 +901,7 @@ export default function Pricing() {
                                  tier.title === 'Enterprise' ? 'white' : 'primary.main'
                         }}
                       />
-                      <Typography variant="body1">{t(`feature_${line.replace(/\s+/g, '_').toLowerCase()}`, line)}</Typography>
+                      <Typography variant="body1">{t(`feature_${safeTranslationKey(line)}`, line)}</Typography>
                     </Box>
                   ))}
                   
@@ -927,7 +935,7 @@ export default function Pricing() {
                               fontSize: '0.9rem'
                             }}
                           >
-                            • {t(`addon_${addon.replace(/\s+/g, '_').toLowerCase()}`, addon)}
+                            • {t(`addon_${safeTranslationKey(addon)}`, addon)}
                           </Typography>
                         </Box>
                       ))}
@@ -962,7 +970,7 @@ export default function Pricing() {
                       }),
                     }}
                   >
-                    {t(`button_${tier.buttonText.replace(/\s+/g, '_').toLowerCase()}`, tier.buttonText)}
+                    {t(`button_${safeTranslationKey(tier.buttonText)}`, tier.buttonText)}
                   </Button>
                 </CardActions>
               </Card>

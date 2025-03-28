@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, CircularProgress } from '@mui/material';
 import ProductForm from '../../components/ProductForm';
 import { useParams } from 'next/navigation';
 
@@ -32,28 +31,30 @@ export default function EditProductPage() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900"></div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Typography color="error">Error: {error}</Typography>
-      </Box>
+      <div className="p-6">
+        <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+          Error: {error}
+        </div>
+      </div>
     );
   }
 
   return (
-    <Box>
-      <Box sx={{ p: 3, borderBottom: '1px solid #e0e0e0' }}>
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+    <div>
+      <div className="p-6 border-b border-gray-200">
+        <h1 className="text-2xl font-bold text-gray-800">
           Edit Product: {product?.name}
-        </Typography>
-      </Box>
+        </h1>
+      </div>
       <ProductForm mode="edit" product={product} />
-    </Box>
+    </div>
   );
-} 
+}

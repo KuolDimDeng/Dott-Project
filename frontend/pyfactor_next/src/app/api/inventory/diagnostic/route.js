@@ -1,153 +1,144 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
-import axios from 'axios';
-import { getAccessToken } from '@/utils/tokenUtils';
+import { jwtDecode } from 'jwt-decode';
+import { getTokens } from '@/utils/apiUtils';
 
 /**
- * API route to diagnose and fix inventory table issues
- * This checks the schema, runs migrations if needed, and creates test data
+ * API route to diagnose authentication issues
+ * This checks token validity and provides debugging information
  */
 export async function POST(request) {
   try {
-    // Get parameters from request
-    const body = await request.json();
-    const { tenantId } = body;
+    const data = await request.json();
+    const { tenantId } = data;
     
     if (!tenantId) {
-      return NextResponse.json({
-        success: false,
-        message: 'Tenant ID is required'
+      return NextResponse.json({ 
+        error: 'Missing required parameter: tenantId',
+        diagnosticInfo: null 
       }, { status: 400 });
     }
     
-    logger.info(`[API/inventory/diagnostic] Running diagnostics for tenant ${tenantId}`);
+    logger.info(`[API][inventory/diagnostic] Running diagnostics for tenant ${tenantId}`);
     
-    // Generate schema name from tenant ID
-    const schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
+    // Get auth headers for debugging (safe version)
+    const headers = {};
+    for (const [key, value] of request.headers.entries()) {
+      // Safely include auth headers for diagnostic purposes
+      if (key.toLowerCase().includes('authorization') || 
+          key.toLowerCase().includes('token')) {
+        headers[key] = '[REDACTED]';
+      } else {
+        headers[key] = value;
+      }
+    }
     
-    // Create a diagnostic response object to collect all information
+    // Extract tokens using the apiUtils function
+    const { accessToken, idToken } = await getTokens(request);
+    
+    // Get raw headers for additional debugging
+    const rawHeaders = {};
+    for (const [key, value] of request.headers.entries()) {
+      // Include all headers but redact sensitive values
+      if (key.toLowerCase().includes('authorization') || 
+          key.toLowerCase().includes('token')) {
+        rawHeaders[key] = 'present-but-redacted';
+      } else {
+        rawHeaders[key] = value;
+      }
+    }
+    
+    // Check for cookies
+    const cookies = {};
+    const cookieHeader = request.headers.get('cookie');
+    if (cookieHeader) {
+      cookieHeader.split(';').forEach(cookie => {
+        const [name, value] = cookie.trim().split('=');
+        if (name.includes('token') || name.includes('auth')) {
+          cookies[name] = 'present-but-redacted';
+        } else {
+          cookies[name] = value;
+        }
+      });
+    }
+    
+    // Check authentication status
+    let authInfo = {};
+    try {
+      if (!accessToken) {
+        authInfo.status = 'missing_access_token';
+        authInfo.message = 'No access token provided';
+      } else if (!idToken) {
+        authInfo.status = 'missing_id_token';
+        authInfo.message = 'No ID token provided';
+      } else {
+        // Decode the tokens to check validity
+        try {
+          const decodedAccess = jwtDecode(accessToken);
+          const decodedId = jwtDecode(idToken);
+          
+          const now = Math.floor(Date.now() / 1000);
+          const accessTokenExpiry = decodedAccess.exp || 0;
+          const idTokenExpiry = decodedId.exp || 0;
+          
+          // Check if tokens are expired
+          const isAccessTokenExpired = now >= accessTokenExpiry;
+          const isIdTokenExpired = now >= idTokenExpiry;
+          
+          if (isAccessTokenExpired || isIdTokenExpired) {
+            authInfo.status = 'token_expired';
+            authInfo.message = 'One or more tokens are expired';
+          } else {
+            authInfo.status = 'valid';
+            authInfo.message = 'Tokens are valid';
+          }
+          
+          // Add token details
+          authInfo.userId = decodedAccess.sub || decodedId.sub || null;
+          authInfo.accessTokenExpiry = accessTokenExpiry;
+          authInfo.idTokenExpiry = idTokenExpiry;
+          authInfo.currentTime = now;
+          authInfo.timeRemaining = Math.min(
+            accessTokenExpiry - now,
+            idTokenExpiry - now
+          );
+        } catch (decodeError) {
+          authInfo.status = 'invalid_token_format';
+          authInfo.message = `Error decoding token: ${decodeError.message}`;
+        }
+      }
+    } catch (authError) {
+      authInfo.status = 'auth_check_error';
+      authInfo.message = `Error checking authentication: ${authError.message}`;
+    }
+      
+    // Create diagnostic info structure
     const diagnosticInfo = {
       tenant: {
-        tenantId,
-        schemaName,
-        timestamp: new Date().toISOString()
+        id: tenantId,
+        schemaName: `tenant_${tenantId.replace(/-/g, '_')}`
       },
-      schema: { exists: null, tables: [], error: null },
-      migrations: { applied: false, error: null },
-      testData: { created: false, error: null }
+      auth: authInfo,
+      requestInfo: {
+        method: request.method,
+        headers: headers,
+        rawHeaders: rawHeaders,
+        cookies: cookies,
+        hasAccessToken: !!accessToken,
+        hasIdToken: !!idToken,
+      },
+      timestamp: new Date().toISOString()
     };
     
-    try {
-      // Get access token for authentication
-      const accessToken = await getAccessToken();
-      
-      // Step 1: Check if the schema exists and has the inventory_product table
-      logger.info(`[API/inventory/diagnostic] Checking schema ${schemaName}`);
-      
-      try {
-        const schemaResponse = await axios.post('/api/tenant/validate/', {
-          tenantId,
-          schemaName
-        }, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'X-Tenant-ID': tenantId,
-            'X-Schema-Name': schemaName,
-            'X-Business-ID': tenantId,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        // Save schema validation results
-        if (schemaResponse.data) {
-          diagnosticInfo.schema.exists = schemaResponse.data.schemaExists || false;
-          diagnosticInfo.schema.tables = schemaResponse.data.tables || [];
-          
-          // Check if the inventory_product table exists
-          const hasInventoryProductTable = diagnosticInfo.schema.tables.includes('inventory_product');
-          diagnosticInfo.schema.hasInventoryProductTable = hasInventoryProductTable;
-        }
-      } catch (schemaError) {
-        logger.error(`[API/inventory/diagnostic] Schema check error:`, schemaError);
-        diagnosticInfo.schema.error = schemaError.response?.data || schemaError.message;
-      }
-      
-      // Step 2: If schema exists but doesn't have the inventory_product table, run migrations
-      if (diagnosticInfo.schema.exists && !diagnosticInfo.schema.hasInventoryProductTable) {
-        logger.info(`[API/inventory/diagnostic] Schema exists but inventory_product table missing, running migrations`);
-        
-        try {
-          // Call migration endpoint - we'll create a simple endpoint that runs 'migrate inventory'
-          const migrationResponse = await axios.post('/api/schema/migrate', {
-            tenantId,
-            schemaName,
-            app: 'inventory'
-          }, {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'X-Tenant-ID': tenantId,
-              'X-Schema-Name': schemaName,
-              'X-Business-ID': tenantId,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          diagnosticInfo.migrations.applied = true;
-          diagnosticInfo.migrations.details = migrationResponse.data;
-        } catch (migrationError) {
-          logger.error(`[API/inventory/diagnostic] Migration error:`, migrationError);
-          diagnosticInfo.migrations.error = migrationError.response?.data || migrationError.message;
-        }
-      }
-      
-      // Step 3: Create test data if migrations were successful or the table already exists
-      if (diagnosticInfo.schema.hasInventoryProductTable || diagnosticInfo.migrations.applied) {
-        logger.info(`[API/inventory/diagnostic] Creating test data`);
-        
-        try {
-          // Use the seed endpoint to create test data
-          const seedResponse = await axios.post('/api/inventory/seed', {
-            tenantId
-          }, {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'X-Tenant-ID': tenantId,
-              'X-Schema-Name': schemaName,
-              'X-Business-ID': tenantId,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          diagnosticInfo.testData.created = true;
-          diagnosticInfo.testData.product = seedResponse.data.product;
-        } catch (seedError) {
-          logger.error(`[API/inventory/diagnostic] Seed error:`, seedError);
-          diagnosticInfo.testData.error = seedError.response?.data || seedError.message;
-        }
-      }
-      
-      // Return the full diagnostic info
-      return NextResponse.json({
-        success: true,
-        message: 'Diagnostics completed',
-        diagnosticInfo,
-        recommendations: generateRecommendations(diagnosticInfo)
-      });
-    } catch (error) {
-      logger.error(`[API/inventory/diagnostic] API error:`, error);
-      return NextResponse.json({
-        success: false,
-        message: `API error: ${error.message || 'Unknown error'}`,
-        error: error.response?.data || error.message,
-        partialDiagnosticInfo: diagnosticInfo
-      }, { status: 500 });
-    }
-  } catch (error) {
-    logger.error(`[API/inventory/diagnostic] Unexpected error:`, error);
     return NextResponse.json({
-      success: false,
-      message: 'Unexpected error in diagnostic API',
-      error: error.message
+      diagnosticInfo,
+      message: 'Authentication diagnostic information retrieved successfully'
+    });
+  } catch (error) {
+    logger.error('[API][inventory/diagnostic] Error:', error);
+    return NextResponse.json({ 
+      error: 'Error running diagnostics',
+      message: error.message
     }, { status: 500 });
   }
 }

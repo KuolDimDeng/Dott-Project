@@ -74,6 +74,12 @@ const nextConfig = {
   },
   async rewrites() {
     return [
+      // Skip redirecting inventory/products to the backend so our Next.js API can handle it
+      {
+        source: '/api/inventory/products/:path*',
+        destination: '/api/inventory/products/:path*',
+      },
+      // All other API routes redirect to backend
       {
         source: '/api/:path*',
         destination: 'http://127.0.0.1:8000/api/:path*'

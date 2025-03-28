@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/utils/logger';
@@ -17,6 +17,7 @@ import { getOnboardingStatus } from '@/utils/onboardingUtils';
 import { ONBOARDING_STATES } from '@/utils/userAttributes';
 import { appendLanguageParam, getLanguageQueryString } from '@/utils/languageUtils';
 import { useTenantInitialization } from '@/hooks/useTenantInitialization';
+import { TextField, Button, CircularProgress, Alert, Checkbox } from '@/components/ui/TailwindComponents';
 
 export default function SignInForm() {
   const [email, setEmail] = useState('');
@@ -27,121 +28,148 @@ export default function SignInForm() {
   const router = useRouter();
   const { login, initializeTenantId } = useTenantInitialization();
 
+  // Setup login timeout
+  useEffect(() => {
+    let timeoutId;
+    if (isLoading) {
+      timeoutId = setTimeout(() => {
+        logger.error('[SignInForm] Sign in timed out after 45 seconds');
+        setError('Sign in timed out. Please try again.');
+        setIsLoading(false);
+      }, 45000); // 45 second timeout (increased from 15)
+    }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isLoading]);
+
+  const setCookiesViaAPI = async (tokens, onboardingStep, onboardedStatus, rememberMe) => {
+    logger.debug('[SignInForm] Setting cookies via API');
+    try {
+      // Set cookies with a retry mechanism
+      const maxRetries = 3;
+      let retryCount = 0;
+      let success = false;
+      
+      while (!success && retryCount < maxRetries) {
+        try {
+          const response = await fetch('/api/auth/set-cookies', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              idToken: tokens?.idToken?.toString(),
+              accessToken: tokens?.accessToken?.toString(),
+              onboardingStep,
+              onboardedStatus,
+              rememberMe,
+            }),
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Failed to set cookies: ${response.status}`);
+          }
+          
+          success = true;
+          logger.debug('[SignInForm] Cookies set successfully via API');
+          return true;
+        } catch (error) {
+          retryCount++;
+          logger.warn(`[SignInForm] Failed to set cookies (attempt ${retryCount}/${maxRetries}):`, error);
+          
+          if (retryCount >= maxRetries) {
+            throw error;
+          }
+          
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
+        }
+      }
+    } catch (error) {
+      logger.error('[SignInForm] Failed to set cookies via API:', error);
+      throw error;
+    }
+  };
+
   const handleRedirect = async () => {
     try {
-      // Wait for session to be established
-      const { tokens } = await fetchAuthSession();
-      if (!tokens?.idToken) {
-        throw new Error('No valid session');
-      }
-
-      // Get current user
-      const currentUser = await getCurrentUser();
-      logger.debug('[SignInForm] Current user:', {
-        username: currentUser.username
-      });
-
-      // Fetch user attributes directly
-      const attributes = await fetchUserAttributes();
-      const onboardingStatus = attributes['custom:onboarding'];
+      logger.debug('[SignInForm] Getting tokens for redirect');
       
-      logger.debug('[SignInForm] User attributes:', {
-        attributes,
-        onboardingStatus
+      // Get current tokens using the retry-enabled function
+      const { fetchAuthSessionWithRetry } = await import('@/config/amplifyUnified');
+      const { tokens } = await fetchAuthSessionWithRetry();
+      
+      logger.debug('[SignInForm] Session tokens:', {
+        hasIdToken: !!tokens?.idToken,
+        hasAccessToken: !!tokens?.accessToken,
+        idTokenLength: tokens?.idToken?.toString()?.length,
+        accessTokenLength: tokens?.accessToken?.toString()?.length
       });
       
-      // Initialize tenant ID from user attributes
-      try {
-        const tenantId = await initializeTenantId(currentUser);
-        logger.debug(`[SignInForm] Initialized tenant ID: ${tenantId}`);
-      } catch (tenantError) {
-        // Log but don't fail the login process
-        logger.error('[SignInForm] Error initializing tenant ID:', tenantError);
-      }
-
-      // Get full onboarding status
-      const { currentStep, setupDone } = await getOnboardingStatus();
-      logger.debug('[SignInForm] Full onboarding status:', { currentStep, setupDone });
+      // Get onboarding status
+      const status = await getOnboardingStatus();
+      logger.debug('[SignInForm] Full onboarding status:', status);
       
-      // Set cookies using our API route
       try {
-        logger.debug('[SignInForm] Setting cookies via API');
-        const response = await fetch('/api/auth/set-cookies', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            idToken: tokens.idToken.toString(),
-            accessToken: tokens.accessToken.toString(),
-            refreshToken: tokens.refreshToken ? tokens.refreshToken.toString() : undefined,
-            onboardingStep: currentStep,
-            onboardedStatus: onboardingStatus
-          })
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`Failed to set cookies via API: ${errorData.error || response.statusText}`);
-        }
+        // Set cookies via API with retries
+        await setCookiesViaAPI(
+          tokens, 
+          status.currentStep || ONBOARDING_STATES.NOT_STARTED,
+          status.setupDone ? ONBOARDING_STATES.COMPLETE : ONBOARDING_STATES.NOT_STARTED,
+          rememberMe
+        );
         
         logger.debug('[SignInForm] Cookies set successfully via API');
       } catch (cookieError) {
+        // Log but continue - we'll use client-side redirect with the tokens we have
         logger.error('[SignInForm] Failed to set cookies via API:', cookieError);
-        throw cookieError;
-      }
-
-      // Get the language query string using our utility
-      const langQueryString = getLanguageQueryString();
-      
-      // Determine redirect URL
-      let redirectUrl;
-      
-      if (setupDone && currentStep === ONBOARDING_STATES.COMPLETE) {
-        redirectUrl = '/dashboard';
-      } else {
-        // Handle different onboarding statuses
-        switch (onboardingStatus) {
-          case 'NOT_STARTED':
-          case 'IN_PROGRESS':
-          case 'BUSINESS_INFO':
-            logger.debug(`[SignInForm] Redirecting to business info for ${onboardingStatus} status`);
-            redirectUrl = `/onboarding/business-info${langQueryString}`;
-            break;
-          case 'SUBSCRIPTION':
-            logger.debug('[SignInForm] Redirecting to subscription page');
-            redirectUrl = `/onboarding/subscription${langQueryString}`;
-            break;
-          case 'PAYMENT':
-            logger.debug('[SignInForm] Redirecting to payment page');
-            redirectUrl = `/onboarding/payment${langQueryString}`;
-            break;
-          case 'SETUP':
-            logger.debug('[SignInForm] Redirecting to setup page');
-            redirectUrl = `/onboarding/setup${langQueryString}`;
-            break;
-          default:
-            logger.warn('[SignInForm] Unknown onboarding status:', onboardingStatus);
-            redirectUrl = `/onboarding/business-info${langQueryString}`;
+        
+        // Set cookies manually as a fallback
+        try {
+          // Set required cookies with client-side code
+          const expiration = new Date();
+          expiration.setDate(expiration.getDate() + 7); // 7 days
+          
+          // Set authToken cookie explicitly - crucial for middleware
+          document.cookie = `authToken=true; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+          document.cookie = `onboardedStatus=${status.currentStep || 'NOT_STARTED'}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+          document.cookie = `onboardingStep=business-info; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+          
+          logger.debug('[SignInForm] Set fallback cookies via client-side');
+        } catch (clientCookieError) {
+          logger.error('[SignInForm] Failed to set fallback cookies:', clientCookieError);
         }
       }
       
-      // Use window.location for a full page reload instead of client-side navigation
-      // This ensures the server sees the cookies we just set
-      logger.debug(`[SignInForm] Redirecting to: ${redirectUrl}`);
-      window.location.href = redirectUrl;
+      // Determine where to redirect
+      let redirectPath = '/onboarding/business-info'; // Default for NOT_STARTED
+      
+      if (status.setupDone) {
+        redirectPath = '/dashboard';
+      }
+      
+      // Add query parameter to prevent middleware redirect loops
+      redirectPath += '?from=signin';
+      
+      // Add language parameter if needed
+      redirectPath = appendLanguageParam(redirectPath);
+      logger.debug('[SignInForm] Redirecting to:', redirectPath);
+      
+      // Use window.location for a full page reload to ensure middleware re-evaluation
+      window.location.href = redirectPath;
     } catch (error) {
       logger.error('[SignInForm] Failed to handle redirect:', error);
-      setError('Failed to determine redirect path. Please try again.');
-      // Sign out on error to ensure clean state
+      setError('An error occurred during sign in. Please try again.');
+      
+      // Try to clean up
       try {
         if (isAmplifyConfigured()) {
           await signOut();
-        } else {
-          logger.debug('[SignInForm] Skipping sign out, Amplify not configured');
         }
       } catch (signOutError) {
-        logger.error('[SignInForm] Error signing out:', signOutError);
+        logger.error('[SignInForm] Error during cleanup sign out:', signOutError);
       }
     }
   };
@@ -179,7 +207,6 @@ export default function SignInForm() {
       };
 
       setError(errorMessages[error.name] || error.message || 'An unexpected error occurred');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -191,36 +218,35 @@ export default function SignInForm() {
     try {
       logger.debug('[SignInForm] Initiating Google sign in');
       
-      setError("Google Sign-in is coming soon! Please use email login for now.");
-      setIsLoading(false);
-      return;
-
-      /* 
-      // GOOGLE SIGN-IN IMPLEMENTATION 
-      // Temporarily disabled until Cognito is properly configured for OAuth
+      // Call the utility function to handle social sign-in
+      await signInWithSocialProvider('Google');
       
-      // Proper implementation below:
-      const { signInWithRedirect } = await import('@aws-amplify/auth');
-      
-      // Initialize Amplify with proper configuration
-      const { Amplify } = await import('aws-amplify');
-      const { amplifyConfig } = await import('@/config/amplifyUnified');
-      
-      // Make sure config has been applied
-      Amplify.configure(amplifyConfig);
-      
-      logger.debug('[SignInForm] Redirecting to Google sign-in');
-      
-      // Redirect to Google sign-in
-      await signInWithRedirect({ provider: 'Google' });
-      
-      // Browser will redirect, no code after this will execute
-      */
+      // The browser will redirect, no code after this will execute
     } catch (error) {
       logger.error('[SignInForm] Google sign in failed:', error);
       
       // User-friendly error message
       setError('Google sign-in is not available at this moment. Please use email login.');
+      setIsLoading(false);
+    }
+  };
+  
+  const handleAppleSignIn = async () => {
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      logger.debug('[SignInForm] Initiating Apple sign in');
+      
+      // Call the utility function to handle social sign-in
+      await signInWithSocialProvider('Apple');
+      
+      // The browser will redirect, no code after this will execute
+    } catch (error) {
+      logger.error('[SignInForm] Apple sign in failed:', error);
+      
+      // User-friendly error message
+      setError('Apple sign-in is not available at this moment. Please use email login.');
       setIsLoading(false);
     }
   };
@@ -244,107 +270,98 @@ export default function SignInForm() {
           <button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed relative"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed relative mb-3"
           >
             <div className="flex items-center justify-center gap-3">
               <img src="/google.svg" alt="Google" className="w-5 h-5" />
               <span>Continue with Google</span>
             </div>
-            <div className="absolute top-0 right-0 bg-yellow-500 text-xs text-white px-1 rounded-bl-md rounded-tr-md">
-              Coming Soon
+          </button>
+          
+          <button
+            onClick={handleAppleSignIn}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed relative"
+          >
+            <div className="flex items-center justify-center gap-3">
+              <img src="/apple.svg" alt="Apple" className="w-5 h-5" />
+              <span>Continue with Apple</span>
             </div>
           </button>
-        </div>
 
-        <div className="mt-6 relative">
-          <div className="absolute inset-0 flex items-center" aria-hidden="true">
-            <div className="w-full border-t border-gray-300" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white text-gray-500 text-center">Or continue with email</span>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email address
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-              placeholder="Enter your email"
-              disabled={isLoading}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-              placeholder="Enter your password"
-              disabled={isLoading}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                Remember me
-              </label>
+          <div className="relative mt-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
             </div>
-
-            <div className="text-sm">
-              <Link href="/auth/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Forgot your password?
-              </Link>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">or</span>
             </div>
           </div>
 
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="flex">
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">{error}</h3>
-                </div>
-              </div>
-            </div>
+            <Alert severity="error">
+              {error}
+            </Alert>
           )}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-center"
-          >
-            <span className="mx-auto">{isLoading ? 'Signing in...' : 'Sign in'}</span>
-          </button>
-        </form>
-        
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-600">
-            Already signed up but need to verify your email?{' '}
-            <Link href="/auth/verify-email" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Enter verification code
-            </Link>
-          </p>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <TextField
+              label="Email address"
+              name="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+              autoFocus
+              disabled={isLoading}
+            />
+
+            <TextField
+              label="Password"
+              name="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+              disabled={isLoading}
+            />
+
+            <div className="flex items-center justify-between">
+              <Checkbox
+                name="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                label="Remember me"
+                disabled={isLoading}
+              />
+              <div className="text-sm">
+                <Link 
+                  href="/auth/forgot-password" 
+                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isLoading}
+              fullWidth
+              className="flex justify-center h-10"
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <CircularProgress size="small" className="h-5 w-5 mr-2" />
+                  <span>Signing in...</span>
+                </div>
+              ) : (
+                'Sign in'
+              )}
+            </Button>
+          </form>
         </div>
       </div>
     </div>

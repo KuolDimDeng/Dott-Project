@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import SignInForm from '@/components/auth/SignInForm';
 import { getCurrentUser } from '@aws-amplify/auth';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { CircularProgress } from '@/components/ui/TailwindComponents';
 
 export default function SignInPage() {
   const router = useRouter();
@@ -19,57 +19,105 @@ export default function SignInPage() {
   useEffect(() => {
     const checkUserStatus = async () => {
       try {
-        // Check if user is already signed in
-        const currentUser = await getCurrentUser();
+        // Check for authentication tokens in cookies
+        const idTokenCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('idToken='));
+          
+        const authTokenCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('authToken='));
         
-        if (currentUser) {
+        // For authenticated users, check their status and redirect appropriately
+        if (idTokenCookie || authTokenCookie) {
           logger.debug('[SignInPage] User already signed in, checking status');
           
-          try {
-            const onboardingStatus = currentUser.attributes?.['custom:onboarding'];
+          // Get cookie values for onboarding status
+          const cookieStatus = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('onboardedStatus='))
+            ?.split('=')[1];
             
-            logger.debug('[SignInPage] User status:', {
-              onboardingStatus,
-              attributes: currentUser.attributes
+          const cookieStep = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('onboardingStep='))
+            ?.split('=')[1];
+          
+          logger.debug('[SignInPage] Cookie status:', {
+            cookieStatus,
+            cookieStep
+          });
+          
+          // Determine best status to use
+          const finalStatus = cookieStatus || 'NOT_STARTED';
+          
+          // 4. Set default cookies if they don't exist
+          if (!cookieStatus) {
+            const expiration = new Date();
+            expiration.setDate(expiration.getDate() + 7); // 7 days
+            
+            document.cookie = `onboardedStatus=${finalStatus}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+            
+            const stepMap = {
+              'NOT_STARTED': 'business-info',
+              'BUSINESS_INFO': 'subscription',
+              'SUBSCRIPTION': 'payment',
+              'PAYMENT': 'setup',
+              'SETUP': 'dashboard',
+              'COMPLETE': 'dashboard'
+            };
+            
+            document.cookie = `onboardingStep=${stepMap[finalStatus] || 'business-info'}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+            
+            logger.debug('[SignInPage] Set missing cookies:', {
+              onboardedStatus: finalStatus,
+              onboardingStep: stepMap[finalStatus] || 'business-info'
             });
-            
-            // Handle different onboarding statuses
-            switch (onboardingStatus) {
-              case 'NOT_STARTED':
-              case 'IN_PROGRESS':
-              case 'BUSINESS_INFO':
-                logger.debug(`[SignInPage] Redirecting to business info for ${onboardingStatus} status`);
-                router.push('/onboarding/business-info');
-                return;
-              case 'SUBSCRIPTION':
-                logger.debug('[SignInPage] Redirecting to subscription page');
-                router.push('/onboarding/subscription');
-                return;
-              case 'PAYMENT':
-                logger.debug('[SignInPage] Redirecting to payment page');
-                router.push('/onboarding/payment');
-                return;
-              case 'SETUP':
-                logger.debug('[SignInPage] Redirecting to setup page');
-                router.push('/onboarding/setup');
-                return;
-              case 'COMPLETE':
-                logger.debug('[SignInPage] User onboarded, redirecting to dashboard');
-                router.push('/dashboard');
-                return;
-              default:
-                logger.debug('[SignInPage] Unknown onboarding status, showing sign in form');
-                break;
-            }
-          } catch (attributeError) {
-            logger.error('[SignInPage] Error getting user attributes:', attributeError);
-            // Continue to show sign in form
           }
+          
+          // Force middleware to re-evaluate by setting authToken cookie
+          const expiration = new Date();
+          expiration.setDate(expiration.getDate() + 7); // 7 days
+          document.cookie = `authToken=true; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+          
+          // Determine where to redirect
+          let targetPath = '/onboarding/business-info'; // Default for NOT_STARTED
+          
+          // Add query parameter to avoid refresh loops
+          if (finalStatus === 'COMPLETE') {
+            targetPath = '/dashboard?from=signin';
+          } else if (finalStatus === 'SETUP') {
+            targetPath = '/dashboard?from=signin';
+          } else if (finalStatus === 'PAYMENT') {
+            targetPath = '/onboarding/payment?from=signin';
+          } else if (finalStatus === 'SUBSCRIPTION') {
+            // Check for free plan to bypass payment
+            const selectedPlan = document.cookie
+              .split('; ')
+              .find(row => row.startsWith('selectedPlan='))
+              ?.split('=')[1];
+              
+            if (selectedPlan === 'free') {
+              targetPath = '/dashboard?from=signin';
+            } else {
+              targetPath = '/onboarding/payment?from=signin';
+            }
+          } else if (finalStatus === 'BUSINESS_INFO') {
+            targetPath = '/onboarding/subscription?from=signin';
+          }
+          
+          logger.debug('[SignInPage] Redirecting user based on status:', { targetPath, finalStatus });
+          
+          // Use window.location.href for a full page reload to ensure middleware re-evaluates
+          window.location.href = targetPath;
+          return;
+        } else {
+          // Not signed in, show the sign in form
+          setIsLoading(false);
         }
       } catch (error) {
         logger.debug('[SignInPage] No active session, showing sign in form');
         // Not signed in, show the sign in form
-      } finally {
         setIsLoading(false);
       }
     };
@@ -80,7 +128,7 @@ export default function SignInPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner />
+        <CircularProgress />
       </div>
     );
   }

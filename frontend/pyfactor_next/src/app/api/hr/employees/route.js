@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getTenantId } from '@/lib/tenantUtils';
-import { axiosInstance } from '@/lib/axiosConfig';
+import { serverAxiosInstance } from '@/lib/axiosConfig';
 import { validateServerSession } from '@/utils/serverUtils';
 
 export async function GET(request) {
@@ -28,7 +28,7 @@ export async function GET(request) {
     const query = searchParams.get('q') || '';
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-    const response = await axiosInstance.get(`${API_URL}/api/hr/employees/?q=${query}`, {
+    const response = await serverAxiosInstance.get(`${API_URL}/api/hr/employees/?q=${query}`, {
       headers: {
         'Authorization': `Bearer ${session.tokens.accessToken}`,
         'X-Id-Token': session.tokens.idToken,
@@ -70,7 +70,7 @@ export async function POST(request) {
 
     const body = await request.json();
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-    const response = await axiosInstance.post(`${API_URL}/api/hr/employees/create/`, body, {
+    const response = await serverAxiosInstance.post(`${API_URL}/api/hr/employees/create/`, body, {
       headers: {
         'Authorization': `Bearer ${session.tokens.accessToken}`,
         'X-Id-Token': session.tokens.idToken,

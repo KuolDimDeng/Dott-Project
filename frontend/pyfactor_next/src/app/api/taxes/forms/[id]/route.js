@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getTenantId } from '@/lib/tenantUtils';
-import { axiosInstance } from '@/lib/axiosConfig';
+import { serverAxiosInstance } from '@/lib/axiosConfig';
 
 export async function GET(request, { params }) {
   try {
@@ -20,7 +20,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Form ID is required' }, { status: 400 });
     }
 
-    const response = await axiosInstance.get(`/api/taxes/forms/${formId}/`, {
+    const response = await serverAxiosInstance.get(`/api/taxes/forms/${formId}/`, {
       headers: {
         'X-Tenant-ID': tenantId,
         'X-Schema-Name': `tenant_${tenantId.replace(/-/g, '_')}`,
@@ -56,7 +56,7 @@ export async function PUT(request, { params }) {
 
     const formData = await request.formData();
 
-    const response = await axiosInstance.put(`/api/taxes/forms/${formId}/`, formData, {
+    const response = await serverAxiosInstance.put(`/api/taxes/forms/${formId}/`, formData, {
       headers: {
         'X-Tenant-ID': tenantId,
         'X-Schema-Name': `tenant_${tenantId.replace(/-/g, '_')}`,
@@ -91,7 +91,7 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Form ID is required' }, { status: 400 });
     }
 
-    const response = await axiosInstance.delete(`/api/taxes/forms/${formId}/`, {
+    const response = await serverAxiosInstance.delete(`/api/taxes/forms/${formId}/`, {
       headers: {
         'X-Tenant-ID': tenantId,
         'X-Schema-Name': `tenant_${tenantId.replace(/-/g, '_')}`,

@@ -8,7 +8,7 @@ import { logger } from '@/utils/logger';
 import { useSession } from '@/hooks/useSession';
 import ConfigureAmplify from '@/components/ConfigureAmplify';
 
-const REDIRECT_DELAY = 2000; // Increased delay to ensure session is properly established
+const REDIRECT_DELAY = 3000; // Increased delay to ensure session is properly established
 
 export default function SignInForm() {
   const router = useRouter();
@@ -22,7 +22,7 @@ export default function SignInForm() {
   const [error, setError] = useState('');
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [sessionAttempts, setSessionAttempts] = useState(0);
-  const maxSessionAttempts = 3;
+  const maxSessionAttempts = 5;
 
   useEffect(() => {
     logger.debug('[SignInForm] Component mounted', {
@@ -55,28 +55,52 @@ export default function SignInForm() {
     }
   };
 
-  const verifySession = async (maxAttempts = 3, delay = 500) => {
+  const verifySession = async (maxAttempts = 5, initialDelay = 1000) => {
     logger.debug('[SignInForm] Verifying session establishment:', {
       attempt: sessionAttempts + 1,
       maxAttempts,
-      delay
+      initialDelay
     });
 
     if (sessionAttempts >= maxAttempts) {
+      logger.error('[SignInForm] Failed to establish session after multiple attempts');
       throw new Error('Failed to establish session after multiple attempts');
     }
 
     // Wait for delay before checking
-    await new Promise(resolve => setTimeout(resolve, delay));
+    const currentDelay = initialDelay * Math.pow(1.5, sessionAttempts);
+    logger.debug(`[SignInForm] Waiting ${currentDelay}ms before checking session`);
+    await new Promise(resolve => setTimeout(resolve, currentDelay));
 
-    // Attempt to refresh session
-    const refreshResult = await refreshSession();
-    if (!refreshResult) {
+    // Attempt to refresh session with multiple strategies
+    try {
+      // First try normal refresh
+      const refreshResult = await refreshSession();
+      if (refreshResult) {
+        logger.debug('[SignInForm] Session verified on attempt #' + (sessionAttempts + 1));
+        return true;
+      }
+      
+      // If that fails, try a forced refresh
+      try {
+        logger.debug('[SignInForm] Attempting forced session refresh');
+        const { tokens } = await fetchAuthSession({ forceRefresh: true });
+        if (tokens?.idToken) {
+          logger.debug('[SignInForm] Forced session refresh succeeded');
+          return true;
+        }
+      } catch (forceError) {
+        logger.warn('[SignInForm] Forced refresh failed:', forceError);
+      }
+      
+      // If still not successful, retry
       setSessionAttempts(prev => prev + 1);
-      return verifySession(maxAttempts, delay * 2);
+      return verifySession(maxAttempts, initialDelay);
+    } catch (error) {
+      logger.error('[SignInForm] Session verification error:', error);
+      setSessionAttempts(prev => prev + 1);
+      return verifySession(maxAttempts, initialDelay);
     }
-
-    return true;
   };
 
   const handleSubmit = async (e) => {
@@ -147,16 +171,33 @@ export default function SignInForm() {
 
       logger.debug('[SignInForm] Sign in successful, verifying session establishment');
 
+      // Add a longer initial wait to allow token propagation
+      const tokenPropagationDelay = 2000;
+      logger.debug(`[SignInForm] Waiting ${tokenPropagationDelay}ms for token propagation`);
+      await new Promise(resolve => setTimeout(resolve, tokenPropagationDelay));
+      
       // Verify session is properly established
       try {
-        await verifySession(maxSessionAttempts);
+        await verifySession(maxSessionAttempts, 1500); // Increased initial delay
         logger.debug('[SignInForm] Session verified successfully');
       } catch (sessionError) {
         logger.error('[SignInForm] Session verification failed:', sessionError);
-        throw new Error('Failed to establish session. Please try again.');
+        
+        // Final attempt with a different approach
+        logger.debug('[SignInForm] Attempting final session establishment with direct check');
+        try {
+          const { tokens } = await fetchAuthSession({ forceRefresh: true });
+          if (tokens?.idToken) {
+            logger.debug('[SignInForm] Final direct session check succeeded');
+          } else {
+            logger.warn('[SignInForm] Final direct session check failed, but proceeding with redirect');
+          }
+        } catch (finalError) {
+          logger.error('[SignInForm] Final session check error:', finalError);
+        }
       }
 
-      logger.debug('[SignInForm] Session verified successfully, preparing redirect');
+      logger.debug('[SignInForm] Preparing redirect');
 
       setIsRedirecting(true);
 

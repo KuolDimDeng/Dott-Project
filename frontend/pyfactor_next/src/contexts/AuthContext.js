@@ -289,11 +289,25 @@ export function AuthProvider({ children }) {
             logger.debug('[Auth] Staying on verify-email page despite token refresh failure');
             break;
           }
+          
+          // If we're already on the sign-in page, don't redirect again
+          if (pathname === '/auth/signin' || pathname.startsWith('/auth/signin')) {
+            logger.debug('[Auth] Already on sign-in page, not redirecting');
+            break;
+          }
+          
+          // Only redirect if we're on a protected route
           if (!isPublicRoute(pathname) && pathname !== '/') {
-            router.push('/auth/signin');
+            logger.debug('[Auth] Redirecting to sign-in page after token refresh failure');
+            // Use window.location for a hard redirect to clear state
+            window.location.href = '/auth/signin';
           }
         } catch (error) {
-          logger.error(`[Auth] Sign out error: ${error.message}`);
+          logger.error('[Auth] Sign out error after token refresh failure:', error);
+          // Even if sign out fails, try to redirect if needed
+          if (!isPublicRoute(window.location.pathname) && window.location.pathname !== '/') {
+            window.location.href = '/auth/signin';
+          }
         }
         break;
 

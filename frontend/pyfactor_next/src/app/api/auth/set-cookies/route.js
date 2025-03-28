@@ -48,6 +48,12 @@ export async function POST(request) {
     response.cookies.set('idToken', idToken, cookieOptions);
     response.cookies.set('accessToken', accessToken, cookieOptions);
     
+    // Set authToken cookie which is used by middleware for authentication detection
+    response.cookies.set('authToken', 'true', {
+      ...cookieOptions,
+      httpOnly: false,  // Make accessible to JS
+    });
+    
     if (refreshToken) {
       // For refresh token, always use a longer expiry - either the rememberMe duration or at least 7 days
       const refreshTokenMaxAge = rememberMe ? 
@@ -73,14 +79,34 @@ export async function POST(request) {
       // Try to extract onboarding status from the ID token if not provided
       try {
         const decodedToken = parseJwt(idToken);
-        const customAttributes = decodedToken['custom:onboarding_status'];
+        const customAttributes = decodedToken['custom:onboarding'] || decodedToken['custom:onboarding_status'];
         
         if (customAttributes) {
           response.cookies.set('onboardedStatus', customAttributes, cookieOptions);
-          logger.debug('[API] Set onboardedStatus cookie from token:', { onboardedStatus: customAttributes });
+          response.cookies.set('onboardingStep', customAttributes === 'NOT_STARTED' ? 'business-info' : 
+            customAttributes === 'BUSINESS_INFO' ? 'subscription' :
+            customAttributes === 'SUBSCRIPTION' ? 'payment' :
+            customAttributes === 'PAYMENT' ? 'setup' : 'dashboard', cookieOptions);
+          
+          logger.debug('[API] Set onboarding cookies from token:', { 
+            onboardedStatus: customAttributes,
+            onboardingStep: response.cookies.get('onboardingStep')
+          });
+        } else {
+          // Set default NOT_STARTED status for fresh users
+          response.cookies.set('onboardedStatus', 'NOT_STARTED', cookieOptions);
+          response.cookies.set('onboardingStep', 'business-info', cookieOptions);
+          
+          logger.debug('[API] Set default onboarding cookies for new user');
         }
       } catch (parseError) {
         logger.warn('[API] Failed to parse JWT for onboarding status:', parseError);
+        
+        // Set default NOT_STARTED status as fallback
+        response.cookies.set('onboardedStatus', 'NOT_STARTED', cookieOptions);
+        response.cookies.set('onboardingStep', 'business-info', cookieOptions);
+        
+        logger.debug('[API] Set default onboarding cookies after JWT parse error');
       }
     }
     

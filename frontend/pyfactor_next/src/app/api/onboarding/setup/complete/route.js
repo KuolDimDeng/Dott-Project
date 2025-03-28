@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { getAmplifyConfig } from '@/config/amplifyServer';
 import { v4 as uuidv4 } from 'uuid';
+import { fetchAuthSession, getCurrentUser, updateUserAttributes } from 'aws-amplify/auth';
 
 // Helper to get token from cookie string
 function getTokenFromCookie(cookieString, tokenName) {
@@ -104,12 +105,71 @@ async function checkBackendHealth(requestId) {
   }
 }
 
+// Update cognito attributes directly
+async function updateCognitoAttributes(requestId, token) {
+  try {
+    // Update Cognito attributes directly with explicit strings
+    await updateUserAttributes({
+      userAttributes: {
+        'custom:onboarding': 'COMPLETE',
+        'custom:setupdone': 'TRUE',
+        'custom:updated_at': new Date().toISOString()
+      }
+    });
+    
+    logger.info('[SetupAPI] Updated Cognito attributes successfully', {
+      requestId,
+      attributes: ['custom:onboarding', 'custom:setupdone', 'custom:updated_at']
+    });
+    
+    return true;
+  } catch (error) {
+    logger.error('[SetupAPI] Failed to update Cognito attributes:', {
+      requestId,
+      error: error.message
+    });
+    
+    // Fallback to API call
+    try {
+      const response = await fetch('/api/user/update-attributes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          attributes: {
+            'custom:onboarding': 'COMPLETE',
+            'custom:setupdone': 'TRUE',
+            'custom:updated_at': new Date().toISOString()
+          },
+          forceUpdate: true
+        })
+      });
+      
+      if (response.ok) {
+        logger.info('[SetupAPI] Updated attributes via API call', { requestId });
+        return true;
+      } else {
+        throw new Error(`API call failed with status ${response.status}`);
+      }
+    } catch (apiError) {
+      logger.error('[SetupAPI] Failed to update attributes via API:', {
+        requestId,
+        error: apiError.message
+      });
+      return false;
+    }
+  }
+}
+
 export async function POST(request) {
   const requestId = uuidv4();
   logger.info('[SetupAPI] Starting setup completion', { requestId });
 
   try {
-    // No need to configure Amplify here as it's already configured in amplifyUnified.js
+    // Configure Amplify if needed (server-side)
+    getAmplifyConfig();
 
     // Get authentication token
     const headers = new Headers(request.headers);
@@ -155,63 +215,85 @@ export async function POST(request) {
 
     // Check backend health
     const isBackendHealthy = await checkBackendHealth(requestId);
-    if (!isBackendHealthy) {
-      return NextResponse.json(
-        { error: 'Backend service is not available. Please ensure the backend server is running.' },
-        { status: 503 }
-      );
+    let backendUpdateSuccess = false;
+    
+    // Only attempt backend API call if backend is healthy
+    if (isBackendHealthy) {
+      try {
+        const requestHeaders = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Request-ID': requestId,
+          'Origin': 'http://localhost:3000'
+        };
+
+        const response = await fetch('http://localhost:8000/api/onboarding/setup/complete/', {
+          method: 'POST',
+          headers: requestHeaders,
+          cache: 'no-store'
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          logger.error('[SetupAPI] Setup completion failed:', {
+            requestId,
+            status: response.status,
+            error: errorData.error || errorData.message || 'Unknown error'
+          });
+        } else {
+          const data = await response.json();
+          logger.info('[SetupAPI] Setup completed successfully by backend', {
+            requestId,
+            setupStatus: data.status,
+            nextStep: data.next_step
+          });
+          backendUpdateSuccess = true;
+        }
+      } catch (error) {
+        logger.error('[SetupAPI] Setup completion request failed:', {
+          requestId,
+          error: error.message
+        });
+      }
     }
 
-    // Complete setup
-    try {
-      const requestHeaders = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-        'X-Request-ID': requestId,
-        'Origin': 'http://localhost:3000'
-      };
-
-      const response = await fetch('http://localhost:8000/api/onboarding/setup/complete/', {
-        method: 'POST',
-        headers: requestHeaders,
-        cache: 'no-store'
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        logger.error('[SetupAPI] Setup completion failed:', {
-          requestId,
-          status: response.status,
-          error: errorData.error || errorData.message || 'Unknown error'
-        });
-        throw new Error(errorData.error || errorData.message || 'Failed to complete setup process');
-      }
-
-      const data = await response.json();
-      logger.info('[SetupAPI] Setup completed successfully', {
-        requestId,
-        setupStatus: data.status,
-        nextStep: data.next_step
-      });
-
-      return NextResponse.json({
-        ...data,
-        requestId
-      });
-    } catch (error) {
-      logger.error('[SetupAPI] Setup completion request failed:', {
-        requestId,
-        error: error.message
-      });
+    // Always update Cognito attributes directly, even if backend succeeded
+    // This ensures consistency and avoids race conditions in status updates
+    const attributesUpdated = await updateCognitoAttributes(requestId, accessToken);
+    
+    if (!backendUpdateSuccess && !attributesUpdated) {
       return NextResponse.json(
         {
-          error: 'Failed to communicate with backend service. Please try again.',
-          requestId,
-          details: { errorMessage: error.message }
+          error: 'Failed to update onboarding status',
+          details: 'Both backend and direct methods failed'
         },
         { status: 500 }
       );
     }
+
+    // Set cookies in the response
+    const response = NextResponse.json({
+      success: true,
+      message: 'Setup completed successfully',
+      status: 'COMPLETE',
+      next_step: '/dashboard',
+      requestId,
+    });
+
+    // Set cookies
+    const cookieOptions = {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      sameSite: 'lax',
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production'
+    };
+
+    response.cookies.set('onboardingStep', 'COMPLETE', cookieOptions);
+    response.cookies.set('onboardedStatus', 'COMPLETE', cookieOptions);
+    response.cookies.set('setupCompleted', 'true', cookieOptions);
+
+    return response;
   } catch (error) {
     logger.error('[SetupAPI] Unexpected error during setup completion:', {
       requestId,

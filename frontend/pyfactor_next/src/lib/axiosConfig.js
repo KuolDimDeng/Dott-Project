@@ -24,6 +24,19 @@ const processQueue = (error, tokens = null) => {
 // This will route requests through Next.js API routes
 const API_URL = '';  // Remove '/api' to avoid duplicate in the path
 
+// Create a server-side axios instance with no interceptors 
+// for use in server components and API routes
+const serverAxiosInstance = axios.create({
+  baseURL: API_URL,
+  timeout: 15000,
+  headers: {
+    'Content-Type': 'application/json',
+  }
+});
+
+logger.debug('[AxiosConfig] Server axios instance initialized');
+
+// Regular axios instance with interceptors for client-side use
 const axiosInstance = axios.create({
   baseURL: API_URL,
   timeout: 15000, // Increased from 8000 to 15000 ms to handle service creation
@@ -32,7 +45,10 @@ const axiosInstance = axios.create({
   }
 });
 
-logger.debug('[AxiosConfig] Initialized with baseURL:', API_URL);
+logger.debug('[AxiosConfig] Client axios instance initialized with baseURL:', API_URL);
+
+// Export the axios instances
+export { axiosInstance, serverAxiosInstance };
 
 // Add a request interceptor
 axiosInstance.interceptors.request.use(
@@ -54,6 +70,12 @@ axiosInstance.interceptors.request.use(
         });
       }
       
+      // Skip interceptor for server side
+      if (typeof window === 'undefined') {
+        logger.info('[AxiosConfig] Server-side context detected - skipping auth token fetch');
+        return config;
+      }
+      
       // Get tokens from Amplify session
       let { tokens, userSub } = await fetchAuthSession();
       let accessToken = tokens?.accessToken?.toString();
@@ -62,44 +84,47 @@ axiosInstance.interceptors.request.use(
       if (!accessToken || !idToken) {
         logger.warn('[AxiosConfig] Missing required tokens in session');
         
-        // For product-related endpoints, we need to handle this more gracefully
-        if (config.url?.includes('/api/inventory/products')) {
-          logger.warn('[AxiosConfig] Product API called with missing tokens, attempting to refresh');
-          try {
-            const refreshResult = await fetchAuthSession({ forceRefresh: true });
-            accessToken = refreshResult.tokens?.accessToken?.toString();
-            idToken = refreshResult.tokens?.idToken?.toString();
-            
-            if (!accessToken || !idToken) {
-              logger.error('[AxiosConfig] Token refresh failed for product API');
-              
-              // Check if we're in a server context
-              if (typeof window === 'undefined') {
-                throw new Error('No valid session');
-              } else {
-                // In browser, redirect to login if possible
-                if (typeof window !== 'undefined' && window.location) {
-                  window.location.href = '/auth/signin?error=session_expired';
-                  return Promise.reject(new Error('Session expired, redirecting to login'));
-                } else {
-                  throw new Error('No valid session - user authentication required');
-                }
+        // Client-side context
+        // Attempt token refresh for client-side requests
+        try {
+          logger.info('[AxiosConfig] Client-side request with missing tokens, attempting refresh');
+          const refreshResult = await fetchAuthSession({ forceRefresh: true });
+          accessToken = refreshResult.tokens?.accessToken?.toString();
+          idToken = refreshResult.tokens?.idToken?.toString();
+          
+          if (!accessToken || !idToken) {
+            // If still no tokens after refresh, handle based on URL
+            if (config.url?.includes('/api/inventory/diagnostic')) {
+              logger.warn('[AxiosConfig] Diagnostic endpoint called without tokens after refresh attempt');
+              // Continue anyway for diagnostic endpoints
+            } else {
+              // For other endpoints, redirect to login
+              logger.error('[AxiosConfig] Token refresh failed for client request');
+              if (window.location.pathname !== '/auth/signin') {
+                window.location.href = '/auth/signin?error=session_expired';
               }
+              throw new Error('Session expired, redirecting to login');
             }
-          } catch (refreshError) {
-            logger.error('[AxiosConfig] Failed to refresh tokens for product API:', refreshError);
-            throw new Error('Authentication required - please log in again');
-          }
-        } else {
-          // For other endpoints, maintain existing behavior
-          // Check if we're in a server context first
-          if (typeof window === 'undefined') {
-            // In server context, return a generic error that won't break API routes
-            logger.warn('[AxiosConfig] Server-side request with missing tokens');
-            throw new Error('No valid session');
           } else {
-            // In client context, throw a more descriptive error
-            throw new Error('No valid session - user authentication required');
+            logger.info('[AxiosConfig] Tokens refreshed successfully for client request');
+            // Store refreshed tokens in localStorage for future requests
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('tokens', JSON.stringify({
+                accessToken,
+                idToken
+              }));
+            }
+          }
+        } catch (refreshError) {
+          logger.error('[AxiosConfig] Failed to refresh tokens for client request:', refreshError);
+          // Only redirect if not already on the login page
+          if (typeof window !== 'undefined' && 
+              window.location && 
+              window.location.pathname !== '/auth/signin') {
+            window.location.href = '/auth/signin?error=session_expired';
+            throw new Error('Authentication required - redirecting to login');
+          } else {
+            throw new Error('Authentication required - please log in again');
           }
         }
       }
@@ -359,5 +384,3 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-export { axiosInstance };

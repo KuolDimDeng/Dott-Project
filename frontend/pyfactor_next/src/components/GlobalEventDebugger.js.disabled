@@ -1,0 +1,337 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+/**
+ * GlobalEventDebugger - Focuses on fixing styles only, not handling keyboard events
+ */
+export default function GlobalEventDebugger() {
+  const [isEnabled, setIsEnabled] = useState(true);
+
+  useEffect(() => {
+    if (!isEnabled) return;
+    
+    // Log initialization
+    console.log('[GlobalEventDebugger] Initialized with style fixes only (no keyboard handling)');
+
+    // Helper to check if we're on the dashboard page
+    const isDashboardPage = () => {
+      return window.location.pathname.includes('/dashboard');
+    };
+    
+    console.log(`[GlobalEventDebugger] Current page: ${window.location.pathname}`);
+    
+    // Create toggle button
+    const createToggleButton = () => {
+      const existingButton = document.getElementById('global-event-debugger-toggle');
+      if (existingButton) {
+        existingButton.remove();
+      }
+      
+      const button = document.createElement('button');
+      button.id = 'global-event-debugger-toggle';
+      button.textContent = isEnabled ? 'Disable Style Fix' : 'Enable Style Fix';
+      button.style.cssText = `
+        position: fixed; 
+        bottom: 10px; 
+        right: 10px; 
+        z-index: 100000; 
+        padding: 8px; 
+        background: ${isEnabled ? '#ff5722' : '#4caf50'}; 
+        color: white; 
+        border: none; 
+        border-radius: 4px;
+      `;
+      
+      button.addEventListener('click', () => {
+        setIsEnabled(prev => !prev);
+      });
+      
+      // Add emergency fix button
+      const emergencyButton = document.createElement('button');
+      emergencyButton.id = 'global-event-debugger-emergency';
+      emergencyButton.textContent = 'Nuclear Input Fix';
+      emergencyButton.style.cssText = `
+        position: fixed; 
+        bottom: 10px; 
+        right: 120px; 
+        z-index: 100000; 
+        padding: 8px; 
+        background: #f44336; 
+        color: white; 
+        border: none; 
+        border-radius: 4px;
+      `;
+      
+      emergencyButton.addEventListener('click', () => {
+        console.log('[GlobalEventDebugger] NUCLEAR: Taking complete control of all inputs');
+        
+        // First remove any possible event blockers
+        document.querySelectorAll('*').forEach(el => {
+          if (el.tagName !== 'INPUT' && 
+              el.tagName !== 'TEXTAREA' && 
+              el.tagName !== 'SELECT' && 
+              el.tagName !== 'BUTTON') {
+            el.style.pointerEvents = 'none';
+          }
+        });
+        
+        // Create a test input field that will definitely work
+        const testContainer = document.createElement('div');
+        testContainer.style.cssText = `
+          position: fixed;
+          top: 100px;
+          left: 50%;
+          transform: translateX(-50%);
+          background-color: white;
+          padding: 20px;
+          border: 3px solid red;
+          z-index: 1000000;
+          width: 80%;
+          max-width: 500px;
+          box-shadow: 0 0 20px rgba(0,0,0,0.5);
+          font-family: sans-serif;
+        `;
+        
+        const testHeader = document.createElement('h3');
+        testHeader.textContent = 'Test Input Field (100% Guaranteed to Work)';
+        testHeader.style.margin = '0 0 10px 0';
+        
+        const testInput = document.createElement('input');
+        testInput.type = 'text';
+        testInput.placeholder = 'Type here to test input - this will definitely work';
+        testInput.style.cssText = `
+          width: 100%;
+          padding: 10px;
+          border: 1px solid #ddd;
+          font-size: 16px;
+          margin-bottom: 10px;
+          box-sizing: border-box;
+        `;
+        
+        const closeButton = document.createElement('button');
+        closeButton.textContent = 'Close Test Box';
+        closeButton.style.cssText = `
+          background: #f44336;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          cursor: pointer;
+        `;
+        closeButton.addEventListener('click', () => {
+          document.body.removeChild(testContainer);
+        });
+        
+        testContainer.appendChild(testHeader);
+        testContainer.appendChild(testInput);
+        testContainer.appendChild(closeButton);
+        document.body.appendChild(testContainer);
+        
+        // Focus the test input
+        setTimeout(() => {
+          testInput.focus();
+        }, 100);
+        
+        // Fix each input field directly
+        document.querySelectorAll('input[type="text"], textarea').forEach(inputEl => {
+          // Enable all parent elements
+          let parent = inputEl.parentElement;
+          while (parent && parent !== document.body) {
+            parent.style.pointerEvents = 'auto';
+            parent = parent.parentElement;
+          }
+          
+          // Set up direct manual input handler
+          inputEl.style.pointerEvents = 'auto';
+          inputEl.style.color = 'black';
+          inputEl.style.background = 'white';
+          inputEl.style.zIndex = '999999';
+          inputEl.style.position = 'relative';
+          inputEl.style.border = '2px solid blue';
+          
+          // Create a direct text insertion function for this input
+          if (!inputEl._hasDirectTextHandler) {
+            inputEl._hasDirectTextHandler = true;
+            
+            // Add direct keydown listener
+            inputEl.addEventListener('keydown', (e) => {
+              e.stopPropagation();
+              
+              if (e.key.length === 1) {
+                // Single character - insert it directly
+                const start = inputEl.selectionStart || 0;
+                const end = inputEl.selectionEnd || 0;
+                const value = inputEl.value || '';
+                
+                // Insert the character
+                const newValue = value.substring(0, start) + e.key + value.substring(end);
+                inputEl.value = newValue;
+                
+                // Move cursor position
+                inputEl.selectionStart = start + 1;
+                inputEl.selectionEnd = start + 1;
+                
+                // Trigger change events
+                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                // Prevent default to avoid double input
+                e.preventDefault();
+              } else if (e.key === 'Backspace') {
+                // Handle backspace
+                const start = inputEl.selectionStart || 0;
+                const end = inputEl.selectionEnd || 0;
+                const value = inputEl.value || '';
+                
+                if (start === end && start > 0) {
+                  // Delete one character behind cursor
+                  const newValue = value.substring(0, start - 1) + value.substring(end);
+                  inputEl.value = newValue;
+                  
+                  // Move cursor position
+                  inputEl.selectionStart = start - 1;
+                  inputEl.selectionEnd = start - 1;
+                } else if (start !== end) {
+                  // Delete selected text
+                  const newValue = value.substring(0, start) + value.substring(end);
+                  inputEl.value = newValue;
+                  
+                  // Move cursor position
+                  inputEl.selectionStart = start;
+                  inputEl.selectionEnd = start;
+                }
+                
+                // Trigger change events
+                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                // Prevent default
+                e.preventDefault();
+              }
+            }, true);
+          }
+        });
+        
+        alert('Emergency input fix applied. Your keyboard input should now work directly.');
+      });
+      
+      document.body.appendChild(button);
+      document.body.appendChild(emergencyButton);
+      return button;
+    };
+    
+    // Apply simple dashboard input fixes - STYLES ONLY
+    const applyDashboardFixes = () => {
+      // Skip if not on dashboard
+      if (!isDashboardPage()) return;
+      
+      // Find all inputs on the page - be more specific for dashboard
+      const dashboardInputs = document.querySelectorAll('.MuiBox-root input, .MuiBox-root textarea, div[role="dialog"] input, div[role="dialog"] textarea');
+      
+      if (dashboardInputs.length > 0) {
+        console.log(`[GlobalEventDebugger] Found ${dashboardInputs.length} dashboard inputs to fix`);
+      }
+      
+      // First, remove any overlay elements that might be blocking inputs
+      const potentialBlockingOverlays = document.querySelectorAll('div[style*="position: fixed"], div[style*="position: absolute"]');
+      potentialBlockingOverlays.forEach(overlay => {
+        if (!overlay.querySelector('input, textarea, select, button')) {
+          // This is likely just a blocking overlay
+          overlay.style.pointerEvents = 'none';
+        }
+      });
+      
+      dashboardInputs.forEach(input => {
+        // Skip if already fixed
+        if (input.hasAttribute('data-fixed-by-global-debugger')) return;
+        
+        // Only apply styles, don't replace elements or handle events
+        input.style.pointerEvents = 'auto';
+        input.style.touchAction = 'auto';
+        input.style.userSelect = 'text';
+        input.style.WebkitUserSelect = 'text';
+        input.style.caretColor = 'black';  // Make cursor visible
+        input.style.color = 'black';  // Ensure text is visible
+        input.style.zIndex = '10000';  // Higher than before
+        
+        // Set tabindex to ensure focusability
+        if (!input.hasAttribute('tabindex')) {
+          input.setAttribute('tabindex', '0');
+        }
+        
+        // Ensure parent elements don't block events
+        let parent = input.parentElement;
+        while (parent && parent !== document.body) {
+          parent.style.pointerEvents = 'auto';
+          parent = parent.parentElement;
+        }
+        
+        // Mark as fixed
+        input.setAttribute('data-fixed-by-global-debugger', 'true');
+      });
+    };
+    
+    // Fix MUI modals and popups that might block input
+    const fixMUIComponents = () => {
+      document.querySelectorAll('.MuiModal-root, .MuiPopover-root, .MuiDialog-root, .MuiDrawer-root')
+        .forEach(modal => {
+          if (!modal.hasAttribute('data-fixed-by-global-debugger')) {
+            modal.style.pointerEvents = 'auto';
+            
+            modal.querySelectorAll('input, button, select, textarea')
+              .forEach(el => {
+                el.style.pointerEvents = 'auto';
+                el.style.position = 'relative';
+                el.style.zIndex = '10001';  // Higher than inputs
+                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
+                  el.style.color = 'black';
+                  el.style.caretColor = 'black';
+                  el.style.userSelect = 'text';
+                }
+              });
+            
+            modal.setAttribute('data-fixed-by-global-debugger', 'true');
+          }
+        });
+    };
+    
+    // Create toggle button
+    const button = createToggleButton();
+    
+    // Apply fixes immediately
+    applyDashboardFixes();
+    fixMUIComponents();
+    
+    // Set up a mutation observer to catch new inputs
+    const observer = new MutationObserver(() => {
+      if (isEnabled) {
+        applyDashboardFixes();
+        fixMUIComponents();
+      }
+    });
+    
+    // Start observing
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true 
+    });
+    
+    // Set up minimal refresh
+    const intervalId = setInterval(() => {
+      if (isEnabled) {
+        applyDashboardFixes();
+        fixMUIComponents();
+      }
+    }, 2000);
+    
+    // Cleanup function
+    return () => {
+      if (button && button.parentNode) {
+        button.parentNode.removeChild(button);
+      }
+      
+      clearInterval(intervalId);
+      observer.disconnect();
+    };
+  }, [isEnabled]);
+  
+  return null;
+}

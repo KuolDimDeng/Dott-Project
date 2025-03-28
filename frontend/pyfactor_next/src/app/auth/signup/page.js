@@ -3,19 +3,13 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Box, CircularProgress } from '@mui/material';
+import { CircularProgress } from '@/components/ui/TailwindComponents';
 
 // Simple loading component for dynamic import
 const LoadingFallback = () => (
-  <Box sx={{ 
-    display: 'flex',
-    justifyContent: 'center', 
-    alignItems: 'center',
-    height: '100vh',
-    width: '100vw'
-  }}>
+  <div className="flex justify-center items-center h-screen w-screen">
     <CircularProgress />
-  </Box>
+  </div>
 );
 
 // Dynamically import SignUp component with improved loading state

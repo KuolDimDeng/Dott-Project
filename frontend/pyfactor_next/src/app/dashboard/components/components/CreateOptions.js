@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, List, ListItem, ListItemText } from '@mui/material';
+import { Box, Typography } from '@/components/ui/TailwindComponents';
 import { logger, UserMessage } from '@/utils/logger';
 
 const CreateOptions = ({ onOptionSelect }) => {
@@ -20,17 +20,21 @@ const CreateOptions = ({ onOptionSelect }) => {
   };
 
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
+    <Box className="p-4">
+      <Typography variant="h5" className="mb-4">
         Create Options
       </Typography>
-      <List>
+      <ul className="space-y-2">
         {createOptions.map((option, index) => (
-          <ListItem key={index} button onClick={() => handleOptionClick(option)}>
-            <ListItemText primary={option} />
-          </ListItem>
+          <li 
+            key={index} 
+            className="p-2 hover:bg-gray-100 rounded cursor-pointer transition-colors"
+            onClick={() => handleOptionClick(option)}
+          >
+            <span className="text-gray-900">{option}</span>
+          </li>
         ))}
-      </List>
+      </ul>
     </Box>
   );
 };

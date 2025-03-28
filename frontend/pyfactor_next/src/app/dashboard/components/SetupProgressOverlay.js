@@ -39,7 +39,8 @@ export default function SetupProgressOverlay() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 9999,
+        zIndex: 50,
+        pointerEvents: 'none',
       }}
     >
       <Paper
@@ -49,6 +50,7 @@ export default function SetupProgressOverlay() {
           maxWidth: 400,
           width: '90%',
           textAlign: 'center',
+          pointerEvents: 'auto',
         }}
       >
         <Typography variant="h5" gutterBottom>

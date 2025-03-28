@@ -533,6 +533,32 @@ export const createProduct = async (productData) => {
       productData.product_code = generateProductCode(productData.name);
     }
     
+    // Force a session refresh before proceeding
+    try {
+      const { fetchAuthSession } = await import('aws-amplify/auth');
+      const sessionResult = await fetchAuthSession({ forceRefresh: true });
+      
+      if (!sessionResult.tokens?.idToken || !sessionResult.tokens?.accessToken) {
+        logger.error('Failed to get valid tokens from refreshed session');
+        // Redirect to login page
+        if (typeof window !== 'undefined' && window.location) {
+          window.location.href = '/auth/signin?error=session_expired';
+          throw new Error('Your session has expired. Please sign in again.');
+        }
+      } else {
+        logger.info('Session refreshed successfully before product creation');
+        // Update tokens in tenant utils
+        const { setTokens } = await import('@/utils/tenantUtils');
+        setTokens({
+          accessToken: sessionResult.tokens.accessToken.toString(),
+          idToken: sessionResult.tokens.idToken.toString()
+        });
+      }
+    } catch (sessionError) {
+      logger.error('Error refreshing session before product creation:', sessionError);
+      // Continue with request anyway, we'll handle errors below
+    }
+    
     // Ensure we have a valid tenant ID and the schema is properly set up
     try {
       // This will validate tenant and try to fix schema issues
@@ -547,7 +573,10 @@ export const createProduct = async (productData) => {
       if (tenantId) {
         const diagnosticResponse = await fetch('/api/inventory/diagnostic', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            ...tenantHeaders // Include the tenant headers for authentication
+          },
           body: JSON.stringify({ tenantId })
         });
         
@@ -567,7 +596,10 @@ export const createProduct = async (productData) => {
               const schemaName = diagnosticData.diagnosticInfo.tenant.schemaName;
               const migrateResponse = await fetch('/api/schema/migrate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                  'Content-Type': 'application/json',
+                  ...tenantHeaders // Include the tenant headers for authentication
+                },
                 body: JSON.stringify({ 
                   tenantId,
                   schemaName,
@@ -583,26 +615,61 @@ export const createProduct = async (productData) => {
               }
             }
           }
+        } else if (diagnosticResponse.status === 401) {
+          // Handle unauthorized access immediately
+          logger.error('Authentication error during diagnostics check');
+          throw new Error('Authentication required - please log in again');
         }
       }
     } catch (setupError) {
       logger.error('Error setting up schema for product creation:', setupError);
+      // If this is an auth error, throw it immediately
+      if (setupError.message.includes('Authentication') || 
+          setupError.message.includes('session') ||
+          setupError.status === 401) {
+        throw setupError;
+      }
     }
     
     // Make the product creation request with explicit tenant headers
     const tenantHeaders = getInventoryHeaders();
-    const response = await apiService.post('/api/inventory/products/', productData, {
-      invalidateCache: ['/api/inventory/products/', '/api/inventory/ultra/products/'],
-      headers: tenantHeaders
-    });
     
-    logger.info('Product created successfully:', response);
-    return response;
+    // Direct API call with more control and explicit headers
+    try {
+      const response = await fetch('/api/inventory/products/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...tenantHeaders
+        },
+        body: JSON.stringify(productData)
+      });
+      
+      if (!response.ok) {
+        // Handle HTTP errors
+        if (response.status === 401) {
+          throw new Error('Authentication required - please log in again');
+        }
+        
+        // Try to get error details from response
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Server error: ${response.status}`);
+      }
+      
+      // Parse the successful response
+      const data = await response.json();
+      logger.info('Product created successfully:', data);
+      return data;
+    } catch (fetchError) {
+      logger.error('Fetch error during product creation:', fetchError);
+      throw fetchError;
+    }
   } catch (error) {
     logger.error('Error creating product:', error);
     
     // Check for authentication errors
     if (error.response?.status === 401 || 
+        error.status === 401 ||
         error.message?.includes('No valid session') || 
         error.message?.includes('Authentication required') ||
         error.response?.data?.code === 'session_expired') {
@@ -611,12 +678,20 @@ export const createProduct = async (productData) => {
       
       // Attempt to refresh the session
       try {
-        const { refreshUserSession } = await import('@/utils/refreshUserSession');
-        const refreshed = await refreshUserSession();
+        const { fetchAuthSession } = await import('aws-amplify/auth');
+        const sessionResult = await fetchAuthSession({ forceRefresh: true });
         
-        if (refreshed) {
-          // If refresh successful, try the operation again
+        if (sessionResult.tokens?.idToken && sessionResult.tokens?.accessToken) {
+          // Update tokens in tenant utils
+          const { setTokens } = await import('@/utils/tenantUtils');
+          setTokens({
+            accessToken: sessionResult.tokens.accessToken.toString(),
+            idToken: sessionResult.tokens.idToken.toString()
+          });
+          
           logger.info('Session refreshed successfully, retrying product creation');
+          // Wait a moment before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
           return createProduct(productData);
         } else {
           // If refresh failed, throw an authentication error
@@ -652,7 +727,10 @@ export const createProduct = async (productData) => {
           
           const migrateResponse = await fetch('/api/schema/migrate', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              ...tenantHeaders
+            },
             body: JSON.stringify({ 
               tenantId,
               schemaName,
@@ -662,7 +740,9 @@ export const createProduct = async (productData) => {
           
           if (migrateResponse.ok) {
             logger.info('Successfully ran migrations:', await migrateResponse.json());
-            throw new Error('Database tables have been created. Please try again.');
+            // Wait briefly before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return createProduct(productData);
           }
         }
       } catch (recoveryError) {

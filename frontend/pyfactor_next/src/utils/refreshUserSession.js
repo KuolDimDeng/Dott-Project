@@ -2,21 +2,22 @@ import { fetchAuthSession, getCurrentUser, signOut } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 import { parseJwt } from '@/lib/authUtils';
 
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 5;
 const RETRY_DELAY = 1000;
 
 const setCookie = (name, value, options = {}) => {
   try {
     const isDev = process.env.NODE_ENV === 'development';
+    const defaultMaxAge = 2 * 24 * 60 * 60; // 2 days
+    
     const cookieOptions = [
-      `${name}=${value}`,
+      `${name}=${encodeURIComponent(value)}`,
       'path=/',
-      options.maxAge ? `max-age=${options.maxAge}` : '',
+      options.maxAge ? `max-age=${options.maxAge}` : `max-age=${defaultMaxAge}`,
       isDev ? '' : 'secure',
-      isDev ? 'samesite=lax' : 'samesite=strict'
+      options.sameSite || (isDev ? 'samesite=lax' : 'samesite=strict')
     ].filter(Boolean);
 
-    // Only set domain in production
     if (!isDev) {
       cookieOptions.push(`domain=${window.location.hostname}`);
     }
@@ -24,9 +25,9 @@ const setCookie = (name, value, options = {}) => {
     document.cookie = cookieOptions.join('; ');
     logger.debug(`[Session] Setting cookie: ${name}`, {
       isDev,
-      maxAge: options.maxAge,
+      maxAge: options.maxAge || defaultMaxAge,
       secure: !isDev,
-      sameSite: isDev ? 'lax' : 'strict'
+      sameSite: options.sameSite || (isDev ? 'lax' : 'strict')
     });
     return true;
   } catch (error) {
@@ -70,33 +71,156 @@ const clearCookie = (name) => {
 };
 
 export async function refreshUserSession() {
-  try {
-    logger.debug('[RefreshSession] Attempting to refresh session');
-    
-    // Use the new fetchAuthSession with forceRefresh option
-    const { tokens, hasValidSession } = await fetchAuthSession({ forceRefresh: true });
-    
-    if (!hasValidSession || !tokens?.idToken) {
-      logger.warn('[RefreshSession] No valid session after refresh attempt');
-      // Sign out user if session is invalid
-      await signOut();
+  let retryCount = 0;
+  const maxRetries = MAX_RETRIES;
+  
+  async function attemptRefresh() {
+    try {
+      logger.debug(`[RefreshSession] Attempting to refresh session (attempt ${retryCount + 1}/${maxRetries})`);
+      
+      try {
+        const currentSession = await fetchAuthSession();
+        if (currentSession?.tokens?.idToken) {
+          const decodedToken = parseJwt(currentSession.tokens.idToken.toString());
+          const tokenExpiry = decodedToken.exp * 1000;
+          const now = Date.now();
+          const timeRemaining = tokenExpiry - now;
+          
+          if (timeRemaining > 10 * 60 * 1000) {
+            logger.debug(`[RefreshSession] Current token still valid for ${Math.round(timeRemaining/60000)} minutes, using it`);
+            
+            storeTokensInCookies(currentSession.tokens);
+            return true;
+          }
+          
+          logger.debug(`[RefreshSession] Current token expiring soon (${Math.round(timeRemaining/60000)} minutes), forcing refresh`);
+        }
+      } catch (currentSessionError) {
+        logger.warn('[RefreshSession] Error checking current session:', currentSessionError);
+      }
+      
+      const { tokens, hasValidSession } = await fetchAuthSession({ forceRefresh: true });
+      
+      if (!hasValidSession || !tokens?.idToken) {
+        logger.warn('[RefreshSession] No valid session after refresh attempt');
+        
+        try {
+          const user = await getCurrentUser();
+          if (user) {
+            logger.debug('[RefreshSession] Got user without tokens, preserving some state');
+            setCookie('userId', user.userId, { maxAge: 7 * 24 * 60 * 60, sameSite: 'lax' });
+            setCookie('hasUser', 'true', { maxAge: 7 * 24 * 60 * 60, sameSite: 'lax' });
+          }
+        } catch (userError) {
+          logger.warn('[RefreshSession] Could not get current user:', userError);
+        }
+        
+        if (retryCount < maxRetries - 1) {
+          retryCount++;
+          const delay = RETRY_DELAY * Math.pow(2, retryCount - 1);
+          logger.debug(`[RefreshSession] Retrying after ${delay}ms`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return attemptRefresh();
+        }
+        
+        if (document.cookie.includes('idToken=') || document.cookie.includes('accessToken=')) {
+          logger.warn('[RefreshSession] No valid session but found token cookies, attempting to work with those');
+          return true;
+        }
+        
+        try {
+          logger.warn('[RefreshSession] Max retries reached, signing out');
+          await signOut();
+        } catch (signOutError) {
+          logger.error('[RefreshSession] Error during sign-out after failed refresh:', signOutError);
+        }
+        return false;
+      }
+
+      storeTokensInCookies(tokens);
+      
+      logger.info('[RefreshSession] Successfully refreshed session');
+      return true;
+    } catch (error) {
+      logger.error('[RefreshSession] Failed to refresh session:', {
+        error: error.message,
+        name: error.name,
+        code: error.code,
+        attempt: retryCount + 1
+      });
+      
+      if (retryCount < maxRetries - 1) {
+        retryCount++;
+        const delay = RETRY_DELAY * Math.pow(2, retryCount - 1);
+        logger.debug(`[RefreshSession] Retrying after ${delay}ms`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return attemptRefresh();
+      }
+      
+      if (retryCount === maxRetries - 1) {
+        logger.debug('[RefreshSession] Final retry with longer delay...');
+        retryCount++;
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        return attemptRefresh();
+      }
+      
+      if (error.name === 'NotAuthorizedException' || error.name === 'TokenExpiredError') {
+        try {
+          await signOut();
+        } catch (signOutError) {
+          logger.error('[RefreshSession] Error during sign-out after failed refresh:', signOutError);
+        }
+      }
+      
       return false;
     }
+  }
+  
+  return attemptRefresh();
+}
 
-    logger.info('[RefreshSession] Successfully refreshed session');
-    return true;
-  } catch (error) {
-    logger.error('[RefreshSession] Failed to refresh session:', {
-      error: error.message,
-      name: error.name,
-      code: error.code
-    });
-    
-    // If the error is related to invalid/expired tokens, sign out the user
-    if (error.name === 'NotAuthorizedException' || error.name === 'TokenExpiredError') {
-      await signOut();
+function storeTokensInCookies(tokens) {
+  try {
+    if (tokens.idToken) {
+      const decodedToken = parseJwt(tokens.idToken.toString());
+      const tokenExpiry = decodedToken.exp * 1000;
+      const now = Date.now();
+      const maxAgeSeconds = Math.floor((tokenExpiry - now) / 1000);
+      
+      setCookie('idToken', tokens.idToken.toString(), { 
+        maxAge: Math.min(maxAgeSeconds, 2 * 24 * 60 * 60),
+        sameSite: 'lax'
+      });
+      
+      if (decodedToken.sub) {
+        setCookie('userId', decodedToken.sub, { 
+          maxAge: 7 * 24 * 60 * 60,
+          sameSite: 'lax'
+        });
+      }
+      
+      setCookie('tokenExpiry', tokenExpiry.toString(), { 
+        maxAge: Math.min(maxAgeSeconds, 2 * 24 * 60 * 60),
+        sameSite: 'lax'
+      });
     }
     
+    if (tokens.accessToken) {
+      setCookie('accessToken', tokens.accessToken.toString(), { 
+        maxAge: 24 * 60 * 60,
+        sameSite: 'lax'
+      });
+    }
+    
+    setCookie('hasSession', 'true', { 
+      maxAge: 24 * 60 * 60,
+      sameSite: 'lax'
+    });
+    
+    logger.debug('[RefreshSession] Stored tokens in cookies with enhanced security');
+    return true;
+  } catch (cookieError) {
+    logger.warn('[RefreshSession] Failed to update cookies with new tokens:', cookieError);
     return false;
   }
 }
@@ -105,7 +229,6 @@ export async function clearUserSession() {
   try {
     logger.debug('[Session] Starting session cleanup');
 
-    // Clear cookies using the API route
     try {
       const response = await fetch('/api/auth/clear-cookies', {
         method: 'POST',
@@ -122,7 +245,6 @@ export async function clearUserSession() {
       logger.debug('[Session] Session cleared successfully');
       return true;
     } catch (cookieError) {
-      // Fallback to client-side cookie clearing if API fails
       logger.warn('[Session] Failed to clear cookies via API, falling back to client-side:', {
         error: cookieError.message
       });

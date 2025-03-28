@@ -1,52 +1,58 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/components/steps/Subscription/Subscription.js
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession';
 import { ONBOARDING_STATES } from '@/app/onboarding/state/OnboardingStateManager';
 import { fetchAuthSession, updateUserAttributes } from 'aws-amplify/auth';
-import {
-  Container,
-  Grid,
-  Typography,
+import { logger } from '@/utils/logger';
+import { useOnboarding } from '@/hooks/useOnboarding';
+import { getSubscriptionPlanColor } from '@/utils/userAttributes';
+import { toast } from 'react-hot-toast';
+import { useEnhancedOnboarding } from '@/hooks/useEnhancedOnboarding';
+import { 
+  Box, 
+  Container, 
+  Alert, 
+  CircularProgress, 
+  Typography, 
   Button,
   Card,
   CardContent,
   CardActions,
-  Box,
-  CircularProgress,
-  Alert,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  FormControl,
-  Paper,
   Divider,
-  Icon,
+  FormControl,
+  RadioGroup,
+  Radio,
+  FormControlLabel,
+  TextField,
+  Tabs,
+  Tab,
   ToggleButtonGroup,
   ToggleButton,
   Collapse,
-  Fade,
-} from '@mui/material';
-import { logger } from '@/utils/logger';
-import { useOnboarding } from '@/hooks/useOnboarding';
-import { getSubscriptionPlanColor } from '@/utils/userAttributes';
+  Fade
+} from '@/components/ui/TailwindComponents';
 
 const PLANS = [
   {
     id: 'free',
-    name: 'Free',
+    name: 'Basic',
     price: {
       monthly: '0',
       annual: '0',
     },
     features: [
-      'Basic invoicing',
-      'Up to 5 clients',
-      'Basic reporting',
-      'Email support',
+      'Income and expense tracking',
+      'Invoice creation',
+      'Automated invoice reminders',
+      'Basic inventory tracking',
+      'Limited bank account integration (2 accounts)',
+      'Basic financial reporting',
+      'Mobile app access',
       '2GB storage',
+      'Expense categorization',
+      'Limited multi-currency support',
     ],
   },
   {
@@ -57,13 +63,16 @@ const PLANS = [
       annual: '150',
     },
     features: [
-      'Unlimited invoicing',
-      'Unlimited clients',
-      'Advanced reporting',
+      'Multiple users',
+      'Bank account integration (up to 10 accounts)',
+      'Advanced financial reporting',
+      'Advanced inventory management',
+      'Mobile Point of Sale (mPOS)',
+      'AI-powered business insights',
       'Priority support',
-      'Custom branding',
-      '15GB storage',
-      'Up to 3 users',
+      'Multi-currency support',
+      'Reduced transaction fees',
+      '30GB storage',
     ],
   },
   {
@@ -74,14 +83,16 @@ const PLANS = [
       annual: '450',
     },
     features: [
-      'Everything in Professional',
+      'Unlimited bank accounts',
+      'Custom financial reporting',
+      'Custom inventory categories',
       'Unlimited storage',
-      'Unlimited users',
+      'Advanced forecasting',
+      'Custom API access',
       'Dedicated account manager',
-      'Advanced API access',
-      'Custom roles & permissions',
-      'Advanced security features',
-      'Preferential transaction rates',
+      'White-label payment solutions',
+      'Advanced inventory forecasting',
+      'Lowest transaction fees (1%)',
     ],
   },
 ];
@@ -107,15 +118,133 @@ const PAYMENT_METHODS = [
   },
 ];
 
-export function Subscription() {
+export function Subscription({ metadata }) {
   const router = useRouter();
-  const { user, loading, logout } = useSession();
+  const { user, loading: sessionLoading, logout } = useSession();
   const { isLoading: isUpdating, updateOnboardingStatus } = useOnboarding();
+  const { updateState, isLoading: isEnhancedLoading, navigateToNextStep } = useEnhancedOnboarding();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [billingCycle, setBillingCycle] = useState('monthly');
+  const [businessData, setBusinessData] = useState({
+    businessName: '',
+    businessType: ''
+  });
+  const [initializing, setInitializing] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [paymentTab, setPaymentTab] = useState(0);
+
+  // Initialize component with business data from metadata or cookies
+  useEffect(() => {
+    try {
+      // Log what metadata we received with safe value handling
+      logger.info('[Subscription] Processing metadata:', {
+        hasMetadata: !!metadata,
+        businessName: metadata?.businessName || 'Not provided',
+        businessType: metadata?.businessType || 'Not provided',
+        isFormSubmission: !!metadata?.formSubmission,
+        source: metadata?.formSubmission ? 'URL params' : 
+               (metadata?.fromCookies ? 'Cookies' : 
+               (metadata?.fromUserAttributes ? 'User attributes' : 'Unknown'))
+      });
+
+      if (!metadata) {
+        throw new Error("No metadata provided to subscription component");
+      }
+      
+      // If coming directly from business-info form or we have business data
+      if (metadata.businessName) {
+        setBusinessData({
+          businessName: metadata.businessName || '',
+          businessType: metadata.businessType || ''
+        });
+        
+        logger.info('[Subscription] Successfully initialized with business data');
+
+        // Ensure onboarding cookies are set consistently
+        if (typeof document !== 'undefined') {
+          try {
+            const expiration = new Date();
+            expiration.setDate(expiration.getDate() + 7);
+            
+            document.cookie = `onboardingStep=subscription; path=/; expires=${expiration.toUTCString()}`;
+            document.cookie = `onboardedStatus=BUSINESS_INFO; path=/; expires=${expiration.toUTCString()}`;
+            document.cookie = `businessName=${encodeURIComponent(metadata.businessName)}; path=/; expires=${expiration.toUTCString()}`;
+            if (metadata.businessType) {
+              document.cookie = `businessType=${encodeURIComponent(metadata.businessType)}; path=/; expires=${expiration.toUTCString()}`;
+            }
+          } catch (e) {
+            logger.error('[Subscription] Error setting cookies:', e);
+          }
+        }
+      } else if (metadata.noBusinessData) {
+        // Show an error but don't block rendering completely
+        logger.error('[Subscription] No business data found in any source');
+        setError('Missing business information. Please go back and complete the business info step first.');
+      }
+    } catch (error) {
+      logger.error('[Subscription] Error initializing component:', error);
+      setError('Error initializing subscription page. Please try again or go back to the previous step.');
+    } finally {
+      // Always complete initialization to avoid leaving component in loading state
+      setInitializing(false);
+    }
+  }, [metadata]);
+
+  // Show loading state when initializing
+  if (initializing) {
+    return (
+      <Container maxWidth="md">
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <CircularProgress className="mb-2" />
+          <Typography variant="body1" color="textSecondary">
+            Loading subscription options...
+          </Typography>
+        </div>
+      </Container>
+    );
+  }
+
+  // More user-friendly error state for missing business info
+  if (error && error.includes('Missing business information')) {
+    return (
+      <Container maxWidth="md">
+        <div className="my-4">
+          <Alert 
+            severity="warning"
+            className="mb-3"
+          >
+            {error}
+          </Alert>
+          <Typography variant="body1" className="mb-3">
+            We need your business information to show you the right subscription options.
+          </Typography>
+          <Button 
+            variant="contained" 
+            size="large"
+            onClick={() => router.push('/onboarding/business-info')}
+            className="mt-1"
+          >
+            Go Back to Business Info
+          </Button>
+        </div>
+      </Container>
+    );
+  }
+
+  // Loading state for session if we're still waiting for user data
+  if (sessionLoading && !businessData.businessName) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <CircularProgress className="mb-2" />
+        <Typography variant="body1" color="textSecondary">
+          Verifying account information...
+        </Typography>
+      </div>
+    );
+  }
 
   // Handle billing cycle change
   const handleBillingCycleChange = (event, newBillingCycle) => {
@@ -124,19 +253,45 @@ export function Subscription() {
     }
   };
 
-  // Handler for plan selection
-  const handlePlanSelect = (planId) => {
-    logger.debug('[Subscription] Plan selected:', { planId, planId_lc: planId.toLowerCase() });
-    setSelectedPlan(planId);
-    // If Free, submit immediately
-    if (planId.toLowerCase() === 'free') {
-      handleSubscriptionSubmit(planId, 'monthly', null);
+  const handlePlanSelection = async (plan) => {
+    setSelectedPlan(plan);
+    setSubmitting(true);
+
+    try {
+      logger.debug('[Subscription] Plan selected:', plan);
+      
+      // Update state and get navigation in one call using enhanced onboarding hook
+      await updateState('subscription', {
+        selectedPlan: plan.id,
+        pricingTier: plan.tier,
+        planType: plan.type,
+        price: plan.price
+      });
+      
+      logger.debug('[Subscription] State updated successfully');
+      toast.success(`${plan.name} plan selected successfully!`);
+      
+      // Navigate to the next step using the enhanced onboarding hook
+      await navigateToNextStep('subscription', {
+        selectedPlan: plan.id,
+        pricingTier: plan.tier
+      });
+    } catch (error) {
+      logger.error('[Subscription] Plan selection failed:', error);
+      toast.error('Failed to process your selection. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   // Handler for payment method selection
-  const handlePaymentMethodSelect = (event) => {
+  const handlePaymentMethodChange = (event) => {
     setSelectedPaymentMethod(event.target.value);
+  };
+
+  // Handle payment tab change
+  const handlePaymentTabChange = (event, newValue) => {
+    setPaymentTab(newValue);
   };
 
   // Continue button handler for payment method
@@ -154,7 +309,8 @@ export function Subscription() {
         planId,
         planId_lc: planId.toLowerCase(),
         billingInterval,
-        paymentMethod
+        paymentMethod,
+        businessData
       });
 
       // Make plan ID consistent by always using lowercase
@@ -173,7 +329,9 @@ export function Subscription() {
               plan: normalizedPlanId,
               billing_interval: billingInterval,
               interval: billingInterval,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
+              businessName: businessData.businessName,
+              businessType: businessData.businessType
             })
           );
           
@@ -186,13 +344,26 @@ export function Subscription() {
             backgroundSetup: true // Flag indicating setup should happen in background
           }));
           
+          // Store the business info in cookies
+          if (typeof document !== 'undefined') {
+            const expiration = new Date();
+            expiration.setDate(expiration.getDate() + 7); // 7 days
+            
+            // Set our state to SUBSCRIPTION
+            document.cookie = `onboardingStep=setup; path=/; expires=${expiration.toUTCString()}`;
+            document.cookie = `onboardedStatus=SUBSCRIPTION; path=/; expires=${expiration.toUTCString()}`;
+            document.cookie = `subplan=free; path=/; expires=${expiration.toUTCString()}`;
+          }
+          
           // Update Cognito attributes via the API with more comprehensive set of attributes
           await updateUserAttributes({
             userAttributes: {
               'custom:subplan': 'free',
               'custom:onboarding': 'SUBSCRIPTION',
               'custom:setupdone': 'FALSE',
-              'custom:updated_at': new Date().toISOString()
+              'custom:updated_at': new Date().toISOString(),
+              'custom:businessName': businessData.businessName,
+              'custom:businessType': businessData.businessType
             }
           });
           
@@ -272,318 +443,225 @@ export function Subscription() {
     return getSubscriptionPlanColor(planId);
   };
 
-  // Loading state (existing code)
-  if (loading || !user) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   // Determine if a paid plan is selected
   const isPaidPlanSelected = selectedPlan === 'professional' || selectedPlan === 'enterprise';
 
   return (
     <Container maxWidth="lg">
       {/* Billing Cycle Toggle */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 5 }}>
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            p: 0.5, 
-            display: 'inline-flex', 
-            borderRadius: 3,
-            backgroundColor: '#f0f4f8',
-            border: '1px solid',
-            borderColor: 'divider'
-          }}
-        >
+      <div className="flex justify-center mb-12">
+        <div className="inline-flex p-1 bg-gray-100 rounded-lg border border-gray-200">
           <ToggleButtonGroup
             value={billingCycle}
             exclusive
             onChange={handleBillingCycleChange}
-            aria-label="billing cycle"
-            color="primary"
-            sx={{ 
-              width: '100%',
-              '& .MuiToggleButtonGroup-grouped': {
-                borderRadius: 3,
-                fontWeight: 500,
-                py: 1,
-                px: 3
-              }
-            }}
+            className="w-full"
           >
-            <ToggleButton value="monthly" aria-label="monthly billing">
+            <ToggleButton value="monthly" className="rounded-lg font-medium py-2 px-6">
               Monthly
             </ToggleButton>
-            <ToggleButton value="annual" aria-label="annual billing">
-              Annual <Box component="span" sx={{ ml: 1, color: 'success.main', fontSize: '0.75rem', fontWeight: 'bold' }}>Save 17%</Box>
+            <ToggleButton value="annual" className="rounded-lg font-medium py-2 px-6">
+              Annual <span className="ml-1 text-xs font-bold text-green-600">Save 17%</span>
             </ToggleButton>
           </ToggleButtonGroup>
-        </Paper>
-      </Box>
+        </div>
+      </div>
 
       {error && (
         <Alert
           severity={error.includes('Setting up') || error.includes('Processing') || error.includes('Redirecting') ? 'info' : 'error'}
-          sx={{ 
-            mb: 4, 
-            '& .MuiAlert-message': { whiteSpace: 'pre-line' },
-            borderRadius: 2,
-            boxShadow: '0 2px 10px rgba(0,0,0,0.08)'
-          }}
+          className="mb-8 whitespace-pre-line rounded-lg shadow-sm"
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <div className="flex items-center gap-2">
             <Typography variant="subtitle1" component="div">
               {error}
             </Typography>
             {(error.includes('Setting up') || error.includes('Processing') || error.includes('Redirecting')) && (
-              <CircularProgress size={20} />
+              <CircularProgress size="small" />
             )}
-          </Box>
+          </div>
         </Alert>
       )}
 
       {/* Plan selection cards */}
-      <Grid container spacing={4} justifyContent="center">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 justify-center">
         {PLANS.map((plan) => (
-          <Grid item xs={12} sm={6} md={4} key={plan.id}>
+          <div key={plan.id} className="col-span-1">
             <Card
-              sx={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                position: 'relative',
-                borderRadius: 3,
-                overflow: 'visible', // Allow elements to overflow for the badge
-                boxShadow: selectedPlan === plan.id 
-                  ? '0 8px 24px rgba(0,0,0,0.12)' 
-                  : '0 2px 12px rgba(0,0,0,0.08)',
-                transition: 'all 0.3s ease',
-                transform: selectedPlan === plan.id ? 'translateY(-8px)' : 'none',
-                '&:hover': {
-                  transform: 'translateY(-5px)',
-                  boxShadow: '0 8px 28px rgba(0,0,0,0.15)',
-                },
-                ...(selectedPlan === plan.id && {
-                  border: '2px solid',
-                  borderColor: getPlanColor(plan.id),
-                }),
-              }}
+              className={`h-full flex flex-col relative overflow-visible rounded-xl transition-all duration-300 ${
+                selectedPlan === plan.id 
+                  ? `border-2 border-${plan.id === 'professional' ? 'purple' : plan.id === 'enterprise' ? 'indigo' : 'blue'}-500 shadow-lg transform -translate-y-2` 
+                  : 'shadow-md hover:shadow-lg hover:-translate-y-1'
+              }`}
             >
               {/* Popular badge */}
               {plan.id === 'professional' && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: -12,
-                    right: 24,
-                    backgroundColor: getPlanColor('professional'),
-                    color: 'white',
-                    px: 2,
-                    py: 0.5,
-                    borderRadius: 10,
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                    zIndex: 1
-                  }}
+                <div
+                  className="absolute -top-3 right-6 px-3 py-1 bg-purple-600 text-white text-xs font-bold rounded-full shadow-md z-10"
                 >
-                  <Typography variant="caption" fontWeight="bold">
-                    POPULAR
-                  </Typography>
-                </Box>
+                  POPULAR
+                </div>
               )}
               
               {/* Best value badge */}
               {plan.id === 'enterprise' && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: -12,
-                    right: 24,
-                    backgroundColor: getPlanColor('enterprise'),
-                    color: 'white',
-                    px: 2,
-                    py: 0.5,
-                    borderRadius: 10,
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                    zIndex: 1
-                  }}
+                <div
+                  className="absolute -top-3 right-6 px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded-full shadow-md z-10"
                 >
-                  <Typography variant="caption" fontWeight="bold">
-                    BEST VALUE
-                  </Typography>
-                </Box>
+                  BEST VALUE
+                </div>
               )}
               
-              <CardContent sx={{ flexGrow: 1, p: 3 }}>
-                <Typography gutterBottom variant="h5" component="h2" fontWeight={600}>
+              <CardContent className="flex-grow p-6">
+                <Typography variant="h5" component="h2" className="font-semibold">
                   {plan.name}
                 </Typography>
-                <Typography variant="h4" sx={{ color: getPlanColor(plan.id) }} gutterBottom fontWeight={700}>
+                <Typography variant="h4" className={`text-${plan.id === 'professional' ? 'purple' : plan.id === 'enterprise' ? 'indigo' : 'blue'}-600 font-bold`}>
                   ${plan.price[billingCycle]}
                   <Typography
                     component="span"
                     variant="subtitle1"
-                    color="text.secondary"
-                    sx={{ ml: 0.5, fontWeight: 400 }}
+                    className="ml-1 text-gray-500 font-normal"
                   >
                     {billingCycle === 'monthly' ? '/month' : '/year'}
                   </Typography>
                 </Typography>
                 
-                <Divider sx={{ my: 2 }} />
+                <Divider className="my-4" />
                 
-                <Box sx={{ mt: 2 }}>
+                <div className="mt-4">
                   {plan.features.map((feature) => (
-                    <Box 
+                    <div 
                       key={feature}
-                      sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center',
-                        py: 0.75,
-                        borderBottom: '1px solid',
-                        borderColor: 'rgba(0,0,0,0.06)',
-                        '&:last-child': {
-                          borderBottom: 'none'
-                        }
-                      }}
+                      className="flex items-center py-2 border-b border-gray-100 last:border-0"
                     >
-                      <Box 
-                        sx={{ 
-                          color: 'success.main', 
-                          display: 'flex', 
-                          mr: 1.5,
-                          fontSize: '1.2rem',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
+                      <span className={`text-${plan.id === 'professional' ? 'purple' : plan.id === 'enterprise' ? 'indigo' : 'green'}-500 mr-3 font-bold`}>
                         ✓
-                      </Box>
-                      <Typography variant="body2" color="text.primary">
+                      </span>
+                      <Typography variant="body2" className="text-gray-700">
                         {feature}
                       </Typography>
-                    </Box>
+                    </div>
                   ))}
-                </Box>
+                </div>
               </CardContent>
-              <CardActions sx={{ p: 3, pt: 0 }}>
+              <CardActions className="p-6 pt-0">
                 <Button
                   fullWidth
                   variant={selectedPlan === plan.id ? 'contained' : 'outlined'}
-                  onClick={() => handlePlanSelect(plan.id)}
-                  disabled={isSubmitting || isUpdating}
-                  sx={{ 
-                    py: 1.2,
-                    borderRadius: 2,
-                    textTransform: 'none',
-                    fontSize: '1rem',
-                    fontWeight: 500,
-                    ...(selectedPlan === plan.id ? {
-                      bgcolor: getPlanColor(plan.id),
-                      '&:hover': { bgcolor: getPlanColor(plan.id) },
-                      boxShadow: '0 4px 10px rgba(0,0,0,0.15)'
-                    } : {
-                      color: getPlanColor(plan.id),
-                      borderColor: getPlanColor(plan.id)
-                    })
-                  }}
+                  onClick={() => handlePlanSelection(plan)}
+                  disabled={submitting || isUpdating}
+                  className={`py-3 rounded-lg text-base font-medium ${
+                    selectedPlan === plan.id 
+                      ? `bg-${plan.id === 'professional' ? 'purple' : plan.id === 'enterprise' ? 'indigo' : 'blue'}-600 hover:bg-${plan.id === 'professional' ? 'purple' : plan.id === 'enterprise' ? 'indigo' : 'blue'}-700 text-white shadow-md` 
+                      : `text-${plan.id === 'professional' ? 'purple' : plan.id === 'enterprise' ? 'indigo' : 'blue'}-600 border-${plan.id === 'professional' ? 'purple' : plan.id === 'enterprise' ? 'indigo' : 'blue'}-600`
+                  }`}
                 >
-                  {(isSubmitting || isUpdating) && selectedPlan === plan.id ? (
-                    <CircularProgress size={24} />
+                  {(submitting || isUpdating) && selectedPlan === plan.id ? (
+                    <CircularProgress size="small" />
                   ) : (
                     'Select Plan'
                   )}
                 </Button>
               </CardActions>
             </Card>
-          </Grid>
+          </div>
         ))}
-      </Grid>
+      </div>
 
-        {/* Payment Method Selection - Only show for paid plans and animate appearance */}
-        <Collapse in={isPaidPlanSelected}>
-          <Fade in={isPaidPlanSelected} timeout={800}>
-            <Box sx={{ mt: 4 }}>
-              <Paper sx={{ p: 3, mb: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">
-                    Selected Plan: {selectedPlan === 'professional' ? 'Professional' : 'Enterprise'}
-                  </Typography>
-                  <Typography variant="h6" color="primary">
-                    ${selectedPlan && PLANS.find(p => p.id === selectedPlan)?.price[billingCycle]}{billingCycle === 'monthly' ? '/month' : '/year'}
-                  </Typography>
-                </Box>
-                
-                <Divider sx={{ mb: 3 }} />
-                
-                <Typography variant="h6" gutterBottom>
-                  How would you like to pay?
+      {/* Payment Method Selection - Only show for paid plans and animate appearance */}
+      <Collapse in={isPaidPlanSelected}>
+        <Fade in={isPaidPlanSelected} timeout={800}>
+          <div className="mt-8">
+            <Card className="p-6 mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <Typography variant="h6">
+                  Selected Plan: {selectedPlan === 'professional' ? 'Professional' : 'Enterprise'}
                 </Typography>
-                
-                <FormControl component="fieldset" sx={{ width: '100%' }}>
-                  <RadioGroup
-                    aria-label="payment-method"
-                    name="payment-method"
-                    value={selectedPaymentMethod}
-                    onChange={handlePaymentMethodSelect}
-                  >
-                    {PAYMENT_METHODS.map((method) => (
-                      <Paper 
-                        key={method.id}
-                        elevation={selectedPaymentMethod === method.id ? 3 : 1}
-                        sx={{ 
-                          mb: 2, 
-                          p: 2, 
-                          border: selectedPaymentMethod === method.id ? '2px solid' : '1px solid',
-                          borderColor: selectedPaymentMethod === method.id ? 'primary.main' : 'divider',
-                          borderRadius: 1,
-                          transition: 'all 0.2s ease-in-out'
-                        }}
-                      >
-                        <FormControlLabel
-                          value={method.id}
-                          control={<Radio />}
-                          label={
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Icon sx={{ mr: 1 }}>{method.icon}</Icon>
-                              <Box>
-                                <Typography variant="subtitle1">{method.name}</Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  {method.description}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          }
-                          sx={{ width: '100%', m: 0 }}
-                        />
-                      </Paper>
-                    ))}
-                  </RadioGroup>
-                </FormControl>
-                
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleContinue}
-                    disabled={!selectedPaymentMethod || isSubmitting || isUpdating}
-                    sx={{ minWidth: 200 }}
-                  >
-                    {isSubmitting || isUpdating ? (
-                      <CircularProgress size={24} />
-                    ) : (
-                      'Continue'
-                    )}
-                  </Button>
-                </Box>
-              </Paper>
-            </Box>
-          </Fade>
-        </Collapse>
-      </Container>
+                <Typography variant="h6" className="text-primary-600">
+                  ${selectedPlan && PLANS.find(p => p.id === selectedPlan)?.price[billingCycle]}{billingCycle === 'monthly' ? '/month' : '/year'}
+                </Typography>
+              </div>
+              
+              <Divider className="mb-6" />
+              
+              <Typography variant="h6" className="mb-4">
+                How would you like to pay?
+              </Typography>
+              
+              <FormControl className="w-full">
+                <RadioGroup
+                  name="payment-method"
+                  value={selectedPaymentMethod}
+                  onChange={handlePaymentMethodChange}
+                  className="space-y-4"
+                >
+                  {PAYMENT_METHODS.map((method) => (
+                    <div 
+                      key={method.id}
+                      className={`p-4 border rounded-lg transition-all ${
+                        selectedPaymentMethod === method.id 
+                          ? 'border-primary-500 shadow-md' 
+                          : 'border-gray-200 shadow-sm'
+                      }`}
+                    >
+                      <FormControlLabel
+                        value={method.id}
+                        control={<Radio />}
+                        label={
+                          <div className="flex items-center ml-2">
+                            <span className="mr-3 text-gray-500">
+                              {method.icon === 'credit_card' && (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                </svg>
+                              )}
+                              {method.icon === 'account_balance_wallet' && (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                              )}
+                              {method.icon === 'smartphone' && (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                              )}
+                            </span>
+                            <div>
+                              <Typography variant="subtitle1">{method.name}</Typography>
+                              <Typography variant="body2" className="text-gray-500">
+                                {method.description}
+                              </Typography>
+                            </div>
+                          </div>
+                        }
+                        className="w-full m-0"
+                      />
+                    </div>
+                  ))}
+                </RadioGroup>
+              </FormControl>
+              
+              <div className="flex justify-end mt-6">
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleContinue}
+                  disabled={!selectedPaymentMethod || submitting || isUpdating}
+                  className="min-w-[200px]"
+                >
+                  {submitting || isUpdating ? (
+                    <CircularProgress size="small" />
+                  ) : (
+                    'Continue'
+                  )}
+                </Button>
+              </div>
+            </Card>
+          </div>
+        </Fade>
+      </Collapse>
+    </Container>
   );
 }
 

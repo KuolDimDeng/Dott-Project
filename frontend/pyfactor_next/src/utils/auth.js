@@ -1,4 +1,4 @@
-import { fetchAuthSession, signInWithRedirect } from 'aws-amplify/auth';
+import { fetchAuthSession, signInWithRedirect, updateUserAttributes as amplifyUpdateUserAttributes, getCurrentUser as amplifyGetCurrentUser } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 import { jwtDecode } from 'jwt-decode';
 
@@ -185,5 +185,60 @@ export const extractUserInfo = (user) => {
       id: user.userId,
       provider: 'Cognito'
     };
+  }
+}
+
+/**
+ * Update user attributes in Cognito
+ * @param {Object} params - The parameters containing user attributes to update
+ * @returns {Promise<Object>} - Returns a promise that resolves to the update result
+ */
+export async function updateUserAttributes(params) {
+  try {
+    logger.debug('[Auth] Updating user attributes', { attributes: Object.keys(params.userAttributes) });
+    const result = await amplifyUpdateUserAttributes(params);
+    logger.debug('[Auth] User attributes updated successfully');
+    return result;
+  } catch (error) {
+    logger.error('[Auth] Error updating user attributes:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get the current authenticated user
+ * @returns {Promise<Object|null>} - Returns a promise that resolves to the current user or null
+ */
+export async function getCurrentUser() {
+  try {
+    logger.debug('[Auth] Getting current user');
+    const user = await amplifyGetCurrentUser();
+    logger.debug('[Auth] Current user retrieved successfully');
+    return user;
+  } catch (error) {
+    logger.debug('[Auth] No current user or error retrieving user:', error);
+    return null;
+  }
+}
+
+/**
+ * Get the current auth session including tokens
+ * @returns {Promise<Object|null>} - Returns a promise that resolves to the current session or null
+ */
+export async function getCurrentSession() {
+  try {
+    logger.debug('[Auth] Getting current session');
+    const session = await fetchAuthSession();
+    
+    if (!session.tokens) {
+      logger.warn('[Auth] No tokens in session');
+      return null;
+    }
+    
+    logger.debug('[Auth] Current session retrieved successfully');
+    return session;
+  } catch (error) {
+    logger.error('[Auth] Error getting current session:', error);
+    return null;
   }
 }

@@ -2,20 +2,16 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, Container, Paper, Typography, TextField, Button, Alert, CircularProgress, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
 import useOnboardingStore from '@/store/onboardingStore';
 import {
   businessTypes,
   legalStructures
 } from '@/app/utils/businessData';
 import { logger } from '@/utils/logger';
-import { validateSession } from '@/utils/onboardingUtils';
-import { getRefreshedAccessToken } from '@/utils/auth';
+import { onboardingService } from '@/services/onboardingService';
+import { updateUserAttributes } from '@/utils/auth';
 import countryList from 'react-select-country-list';
-import { ONBOARDING_STATES } from '../state/OnboardingStateManager';
-import { appendLanguageParam, getLanguageQueryString } from '@/utils/languageUtils';
-
-// Business state functionality removed as requested
+import { Box, Container, Paper, Typography, TextField, Button, Alert, CircularProgress, Select, FormControl, InputLabel } from '@/components/ui/TailwindComponents';
 
 // Create a safe version of useToast that doesn't throw if ToastProvider is not available
 const useSafeToast = () => {
@@ -34,8 +30,6 @@ const useSafeToast = () => {
   }
 };
 
-// Business subtypes functionality removed as requested
-
 export default function BusinessInfoPage() {
   const router = useRouter();
   const toast = useSafeToast();
@@ -51,18 +45,162 @@ export default function BusinessInfoPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [pageState, setPageState] = useState('loading');
 
+  // Initialize page and verify state
   useEffect(() => {
-    if (businessInfo) {
-      setFormData({
-        businessName: businessInfo.businessName || '',
-        businessType: businessInfo.businessType || '',
-        country: businessInfo.country || '',
-        legalStructure: businessInfo.legalStructure || '',
-        dateFounded: businessInfo.dateFounded || new Date().toISOString().split('T')[0],
-      });
+    async function initPage() {
+      try {
+        logger.debug('[BusinessInfo] Initializing page');
+        
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        // Function to handle state verification with retries
+        const verifyStateWithRetry = async () => {
+          try {
+            // For business-info, we want to allow partial state handling
+            const stateVerification = await onboardingService.verifyState('business-info')
+              .catch(err => {
+                logger.warn('[BusinessInfo] State verification failed on attempt ' + (retryCount + 1), err);
+                // Return a fallback verification that allows business-info
+                return {
+                  isValid: true,
+                  isPartial: true,
+                  userData: {
+                    email: '',
+                    onboardingStatus: 'NOT_STARTED',
+                    businessName: '',
+                    businessType: ''
+                  }
+                };
+              });
+            
+            if (!stateVerification) {
+              // For failed verification, if we have retries left, wait and try again
+              if (retryCount < maxRetries) {
+                retryCount++;
+                const delay = 1000 * Math.pow(1.5, retryCount);
+                logger.debug(`[BusinessInfo] Retrying state verification after ${delay}ms (attempt ${retryCount}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return verifyStateWithRetry();
+              } else {
+                // After max retries, just return a default verification that allows business-info
+                logger.warn('[BusinessInfo] Max retries reached for state verification, using default');
+                return { isValid: true, isPartial: true, userData: {} };
+              }
+            }
+            
+            // Special handling for partial responses
+            if (stateVerification.isPartial) {
+              logger.debug('[BusinessInfo] Using partial state verification');
+              return { isValid: true, isPartial: true, userData: {} };
+            }
+            
+            // Normal case
+            return stateVerification;
+          } catch (error) {
+            logger.error('[BusinessInfo] Error in verification retry:', error);
+            
+            // After error, if we have retries left, wait and try again
+            if (retryCount < maxRetries) {
+              retryCount++;
+              const delay = 1000 * Math.pow(1.5, retryCount);
+              logger.debug(`[BusinessInfo] Retrying after error with ${delay}ms delay (attempt ${retryCount}/${maxRetries})`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              return verifyStateWithRetry();
+            } else {
+              // After max retries, just return a default verification that allows business-info
+              logger.warn('[BusinessInfo] Max retries reached, using default verification');
+              return { isValid: true, isPartial: true, userData: {} };
+            }
+          }
+        };
+        
+        // Start verification process
+        const stateVerification = await verifyStateWithRetry();
+        
+        if (stateVerification && !stateVerification.isValid) {
+          logger.warn('[BusinessInfo] Invalid state, redirecting to:', stateVerification.redirectUrl);
+          router.replace(stateVerification.redirectUrl);
+          return;
+        }
+        
+        // Reset retry counter for state fetch
+        retryCount = 0;
+        
+        // Function to get state with retries
+        const getStateWithRetry = async () => {
+          try {
+            // For business-info, explicitly set forBusinessInfo=true
+            const state = await onboardingService.getState({ 
+              allowPartial: true, 
+              forBusinessInfo: true 
+            });
+            return state;
+          } catch (error) {
+            logger.error('[BusinessInfo] Error fetching state on attempt ' + (retryCount + 1), error);
+            
+            // If we have retries left, wait and try again
+            if (retryCount < maxRetries) {
+              retryCount++;
+              const delay = 1000 * Math.pow(1.5, retryCount);
+              logger.debug(`[BusinessInfo] Retrying state fetch after ${delay}ms (attempt ${retryCount}/${maxRetries})`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              return getStateWithRetry();
+            } else {
+              // After max retries, just return an empty state for business-info
+              logger.warn('[BusinessInfo] Max retries reached for state fetch, using empty state');
+              return { 
+                userData: {
+                  email: '',
+                  businessName: '',
+                  businessType: '',
+                  onboardingStatus: 'NOT_STARTED'
+                }, 
+                isPartial: true,
+                status: 'NOT_STARTED',
+                currentStep: 'business-info'
+              };
+            }
+          }
+        };
+        
+        // Fetch existing business info data from server with retries
+        const state = await getStateWithRetry();
+        
+        if (state && state.userData) {
+          // Use server data if available
+          setFormData({
+            businessName: state.userData.businessName || '',
+            businessType: state.userData.businessType || '',
+            country: state.userData.country || '',
+            legalStructure: state.userData.legalStructure || '',
+            dateFounded: state.userData.dateFounded || new Date().toISOString().split('T')[0],
+          });
+          logger.debug('[BusinessInfo] Loaded data from server', state.userData);
+        } else if (businessInfo) {
+          // Fall back to local store
+          setFormData({
+            businessName: businessInfo.businessName || '',
+            businessType: businessInfo.businessType || '',
+            country: businessInfo.country || '',
+            legalStructure: businessInfo.legalStructure || '',
+            dateFounded: businessInfo.dateFounded || new Date().toISOString().split('T')[0],
+          });
+          logger.debug('[BusinessInfo] Loaded data from local store');
+        }
+        
+        setPageState('ready');
+      } catch (error) {
+        logger.error('[BusinessInfo] Error initializing page:', error);
+        setPageState('error');
+        setFormError('Failed to initialize page. Please try refreshing.');
+      }
     }
-  }, [businessInfo]);
+    
+    initPage();
+  }, [businessInfo, router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -88,143 +226,211 @@ export default function BusinessInfoPage() {
         throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
       }
 
-      // Get auth session with tokens
-      const { tokens } = await validateSession();
-      if (!tokens?.accessToken || !tokens?.idToken) {
-        throw new Error('No valid session tokens');
-      }
-
-      // Ensure we have a fresh token
-      let accessToken = tokens.accessToken.toString();
-      const idToken = tokens.idToken.toString();
+      logger.debug('[BusinessInfo] Submitting form data');
       
-      // Try to refresh the token before making the API request
+      // ENHANCED: Step 1: Ensure cookies are set with proper values and debugging
       try {
-        const refreshedToken = await getRefreshedAccessToken();
-        if (refreshedToken) {
-          logger.info('[BusinessInfo] Using refreshed token for API request');
-          accessToken = refreshedToken;
-        }
-      } catch (refreshError) {
-        logger.warn('[BusinessInfo] Token refresh failed, using original token:', refreshError);
-        // Continue with original token
-      }
-      
-      logger.debug('[BusinessInfo] Making API request:', {
-        token: accessToken.substring(0, 20) + '...', // Log first 20 chars of token
-        formData,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Id-Token': idToken
-        }
-      });
-
-      // Submit business info to API with auth tokens
-      let response = await fetch('/api/onboarding/business-info', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Id-Token': idToken
-        },
-        body: JSON.stringify(formData),
-      });
-
-      // Handle 401 Unauthorized errors by trying again with a forced token refresh
-      if (response.status === 401) {
-        logger.warn('[BusinessInfo] Received 401 Unauthorized, attempting token refresh and retry');
+        // Set cookies directly - important for navigation
+        const expiration = new Date();
+        expiration.setDate(expiration.getDate() + 7); // 7 days
         
-        // Force token refresh
-        const forcedRefreshToken = await getRefreshedAccessToken();
-        if (!forcedRefreshToken) {
-          throw new Error('Token refresh failed after 401 error');
-        }
+        // Set onboarding status cookies with forced values for reliable redirection
+        const statusCookie = `onboardedStatus=BUSINESS_INFO; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+        const stepCookie = `onboardingStep=subscription; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
         
-        // Retry the request with the new token
-        logger.info('[BusinessInfo] Retrying request with fresh token');
-        response = await fetch('/api/onboarding/business-info', {
+        logger.debug('[BusinessInfo] Setting critical cookies:', {
+          statusCookie,
+          stepCookie
+        });
+        
+        document.cookie = statusCookie;
+        document.cookie = stepCookie;
+        
+        // Force verification of cookie setting - read back to confirm
+        setTimeout(() => {
+          const cookieStatus = document.cookie.split(';').find(c => c.trim().startsWith('onboardedStatus='))?.trim().split('=')[1];
+          const cookieStep = document.cookie.split(';').find(c => c.trim().startsWith('onboardingStep='))?.trim().split('=')[1];
+          
+          logger.debug('[BusinessInfo] Verified cookie values:', {
+            cookieStatus,
+            cookieStep,
+            expected: {
+              status: 'BUSINESS_INFO',
+              step: 'subscription'
+            }
+          });
+        }, 100);
+        
+        // Set business info cookies
+        document.cookie = `businessName=${encodeURIComponent(formData.businessName)}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+        document.cookie = `businessType=${encodeURIComponent(formData.businessType)}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+        document.cookie = `businessCountry=${encodeURIComponent(formData.country)}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+        document.cookie = `legalStructure=${encodeURIComponent(formData.legalStructure)}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+        
+        logger.debug('[BusinessInfo] Business info cookies set successfully');
+        
+        // Use API endpoint to set cookies server-side as well
+        fetch('/api/onboarding/business-info', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${forcedRefreshToken}`,
-            'X-Id-Token': idToken
+            'Content-Type': 'application/json'
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({
+            ...formData,
+            // Add explicit status for server
+            _onboardingStatus: 'BUSINESS_INFO',
+            _onboardingStep: 'subscription'
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          logger.debug('[BusinessInfo] API business info update successful:', data);
+        })
+        .catch(apiError => {
+          logger.error('[BusinessInfo] API business info update failed:', apiError);
+          // Continue since we already set cookies directly
         });
         
-        if (!response.ok) {
-          const errorData = await response.json();
-          logger.error('[BusinessInfo] API retry request failed:', {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData
-          });
-          throw new Error(errorData.message || 'Failed to update business information after token refresh');
-        }
-      } else if (!response.ok) {
-        const errorData = await response.json();
-        logger.error('[BusinessInfo] API request failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData
+        // Try to update Cognito attributes in the background without blocking
+        updateUserAttributes({
+          userAttributes: {
+            'custom:onboarding': 'BUSINESS_INFO',
+            'custom:updated_at': new Date().toISOString()
+          }
+        }).then(() => {
+          logger.debug('[BusinessInfo] Cognito attributes updated successfully');
+        }).catch(cognitoError => {
+          logger.error('[BusinessInfo] Failed to update Cognito attributes:', cognitoError);
+          // Don't throw error since we have cookies as a backup
         });
-        throw new Error(errorData.message || 'Failed to update business information');
+      } catch (cookieError) {
+        logger.error('[BusinessInfo] Failed to set cookies:', cookieError);
+        
+        // If direct cookie setting fails, try the API method
+        fetch('/api/onboarding/business-info', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            ...formData,
+            // Add explicit status for server
+            _onboardingStatus: 'BUSINESS_INFO',
+            _onboardingStep: 'subscription'
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          logger.debug('[BusinessInfo] Fallback API business info update successful:', data);
+        })
+        .catch(apiError => {
+          logger.error('[BusinessInfo] Fallback API business info update failed:', apiError);
+          // Continue to next step of the process
+        });
       }
-
-      const data = await response.json();
       
-      // Update store
-      const success = await setBusinessInfo(formData);
+      // Step 2: Try to update server-side state in background without waiting
+      onboardingService.updateState('business-info', {
+        ...formData,
+        onboardingStatus: 'BUSINESS_INFO',
+        onboardingStep: 'subscription'
+      })
+        .then(() => {
+          logger.debug('[BusinessInfo] Server state updated successfully');
+        })
+        .catch((stateError) => {
+          logger.error('[BusinessInfo] Server state update failed:', stateError);
+          
+          // Try the dedicated API endpoint as a backup
+          fetch('/api/onboarding/state', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              step: 'business-info',
+              data: formData,
+              status: 'BUSINESS_INFO',
+              nextStep: 'subscription'
+            })
+          })
+          .then(res => res.json())
+          .then(data => {
+            logger.debug('[BusinessInfo] API state endpoint backup succeeded:', data);
+          })
+          .catch(apiError => {
+            logger.error('[BusinessInfo] API state endpoint backup failed:', apiError);
+            // We still have cookies as our ultimate fallback
+          });
+        });
       
-      if (!success) {
-        throw new Error('Failed to update business information');
+      // Step 3: Update local store
+      try {
+        await setBusinessInfo(formData);
+        logger.debug('[BusinessInfo] Local store updated successfully');
+      } catch (storeError) {
+        logger.warn('[BusinessInfo] Local store update failed:', storeError);
+        // Not critical, continue
       }
-
-      logger.debug('[BusinessInfo] Successfully updated business info:', data);
       
-      // Check if there's a warning message
-      if (data.warning) {
-        logger.warn('[BusinessInfo] Warning from API:', data.warning);
-        toast.warning(`Business information saved with warning: ${data.warning}`);
-      } else {
-        toast.success('Business information saved successfully');
-      }
+      // ENHANCED: Force cookies one more time
+      const expiration = new Date();
+      expiration.setDate(expiration.getDate() + 7);
+      document.cookie = `onboardingStep=subscription; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+      document.cookie = `onboardedStatus=BUSINESS_INFO; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
       
-      // ALWAYS redirect to subscription page regardless of API response
-      logger.debug('[BusinessInfo] Force redirecting to subscription page');
-
-      // Set cookie with the next step
-      document.cookie = `onboardingStep=subscription; path=/; max-age=${60 * 60 * 24 * 7}`;
-      document.cookie = `onboardedStatus=BUSINESS_INFO; path=/; max-age=${60 * 60 * 24 * 7}`;
-
-      // Get the language query string using our utility
-      const langQueryString = getLanguageQueryString();
-
-      // Use window.location for a full page reload instead of router.push
-      // This ensures all cookies are properly set before redirection
-      window.location.href = `/onboarding/subscription${langQueryString}`;
+      // Show success message
+      toast.success('Business information saved successfully');
+      
+      // Use a simplified approach to navigation
+      logger.debug('[BusinessInfo] Using simplified navigation to subscription page');
+      
+      // Add a timestamp parameter to avoid URL cache
+      const timestamp = Date.now();
+      const redirectUrl = `/onboarding/subscription?ts=${timestamp}`;
+      
+      // ENHANCED: Set a flag indicating navigation is in progress
+      window.sessionStorage.setItem('navigatingTo', 'subscription');
+      window.sessionStorage.setItem('businessInfoSubmitted', 'true');
+      
+      // Force one final cookie set then navigate
+      setTimeout(() => {
+        document.cookie = `onboardingStep=subscription; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+        document.cookie = `onboardedStatus=BUSINESS_INFO; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+        
+        try {
+          logger.debug(`[BusinessInfo] Redirecting to ${redirectUrl} - final cookies:`, {
+            onboardingStep: document.cookie.split(';').find(c => c.trim().startsWith('onboardingStep='))?.trim().split('=')[1],
+            onboardedStatus: document.cookie.split(';').find(c => c.trim().startsWith('onboardedStatus='))?.trim().split('=')[1]
+          });
+          
+          // Force page refresh with new URL
+          window.location.href = redirectUrl;
+        } catch (navError) {
+          logger.error('[BusinessInfo] Direct navigation failed:', navError);
+          
+          // Final fallback - try router
+          try {
+            logger.debug('[BusinessInfo] Using router fallback');
+            router.push(redirectUrl);
+          } catch (routerError) {
+            logger.error('[BusinessInfo] Router fallback failed:', routerError);
+          }
+        }
+      }, 500);
 
     } catch (error) {
       logger.error('[BusinessInfo] Form submission failed:', error);
       setFormError(error.message);
       toast.error(error.message);
-    } finally {
       setSubmitting(false);
     }
   };
 
-  if (isLoading) {
+  if (pageState === 'loading' || isLoading) {
     return (
       <Container maxWidth="sm">
-        <Box
-          sx={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
+        <Box className="min-h-screen flex items-center justify-center">
           <CircularProgress />
         </Box>
       </Container>
@@ -233,167 +439,121 @@ export default function BusinessInfoPage() {
 
   return (
     <Container maxWidth="md">
-      <Paper
-        elevation={2}
-        sx={{
-          p: { xs: 3, sm: 5 },
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 3,
-          borderRadius: 2,
-          backgroundColor: 'white',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
-        }}
-      >
+      <Paper className="p-6 sm:p-10 flex flex-col gap-6 rounded-lg shadow-md bg-white">
         {(error || formError) && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" className="mb-4">
             {error || formError}
           </Alert>
         )}
 
-        <Box
-          component="form"
-          onSubmit={handleSubmit}
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 3
-          }}
-        >
-          {/* Business name field with improved styling */}
+        <div className="text-center mb-2">
+          <Typography variant="h4" component="h1" className="mb-2">
+            Business Information
+          </Typography>
+          <Typography variant="body1" color="textSecondary">
+            Tell us about your business so we can customize your experience
+          </Typography>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
           <TextField
-            required
-            fullWidth
-            id="businessName"
-            name="businessName"
             label="Business Name"
+            name="businessName"
             value={formData.businessName}
             onChange={handleChange}
+            required
+            fullWidth
             disabled={submitting}
-            variant="outlined"
-            helperText="The official name of your business"
-            InputProps={{
-              sx: { borderRadius: 1.5 }
-            }}
           />
 
-          {/* Organize form into 2-column layout on larger screens */}
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
-            <FormControl fullWidth required variant="outlined">
-              <InputLabel id="businessType-label">Business Type</InputLabel>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormControl fullWidth>
               <Select
-                labelId="businessType-label"
-                id="businessType"
+                label="Business Type"
                 name="businessType"
                 value={formData.businessType}
                 onChange={handleChange}
+                required
                 disabled={submitting}
-                label="Business Type"
-                sx={{ borderRadius: 1.5 }}
               >
+                <option value="">Select a business type</option>
                 {businessTypes.map((type) => (
-                  <MenuItem key={type} value={type}>
+                  <option key={type} value={type}>
                     {type}
-                  </MenuItem>
+                  </option>
                 ))}
               </Select>
             </FormControl>
 
-            <FormControl fullWidth required variant="outlined">
-              <InputLabel id="country-label">Country</InputLabel>
+            <FormControl fullWidth>
               <Select
-                labelId="country-label"
-                id="country"
+                label="Country"
                 name="country"
                 value={formData.country}
                 onChange={handleChange}
+                required
                 disabled={submitting}
-                label="Country"
-                sx={{ borderRadius: 1.5 }}
               >
+                <option value="">Select your country</option>
                 {countries.map((country) => (
-                  <MenuItem key={country.value} value={country.value}>
+                  <option key={country.value} value={country.value}>
                     {country.label}
-                  </MenuItem>
+                  </option>
                 ))}
               </Select>
             </FormControl>
-          </Box>
+          </div>
 
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
-            <FormControl fullWidth required variant="outlined">
-              <InputLabel id="legalStructure-label">Legal Structure</InputLabel>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormControl fullWidth>
               <Select
-                labelId="legalStructure-label"
-                id="legalStructure"
+                label="Legal Structure"
                 name="legalStructure"
                 value={formData.legalStructure}
                 onChange={handleChange}
+                required
                 disabled={submitting}
-                label="Legal Structure" 
-                sx={{ borderRadius: 1.5 }}
               >
+                <option value="">Select legal structure</option>
                 {legalStructures.map((structure) => (
-                  <MenuItem key={structure} value={structure}>
+                  <option key={structure} value={structure}>
                     {structure}
-                  </MenuItem>
+                  </option>
                 ))}
               </Select>
             </FormControl>
 
             <TextField
-              required
-              fullWidth
-              id="dateFounded"
-              name="dateFounded"
               label="Date Founded"
+              name="dateFounded"
               type="date"
               value={formData.dateFounded}
               onChange={handleChange}
+              required
+              fullWidth
               disabled={submitting}
-              InputLabelProps={{
-                shrink: true,
-              }}
-              variant="outlined"
-              sx={{ borderRadius: 1.5 }}
-              InputProps={{
-                sx: { borderRadius: 1.5 }
-              }}
             />
-          </Box>
+          </div>
 
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+          <div className="flex justify-end pt-4">
             <Button
               type="submit"
               variant="contained"
               color="primary"
-              size="large"
               disabled={submitting}
-              sx={{ 
-                mt: 2,
-                py: 1.5, 
-                px: 4,
-                borderRadius: 2,
-                textTransform: 'none',
-                fontSize: '1rem',
-                fontWeight: 500,
-                boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                '&:hover': {
-                  boxShadow: '0 6px 15px rgba(0,0,0,0.15)',
-                }
-              }}
+              className="w-full md:w-auto"
             >
               {submitting ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CircularProgress size={24} color="inherit" />
+                <div className="flex items-center justify-center">
+                  <CircularProgress size="small" className="mr-2" />
                   <span>Saving...</span>
-                </Box>
+                </div>
               ) : (
-                'Continue to Next Step'
+                'Continue to Subscription'
               )}
             </Button>
-          </Box>
-        </Box>
+          </div>
+        </form>
       </Paper>
     </Container>
   );

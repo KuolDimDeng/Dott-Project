@@ -13,9 +13,10 @@ import {
   Paper,
   Container,
   Link,
-} from '@mui/material';
+} from '@/components/ui/TailwindComponents';
 import { useAuth } from '@/hooks/auth';
 import { logger } from '@/utils/logger';
+import ConfigureAmplify from '@/components/ConfigureAmplify';
 
 export default function VerifyEmail() {
   const router = useRouter();
@@ -29,6 +30,7 @@ export default function VerifyEmail() {
   const [countdown, setCountdown] = useState(0);
   const [initialCodeSent, setInitialCodeSent] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const handleResendCode = useCallback(async () => {
     if (!email) {
@@ -80,57 +82,56 @@ export default function VerifyEmail() {
   const sendInitialCode = useCallback(async () => {
     if (!email) return;
     
-    // Check if a code was recently sent (in the last 2 minutes)
+    // Check if a code was already sent via session storage
     try {
       const lastCodeSentTime = sessionStorage.getItem('verificationCodeSentAt');
-      const now = Date.now();
-      
       if (lastCodeSentTime) {
-        const timeSinceLastCode = now - parseInt(lastCodeSentTime);
-        const twoMinutesInMs = 2 * 60 * 1000;
+        const timeSinceLastCode = Date.now() - parseInt(lastCodeSentTime);
+        const fiveMinutesInMs = 5 * 60 * 1000;
         
-        if (timeSinceLastCode < twoMinutesInMs) {
-          logger.debug('[VerifyEmail] Code was recently sent, skipping automatic resend');
-          setSuccess('Please use the verification code sent to your email');
+        if (timeSinceLastCode < fiveMinutesInMs) {
+          logger.debug('[VerifyEmail] Code was recently sent via session, using existing code');
+          setSuccess('Please use the verification code already sent to your email');
           setInitialCodeSent(true);
           return;
         }
       }
     } catch (storageError) {
-      // Ignore storage errors
       logger.debug('[VerifyEmail] Error checking session storage:', storageError);
     }
     
+    // If we get here, we need to send a new code
     setError('');
     setSuccess('');
     setSendingCode(true);
 
     try {
-      logger.debug('[VerifyEmail] Sending initial verification code to:', email);
+      logger.debug('[VerifyEmail] Sending verification code to:', email);
       const result = await resendVerificationCode(email);
       
       if (result.success) {
+        const timestamp = Date.now().toString();
         setSuccess('Verification code has been sent to your email');
-        logger.debug('[VerifyEmail] Initial verification code sent successfully');
-        // Store the timestamp when the code was sent
+        logger.debug('[VerifyEmail] Verification code sent successfully');
+        
+        // Store the timestamp when the code was sent (in both session and local storage)
         try {
-          sessionStorage.setItem('verificationCodeSentAt', Date.now().toString());
+          sessionStorage.setItem('verificationCodeSentAt', timestamp);
         } catch (storageError) {
           logger.debug('[VerifyEmail] Error saving to session storage:', storageError);
         }
       } else if (result.code === 'LimitExceededException') {
-        // For rate limiting, show a success message instead of an error
-        logger.info('[VerifyEmail] Rate limit hit for initial verification code');
+        logger.info('[VerifyEmail] Rate limit hit for verification code');
         setSuccess('Please check your email for the verification code or wait a few minutes before requesting another');
       } else if (result.error?.includes('already confirmed')) {
         logger.info('[VerifyEmail] User already confirmed:', email);
         router.push('/dashboard');
       } else {
-        logger.error('[VerifyEmail] Error sending initial verification code:', result.error);
+        logger.error('[VerifyEmail] Error sending verification code:', result.error);
         setError(result.error || 'Failed to send verification code');
       }
     } catch (error) {
-      logger.error('[VerifyEmail] Unexpected error sending initial verification code:', error);
+      logger.error('[VerifyEmail] Unexpected error sending verification code:', error);
       setError('Failed to send verification code. Please try again later.');
     } finally {
       setSendingCode(false);
@@ -140,15 +141,31 @@ export default function VerifyEmail() {
 
   useEffect(() => {
     const emailParam = searchParams.get('email');
-    if (emailParam) {
+    if (emailParam && !initialCodeSent) {
       const decodedEmail = decodeURIComponent(emailParam);
       setEmail(decodedEmail);
       
-      // Always send verification code when email parameter is present
-      if (!initialCodeSent) {
-        sendInitialCode();
+      // Check if we're coming directly from signup
+      const signupCodeSent = localStorage.getItem('signupCodeSent');
+      const signupCodeTimestamp = localStorage.getItem('signupCodeTimestamp');
+      const now = Date.now();
+      
+      if (signupCodeSent === 'true' && signupCodeTimestamp) {
+        const timeSinceSignup = now - parseInt(signupCodeTimestamp);
+        const fiveMinutesInMs = 5 * 60 * 1000;
+        
+        if (timeSinceSignup < fiveMinutesInMs) {
+          // If we just came from signup (within 5 minutes), don't send another email
+          logger.debug('[VerifyEmail] Recently signed up, using existing code');
+          setSuccess('Please use the verification code sent during signup');
+          setInitialCodeSent(true);
+          return;
+        }
       }
-    } else {
+      
+      // Only proceed with sending code if we didn't just come from signup
+      sendInitialCode();
+    } else if (!emailParam) {
       // If no email parameter, log for debugging
       logger.debug('[VerifyEmail] No email parameter in URL, user will need to enter email manually');
     }
@@ -165,6 +182,12 @@ export default function VerifyEmail() {
 
   const handleVerifyEmail = async (e) => {
     e.preventDefault();
+    logger.debug('[VerifyEmail] Verify button clicked with:', {
+      email: email, 
+      codeLength: code?.length,
+      isLoading: isLoading
+    });
+    
     if (!email || !code) {
       setError('Please provide both email and verification code');
       return;
@@ -175,68 +198,84 @@ export default function VerifyEmail() {
 
     try {
       logger.debug('[VerifyEmail] Confirming sign up for:', email);
-      await confirmSignUp(email, code);
+      logger.debug('[VerifyEmail] Using verification code:', code.length > 0 ? '(provided)' : '(empty)');
+      
+      // Add more specific logging and validation
+      if (code.length < 6) {
+        setError('Verification code should be 6 digits. Please check the code sent to your email.');
+        return;
+      }
+      
+      logger.debug('[VerifyEmail] About to call confirmSignUp with:', {
+        email: email,
+        codeLength: code?.length,
+        code: code
+      });
+      
+      // Attempt to confirm the sign up
+      const result = await confirmSignUp(email, code);
+      
+      logger.debug('[VerifyEmail] Sign up confirmation result:', result);
       logger.debug('[VerifyEmail] Sign up confirmed successfully, redirecting to dashboard');
+      
       setSuccess('Email verified successfully! Redirecting to dashboard...');
       
       // Redirect to dashboard after a short delay
       setTimeout(() => {
+        logger.debug('[VerifyEmail] Redirecting to dashboard');
         router.push('/dashboard');
       }, 1500);
     } catch (error) {
-      logger.error('[VerifyEmail] Failed to confirm sign up:', error);
-      setError(error.message || 'Failed to verify email. Please try again.');
+      // Log specific error details
+      logger.error('[VerifyEmail] Failed to confirm sign up:', {
+        message: error.message,
+        code: error.code,
+        name: error.name,
+        email: email,
+        codeLength: code?.length
+      });
+      
+      // Show specific error messages based on the error type
+      if (error.code === 'CodeMismatchException') {
+        setError('The verification code is incorrect. Please check the code and try again.');
+      } else if (error.code === 'ExpiredCodeException') {
+        setError('The verification code has expired. Please request a new code.');
+      } else if (error.code === 'NotAuthorizedException') {
+        setError('Your account has already been verified. You can now sign in.');
+        setTimeout(() => {
+          router.push('/auth/signin');
+        }, 1500);
+      } else {
+        setError(error.message || 'Failed to verify email. Please try again.');
+      }
     }
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          py: 4,
-        }}
-      >
-        <Paper
-          elevation={3}
-          sx={{
-            p: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            width: '100%',
-          }}
-        >
-          <Box sx={{ mb: 4, width: '200px', height: '60px', position: 'relative' }}>
-            <Image
-              src="/static/images/Pyfactor.png"
-              alt="PyFactor Logo"
-              layout="fill"
-              objectFit="contain"
-              priority
-            />
-          </Box>
-
-          <Typography component="h1" variant="h5" gutterBottom>
+    <Container component="main" maxWidth="sm" className="pt-8">
+      <ConfigureAmplify />
+      <Paper elevation={3} className="p-8 mt-8">
+        <Box className="flex flex-col items-center">
+          <Typography component="h1" variant="h5" className="text-center mb-4">
             Verify Your Email
+          </Typography>
+          
+          <Typography variant="body1" className="text-center mb-4">
+            Enter the verification code that was sent to your email
           </Typography>
 
           {email ? (
             <>
-              <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: sendingCode ? 1 : 3 }}>
+              <Typography variant="body1" className="text-gray-600 text-center mb-3">
                 We've sent a verification code to:
               </Typography>
-              <Typography variant="body1" fontWeight="bold" align="center" sx={{ mb: sendingCode ? 1 : 3 }}>
+              <Typography variant="body1" className="font-bold text-center mb-3">
                 {email}
               </Typography>
               {sendingCode && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                  <CircularProgress size={24} />
-                  <Typography variant="body2" component="span" sx={{ ml: 1 }}>
+                <Box className="flex justify-center mb-2">
+                  <CircularProgress size="small" />
+                  <Typography variant="body2" component="span" className="ml-2">
                     Sending verification code...
                   </Typography>
                 </Box>
@@ -244,28 +283,35 @@ export default function VerifyEmail() {
             </>
           ) : (
             <>
-              <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 1 }}>
+              <Typography variant="body1" className="text-gray-600 text-center mb-1">
                 Please enter the email address you used to sign up and the verification code you received.
               </Typography>
-              <Typography variant="body1" fontWeight="bold" align="center" sx={{ mb: 3 }}>
+              <Typography variant="body1" className="font-bold text-center mb-3">
                 If you were redirected here from sign-in, you may need to check your email for the verification code.
               </Typography>
             </>
           )}
 
           {error && (
-            <Alert severity="error" sx={{ mb: 2, width: '100%' }}>
+            <Alert severity="error" className="mb-4 w-full">
               {error}
             </Alert>
           )}
 
           {success && (
-            <Alert severity="success" sx={{ mb: 2, width: '100%' }}>
+            <Alert severity="success" className="mb-4 w-full">
               {success}
             </Alert>
           )}
 
-          <Box component="form" onSubmit={handleVerifyEmail} sx={{ width: '100%' }}>
+          <Box 
+            component="form" 
+            onSubmit={(e) => {
+              logger.debug('[VerifyEmail] Form submit event triggered');
+              handleVerifyEmail(e);
+            }} 
+            className="w-full"
+          >
             <TextField
               margin="normal"
               required
@@ -305,23 +351,29 @@ export default function VerifyEmail() {
               type="submit"
               fullWidth
               variant="contained"
-              sx={{ mt: 3, mb: 2 }}
+              className="mt-6 mb-4 py-2"
               disabled={isLoading || !email || !code}
+              onClick={(e) => {
+                logger.debug('[VerifyEmail] Button clicked directly');
+                if (!isLoading && email && code) {
+                  handleVerifyEmail(e);
+                }
+              }}
             >
-              {isLoading ? <CircularProgress size={24} /> : 'Verify Email'}
+              {isLoading ? <CircularProgress size="small" /> : 'Verify Email'}
             </Button>
 
-            <Box sx={{ mt: 3, mb: 3, p: 2, bgcolor: 'rgba(0, 0, 0, 0.03)', borderRadius: 1 }}>
-              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+            <Box className="mt-6 mb-6 p-4 bg-gray-50 rounded">
+              <Typography variant="subtitle1" className="font-bold mb-2">
                 Didn't receive the verification code?
               </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <Typography variant="body2" className="text-gray-600 mb-1">
                 1. Check your spam/junk folder
               </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <Typography variant="body2" className="text-gray-600 mb-1">
                 2. Make sure the email address above is correct
               </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <Typography variant="body2" className="text-gray-600 mb-3">
                 3. Click the button below to request a new code
               </Typography>
               
@@ -331,29 +383,28 @@ export default function VerifyEmail() {
                 color="secondary"
                 onClick={handleResendCode}
                 disabled={resendDisabled || isLoading || !email || sendingCode}
-                sx={{ mt: 2 }}
+                className="mt-4"
               >
                 {countdown > 0
                   ? `Resend Code (${countdown}s)`
-                  : sendingCode ? <CircularProgress size={20} sx={{ mr: 1 }} /> : 'Resend Verification Code'}
+                  : sendingCode ? <CircularProgress size="small" className="mr-2" /> : 'Resend Verification Code'}
               </Button>
             </Box>
 
-            <Box sx={{ mt: 2, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary" component="div">
+            <Box className="mt-4 text-center">
+              <Typography variant="body2" className="text-gray-600">
                 Need to use a different email?{' '}
                 <Link
                   href="/auth/signin"
-                  sx={{ cursor: 'pointer' }}
-                  underline="hover"
+                  className="cursor-pointer hover:underline text-primary"
                 >
                   Return to sign in
                 </Link>
               </Typography>
             </Box>
           </Box>
-        </Paper>
-      </Box>
+        </Box>
+      </Paper>
     </Container>
   );
 }

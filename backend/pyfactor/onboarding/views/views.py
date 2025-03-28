@@ -1017,21 +1017,17 @@ class StartOnboardingView(BaseOnboardingView):
                             connection.close()
                             connection.connect()
                         
-                        try:
-                            onboarding = OnboardingProgress.objects.create(
-                                user=user,
-                                onboarding_status="setup",
-                                current_step="setup",
-                                next_step="complete"
-                            )
-                            return onboarding, True
-                        except IntegrityError:
-                            # Another process created it first, try to get it again
-                            onboarding = OnboardingProgress.objects.get(user=user)
-                            return onboarding, False
-                    except Exception as e:
-                        logger.error(f"Error in transaction: {str(e)}", exc_info=True)
-                        raise
+                        onboarding = OnboardingProgress.objects.create(
+                            user=user,
+                            onboarding_status="setup",
+                            current_step="setup",
+                            next_step="complete"
+                        )
+                        return onboarding, True
+                    except IntegrityError:
+                        # Another process created it first, try to get it again
+                        onboarding = OnboardingProgress.objects.get(user=user)
+                        return onboarding, False
                     finally:
                         # Restore previous autocommit setting
                         try:
@@ -3161,6 +3157,9 @@ class SaveStep2View(APIView):
                 # Only add non-empty values
                 if data['selected_plan']:
                     cognito_attributes['custom:subplan'] = data['selected_plan']
+                    # Explicitly log for free plan to ensure it's being set
+                    if data['selected_plan'] == 'free':
+                        logger.info(f"Setting FREE plan for user {request.user.id} in Cognito")
                 
                 # Always set onboarding status to a valid string value
                 cognito_attributes['custom:onboarding'] = 'SUBSCRIPTION'
@@ -3173,6 +3172,7 @@ class SaveStep2View(APIView):
                     logger.warning(f"No valid Cognito attributes to update for user {request.user.id}")
             except Exception as e:
                 logger.error(f"Failed to update Cognito attributes: {str(e)}")
+                # Continue even if Cognito update fails
 
             return subscription
         except Exception as e:

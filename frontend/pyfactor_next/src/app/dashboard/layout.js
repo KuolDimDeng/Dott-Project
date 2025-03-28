@@ -2,10 +2,18 @@
 
 // In /app/dashboard/layout.js
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { logger } from '@/utils/logger';
 import { ErrorBoundary } from 'react-error-boundary';
-import { Box, Typography, Button, Alert } from '@mui/material';
+
+// Dynamically load components with Next.js dynamic import
+const KeyboardFixerLoader = dynamic(
+  () => import('./components/forms/fixed/KeyboardEventFixer'),
+  { 
+    ssr: false,
+    loading: () => null
+  }
+);
 
 // Dynamically import the ReactErrorDebugger to avoid SSR issues
 const ReactErrorDebugger = dynamic(
@@ -19,48 +27,37 @@ const ReactErrorDebugger = dynamic(
 // Error fallback component
 function ErrorFallback({ error, resetErrorBoundary }) {
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        p: 3,
-        textAlign: 'center'
-      }}
+    <div
+      className="flex flex-col items-center justify-center min-h-screen p-3 text-center"
     >
-      <Alert severity="error" sx={{ mb: 3, maxWidth: 600 }}>
+      <div className="mb-3 max-w-md p-4 text-red-700 border border-red-200 bg-red-50 rounded-md">
         Something went wrong while loading the dashboard.
-      </Alert>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 600 }}>
+      </div>
+      <p className="mb-3 max-w-md text-sm text-gray-500">
         {error.message || 'An unexpected error occurred'}
-      </Typography>
-      <Button
-        variant="contained"
-        color="primary"
+      </p>
+      <button
         onClick={() => {
           // Clear any pending schema setup to avoid getting stuck
           sessionStorage.removeItem('pendingSchemaSetup');
           // Reset the error boundary
           resetErrorBoundary();
         }}
+        className="px-4 py-2 mb-2 text-white bg-primary-main hover:bg-primary-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-offset-2"
       >
         Try Again
-      </Button>
-      <Button
-        variant="outlined"
-        color="secondary"
-        sx={{ mt: 2 }}
+      </button>
+      <button
         onClick={() => {
           // Clear session storage and reload
           sessionStorage.clear();
           window.location.reload();
         }}
+        className="px-4 py-2 text-primary-main border border-primary-main hover:bg-primary-main/5 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-offset-2"
       >
         Reload Dashboard
-      </Button>
-    </Box>
+      </button>
+    </div>
   );
 }
 
@@ -130,6 +127,46 @@ export default function DashboardLayout({ children }) {
         };
     }, []);
     
+    // Performance monitoring for input fixes
+    useEffect(() => {
+        const monitorPerformance = () => {
+            // Watch for long tasks that might indicate performance issues
+            if ('PerformanceObserver' in window) {
+                try {
+                    const observer = new PerformanceObserver((list) => {
+                        const entries = list.getEntries();
+                        for (const entry of entries) {
+                            if (entry.duration > 50) { // Long task threshold (ms)
+                                logger.warn('[DashboardLayout] Long task detected:', {
+                                    duration: Math.round(entry.duration),
+                                    startTime: Math.round(entry.startTime),
+                                    name: entry.name
+                                });
+                                
+                                // If we detect very long tasks (> 500ms), disable the keyboard fix temporarily
+                                if (entry.duration > 500 && window.toggleInputFix) {
+                                    window.toggleInputFix(false);
+                                    
+                                    // Re-enable after 1 second
+                                    setTimeout(() => {
+                                        if (window.toggleInputFix) window.toggleInputFix(true);
+                                    }, 1000);
+                                }
+                            }
+                        }
+                    });
+                    
+                    observer.observe({ entryTypes: ['longtask'] });
+                    return () => observer.disconnect();
+                } catch (e) {
+                    logger.error('[DashboardLayout] Error setting up performance observer:', e);
+                }
+            }
+        };
+        
+        monitorPerformance();
+    }, []);
+    
     // Handle unhandled promise rejections
     useEffect(() => {
         const handleUnhandledRejection = (event) => {
@@ -147,12 +184,51 @@ export default function DashboardLayout({ children }) {
     }, []);
     
     return (
-        <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => {
-            // Reset any state that might have caused the error
-            sessionStorage.removeItem('pendingSchemaSetup');
-        }}>
-            {children}
-            {showDebugger && <ReactErrorDebugger enabled={true} />}
-        </ErrorBoundary>
+        <div className="text-gray-900 bg-gray-50 min-h-screen">
+            <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => {
+                // Reset any state that might have caused the error
+                sessionStorage.removeItem('pendingSchemaSetup');
+            }}>
+                <div className="dashboard-container relative min-h-screen">
+                    {/* 
+                      Load both input fixes, but with Suspense and lazy loading to minimize
+                      performance impact. These components run in parallel and complement each other.
+                    */}
+                    <Suspense fallback={null}>
+                      {React.createElement(
+                        React.lazy(() => import('./fixInputEvent')), 
+                        {}
+                      )}
+                    </Suspense>
+                    
+                    {/* Load the second fixer after a short delay */}
+                    <Suspense fallback={null}>
+                      {React.createElement(
+                        React.lazy(() => {
+                          // Small delay to stagger the loading
+                          return new Promise(resolve => {
+                            setTimeout(() => {
+                              resolve(import('./components/forms/fixed/KeyboardEventFixer'));
+                            }, 300);
+                          });
+                        }),
+                        {}
+                      )}
+                    </Suspense>
+                    
+                    {/* Add diagnostics component to help identify input issues */}
+                    <Suspense fallback={null}>
+                      {React.createElement(
+                        React.lazy(() => import('./RootDiagnostics')),
+                        {}
+                      )}
+                    </Suspense>
+                    
+                    {children}
+                    
+                    {showDebugger && <ReactErrorDebugger enabled={true} />}
+                </div>
+            </ErrorBoundary>
+        </div>
     );
 }

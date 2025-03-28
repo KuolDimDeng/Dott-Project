@@ -193,7 +193,7 @@ const Chatbot = ({ userName, backgroundColor }) => {
   };
 
   return (
-    <Box sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 9999 }}>
+    <Box sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 40, pointerEvents: 'auto' }}>
       {isOpen ? (
         <Paper
           elevation={3}
@@ -203,6 +203,7 @@ const Chatbot = ({ userName, backgroundColor }) => {
             display: 'flex',
             flexDirection: 'column',
             backgroundColor,
+            pointerEvents: 'auto',
           }}
         >
           <Box

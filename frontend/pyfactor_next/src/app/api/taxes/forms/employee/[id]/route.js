@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getTenantId } from '@/lib/tenantUtils';
-import { axiosInstance } from '@/lib/axiosConfig';
+import { serverAxiosInstance } from '@/lib/axiosConfig';
 
 export async function GET(request, { params }) {
   try {
@@ -18,7 +18,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Employee ID is required' }, { status: 400 });
     }
 
-    const response = await axiosInstance.get(`/api/taxes/forms/employee/${employeeId}/`, {
+    const response = await serverAxiosInstance.get(`/api/taxes/forms/employee/${employeeId}/`, {
       headers: {
         'X-Tenant-ID': tenantId,
         'X-Schema-Name': `tenant_${tenantId.replace(/-/g, '_')}`,

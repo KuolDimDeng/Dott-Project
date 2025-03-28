@@ -176,35 +176,130 @@ const useOnboardingStore = create((set, get) => ({
   },
 
   completeSetup: async () => {
+    set({ isLoading: true });
+    
     try {
       // Get current session using v6 API
       const { tokens } = await fetchAuthSession();
       if (!tokens?.accessToken) {
         throw new Error('No valid session');
       }
-
-      // Update user attributes
-      await updateUserAttributes({
-        userAttributes: {
-          'custom:setupdone': 'TRUE',
-          'custom:onboarding': ONBOARDING_STATES.COMPLETE,
-          'custom:updated_at': new Date().toISOString()
+      
+      const requestId = crypto.randomUUID();
+      let attributeUpdateSuccess = false;
+      
+      // Try multiple approaches to ensure attributes are updated
+      logger.debug('[OnboardingStore] Starting setup completion', {
+        requestId,
+        startTime: new Date().toISOString()
+      });
+      
+      // 1. First try: Update user attributes directly
+      try {
+        await updateUserAttributes({
+          userAttributes: {
+            'custom:setupdone': 'TRUE',
+            'custom:onboarding': ONBOARDING_STATES.COMPLETE,
+            'custom:updated_at': new Date().toISOString(),
+            'custom:onboardingCompletedAt': new Date().toISOString()
+          }
+        });
+        
+        attributeUpdateSuccess = true;
+        logger.debug('[OnboardingStore] Updated attributes directly', { requestId });
+      } catch (updateError) {
+        logger.error('[OnboardingStore] Direct attribute update failed:', {
+          requestId,
+          error: updateError.message
+        });
+        
+        // 2. Second try: Call the completion API endpoint
+        try {
+          const response = await fetch('/api/onboarding/setup/complete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${tokens.accessToken}`,
+              'X-Request-ID': requestId
+            }
+          });
+          
+          if (response.ok) {
+            attributeUpdateSuccess = true;
+            logger.debug('[OnboardingStore] Setup completed via API', { requestId });
+          } else {
+            throw new Error(`API returned status ${response.status}`);
+          }
+        } catch (apiError) {
+          logger.error('[OnboardingStore] API completion failed:', {
+            requestId,
+            error: apiError.message
+          });
+          
+          // 3. Third try: Use the update-attributes API
+          try {
+            const attributeResponse = await fetch('/api/user/update-attributes', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${tokens.accessToken}`,
+                'X-Request-ID': requestId
+              },
+              body: JSON.stringify({
+                attributes: {
+                  'custom:setupdone': 'TRUE',
+                  'custom:onboarding': ONBOARDING_STATES.COMPLETE,
+                  'custom:updated_at': new Date().toISOString()
+                },
+                forceUpdate: true
+              })
+            });
+            
+            if (attributeResponse.ok) {
+              attributeUpdateSuccess = true;
+              logger.debug('[OnboardingStore] Setup completed via attributes API', { requestId });
+            } else {
+              throw new Error(`Attributes API returned status ${attributeResponse.status}`);
+            }
+          } catch (attributesApiError) {
+            logger.error('[OnboardingStore] All methods failed:', {
+              requestId,
+              error: attributesApiError.message
+            });
+          }
         }
-      });
-
-      // Update store state
-      set({
-        currentStep: ONBOARDING_STATES.COMPLETE,
-        error: null
-      });
-
-      logger.debug('[OnboardingStore] Setup completed');
-      return true;
+      }
+      
+      // Set cookies for immediate status update
+      if (attributeUpdateSuccess) {
+        document.cookie = `onboardingStep=COMPLETE; path=/; max-age=${60*60*24*7}`;
+        document.cookie = `onboardedStatus=COMPLETE; path=/; max-age=${60*60*24*7}`;
+        document.cookie = `setupCompleted=true; path=/; max-age=${60*60*24*7}`;
+        
+        // Update store state
+        set({
+          currentStep: ONBOARDING_STATES.COMPLETE,
+          isLoading: false,
+          error: null
+        });
+        
+        logger.info('[OnboardingStore] Setup completed successfully', { requestId });
+        return true;
+      } else {
+        throw new Error('Failed to update onboarding status after multiple attempts');
+      }
     } catch (error) {
-      logger.error('[OnboardingStore] Failed to complete setup:', error);
-      set({
-        error: error.message
+      logger.error('[OnboardingStore] Failed to complete setup:', {
+        error: error.message,
+        code: error.code,
+        stack: error.stack
       });
+      
+      set({
+        error: error.message,
+        isLoading: false
+      });
+      
       return false;
     }
   },

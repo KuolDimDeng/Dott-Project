@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { jwtDecode } from 'jwt-decode';
 import { logger } from '@/utils/logger';
-import { getCurrentUser, fetchAuthSession, validateToken } from '@/config/amplifyServer';
+import { verifyToken, decodeToken } from '@/utils/serverAuth';
 
-// No need to configure Amplify here as it's already configured in amplifyUnified.js
+// Using our server-side auth utilities that don't rely on Amplify
 
 /**
  * Handle session token storage
@@ -18,15 +17,13 @@ export async function POST(request) {
       return new Response('No token provided', { status: 400 });
     }
 
-    // Validate token
-    const validation = validateToken(token);
-    if (!validation.valid) {
-      logger.error('[Session] Token validation failed:', validation.reason);
-      return new Response(validation.reason, { status: 401 });
+    // Verify token using our server-side utility
+    const payload = await verifyToken(token);
+    if (!payload) {
+      logger.error('[Session] Token verification failed');
+      return new Response('Invalid token', { status: 401 });
     }
     
-    const decoded = validation.decoded;
-
     // Set session cookies with secure options
     const response = NextResponse.json({ success: true });
     const cookieOptions = {
@@ -63,69 +60,42 @@ export async function GET(request) {
       return new Response('No valid session', { status: 401 });
     }
 
-    // Validate token, but be more lenient in development
-    const validation = validateToken(idToken);
-    if (!validation.valid && process.env.NODE_ENV === 'production') {
-      return new Response(validation.reason, { status: 401 });
-    }
+    // Verify token with our server-side utility
+    const payload = await verifyToken(idToken);
     
-    // If we're in development and the token is invalid, log a warning but continue
-    if (!validation.valid && process.env.NODE_ENV !== 'production') {
-      logger.warn('[Session] Token validation failed in development mode, continuing anyway:', validation.reason);
-      // Try to decode the token anyway
-      try {
-        var decoded = jwtDecode(idToken);
-      } catch (decodeError) {
-        logger.error('[Session] Failed to decode token even in lenient mode:', decodeError);
+    // In development, be more lenient with token validation
+    let decodedToken;
+    if (!payload && process.env.NODE_ENV !== 'production') {
+      logger.warn('[Session] Token verification failed in development mode, falling back to decoding');
+      decodedToken = decodeToken(idToken);
+      if (!decodedToken) {
+        logger.error('[Session] Failed to decode token even in lenient mode');
         return new Response('Invalid token format', { status: 401 });
       }
+    } else if (!payload) {
+      logger.error('[Session] Token verification failed in production mode');
+      return new Response('Invalid or expired token', { status: 401 });
     } else {
-      var decoded = validation.decoded;
+      decodedToken = payload;
     }
     
-    // Try to get current user from token
-    let user;
-    try {
-      // Get current authenticated user from token
-      const currentUser = await getCurrentUser(idToken);
-      // Get session info
-      const session = await fetchAuthSession(idToken);
-      
-      user = {
-        username: currentUser.username,
-        userId: currentUser.userId,
-        email: decoded.email,
-        attributes: {
-          email: decoded.email,
-          email_verified: decoded.email_verified,
-          // Extract any custom attributes
-          ...Object.keys(decoded)
-            .filter(key => key.startsWith('custom:'))
-            .reduce((obj, key) => {
-              obj[key] = decoded[key];
-              return obj;
-            }, {})
-        }
-      };
-    } catch (userError) {
-      logger.error('[Session] Failed to get current user:', userError);
-      // Fallback to token data if getCurrentUser fails
-      user = {
-        username: decoded['cognito:username'] || decoded.sub,
-        email: decoded.email,
-        attributes: {
-          email: decoded.email,
-          email_verified: decoded.email_verified,
-          // Extract any custom attributes
-          ...Object.keys(decoded)
-            .filter(key => key.startsWith('custom:'))
-            .reduce((obj, key) => {
-              obj[key] = decoded[key];
-              return obj;
-            }, {})
-        }
-      };
-    }
+    // Construct user object from token data
+    const user = {
+      username: decodedToken['cognito:username'] || decodedToken.sub,
+      userId: decodedToken.sub,
+      email: decodedToken.email,
+      attributes: {
+        email: decodedToken.email,
+        email_verified: decodedToken.email_verified === 'true' || decodedToken.email_verified === true,
+        // Extract any custom attributes
+        ...Object.keys(decodedToken)
+          .filter(key => key.startsWith('custom:'))
+          .reduce((obj, key) => {
+            obj[key] = decodedToken[key];
+            return obj;
+          }, {})
+      }
+    };
 
     // Set refreshed session cookies
     const response = NextResponse.json({ success: true, user });
