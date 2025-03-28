@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
+import { useNotification } from '@/context/NotificationContext';
 
 const CustomerList = ({ onCreateCustomer, onInvoiceSelect, onCustomerSelect, onBack }) => {
   const [customers, setCustomers] = useState([]);
   const [userDatabase, setUserDatabase] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { notifyError, notifyInfo } = useNotification();
 
   useEffect(() => {
     fetchUserProfile();
@@ -27,6 +29,7 @@ const CustomerList = ({ onCreateCustomer, onInvoiceSelect, onCustomerSelect, onB
     } catch (error) {
       logger.error('Error fetching user profile:', error);
       setError('Error fetching user profile');
+      notifyError('Failed to fetch user profile');
       setLoading(false);
     }
   };
@@ -43,6 +46,7 @@ const CustomerList = ({ onCreateCustomer, onInvoiceSelect, onCustomerSelect, onB
     } catch (error) {
       logger.error('Error fetching customers:', error);
       setError('Error fetching customers');
+      notifyError('Failed to fetch customers');
       setLoading(false);
     }
   };
@@ -50,6 +54,7 @@ const CustomerList = ({ onCreateCustomer, onInvoiceSelect, onCustomerSelect, onB
   const handleViewCustomer = (customer) => {
     console.log('Selected customer:', customer);
     onCustomerSelect(customer.id);
+    notifyInfo(`Viewing customer: ${customer.customerName || `${customer.first_name} ${customer.last_name}`}`);
   };
 
   if (loading) {

@@ -31,6 +31,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { styled } from '@mui/material/styles';
 import { axiosInstance } from '@/lib/axiosConfig';
 import PropTypes from 'prop-types';
+import { useNotification } from '@/context/NotificationContext';
 
 // Styled component for modern form layout
 const ModernFormLayout = styled(Box)(({ theme }) => ({
@@ -98,6 +99,55 @@ const FallbackCheckbox = ({ checked, onChange, name }) => {
 const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product, onUpdate, onCancel }) => {
   // Support both isNewProduct and newProduct props for backward compatibility
   const isCreatingNewProduct = isNewProduct || isNewProductProp || false;
+
+  // Add print styles for QR code
+  useEffect(() => {
+    // Create a style element for print styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        body.printing-qr-code .MuiDialog-root * {
+          visibility: hidden;
+        }
+        body.printing-qr-code .print-container,
+        body.printing-qr-code .print-container * {
+          visibility: visible;
+        }
+        body.printing-qr-code .hidden-print {
+          display: none !important;
+        }
+        body.printing-qr-code .print-container {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          padding: 15mm;
+        }
+        body.printing-qr-code .qr-code-container {
+          page-break-inside: avoid;
+          margin: 0 auto;
+          width: fit-content;
+        }
+        body.printing-qr-code .print-details {
+          margin-top: 15mm;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      // Clean up
+      if (style.parentNode) {
+        style.parentNode.removeChild(style);
+      }
+    };
+  }, []);
+
+  // Get notification functions
+  const { notifySuccess, notifyError, notifyInfo, notifyWarning } = useNotification();
 
   // Determine initial tab based on mode
   const initialTab = isCreatingNewProduct ? 0 : 2;
@@ -168,11 +218,39 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
+      console.log('Fetching products from tenant schema...');
       const response = await axiosInstance.get('/api/inventory/products/');
-      setProducts(response.data);
+      
+      // Log the response for debugging
+      console.log('Products fetched:', response.data);
+      
+      let parsedProducts = [];
+      
+      if (!response.data) {
+        console.warn('Empty response data received from API');
+      } else if (Array.isArray(response.data)) {
+        parsedProducts = response.data;
+      } else if (typeof response.data === 'string') {
+        try {
+          // Try to parse if it's a JSON string
+          const parsedData = JSON.parse(response.data);
+          parsedProducts = Array.isArray(parsedData) ? parsedData : 
+            (parsedData && typeof parsedData === 'object' ? [parsedData] : []);
+        } catch (parseError) {
+          console.error('Error parsing product data:', parseError);
+          notifyError('Error parsing product data');
+        }
+      } else if (typeof response.data === 'object') {
+        // Single product object
+        parsedProducts = [response.data];
+      }
+      
+      console.log('Parsed products:', parsedProducts);
+      setProducts(parsedProducts);
     } catch (error) {
-      toast.error('Failed to fetch products');
+      notifyError('Failed to fetch products');
       console.error('Error fetching products:', error);
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }
@@ -189,25 +267,55 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
   const handleCreateProduct = async (e) => {
     e.preventDefault();
     
+    // Validate required fields
+    if (!name.trim()) {
+      notifyError('Product name is required');
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       
       // Prepare data to submit
       const productData = {
-        name,
+        name: name.trim(),
         description,
-        price,
+        price: price || 0,
         for_sale: forSale,
         for_rent: forRent,
-        stock_quantity: stockQuantity,
-        reorder_level: reorderLevel
+        stock_quantity: stockQuantity || 0,
+        reorder_level: reorderLevel || 0,
+        product_code: `P-${Date.now().toString().slice(-6)}` // Generate a simple product code if not provided
       };
       
-      // Here you would typically call your API
-      // const response = await createProduct(productData);
+      console.log('Creating product with data:', productData);
+      const response = await axiosInstance.post('/api/inventory/products/', productData);
       
-      // Success handling
-      toast.success("Product created successfully!");
+      // Log the created product
+      console.log('Product created successfully:', response.data);
+      
+      // Parse response data if needed
+      let createdProduct;
+      if (typeof response.data === 'string') {
+        try {
+          createdProduct = JSON.parse(response.data);
+        } catch (e) {
+          console.warn('Could not parse product response as JSON', e);
+          createdProduct = response.data;
+        }
+      } else {
+        createdProduct = response.data;
+      }
+      
+      // Show success notification
+      notifySuccess(`Product "${productData.name}" created successfully`);
+      
+      // Set the newly created product for possible barcode generation
+      setCreatedProductId(createdProduct.id);
+      setCurrentBarcodeProduct(createdProduct);
+      
+      // Show success dialog with option to print barcode
+      setSuccessDialogOpen(true);
       
       // Reset form
       setName('');
@@ -218,18 +326,25 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
       setStockQuantity('');
       setReorderLevel('');
       
+      // Refresh product list after creation
+      await fetchProducts();
+      
+      // Switch to the list tab to show the newly created product
+      setActiveTab(2);
+      
     } catch (error) {
-      console.error("Error creating product:", error);
-      toast.error("Failed to create product");
+      notifyError(error.response?.data?.message || 'Error creating product');
+      console.error('Error creating product:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleSaveEdit = async () => {
+    if (!editedProduct) return;
+    
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      
       // Prepare edited product data
       const updatedProduct = {
         ...editedProduct,
@@ -242,19 +357,17 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
         reorder_level: editReorderLevel
       };
       
-      await axiosInstance.put(`/api/inventory/products/${editedProduct.id}/`, updatedProduct);
+      const response = await axiosInstance.patch(`/api/inventory/products/${editedProduct.id}/`, updatedProduct);
       
-      // Show success message
-      toast.success('Product updated successfully!');
-      
-      // Refresh the products list and reset editing state
-      fetchProducts();
+      // Update local state with the updated product
+      setProducts(products.map(p => p.id === editedProduct.id ? response.data : p));
       setIsEditing(false);
       setEditedProduct(null);
+      
+      notifySuccess('Product updated successfully');
+      
     } catch (error) {
-      // Handle errors
-      const errorMessage = error.response?.data?.message || 'An error occurred while updating the product';
-      toast.error(errorMessage);
+      notifyError(error.response?.data?.message || 'Error updating product');
       console.error('Error updating product:', error);
     } finally {
       setIsSubmitting(false);
@@ -262,22 +375,18 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
   };
 
   const handleDeleteProduct = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) {
-      return;
-    }
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
     
     try {
       await axiosInstance.delete(`/api/inventory/products/${id}/`);
       
-      // Show success message
-      toast.success('Product deleted successfully!');
+      // Remove the deleted product from the list
+      setProducts(products.filter(p => p.id !== id));
       
-      // Refresh the products list
-      fetchProducts();
+      notifySuccess('Product deleted successfully');
+      
     } catch (error) {
-      // Handle errors
-      const errorMessage = error.response?.data?.message || 'An error occurred while deleting the product';
-      toast.error(errorMessage);
+      notifyError(error.response?.data?.message || 'Error deleting product');
       console.error('Error deleting product:', error);
     }
   };
@@ -300,51 +409,98 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
   };
 
   const dataGridColumns = [
-    { field: 'product_code', headerName: 'Code', flex: 0.5 },
-    { field: 'name', headerName: 'Name', flex: 1 },
-    { field: 'price', headerName: 'Price', flex: 0.5, valueFormatter: (params) => `$${params.value}` },
-    { field: 'stock_quantity', headerName: 'Stock', flex: 0.5 },
+    { 
+      field: 'product_code', 
+      headerName: 'Code', 
+      flex: 0.5,
+      valueGetter: (params) => {
+        if (!params || !params.row) return '';
+        return params.row.product_code || params.row.productCode || `P-${params.row.id}`;
+      },
+    },
+    { 
+      field: 'name', 
+      headerName: 'Name', 
+      flex: 1,
+      valueGetter: (params) => {
+        if (!params || !params.row) return '';
+        return params.row.name || 'Unnamed Product';
+      },
+    },
+    { 
+      field: 'price', 
+      headerName: 'Price', 
+      flex: 0.5, 
+      valueFormatter: (params) => {
+        if (!params || params.value === undefined) return '$0';
+        return `$${params.value || 0}`;
+      }
+    },
+    { 
+      field: 'stock_quantity', 
+      headerName: 'Stock', 
+      flex: 0.5,
+      valueGetter: (params) => {
+        if (!params || !params.row) return 0;
+        return params.row.stock_quantity || params.row.stockQuantity || 0;
+      },
+    },
     {
       field: 'actions',
       headerName: 'Actions',
       flex: 1,
-      renderCell: (params) => (
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <Button 
-            variant="outlined" 
-            color="primary" 
-            size="small"
-            onClick={() => handleViewDetails(params.row)}
-          >
-            View
-          </Button>
-          <Button 
-            variant="outlined" 
-            color="secondary" 
-            size="small"
-            onClick={() => handleEditClick(params.row)}
-          >
-            Edit
-          </Button>
-          <Button
-            variant="outlined"
-            color="error"
-            size="small"
-            onClick={() => handleDeleteProduct(params.row.id)}
-          >
-            Delete
-          </Button>
-          <Button
-            variant="outlined"
-            color="info"
-            size="small"
-            startIcon={<QrCodeIcon fontSize="small" />}
-            onClick={() => handleGenerateBarcode(params.row)}
-          >
-            QR
-          </Button>
-        </div>
-      ),
+      renderCell: (params) => {
+        if (!params || !params.row) return null;
+        return (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button 
+              variant="outlined" 
+              color="primary" 
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewDetails(params.row);
+              }}
+            >
+              View
+            </Button>
+            <Button 
+              variant="outlined" 
+              color="secondary" 
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditClick(params.row);
+              }}
+            >
+              Edit
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteProduct(params.row.id);
+              }}
+            >
+              Delete
+            </Button>
+            <Button
+              variant="outlined"
+              color="info"
+              size="small"
+              startIcon={<QrCodeIcon fontSize="small" />}
+              onClick={(e) => {
+                e.stopPropagation(); 
+                handleGenerateBarcode(params.row);
+              }}
+            >
+              QR
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -357,7 +513,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     const commonTextFieldProps = {
       autoComplete: "off",
       variant: "outlined",
-      InputProps: {
+      inputProps: {
         sx: { 
           '&.Mui-focused': { zIndex: 99999 },
           '&:hover': { zIndex: 99999 }
@@ -367,16 +523,26 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     };
     
     return (
-      <div>
-        <Typography variant="h5" component="h1" gutterBottom>
-          {isEditing ? 'Edit Product' : 'Create New Product'}
-        </Typography>
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-6 border-b border-gray-200 pb-4">
+          <Typography variant="h4" component="h1" className="font-bold text-gray-800">
+            {isEditing ? 'Edit Product' : 'Create New Product'}
+          </Typography>
+          <Typography variant="body1" className="text-gray-500 mt-1">
+            {isEditing ? 'Update the product information below.' : 'Fill in the details to add a new product to your inventory.'}
+          </Typography>
+          {!isEditing && (
+            <Alert severity="info" className="mt-4">
+              After creating a product, you'll be able to print a QR code for inventory management.
+            </Alert>
+          )}
+        </div>
         
-        <Paper elevation={3} sx={{ p: 3, mt: 2 }}>
+        <Paper elevation={3} className="rounded-lg overflow-hidden shadow-lg">
           {isEditing ? (
             // Edit form with MUI components
-            <form className="product-form" onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}>
-              <div className="grid grid-cols-2 gap-4">
+            <form className="product-form p-6" onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="col-span-2">
                   <TextField
                     {...commonTextFieldProps}
@@ -387,9 +553,10 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     onChange={(e) => setEditName(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
                     required
+                    className="mb-0"
                   />
                 </div>
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <TextField
                     {...commonTextFieldProps}
                     fullWidth
@@ -399,10 +566,24 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     value={editPrice}
                     onChange={(e) => setEditPrice(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
-                    InputProps={{
-                      ...commonTextFieldProps.InputProps,
+                    inputProps={{
+                      ...commonTextFieldProps.inputProps,
                       startAdornment: <span>$</span>,
                     }}
+                    className="mb-0"
+                  />
+                </div>
+                <div className="col-span-1">
+                  <TextField
+                    {...commonTextFieldProps}
+                    fullWidth
+                    label="Stock Quantity"
+                    name="stock_quantity"
+                    type="number"
+                    value={editStockQuantity}
+                    onChange={(e) => setEditStockQuantity(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="mb-0"
                   />
                 </div>
                 <div className="col-span-2">
@@ -414,23 +595,12 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
-                    multiline
+                    multiline="true"
                     rows={3}
+                    className="mb-0"
                   />
                 </div>
-                <div className="col-span-2">
-                  <TextField
-                    {...commonTextFieldProps}
-                    fullWidth
-                    label="Stock Quantity"
-                    name="stock_quantity"
-                    type="number"
-                    value={editStockQuantity}
-                    onChange={(e) => setEditStockQuantity(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <TextField
                     {...commonTextFieldProps}
                     fullWidth
@@ -440,17 +610,37 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     value={editReorderLevel}
                     onChange={(e) => setEditReorderLevel(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
+                    className="mb-0"
                   />
                 </div>
-                <div className="col-span-2">
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    type="submit"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Saving...' : 'Save Changes'}
-                  </Button>
+                <div className="col-span-1">
+                  <FormControl component="fieldset" fullWidth className="mb-0">
+                    <Typography variant="body1" className="font-medium mb-2">Availability</Typography>
+                    <FormGroup row className="space-x-4">
+                      <FormControlLabel
+                        control={
+                          <CheckboxToUse
+                            checked={editForSale}
+                            onChange={(e) => setEditForSale(e.target.checked)}
+                            name="for_sale"
+                          />
+                        }
+                        label="For Sale"
+                      />
+                      <FormControlLabel
+                        control={
+                          <CheckboxToUse
+                            checked={editForRent}
+                            onChange={(e) => setEditForRent(e.target.checked)}
+                            name="for_rent"
+                          />
+                        }
+                        label="For Rent"
+                      />
+                    </FormGroup>
+                  </FormControl>
+                </div>
+                <div className="col-span-2 mt-4 flex justify-end space-x-4">
                   <Button
                     variant="outlined"
                     color="secondary"
@@ -458,17 +648,26 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                       setIsEditing(false);
                       setEditedProduct(null);
                     }}
-                    sx={{ ml: 2 }}
+                    className="px-6"
                   >
                     Cancel
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-6"
+                  >
+                    {isSubmitting ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </div>
               </div>
             </form>
           ) : (
             // Create form using MUI components
-            <form className="product-form" onSubmit={handleCreateProduct}>
-              <div className="grid grid-cols-2 gap-4">
+            <form className="product-form p-6" onSubmit={handleCreateProduct}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="col-span-2">
                   <TextField
                     {...commonTextFieldProps}
@@ -480,10 +679,11 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     onChange={(e) => setName(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
                     placeholder="Enter product name"
+                    className="mb-0"
                   />
                 </div>
                 
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <TextField
                     {...commonTextFieldProps}
                     fullWidth
@@ -496,10 +696,11 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     onChange={(e) => setPrice(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
                     placeholder="0.00"
+                    className="mb-0"
                   />
                 </div>
                 
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <TextField
                     {...commonTextFieldProps}
                     fullWidth
@@ -511,6 +712,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     onChange={(e) => setStockQuantity(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
                     placeholder="0"
+                    className="mb-0"
                   />
                 </div>
                 
@@ -520,44 +722,17 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     fullWidth
                     label="Description"
                     name="description"
-                    multiline
+                    multiline="true"
                     rows={4}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
                     placeholder="Enter product description"
+                    className="mb-0"
                   />
                 </div>
                 
-                <div className="col-span-2">
-                  <FormControl component="fieldset" fullWidth sx={{ mb: 2 }}>
-                    <Typography variant="body1" className="font-medium mb-2">Availability</Typography>
-                    <FormGroup row>
-                      <FormControlLabel
-                        control={
-                          <CheckboxToUse
-                            checked={forSale}
-                            onChange={(e) => setForSale(e.target.checked)}
-                            name="for_sale"
-                          />
-                        }
-                        label="Available for Sale"
-                      />
-                      <FormControlLabel
-                        control={
-                          <CheckboxToUse
-                            checked={forRent}
-                            onChange={(e) => setForRent(e.target.checked)}
-                            name="for_rent"
-                          />
-                        }
-                        label="Available for Rent"
-                      />
-                    </FormGroup>
-                  </FormControl>
-                </div>
-                
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <TextField
                     {...commonTextFieldProps}
                     fullWidth
@@ -569,19 +744,82 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     onChange={(e) => setReorderLevel(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
                     placeholder="0"
+                    className="mb-0"
                   />
                 </div>
                 
-                <div className="col-span-2">
+                <div className="col-span-1">
+                  <FormControl component="fieldset" fullWidth className="mb-0">
+                    <Typography variant="body1" className="font-medium mb-2">Availability Options</Typography>
+                    <FormGroup row className="space-x-4">
+                      <FormControlLabel
+                        control={
+                          <CheckboxToUse
+                            checked={forSale}
+                            onChange={(e) => setForSale(e.target.checked)}
+                            name="for_sale"
+                          />
+                        }
+                        label="For Sale"
+                      />
+                      <FormControlLabel
+                        control={
+                          <CheckboxToUse
+                            checked={forRent}
+                            onChange={(e) => setForRent(e.target.checked)}
+                            name="for_rent"
+                          />
+                        }
+                        label="For Rent"
+                      />
+                    </FormGroup>
+                  </FormControl>
+                </div>
+                
+                <div className="col-span-2 mt-4 flex justify-end">
                   <Button
                     type="submit"
                     variant="contained"
                     color="primary"
                     size="large"
                     disabled={isSubmitting}
+                    className="px-8 py-3"
                   >
-                    {isSubmitting ? 'Creating...' : 'Create Product'}
+                    {isSubmitting ? 
+                      <div className="flex items-center">
+                        <CircularProgress size="small" color="inherit" className="mr-2" />
+                        Creating...
+                      </div> : 
+                      'Create Product'
+                    }
                   </Button>
+                </div>
+                
+                {/* QR Code Information Section */}
+                <div className="col-span-2 mt-8 pt-6 border-t border-gray-200">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between">
+                    <div className="mb-4 md:mb-0 md:mr-6">
+                      <Typography variant="h6" className="font-medium mb-2">
+                        Inventory QR Code
+                      </Typography>
+                      <Typography variant="body2" className="text-gray-600">
+                        Print QR codes for your products to streamline inventory management.
+                        Scan codes with any QR reader for quick product identification and tracking.
+                      </Typography>
+                      <Typography variant="body2" className="text-gray-500 mt-2 italic">
+                        Create your product first to enable QR code generation.
+                      </Typography>
+                    </div>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      startIcon={<QrCodeIcon fontSize="small" />}
+                      disabled={true}
+                      className="whitespace-nowrap px-6 py-2 opacity-50"
+                    >
+                      Generate QR Code
+                    </Button>
+                  </div>
                 </div>
               </div>
             </form>
@@ -590,14 +828,30 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
         
         {/* Success Dialog */}
         <Dialog open={successDialogOpen} onClose={() => setSuccessDialogOpen(false)}>
-          <DialogTitle>Product Created Successfully</DialogTitle>
-          <DialogContent>
-            <Typography>Your product has been created successfully!</Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-              Would you like to print a barcode for this product?
+          <DialogTitle className="border-b pb-2">
+            <div className="flex items-center">
+              <span className="text-green-600 mr-2">✓</span>
+              Product Created Successfully
+            </div>
+          </DialogTitle>
+          <DialogContent className="pt-4">
+            <Typography variant="h6" className="mb-2">Your product has been created successfully!</Typography>
+            <Typography variant="body1" className="mb-4">
+              Your product is now saved in the inventory system and can be managed from the Products List.
             </Typography>
+            <Alert severity="info" className="mb-2">
+              <div className="flex items-center">
+                <QrCodeIcon className="mr-2" />
+                <Typography variant="body1" className="font-medium">
+                  Print QR Code for Inventory Management
+                </Typography>
+              </div>
+              <Typography variant="body2" className="mt-1">
+                You can now generate and print a QR code label for this product to streamline your inventory management.
+              </Typography>
+            </Alert>
           </DialogContent>
-          <DialogActions>
+          <DialogActions className="border-t p-3">
             <Button onClick={() => setSuccessDialogOpen(false)}>Close</Button>
             <Button 
               variant="contained" 
@@ -612,8 +866,9 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                 }
               }}
               startIcon={<QrCodeIcon fontSize="small" />}
+              className="px-6"
             >
-              Generate Barcode
+              Generate QR Code
             </Button>
           </DialogActions>
         </Dialog>
@@ -698,7 +953,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
             startIcon={<QrCodeIcon fontSize="small" />}
             onClick={() => handleGenerateBarcode(selectedProduct)}
           >
-            Generate Barcode
+            Generate QR Code
           </Button>
         </div>
       </ModernFormLayout>
@@ -727,12 +982,27 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
         
         <Paper elevation={3} sx={{ height: 500, width: '100%' }}>
           <DataGrid
-            rows={products}
+            rows={products || []}
             columns={dataGridColumns}
             pageSize={10}
             rowsPerPageOptions={[5, 10, 25]}
             disableSelectionOnClick
             loading={isLoading}
+            getRowId={(row) => {
+              if (!row) return Math.random().toString(36).substr(2, 9);
+              return row.id?.toString() || row._id?.toString() || Math.random().toString(36).substr(2, 9);
+            }}
+            sx={{ 
+              '& .MuiDataGrid-row:hover': {
+                backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                cursor: 'pointer'
+              }
+            }}
+            onRowClick={(params) => {
+              if (!params || !params.row) return;
+              console.log('Row clicked:', params.row);
+              setSelectedProduct(params.row);
+            }}
           />
         </Paper>
       </div>
@@ -748,46 +1018,86 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Product QR Code</DialogTitle>
+        <DialogTitle className="border-b pb-2">
+          <div className="flex items-center">
+            <QrCodeIcon className="mr-2" />
+            Product QR Code
+          </div>
+        </DialogTitle>
         <DialogContent>
           {currentBarcodeProduct && (
-            <Box sx={{ textAlign: 'center', p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                {currentBarcodeProduct.name}
-              </Typography>
-              <Typography variant="body2" color="textSecondary" gutterBottom>
-                Code: {currentBarcodeProduct.product_code}
-              </Typography>
+            <Box sx={{ p: 3 }} className="print-container">
+              <div className="text-center">
+                <Typography variant="h5" className="font-bold mb-1">
+                  {currentBarcodeProduct.name}
+                </Typography>
+                <Typography variant="body1" color="textSecondary" className="mb-2">
+                  Code: {currentBarcodeProduct.product_code}
+                </Typography>
+                
+                {currentBarcodeProduct.description && (
+                  <Typography variant="body2" color="textSecondary" className="mb-4 max-w-md mx-auto">
+                    {currentBarcodeProduct.description}
+                  </Typography>
+                )}
+              </div>
               
-              <Box sx={{ my: 3 }}>
-                <BarcodeGenerator 
-                  value={currentBarcodeProduct.product_code || currentBarcodeProduct.id.toString()}
-                  size={200}
-                  productInfo={{
-                    name: currentBarcodeProduct.name,
-                    price: `$${currentBarcodeProduct.price}`,
-                    id: currentBarcodeProduct.id
-                  }}
-                />
-              </Box>
+              <div className="flex justify-center my-6">
+                <div className="qr-code-container p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
+                  <BarcodeGenerator 
+                    value={currentBarcodeProduct.product_code || currentBarcodeProduct.id.toString()}
+                    size={250}
+                    productInfo={{
+                      name: currentBarcodeProduct.name,
+                      price: `$${currentBarcodeProduct.price}`,
+                      id: currentBarcodeProduct.id
+                    }}
+                  />
+                </div>
+              </div>
               
-              <Typography variant="body2">
-                Scan this code to quickly access this product.
-              </Typography>
+              <div className="grid grid-cols-2 gap-4 mt-4 print-details">
+                <div className="col-span-1">
+                  <Typography variant="subtitle2" className="text-gray-500">Price</Typography>
+                  <Typography variant="body1" className="font-medium">${currentBarcodeProduct.price}</Typography>
+                </div>
+                {currentBarcodeProduct.stock_quantity !== undefined && (
+                  <div className="col-span-1">
+                    <Typography variant="subtitle2" className="text-gray-500">Stock</Typography>
+                    <Typography variant="body1" className="font-medium">{currentBarcodeProduct.stock_quantity}</Typography>
+                  </div>
+                )}
+              </div>
+              
+              <div className="print-instructions mt-6 border-t border-gray-200 pt-4">
+                <Typography variant="body2" className="text-gray-600">
+                  <span className="font-medium">Scan Instructions:</span> Scan this code with any QR reader to quickly access product information for inventory management.
+                </Typography>
+              </div>
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions className="border-t p-3">
+          <Typography variant="body2" color="textSecondary" className="mr-auto hidden-print">
+            Click Print to save or print this QR code
+          </Typography>
           <Button onClick={() => setBarcodeDialogOpen(false)}>Close</Button>
           <Button 
             variant="contained" 
             color="primary"
+            startIcon={<span role="img" aria-label="print">🖨️</span>}
             onClick={() => {
-              // This would be connected to a print function
+              // Add a class to body for print styling
+              document.body.classList.add('printing-qr-code');
+              // Print using browser print
               window.print();
+              // Remove class after printing
+              setTimeout(() => {
+                document.body.classList.remove('printing-qr-code');
+              }, 1000);
             }}
           >
-            Print Barcode
+            Print QR Code
           </Button>
         </DialogActions>
       </Dialog>

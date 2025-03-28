@@ -223,6 +223,10 @@ function RenderMainContent({
   showHome,
   // CRM view states
   view,
+  // Tenant status props
+  tenantStatus,
+  tenantError,
+  tenantId,
 }) {
   const [selectedTab, setSelectedTab] = React.useState(0);
 
@@ -283,10 +287,96 @@ function RenderMainContent({
   };
 
   const renderContent = () => {
-    if (selectedSettingsOption) {
-      return renderSettingsTabs();
+    // If tenant status is pending or error, we still allow access to settings and help
+    const isTenantStatusOk = !tenantStatus || tenantStatus === 'success';
+    const isSettingsOrHelp = showMyAccount || showHelpCenter || 
+      showDeviceSettings || selectedSettingsOption || 
+      showTermsAndConditions || showPrivacyPolicy;
+    
+    // Allow access to these sections regardless of tenant status
+    if (isSettingsOrHelp) {
+      // Continue with existing settings rendering logic
+      return (
+        <ContentWrapper>
+          {renderSettingsTabs()}
+          {selectedSettingsOption === 'profile' && <ProfileSettings />}
+          {selectedSettingsOption === 'business' && <BusinessSettings />}
+          {selectedSettingsOption === 'accounting' && <AccountingSettings />}
+          {selectedSettingsOption === 'payroll' && <PayrollSettings />}
+          {showDeviceSettings && <DeviceSettings />}
+          {showMyAccount && <MyAccount />}
+          {showHelpCenter && <HelpCenter />}
+          {showTermsAndConditions && <TermsAndConditions />}
+          {showPrivacyPolicy && <PrivacyPolicy />}
+        </ContentWrapper>
+      );
     }
-
+    
+    // For all other features, check tenant status
+    if (tenantStatus === 'pending') {
+      return (
+        <ContentWrapper>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              height: '70vh' 
+            }}
+          >
+            <CircularProgress size={40} />
+            <Typography variant="h6" sx={{ mt: 2 }}>
+              Setting up your account data...
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+              This may take a few moments.
+            </Typography>
+          </Box>
+        </ContentWrapper>
+      );
+    }
+    
+    if (tenantStatus === 'error' || tenantStatus === 'invalid_tenant') {
+      return (
+        <ContentWrapper>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              height: '70vh',
+              textAlign: 'center',
+              maxWidth: '600px',
+              mx: 'auto'
+            }}
+          >
+            <svg className="w-16 h-16 text-yellow-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <Typography variant="h5" sx={{ mb: 2 }}>
+              Account Setup Issue
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 3 }}>
+              We're having trouble setting up your account data. Some features may be unavailable at this time.
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 4 }}>
+              {tenantError || "Please try refreshing the page or contact support if this issue persists."}
+            </Typography>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              onClick={() => window.location.reload()}
+            >
+              Refresh Page
+            </Button>
+          </Box>
+        </ContentWrapper>
+      );
+    }
+    
+    // Continue with the normal content if tenant status is good
     // CRM view handling
     if (view && view.startsWith('crm-')) {
       return (
@@ -368,6 +458,16 @@ function RenderMainContent({
       );
     }
 
+    if (showHome) {
+      return (
+        <ContentWrapper>
+          <Suspense fallback={<LoadingComponent />}>
+            <Home />
+          </Suspense>
+        </ContentWrapper>
+      );
+    }
+
     return (
       <Suspense fallback={<LoadingComponent />}>
         {showEmployeeManagement && (
@@ -442,7 +542,6 @@ function RenderMainContent({
         {showInventoryItems && <InventoryItems />}
         {showBankTransactions && <BankTransactions />}
         {showInventoryManagement && <InventoryManagement />}
-        {showHome && <Home userData={userData} />}
       </Suspense>
     );
   };

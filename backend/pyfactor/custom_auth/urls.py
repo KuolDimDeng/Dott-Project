@@ -19,29 +19,21 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.views import TokenRefreshView, TokenBlacklistView
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from .views import (
-    RegisterView,
-    CustomTokenObtainPairView,
-    CustomAuthToken,
-    SocialLoginView,
-    UpdateSessionView,
-    SignUpView,
-    ForgotPasswordView,
-    CustomPasswordResetView,
-    CustomPasswordResetConfirmView,
-    ActivateAccountView,
-    ResendActivationEmailView,
-    VerifyEmailView,
-    health_check,
-    AuthErrorView,
-    async_csrf_exempt,  # Import the decorator from views
-    SessionView,
-    SignupAPIView,
+
+# Import views from subdirectories
+from custom_auth.views.signup import SignupView as APISignupView
+from custom_auth.views.tenant import TenantVerifyView, TenantCreateView
+from custom_auth.api.views.tenant_views import TenantDetailView
+
+# Import directly from the main_views.py file
+from .main_views import (
+    AuthErrorView, RegisterView, CustomTokenObtainPairView, CustomAuthToken,
+    SocialLoginView, SessionView, SignUpView, ForgotPasswordView,
+    CustomPasswordResetView, CustomPasswordResetConfirmView,
+    ActivateAccountView, ResendActivationEmailView, VerifyEmailView, health_check
 )
-from .api.views.tenant_views import TenantDetailView
 
 class UUIDConverter:
     regex = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
@@ -53,8 +45,6 @@ class UUIDConverter:
         return str(value)
 
 register_converter(UUIDConverter, 'uuid')
-
-
 
 urlpatterns = [
        # API endpoints
@@ -100,8 +90,6 @@ urlpatterns = [
     # Social Authentication
     path('social-login/', SocialLoginView.as_view(), name='social_login'),
 
-
-
     # Email Verification
     path(
         'activate/<str:uidb64>/<str:token>/',
@@ -123,5 +111,9 @@ urlpatterns = [
     path('health-check/', health_check.as_view(), name='health-check'),
     
     # User Signup API
-    path('api/auth/signup/', SignupAPIView.as_view(), name='signup_api'),
+    path('api/auth/signup/', APISignupView.as_view(), name='signup_api'),
+
+    # Tenant endpoints
+    path('tenant/verify/', TenantVerifyView.as_view(), name='tenant-verify'),
+    path('tenant/create/', TenantCreateView.as_view(), name='tenant-create'),
 ]

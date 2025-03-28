@@ -3,7 +3,7 @@
 
 import React, { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { useStore } from '@/store/authStore';
-import { Box, Container, Typography, CircularProgress } from '@/components/ui/TailwindComponents';
+import { Box, Container, Typography, CircularProgress, Alert } from '@/components/ui/TailwindComponents';
 import AppBar from './components/AppBar';
 import Drawer from './components/Drawer';
 import { logger } from '@/utils/logger';
@@ -15,6 +15,9 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { fetchAuthSession } from '@aws-amplify/auth';
+import { NotificationProvider, useNotification } from '@/context/NotificationContext';
+import useEnsureTenant from '@/hooks/useEnsureTenant';
+import { useAuth } from '@/hooks/auth';
 
 // Lazy load components to reduce initial memory usage
 const RenderMainContent = lazy(() =>
@@ -27,6 +30,12 @@ const RenderMainContent = lazy(() =>
 const LoadingComponent = () => null;
 
 function DashboardContent({ setupStatus, customContent }) {
+  const { user, isAuthenticated, logout } = useAuth();
+  const router = useRouter();
+  const { showNotification } = useNotification();
+  const { tenantStatus, tenantError, tenantId, retry } = useEnsureTenant();
+  const [tenantSetupAttempted, setTenantSetupAttempted] = useState(false);
+
   // Use a single state object for UI visibility flags to reduce memory overhead
   const [uiState, setUiState] = useState({
     // Menu state
@@ -115,8 +124,6 @@ function DashboardContent({ setupStatus, customContent }) {
   const setSelectedSettingsOption = useCallback((value) => updateState({ selectedSettingsOption: value }), [updateState]);
   const setShowCreateMenu = useCallback((value) => updateState({ showCreateMenu: value }), [updateState]);
   
-  const router = useRouter();
-
   // Simplified reset state function to avoid memory issues
   const resetAllStates = useCallback(() => {
     // Reset all view states to false except for the ones we want to keep
@@ -718,9 +725,68 @@ function DashboardContent({ setupStatus, customContent }) {
             relative
           `}
         >
+          {/* Tenant schema verification status */}
+          {tenantStatus === 'pending' && (
+            <div className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700">
+              <div className="flex items-center">
+                <svg className="h-5 w-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <p>Verifying your account setup...</p>
+              </div>
+            </div>
+          )}
+          
+          {tenantStatus === 'error' && (
+            <div className="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                  </svg>
+                  <div>
+                    <p>There was an issue with your account setup. Some features may be unavailable.</p>
+                    {tenantError && <p className="mt-2 text-sm">{tenantError}</p>}
+                  </div>
+                </div>
+                <button 
+                  onClick={retry}
+                  className="px-3 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-md text-sm"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {tenantStatus === 'invalid_tenant' && (
+            <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <p>Your account is not properly configured. Please contact support or try logging out and back in.</p>
+                </div>
+                <button 
+                  onClick={logout}
+                  className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded-md text-sm"
+                >
+                  Log out
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Create New Popup directly in the main content area */}
           {showCreateMenu && (
             <>
+              {/* Overlay to capture clicks outside the menu */}
+              <div 
+                className="fixed inset-0 z-40 bg-transparent"
+                onClick={handleCloseCreateMenu}
+              />
+              
               {/* Add a visual indicator connecting to the button */}
               <div 
                 className="fixed z-50 w-3 h-3 bg-white rotate-45 border-l border-t border-blue-500"
@@ -739,23 +805,6 @@ function DashboardContent({ setupStatus, customContent }) {
                   overflow: 'auto'
                 }}
               >
-                <div className="flex justify-between items-center mb-4 border-b pb-3">
-                  <h3 className="text-xl font-semibold text-primary-main flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Create New
-                  </h3>
-                  <button 
-                    onClick={handleCloseCreateMenu}
-                    className="text-gray-400 hover:text-gray-700 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                
                 <div className="grid grid-cols-2 gap-3">
                   {/* Transaction */}
                   <button
@@ -896,6 +945,9 @@ function DashboardContent({ setupStatus, customContent }) {
                   selectedSettingsOption={selectedSettingsOption}
                   showCreateOptions={showForm}
                   selectedOption={formOption}
+                  tenantStatus={tenantStatus}
+                  tenantError={tenantError}
+                  tenantId={tenantId}
                 />
               )
             )}
@@ -908,8 +960,10 @@ function DashboardContent({ setupStatus, customContent }) {
 
 export default function Dashboard({ children, setupStatus }) {
   return (
-    <ErrorBoundary>
-      <DashboardContent setupStatus={setupStatus} customContent={children} />
-    </ErrorBoundary>
+    <NotificationProvider>
+      <ErrorBoundary>
+        <DashboardContent setupStatus={setupStatus} customContent={children} />
+      </ErrorBoundary>
+    </NotificationProvider>
   );
 }

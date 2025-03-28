@@ -2,6 +2,7 @@
 
 from celery import Celery
 import os
+from celery.schedules import crontab
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 
@@ -46,6 +47,11 @@ app.conf.update(
             'task': 'users.utils.cleanup_stale_schemas',
             'schedule': 604800.0,  # Run weekly (604800 seconds)
             'options': {'queue': 'default'}
+        },
+        'monitor-tenant-schemas': {
+            'task': 'custom_auth.tasks.monitor_tenant_schemas',
+            'schedule': crontab(hour='2', minute='0'),  # Run daily at 2:00 AM
+            'options': {'queue': 'maintenance'}
         }
     }
 )

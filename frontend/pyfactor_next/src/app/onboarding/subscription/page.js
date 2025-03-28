@@ -174,6 +174,7 @@ export default function SubscriptionPage() {
       // Store selected plan in session storage
       if (typeof window !== 'undefined') {
         try {
+          // Store in selectedPlan as before
           sessionStorage.setItem('selectedPlan', JSON.stringify({
             id: plan.id,
             name: plan.name,
@@ -181,7 +182,24 @@ export default function SubscriptionPage() {
             billingCycle,
             timestamp: new Date().toISOString()
           }));
-          logger.debug('[SubscriptionPage] Plan stored in session storage');
+          
+          // CRITICAL FIX: Also store in pendingSubscription with required fields
+          // This is what the payment page looks for
+          sessionStorage.setItem('pendingSubscription', JSON.stringify({
+            plan: plan.id,
+            billing_interval: billingCycle,
+            interval: billingCycle, // Include both for compatibility
+            payment_method: 'credit_card', // Default to credit card
+            timestamp: new Date().toISOString()
+          }));
+          
+          // Verify the data was stored properly
+          const pendingData = sessionStorage.getItem('pendingSubscription');
+          logger.debug('[SubscriptionPage] Plan stored in sessionStorage:', {
+            selectedPlan: true,
+            pendingSubscription: !!pendingData,
+            pendingData: pendingData ? JSON.parse(pendingData) : null
+          });
         } catch (storageError) {
           logger.warn('[SubscriptionPage] Failed to store plan in session storage:', storageError);
           // Continue anyway since we're using cookies as primary storage
@@ -247,6 +265,22 @@ export default function SubscriptionPage() {
             : '/onboarding/payment'; // Paid plans go to payment
             
           logger.debug('[SubscriptionPage] Navigating to:', targetRoute);
+          
+          // FIXED: First confirm pendingSubscription is set before navigation
+          if (plan.id !== 'free') {
+            const pendingData = sessionStorage.getItem('pendingSubscription');
+            if (!pendingData) {
+              logger.warn('[SubscriptionPage] pendingSubscription not found before navigation, setting it now');
+              // Final attempt to set the data
+              sessionStorage.setItem('pendingSubscription', JSON.stringify({
+                plan: plan.id,
+                billing_interval: billingCycle,
+                interval: billingCycle,
+                payment_method: 'credit_card',
+                timestamp: new Date().toISOString()
+              }));
+            }
+          }
           
           // Force the navigation using window.location.replace for the most reliable redirect
           // This completely replaces the current page in history

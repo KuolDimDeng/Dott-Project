@@ -3,13 +3,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.db import transaction
 from django.contrib.auth import get_user_model
-from ..models import UserProfile
+from users.models import UserProfile
 from onboarding.models import OnboardingProgress
-from ..serializers import UserSerializer
+from users.serializers import UserProfileSerializer as UserSerializer
 from django.utils import timezone
 from ..authentication import CognitoAuthentication
 from rest_framework.permissions import AllowAny
-from ..utils import validate_cognito_token
 from django.core.exceptions import ValidationError
 from pyfactor.logging_config import get_logger
 

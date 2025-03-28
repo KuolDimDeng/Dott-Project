@@ -74,17 +74,28 @@ export default function KeyboardEventFixer() {
           const newValue = value.substring(0, start) + e.key + value.substring(end);
           focusedInput.value = newValue;
           
-          // Set cursor position
-          focusedInput.selectionStart = start + 1;
-          focusedInput.selectionEnd = start + 1;
-          
-          // Trigger change event - use InputEvent when possible for better React compatibility
-          if (typeof InputEvent === 'function') {
-            const inputEvent = new InputEvent('input', { bubbles: true });
-            focusedInput.dispatchEvent(inputEvent);
-          } else {
-            const changeEvent = new Event('input', { bubbles: true });
-            focusedInput.dispatchEvent(changeEvent);
+          // Check if the input is still valid and in the DOM before manipulating selection
+          try {
+            // Set cursor position
+            if (focusedInput && focusedInput.isConnected) {
+              focusedInput.selectionStart = start + 1;
+              focusedInput.selectionEnd = start + 1;
+            }
+            
+            // Trigger change event - use InputEvent when possible for better React compatibility
+            if (focusedInput && focusedInput.isConnected) {
+              if (typeof InputEvent === 'function') {
+                const inputEvent = new InputEvent('input', { bubbles: true });
+                focusedInput.dispatchEvent(inputEvent);
+              } else {
+                const changeEvent = new Event('input', { bubbles: true });
+                focusedInput.dispatchEvent(changeEvent);
+              }
+            }
+          } catch (error) {
+            console.warn('KeyboardEventFixer: Error setting input properties', error);
+            // The input is no longer usable, clear our reference
+            focusedInput = null;
           }
           
           // Prevent the original event

@@ -1,293 +1,211 @@
 #!/usr/bin/env python
 """
-Script to monitor tenant schemas and fix any issues.
-
-This script:
-1. Checks all tenant schemas for issues
-2. Fixes any schemas with missing tables
-3. Can be run as a scheduled task to ensure all tenant schemas are properly maintained
-
+Monitor tenant schemas and detect issues
 Usage:
-    python monitor_tenant_schemas.py [--fix] [--verbose]
-
-Options:
-    --fix       Automatically fix any issues found (default: just report)
-    --verbose   Show detailed logs
+    python manage.py shell < scripts/monitor_tenant_schemas.py
 """
 
 import os
 import sys
-import django
-import argparse
-import logging
+import json
 import uuid
-import time
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+import datetime
+from django.db import connection
+from custom_auth.models import User, Tenant
+from django.conf import settings
+import logging
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(levelname)s %(asctime)s %(name)s %(message)s',
-    handlers=[logging.StreamHandler()]
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    filename='tenant_monitoring.log', 
+    filemode='a'
 )
 logger = logging.getLogger(__name__)
 
-# Add the parent directory to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Configuration
+EMAIL_FROM = settings.EMAIL_HOST_USER if hasattr(settings, 'EMAIL_HOST_USER') else os.environ.get('EMAIL_HOST_USER')
+EMAIL_TO = os.environ.get('ALERT_EMAIL', 'admin@example.com')
+ALERT_THRESHOLD = 3  # Number of users without schemas before alerting
 
-# Set up Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
-django.setup()
-
-from django.db import connection
-from django.conf import settings
-from custom_auth.models import Tenant
-from custom_auth.tasks import migrate_tenant_schema
-
-def get_db_connection():
-    """Get a direct database connection using psycopg2."""
-    db_settings = settings.DATABASES['default']
-    conn = psycopg2.connect(
-        dbname=db_settings['NAME'],
-        user=db_settings['USER'],
-        password=db_settings['PASSWORD'],
-        host=db_settings['HOST'],
-        port=db_settings['PORT']
-    )
-    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-    return conn
-
-def get_tenant_schemas():
-    """Get all tenant schemas from the database."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT schema_name
-        FROM information_schema.schemata
-        WHERE schema_name LIKE 'tenant_%'
-        ORDER BY schema_name
-    """)
-    schemas = [row[0] for row in cursor.fetchall()]
-    cursor.close()
-    conn.close()
-    return schemas
-
-def get_schema_tables(schema_name):
-    """Get all tables in a schema."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema = %s
-        AND table_type = 'BASE TABLE'
-        ORDER BY table_name
-    """, [schema_name])
-    tables = [row[0] for row in cursor.fetchall()]
-    cursor.close()
-    conn.close()
-    return tables
-
-def check_migrations_table(schema_name):
-    """Check if the django_migrations table exists in the schema."""
-    tables = get_schema_tables(schema_name)
-    return 'django_migrations' in tables
-
-def check_expected_tables(schema_name):
-    """Check if all expected tables for tenant apps exist in the schema."""
-    tables = get_schema_tables(schema_name)
-    tenant_apps = settings.TENANT_APPS
-    
-    missing_app_tables = []
-    
-    for app in tenant_apps:
-        app_name = app.split('.')[-1] if '.' in app else app
-        app_prefix = f"{app_name}_"
-        
-        # Check if at least one table exists for this app
-        found = False
-        for table in tables:
-            if table.startswith(app_prefix):
-                found = True
-                break
-        
-        if not found:
-            missing_app_tables.append(app_name)
-    
-    return missing_app_tables
-
-def create_migrations_table(schema_name):
-    """Create django_migrations table in the schema if it doesn't exist."""
-    logger.info(f"Creating django_migrations table in schema {schema_name} if it doesn't exist")
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Set search path to the tenant schema
-    cursor.execute(f'SET search_path TO "{schema_name}"')
-    
-    # Check if django_migrations table exists
-    cursor.execute("""
-        SELECT EXISTS (
-            SELECT 1 
-            FROM information_schema.tables 
-            WHERE table_schema = %s 
-            AND table_name = 'django_migrations'
-        )
-    """, [schema_name])
-    
-    table_exists = cursor.fetchone()[0]
-    
-    if not table_exists:
-        logger.info(f"Creating django_migrations table in schema {schema_name}")
-        cursor.execute("""
-            CREATE TABLE django_migrations (
-                id serial NOT NULL PRIMARY KEY,
-                app character varying(255) NOT NULL,
-                name character varying(255) NOT NULL,
-                applied timestamp with time zone NOT NULL
-            )
-        """)
-    else:
-        logger.info(f"django_migrations table already exists in schema {schema_name}")
-    
-    cursor.close()
-    conn.close()
-
-def monitor_tenant_schemas(fix=False, verbose=False):
-    """Monitor tenant schemas and fix any issues."""
-    process_id = uuid.uuid4()
-    start_time = time.time()
-    
-    if verbose:
-        logger.setLevel(logging.DEBUG)
-    
-    logger.info(f"[MONITOR-{process_id}] Starting tenant schema monitoring")
-    
+def send_email_alert(subject, message):
+    """Send email alert to administrators"""
     try:
-        # Get all tenants
-        tenants = Tenant.objects.filter(is_active=True)
-        logger.info(f"[MONITOR-{process_id}] Found {len(tenants)} active tenants")
-        
-        # Initialize counters for summary
-        schemas_checked = 0
-        schemas_with_issues = 0
-        schemas_fixed = 0
-        schemas_with_errors = 0
-        schemas_with_missing_tables = 0
-        schemas_with_missing_migrations_table = 0
-        
-        # Check each tenant's schema
-        for tenant in tenants:
-            tenant_start_time = time.time()
-            schema_name = tenant.schema_name
-            logger.info(f"[MONITOR-{process_id}] Checking tenant {tenant.id} ({tenant.name}) with schema {schema_name}")
+        if not EMAIL_FROM:
+            logger.error("EMAIL_FROM not configured. Skipping email alert.")
+            return False
             
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_FROM
+        msg['To'] = EMAIL_TO
+        msg['Subject'] = subject
+        
+        msg.attach(MIMEText(message, 'plain'))
+        
+        server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
+        server.starttls()
+        server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        
+        logger.info(f"Alert email sent to {EMAIL_TO}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send email alert: {str(e)}")
+        return False
+
+def check_users_without_schemas():
+    """Check for users who should have schemas but don't"""
+    issues = []
+    
+    # Get all owner users with tenant_id
+    users = User.objects.filter(role='OWNER', tenant_id__isnull=False)
+    logger.info(f"Found {users.count()} owner users with tenant_id")
+    
+    for user in users:
+        try:
+            # Get tenant
+            tenant = Tenant.objects.filter(id=user.tenant_id).first()
+            if not tenant:
+                issues.append({
+                    'user_id': str(user.id),
+                    'email': user.email,
+                    'tenant_id': str(user.tenant_id) if user.tenant_id else None,
+                    'issue': 'Tenant record not found',
+                })
+                continue
+                
             # Check if schema exists
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT schema_name
-                    FROM information_schema.schemata
-                    WHERE schema_name = %s
-                """, [schema_name])
-                schema_exists = cursor.fetchone() is not None
-            
-            if not schema_exists:
-                logger.warning(f"[MONITOR-{process_id}] Schema {schema_name} does not exist for tenant {tenant.id}")
-                schemas_with_issues += 1
+                    SELECT EXISTS (
+                        SELECT 1 FROM information_schema.schemata 
+                        WHERE schema_name = %s
+                    )
+                """, [tenant.schema_name])
                 
-                if fix:
-                    logger.info(f"[MONITOR-{process_id}] Creating schema {schema_name}")
-                    try:
-                        with connection.cursor() as cursor:
-                            # Create schema
-                            cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
-                            
-                            # Set up permissions
-                            db_user = connection.settings_dict['USER']
-                            cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {db_user}')
-                            cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {db_user}')
-                            cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {db_user}')
-                        
-                        # Run migrations for the new schema
-                        migrate_tenant_schema.delay(str(tenant.id))
-                        logger.info(f"[MONITOR-{process_id}] Scheduled migration task for tenant {tenant.id}")
-                        schemas_fixed += 1
-                    except Exception as e:
-                        logger.error(f"[MONITOR-{process_id}] Error creating schema {schema_name}: {str(e)}")
-                        schemas_with_errors += 1
+                schema_exists = cursor.fetchone()[0]
                 
-                continue
-            
-            schemas_checked += 1
-            
-            # Check if django_migrations table exists
-            migrations_table_exists = check_migrations_table(schema_name)
-            
-            if not migrations_table_exists:
-                logger.warning(f"[MONITOR-{process_id}] django_migrations table does not exist in schema {schema_name}")
-                schemas_with_issues += 1
-                schemas_with_missing_migrations_table += 1
-            
-            # Check if schema has tables
-            tables = get_schema_tables(schema_name)
-            table_count = len(tables)
-            
-            logger.info(f"[MONITOR-{process_id}] Schema {schema_name} has {table_count} tables")
-            
-            # Check for expected tables for each tenant app
-            missing_app_tables = check_expected_tables(schema_name)
-            
-            if missing_app_tables:
-                logger.warning(f"[MONITOR-{process_id}] Missing tables for apps: {', '.join(missing_app_tables)}")
-                schemas_with_issues += 1
-                schemas_with_missing_tables += 1
-            
-            # Fix issues if requested
-            if fix and (not migrations_table_exists or missing_app_tables or table_count == 0):
-                logger.info(f"[MONITOR-{process_id}] Fixing issues with schema {schema_name}")
-                try:
-                    # Schedule migration task
-                    migrate_tenant_schema.delay(str(tenant.id))
-                    logger.info(f"[MONITOR-{process_id}] Scheduled migration task for tenant {tenant.id}")
-                    schemas_fixed += 1
-                except Exception as e:
-                    logger.error(f"[MONITOR-{process_id}] Error scheduling migration for schema {schema_name}: {str(e)}")
-                    schemas_with_errors += 1
-            
-            tenant_elapsed_time = time.time() - tenant_start_time
-            logger.info(f"[MONITOR-{process_id}] Finished checking tenant {tenant.id} in {tenant_elapsed_time:.2f} seconds")
-        
-        # Log summary
-        logger.info(f"[MONITOR-{process_id}] Tenant schema monitoring summary:")
-        logger.info(f"[MONITOR-{process_id}] - Schemas checked: {schemas_checked}")
-        logger.info(f"[MONITOR-{process_id}] - Schemas with issues: {schemas_with_issues}")
-        logger.info(f"[MONITOR-{process_id}] - Schemas with missing tables: {schemas_with_missing_tables}")
-        logger.info(f"[MONITOR-{process_id}] - Schemas with missing migrations table: {schemas_with_missing_migrations_table}")
-        
-        if fix:
-            logger.info(f"[MONITOR-{process_id}] - Schemas fixed: {schemas_fixed}")
-            logger.info(f"[MONITOR-{process_id}] - Schemas with errors: {schemas_with_errors}")
-        
-        total_elapsed_time = time.time() - start_time
-        logger.info(f"[MONITOR-{process_id}] Successfully completed tenant schema monitoring in {total_elapsed_time:.2f} seconds")
-        
-        return True
+                if not schema_exists:
+                    issues.append({
+                        'user_id': str(user.id),
+                        'email': user.email,
+                        'tenant_id': str(tenant.id),
+                        'schema_name': tenant.schema_name,
+                        'issue': 'Schema does not exist',
+                    })
+                else:
+                    # Check if auth tables exist
+                    cursor.execute(f"""
+                        SELECT EXISTS (
+                            SELECT 1 FROM information_schema.tables 
+                            WHERE table_schema = %s AND table_name = 'custom_auth_user'
+                        )
+                    """, [tenant.schema_name])
+                    
+                    tables_exist = cursor.fetchone()[0]
+                    
+                    if not tables_exist:
+                        issues.append({
+                            'user_id': str(user.id),
+                            'email': user.email,
+                            'tenant_id': str(tenant.id),
+                            'schema_name': tenant.schema_name,
+                            'issue': 'Auth tables missing from schema',
+                        })
+        except Exception as e:
+            logger.error(f"Error checking user {user.email}: {str(e)}")
+            issues.append({
+                'user_id': str(user.id),
+                'email': user.email,
+                'tenant_id': str(user.tenant_id) if user.tenant_id else None,
+                'issue': f'Error: {str(e)}',
+            })
     
-    except Exception as e:
-        total_elapsed_time = time.time() - start_time
-        logger.error(f"[MONITOR-{process_id}] Error in monitor_tenant_schemas: {str(e)}", exc_info=True)
-        return False
+    return issues
 
-def main():
-    """Main function."""
-    parser = argparse.ArgumentParser(description='Monitor tenant schemas')
-    parser.add_argument('--fix', action='store_true', help='Automatically fix any issues found')
-    parser.add_argument('--verbose', action='store_true', help='Show detailed logs')
-    args = parser.parse_args()
+def check_schemas_without_tenants():
+    """Check for schemas without corresponding tenant records"""
+    issues = []
     
-    monitor_tenant_schemas(fix=args.fix, verbose=args.verbose)
+    # Get all tenant schemas
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT schema_name 
+            FROM information_schema.schemata 
+            WHERE schema_name LIKE 'tenant_%'
+            ORDER BY schema_name
+        """)
+        
+        schemas = [row[0] for row in cursor.fetchall()]
+        logger.info(f"Found {len(schemas)} tenant schemas")
+        
+        for schema_name in schemas:
+            # Extract tenant ID from schema name
+            try:
+                tenant_id_str = schema_name[7:].replace('_', '-')
+                tenant_id = uuid.UUID(tenant_id_str)
+                
+                # Check if tenant record exists
+                tenant = Tenant.objects.filter(id=tenant_id).first()
+                if not tenant:
+                    issues.append({
+                        'schema_name': schema_name,
+                        'tenant_id': str(tenant_id),
+                        'issue': 'No tenant record exists for schema',
+                    })
+            except ValueError:
+                issues.append({
+                    'schema_name': schema_name,
+                    'issue': 'Invalid schema name format',
+                })
+    
+    return issues
 
-if __name__ == '__main__':
-    main()
+def run_monitoring():
+    """Run tenant schema monitoring checks"""
+    logger.info("Starting tenant schema monitoring")
+    
+    # Check users without schemas
+    user_issues = check_users_without_schemas()
+    
+    # Check schemas without tenants
+    schema_issues = check_schemas_without_tenants()
+    
+    # Combine all issues
+    all_issues = {
+        'timestamp': datetime.datetime.now().isoformat(),
+        'user_issues': user_issues,
+        'schema_issues': schema_issues,
+        'total_issues': len(user_issues) + len(schema_issues)
+    }
+    
+    # Log results
+    logger.info(f"Monitoring completed. Found {all_issues['total_issues']} issues.")
+    
+    # Save results to file
+    with open('tenant_monitoring_results.json', 'w') as f:
+        json.dump(all_issues, f, indent=2)
+    
+    # Send alert if issues exceed threshold
+    if all_issues['total_issues'] >= ALERT_THRESHOLD:
+        subject = f"ALERT: {all_issues['total_issues']} tenant schema issues detected"
+        message = f"""
+Tenant Schema Monitoring Alert
+
+Timestamp: {all_issues['timestamp']}
+Total Issues: {all_issues['total_issues']}
+
+Users with Schema Issues: {len(user_issues)}
+Schemas without Tenant Records: {len(schema_issues)}
+
+See tenant_monitoring_results.json for details.
+"""
+        send_email_alert(subject, message)
+
+if __name__ == "__main__":
+    run_monitoring()

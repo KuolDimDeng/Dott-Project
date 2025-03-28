@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import DashboardLanguageSelector from './LanguageSelector';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
+import { useNotification } from '@/context/NotificationContext';
 
 const AppBar = ({
   drawerOpen,
@@ -20,6 +21,8 @@ const AppBar = ({
   handleTermsClick,
   handleHomeClick,
 }) => {
+  const { notifySuccess, notifyError, notifyInfo, notifyWarning } = useNotification();
+
   // Generate initials from the first and last name
   const getInitials = (name) => {
     if (!name || typeof name !== 'string') return '';
@@ -118,6 +121,23 @@ const AppBar = ({
     router.push('/onboarding/subscription');
   };
 
+  const handleShowNotification = (type) => {
+    switch(type) {
+      case 'success':
+        notifySuccess('Operation completed successfully!');
+        break;
+      case 'error':
+        notifyError('An error occurred. Please try again.');
+        break;
+      case 'warning':
+        notifyWarning('Please be aware of this important information.');
+        break;
+      default:
+        notifyInfo('This is an informational message.');
+        break;
+    }
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 h-16 bg-primary-main z-50 text-white border-b-2 border-primary-dark shadow-md" style={{ width: '100vw !important' }}>
       <div className="flex justify-between items-center h-full w-full px-4 sm:px-6">
@@ -185,6 +205,17 @@ const AppBar = ({
               Connected to Shopify
             </span>
           )}
+          
+          {/* Notification button */}
+          <button
+            className="hidden sm:flex items-center justify-center p-2 text-white hover:bg-white/10 rounded-full mr-2"
+            onClick={() => handleShowNotification('info')}
+            title="Show Notification"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </button>
           
           {/* Home button */}
           <button

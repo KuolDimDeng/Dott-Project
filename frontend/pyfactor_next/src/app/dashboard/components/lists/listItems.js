@@ -195,8 +195,13 @@ const MainListItems = ({
       callback();
     }
     
-    // Always close drawer when an item is clicked, regardless of device type
-    if (handleDrawerClose && !isIconOnly) {
+    // Don't close the drawer for Create New options
+    if (callback === handleShowCreateOptions || callback === handleShowCreateMenu) {
+      return;
+    }
+    
+    // Close drawer when an item is clicked, only on mobile devices
+    if (handleDrawerClose && !isIconOnly && isMobile.current) {
       // Use setTimeout to ensure this happens after the callback has completed
       setTimeout(() => {
         handleDrawerClose();
@@ -405,7 +410,7 @@ const MainListItems = ({
       label: 'Transaction', 
       icon: <NavIcons.Payments className="w-4 h-4" />,
       onClick: () => {
-        handleItemClick(() => handleShowCreateOptions('Transaction'))();
+        handleShowCreateOptions('Transaction');
       }, 
       value: 'Transaction' 
     },
@@ -413,7 +418,7 @@ const MainListItems = ({
       label: 'Product', 
       icon: <NavIcons.Inventory className="w-4 h-4" />,
       onClick: () => {
-        handleItemClick(() => handleShowCreateOptions('Product'))();
+        handleShowCreateOptions('Product');
       }, 
       value: 'Product' 
     },
@@ -421,7 +426,7 @@ const MainListItems = ({
       label: 'Service', 
       icon: <NavIcons.Receipt className="w-4 h-4" />,
       onClick: () => {
-        handleItemClick(() => handleShowCreateOptions('Service'))();
+        handleShowCreateOptions('Service');
       }, 
       value: 'Service' 
     },
@@ -429,7 +434,7 @@ const MainListItems = ({
       label: 'Invoice', 
       icon: <NavIcons.Description className="w-4 h-4" />,
       onClick: () => {
-        handleItemClick(() => handleShowCreateOptions('Invoice'))();
+        handleShowCreateOptions('Invoice');
       }, 
       value: 'Invoice' 
     },
@@ -437,7 +442,7 @@ const MainListItems = ({
       label: 'Bill', 
       icon: <NavIcons.Cart className="w-4 h-4" />,
       onClick: () => {
-        handleItemClick(() => handleShowCreateOptions('Bill'))();
+        handleShowCreateOptions('Bill');
       }, 
       value: 'Bill' 
     },
@@ -445,7 +450,7 @@ const MainListItems = ({
       label: 'Estimate', 
       icon: <NavIcons.Reports className="w-4 h-4" />,
       onClick: () => {
-        handleItemClick(() => handleShowCreateOptions('Estimate'))();
+        handleShowCreateOptions('Estimate');
       }, 
       value: 'Estimate' 
     },
@@ -453,7 +458,7 @@ const MainListItems = ({
       label: 'Customer', 
       icon: <NavIcons.People className="w-4 h-4" />,
       onClick: () => {
-        handleItemClick(() => handleShowCreateOptions('Customer'))();
+        handleShowCreateOptions('Customer');
       }, 
       value: 'Customer' 
     },
@@ -461,7 +466,7 @@ const MainListItems = ({
       label: 'Vendor', 
       icon: <NavIcons.Contacts className="w-4 h-4" />,
       onClick: () => {
-        handleItemClick(() => handleShowCreateOptions('Vendor'))();
+        handleShowCreateOptions('Vendor');
       }, 
       value: 'Vendor' 
     },
@@ -516,7 +521,7 @@ const MainListItems = ({
               {/* Create New button */}
               <li className={isIconOnly ? "px-[10px] py-2" : "px-3 py-2"}>
                 <button
-                  onClick={isIconOnly ? handleDrawerClose : handleItemClick(handleShowCreateMenu)}
+                  onClick={isIconOnly ? handleDrawerClose : handleShowCreateMenu}
                   className={`
                     flex items-center 
                     ${isIconOnly ? 'justify-center w-10 h-10 p-0 mx-auto' : 'w-full text-left py-3 px-4'}

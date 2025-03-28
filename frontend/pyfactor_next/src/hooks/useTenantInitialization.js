@@ -372,9 +372,69 @@ export function useTenantInitialization() {
     initializeExistingUser();
   }, [initializeTenantId]);
 
+  /**
+   * Verify tenant schema exists and create one if missing
+   */
+  const verifyTenantSchema = useCallback(async () => {
+    if (!auth.isAuthenticated || !auth.user) {
+      logger.debug('[TenantInit] User not authenticated, skipping tenant schema verification');
+      return null;
+    }
+
+    try {
+      logger.debug('[TenantInit] Verifying tenant schema exists...');
+      const response = await fetch('/api/tenant/verify', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${auth.getAccessToken()}`
+        }
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        logger.error('[TenantInit] Error verifying tenant schema:', data);
+        return null;
+      }
+
+      if (data.schema_exists) {
+        logger.debug('[TenantInit] Tenant schema exists:', data.schema_name);
+        return data;
+      }
+
+      // If schema doesn't exist, create it
+      logger.warn('[TenantInit] Tenant schema missing, creating one...');
+      const createResponse = await fetch('/api/tenant/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${auth.getAccessToken()}`
+        }
+      });
+
+      const createData = await createResponse.json();
+      
+      if (!createResponse.ok) {
+        logger.error('[TenantInit] Error creating tenant schema:', createData);
+        return null;
+      }
+
+      logger.info('[TenantInit] Successfully created tenant schema:', createData);
+      return createData;
+    } catch (error) {
+      logger.error('[TenantInit] Error in verifyTenantSchema:', error);
+      return null;
+    }
+  }, [auth]);
+
   return {
     login: handleLogin,
     register: handleRegistration,
-    initializeTenantId
+    initializeTenantId,
+    getTenantId,
+    storeTenantInfo,
+    clearTenantInfo: releaseTenantLock,
+    verifyTenantSchema
   };
 }

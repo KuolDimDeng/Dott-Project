@@ -957,14 +957,42 @@ def setup_user_schema_task(self, user_id: str, business_id: str, **kwargs) -> Di
         except Exception as update_error:
             logger.error(f"Error status update failed: {str(update_error)}")
 
+        # REMOVE SCHEMA DELETION - THIS IS THE ROOT CAUSE OF DISAPPEARING SCHEMAS
+        # Instead of deleting, log the error and leave the schema for manual inspection
         if schema_name:
             try:
+                # Check if schema exists and log status instead of dropping it
                 if direct_conn and not direct_conn.closed:
                     with direct_conn.cursor() as cursor:
-                        cursor.execute(f"DROP SCHEMA IF EXISTS {schema_name} CASCADE")
-                        logger.info(f"Cleaned up schema {schema_name} after error")
-            except Exception as cleanup_error:
-                logger.error(f"Schema cleanup failed: {str(cleanup_error)}")
+                        cursor.execute("""
+                            SELECT EXISTS (
+                                SELECT 1 FROM information_schema.schemata 
+                                WHERE schema_name = %s
+                            )
+                        """, [schema_name])
+                        schema_exists = cursor.fetchone()[0]
+                        
+                        if schema_exists:
+                            # Count tables to see what was created
+                            cursor.execute("""
+                                SELECT COUNT(*) FROM information_schema.tables
+                                WHERE table_schema = %s
+                            """, [schema_name])
+                            table_count = cursor.fetchone()[0]
+                            
+                            logger.error(f"Schema setup failed but schema {schema_name} exists with {table_count} tables. Manual intervention may be required.")
+                            
+                            # Get list of tables for debugging
+                            cursor.execute("""
+                                SELECT table_name FROM information_schema.tables
+                                WHERE table_schema = %s
+                            """, [schema_name])
+                            tables = [row[0] for row in cursor.fetchall()]
+                            logger.error(f"Tables in failed schema {schema_name}: {', '.join(tables)}")
+                        else:
+                            logger.error(f"Schema {schema_name} does not exist after setup failure")
+            except Exception as inspect_error:
+                logger.error(f"Schema inspection after error failed: {str(inspect_error)}")
 
         raise
 

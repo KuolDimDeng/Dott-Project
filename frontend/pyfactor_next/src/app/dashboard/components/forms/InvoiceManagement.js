@@ -35,7 +35,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import { useToast } from '@/components/Toast/ToastProvider';
+import { useNotification } from '@/context/NotificationContext';
 
 const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
   const [activeTab, setActiveTab] = useState(isNewInvoice ? 0 : 2);
@@ -49,7 +49,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
     currency: 'USD',
     totalAmount: 0,
   });
-  const toast = useToast();
+  const { notifySuccess, notifyError, notifyInfo, notifyWarning } = useNotification();
   const [isEditing, setIsEditing] = useState(false);
   const [editedInvoice, setEditedInvoice] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -72,7 +72,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
       setInvoices(response.data);
     } catch (error) {
       console.error('Error fetching invoices:', error);
-      toast.error('Failed to fetch invoices');
+      notifyError('Failed to fetch invoices');
     }
   };
 
@@ -82,7 +82,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
       setCustomers(response.data);
     } catch (error) {
       console.error('Error fetching customers:', error);
-      toast.error('Failed to fetch customers');
+      notifyError('Failed to fetch customers');
     }
   };
 
@@ -92,7 +92,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
       setProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast.error('Failed to fetch products');
+      notifyError('Failed to fetch products');
     }
   };
 
@@ -102,7 +102,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
       setServices(response.data);
     } catch (error) {
       console.error('Error fetching services:', error);
-      toast.error('Failed to fetch services');
+      notifyError('Failed to fetch services');
     }
   };
 
@@ -170,7 +170,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
     e.preventDefault();
 
     if (!newInvoice.customer) {
-      toast.error('Please select a customer');
+      notifyError('Please select a customer');
       return;
     }
 
@@ -191,7 +191,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
       console.log('Sending invoice data:', invoiceData); // For debugging
 
       const response = await axiosInstance.post('/api/invoices/create/', invoiceData);
-      toast.success('Invoice created successfully');
+      notifySuccess('Invoice created successfully');
       setNewInvoice({
         customer: '',
         date: new Date(),

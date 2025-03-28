@@ -33,7 +33,7 @@ import SalesForm from './SalesForm';
 import RefundForm from './RefundForm';
 import { axiosInstance as useApi } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import { useToast } from '@/components/Toast/ToastProvider';
+import { useNotification } from '@/context/NotificationContext';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -58,7 +58,7 @@ const TransactionForm = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
-  const toast = useToast();
+  const { notifySuccess, notifyError, notifyInfo, notifyWarning } = useNotification();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -87,7 +87,7 @@ const TransactionForm = () => {
       logger.info('[TransactionForm] User profile fetched:', response.data);
     } catch (error) {
       logger.error('[TransactionForm] Error fetching user profile:', error);
-      toast.error('Failed to fetch user profile');
+      notifyError('Failed to fetch user profile');
     }
   };
 
@@ -101,7 +101,7 @@ const TransactionForm = () => {
       setAccounts(response.data);
     } catch (error) {
       logger.error('[TransactionForm] Error fetching accounts:', error);
-      toast.error('Failed to fetch accounts');
+      notifyError('Failed to fetch accounts');
     }
   };
 
@@ -116,7 +116,7 @@ const TransactionForm = () => {
       setTransactions(response.data);
     } catch (error) {
       logger.error('[TransactionForm] Error fetching transactions:', error);
-      toast.error('Failed to fetch transactions');
+      notifyError('Failed to fetch transactions');
     } finally {
       setLoading(false);
     }
