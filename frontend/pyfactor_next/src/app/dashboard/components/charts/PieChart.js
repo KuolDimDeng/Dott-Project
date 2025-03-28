@@ -1,23 +1,14 @@
 import React from 'react';
-import { Box, Typography, useTheme } from '@mui/material';
 import { PieChart as RechartsChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     return (
-      <Box
-        sx={{
-          backgroundColor: 'background.paper',
-          p: 1,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 1,
-        }}
-      >
-        <Typography variant="body2" color="text.primary">
+      <div className="bg-white dark:bg-gray-800 p-2 border border-gray-200 dark:border-gray-700 rounded shadow-sm">
+        <p className="text-sm text-gray-900 dark:text-white">
           {`${payload[0].name}: ${payload[0].value}`}
-        </Typography>
-      </Box>
+        </p>
+      </div>
     );
   }
   return null;
@@ -43,16 +34,14 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 };
 
 const PieChart = ({ data, colors = [] }) => {
-  const theme = useTheme();
-  
-  // Default colors if none provided
+  // Default colors for the chart
   const defaultColors = [
-    theme.palette.primary.main,
-    theme.palette.secondary.main,
-    theme.palette.success.main,
-    theme.palette.warning.main,
-    theme.palette.error.main,
-    theme.palette.info.main,
+    '#3f51b5', // primary
+    '#f50057', // secondary
+    '#4caf50', // success
+    '#ff9800', // warning
+    '#f44336', // error
+    '#2196f3', // info
     '#9c27b0', // purple
     '#ff9800', // orange
     '#795548', // brown
@@ -86,4 +75,4 @@ const PieChart = ({ data, colors = [] }) => {
   );
 };
 
-export default PieChart; 
+export default PieChart;

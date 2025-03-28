@@ -72,11 +72,33 @@ module.exports = {
         'inner': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
         'none': 'none',
       },
+      animation: {
+        'fadeIn': 'fadeIn 0.3s ease-in-out',
+        'slideInRight': 'slideInRight 0.4s ease-in-out',
+        'slideOutRight': 'slideOutRight 0.4s ease-in-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideInRight: {
+          '0%': { transform: 'translateX(100%)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
+        slideOutRight: {
+          '0%': { transform: 'translateX(0)', opacity: '1' },
+          '100%': { transform: 'translateX(100%)', opacity: '0' },
+        },
+      },
     },
   },
   plugins: [
-    // Comment out the forms plugin temporarily until it's installed
-    // require('@tailwindcss/forms'),
+    require('@tailwindcss/forms'),
+    require('tailwind-scrollbar')({
+      nocompatible: true,
+      preferredStrategy: 'pseudoclasses',
+    }),
   ],
   // Only disable preflight if you're experiencing conflicts with MUI during transition
   // Once fully migrated to Tailwind, you can remove this

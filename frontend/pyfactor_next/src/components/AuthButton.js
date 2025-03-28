@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@/hooks/useSession';
 import { useRouter } from 'next/navigation';
-import { Button } from '@mui/material';
 import { logger } from '@/utils/logger';
 import { useTranslation } from 'react-i18next';
 import { fetchAuthSession } from 'aws-amplify/auth';
@@ -16,7 +15,7 @@ export const resetPreviouslyOnboarded = () => {
   }
 };
 
-export default function AuthButton({ variant = 'contained', size = 'medium', fullWidth = false }) {
+export default function AuthButton({ variant = 'primary', size = 'medium', fullWidth = false }) {
   const { user, loading } = useSession();
   const router = useRouter();
   const { t } = useTranslation();
@@ -132,21 +131,39 @@ export default function AuthButton({ variant = 'contained', size = 'medium', ful
     buttonText: text
   });
 
+  const sizeClasses = {
+    small: 'px-3 py-1 text-xs',
+    medium: 'px-4 py-2 text-sm',
+    large: 'px-5 py-2.5 text-base'
+  };
+
+  const variantClasses = {
+    primary: 'bg-primary-main hover:bg-primary-dark text-white',
+    secondary: 'bg-secondary-main hover:bg-secondary-dark text-white',
+    outlined: 'bg-transparent border border-primary-main text-primary-main hover:bg-primary-main/5',
+    text: 'bg-transparent hover:bg-primary-light/10 text-primary-main'
+  };
+
   return (
-    <Button
-      variant={variant}
-      size={size}
+    <button
       onClick={action}
       disabled={loading}
-      fullWidth={fullWidth}
-      sx={{
-        minWidth: '200px',
-        fontWeight: 600,
-        textTransform: 'uppercase',
-        letterSpacing: '0.05em'
-      }}
+      className={`
+        ${sizeClasses[size]}
+        ${variantClasses[variant]}
+        ${fullWidth ? 'w-full' : 'min-w-[200px]'}
+        font-semibold uppercase tracking-wider rounded-md transition-colors duration-200
+        focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-50
+        disabled:opacity-50 disabled:cursor-not-allowed
+      `}
     >
-      {text}
-    </Button>
+      {loading ? (
+        <div className="flex justify-center items-center">
+          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+        </div>
+      ) : (
+        text
+      )}
+    </button>
   );
 }

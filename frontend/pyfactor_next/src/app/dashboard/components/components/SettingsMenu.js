@@ -1,48 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Menu, MenuItem, styled } from '@mui/material';
-import { menuItemStyle } from '../../../../styles/menuStyles';
-
-// No styled component needed as we'll use direct positioning
-const StyledMenu = styled(Menu)(({ theme }) => ({
-  '& .MuiPaper-root': {
-    minWidth: 200,
-    backgroundColor: '#ffffff',
-    backgroundImage: 'linear-gradient(to bottom, #f8f9fa, #ffffff)',
-    color: '#263238',
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
-    boxShadow: theme.shadows[4],
-  },
-}));
-
-const StyledMenuItem = styled(MenuItem)(({ theme }) => ({
-  ...menuItemStyle,
-  padding: '10px 16px',
-  color: '#263238', 
-  fontSize: '0.875rem',
-  '&:hover': {
-    backgroundColor: 'rgba(25, 118, 210, 0.08)', 
-  },
-  '&.Mui-selected': {
-    backgroundColor: 'rgba(25, 118, 210, 0.12)', 
-    '&:hover': {
-      backgroundColor: 'rgba(25, 118, 210, 0.15)', 
-    },
-  },
-}));
+import React, { useState, useEffect, useRef } from 'react';
 
 const SettingsMenu = ({ 
-  anchorEl, 
   open, 
   onClose, 
   onOptionSelect, 
   selectedOption,
   onIntegrationsClick,
-  onDeviceSettingsClick,
-  backgroundColor
+  onDeviceSettingsClick
 }) => {
   // Track window width for menu positioning
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const menuRef = useRef(null);
   
   // Update window width on resize for responsive menu positioning
   useEffect(() => {
@@ -57,6 +25,20 @@ const SettingsMenu = ({
       };
     }
   }, []);
+  
+  // Close when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target) && open) {
+        onClose();
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [open, onClose]);
 
   // Menu options array
   const options = [
@@ -76,32 +58,32 @@ const SettingsMenu = ({
     onClose(); // Close the menu after selection
   };
 
+  if (!open) return null;
+
   return (
-    <StyledMenu
-      anchorEl={null}
-      anchorReference="anchorPosition"
-      anchorPosition={{ top: 60, left: windowWidth - 220 }}
-      open={open}
-      onClose={onClose}
+    <div 
+      className="fixed top-[60px] right-4 z-50"
+      ref={menuRef}
+      style={{ right: '20px' }}
     >
-      {options.map((option, index) => (
-        <StyledMenuItem
-          key={option}
-          onClick={() => handleOptionClick(option)} // Handle item click
-          selected={option === selectedOption} // Highlight the selected option
-          style={{
-            backgroundColor: selectedOption === option
-              ? 'rgba(10, 57, 119, 0.15)' 
-              : 'transparent',
-            '&:hover': {
-              backgroundColor: '#f0f3f9', // Very light gray with slight blue tint
-            },
-          }}
-        >
-          {option}
-        </StyledMenuItem>
-      ))}
-    </StyledMenu>
+      <div className="min-w-[200px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
+        <div className="py-1">
+          {options.map((option) => (
+            <button
+              key={option}
+              onClick={() => handleOptionClick(option)}
+              className={`w-full text-left px-4 py-2.5 text-sm ${
+                selectedOption === option
+                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                  : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+              } transition-colors duration-150`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };
 

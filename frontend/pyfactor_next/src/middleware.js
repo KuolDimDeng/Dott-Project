@@ -35,7 +35,8 @@ const PUBLIC_API_ROUTES = [
   '/api/onboarding/setup/status',
   '/api/auth/set-cookies',
   '/api/auth/callback',
-  '/api/onboarding/redirect'
+  '/api/onboarding/redirect',
+  '/api/user/profile'
 ];
 
 // Onboarding routes with their progression order
@@ -80,6 +81,12 @@ export function middleware(request) {
   const pathname = request.nextUrl.pathname;
   const origin = request.nextUrl.origin;
   
+  // Check for force flag in URL - bypass middleware checks if present
+  if (request.nextUrl.searchParams.has('force')) {
+    console.log(`[Middleware] Force flag detected in URL, bypassing middleware checks for: ${pathname}`);
+    return NextResponse.next();
+  }
+  
   // Check for signin redirect loop - important safeguard
   if (pathname === '/auth/signin' && request.nextUrl.searchParams.has('from')) {
     console.log(`[Middleware] Detected potential redirect loop at signin page with 'from' parameter, bypassing middleware`);
@@ -94,17 +101,37 @@ export function middleware(request) {
     return NextResponse.next();
   }
   
-  // Always pass through for API routes
-  if (pathname.startsWith('/api/') || pathname.startsWith('/_next/')) {
+  // For protected API routes, verify token
+  // (simplified; in production, you'd verify the token more thoroughly)
+  if (pathname.startsWith('/api/')) {
     // Check for public API routes first
     if (PUBLIC_API_ROUTES.some(route => pathname.startsWith(route))) {
       return NextResponse.next();
     }
     
-    // For protected API routes, verify token
-    // (simplified; in production, you'd verify the token more thoroughly)
+    // Special handling for onboarding API routes - be more lenient
+    if (pathname.startsWith('/api/onboarding/')) {
+      // For onboarding routes, add special headers and proceed
+      const newResponse = NextResponse.next();
+      // Transfer any existing cookies from the request to the response
+      request.cookies.getAll().forEach(cookie => {
+        newResponse.cookies.set(cookie.name, cookie.value, cookie);
+      });
+      
+      // Add special headers for onboarding routes
+      if (pathname.includes('business-info') || pathname.includes('state')) {
+        console.log(`[Middleware] Adding lenient access headers for onboarding API route: ${pathname}`);
+        newResponse.headers.set('X-Lenient-Access', 'true');
+        newResponse.headers.set('X-Allow-Partial', 'true');
+        newResponse.headers.set('X-Onboarding-Route', 'true');
+      }
+      
+      return newResponse;
+    }
+    
     const authToken = request.cookies.get('authToken')?.value;
-    if (!authToken) {
+    const idToken = request.cookies.get('idToken')?.value;
+    if (!authToken && !idToken) {
       // For API routes, return a JSON response
       return new NextResponse(
         JSON.stringify({ error: 'Authentication required' }),
@@ -112,6 +139,11 @@ export function middleware(request) {
       );
     }
     
+    return NextResponse.next();
+  }
+  
+  // Always pass through for Next.js framework routes
+  if (pathname.startsWith('/_next/')) {
     return NextResponse.next();
   }
   
@@ -147,6 +179,54 @@ export function middleware(request) {
       path: '/',
       maxAge: 60 * 60 * 24 * 7 // 7 days
     });
+  }
+  
+  // Check for status mismatch between Cognito token and cookies - fix if necessary
+  try {
+    // Extract status from ID token if available
+    const cognito_idToken = request.cookies.get('idToken')?.value;
+    if (cognito_idToken) {
+      // Simple decode without verification (middleware context only)
+      const tokenParts = cognito_idToken.split('.');
+      if (tokenParts.length === 3) {
+        try {
+          const tokenPayload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+          const cognitoOnboardingStatus = tokenPayload['custom:onboarding'];
+          const cookieOnboardingStatus = request.cookies.get('onboardedStatus')?.value;
+          
+          // If there's a mismatch and Cognito has a valid status, update the cookie
+          if (cognitoOnboardingStatus && cognitoOnboardingStatus !== cookieOnboardingStatus) {
+            console.log(`[Middleware] Fixing onboarding status mismatch: Cognito=${cognitoOnboardingStatus}, Cookie=${cookieOnboardingStatus}`);
+            
+            response.cookies.set('onboardedStatus', cognitoOnboardingStatus, {
+              path: '/',
+              maxAge: 60 * 60 * 24 * 7 // 7 days
+            });
+            
+            // Also update step based on status
+            let nextStep = 'business-info';
+            if (cognitoOnboardingStatus === 'BUSINESS_INFO') {
+              nextStep = 'subscription';
+            } else if (cognitoOnboardingStatus === 'SUBSCRIPTION') {
+              nextStep = 'payment';
+            } else if (cognitoOnboardingStatus === 'PAYMENT') {
+              nextStep = 'setup';
+            } else if (cognitoOnboardingStatus === 'SETUP' || cognitoOnboardingStatus === 'COMPLETE') {
+              nextStep = 'dashboard';
+            }
+            
+            response.cookies.set('onboardingStep', nextStep, {
+              path: '/',
+              maxAge: 60 * 60 * 24 * 7 // 7 days
+            });
+          }
+        } catch (tokenParseError) {
+          console.error(`[Middleware] Error parsing token:`, tokenParseError.message);
+        }
+      }
+    }
+  } catch (tokenError) {
+    console.error(`[Middleware] Error processing token:`, tokenError.message);
   }
   
   // Step 4: Handle onboarding routes

@@ -20,7 +20,20 @@ function CrispChat({ isAuthenticated }) {
           return;
         }
 
-        const user = await getCurrentUser();
+        let user;
+        try {
+          user = await getCurrentUser();
+        } catch (authError) {
+          // Handle authentication errors gracefully
+          if (authError.name === 'UserUnAuthenticatedException') {
+            logger.info('User not fully authenticated for Crisp chat, continuing without user data');
+            // Set up Crisp with minimal configuration
+            window.$crisp.push(['do', 'chat:show']);
+            return;
+          }
+          throw authError; // Re-throw other errors
+        }
+
         if (!user?.attributes) {
           logger.warn('User authenticated but attributes not available');
           return;
@@ -57,7 +70,12 @@ function CrispChat({ isAuthenticated }) {
 
         logger.debug('Crisp user data set successfully');
       } catch (error) {
+        // Log the error but don't let it block Crisp initialization
         logger.error('Error setting Crisp user:', error);
+        // Ensure Crisp is still visible even if user data setting fails
+        if (window.$crisp?.push) {
+          window.$crisp.push(['do', 'chat:show']);
+        }
       }
     };
 
@@ -81,17 +99,26 @@ function CrispChat({ isAuthenticated }) {
           throw new Error('Crisp failed to initialize after maximum attempts');
         }
 
+        // Basic configuration that should always be applied
         window.$crisp.push(['safe', true]);
         window.$crisp.push(['configure', 'position:reverse']);
         window.$crisp.push(['configure', 'hide:on:mobile', false]);
         window.$crisp.push(['configure', 'position:reverse', true]);
         window.$crisp.push(['do', 'chat:show']);
 
-        await initCrispWithUser();
+        // Try to set user data, but don't block if it fails
+        try {
+          await initCrispWithUser();
+        } catch (userError) {
+          // Already logged in initCrispWithUser, don't log again
+          // But ensure chat is still shown
+          window.$crisp.push(['do', 'chat:show']);
+        }
 
         logger.debug('Crisp chat initialized successfully');
       } catch (error) {
         logger.error('Error initializing Crisp:', error);
+        // Don't rethrow - we want the app to continue even if Crisp fails
       }
     };
 

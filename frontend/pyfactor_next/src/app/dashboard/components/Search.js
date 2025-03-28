@@ -1,52 +1,18 @@
 import React from 'react';
-import { styled } from '@mui/material/styles';
-import { InputBase } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-
-const Search = styled('div')(({ theme }) => ({
-  position: 'relative',
-  borderRadius: theme.shape.borderRadius,
-  backgroundColor: theme.palette.common.white,
-  marginRight: theme.spacing(2),
-  marginLeft: theme.spacing(3),
-  width: 'auto',
-  [theme.breakpoints.up('sm')]: {
-    width: 'calc(20ch * 1.4)',
-  },
-}));
-
-const SearchIconWrapper = styled('div')(({ theme }) => ({
-  padding: theme.spacing(0, 2),
-  height: '100%',
-  position: 'absolute',
-  pointerEvents: 'none',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: theme.palette.text.primary,
-}));
-
-const StyledInputBase = styled(InputBase)(({ theme }) => ({
-  color: theme.palette.text.primary,
-  '& .MuiInputBase-input': {
-    padding: theme.spacing(1, 1, 1, 0),
-    paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-    transition: theme.transitions.create('width'),
-    width: '100%',
-    [theme.breakpoints.up('md')]: {
-      width: 'calc(20ch * 1.4)',
-    },
-  },
-}));
+import { SearchIcon } from '@/app/components/icons';
 
 const SearchComponent = () => {
   return (
-    <Search>
-      <SearchIconWrapper>
-        <SearchIcon />
-      </SearchIconWrapper>
-      <StyledInputBase placeholder="Search…" inputProps={{ 'aria-label': 'search' }} />
-    </Search>
+    <div className="relative rounded-md bg-white dark:bg-gray-700 mx-3 md:w-80">
+      <div className="absolute inset-y-0 left-0 flex items-center justify-center px-3 pointer-events-none text-gray-500 dark:text-gray-400">
+        <SearchIcon className="h-5 w-5" />
+      </div>
+      <input
+        className="block w-full pl-10 pr-3 py-2 text-gray-900 dark:text-white bg-transparent border-none rounded-md focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none transition-all"
+        placeholder="Search…"
+        aria-label="search"
+      />
+    </div>
   );
 };
 

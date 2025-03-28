@@ -757,3 +757,37 @@ def get_tenant_database(user):
     except Exception as e:
         logger.error(f"Error getting tenant database: {str(e)}")
         return None
+
+def get_business_for_user(user):
+    """
+    Safely retrieve the business associated with a user without using select_related.
+    
+    This utility function handles the case where UserProfile.business is a property, 
+    not a foreign key, and thus can't be used with select_related.
+    
+    Args:
+        user: The user object to retrieve the business for
+        
+    Returns:
+        Business instance if found, None otherwise
+    """
+    from users.models import UserProfile, Business
+    
+    try:
+        # First try to find through UserProfile
+        profile = UserProfile.objects.filter(user=user).first()
+        if profile and profile.business_id:
+            return Business.objects.get(id=profile.business_id)
+            
+        # If not found, try OnboardingProgress
+        from onboarding.models import OnboardingProgress
+        progress = OnboardingProgress.objects.filter(user=user).first()
+        if progress and progress.business_id:
+            return Business.objects.get(id=progress.business_id)
+            
+        return None
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error getting business for user {user.id}: {str(e)}")
+        return None

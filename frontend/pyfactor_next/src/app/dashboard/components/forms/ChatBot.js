@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Box, Fab, Paper, Typography, TextField, IconButton } from '@mui/material';
-import ChatIcon from '@mui/icons-material/Chat';
-import SendIcon from '@mui/icons-material/Send';
-import CloseIcon from '@mui/icons-material/Close';
 import { axiosInstance } from '@/lib/axiosConfig';
 import debounce from 'lodash/debounce';
+import { ChatIcon, SendIcon, CloseIcon } from '@/app/components/icons';
 
-const Chatbot = ({ userName, backgroundColor }) => {
+const Chatbot = ({ userName, backgroundColor = 'bg-white dark:bg-gray-800' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -193,94 +190,84 @@ const Chatbot = ({ userName, backgroundColor }) => {
   };
 
   return (
-    <Box sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 40, pointerEvents: 'auto' }}>
+    <div className="fixed bottom-4 right-4 z-40 pointer-events-auto">
       {isOpen ? (
-        <Paper
-          elevation={3}
-          sx={{
-            width: 300,
-            height: 400,
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor,
-            pointerEvents: 'auto',
-          }}
-        >
-          <Box
-            sx={{
-              p: 2,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              borderBottom: '1px solid #e0e0e0',
-            }}
-          >
-            <Typography variant="h6">Hello {userName}, need help?</Typography>
-            <IconButton onClick={handleToggle} size="small" aria-label="Close Chat">
-              <CloseIcon />
-            </IconButton>
-          </Box>
-          <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
+        <div className={`w-[300px] h-[400px] shadow-lg rounded-lg flex flex-col ${backgroundColor} pointer-events-auto`}>
+          <div className="p-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-medium dark:text-white">Hello {userName}, need help?</h3>
+            <button
+              onClick={handleToggle}
+              className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Close Chat"
+            >
+              <CloseIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            </button>
+          </div>
+          <div className="flex-grow overflow-y-auto p-4">
             {error && (
-              <Typography color="error" sx={{ mb: 1 }}>
+              <p className="text-red-600 dark:text-red-400 mb-2">
                 {error}
-              </Typography>
+              </p>
             )}
             {Array.isArray(messages) &&
               messages.map((msg, index) => (
-                <Box
+                <div
                   key={index}
-                  sx={{
-                    mb: 2,
-                    textAlign: msg.is_from_user ? 'right' : 'left',
-                    backgroundColor: msg.is_from_user ? '#f0f3f9' : '#f5f5f5',
-                    padding: '8px',
-                    borderRadius: '8px',
-                    display: 'inline-block',
-                    maxWidth: '80%',
-                  }}
+                  className={`mb-3 ${msg.is_from_user ? 'text-right' : 'text-left'}`}
                 >
-                  {typeof msg.message === 'string' ? (
-                    msg.message.split('\n').map((line, lineIndex) => (
-                      <Typography
-                        key={lineIndex}
-                        sx={{
-                          display: 'block',
-                          mb: lineIndex < msg.message.split('\n').length - 1 ? '4px' : '0',
-                        }}
-                      >
-                        {line}
-                      </Typography>
-                    ))
-                  ) : (
-                    <Typography>{msg.message}</Typography>
-                  )}
-                </Box>
+                  <div
+                    className={`inline-block p-2 rounded-lg max-w-[80%] ${
+                      msg.is_from_user 
+                        ? 'bg-blue-50 dark:bg-blue-900 text-gray-800 dark:text-gray-100' 
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'
+                    }`}
+                  >
+                    {typeof msg.message === 'string' ? (
+                      msg.message.split('\n').map((line, lineIndex) => (
+                        <p
+                          key={lineIndex}
+                          className={`block ${lineIndex < msg.message.split('\n').length - 1 ? 'mb-1' : ''}`}
+                        >
+                          {line}
+                        </p>
+                      ))
+                    ) : (
+                      <p>{msg.message}</p>
+                    )}
+                  </div>
+                </div>
               ))}
             <div ref={messagesEndRef} />
-          </Box>
-          <Box sx={{ p: 2, display: 'flex' }}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              size="small"
+          </div>
+          <div className="p-4 flex">
+            <input
+              type="text"
+              className="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-primary-main dark:bg-gray-700 dark:text-white"
               value={input}
               onChange={handleInputChange}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Type a message..."
               aria-label="Type a message"
             />
-            <IconButton onClick={handleSend} aria-label="Send Message">
-              <SendIcon />
-            </IconButton>
-          </Box>
-        </Paper>
+            <button
+              onClick={handleSend}
+              className="px-3 py-2 bg-primary-main hover:bg-primary-dark text-white rounded-r-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-main focus:ring-opacity-50"
+              aria-label="Send Message"
+            >
+              <SendIcon className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
       ) : (
-        <Fab color="primary" onClick={handleToggle} aria-label="Open Chat">
-          <ChatIcon />
-        </Fab>
+        <button
+          onClick={handleToggle}
+          className="w-12 h-12 rounded-full bg-primary-main hover:bg-primary-dark text-white flex items-center justify-center shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-main focus:ring-opacity-50"
+          aria-label="Open Chat"
+        >
+          <ChatIcon className="w-6 h-6" />
+        </button>
       )}
-    </Box>
+    </div>
   );
 };
 

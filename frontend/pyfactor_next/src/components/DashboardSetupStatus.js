@@ -2,7 +2,6 @@
 
 // components/DashboardSetupStatus.js
 import { useState, useEffect } from 'react';
-import { Box, LinearProgress, Typography, Alert } from '@mui/material';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 
@@ -105,39 +104,29 @@ const DashboardSetupStatus = () => {
     if (!setupState.show) return null;
 
     return (
-        <Box
-            sx={{
-                position: 'fixed',
-                bottom: 16,
-                right: 16,
-                bgcolor: 'background.paper',
-                p: 2,
-                borderRadius: 1,
-                boxShadow: 2,
-                maxWidth: 400,
-                zIndex: 1000
-            }}
-        >
-            <Typography variant="subtitle2" gutterBottom color="primary">
+        <div className="fixed bottom-4 right-4 bg-white p-4 rounded-lg shadow-md max-w-sm z-50">
+            <p className="text-sm font-medium text-primary-main mb-2">
                 {STAGE_MESSAGES[setupState.stage] || setupState.message || 'Setting up your account...'}
-            </Typography>
+            </p>
+            
             {setupState.error ? (
-                <Alert severity="error" sx={{ mt: 1 }}>
+                <div className="mt-2 bg-red-50 text-red-800 p-3 rounded-md border border-red-200 text-sm">
                     {setupState.error}
-                </Alert>
+                </div>
             ) : (
                 <>
-                    <LinearProgress
-                        variant="determinate"
-                        value={setupState.progress}
-                        sx={{ mt: 1 }}
-                    />
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                        <div 
+                            className="bg-primary-main h-1.5 rounded-full transition-all duration-300 ease-in-out"
+                            style={{ width: `${setupState.progress}%` }}
+                        ></div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
                         {setupState.progress}% complete
-                    </Typography>
+                    </p>
                 </>
             )}
-        </Box>
+        </div>
     );
 };
 

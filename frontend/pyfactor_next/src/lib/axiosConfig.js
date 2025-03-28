@@ -50,6 +50,49 @@ logger.debug('[AxiosConfig] Client axios instance initialized with baseURL:', AP
 // Export the axios instances
 export { axiosInstance, serverAxiosInstance };
 
+// Helper function to check if the current path is an onboarding route that should use lenient access
+const isLenientAccessRoute = (pathname) => {
+  if (!pathname) return false;
+  
+  // Onboarding routes should have lenient access
+  if (pathname.startsWith('/onboarding/')) {
+    return true;
+  }
+  
+  // Special case for dashboard after subscription
+  if (pathname === '/dashboard') {
+    // Check cookies to see if this is a post-subscription dashboard access
+    if (typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+        const parts = cookie.trim().split('=');
+        if (parts.length > 1) {
+          try {
+            acc[parts[0].trim()] = decodeURIComponent(parts[1]);
+          } catch (e) {
+            acc[parts[0].trim()] = parts[1];
+          }
+        }
+        return acc;
+      }, {});
+      
+      // Check for free plan subscription flow
+      if ((cookies.selectedPlan === 'free' && 
+           (cookies.onboardedStatus === 'SUBSCRIPTION' || cookies.onboardedStatus === 'SETUP')) || 
+          cookies.postSubscriptionAccess === 'true') {
+        logger.info('[AxiosConfig] Dashboard access from subscription flow, allowing lenient access');
+        return true;
+      }
+    }
+  }
+  
+  // Verification routes should also have lenient access
+  if (pathname === '/auth/verify-email' || pathname.startsWith('/auth/verify-email')) {
+    return true;
+  }
+  
+  return false;
+};
+
 // Add a request interceptor
 axiosInstance.interceptors.request.use(
   async (config) => {
@@ -76,6 +119,10 @@ axiosInstance.interceptors.request.use(
         return config;
       }
       
+      // Check if this is a lenient access route (onboarding)
+      const currentPathname = window.location.pathname;
+      const isLenientRoute = isLenientAccessRoute(currentPathname);
+      
       // Get tokens from Amplify session
       let { tokens, userSub } = await fetchAuthSession();
       let accessToken = tokens?.accessToken?.toString();
@@ -83,6 +130,29 @@ axiosInstance.interceptors.request.use(
       
       if (!accessToken || !idToken) {
         logger.warn('[AxiosConfig] Missing required tokens in session');
+        
+        // Check for special case of post-subscription dashboard access
+        if (typeof document !== 'undefined' && currentPathname === '/dashboard') {
+          const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+            const parts = cookie.trim().split('=');
+            if (parts.length > 1) {
+              try {
+                acc[parts[0].trim()] = decodeURIComponent(parts[1]);
+              } catch (e) {
+                acc[parts[0].trim()] = parts[1];
+              }
+            }
+            return acc;
+          }, {});
+          
+          if (cookies.postSubscriptionAccess === 'true' || 
+             (cookies.selectedPlan === 'free' && 
+              (cookies.onboardedStatus === 'SUBSCRIPTION' || cookies.onboardedStatus === 'SETUP'))) {
+            logger.info('[AxiosConfig] Post-subscription dashboard access detected, continuing without tokens');
+            // For API calls to continue without tokens in this specific case
+            return config;
+          }
+        }
         
         // Client-side context
         // Attempt token refresh for client-side requests
@@ -94,9 +164,9 @@ axiosInstance.interceptors.request.use(
           
           if (!accessToken || !idToken) {
             // If still no tokens after refresh, handle based on URL
-            if (config.url?.includes('/api/inventory/diagnostic')) {
-              logger.warn('[AxiosConfig] Diagnostic endpoint called without tokens after refresh attempt');
-              // Continue anyway for diagnostic endpoints
+            if (config.url?.includes('/api/inventory/diagnostic') || isLenientRoute) {
+              logger.warn('[AxiosConfig] Diagnostic endpoint or lenient route called without tokens after refresh attempt');
+              // Continue anyway for diagnostic endpoints and lenient routes
             } else {
               // For other endpoints, redirect to login
               logger.error('[AxiosConfig] Token refresh failed for client request');
@@ -117,12 +187,17 @@ axiosInstance.interceptors.request.use(
           }
         } catch (refreshError) {
           logger.error('[AxiosConfig] Failed to refresh tokens for client request:', refreshError);
-          // Only redirect if not already on the login page
+          
+          // Only redirect if not already on the login page and not a lenient route
           if (typeof window !== 'undefined' && 
               window.location && 
-              window.location.pathname !== '/auth/signin') {
+              window.location.pathname !== '/auth/signin' &&
+              !isLenientRoute) {
             window.location.href = '/auth/signin?error=session_expired';
             throw new Error('Authentication required - redirecting to login');
+          } else if (isLenientRoute) {
+            // For lenient routes, continue without valid tokens
+            logger.warn('[AxiosConfig] Continuing on lenient route without tokens');
           } else {
             throw new Error('Authentication required - please log in again');
           }

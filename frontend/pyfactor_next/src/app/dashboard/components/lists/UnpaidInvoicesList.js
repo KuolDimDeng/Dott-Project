@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, List, ListItem, ListItemText, CircularProgress, Button } from '@mui/material';
 import { axiosInstance } from '@/lib/axiosConfig';
-import { logger } from '@/utils/logger';
 import { useToast } from '@/components/Toast/ToastProvider';
 
 const UnpaidInvoicesList = ({ onSelect }) => {
@@ -42,24 +40,39 @@ const UnpaidInvoicesList = ({ onSelect }) => {
   };
 
   return (
-    <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
-      <List>
+    <div className="max-h-[300px] overflow-auto">
+      <ul className="divide-y divide-gray-200 dark:divide-gray-700">
         {invoices.map((invoice) => (
-          <ListItem key={invoice.id} button onClick={() => onSelect(invoice)}>
-            <ListItemText
-              primary={`Invoice #${invoice.id}`}
-              secondary={`Amount: $${invoice.amount} - Date: ${invoice.date}`}
-            />
-          </ListItem>
+          <li 
+            key={invoice.id} 
+            className="py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+            onClick={() => onSelect(invoice)}
+          >
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                Invoice #{invoice.id}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Amount: ${invoice.amount} - Date: {invoice.date}
+              </span>
+            </div>
+          </li>
         ))}
-      </List>
-      {loading && <CircularProgress />}
-      {!loading && hasMore && (
-        <Button onClick={loadMore} fullWidth>
-          Load More
-        </Button>
+      </ul>
+      {loading && (
+        <div className="flex justify-center py-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary-main"></div>
+        </div>
       )}
-    </Box>
+      {!loading && hasMore && (
+        <button 
+          onClick={loadMore}
+          className="w-full py-2 px-4 mt-2 bg-primary-main hover:bg-primary-dark text-white font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-main focus:ring-opacity-50 dark:bg-primary-dark dark:hover:bg-primary-main"
+        >
+          Load More
+        </button>
+      )}
+    </div>
   );
 };
 

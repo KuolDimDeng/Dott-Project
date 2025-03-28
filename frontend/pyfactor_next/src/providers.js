@@ -2,9 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider, StyledEngineProvider } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
-import theme from '@/styles/theme';
 import { usePathname } from 'next/navigation';
 import { isPublicRoute } from '@/lib/authUtils';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -52,15 +49,7 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="error-boundary" style={{
-          padding: '10px',
-          margin: '10px',
-          border: '2px solid orange',
-          backgroundColor: 'rgba(255,165,0,0.1)',
-          color: 'darkorange',
-          fontFamily: 'monospace',
-          fontSize: '12px'
-        }}>
+        <div className="p-4 m-4 border-2 border-orange-500 bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 font-mono text-xs">
           <p>Error in {this.props.name || 'component'}: {this.state.error.message}</p>
         </div>
       );
@@ -91,35 +80,29 @@ function Providers({ children }) {
   
   logger.debug('[Providers] Rendering providers tree');
   
-  // Use StyledEngineProvider to avoid MUI context issues
   return (
-    <StyledEngineProvider injectFirst>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <ToastProvider>
-            {/* Always use AmplifyProvider for auth routes, regardless of public status */}
-            {pathname.startsWith('/auth/') ? (
-              <AmplifyProvider>
-                <AuthProvider>
-                  {children}
-                </AuthProvider>
-              </AmplifyProvider>
-            ) : !isPublic ? (
-              <AmplifyProvider>
-                <AuthProvider>
-                  <AuthWrapper>{children}</AuthWrapper>
-                </AuthProvider>
-              </AmplifyProvider>
-            ) : (
-              <AuthProvider>
-                {children}
-              </AuthProvider>
-            )}
-          </ToastProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </StyledEngineProvider>
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>
+        {/* Always use AmplifyProvider for auth routes, regardless of public status */}
+        {pathname.startsWith('/auth/') ? (
+          <AmplifyProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </AmplifyProvider>
+        ) : !isPublic ? (
+          <AmplifyProvider>
+            <AuthProvider>
+              <AuthWrapper>{children}</AuthWrapper>
+            </AuthProvider>
+          </AmplifyProvider>
+        ) : (
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        )}
+      </ToastProvider>
+    </QueryClientProvider>
   );
 }
 

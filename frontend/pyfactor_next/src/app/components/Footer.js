@@ -1,161 +1,187 @@
 'use client';
 
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
-import IconButton from '@mui/material/IconButton';
-import Link from '@mui/material/Link';
-import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Grid';
-import NextLink from 'next/link';
-
-import FacebookIcon from '@mui/icons-material/Facebook';
-import LinkedInIcon from '@mui/icons-material/LinkedIn';
-import YouTubeIcon from '@mui/icons-material/YouTube';
-import TwitterIcon from '@mui/icons-material/Twitter';
-import InstagramIcon from '@mui/icons-material/Instagram';
-// Custom icon for BlueSky since it's not part of MUI icons
-import SvgIcon from '@mui/material/SvgIcon';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
-import i18nInstance from '../../i18n';
-
-const BlueSkyIcon = (props) => (
-  <SvgIcon {...props}>
-    <path d="M12,2L2,7.5V12.5L7.5,16V22L12,20L16.5,22V16L22,12.5V7.5L12,2M12,4.5L19,8.25V11.75L12,16L5,11.75V8.25L12,4.5Z" />
-  </SvgIcon>
-);
-
-const logoStyle = {
-  width: '140px',
-  height: 'auto',
-};
-
-function Copyright() {
-  const { t } = useTranslation();
-  return (
-    <Typography variant="body2" color="text.secondary" mt={2}>
-      {'© '}
-      {new Date().getFullYear()}
-      {' '}
-      {t('copyright_text', 'Dott, LLC. All rights reserved.')}
-    </Typography>
-  );
-}
-
-const footerLinks = [
-  {
-    title: 'Product',
-    links: [
-      { name: 'Features', url: '#features' },
-      { name: 'Highlights', url: '#highlights' },
-      { name: 'Pricing', url: '#pricing' },
-      { name: 'FAQs', url: '#faq' },
-    ],
-  },
-  {
-    title: 'Company',
-    links: [
-      { name: 'About us', url: '/about' },
-      { name: 'Careers', url: '/careers' },
-      { name: 'Press', url: '/press' },
-      { name: 'Blog', url: '/blog' },
-    ],
-  },
-  {
-    title: 'Legal',
-    links: [
-      { name: 'Terms of Use', url: '/terms' },
-      { name: 'Privacy Policy', url: '/privacy' },
-      { name: 'Cookie Policy', url: '/cookies' },
-      { name: 'Contact', url: '/contact' },
-    ],
-  },
-];
-
-// Social media links with icons
-const socialLinks = [
-  { Icon: FacebookIcon, url: 'https://www.facebook.com/dottapps/', label: 'Facebook' },
-  { Icon: LinkedInIcon, url: 'https://www.linkedin.com/company/dottapps/', label: 'LinkedIn' },
-  { Icon: TwitterIcon, url: 'https://twitter.com/Dott_Apps', label: 'Twitter' },
-  { Icon: InstagramIcon, url: 'https://www.instagram.com/dottapps/', label: 'Instagram' },
-  { Icon: YouTubeIcon, url: 'https://www.youtube.com/Dott-Apps', label: 'YouTube' },
-  { Icon: BlueSkyIcon, url: 'https://bsky.app/profile/dottapps.bsky.social', label: 'BlueSky' },
-];
 
 export default function Footer() {
+  const router = useRouter();
   const { t } = useTranslation();
   
-  // Force re-render when language changes
-  const [, setRenderKey] = React.useState(0);
+  const currentYear = new Date().getFullYear();
   
-  React.useEffect(() => {
-    const handleLanguageChange = () => {
-      setRenderKey(prev => prev + 1); // Force re-render
-    };
-    
-    window.addEventListener('languageChange', handleLanguageChange);
-    return () => {
-      window.removeEventListener('languageChange', handleLanguageChange);
-    };
-  }, []);
-  
+  const navigation = {
+    main: [
+      { name: t('footer.home', 'Home'), href: '/' },
+      { name: t('footer.features', 'Features'), href: '/features' },
+      { name: t('footer.pricing', 'Pricing'), href: '/pricing' },
+      { name: t('footer.about', 'About Us'), href: '/about' },
+      { name: t('footer.blog', 'Blog'), href: '/blog' },
+      { name: t('footer.contact', 'Contact'), href: '/contact' },
+    ],
+    product: [
+      { name: t('footer.inventory', 'Inventory Management'), href: '/features#inventory' },
+      { name: t('footer.accounting', 'Accounting'), href: '/features#accounting' },
+      { name: t('footer.invoicing', 'Invoicing'), href: '/features#invoicing' },
+      { name: t('footer.payments', 'Payments'), href: '/features#payments' },
+      { name: t('footer.pos', 'Point of Sale'), href: '/features#pos' },
+    ],
+    company: [
+      { name: t('footer.careers', 'Careers'), href: '/careers' },
+      { name: t('footer.press', 'Press'), href: '/press' },
+      { name: t('footer.partners', 'Partners'), href: '/partners' },
+      { name: t('footer.privacy', 'Privacy Policy'), href: '/privacy' },
+      { name: t('footer.terms', 'Terms of Service'), href: '/terms' },
+    ],
+    support: [
+      { name: t('footer.help', 'Help Center'), href: '/help' },
+      { name: t('footer.docs', 'Documentation'), href: '/docs' },
+      { name: t('footer.status', 'System Status'), href: '/status' },
+      { name: t('footer.security', 'Security'), href: '/security' },
+    ],
+    social: [
+      {
+        name: 'Facebook',
+        href: 'https://facebook.com',
+        icon: (props) => (
+          <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
+            <path
+              fillRule="evenodd"
+              d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"
+              clipRule="evenodd"
+            />
+          </svg>
+        ),
+      },
+      {
+        name: 'Twitter',
+        href: 'https://twitter.com',
+        icon: (props) => (
+          <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
+            <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
+          </svg>
+        ),
+      },
+      {
+        name: 'LinkedIn',
+        href: 'https://linkedin.com',
+        icon: (props) => (
+          <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
+            <path
+              fillRule="evenodd"
+              d="M19.812 5.418c.861.23 1.538.907 1.768 1.768C21.998 8.746 22 12 22 12s0 3.255-.418 4.814a2.504 2.504 0 0 1-1.768 1.768c-1.56.419-7.814.419-7.814.419s-6.255 0-7.814-.419a2.505 2.505 0 0 1-1.768-1.768C2 15.255 2 12 2 12s0-3.255.417-4.814a2.507 2.507 0 0 1 1.768-1.768C5.744 5 11.998 5 11.998 5s6.255 0 7.814.418ZM15.194 12 10 15V9l5.194 3Z"
+              clipRule="evenodd"
+            />
+          </svg>
+        ),
+      },
+    ],
+  };
+
   return (
-    <Box
-      component="footer"
-      sx={{
-        backgroundColor: (theme) => (theme.palette.mode === 'light' ? '#f5f5f5' : '#101010'),
-        py: 6,
-      }}
-    >
-      <Container maxWidth="lg">
-        <Grid container spacing={4} justifyContent="space-between">
-          <Grid item xs={12} md={3}>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
-              {socialLinks.map(({ Icon, url, label }) => (
-                <IconButton 
-                  key={label} 
-                  color="primary" 
-                  aria-label={`${label} link`}
-                  component="a" 
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Icon />
-                </IconButton>
+    <footer className="bg-white border-t border-gray-200" aria-labelledby="footer-heading">
+      <h2 id="footer-heading" className="sr-only">
+        Footer
+      </h2>
+      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
+        <div className="xl:grid xl:grid-cols-3 xl:gap-8">
+          <div className="space-y-8 xl:col-span-1">
+            <Image
+              src="/static/images/PyfactorLandingpage.png"
+              alt="Dott Logo"
+              width={150}
+              height={40}
+              className="h-10 w-auto"
+            />
+            <p className="text-gray-500 text-base">
+              {t('footer.tagline', 'Making business management simple and efficient for companies around the world.')}
+            </p>
+            <div className="flex space-x-6">
+              {navigation.social.map((item) => (
+                <a key={item.name} href={item.href} className="text-gray-400 hover:text-gray-500">
+                  <span className="sr-only">{item.name}</span>
+                  <item.icon className="h-6 w-6" aria-hidden="true" />
+                </a>
               ))}
-            </Stack>
-          </Grid>
-          {footerLinks.map((column) => (
-            <Grid item xs={6} md={2} key={column.title}>
-              <Typography variant="h6" color="text.primary" gutterBottom>
-                {t(`footer_${column.title.toLowerCase()}`, column.title)}
-              </Typography>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                {column.links.map((link) => (
-                  <li key={link.name} style={{ marginBottom: '8px' }}>
-                    <Link
-                      component={NextLink}
-                      href={link.url}
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-                    >
-                      {t(`footer_link_${link.name.replace(/\s+/g, '_').toLowerCase()}`, link.name)}
-                    </Link>
+            </div>
+          </div>
+          <div className="mt-12 grid grid-cols-2 gap-8 xl:mt-0 xl:col-span-2">
+            <div className="md:grid md:grid-cols-2 md:gap-8">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-400 tracking-wider uppercase">
+                  {t('footer.product', 'Product')}
+                </h3>
+                <ul role="list" className="mt-4 space-y-4">
+                  {navigation.product.map((item) => (
+                    <li key={item.name}>
+                      <a href={item.href} className="text-base text-gray-500 hover:text-primary-main">
+                        {item.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mt-12 md:mt-0">
+                <h3 className="text-sm font-semibold text-gray-400 tracking-wider uppercase">
+                  {t('footer.company', 'Company')}
+                </h3>
+                <ul role="list" className="mt-4 space-y-4">
+                  {navigation.company.map((item) => (
+                    <li key={item.name}>
+                      <a href={item.href} className="text-base text-gray-500 hover:text-primary-main">
+                        {item.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="md:grid md:grid-cols-2 md:gap-8">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-400 tracking-wider uppercase">
+                  {t('footer.support', 'Support')}
+                </h3>
+                <ul role="list" className="mt-4 space-y-4">
+                  {navigation.support.map((item) => (
+                    <li key={item.name}>
+                      <a href={item.href} className="text-base text-gray-500 hover:text-primary-main">
+                        {item.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mt-12 md:mt-0">
+                <h3 className="text-sm font-semibold text-gray-400 tracking-wider uppercase">
+                  {t('footer.legal', 'Legal')}
+                </h3>
+                <ul role="list" className="mt-4 space-y-4">
+                  <li>
+                    <a href="/privacy" className="text-base text-gray-500 hover:text-primary-main">
+                      {t('footer.privacy', 'Privacy Policy')}
+                    </a>
                   </li>
-                ))}
-              </ul>
-            </Grid>
-          ))}
-        </Grid>
-        <Box mt={5}>
-          <Copyright />
-        </Box>
-      </Container>
-    </Box>
+                  <li>
+                    <a href="/terms" className="text-base text-gray-500 hover:text-primary-main">
+                      {t('footer.terms', 'Terms of Service')}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="/cookies" className="text-base text-gray-500 hover:text-primary-main">
+                      {t('footer.cookies', 'Cookie Policy')}
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="mt-12 border-t border-gray-200 pt-8">
+          <p className="text-base text-gray-400 xl:text-center">
+            &copy; {currentYear} Dott, LLC. {t('footer.rights', 'All rights reserved.')}
+          </p>
+        </div>
+      </div>
+    </footer>
   );
 }

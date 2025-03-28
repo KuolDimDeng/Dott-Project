@@ -1,18 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { alpha, useTheme } from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import Image from 'next/image';
 import AuthButton from '@/components/AuthButton';
 import { useTranslation } from 'react-i18next';
 import i18nInstance from '../../i18n'; // Import i18n instance
 
 export default function Hero() {
-  const theme = useTheme();
   const { t } = useTranslation();
   
   // Force re-render when language changes
@@ -30,153 +24,78 @@ export default function Hero() {
   }, []);
 
   return (
-    <Box
-      id="hero"
-      sx={{
-        width: '100%',
-        backgroundImage:
-          theme.palette.mode === 'light'
-            ? 'linear-gradient(180deg, rgba(25, 118, 210, 0.05) 0%, rgba(25, 118, 210, 0.02) 100%)'
-            : 'linear-gradient(180deg, rgba(100, 181, 246, 0.05) 0%, rgba(100, 181, 246, 0.02) 100%)',
-        backgroundRepeat: 'no-repeat',
-        color: theme.palette.mode === 'light' ? '#333' : '#FFF',
-      }}
-    >
-      <Container
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          pt: { xs: 14, sm: 20 },
-          pb: { xs: 8, sm: 12 },
-          position: 'relative',
-        }}
-      >
-        <Stack spacing={3} sx={{ width: { xs: '100%', sm: '80%' } }}>
-          <Typography
-            component="h1"
-            variant="h1"
-            align="center"
-            sx={{
-              fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
-              color: theme.palette.mode === 'light' ? '#1976d2' : '#64b5f6',
-              fontFamily: '"Poppins", sans-serif',
-              fontWeight: 600,
-              letterSpacing: '-0.02em',
-              lineHeight: 1.2,
-              mb: { xs: 3, sm: 4 },
-              background:
-                theme.palette.mode === 'light'
-                  ? 'linear-gradient(45deg, #1976d2, #2196f3)'
-                  : 'linear-gradient(45deg, #64b5f6, #90caf9)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            {t('heroTitle', 'Manage your business like a boss.')}
-          </Typography>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              mb: { xs: 6, sm: 8 },
-              position: 'relative',
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                bottom: -20,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '60%',
-                height: '1px',
-                background:
-                  theme.palette.mode === 'light'
-                    ? 'linear-gradient(90deg, transparent, rgba(25, 118, 210, 0.2), transparent)'
-                    : 'linear-gradient(90deg, transparent, rgba(100, 181, 246, 0.2), transparent)',
-              },
-            }}
-          >
-            <Image
-              src="/static/images/Work-Life-Balance-1--Streamline-Brooklyn.png"
-              alt={t('heroImageAlt', 'Business Management Illustration')}
-              width={250}
-              height={180}
-              priority
-              style={{ maxWidth: '100%', height: 'auto' }}
-            />
-          </Box>
-
-          <Typography
-            variant="h5"
-            align="center"
-            sx={{
-              color:
-                theme.palette.mode === 'light'
-                  ? alpha(theme.palette.text.primary, 0.7)
-                  : alpha(theme.palette.text.primary, 0.8),
-              fontWeight: 400,
-              fontFamily: '"Inter", sans-serif',
-              letterSpacing: '0.01em',
-              fontSize: { xs: '1.1rem', sm: '1.3rem' },
-              maxWidth: '800px',
-              mx: 'auto',
-              px: { xs: 2, sm: 4 },
-              mb: { xs: 6, sm: 8 },
-              lineHeight: 1.6,
-            }}
-          >
+    <div id="hero" className="relative overflow-hidden bg-white">
+      {/* Background decoration */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary-light/10 blur-3xl"></div>
+        <div className="absolute top-1/2 -left-24 w-72 h-72 rounded-full bg-primary-main/5 blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-64 h-64 rounded-full bg-secondary-light/10 blur-3xl"></div>
+      </div>
+      
+      <div className="relative z-10 max-w-7xl mx-auto pt-20 pb-16 px-4 sm:pt-28 sm:pb-24 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">Manage your business like a pro.</span>
+          </h1>
+          
+          <div className="mt-10 max-w-3xl mx-auto">
+            <div className="sm:flex sm:justify-center">
+              <div className="relative w-full sm:max-w-sm">
+                <Image
+                  src="/static/images/Work-Life-Balance-1--Streamline-Brooklyn.png"
+                  alt={t('heroImageAlt', 'Business Management Illustration')}
+                  width={400}
+                  height={280}
+                  priority
+                  className="w-full h-auto object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent"></div>
+              </div>
+            </div>
+          </div>
+          
+          <p className="mt-12 text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             {t('heroDescription', 'Global business management with advanced inventory, barcode scanning, and regional payment solutions—all in one intuitive platform for businesses worldwide.')}
-          </Typography>
-
-          <Stack
-            direction="row"
-            spacing={2}
-            justifyContent="center"
-            alignItems="center"
-            sx={{ mb: { xs: 8, sm: 10 } }}
-          >
-            <AuthButton size="large" />
-          </Stack>
-
-          <Box
-            sx={{
-              width: '100%',
-              maxWidth: '1000px',
-              mx: 'auto',
-              px: { xs: 2, sm: 4 },
-              position: 'relative',
-              '&::before': {
-                content: '""',
-                display: 'block',
-                paddingTop: '56.25%', // 16:9 aspect ratio
-              },
-              boxShadow:
-                theme.palette.mode === 'light'
-                  ? '0 4px 20px rgba(0, 0, 0, 0.1)'
-                  : '0 4px 20px rgba(0, 0, 0, 0.3)',
-              borderRadius: '12px',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Replace YOUR_VIDEO_ID with actual video ID */}
-            <iframe
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                border: 0,
-              }}
-              src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-              title={t('heroVideoTitle', 'Dott Software Demo')}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
-          </Box>
-        </Stack>
-      </Container>
-    </Box>
+          </p>
+          
+          <div className="mt-10">
+            <AuthButton size="large" variant="primary" />
+          </div>
+          
+          <div className="mt-16 max-w-5xl mx-auto">
+            <div className="relative rounded-xl overflow-hidden shadow-xl aspect-video">
+              <iframe 
+                className="absolute inset-0 w-full h-full"
+                src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                title={t('heroVideoTitle', 'Dott Software Demo')}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            </div>
+          </div>
+          
+          {/* Trusted by section */}
+          <div className="mt-16">
+            <p className="text-base font-medium text-gray-500 tracking-wide">
+              {t('trustedBy', 'TRUSTED BY INNOVATIVE COMPANIES')}
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-8 md:grid-cols-4">
+              <div className="flex justify-center grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition duration-300">
+                <Image src="/static/images/logos/logo1.png" alt="Company logo" width={140} height={40} />
+              </div>
+              <div className="flex justify-center grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition duration-300">
+                <Image src="/static/images/logos/logo2.png" alt="Company logo" width={140} height={40} />
+              </div>
+              <div className="flex justify-center grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition duration-300">
+                <Image src="/static/images/logos/logo3.png" alt="Company logo" width={140} height={40} />
+              </div>
+              <div className="flex justify-center grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition duration-300">
+                <Image src="/static/images/logos/logo4.png" alt="Company logo" width={140} height={40} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

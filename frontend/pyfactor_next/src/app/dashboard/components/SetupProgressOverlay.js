@@ -1,8 +1,6 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/SetupProgressOverlay.js
 'use client'
 
 import { useEffect } from 'react'
-import { Box, Typography, LinearProgress, Paper } from '@mui/material'
 import { useRouter } from 'next/navigation'
 import { useOnboardingStatus } from '@/hooks/useOnboardingStatus'
 import { useSetupStatus } from '@/hooks/useSetupStatus'
@@ -28,94 +26,63 @@ export default function SetupProgressOverlay() {
   const currentTask = tasks.find(task => task.status === 'in_progress')
 
   return (
-    <Box
-      sx={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 50,
-        pointerEvents: 'none',
-      }}
-    >
-      <Paper
-        elevation={3}
-        sx={{
-          p: 4,
-          maxWidth: 400,
-          width: '90%',
-          textAlign: 'center',
-          pointerEvents: 'auto',
-        }}
-      >
-        <Typography variant="h5" gutterBottom>
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 pointer-events-none">
+      <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-[90%] text-center pointer-events-auto">
+        <h2 className="text-xl font-semibold mb-4">
           Setting up your account
-        </Typography>
+        </h2>
 
-        <Box sx={{ width: '100%', mt: 2 }}>
-          <LinearProgress variant="determinate" value={progress} />
-        </Box>
+        <div className="w-full mt-4">
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+            <div 
+              className="bg-primary-main h-2 rounded-full transition-all duration-300 ease-in-out"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+        </div>
 
-        <Typography variant="body1" sx={{ mt: 2 }}>
-          {currentTask ? (
-            currentTask.description || currentTask.name
-          ) : (
-            'Completing setup...'
-          )}
-        </Typography>
+        <p className="text-base mt-4">
+          {currentTask ? (currentTask.description || currentTask.name) : 'Completing setup...'}
+        </p>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        <p className="text-sm text-gray-500 mt-2">
           {completedTasks.length} of {tasks.length} tasks completed
-        </Typography>
+        </p>
 
-        {tasks.map((task) => (
-          <Box
-            key={task.id}
-            sx={{
-              mt: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Typography
-              variant="body2"
-              color={task.completed ? 'success.main' : 'text.secondary'}
+        <div className="mt-6 space-y-3">
+          {tasks.map((task) => (
+            <div
+              key={task.id}
+              className="flex items-center justify-between"
             >
-              {task.name}
-            </Typography>
-            <Typography
-              variant="body2"
-              color={
-                task.status === 'failed'
-                  ? 'error.main'
+              <span className={`text-sm ${task.completed ? 'text-success-main' : 'text-gray-600'}`}>
+                {task.name}
+              </span>
+              <span className={`text-sm ${
+                task.status === 'failed' 
+                  ? 'text-error-main'
                   : task.completed
-                  ? 'success.main'
-                  : 'text.secondary'
-              }
-            >
-              {task.status === 'failed'
-                ? 'Failed'
-                : task.completed
-                ? 'Completed'
-                : task.status === 'in_progress'
-                ? 'In Progress'
-                : 'Pending'}
-            </Typography>
-          </Box>
-        ))}
+                    ? 'text-success-main'
+                    : 'text-gray-500'
+              }`}>
+                {task.status === 'failed'
+                  ? 'Failed'
+                  : task.completed
+                    ? 'Completed'
+                    : task.status === 'in_progress'
+                      ? 'In Progress'
+                      : 'Pending'}
+              </span>
+            </div>
+          ))}
+        </div>
 
         {tasks.some(task => task.status === 'failed') && (
-          <Typography color="error" sx={{ mt: 2 }}>
+          <p className="mt-4 text-error-main text-sm">
             Some tasks failed. Please contact support for assistance.
-          </Typography>
+          </p>
         )}
-      </Paper>
-    </Box>
+      </div>
+    </div>
   )
 }

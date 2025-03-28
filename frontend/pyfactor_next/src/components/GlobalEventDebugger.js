@@ -1,66 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button, ThemeProvider, createTheme } from '@mui/material';
 
 /**
- * GlobalEventDebugger - Uses MUI's recommended approach without direct DOM manipulation
+ * GlobalEventDebugger - Uses Tailwind CSS approach without direct DOM manipulation
  */
 export default function GlobalEventDebugger() {
   const [isEnabled, setIsEnabled] = useState(true);
-
-  // Create a theme that specifically addresses input issues
-  const fixedInputTheme = createTheme({
-    components: {
-      MuiInputBase: {
-        defaultProps: {
-          // Prevent performance issues with many text fields
-          disableInjectingGlobalStyles: true,
-        },
-        styleOverrides: {
-          // Ensure inputs are visible and interactable
-          root: {
-            '&.MuiInputBase-root': {
-              position: 'relative',
-              zIndex: 10,
-            },
-            '& input': {
-              color: 'inherit',
-              caretColor: 'black',
-            },
-          },
-        },
-      },
-      MuiTextField: {
-        defaultProps: {
-          InputLabelProps: {
-            // Force labels to shrink consistently
-            shrink: true,
-          },
-        },
-        styleOverrides: {
-          root: {
-            '& .MuiInputBase-input': {
-              position: 'relative',
-              zIndex: 10,
-            },
-          },
-        },
-      },
-      MuiModal: {
-        defaultProps: {
-          // Ensure modals don't block inputs
-          disableEnforceFocus: true,
-        },
-      },
-    },
-  });
 
   useEffect(() => {
     if (!isEnabled) return;
     
     // Log initialization
-    console.log('[GlobalEventDebugger] Initialized with MUI recommended approach');
+    console.log('[GlobalEventDebugger] Initialized with Tailwind CSS approach');
 
     // Helper to check if we're on the dashboard page
     const isDashboardPage = () => {
@@ -69,7 +21,7 @@ export default function GlobalEventDebugger() {
     
     console.log(`[GlobalEventDebugger] Current page: ${window.location.pathname}`);
     
-    // Create toggle button using MUI styling approach
+    // Create toggle button using Tailwind styling approach
     const createToggleButton = () => {
       const existingButton = document.getElementById('global-event-debugger-toggle');
       if (existingButton) {
@@ -78,14 +30,14 @@ export default function GlobalEventDebugger() {
       
       const button = document.createElement('button');
       button.id = 'global-event-debugger-toggle';
-      button.textContent = isEnabled ? 'Disable MUI Fix' : 'Enable MUI Fix';
+      button.textContent = isEnabled ? 'Disable Input Fix' : 'Enable Input Fix';
       button.style.cssText = `
         position: fixed; 
         bottom: 10px; 
         right: 10px; 
         z-index: 100000; 
         padding: 8px; 
-        background: ${isEnabled ? '#ff5722' : '#4caf50'}; 
+        background: ${isEnabled ? '#dc2626' : '#16a34a'}; 
         color: white; 
         border: none; 
         border-radius: 4px;
@@ -102,27 +54,32 @@ export default function GlobalEventDebugger() {
     // Create toggle button
     const button = createToggleButton();
     
-    // Add global stylesheet to fix common MUI input issues
+    // Add global stylesheet to fix common input issues
     const addGlobalStyle = () => {
-      const id = 'mui-input-fix-styles';
+      const id = 'input-fix-styles';
       if (!document.getElementById(id)) {
         const style = document.createElement('style');
         style.id = id;
         style.innerHTML = `
-          /* MUI Input Fix Styles */
-          @keyframes mui-auto-fill { from { display: block; } }
-          @keyframes mui-auto-fill-cancel { from { display: block; } }
+          /* Input Fix Styles */
           
           /* Ensure inputs are interactive */
-          .MuiInputBase-root, .MuiInput-root, .MuiOutlinedInput-root, .MuiFilledInput-root {
+          input, textarea, select {
             position: relative !important;
             z-index: 10 !important;
           }
           
           /* Ensure text is visible */
-          .MuiInputBase-input {
-            color: black !important;
-            caret-color: black !important;
+          input, textarea, select {
+            color: currentColor !important;
+            caret-color: currentColor !important;
+          }
+          
+          /* Fix for Safari and some browsers */
+          input[type="text"], input[type="email"], input[type="password"], textarea {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
           }
         `;
         document.head.appendChild(style);
@@ -140,17 +97,13 @@ export default function GlobalEventDebugger() {
         button.parentNode.removeChild(button);
       }
       
-      const style = document.getElementById('mui-input-fix-styles');
+      const style = document.getElementById('input-fix-styles');
       if (style) {
         style.parentNode.removeChild(style);
       }
     };
   }, [isEnabled]);
   
-  // Wrap the application with the fixed theme
-  return isEnabled ? (
-    <ThemeProvider theme={fixedInputTheme}>
-      {null}
-    </ThemeProvider>
-  ) : null;
+  // With Tailwind, we don't need a theme provider wrapper
+  return null;
 } 

@@ -1,29 +1,8 @@
 // src/components/LoadingState/LoadingStateWithProgress.js
+'use client';
+
 import React from 'react';
-import { Box, Typography, CircularProgress, LinearProgress } from '@mui/material';
-import { styled } from '@mui/material/styles';
 import Image from 'next/image';
-
-const LoadingContainer = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'center',
-  alignItems: 'center',
-  minHeight: '100vh',
-  gap: theme.spacing(3),
-  padding: theme.spacing(2),
-  backgroundColor: theme.palette.background.default,
-}));
-
-const ProgressWrapper = styled(Box)(({ theme }) => ({
-  width: '100%',
-  maxWidth: 400,
-  textAlign: 'center',
-  '& .MuiLinearProgress-root': {
-    height: 8,
-    borderRadius: 4,
-  },
-}));
 
 export function LoadingStateWithProgress({
   message = 'Loading...',
@@ -37,61 +16,53 @@ export function LoadingStateWithProgress({
 }) {
   if (isBackground) {
     return (
-      <Box
-        position="fixed"
-        bottom={16}
-        right={16}
-        zIndex={1000}
-        bgcolor="background.paper"
-        borderRadius={2}
-        boxShadow={3}
-        p={2}
-        maxWidth={400}
+      <div
+        className="fixed bottom-4 right-4 z-[1000] max-w-[400px] rounded-lg bg-white dark:bg-gray-800 p-4 shadow-lg"
       >
-        <ProgressWrapper>
+        <div className="w-full text-center">
           {error ? (
             <>
-              <Typography color="error" variant="body2" gutterBottom>
+              <p className="mb-2 text-sm text-error-main">
                 {error}
-              </Typography>
+              </p>
               {onRetry && (
-                <Typography
-                  variant="caption"
-                  sx={{ cursor: 'pointer', textDecoration: 'underline' }}
+                <span
+                  className="text-xs cursor-pointer underline"
                   onClick={onRetry}
                 >
                   Retry
-                </Typography>
+                </span>
               )}
             </>
           ) : (
             <>
               {showProgress && (
-                <LinearProgress
-                  variant="determinate"
-                  value={progress}
-                  sx={{ mb: 1 }}
-                />
+                <div className="relative h-2 w-full mb-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                  <div 
+                    className="h-full rounded-full bg-primary-main" 
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
               )}
-              <Typography variant="body2">
+              <p className="text-sm">
                 {message}
-              </Typography>
+              </p>
               {showProgress && (
-                <Typography variant="caption" color="textSecondary">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
                   {progress}% complete
-                </Typography>
+                </span>
               )}
             </>
           )}
-        </ProgressWrapper>
-      </Box>
+        </div>
+      </div>
     );
   }
 
   return (
-    <LoadingContainer>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-white dark:bg-gray-900 p-4">
       {image && (
-        <Box sx={{ mb: 4 }}>
+        <div className="mb-8">
           <Image
             src={image.src}
             alt={image.alt}
@@ -99,48 +70,48 @@ export function LoadingStateWithProgress({
             height={image.height}
             priority
           />
-        </Box>
+        </div>
       )}
 
       {error ? (
         <>
-          <Typography color="error" variant="h6" gutterBottom>
+          <h6 className="mb-2 text-xl font-semibold text-error-main">
             {error}
-          </Typography>
+          </h6>
           {onRetry && (
-            <Typography
-              variant="body2"
-              sx={{ cursor: 'pointer', textDecoration: 'underline' }}
+            <p
+              className="text-sm cursor-pointer underline"
               onClick={onRetry}
             >
               Retry
-            </Typography>
+            </p>
           )}
         </>
       ) : (
         showProgress ? (
-          <ProgressWrapper>
-            <LinearProgress
-              variant="determinate"
-              value={progress}
-              sx={{ mb: 2 }}
-            />
-            <Typography variant="h6" gutterBottom>
+          <div className="w-full max-w-[400px] text-center">
+            <div className="relative h-2 w-full mb-4 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+              <div 
+                className="h-full rounded-full bg-primary-main transition-all duration-300" 
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+            <h6 className="mb-2 text-lg font-semibold">
               {message}
-            </Typography>
-            <Typography variant="caption" color="textSecondary">
+            </h6>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               {progress}% Complete
-            </Typography>
-          </ProgressWrapper>
+            </span>
+          </div>
         ) : (
           <>
-            <CircularProgress size={40} />
-            <Typography variant="body1" color="textSecondary">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-primary-main"></div>
+            <p className="text-base text-gray-500 dark:text-gray-400">
               {message}
-            </Typography>
+            </p>
           </>
         )
       )}
-    </LoadingContainer>
+    </div>
   );
 }

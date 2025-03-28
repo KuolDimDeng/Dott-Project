@@ -1,75 +1,50 @@
 'use client';
 
-import React from 'react';
-import { Box, Container, Grid, Typography, Card, CardContent, Chip } from '@mui/material';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import PeopleIcon from '@mui/icons-material/People';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
-import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
-import PublicIcon from '@mui/icons-material/Public';
-import PaymentsIcon from '@mui/icons-material/Payments';
 import { useTranslation } from 'react-i18next';
-import i18nInstance from '../../i18n'; // Import i18n instance
+import { useEffect, useState } from 'react';
 
-const features = [
-  {
-    title: 'Global Accounting',
-    description: 'Easy-to-use accounting tools supporting multiple currencies and tax systems for businesses anywhere in the world.',
-    icon: <AccountBalanceIcon sx={{ fontSize: 40 }} />,
-    highlight: true,
-  },
-  {
-    title: 'Inventory & Barcode Management',
-    description: 'Track stock levels, print barcodes, and sync with Bluetooth scanners for efficient inventory management.',
-    icon: <QrCodeScannerIcon sx={{ fontSize: 40 }} />,
-    highlight: true,
-    new: true,
-  },
-  {
-    title: 'Worldwide Payment Solutions',
-    description: 'Accept payments globally through credit cards, bank transfers, mobile money, and regional payment methods.',
-    icon: <PaymentsIcon sx={{ fontSize: 40 }} />,
-    highlight: true,
-  },
-  {
-    title: 'Payroll & HR',
-    description: 'Manage employees, payroll, benefits, and HR documents all in one place, supporting multiple regions.',
-    icon: <PeopleIcon sx={{ fontSize: 40 }} />,
-  },
-  {
-    title: 'Reports & Analytics',
-    description: 'Get insights with customizable reports, real-time business analytics, and AI-powered recommendations.',
-    icon: <AssessmentIcon sx={{ fontSize: 40 }} />,
-  },
-  {
-    title: 'Mobile Money Integration',
-    description: 'Accept payments via M-Pesa, MTN, Airtel Money and other mobile payment systems popular in Africa and Asia.',
-    icon: <PhoneAndroidIcon sx={{ fontSize: 40 }} />,
-    highlight: true,
-  },
-  { 
-    title: 'Invoicing & Factoring',
-    description: 'Create professional invoices in multiple currencies with factoring options for US and Canada businesses.',
-    icon: <ReceiptIcon sx={{ fontSize: 40 }} />,
-  },
-  {
-    title: 'Cross-Border Commerce',
-    description: 'Manage international sales, imports, exports, and comply with regional tax regulations seamlessly.',
-    icon: <PublicIcon sx={{ fontSize: 40 }} />,
-    highlight: true,
-  },
-];
+// Create custom feature icons using inline SVG
+const InventoryIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+  </svg>
+);
+
+const PaymentIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+  </svg>
+);
+
+const GlobalIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const InvoiceIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+  </svg>
+);
+
+const ReportingIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+  </svg>
+);
+
+const SupportIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-primary-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+  </svg>
+);
 
 export default function Features() {
   const { t } = useTranslation();
+  const [renderKey, setRenderKey] = useState(0);
   
-  // Force re-render when language changes
-  const [renderKey, setRenderKey] = React.useState(0);
-  
-  React.useEffect(() => {
+  useEffect(() => {
     const handleLanguageChange = () => {
       setRenderKey(prev => prev + 1); // Force re-render
     };
@@ -80,140 +55,122 @@ export default function Features() {
     };
   }, []);
   
-  // Translate feature titles and descriptions
-  const translatedFeatures = features.map(feature => ({
-    ...feature,
-    title: t(`feature_${feature.title.replace(/\s+/g, '_').toLowerCase()}`, feature.title),
-    description: t(`feature_${feature.title.replace(/\s+/g, '_').toLowerCase()}_desc`, feature.description)
-  }));
-  
-  return (
-    <Box
-      id="features"
-      sx={{
-        py: { xs: 8, sm: 12 },
-        bgcolor: 'background.default',
-      }}
-    >
-      <Container maxWidth="lg">
-        <Box sx={{ mb: { xs: 6, sm: 8 }, textAlign: 'center' }}>
-          <Typography
-            component="h2"
-            variant="h2"
-            sx={{
-              mb: 2,
-              background: (theme) =>
-                theme.palette.mode === 'light'
-                  ? 'linear-gradient(45deg, #1976d2, #2196f3)'
-                  : 'linear-gradient(45deg, #64b5f6, #90caf9)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            {t('featuresTitle', 'Global Business Features')}
-          </Typography>
-          <Typography
-            variant="h5"
-            color="text.secondary"
-            sx={{ maxWidth: 800, mx: 'auto', mb: 3 }}
-          >
-            {t('featuresSubtitle', 'Everything you need to run your business efficiently across 100+ countries')}
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 1, mb: 4 }}>
-            <Chip 
-              icon={<PublicIcon />} 
-              label={t('countriesSupported', '100+ Countries Supported')}
-              color="primary" 
-              variant="outlined" 
-            />
-            <Chip 
-              icon={<PaymentsIcon />} 
-              label={t('globalPaymentOptions', 'Global Payment Options')}
-              color="primary" 
-              variant="outlined" 
-            />
-            <Chip 
-              icon={<InventoryIcon />} 
-              label={t('advancedInventory', 'Advanced Inventory Management')}
-              color="primary" 
-              variant="outlined" 
-            />
-          </Box>
-        </Box>
+  const features = [
+    {
+      title: t('feature.inventory', 'Inventory Management'),
+      description: t('feature.inventory.description', 'Track stock levels, print barcodes, and sync with Bluetooth scanners for efficient inventory management.'),
+      icon: <InventoryIcon />,
+      highlight: true,
+      isNew: true,
+    },
+    {
+      title: t('feature.payments', 'Global Payments'),
+      description: t('feature.payments.description', 'Accept payments globally through credit cards, bank transfers, mobile money, and regional payment methods.'),
+      icon: <PaymentIcon />,
+      highlight: true,
+    },
+    {
+      title: t('feature.global', 'Multi-Region Support'),
+      description: t('feature.global.description', 'Manage international sales, imports, exports, and comply with regional tax regulations seamlessly.'),
+      icon: <GlobalIcon />,
+      highlight: true,
+    },
+    {
+      title: t('feature.invoicing', 'Invoicing & Billing'),
+      description: t('feature.invoicing.description', 'Create professional invoices in multiple currencies with factoring options for businesses worldwide.'),
+      icon: <InvoiceIcon />,
+      highlight: false,
+    },
+    {
+      title: t('feature.reporting', 'Advanced Reporting'),
+      description: t('feature.reporting.description', 'Get insights with customizable reports, real-time business analytics, and AI-powered recommendations.'),
+      icon: <ReportingIcon />,
+      highlight: false,
+    },
+    {
+      title: t('feature.support', '24/7 Support'),
+      description: t('feature.support.description', 'Our global team provides 24/7 support in multiple languages to help you succeed with our platform.'),
+      icon: <SupportIcon />,
+      highlight: false,
+    },
+  ];
 
-        <Grid container spacing={4}>
-          {translatedFeatures.map((feature) => (
-            <Grid item xs={12} sm={6} md={4} key={feature.title}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-                  position: 'relative',
-                  overflow: 'visible',
-                  ...(feature.highlight && {
-                    borderTop: '3px solid #1976d2',
-                  }),
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: (theme) =>
-                      theme.palette.mode === 'light'
-                        ? '0 4px 20px rgba(0,0,0,0.1)'
-                        : '0 4px 20px rgba(0,0,0,0.3)',
-                  },
-                }}
-              >
-                {feature.new && (
-                  <Chip
-                    label={t('new', 'New')}
-                    color="secondary"
-                    size="small"
-                    sx={{
-                      position: 'absolute',
-                      top: -10,
-                      right: -10,
-                      fontWeight: 'bold',
-                    }}
-                  />
-                )}
-                <CardContent>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      mb: 2,
-                      color: feature.highlight ? 'primary.main' : 'secondary.main',
-                    }}
-                  >
-                    {feature.icon}
-                  </Box>
-                  <Typography
-                    variant="h5"
-                    component="h3"
-                    gutterBottom
-                    sx={{ fontWeight: 600 }}
-                  >
-                    {feature.title}
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    {feature.description}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+  return (
+    <section id="features" className="py-16 sm:py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <h2 className="text-base font-semibold text-primary-main uppercase tracking-wide">
+            {t('features.eyebrow', 'Features')}
+          </h2>
+          <p className="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl lg:text-5xl">
+            {t('features.heading', 'Global Business Features')}
+          </p>
+          <p className="mt-6 max-w-2xl text-xl text-gray-600 mx-auto">
+            {t('features.subheading', 'Everything you need to run your business efficiently across 100+ countries')}
+          </p>
+          
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-primary-light/10 text-primary-main">
+              <svg className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {t('features.countries', '100+ Countries Supported')}
+            </span>
+            
+            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-primary-light/10 text-primary-main">
+              <svg className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              {t('features.payments', 'Global Payment Options')}
+            </span>
+            
+            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-primary-light/10 text-primary-main">
+              <svg className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+              {t('features.inventory', 'Advanced Inventory Management')}
+            </span>
+          </div>
+        </div>
         
-        <Box sx={{ mt: 8, textAlign: 'center' }}>
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-            {t('pricingTitle', 'All included in our Professional plan for just $15/month')}
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-            {t('pricingDescription', 'No hidden fees. No extra charges for barcode printing or scanner integration.')}
-          </Typography>
-        </Box>
-      </Container>
-    </Box>
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature, index) => (
+            <div 
+              key={index}
+              className={`relative flex flex-col rounded-2xl overflow-hidden shadow-md transition duration-300 hover:shadow-lg ${
+                feature.highlight ? 'border-t-4 border-primary-main' : 'border border-gray-200'
+              }`}
+            >
+              {feature.isNew && (
+                <span className="absolute right-4 top-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-main text-white">
+                  {t('features.new', 'NEW')}
+                </span>
+              )}
+              
+              <div className="p-6 flex-1">
+                <div className="flex items-center justify-center h-16 w-16 mx-auto mb-6">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 text-center mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 text-center">
+                  {feature.description}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        <div className="text-center mt-16">
+          <a
+            href="#pricing"
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary-main hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light"
+          >
+            {t('features.cta', 'Explore All Features')}
+          </a>
+        </div>
+      </div>
+    </section>
   );
 }

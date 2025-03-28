@@ -67,10 +67,24 @@ export const getCurrentUser = async (options = {}) => {
     // Fetch user profile from API if requested
     if (withProfile) {
       try {
-        const profile = await apiService.fetch('/api/user/profile/', { 
+        // Check if we're in an onboarding process
+        const isOnboarding = typeof window !== 'undefined' && 
+          (window.location.pathname.includes('/onboarding/') || 
+           window.location.pathname.includes('/auth/verify'));
+        
+        // Set options based on context
+        const profileOptions = { 
           useCache: !forceFresh,
-          showErrorNotification: false
-        });
+          showErrorNotification: false,
+          // Use more forgiving options during onboarding
+          ...(isOnboarding ? {
+            fallbackData: {},
+            skipAuthCheck: true,
+            rethrow: false
+          } : {})
+        };
+        
+        const profile = await apiService.fetch('/api/user/profile/', profileOptions);
         
         if (profile) {
           userInfo.profile = profile;
@@ -78,6 +92,19 @@ export const getCurrentUser = async (options = {}) => {
         }
       } catch (profileError) {
         logger.error('[UserService] Error fetching user profile:', profileError);
+        
+        // During onboarding, don't let profile errors block the flow
+        if (typeof window !== 'undefined' && window.location.pathname.includes('/onboarding/')) {
+          logger.info('[UserService] Continuing onboarding flow despite profile error');
+          userInfo.profile = {
+            email: userInfo.email,
+            name: userInfo.name,
+            tenant_id: '',
+            business: { id: '', name: '', type: '' },
+            completedOnboarding: false,
+            isOnboardingFlow: true
+          };
+        }
       }
     }
     

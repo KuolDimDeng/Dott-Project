@@ -1,6 +1,5 @@
 // src/app/dashboard/components/Reports.js
 import React, { useState } from 'react';
-import { Button, Grid, Typography, Paper } from '@mui/material';
 import ReportDisplay from '../forms/ReportDisplay';
 
 const Reports = () => {
@@ -11,30 +10,39 @@ const Reports = () => {
   };
 
   return (
-    <Grid container spacing={3}>
-      <Grid item xs={12}>
-        <Paper sx={{ p: 2, display: 'flex', justifyContent: 'space-around' }}>
-          <Button variant="contained" onClick={() => handleReportSelect('balance_sheet')}>
+    <div className="grid gap-6">
+      <div className="w-full">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow flex justify-around flex-wrap gap-4">
+          <button 
+            className="px-4 py-2 bg-primary-main hover:bg-primary-dark text-white font-medium rounded transition-colors focus:outline-none focus:ring-2 focus:ring-primary-main focus:ring-opacity-50"
+            onClick={() => handleReportSelect('balance_sheet')}
+          >
             Balance Sheet
-          </Button>
-          <Button variant="contained" onClick={() => handleReportSelect('cash_flow')}>
+          </button>
+          <button 
+            className="px-4 py-2 bg-primary-main hover:bg-primary-dark text-white font-medium rounded transition-colors focus:outline-none focus:ring-2 focus:ring-primary-main focus:ring-opacity-50"
+            onClick={() => handleReportSelect('cash_flow')}
+          >
             Cash Flow
-          </Button>
-          <Button variant="contained" onClick={() => handleReportSelect('income_statement')}>
+          </button>
+          <button 
+            className="px-4 py-2 bg-primary-main hover:bg-primary-dark text-white font-medium rounded transition-colors focus:outline-none focus:ring-2 focus:ring-primary-main focus:ring-opacity-50"
+            onClick={() => handleReportSelect('income_statement')}
+          >
             Income Statement
-          </Button>
-        </Paper>
-      </Grid>
-      <Grid item xs={12}>
+          </button>
+        </div>
+      </div>
+      <div className="w-full">
         {selectedReport ? (
           <ReportDisplay reportType={selectedReport} />
         ) : (
-          <Typography variant="h6" align="center">
+          <h2 className="text-lg font-semibold text-center text-gray-700 dark:text-gray-300">
             Select a report type to view
-          </Typography>
+          </h2>
         )}
-      </Grid>
-    </Grid>
+      </div>
+    </div>
   );
 };
 

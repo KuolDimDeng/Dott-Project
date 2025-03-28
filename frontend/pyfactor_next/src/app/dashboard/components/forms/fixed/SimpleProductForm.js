@@ -2,18 +2,10 @@
 
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { 
-  TextField, 
-  Button, 
-  Paper, 
-  Typography, 
-  Box, 
-  Container
-} from '@mui/material';
 
 /*
- * SimpleProductForm - Updated to use MUI's recommended approach
- * Using proper controlled TextField components
+ * SimpleProductForm - Converted to use Tailwind CSS
+ * Using proper controlled input components
  */
 export default function SimpleProductForm() {
   const [name, setName] = useState('');
@@ -42,76 +34,81 @@ export default function SimpleProductForm() {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Paper elevation={2} sx={{ p: 3, mt: 3, mb: 3 }}>
-        <Typography variant="h5" gutterBottom>
+    <div className="max-w-lg mx-auto px-4">
+      <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mt-6 mb-6">
+        <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
           Simple Product Form
-        </Typography>
+        </h2>
         
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          This form uses MUI TextField components with controlled inputs following MUI's best practices.
-        </Typography>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+          This form uses Tailwind CSS styling with controlled inputs.
+        </p>
         
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <TextField
-            id="product-name"
-            label="Product Name"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="mb-4">
+            <label htmlFor="product-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Product Name *
+            </label>
+            <input
+              id="product-name"
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-primary-main dark:bg-gray-700 dark:text-white"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
           
-          <TextField
-            id="product-price"
-            label="Price"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            type="number"
-            inputProps={{ step: "0.01" }}
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            required
-          />
+          <div className="mb-4">
+            <label htmlFor="product-price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Price *
+            </label>
+            <input
+              id="product-price"
+              type="number"
+              step="0.01"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-primary-main dark:bg-gray-700 dark:text-white"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+            />
+          </div>
           
-          <TextField
-            id="product-description"
-            label="Description"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            multiline
-            rows={4}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
+          <div className="mb-4">
+            <label htmlFor="product-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Description
+            </label>
+            <textarea
+              id="product-description"
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-primary-main dark:bg-gray-700 dark:text-white"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
           
-          <TextField
-            id="product-stock"
-            label="Stock Quantity"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            type="number"
-            value={stock}
-            onChange={(e) => setStock(e.target.value)}
-          />
+          <div className="mb-6">
+            <label htmlFor="product-stock" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Stock Quantity
+            </label>
+            <input
+              id="product-stock"
+              type="number"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-primary-main dark:bg-gray-700 dark:text-white"
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+            />
+          </div>
           
-          <Button
+          <button
             type="submit"
-            variant="contained"
-            color="primary"
-            fullWidth
             disabled={isLoading}
-            sx={{ mt: 2, p: 1.5 }}
+            className="w-full py-3 px-6 bg-primary-main hover:bg-primary-dark text-white font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-main focus:ring-opacity-50 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Creating...' : 'Create Product'}
-          </Button>
-        </Box>
-      </Paper>
-    </Container>
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }

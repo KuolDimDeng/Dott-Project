@@ -4,10 +4,10 @@ import ClientLayout from './ClientLayout';
 import ThemeRegistry from '@/components/ThemeRegistry/ThemeRegistry';
 import Providers from '@/providers';
 import LanguageProvider from '@/components/LanguageProvider/LanguageProvider.js';
-import DynamicComponents from '@/components/DynamicComponents';
-import './globals.css';
 import { UserProvider } from '@/contexts/UserContext';
+import './globals.css';
 
+// Dynamic components will be loaded client-side by ClientLayout
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
@@ -33,8 +33,7 @@ export default function RootLayout({ children }) {
             <Providers>
               <LanguageProvider>
                 <ClientLayout>{children}</ClientLayout>
-                {/* DynamicComponents will be loaded client-side by ClientLayout */}
-                <DynamicComponents isAuthenticated={false} />
+                {/* DynamicComponents moved to ClientLayout for proper client-side rendering */}
               </LanguageProvider>
             </Providers>
           </ThemeRegistry>

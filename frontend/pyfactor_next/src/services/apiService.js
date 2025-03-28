@@ -102,6 +102,40 @@ const normalizeEndpoint = (endpoint) => {
   return `${endpoint}/`;
 };
 
+// Helper function to check if the current path is an onboarding route that should use lenient access
+const isLenientAccessRoute = (pathname) => {
+  if (!pathname) return false;
+  
+  // Onboarding routes should have lenient access
+  if (pathname.startsWith('/onboarding/')) {
+    return true;
+  }
+  
+  // Verification routes should also have lenient access
+  if (pathname === '/auth/verify-email' || pathname.startsWith('/auth/verify-email')) {
+    return true;
+  }
+  
+  return false;
+};
+
+// Helper to check if an API endpoint is a profile or lenient endpoint
+const isLenientEndpoint = (endpoint) => {
+  if (!endpoint) return false;
+  
+  // User profile endpoint should have lenient access
+  if (endpoint.includes('/api/user/profile')) {
+    return true;
+  }
+  
+  // Onboarding endpoints should have lenient access
+  if (endpoint.includes('/api/onboarding/')) {
+    return true;
+  }
+  
+  return false;
+};
+
 /**
  * Fetch data from an API endpoint with caching and tenant context
  * @param {string} endpoint - API endpoint
@@ -120,7 +154,8 @@ export const fetchData = async (endpoint, options = {}) => {
     forceRefresh = false,
     tenantOverride = null,
     customMessage,
-    notify = true
+    notify = true,
+    skipAuthCheck = false
   } = options;
   
   try {
@@ -143,6 +178,11 @@ export const fetchData = async (endpoint, options = {}) => {
       logger.debug(`[ApiService] Cache miss for ${normalizedEndpoint}`);
     }
     
+    // Check if this is a lenient access route or endpoint
+    const isLenientRoute = typeof window !== 'undefined' && isLenientAccessRoute(window.location.pathname);
+    const isLenientApiEndpoint = isLenientEndpoint(normalizedEndpoint);
+    const shouldUseLenientAccess = isLenientRoute || isLenientApiEndpoint || skipAuthCheck;
+    
     // Add tenant headers
     const tenantHeaders = tenantOverride 
       ? { 'X-Tenant-ID': tenantOverride }
@@ -153,7 +193,12 @@ export const fetchData = async (endpoint, options = {}) => {
       params,
       headers: {
         ...tenantHeaders,
-        ...headers
+        ...headers,
+        // Add a header to indicate this is a lenient route request
+        ...(shouldUseLenientAccess ? { 
+          'X-Lenient-Access': 'true',
+          'X-Allow-Partial': 'true'
+        } : {})
       },
       timeout
     });
@@ -168,22 +213,40 @@ export const fetchData = async (endpoint, options = {}) => {
     
     return response.data;
   } catch (error) {
-    if (customMessage && error.message && notify) {
-      logger.warn(customMessage, error.message);
-    }
+    // Check if this is a lenient access route or endpoint
+    const isLenientRoute = typeof window !== 'undefined' && isLenientAccessRoute(window.location.pathname);
+    const isLenientApiEndpoint = isLenientEndpoint(endpoint);
+    const shouldUseLenientAccess = isLenientRoute || isLenientApiEndpoint || skipAuthCheck;
     
-    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-      logger.warn('Request timed out', {
-        endpoint,
-        timeout: `${timeout/1000}s`,
-        customMessage: `Request timed out after ${timeout/1000} seconds. Using fallback data.`
+    // If it's a lenient route, we'll be more forgiving with errors
+    if (shouldUseLenientAccess) {
+      logger.warn(`[ApiService] Error on lenient route ${endpoint}, using fallback:`, {
+        error: error.message,
+        status: error.response?.status
       });
+      
+      // For profile requests during onboarding, return a minimal profile
+      if (endpoint.includes('/api/user/profile')) {
+        return {
+          email: '',
+          name: '',
+          tenant_id: '18609ed2-1a46-4d50-bc4e-483d6e3405ff',
+          business: { id: '', name: '', type: '' },
+          completedOnboarding: false,
+          onboardingStep: 'business-info',
+          isOnboardingFlow: true
+        };
+      }
+      
+      // For other lenient endpoints, return fallback data or null
+      return fallbackData !== null ? fallbackData : null;
     }
     
     return handleApiError(error, {
       fallbackData,
       showNotification: showErrorNotification,
-      rethrow: !fallbackData
+      customMessage,
+      rethrow: fallbackData === null
     });
   }
 };

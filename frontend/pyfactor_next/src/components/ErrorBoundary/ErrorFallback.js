@@ -2,75 +2,51 @@
 'use client';
 
 import React from 'react';
-import { Box, Button, Typography, Container, Paper } from '@mui/material';
-import { ErrorOutline } from '@mui/icons-material';
+import { ErrorOutlineIcon } from '@/app/components/icons';
 
 function ErrorFallback({ error, resetErrorBoundary }) {
   return (
-    <Container maxWidth="sm">
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          p: 3,
-        }}
-      >
-        <Paper
-          elevation={3}
-          sx={{
-            p: 4,
-            textAlign: 'center',
-            borderRadius: 2,
-            bgcolor: 'background.paper',
-          }}
-        >
-          <ErrorOutline
-            sx={{
-              fontSize: 60,
-              color: 'error.main',
-              mb: 2,
-            }}
+    <div className="container mx-auto max-w-md">
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="p-8 text-center rounded-lg shadow-lg bg-white dark:bg-gray-800 w-full">
+          <ErrorOutlineIcon 
+            className="text-6xl text-error-main mb-4 mx-auto"
           />
 
-          <Typography variant="h5" color="error" gutterBottom>
+          <h2 className="text-xl font-semibold text-error-main mb-2">
             Oops! Something went wrong
-          </Typography>
+          </h2>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
             {error.message || 'An unexpected error occurred'}
-          </Typography>
+          </p>
 
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-            <Button variant="contained" onClick={resetErrorBoundary} color="primary">
+          <div className="flex gap-4 justify-center">
+            <button 
+              onClick={resetErrorBoundary} 
+              className="px-4 py-2 bg-primary-main text-white rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-50"
+            >
               Try again
-            </Button>
+            </button>
 
-            <Button variant="outlined" onClick={() => (window.location.href = '/')} color="primary">
+            <button 
+              onClick={() => (window.location.href = '/')} 
+              className="px-4 py-2 border border-primary-main text-primary-main rounded-md hover:bg-primary-main/5 focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-50"
+            >
               Go to Home
-            </Button>
-          </Box>
+            </button>
+          </div>
 
           {process.env.NODE_ENV === 'development' && (
-            <Box sx={{ mt: 3, textAlign: 'left' }}>
-              <Typography
-                variant="caption"
-                component="pre"
-                sx={{
-                  whiteSpace: 'pre-wrap',
-                  bgcolor: 'grey.100',
-                  p: 2,
-                  borderRadius: 1,
-                }}
-              >
+            <div className="mt-6 text-left">
+              <pre className="whitespace-pre-wrap bg-gray-100 dark:bg-gray-700 p-4 rounded text-xs overflow-auto">
                 {error.stack}
-              </Typography>
-            </Box>
+              </pre>
+            </div>
           )}
-        </Paper>
-      </Box>
-    </Container>
+        </div>
+      </div>
+    </div>
   );
 }
 

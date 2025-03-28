@@ -1,37 +1,100 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Collapse,
-  Box,
-  Paper,
-  Button,
-  Popover,
-  Typography,
-  useTheme,
-} from '@mui/material';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
-import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
-import PaymentsIcon from '@mui/icons-material/Payments';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
-import ContactsIcon from '@mui/icons-material/Contacts';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Image from 'next/image';
-import DescriptionIcon from '@mui/icons-material/Description';
+
+// SVG Icons for menu items
+const NavIcons = {
+  AddCircle: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  Dashboard: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+    </svg>
+  ),
+  Sales: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+    </svg>
+  ),
+  Contacts: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  ),
+  Inventory: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+    </svg>
+  ),
+  Shipping: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+    </svg>
+  ),
+  Payments: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  ),
+  Cart: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  ),
+  Bank: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+    </svg>
+  ),
+  Wallet: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+    </svg>
+  ),
+  Reports: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  Analytics: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+  ),
+  Receipt: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  ChevronDown: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  ),
+  ChevronUp: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
+    </svg>
+  ),
+  Home: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+    </svg>
+  ),
+  People: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+    </svg>
+  ),
+  Description: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+    </svg>
+  )
+};
 
 const MENU_WIDTH = 258; // Increased to match the drawer width (260px, leaving 2px for borders)
 
@@ -52,20 +115,43 @@ const MainListItems = ({
   handleTransportClick,
   handleHRClick,
   handleShowCreateOptions,
-  borderRightColor = '#0a3977',
-  borderRightWidth = '2px',
+  handleShowCreateMenu,
+  handleDrawerClose,
+  isIconOnly = false,
+  borderRightColor = 'transparent',
+  borderRightWidth = '0px',
 }) => {
   const [openMenu, setOpenMenu] = useState('');
-  const [createAnchorEl, setCreateAnchorEl] = useState(null);
   const [buttonWidth, setButtonWidth] = useState(0);
   const paperRef = useRef(null);
   const [hoveredItem, setHoveredItem] = useState(null);
   const [hoveredCreateOption, setHoveredCreateOption] = useState(null);
+  const isMobile = useRef(window.innerWidth < 640);
 
-  // Custom colors for menu items
-  const mainColorDark = '#041e42';    // Dark navy blue  
-  const navyBlue = '#0a3977';         // Navy blue color for text
-  const hoverBgColor = '#f0f3f9';     // Very light gray with slight blue tint for hover effect
+  // Check if we're on mobile/small screens
+  useEffect(() => {
+    const checkMobile = () => {
+      isMobile.current = window.innerWidth < 640;
+    };
+    
+    window.addEventListener('resize', checkMobile);
+    checkMobile();
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
+
+  // Reset open menu when switching to icon-only mode
+  useEffect(() => {
+    if (isIconOnly) {
+      setOpenMenu('');
+    }
+  }, [isIconOnly]);
+
+  // Custom colors for menu items - these match the theme.js colors
+  const navyBlue = '#0a3977';      // primary.main
+  const hoverBgColor = '#f0f3f9';  // Very light blue-gray
 
   useEffect(() => {
     if (paperRef.current) {
@@ -75,6 +161,12 @@ const MainListItems = ({
   }, []);
 
   const handleMenuToggle = (menuName) => {
+    // If in icon-only mode, always open the drawer first
+    if (isIconOnly && handleDrawerClose) {
+      handleDrawerClose();
+      return;
+    }
+    
     setOpenMenu((prevOpenMenu) => (prevOpenMenu === menuName ? '' : menuName));
     
     // Add a setTimeout to allow the DOM to update before scrolling
@@ -88,21 +180,28 @@ const MainListItems = ({
     }, 100);
   };
 
-  const handleCreateClick = (event) => {
-    // Handle case where event is undefined (when called directly from menu item)
-    if (!event || typeof event !== 'object') {
-      // If no event provided, use a dummy reference element instead
-      const dummyElement = document.getElementById('main-menu-container') || document.body;
-      setCreateAnchorEl(dummyElement);
+  // Helper to close drawer on mobile after navigation
+  const handleItemClick = (callback, param) => () => {
+    // If in icon-only mode, expand drawer first instead of calling the callback
+    if (isIconOnly && handleDrawerClose) {
+      handleDrawerClose();
       return;
     }
     
-    // Normal case with event
-    setCreateAnchorEl(event.currentTarget);
-  };
-
-  const handleCreateClose = () => {
-    setCreateAnchorEl(null);
+    // Call the original callback with its parameter if provided
+    if (param !== undefined) {
+      callback(param);
+    } else if (callback) {
+      callback();
+    }
+    
+    // Always close drawer when an item is clicked, regardless of device type
+    if (handleDrawerClose && !isIconOnly) {
+      // Use setTimeout to ensure this happens after the callback has completed
+      setTimeout(() => {
+        handleDrawerClose();
+      }, 50);
+    }
   };
 
   const handleMouseEnter = (menuName) => {
@@ -112,45 +211,21 @@ const MainListItems = ({
   const handleMouseLeave = () => {
     setHoveredItem(null);
   };
-  const createOpen = Boolean(createAnchorEl);
-  const theme = useTheme();
 
   const menuItems = [
     {
-      icon: <AddCircleOutlineIcon />,
+      icon: <NavIcons.AddCircle className="w-5 h-5" />,
       label: 'Create New',
-      onClick: (e) => handleCreateClick(e),
-      customStyle: {
-        pl: 2,
-        py: 0.5,
-        mb: 0.5,
-        mt: 0.5,
-        textTransform: 'none',
-        border: 'none',
-        borderRadius: 0,
-        maxWidth: '100%',
-        width: '100%',
-        color: navyBlue,
-        backgroundColor: '#e6ebf5',
-        fontSize: '16px',
-        fontWeight: 'bold',
-        position: 'relative',
-        zIndex: 10,
-        boxShadow: 'none !important',
-        overflow: 'visible',
-        '&:hover': {
-          backgroundColor: '#d8e1f3',
-        },
-      },
+      onClick: handleShowCreateMenu,
       isSpecial: true,
     },
     {
-      icon: <DashboardCustomizeIcon />,
+      icon: <NavIcons.Dashboard className="w-5 h-5" />,
       label: 'Dashboard',
       onClick: handleMainDashboardClick,
     },
     {
-      icon: <PointOfSaleIcon />,
+      icon: <NavIcons.Sales className="w-5 h-5" />,
       label: 'Sales',
       subItems: [
         { label: 'Dashboard', onClick: handleSalesClick, value: 'dashboard' },
@@ -163,7 +238,7 @@ const MainListItems = ({
       ],
     },
     {
-      icon: <ContactsIcon />,
+      icon: <NavIcons.Contacts className="w-5 h-5" />,
       label: 'CRM',
       subItems: [
         { label: 'Dashboard', onClick: handleCRMClick, value: 'dashboard' },
@@ -177,7 +252,7 @@ const MainListItems = ({
       ],
     },
     {
-      icon: <Inventory2OutlinedIcon />,
+      icon: <NavIcons.Inventory className="w-5 h-5" />,
       label: 'Inventory',
       subItems: [
         { label: 'Dashboard', onClick: handleInventoryClick, value: 'inventorydashboard' },
@@ -190,7 +265,7 @@ const MainListItems = ({
       ],
     },
     {
-      icon: <LocalShippingIcon />,
+      icon: <NavIcons.Shipping className="w-5 h-5" />,
       label: 'Transport',
       subItems: [
         { label: 'Dashboard', onClick: handleTransportClick, value: 'dashboard' },
@@ -204,7 +279,7 @@ const MainListItems = ({
       ],
     },
     {
-      icon: <PaymentsIcon />,
+      icon: <NavIcons.Payments className="w-5 h-5" />,
       label: 'Payments',
       subItems: [
         { label: 'Dashboard', onClick: handlePaymentsClick, value: 'dashboard' },
@@ -219,9 +294,8 @@ const MainListItems = ({
         { label: 'Reports', onClick: handlePaymentsClick, value: 'reports' },
       ],
     },
-    // Add other menu items (Purchases, Accounting, Banking, Payroll, Inventory, Reports, Analytics, Taxes) similarly
     {
-      icon: <ShoppingCartIcon />,
+      icon: <NavIcons.Cart className="w-5 h-5" />,
       label: 'Purchases',
       subItems: [
         { label: 'Dashboard', onClick: handlePurchasesClick, value: 'dashboard' },
@@ -235,7 +309,7 @@ const MainListItems = ({
       ],
     },
     {
-      icon: <AccountBalanceIcon />,
+      icon: <NavIcons.Bank className="w-5 h-5" />,
       label: 'Accounting',
       subItems: [
         { label: 'Dashboard', onClick: handleAccountingClick, value: 'dashboard' },
@@ -253,7 +327,7 @@ const MainListItems = ({
       ],
     },
     {
-      icon: <AccountBalanceWalletIcon />,
+      icon: <NavIcons.Wallet className="w-5 h-5" />,
       label: 'Banking',
       subItems: [
         { label: 'Dashboard', onClick: handleBankingClick, value: 'dashboard' },
@@ -264,7 +338,7 @@ const MainListItems = ({
       ],
     },
     {
-      icon: <PeopleOutlineIcon />,
+      icon: <NavIcons.People className="w-5 h-5" />,
       label: 'HR',
       subItems: [
         { label: 'Dashboard', onClick: handleHRClick, value: 'dashboard' },
@@ -276,7 +350,7 @@ const MainListItems = ({
       ],
     },
     {
-      icon: <PaymentsIcon />,
+      icon: <NavIcons.Payments className="w-5 h-5" />,
       label: 'Payroll',
       subItems: [
         { label: 'Dashboard', onClick: handlePayrollClick, value: 'dashboard' },
@@ -285,9 +359,8 @@ const MainListItems = ({
         { label: 'Reports', onClick: handlePayrollClick, value: 'reports' },
       ],
     },
-
     {
-      icon: <ReceiptLongIcon />,
+      icon: <NavIcons.Receipt className="w-5 h-5" />,
       label: 'Taxes',
       subItems: [
         { label: 'Dashboard', onClick: handleTaxesClick, value: 'dashboard' },
@@ -299,9 +372,8 @@ const MainListItems = ({
         { label: 'Reports', onClick: handleTaxesClick, value: 'reports' },
       ],
     },
-
     {
-      icon: <AssessmentIcon />,
+      icon: <NavIcons.Reports className="w-5 h-5" />,
       label: 'Reports',
       subItems: [
         { label: 'Profit & Loss Statement', onClick: handleReportClick, value: 'income_statement' },
@@ -318,10 +390,8 @@ const MainListItems = ({
         { label: 'General Ledger', onClick: handleReportClick, value: 'general_ledger' },
       ],
     },
-
- 
     {
-      icon: <AnalyticsIcon />,
+      icon: <NavIcons.Analytics className="w-5 h-5" />,
       label: 'Analytics',
       subItems: [
         { label: 'Dashboard', onClick: handleAnalysisClick, value: 'kpi-data' },
@@ -333,344 +403,189 @@ const MainListItems = ({
   const createOptions = [
     { 
       label: 'Transaction', 
-      icon: <PaymentsIcon fontSize="small" />,
+      icon: <NavIcons.Payments className="w-4 h-4" />,
       onClick: () => {
-        // Update state instead of navigating to a new URL
-        handleShowCreateOptions('Transaction');
+        handleItemClick(() => handleShowCreateOptions('Transaction'))();
       }, 
       value: 'Transaction' 
     },
     { 
       label: 'Product', 
-      icon: <Inventory2OutlinedIcon fontSize="small" />,
+      icon: <NavIcons.Inventory className="w-4 h-4" />,
       onClick: () => {
-        // Update state instead of navigating to a new URL
-        handleShowCreateOptions('Product');
+        handleItemClick(() => handleShowCreateOptions('Product'))();
       }, 
       value: 'Product' 
     },
     { 
       label: 'Service', 
-      icon: <ReceiptLongIcon fontSize="small" />,
+      icon: <NavIcons.Receipt className="w-4 h-4" />,
       onClick: () => {
-        // Update state instead of navigating to a new URL
-        handleShowCreateOptions('Service');
+        handleItemClick(() => handleShowCreateOptions('Service'))();
       }, 
       value: 'Service' 
     },
     { 
       label: 'Invoice', 
-      icon: <DescriptionIcon fontSize="small" />,
+      icon: <NavIcons.Description className="w-4 h-4" />,
       onClick: () => {
-        // Update state instead of navigating to a new URL
-        handleShowCreateOptions('Invoice');
+        handleItemClick(() => handleShowCreateOptions('Invoice'))();
       }, 
       value: 'Invoice' 
     },
     { 
       label: 'Bill', 
-      icon: <ShoppingCartIcon fontSize="small" />,
+      icon: <NavIcons.Cart className="w-4 h-4" />,
       onClick: () => {
-        // Update state instead of navigating to a new URL
-        handleShowCreateOptions('Bill');
+        handleItemClick(() => handleShowCreateOptions('Bill'))();
       }, 
       value: 'Bill' 
     },
     { 
       label: 'Estimate', 
-      icon: <AssessmentIcon fontSize="small" />,
+      icon: <NavIcons.Reports className="w-4 h-4" />,
       onClick: () => {
-        // Update state instead of navigating to a new URL
-        handleShowCreateOptions('Estimate');
+        handleItemClick(() => handleShowCreateOptions('Estimate'))();
       }, 
       value: 'Estimate' 
     },
     { 
       label: 'Customer', 
-      icon: <PeopleOutlineIcon fontSize="small" />,
+      icon: <NavIcons.People className="w-4 h-4" />,
       onClick: () => {
-        // Update state instead of navigating to a new URL
-        handleShowCreateOptions('Customer');
+        handleItemClick(() => handleShowCreateOptions('Customer'))();
       }, 
       value: 'Customer' 
     },
     { 
       label: 'Vendor', 
-      icon: <ContactsIcon fontSize="small" />,
+      icon: <NavIcons.Contacts className="w-4 h-4" />,
       onClick: () => {
-        // Update state instead of navigating to a new URL
-        handleShowCreateOptions('Vendor');
+        handleItemClick(() => handleShowCreateOptions('Vendor'))();
       }, 
       value: 'Vendor' 
     },
   ];
 
-  const menuTheme = createTheme({
-    palette: {
-      menu: {
-        text: '#0a3977', // Navy blue text 
-        textHover: '#041e42', // Dark navy blue for hover
-        icon: '#1a5bc0', // Standard blue for icons
-        iconHover: '#0a3977', // Navy blue for icon hover
-        background: '#ffffff', // White background
-        backgroundHover: '#f0f3f9', // Very light gray with slight blue tint
-      },
-    },
-    components: {
-      MuiPaper: {
-        styleOverrides: {
-          root: {
-            boxShadow: 'none', // Remove shadow from all Paper components
-          },
-        },
-      },
-      MuiListItemButton: {
-        styleOverrides: {
-          root: {
-            boxShadow: 'none', // Remove shadow from all ListItemButton components
-          },
-        },
-      },
-    },
-  });
-
-  const scrollThumbColor = '#0a3977';
-  const scrollTrackColor = '#f0f3f9'; // Slightly lighter than the thumb
-
   const renderSubMenu = (items, parentMenu) => (
-    <Collapse in={openMenu === parentMenu} timeout="auto" unmountOnExit>
-      <List component="div" disablePadding>
+    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openMenu === parentMenu ? 'max-h-96' : 'max-h-0'}`}>
+      <ul className="pl-10 mt-1">
         {items.map((item, index) => (
-          <ListItemButton
-            key={index}
-            sx={{
-              pl: 4,
-              '&:hover': {
-                backgroundColor: hoverBgColor,
-              },
-              backgroundColor: hoveredItem === `${parentMenu}-${item.value}` ? hoverBgColor : 'inherit',
-            }}
-            onClick={(event) => {
-              if (item.subItems) {
-                handleMenuToggle(item.label);
-              } else if (item.onClick) {
-                item.onClick(event);
-              }
-            }}
-            onMouseEnter={() => handleMouseEnter(`${parentMenu}-${item.value}`)}
-            onMouseLeave={handleMouseLeave}
-          >
-            <ListItemText 
-              primary={item.label} 
-              primaryTypographyProps={{ 
-                sx: { 
-                  color: navyBlue, 
-                  fontSize: '0.85rem' 
-                } 
-              }} 
-            />
-          </ListItemButton>
+          <li key={index}>
+            <button
+              className={`flex items-center w-full text-left px-4 py-2 text-sm rounded-md
+                ${hoveredItem === `${parentMenu}-${item.value}` ? 'bg-gray-100' : ''}
+                hover:bg-gray-100 text-primary-main
+              `}
+              onClick={(event) => {
+                if (item.subItems) {
+                  handleMenuToggle(item.label);
+                } else if (item.onClick && item.value) {
+                  // For handlers that take a value parameter
+                  handleItemClick(item.onClick, item.value)(event);
+                } else if (item.onClick) {
+                  // For handlers without parameters
+                  handleItemClick(item.onClick)(event);
+                }
+              }}
+              onMouseEnter={() => handleMouseEnter(`${parentMenu}-${item.value}`)}
+              onMouseLeave={handleMouseLeave}
+            >
+              {item.label}
+            </button>
+          </li>
         ))}
-      </List>
-    </Collapse>
+      </ul>
+    </div>
   );
 
   return (
-    <ThemeProvider theme={menuTheme}>
-      <Box
+    <div className="relative">
+      <div
         id="main-menu-container"
-        sx={{
-          width: '100%',
-          height: '100%',
-          overflowX: 'hidden',
-          overflowY: 'auto',
-          borderRight: `${borderRightWidth} solid ${borderRightColor}`,
-          '.MuiListItemIcon-root': {
-            minWidth: '36px',
-            color: navyBlue, // Set icons to navy blue
-          },
-          // Remove shadows from all elements
-          '& .MuiPaper-root, & .MuiList-root, & .MuiListItem-root, & .MuiListItemButton-root, & .MuiCollapse-root': {
-            boxShadow: 'none !important',
-          },
-          position: 'relative',
-          zIndex: 0,
-        }}
+        className="w-full h-full overflow-x-hidden overflow-y-auto"
+        style={{ borderRight: `${borderRightWidth} solid ${borderRightColor}` }}
       >
-        {/* Single container for all menu items */}
-        <Paper
+        <div
           ref={paperRef}
-          elevation={0}
-          sx={{
-            width: MENU_WIDTH,
-            background: 'transparent',
-            boxShadow: 'none',
-            '&.MuiPaper-root': {
-              boxShadow: 'none',
-              backgroundImage: 'none',
-            },
-            '& > *': {
-              boxShadow: 'none',
-            },
-            position: 'relative',
-            zIndex: 1,
-            pt: 2, // Add padding top to give space at the top
-          }}
+          className="w-full pt-4 bg-transparent"
+          style={{ width: isIconOnly ? '60px' : MENU_WIDTH + 'px' }}
         >
-          <List
-            component="nav"
-            aria-labelledby="navigation-subheader"
-            sx={{
-              width: '100%',
-              pt: 0,
-              mt: 0,
-              position: 'relative',
-              zIndex: 1,
-              boxShadow: 'none',
-              '& .MuiListItem-root, & .MuiListItemButton-root, & .MuiCollapse-root': {
-                boxShadow: 'none !important'
-              },
-              '& .MuiListItemButton-root:last-of-type, & .MuiListItemButton-root:first-of-type': {
-                boxShadow: 'none !important',
-                '&::after, &::before': {
-                  display: 'none',
-                },
-              },
-            }}
-          >
-            {/* Regular menu items, including the New button as first item */}
-            {menuItems.map((item, index) => (
-              <React.Fragment key={index}>
-                <ListItemButton
-                  onClick={(event) => {
-                    if (item.subItems) {
-                      handleMenuToggle(item.label);
-                    } else if (item.onClick) {
-                      item.onClick(event);
-                    }
-                  }}
-                  onMouseEnter={() => handleMouseEnter(item.label)}
-                  onMouseLeave={handleMouseLeave}
-                  data-menu-label={item.label}
-                  sx={{
-                    ...(item.isSpecial ? item.customStyle : {
-                      '&:hover': {
-                        backgroundColor: hoverBgColor,
-                      },
-                      backgroundColor: hoveredItem === item.label ? hoverBgColor : 'inherit',
-                    }),
-                  }}
+          <nav className="w-full" aria-label="Main Navigation">
+            <ul className="w-full space-y-0.5">
+              {/* Create New button */}
+              <li className={isIconOnly ? "px-[10px] py-2" : "px-3 py-2"}>
+                <button
+                  onClick={isIconOnly ? handleDrawerClose : handleItemClick(handleShowCreateMenu)}
+                  className={`
+                    flex items-center 
+                    ${isIconOnly ? 'justify-center w-10 h-10 p-0 mx-auto' : 'w-full text-left py-3 px-4'}
+                    bg-white text-primary-main font-medium
+                    rounded-lg transition-all duration-200 border border-gray-200
+                    hover:bg-blue-50 active:bg-blue-100
+                    shadow-sm hover:shadow-md
+                  `}
+                  title={isIconOnly ? "Create New" : undefined}
                 >
-                  <ListItemIcon sx={item.isSpecial ? {
-                    minWidth: '25px',
-                    color: navyBlue,
-                    '& .MuiSvgIcon-root': {
-                      fontSize: '18px',
-                    }
-                  } : {}}>{item.icon}</ListItemIcon>
-                  <ListItemText 
-                    primary={item.label} 
-                    primaryTypographyProps={{ 
-                      sx: { 
-                        color: navyBlue, 
-                        fontWeight: item.isSpecial ? 600 : (openMenu === item.label ? 600 : 400),
-                        fontSize: item.isSpecial ? '0.9rem' : 'inherit'
-                      } 
-                    }} 
-                  />
-                </ListItemButton>
-                {item.subItems && renderSubMenu(item.subItems, item.label)}
-              </React.Fragment>
-            ))}
-          </List>
-        </Paper>
-      </Box>
-      <Popover
-        open={createOpen}
-        anchorEl={createAnchorEl}
-        onClose={handleCreateClose}
-        disablePortal={false}
-        disableRestoreFocus
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        PaperProps={{
-          sx: {
-            position: 'fixed',
-            left: `calc(${MENU_WIDTH}px + 40px)`, // Position it further into content area
-            top: '120px', // Fixed positioning from top
-            width: '280px',
-            backgroundColor: '#ffffff',
-            boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)',
-            borderRadius: '12px',
-            p: 1.5,
-            border: '1px solid #e0e0e0',
-            zIndex: 1300, // Ensure it appears above other elements
-            '@media (max-width: 600px)': {
-              left: '10px', // On mobile, position it differently
-              width: 'calc(100% - 20px)',
-            },
-          },
-        }}
-      >
-        <Box>
-          <List dense>
-            {createOptions.map((option, index) => (
-              <ListItemButton
-                key={index}
-                onClick={() => {
-                  if (typeof option.onClick === 'function') {
-                    // Call the onClick function with the option value
-                    // Don't directly pass the event since it doesn't need it
-                    option.onClick();
-                  } else {
-                    console.warn(`onClick handler for option "${option.label}" is not a function`);
-                  }
-                  handleCreateClose();
-                }}
-                onMouseEnter={() => setHoveredCreateOption(option.value)}
-                onMouseLeave={() => setHoveredCreateOption(null)}
-                sx={{
-                  py: 1,
-                  color: navyBlue,
-                  borderRadius: '8px',
-                  mb: 0.5,
-                  '&:hover': {
-                    backgroundColor: hoverBgColor,
-                    color: navyBlue,
-                  },
-                }}
-              >
-                <ListItemIcon 
-                  sx={{ 
-                    minWidth: '30px',
-                    color: navyBlue,
-                    '& .MuiSvgIcon-root': {
-                      fontSize: '1.2rem',
-                    }
-                  }}
-                >
-                  {option.icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={option.label}
-                  primaryTypographyProps={{
-                    fontSize: '0.95rem',
-                    fontWeight: hoveredCreateOption === option.value ? 'bold' : 'normal',
-                    color: navyBlue,
-                  }}
-                />
-              </ListItemButton>
-            ))}
-          </List>
-        </Box>
-      </Popover>
-    </ThemeProvider>
+                  <span className={`${isIconOnly ? '' : 'w-7'} text-primary-main flex items-center justify-center`}>
+                    <NavIcons.AddCircle className="w-5 h-5" />
+                  </span>
+                  {!isIconOnly && <span className="flex-1">Create New</span>}
+                  {!isIconOnly && (
+                    <svg className="w-4 h-4 ml-1 text-primary-main" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </button>
+              </li>
+              
+              {/* Regular menu items - skip the first one (Create New) */}
+              {menuItems.slice(1).map((item, index) => (
+                <li key={index}>
+                  <button
+                    onClick={(event) => {
+                      if (isIconOnly) {
+                        handleDrawerClose();
+                      } else if (item.subItems) {
+                        handleMenuToggle(item.label);
+                      } else if (item.onClick) {
+                        handleItemClick(item.onClick)(event);
+                      }
+                    }}
+                    onMouseEnter={() => handleMouseEnter(item.label)}
+                    onMouseLeave={handleMouseLeave}
+                    data-menu-label={item.label}
+                    className={`
+                      flex items-center ${isIconOnly ? 'justify-center' : 'w-full text-left'} 
+                      py-2 ${isIconOnly ? 'px-0 mx-auto' : 'px-4'}
+                      ${item.isSpecial 
+                        ? 'text-primary-main bg-blue-50 border-0 text-sm font-bold my-1' 
+                        : `text-primary-main ${hoveredItem === item.label ? 'bg-gray-100' : ''} hover:bg-gray-100`}
+                    `}
+                    title={isIconOnly ? item.label : undefined}
+                  >
+                    <span className={`${isIconOnly ? '' : 'w-7'} text-primary-main`}>{item.icon}</span>
+                    {!isIconOnly && (
+                      <>
+                        <span className={`flex-1 ${openMenu === item.label ? 'font-semibold' : ''}`}>
+                          {item.label}
+                        </span>
+                        {item.subItems && (
+                          openMenu === item.label 
+                            ? <NavIcons.ChevronUp className="w-4 h-4 text-primary-main" />
+                            : <NavIcons.ChevronDown className="w-4 h-4 text-primary-main" />
+                        )}
+                      </>
+                    )}
+                  </button>
+                  {!isIconOnly && item.subItems && renderSubMenu(item.subItems, item.label)}
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
   );
 };
 

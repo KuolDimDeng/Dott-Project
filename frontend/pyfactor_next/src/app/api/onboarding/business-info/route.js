@@ -30,14 +30,37 @@ const parseCookies = (cookieHeader) => {
  */
 export async function POST(request) {
   try {
-    const data = await request.json();
+    // Try to get authenticated user but don't fail if not present
+    let user = null;
+    try {
+      user = await getServerUser(request);
+    } catch (authError) {
+      logger.warn('[API:business-info] Auth error but continuing:', authError.message);
+      // Continue processing without user
+    }
+    
+    // Get request body, handling empty requests gracefully
+    let data = {};
+    try {
+      if (request.body) {
+        data = await request.json();
+      }
+    } catch (parseError) {
+      logger.warn('[API:business-info] Error parsing request body:', parseError.message);
+      // Continue with empty data object
+    }
+    
+    // Ensure we have at least some data - use defaults if necessary
+    const businessName = data.businessName || user?.['custom:businessname'] || '';
+    const businessType = data.businessType || user?.['custom:businesstype'] || '';
+    const country = data.country || user?.['custom:businesscountry'] || '';
+    const legalStructure = data.legalStructure || user?.['custom:legalstructure'] || '';
     
     logger.debug('[API] Business info update request:', {
+      userPresent: !!user,
       fields: Object.keys(data),
-      businessName: data.businessName,
-      businessType: data.businessType,
-      _onboardingStatus: data._onboardingStatus,
-      _onboardingStep: data._onboardingStep
+      businessName,
+      businessType
     });
 
     // Create response with cookies
@@ -46,10 +69,10 @@ export async function POST(request) {
       message: 'Business information updated successfully',
       nextRoute: '/onboarding/subscription',
       businessInfo: {
-        businessName: data.businessName,
-        businessType: data.businessType,
-        country: data.country,
-        legalStructure: data.legalStructure
+        businessName,
+        businessType,
+        country,
+        legalStructure
       }
     });
     
@@ -81,9 +104,24 @@ export async function POST(request) {
       sameSite: 'lax'
     });
     
-    // Set business info cookies
-    if (data.businessName) {
-      response.cookies.set('businessName', data.businessName, {
+    // Set business info cookies - ensuring we always set something
+    response.cookies.set('businessName', businessName, {
+      path: '/',
+      expires: expiration,
+      httpOnly: false,
+      sameSite: 'lax'
+    });
+    
+    response.cookies.set('businessType', businessType, {
+      path: '/',
+      expires: expiration,
+      httpOnly: false,
+      sameSite: 'lax'
+    });
+    
+    // Only set these if they have values
+    if (country) {
+      response.cookies.set('businessCountry', country, {
         path: '/',
         expires: expiration,
         httpOnly: false,
@@ -91,26 +129,8 @@ export async function POST(request) {
       });
     }
     
-    if (data.businessType) {
-      response.cookies.set('businessType', data.businessType, {
-        path: '/',
-        expires: expiration,
-        httpOnly: false,
-        sameSite: 'lax'
-      });
-    }
-    
-    if (data.country) {
-      response.cookies.set('businessCountry', data.country, {
-        path: '/',
-        expires: expiration,
-        httpOnly: false,
-        sameSite: 'lax'
-      });
-    }
-    
-    if (data.legalStructure) {
-      response.cookies.set('legalStructure', data.legalStructure, {
+    if (legalStructure) {
+      response.cookies.set('legalStructure', legalStructure, {
         path: '/',
         expires: expiration,
         httpOnly: false,
@@ -123,20 +143,64 @@ export async function POST(request) {
       setCookies: {
         onboardingStep,
         onboardedStatus,
-        businessName: data.businessName,
-        businessType: data.businessType
+        businessName,
+        businessType
       }
     });
+    
+    // Set auth-related cookies if needed for seamless experience
+    if (!user) {
+      response.cookies.set('authState', 'onboarding-in-progress', {
+        path: '/',
+        expires: expiration,
+        httpOnly: false,
+        sameSite: 'lax'
+      });
+    }
     
     return response;
   } catch (error) {
     logger.error('[API] Error updating business info:', error);
     
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to update business information',
-      message: error.message
-    }, { status: 500 });
+    // Even on error, still try to set the essential cookies
+    try {
+      const response = NextResponse.json({
+        success: false,
+        error: 'Failed to update business information',
+        message: error.message,
+        fallback: true
+      }, { status: 500 });
+      
+      // Set critical cookies even during error to ensure navigation still works
+      const expiration = new Date();
+      expiration.setDate(expiration.getDate() + 7); // 7 days
+      
+      response.cookies.set('onboardingStep', 'subscription', {
+        path: '/',
+        expires: expiration,
+        httpOnly: false,
+        sameSite: 'lax'
+      });
+      
+      response.cookies.set('onboardedStatus', 'BUSINESS_INFO', {
+        path: '/',
+        expires: expiration,
+        httpOnly: false,
+        sameSite: 'lax'
+      });
+      
+      logger.debug('[API] Set fallback cookies during error handling');
+      
+      return response;
+    } catch (cookieError) {
+      logger.error('[API] Failed to set fallback cookies:', cookieError);
+      
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to update business information',
+        message: error.message
+      }, { status: 500 });
+    }
   }
 }
 
@@ -160,6 +224,7 @@ export async function GET(request) {
       const user = await getServerUser(request);
       userInfo = user;
     } catch (authError) {
+      // Log but continue - use cookies
       logger.warn('[BusinessInfo] Server auth failed, continuing with cookies:', authError.message);
     }
     

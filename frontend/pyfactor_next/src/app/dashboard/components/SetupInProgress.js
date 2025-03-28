@@ -1,5 +1,4 @@
 import React from 'react';
-import { Box, Typography, CircularProgress, Paper, Alert } from '@mui/material';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useSetupStatus } from '@/hooks/useSetupStatus';
 import { logger } from '@/utils/logger';
@@ -11,66 +10,47 @@ export default function SetupInProgress() {
 
   if (error) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
+      <div className="p-6">
+        <div className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 p-4 rounded-md mb-4">
           {error}
-        </Alert>
-        <Typography>
+        </div>
+        <p className="text-gray-700 dark:text-gray-300">
           There was an error setting up your dashboard. Please try refreshing the page or contact support if the issue persists.
-        </Typography>
-      </Box>
+        </p>
+      </div>
     );
   }
 
   return (
     <ErrorBoundary>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          p: 3,
-        }}
-      >
-        <Paper
-          elevation={3}
-          sx={{
-            p: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            maxWidth: 400,
-            width: '100%',
-          }}
-        >
-          {/* Removed loading spinner */}
-          <Typography variant="h5" gutterBottom align="center">
+      <div className="flex flex-col items-center justify-center min-h-screen p-6">
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8 flex flex-col items-center max-w-md w-full">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white text-center mb-2">
             {stepMessage || 'Setting up your dashboard...'}
-          </Typography>
-          <Typography color="text.secondary" align="center" sx={{ mb: 2 }}>
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 text-center mb-4">
             We're preparing your workspace. This may take a few moments.
             Please don't close this window.
-          </Typography>
-          <Typography 
-            variant="caption" 
-            sx={{ mt: 2 }} 
-            color="text.secondary"
-          >
+          </p>
+          
+          {/* Progress bar */}
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-4">
+            <div 
+              className="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all duration-300 ease-in-out" 
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
             {progress}% Complete
-          </Typography>
+          </p>
           {currentStep && (
-            <Typography 
-              variant="caption" 
-              sx={{ mt: 1 }} 
-              color="text.secondary"
-            >
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Current step: {currentStep}
-            </Typography>
+            </p>
           )}
-        </Paper>
-      </Box>
+        </div>
+      </div>
     </ErrorBoundary>
   );
 }

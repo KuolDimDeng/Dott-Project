@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, Button } from '@mui/material';
 import { logger } from '@/utils/logger';
 import { signOut } from '@/config/amplifyUnified';
 import { useRouter } from 'next/navigation';
@@ -71,61 +70,45 @@ class AuthErrorBoundary extends React.Component {
       });
 
       return (
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            p: 3,
-            textAlign: 'center',
-            gap: 2
-          }}
+        <div
+          className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center"
         >
-          <Typography variant="h5" color="error" gutterBottom>
+          <h5 className="mb-2 text-xl font-semibold text-error-main">
             Authentication Error
-          </Typography>
+          </h5>
           
-          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, mb: 3 }}>
+          <p className="mb-6 max-w-[600px] text-gray-600 dark:text-gray-400">
             We encountered an error with the authentication system. This could be due to an expired session or network issues.
-          </Typography>
+          </p>
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              variant="contained"
-              color="primary"
+          <div className="flex gap-4">
+            <button
+              className="rounded-md bg-primary-main px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
               onClick={this.handleSignOut}
             >
               Sign Out
-            </Button>
+            </button>
             
-            <Button
-              variant="outlined"
-              color="primary"
+            <button
+              className="rounded-md border border-primary-main bg-transparent px-4 py-2 text-sm font-medium text-primary-main hover:bg-primary-main/5"
               onClick={this.handleRetry}
             >
               Retry
-            </Button>
-          </Box>
+            </button>
+          </div>
 
           {process.env.NODE_ENV === 'development' && this.state.error && (
-            <Box sx={{ mt: 4, textAlign: 'left', width: '100%', maxWidth: 800 }}>
-              <Typography variant="subtitle2" color="error" sx={{ mb: 1 }}>
+            <div className="mt-8 w-full max-w-[800px] text-left">
+              <h6 className="mb-2 text-sm font-semibold text-error-main">
                 Error Details:
-              </Typography>
-              <Typography variant="body2" component="pre" sx={{
-                p: 2,
-                bgcolor: 'grey.100',
-                borderRadius: 1,
-                overflow: 'auto'
-              }}>
+              </h6>
+              <pre className="overflow-auto rounded bg-gray-100 p-4 text-xs dark:bg-gray-800">
                 {this.state.error.toString()}
                 {this.state.errorInfo?.componentStack}
-              </Typography>
-            </Box>
+              </pre>
+            </div>
           )}
-        </Box>
+        </div>
       );
     }
 

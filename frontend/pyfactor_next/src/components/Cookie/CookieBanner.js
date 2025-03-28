@@ -2,22 +2,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  Typography,
-  Paper,
-  Link,
-  Stack,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormGroup,
-  FormControlLabel,
-  Checkbox,
-} from '@mui/material';
 import NextLink from 'next/link';
 
 const CookieBanner = () => {
@@ -29,48 +13,68 @@ const CookieBanner = () => {
     analytics: true,
     marketing: false,
   });
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // Check if user has already made a cookie choice
-    const cookieConsent = localStorage.getItem('cookieConsent');
-    if (!cookieConsent) {
-      // Wait a short time before showing the banner for better UX
-      const timer = setTimeout(() => {
-        setOpen(true);
-      }, 1000);
-      return () => clearTimeout(timer);
+    setIsMounted(true);
+
+    // Check if user has already made a cookie choice - with error handling
+    try {
+      const cookieConsent = localStorage.getItem('cookieConsent');
+      if (!cookieConsent) {
+        // Wait a short time before showing the banner for better UX
+        const timer = setTimeout(() => {
+          setOpen(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    } catch (error) {
+      console.error('Error accessing localStorage:', error);
+      // Don't show banner if localStorage access fails
     }
   }, []);
 
   const handleAcceptAll = () => {
-    localStorage.setItem('cookieConsent', 'all');
-    setPreferences({
-      essential: true,
-      functional: true,
-      analytics: true,
-      marketing: true,
-    });
-    setOpen(false);
-    // Here you would enable all your cookie-setting scripts
+    try {
+      localStorage.setItem('cookieConsent', 'all');
+      setPreferences({
+        essential: true,
+        functional: true,
+        analytics: true,
+        marketing: true,
+      });
+      setOpen(false);
+      // Here you would enable all your cookie-setting scripts
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
   };
 
   const handleAcceptSelected = () => {
-    localStorage.setItem('cookieConsent', JSON.stringify(preferences));
-    setOpen(false);
-    setShowPreferences(false);
-    // Here you would enable only the cookie types that were selected
+    try {
+      localStorage.setItem('cookieConsent', JSON.stringify(preferences));
+      setOpen(false);
+      setShowPreferences(false);
+      // Here you would enable only the cookie types that were selected
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
   };
 
   const handleRejectAll = () => {
-    localStorage.setItem('cookieConsent', 'essential');
-    setPreferences({
-      essential: true,
-      functional: false,
-      analytics: false,
-      marketing: false,
-    });
-    setOpen(false);
-    // Here you would disable all non-essential cookies
+    try {
+      localStorage.setItem('cookieConsent', 'essential');
+      setPreferences({
+        essential: true,
+        functional: false,
+        analytics: false,
+        marketing: false,
+      });
+      setOpen(false);
+      // Here you would disable all non-essential cookies
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
   };
 
   const handlePreferenceChange = (event) => {
@@ -80,174 +84,155 @@ const CookieBanner = () => {
     });
   };
 
-  if (!open) return null;
+  // Don't render anything during SSR or if banner shouldn't be shown
+  if (!isMounted || !open) return null;
 
   return (
-    <Paper
-      elevation={3}
-      sx={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 99999, // Increased z-index to ensure it's above Crisp chat
-        p: 3,
-        borderRadius: { xs: 0 },
-        boxShadow: '0 -4px 10px rgba(0,0,0,0.1)',
-        width: '100%',
-      }}
+    <div
+      className="fixed bottom-0 left-0 right-0 z-[99999] w-full rounded-none bg-white p-6 shadow-[0_-4px_10px_rgba(0,0,0,0.1)] sm:rounded-t-lg"
     >
       {!showPreferences ? (
         <>
-          <Typography variant="h6" gutterBottom>
+          <h6 className="mb-2 text-lg font-medium">
             We Value Your Privacy
-          </Typography>
-          <Typography variant="body2" sx={{ mb: 2 }}>
+          </h6>
+          <p className="mb-4 text-sm text-gray-700">
             We use cookies to enhance your browsing experience, serve personalized ads or content, and analyze our traffic. By clicking "Accept All", you consent to our use of cookies. Read our{' '}
-            <Link component={NextLink} href="/cookies">
+            <NextLink href="/cookies" className="text-primary-main hover:underline">
               Cookie Policy
-            </Link>{' '}
+            </NextLink>{' '}
             to learn more.
-          </Typography>
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={2}
-            justifyContent="center"
+          </p>
+          <div
+            className="flex flex-col justify-center gap-2 sm:flex-row"
           >
-            <Button
-              variant="outlined"
-              color="primary"
+            <button
+              className="rounded-md border border-primary-main bg-transparent px-4 py-2 text-sm font-medium text-primary-main hover:bg-primary-main/5"
               onClick={() => setShowPreferences(true)}
             >
               Cookie Settings
-            </Button>
-            <Button 
-              variant="outlined" 
-              color="primary" 
+            </button>
+            <button 
+              className="rounded-md border border-primary-main bg-transparent px-4 py-2 text-sm font-medium text-primary-main hover:bg-primary-main/5"
               onClick={handleRejectAll}
             >
               Reject All
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
+            </button>
+            <button
+              className="rounded-md bg-primary-main px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
               onClick={handleAcceptAll}
             >
               Accept All
-            </Button>
-          </Stack>
+            </button>
+          </div>
         </>
       ) : (
         <>
-          <Typography variant="h6" gutterBottom>
+          <h6 className="mb-2 text-lg font-medium">
             Cookie Preferences
-          </Typography>
-          <Divider sx={{ my: 2 }} />
+          </h6>
+          <div className="my-4 border-t border-gray-200" />
           
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Checkbox 
-                  checked={preferences.essential} 
-                  disabled={true}  // Essential cookies cannot be disabled
+          <div className="space-y-4">
+            <div className="flex items-start">
+              <div className="mr-2 flex h-5 items-center">
+                <input
+                  type="checkbox"
+                  checked={preferences.essential}
+                  disabled={true}
+                  className="h-4 w-4 rounded border-gray-300 text-primary-main focus:ring-primary-main disabled:cursor-not-allowed disabled:opacity-50"
                 />
-              }
-              label={
-                <Box>
-                  <Typography variant="subtitle2">Essential (Required)</Typography>
-                  <Typography variant="caption" display="block" color="text.secondary">
-                    These cookies are necessary for the website to function and cannot be switched off.
-                  </Typography>
-                </Box>
-              }
-            />
+              </div>
+              <div className="min-w-0 flex-1 text-sm">
+                <label className="font-medium text-gray-700">Essential (Required)</label>
+                <p className="text-xs text-gray-500">
+                  These cookies are necessary for the website to function and cannot be switched off.
+                </p>
+              </div>
+            </div>
             
-            <FormControlLabel
-              control={
-                <Checkbox 
-                  checked={preferences.functional} 
-                  onChange={handlePreferenceChange} 
-                  name="functional" 
+            <div className="flex items-start">
+              <div className="mr-2 flex h-5 items-center">
+                <input
+                  type="checkbox"
+                  checked={preferences.functional}
+                  onChange={handlePreferenceChange}
+                  name="functional"
+                  className="h-4 w-4 rounded border-gray-300 text-primary-main focus:ring-primary-main"
                 />
-              }
-              label={
-                <Box>
-                  <Typography variant="subtitle2">Functional</Typography>
-                  <Typography variant="caption" display="block" color="text.secondary">
-                    These cookies enable personalized features and functionality.
-                  </Typography>
-                </Box>
-              }
-            />
+              </div>
+              <div className="min-w-0 flex-1 text-sm">
+                <label className="font-medium text-gray-700">Functional</label>
+                <p className="text-xs text-gray-500">
+                  These cookies enable personalized features and functionality.
+                </p>
+              </div>
+            </div>
             
-            <FormControlLabel
-              control={
-                <Checkbox 
-                  checked={preferences.analytics} 
-                  onChange={handlePreferenceChange} 
-                  name="analytics" 
+            <div className="flex items-start">
+              <div className="mr-2 flex h-5 items-center">
+                <input
+                  type="checkbox"
+                  checked={preferences.analytics}
+                  onChange={handlePreferenceChange}
+                  name="analytics"
+                  className="h-4 w-4 rounded border-gray-300 text-primary-main focus:ring-primary-main"
                 />
-              }
-              label={
-                <Box>
-                  <Typography variant="subtitle2">Analytics</Typography>
-                  <Typography variant="caption" display="block" color="text.secondary">
-                    These cookies help us understand how visitors interact with our website.
-                  </Typography>
-                </Box>
-              }
-            />
+              </div>
+              <div className="min-w-0 flex-1 text-sm">
+                <label className="font-medium text-gray-700">Analytics</label>
+                <p className="text-xs text-gray-500">
+                  These cookies help us understand how visitors interact with our website.
+                </p>
+              </div>
+            </div>
             
-            <FormControlLabel
-              control={
-                <Checkbox 
-                  checked={preferences.marketing} 
-                  onChange={handlePreferenceChange} 
-                  name="marketing" 
+            <div className="flex items-start">
+              <div className="mr-2 flex h-5 items-center">
+                <input
+                  type="checkbox"
+                  checked={preferences.marketing}
+                  onChange={handlePreferenceChange}
+                  name="marketing"
+                  className="h-4 w-4 rounded border-gray-300 text-primary-main focus:ring-primary-main"
                 />
-              }
-              label={
-                <Box>
-                  <Typography variant="subtitle2">Marketing</Typography>
-                  <Typography variant="caption" display="block" color="text.secondary">
-                    These cookies are used to track visitors across websites to display relevant advertisements.
-                  </Typography>
-                </Box>
-              }
-            />
-          </FormGroup>
+              </div>
+              <div className="min-w-0 flex-1 text-sm">
+                <label className="font-medium text-gray-700">Marketing</label>
+                <p className="text-xs text-gray-500">
+                  These cookies are used to track visitors across websites to display relevant advertisements.
+                </p>
+              </div>
+            </div>
+          </div>
           
-          <Divider sx={{ my: 2 }} />
+          <div className="my-4 border-t border-gray-200" />
           
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={2}
-            justifyContent="center"
+          <div
+            className="flex flex-col justify-center gap-2 sm:flex-row"
           >
-            <Button
-              variant="outlined"
+            <button
+              className="rounded-md border border-gray-300 bg-transparent px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
               onClick={() => setShowPreferences(false)}
             >
               Back
-            </Button>
-            <Button
-              variant="outlined"
-              color="primary"
+            </button>
+            <button
+              className="rounded-md border border-primary-main bg-transparent px-4 py-2 text-sm font-medium text-primary-main hover:bg-primary-main/5"
               onClick={handleRejectAll}
             >
               Reject All
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
+            </button>
+            <button
+              className="rounded-md bg-primary-main px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
               onClick={handleAcceptSelected}
             >
               Save Preferences
-            </Button>
-          </Stack>
+            </button>
+          </div>
         </>
       )}
-    </Paper>
+    </div>
   );
 };
 

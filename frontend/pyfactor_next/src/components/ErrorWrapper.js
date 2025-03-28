@@ -1,14 +1,13 @@
 import React from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { Alert, Box } from '@mui/material';
 
 function ErrorFallback({ error }) {
   return (
-    <Box sx={{ p: 3 }}>
-      <Alert severity="error">
+    <div className="p-6">
+      <div className="bg-error-light/10 border-l-4 border-error-main text-error-dark p-4 rounded-r">
         {error.message || 'An unexpected error occurred'}
-      </Alert>
-    </Box>
+      </div>
+    </div>
   );
 }
 

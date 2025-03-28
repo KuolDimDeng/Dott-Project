@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, CircularProgress, Box } from '@mui/material';
 import { logger } from '@/utils/logger';
 import { useLandingPageStatus } from '@/hooks/useLandingPageStatus';
 import { ONBOARDING_STATES } from '@/utils/userAttributes';
@@ -11,44 +10,37 @@ import { fetchAuthSession } from 'aws-amplify/auth';
 const BUTTON_CONFIGS = {
   [ONBOARDING_STATES.NOT_STARTED]: {
     text: 'Get Started',
-    variant: 'contained',
-    color: 'primary',
+    variant: 'primary',
     route: '/onboarding/business-info'
   },
   [ONBOARDING_STATES.BUSINESS_INFO]: {
     text: 'Continue Setup',
-    variant: 'contained',
-    color: 'primary',
+    variant: 'primary',
     route: '/onboarding/subscription'
   },
   [ONBOARDING_STATES.SUBSCRIPTION]: {
     text: 'Continue Setup',
-    variant: 'contained',
-    color: 'primary',
+    variant: 'primary',
     route: '/onboarding/payment'
   },
   [ONBOARDING_STATES.PAYMENT]: {
     text: 'Complete Setup',
-    variant: 'contained',
-    color: 'primary',
+    variant: 'primary',
     route: '/onboarding/setup'
   },
   [ONBOARDING_STATES.SETUP]: {
     text: 'Finish Setup',
-    variant: 'contained',
-    color: 'primary',
+    variant: 'primary',
     route: '/onboarding/complete'
   },
   [ONBOARDING_STATES.COMPLETE]: {
     text: 'Go to Dashboard',
-    variant: 'contained',
-    color: 'primary',
+    variant: 'primary',
     route: '/dashboard'
   },
   DEFAULT: {
     text: 'Sign In',
-    variant: 'contained',
-    color: 'primary',
+    variant: 'primary',
     route: '/auth/signin'
   }
 };
@@ -165,48 +157,35 @@ export default function LandingButton() {
 
   if (isLoading) {
     return (
-      <Button
+      <button
         disabled
-        variant="contained"
-        color="primary"
-        size="large"
-        sx={{ minWidth: 200 }}
+        className="min-w-[200px] rounded-md bg-primary-main px-6 py-3 text-base font-medium text-white opacity-70"
       >
-        <CircularProgress size={24} color="inherit" />
-      </Button>
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+      </button>
     );
   }
 
   return (
-    <Button
+    <button
       disabled={loading && !retrying} // Allow clicks during retry
-      variant={buttonConfig.variant}
-      color={buttonConfig.color}
+      className={`min-w-[200px] relative rounded-md px-6 py-3 text-base font-medium ${
+        buttonConfig.variant === 'primary' 
+          ? 'bg-primary-main text-white hover:bg-primary-dark' 
+          : 'border border-primary-main bg-transparent text-primary-main hover:bg-primary-main/5'
+      } ${(loading && !retrying) ? 'opacity-70 cursor-not-allowed' : ''}`}
       onClick={handleButtonClick}
-      size="large"
-      sx={{ 
-        minWidth: 200,
-        position: 'relative'
-      }}
     >
       {loading ? (
         <>
-          {retrying ? 'Retrying...' : 'Loading...'}
-          <CircularProgress
-            size={24}
-            color="inherit"
-            sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              marginTop: '-12px',
-              marginLeft: '-12px',
-            }}
+          <span>{retrying ? 'Retrying...' : 'Loading...'}</span>
+          <div
+            className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 animate-spin rounded-full border-2 border-white border-t-transparent"
           />
         </>
       ) : (
         buttonConfig.text
       )}
-    </Button>
+    </button>
   );
 }

@@ -1,6 +1,7 @@
 // src/components/ErrorStep/ErrorStep.js
+'use client';
+
 import React from 'react';
-import { Box, Typography, Button, Alert, CircularProgress } from '@mui/material';
 import { logger } from '@/utils/logger';
 
 export function ErrorStep({ error, stepNumber, onRetry, isRetrying = false, message }) {
@@ -12,46 +13,38 @@ export function ErrorStep({ error, stepNumber, onRetry, isRetrying = false, mess
   }, [error, stepNumber]);
 
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      minHeight="100vh"
-      p={3}
-      gap={2}
+    <div
+      className="flex min-h-screen flex-col items-center justify-center gap-4 p-6"
     >
-      <Alert
-        severity="error"
-        action={
-          <Button
-            color="inherit"
-            size="small"
+      <div
+        className="w-full max-w-[500px] rounded-md bg-error-main/10 p-4 text-error-dark border-l-4 border-error-main"
+        role="alert"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <h6 className="mb-1 text-sm font-medium">
+              {message || `Error in Step ${stepNumber}`}
+            </h6>
+            {error?.message && (
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                {error.message}
+              </p>
+            )}
+          </div>
+          
+          <button
             onClick={onRetry}
             disabled={isRetrying}
-            startIcon={isRetrying && <CircularProgress size={16} />}
+            className="ml-4 inline-flex items-center rounded-md bg-error-main/10 px-3 py-1 text-xs font-medium text-error-main hover:bg-error-main/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
+            {isRetrying && (
+              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-error-main/20 border-t-error-main"></div>
+            )}
             {isRetrying ? 'Retrying...' : 'Retry'}
-          </Button>
-        }
-        sx={{
-          maxWidth: 500,
-          width: '100%',
-          '& .MuiAlert-message': {
-            width: '100%',
-          },
-        }}
-      >
-        <Typography variant="subtitle2" gutterBottom>
-          {message || `Error in Step ${stepNumber}`}
-        </Typography>
-        {error?.message && (
-          <Typography variant="body2" color="textSecondary">
-            {error.message}
-          </Typography>
-        )}
-      </Alert>
-    </Box>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

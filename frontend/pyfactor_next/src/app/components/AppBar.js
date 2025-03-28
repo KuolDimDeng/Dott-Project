@@ -1,23 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { 
-  Box, 
-  Button, 
-  Stack, 
-  Menu, 
-  MenuItem, 
-  Typography,
-  TextField,
-  InputAdornment,
-  Divider,
-  List,
-  ListSubheader
-} from '@mui/material';
-import LanguageIcon from '@mui/icons-material/Language';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import SearchIcon from '@mui/icons-material/Search';
+import { LanguageIcon, KeyboardArrowDownIcon, SearchIcon } from '@/app/components/icons';
 import AuthButton from '@/components/AuthButton';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
@@ -92,9 +77,10 @@ const regionNames = {
 export default function AppBar() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState(allLanguages.find(lang => lang.code === 'en')); // Default to English
   const [searchQuery, setSearchQuery] = useState('');
+  const menuRef = useRef(null);
 
   // Function to detect user's language from browser or geolocation
   useEffect(() => {
@@ -140,8 +126,6 @@ export default function AppBar() {
       }
     };
 
-    // Use the dispatchCurrencyEvent function defined outside the hook
-
     detectUserLanguage();
     
     // Listen for language changes from other components
@@ -159,13 +143,27 @@ export default function AppBar() {
     };
   }, [currentLanguage.code]);
 
-  const handleLanguageMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
+  useEffect(() => {
+    // Click outside to close menu
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleLanguageMenuOpen = () => {
+    setIsMenuOpen(true);
     setSearchQuery('');
   };
 
   const handleLanguageMenuClose = () => {
-    setAnchorEl(null);
+    setIsMenuOpen(false);
   };
 
   // Helper function to dispatch currency change event
@@ -221,205 +219,140 @@ export default function AppBar() {
     : null;
 
   return (
-    <Box
-      component="nav"
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        px: { xs: 2, sm: 4 },
-        py: 1,
-        backgroundColor: 'background.paper',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 1100,
-      }}
-    >
+    <nav className="flex items-center justify-between px-4 sm:px-8 py-2 bg-white shadow-md sticky top-0 left-0 right-0 z-50">
       {/* Logo */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          cursor: 'pointer',
-          height: 80,
-          width: 'auto',
-          justifyContent: 'center',
-          mr: 2,
-        }}
+      <div
+        className="flex items-center cursor-pointer"
         onClick={() => router.push('/')}
       >
         <Image
           src="/static/images/PyfactorLandingpage.png"
-          alt="Pyfactor Logo"
-          width={140}
-          height={120}
+          alt="Dott Logo"
+          width={150}
+          height={50}
           priority
-          style={{ objectFit: 'contain' }}
+          className="h-12 w-auto object-contain"
         />
-      </Box>
+      </div>
 
-      {/* Navigation Links */}
-      <Stack
-        direction="row"
-        spacing={2}
-        sx={{
-          display: { xs: 'none', md: 'flex' },
-          alignItems: 'center',
-          mx: 4,
-        }}
-      >
-        <Button
-          color="inherit"
-          onClick={() => router.push('/#features')}
+      {/* Navigation Links - Hidden on Mobile */}
+      <div className="hidden md:flex space-x-6 items-center">
+        <button 
+          className="px-3 py-2 text-gray-700 hover:text-primary-main font-medium transition-colors duration-150"
+          onClick={() => router.push('/features')}
         >
-          {t('features')}
-        </Button>
-        <Button
-          color="inherit"
-          onClick={() => router.push('/#pricing')}
+          {t('navFeatures', 'Features')}
+        </button>
+        <button 
+          className="px-3 py-2 text-gray-700 hover:text-primary-main font-medium transition-colors duration-150"
+          onClick={() => router.push('/pricing')}
         >
-          {t('pricing')}
-        </Button>
-        <Button
-          color="inherit"
-          onClick={() => router.push('/blog')}
+          {t('navPricing', 'Pricing')}
+        </button>
+        <button 
+          className="px-3 py-2 text-gray-700 hover:text-primary-main font-medium transition-colors duration-150"
+          onClick={() => router.push('/about')}
         >
-          Blog
-        </Button>
-        <Button
-          color="inherit"
-          onClick={() => router.push('/#contact')}
+          {t('navAbout', 'About')}
+        </button>
+        <button 
+          className="px-3 py-2 text-gray-700 hover:text-primary-main font-medium transition-colors duration-150"
+          onClick={() => router.push('/contact')}
         >
-          {t('contact')}
-        </Button>
-      </Stack>
+          {t('navContact', 'Contact')}
+        </button>
+      </div>
 
-      {/* Right Side Controls */}
-      <Stack direction="row" spacing={1} alignItems="center">
+      {/* Right Section */}
+      <div className="flex items-center space-x-4">
         {/* Language Selector */}
-        <Box>
-          <Button
-            color="inherit"
+        <div className="relative" ref={menuRef}>
+          <button
+            className="flex items-center justify-center space-x-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors duration-150"
             onClick={handleLanguageMenuOpen}
-            startIcon={<LanguageIcon />}
-            endIcon={<KeyboardArrowDownIcon />}
-            sx={{
-              minWidth: { xs: 'auto', sm: '120px' },
-              ml: { xs: 0, sm: 1 },
-              textTransform: 'none',
-            }}
           >
-            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-              {currentLanguage.name}
-            </Box>
-          </Button>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleLanguageMenuClose}
-            PaperProps={{
-              elevation: 3,
-              sx: { 
-                maxHeight: 400,
-                width: 280
-              }
-            }}
-          >
-            {/* Search box */}
-            <Box sx={{ p: 2, pb: 1 }}>
-              <TextField
-                fullWidth
-                placeholder={t('searchLanguages', 'Search languages...')}
-                size="small"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Box>
-            <Divider />
-
-            {/* Display search results or categorized list */}
-            {filteredLanguages ? (
-              // Search results
-              <List sx={{ pt: 0, pb: 1 }}>
-                <ListSubheader sx={{ bgcolor: 'background.paper' }}>
-                  Search Results
-                </ListSubheader>
-                {filteredLanguages.length > 0 ? (
-                  filteredLanguages.map((language) => (
-                    <MenuItem 
-                      key={language.code} 
-                      onClick={() => handleLanguageChange(language)}
-                      selected={currentLanguage.code === language.code}
-                      sx={{
-                        py: 1,
-                        '&.Mui-selected': {
-                          backgroundColor: 'rgba(3, 169, 244, 0.1)',
-                        },
-                        '&.Mui-selected:hover': {
-                          backgroundColor: 'rgba(3, 169, 244, 0.15)',
-                        },
-                      }}
-                    >
-                      <Typography variant="body2">
-                        {language.name}
-                      </Typography>
-                    </MenuItem>
-                  ))
+            <LanguageIcon className="h-4 w-4 text-primary-main" />
+            <span className="hidden sm:inline-block">
+              {currentLanguage?.name || 'English'}
+            </span>
+            <KeyboardArrowDownIcon className="h-3.5 w-3.5" />
+          </button>
+          
+          {isMenuOpen && (
+            <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl overflow-hidden z-50 border border-gray-100">
+              <div className="p-3">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <SearchIcon className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-light focus:border-primary-light text-sm"
+                    placeholder={t('languageSearch', 'Search languages...')}
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                  />
+                </div>
+              </div>
+              
+              <div className="max-h-64 overflow-y-auto p-2">
+                {filteredLanguages ? (
+                  // Show search results
+                  <>
+                    {filteredLanguages.length > 0 ? (
+                      filteredLanguages.map((lang) => (
+                        <button
+                          key={lang.code}
+                          className={`flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-50 rounded-md ${
+                            currentLanguage.code === lang.code 
+                              ? 'bg-primary-light/10 text-primary-main font-medium' 
+                              : 'text-gray-700'
+                          }`}
+                          onClick={() => handleLanguageChange(lang)}
+                        >
+                          {lang.name}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-sm text-gray-500">
+                        {t('noLanguageResults', 'No languages found')}
+                      </div>
+                    )}
+                  </>
                 ) : (
-                  <Box sx={{ p: 2, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      No languages found
-                    </Typography>
-                  </Box>
+                  // Show languages by region
+                  Object.entries(languagesByRegion).map(([region, languages]) => (
+                    <div key={region} className="mb-3">
+                      <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        {regionNames[region]}
+                      </div>
+                      <div className="mt-1">
+                        {languages.map((lang) => (
+                          <button
+                            key={lang.code}
+                            className={`flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-50 rounded-md ${
+                              currentLanguage.code === lang.code 
+                                ? 'bg-primary-light/10 text-primary-main font-medium' 
+                                : 'text-gray-700'
+                            }`}
+                            onClick={() => handleLanguageChange(lang)}
+                          >
+                            {lang.name}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="mx-3 my-1 border-t border-gray-100"></div>
+                    </div>
+                  ))
                 )}
-              </List>
-            ) : (
-              // Categorized list
-              Object.entries(languagesByRegion).map(([region, languages]) => (
-                <List key={region} sx={{ pt: 0, pb: 1 }}>
-                  <ListSubheader sx={{ bgcolor: 'background.paper' }}>
-                    {regionNames[region]}
-                  </ListSubheader>
-                  {languages.map((language) => (
-                    <MenuItem 
-                      key={language.code} 
-                      onClick={() => handleLanguageChange(language)}
-                      selected={currentLanguage.code === language.code}
-                      sx={{
-                        py: 1,
-                        '&.Mui-selected': {
-                          backgroundColor: 'rgba(3, 169, 244, 0.1)',
-                        },
-                        '&.Mui-selected:hover': {
-                          backgroundColor: 'rgba(3, 169, 244, 0.15)',
-                        },
-                      }}
-                    >
-                      <Typography variant="body2">
-                        {language.name}
-                      </Typography>
-                    </MenuItem>
-                  ))}
-                </List>
-              ))
-            )}
-          </Menu>
-        </Box>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Auth Button */}
-        <AuthButton />
-      </Stack>
-    </Box>
+        <AuthButton variant="primary" size="medium" />
+      </div>
+    </nav>
   );
 }

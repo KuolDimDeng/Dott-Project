@@ -3,7 +3,6 @@
 
 import React, { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { useStore } from '@/store/authStore';
-import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
 import { Box, Container, Typography, CircularProgress } from '@/components/ui/TailwindComponents';
 import AppBar from './components/AppBar';
 import Drawer from './components/Drawer';
@@ -26,27 +25,6 @@ const RenderMainContent = lazy(() =>
 
 // Create an empty loading component (removed spinner)
 const LoadingComponent = () => null;
-
-const theme = createTheme({
-  palette: {
-    primary: { main: '#0a3977' }, // Navy blue color
-    secondary: { main: '#1a5bc0' }, // Standard blue color
-    background: {
-      default: '#ffffff', // Pure white background
-      paper: '#ffffff',   // White paper elements
-    },
-    divider: 'rgba(0, 0, 0, 0.12)', // Standardized divider color
-  },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        body: {
-          backgroundColor: '#ffffff', // Ensure body background is also white
-        },
-      },
-    },
-  },
-});
 
 function DashboardContent({ setupStatus, customContent }) {
   // Use a single state object for UI visibility flags to reduce memory overhead
@@ -96,6 +74,9 @@ function DashboardContent({ setupStatus, customContent }) {
     // User menu options visibility
     showMyAccount: false,
     showHelpCenter: false,
+    
+    // Create menu visibility
+    showCreateMenu: false,
   });
   
   // Destructure state for easier access
@@ -105,7 +86,8 @@ function DashboardContent({ setupStatus, customContent }) {
     selectedInvoice, selectedCustomerId, selectedAnalysis, selectedSettingsOption,
     products, services, showKPIDashboard, showMainDashboard, showHome,
     showInventoryItems, showInventoryManagement, showForm, formOption,
-    showHRDashboard, showEmployeeManagement, hrSection, showMyAccount, showHelpCenter
+    showHRDashboard, showEmployeeManagement, hrSection, showMyAccount, showHelpCenter,
+    showCreateMenu
   } = uiState;
   
   // Computed values
@@ -131,6 +113,7 @@ function DashboardContent({ setupStatus, customContent }) {
   const setShowMyAccount = useCallback((value) => updateState({ showMyAccount: value }), [updateState]);
   const setShowHelpCenter = useCallback((value) => updateState({ showHelpCenter: value }), [updateState]);
   const setSelectedSettingsOption = useCallback((value) => updateState({ selectedSettingsOption: value }), [updateState]);
+  const setShowCreateMenu = useCallback((value) => updateState({ showCreateMenu: value }), [updateState]);
   
   const router = useRouter();
 
@@ -153,6 +136,7 @@ function DashboardContent({ setupStatus, customContent }) {
       hrSection: 'dashboard',
       showMyAccount: false,
       showHelpCenter: false,
+      showCreateMenu: false,
     };
     
     updateState(resetState);
@@ -294,7 +278,17 @@ function DashboardContent({ setupStatus, customContent }) {
   }, [router, setUserData, setShowHome]);
 
   const handleDrawerToggle = useCallback(() => {
-    setDrawerOpen(!drawerOpen);
+    // Explicitly set to the opposite of current state for clarity
+    const newDrawerState = !drawerOpen;
+    setDrawerOpen(newDrawerState);
+    
+    // Log for debugging
+    console.log('Drawer toggled: ', newDrawerState ? 'opened' : 'closed');
+    
+    // Force a window resize event to ensure content reflows properly
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 300); // Wait for the animation to complete
   }, [drawerOpen, setDrawerOpen]);
 
   const handleMainDashboardClick = useCallback(() => {
@@ -555,6 +549,15 @@ function DashboardContent({ setupStatus, customContent }) {
     console.log('Help Center clicked');
   }, [resetAllStates, setShowHelpCenter]);
 
+  // Add function to handle create menu visibility
+  const handleShowCreateMenu = () => {
+    setUiState(prev => ({ ...prev, showCreateMenu: true }));
+  };
+
+  const handleCloseCreateMenu = () => {
+    setUiState(prev => ({ ...prev, showCreateMenu: false }));
+  };
+
   // Load user data on mount with auth check
   useEffect(() => {
     let isMounted = true;
@@ -647,115 +650,258 @@ function DashboardContent({ setupStatus, customContent }) {
 
   return (
     <ErrorBoundary>
-      <ThemeProvider theme={theme}>
-        <Box sx={{ display: 'flex', width: '100vw', overflow: 'hidden' }}>
-          <AppBar 
-            mainBackground="#ffffff"
-            textAppColor="#0a3977"
-            drawerOpen={drawerOpen}
-            handleDrawerToggle={handleDrawerToggle}
-            userData={userData}
-            anchorEl={anchorEl}
-            openMenu={openMenu}
-            handleClick={setAnchorEl}
-            handleClose={() => setAnchorEl(null)}
-            settingsAnchorEl={settingsAnchorEl}
-            settingsMenuOpen={settingsMenuOpen}
-            handleSettingsClick={handleSettingsClick}
-            handleSettingsClose={() => setSettingsAnchorEl(null)}
-            handleHomeClick={handleHomeClick}
-            handleLogout={handleSignOut}
-            handleUserProfileClick={handleMyAccountClick}
-            handleHelpClick={handleHelpCenterClick}
-          />
+      <div className="flex w-screen overflow-hidden">
+        <AppBar 
+          mainBackground="#ffffff"
+          textAppColor="#0a3977"
+          drawerOpen={drawerOpen}
+          handleDrawerToggle={handleDrawerToggle}
+          userData={userData}
+          anchorEl={anchorEl}
+          openMenu={openMenu}
+          handleClick={setAnchorEl}
+          handleClose={() => setAnchorEl(null)}
+          settingsAnchorEl={settingsAnchorEl}
+          settingsMenuOpen={settingsMenuOpen}
+          handleSettingsClick={handleSettingsClick}
+          handleSettingsClose={() => setSettingsAnchorEl(null)}
+          handleHomeClick={handleHomeClick}
+          handleLogout={handleSignOut}
+          handleUserProfileClick={handleMyAccountClick}
+          handleHelpClick={handleHelpCenterClick}
+        />
+        
+        <Drawer
+          drawerOpen={drawerOpen}
+          handleDrawerToggle={handleDrawerToggle}
+          handleMainDashboardClick={handleMainDashboardClick}
+          handleKPIDashboardClick={handleKPIDashboardClick}
+          handleHomeClick={handleHomeClick}
+          handleShowInvoiceBuilder={() => {}}
+          handleCloseInvoiceBuilder={() => {}}
+          handleShowCreateOptions={handleShowCreateOptions}
+          handleShowTransactionForm={() => {}}
+          handleReportClick={() => {}}
+          handleBankingClick={() => {}}
+          handleHRClick={handleHRClick}
+          handlePayrollClick={() => {}}
+          handleAnalysisClick={handleAnalysisClick}
+          showCustomerList={false}
+          setShowCustomerList={() => {}}
+          handleCreateCustomer={() => {}}
+          handleSalesClick={handleSalesClick}
+          handleDashboardClick={handleMainDashboardClick}
+          handlePurchasesClick={() => {}}
+          handleAccountingClick={() => {}}
+          handleInventoryClick={handleInventoryClick}
+          handleCRMClick={handleCRMClick}
+          handleShowCreateMenu={handleShowCreateMenu}
+        />
+        
+        <main 
+          className={`
+            ${drawerOpen 
+              ? 'sm:ml-[260px] ml-0' // When drawer is open 
+              : 'ml-[60px]' // When drawer is in icon-only mode (60px on all screen sizes)
+            } 
+            ${drawerOpen 
+              ? 'sm:w-[calc(100%-260px)] w-full' // When drawer is open
+              : 'w-[calc(100%-60px)]' // When drawer is in icon-only mode (adjust for the 60px icon bar on all screens)
+            }
+            transition-all duration-300 ease-in-out
+            p-4 sm:p-6 pt-20 sm:pt-[86px]
+            h-screen overflow-auto
+            flex flex-col justify-start
+            max-w-screen box-border
+            overflow-x-hidden
+            bg-white
+            relative
+          `}
+        >
+          {/* Create New Popup directly in the main content area */}
+          {showCreateMenu && (
+            <>
+              {/* Add a visual indicator connecting to the button */}
+              <div 
+                className="fixed z-50 w-3 h-3 bg-white rotate-45 border-l border-t border-blue-500"
+                style={{ 
+                  top: '123px',
+                  left: drawerOpen ? '277px' : '77px',
+                }}
+              />
+              
+              <div className="fixed z-50 bg-white rounded-xl shadow-2xl border border-blue-500 p-5 animate-fadeIn"
+                style={{ 
+                  top: '112px', /* Position at same level as Create New button */
+                  left: drawerOpen ? '280px' : '80px', /* Position to the right of the sidebar */
+                  width: '320px',
+                  maxHeight: '80vh',
+                  overflow: 'auto'
+                }}
+              >
+                <div className="flex justify-between items-center mb-4 border-b pb-3">
+                  <h3 className="text-xl font-semibold text-primary-main flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Create New
+                  </h3>
+                  <button 
+                    onClick={handleCloseCreateMenu}
+                    className="text-gray-400 hover:text-gray-700 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Transaction */}
+                  <button
+                    className="flex flex-col items-center justify-center p-4 rounded-lg bg-blue-50 hover:bg-blue-100 text-primary-main transition-all hover:shadow-md"
+                    onClick={() => {
+                      handleShowCreateOptions('Transaction');
+                      handleCloseCreateMenu();
+                    }}
+                  >
+                    <svg className="w-7 h-7 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span className="text-sm font-medium">Transaction</span>
+                  </button>
+                  
+                  {/* Product */}
+                  <button
+                    className="flex flex-col items-center justify-center p-4 rounded-lg bg-blue-50 hover:bg-blue-100 text-primary-main transition-all hover:shadow-md"
+                    onClick={() => {
+                      handleShowCreateOptions('Product');
+                      handleCloseCreateMenu();
+                    }}
+                  >
+                    <svg className="w-7 h-7 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    <span className="text-sm font-medium">Product</span>
+                  </button>
+                  
+                  {/* Service */}
+                  <button
+                    className="flex flex-col items-center justify-center p-4 rounded-lg bg-blue-50 hover:bg-blue-100 text-primary-main transition-all hover:shadow-md"
+                    onClick={() => {
+                      handleShowCreateOptions('Service');
+                      handleCloseCreateMenu();
+                    }}
+                  >
+                    <svg className="w-7 h-7 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="text-sm font-medium">Service</span>
+                  </button>
+                  
+                  {/* Invoice */}
+                  <button
+                    className="flex flex-col items-center justify-center p-4 rounded-lg bg-blue-50 hover:bg-blue-100 text-primary-main transition-all hover:shadow-md"
+                    onClick={() => {
+                      handleShowCreateOptions('Invoice');
+                      handleCloseCreateMenu();
+                    }}
+                  >
+                    <svg className="w-7 h-7 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-sm font-medium">Invoice</span>
+                  </button>
+                  
+                  {/* Bill */}
+                  <button
+                    className="flex flex-col items-center justify-center p-4 rounded-lg bg-blue-50 hover:bg-blue-100 text-primary-main transition-all hover:shadow-md"
+                    onClick={() => {
+                      handleShowCreateOptions('Bill');
+                      handleCloseCreateMenu();
+                    }}
+                  >
+                    <svg className="w-7 h-7 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span className="text-sm font-medium">Bill</span>
+                  </button>
+                  
+                  {/* Estimate */}
+                  <button
+                    className="flex flex-col items-center justify-center p-4 rounded-lg bg-blue-50 hover:bg-blue-100 text-primary-main transition-all hover:shadow-md"
+                    onClick={() => {
+                      handleShowCreateOptions('Estimate');
+                      handleCloseCreateMenu();
+                    }}
+                  >
+                    <svg className="w-7 h-7 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="text-sm font-medium">Estimate</span>
+                  </button>
+                  
+                  {/* Customer */}
+                  <button
+                    className="flex flex-col items-center justify-center p-4 rounded-lg bg-blue-50 hover:bg-blue-100 text-primary-main transition-all hover:shadow-md"
+                    onClick={() => {
+                      handleShowCreateOptions('Customer');
+                      handleCloseCreateMenu();
+                    }}
+                  >
+                    <svg className="w-7 h-7 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span className="text-sm font-medium">Customer</span>
+                  </button>
+                  
+                  {/* Vendor */}
+                  <button
+                    className="flex flex-col items-center justify-center p-4 rounded-lg bg-blue-50 hover:bg-blue-100 text-primary-main transition-all hover:shadow-md"
+                    onClick={() => {
+                      handleShowCreateOptions('Vendor');
+                      handleCloseCreateMenu();
+                    }}
+                  >
+                    <svg className="w-7 h-7 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span className="text-sm font-medium">Vendor</span>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
           
-          <Drawer
-            drawerOpen={drawerOpen}
-            handleDrawerToggle={handleDrawerToggle}
-            handleMainDashboardClick={handleMainDashboardClick}
-            handleKPIDashboardClick={handleKPIDashboardClick}
-            handleHomeClick={handleHomeClick}
-            handleShowInvoiceBuilder={() => {}}
-            handleCloseInvoiceBuilder={() => {}}
-            handleShowCreateOptions={handleShowCreateOptions}
-            handleShowTransactionForm={() => {}}
-            handleReportClick={() => {}}
-            handleBankingClick={() => {}}
-            handleHRClick={handleHRClick}
-            handlePayrollClick={() => {}}
-            handleAnalysisClick={handleAnalysisClick}
-            showCustomerList={false}
-            setShowCustomerList={() => {}}
-            handleCreateCustomer={() => {}}
-            handleSalesClick={handleSalesClick}
-            handleDashboardClick={handleMainDashboardClick}
-            handlePurchasesClick={() => {}}
-            handleAccountingClick={() => {}}
-            handleInventoryClick={handleInventoryClick}
-            handleCRMClick={handleCRMClick}
-          />
-          
-          <Box
-            component="main"
-            sx={{
-              marginLeft: drawerOpen ? { xs: '0', sm: `${drawerWidth}px` } : '0px',
-              width: drawerOpen ? { xs: '100%', sm: `calc(100% - ${drawerWidth}px)` } : '100%',
-              transition: 'margin-left 0.3s ease, width 0.3s ease',
-              padding: { xs: '1rem', sm: '1.5rem' },
-              paddingTop: { xs: '80px', sm: '86px' },
-              height: '100vh',
-              overflow: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-start',
-              maxWidth: '100vw',
-              boxSizing: 'border-box',
-              overflowX: 'hidden',
-              backgroundColor: 'background.default', // Ensure consistent background color
-              position: 'relative',
-              // Remove any overlay/backdrop that might be causing the dark shade
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'transparent', // Ensure no overlay
-                zIndex: -1,
-              },
-            }}
-          >
-            <Suspense fallback={<LoadingComponent />}>
-              {customContent ? (
-                // Render the custom content that was passed as children
-                customContent
-              ) : (
-                view !== 'invoiceDetails' && view !== 'customerDetails' &&
-                view !== 'productList' && view !== 'serviceList' && RenderMainContent && (
-                  <RenderMainContent
-                    showKPIDashboard={showKPIDashboard}
-                    showMainDashboard={showMainDashboard}
-                    showHome={showHome}
-                    showInventoryItems={showInventoryItems}
-                    showInventoryManagement={showInventoryManagement}
-                    userData={userData}
-                    showHRDashboard={showHRDashboard}
-                    hrSection={hrSection}
-                    showEmployeeManagement={showEmployeeManagement}
-                    view={view}
-                    showMyAccount={showMyAccount}
-                    showHelpCenter={showHelpCenter}
-                    selectedSettingsOption={selectedSettingsOption}
-                    showCreateOptions={showForm}
-                    selectedOption={formOption}
-                  />
-                )
-              )}
-            </Suspense>
-          </Box>
-        </Box>
-      </ThemeProvider>
+          <Suspense fallback={<LoadingComponent />}>
+            {customContent ? (
+              // Render the custom content that was passed as children
+              customContent
+            ) : (
+              view !== 'invoiceDetails' && view !== 'customerDetails' &&
+              view !== 'productList' && view !== 'serviceList' && RenderMainContent && (
+                <RenderMainContent
+                  showKPIDashboard={showKPIDashboard}
+                  showMainDashboard={showMainDashboard}
+                  showHome={showHome}
+                  showInventoryItems={showInventoryItems}
+                  showInventoryManagement={showInventoryManagement}
+                  userData={userData}
+                  showHRDashboard={showHRDashboard}
+                  hrSection={hrSection}
+                  showEmployeeManagement={showEmployeeManagement}
+                  view={view}
+                  showMyAccount={showMyAccount}
+                  showHelpCenter={showHelpCenter}
+                  selectedSettingsOption={selectedSettingsOption}
+                  showCreateOptions={showForm}
+                  selectedOption={formOption}
+                />
+              )
+            )}
+          </Suspense>
+        </main>
+      </div>
     </ErrorBoundary>
   );
 }

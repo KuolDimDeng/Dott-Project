@@ -1,30 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Grid, 
-  Card, 
-  CardContent, 
-  CardHeader,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  CircularProgress,
-  Divider,
-  Button,
-  useTheme
-} from '@mui/material';
 import { useStore } from '@/store/authStore';
 import { logger } from '@/utils/logger';
 
 const CRMDashboard = () => {
-  const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
     customers: { total: 0, new30d: 0 },
@@ -186,9 +166,9 @@ const CRMDashboard = () => {
   
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center items-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-main"></div>
+      </div>
     );
   }
   
@@ -212,234 +192,216 @@ const CRMDashboard = () => {
   };
   
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" component="h1" sx={{ mb: 4, fontWeight: 'bold' }}>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
         CRM Dashboard
-      </Typography>
+      </h1>
       
       {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={2}>
-            <CardContent>
-              <Typography variant="h6" color="textSecondary">
-                Customers
-              </Typography>
-              <Typography variant="h3" component="div" sx={{ mt: 1 }}>
-                {dashboardData.customers.total}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                {dashboardData.customers.new30d} new in last 30 days
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Customers
+          </h3>
+          <p className="text-3xl font-semibold mt-2 text-gray-900 dark:text-white">
+            {dashboardData.customers.total}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {dashboardData.customers.new30d} new in last 30 days
+          </p>
+        </div>
         
-        <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={2}>
-            <CardContent>
-              <Typography variant="h6" color="textSecondary">
-                Leads
-              </Typography>
-              <Typography variant="h3" component="div" sx={{ mt: 1 }}>
-                {dashboardData.leads.total}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                {dashboardData.leads.new30d} new in last 30 days
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Leads
+          </h3>
+          <p className="text-3xl font-semibold mt-2 text-gray-900 dark:text-white">
+            {dashboardData.leads.total}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {dashboardData.leads.new30d} new in last 30 days
+          </p>
+        </div>
         
-        <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={2}>
-            <CardContent>
-              <Typography variant="h6" color="textSecondary">
-                Opportunities
-              </Typography>
-              <Typography variant="h3" component="div" sx={{ mt: 1 }}>
-                {dashboardData.opportunities.total}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Value: {formatCurrency(dashboardData.opportunities.totalValue)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Opportunities
+          </h3>
+          <p className="text-3xl font-semibold mt-2 text-gray-900 dark:text-white">
+            {dashboardData.opportunities.total}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Value: {formatCurrency(dashboardData.opportunities.totalValue)}
+          </p>
+        </div>
         
-        <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={2}>
-            <CardContent>
-              <Typography variant="h6" color="textSecondary">
-                Deals
-              </Typography>
-              <Typography variant="h3" component="div" sx={{ mt: 1 }}>
-                {dashboardData.deals.total}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Value: {formatCurrency(dashboardData.deals.totalValue)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Deals
+          </h3>
+          <p className="text-3xl font-semibold mt-2 text-gray-900 dark:text-white">
+            {dashboardData.deals.total}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Value: {formatCurrency(dashboardData.deals.totalValue)}
+          </p>
+        </div>
+      </div>
       
       {/* Activities Section */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={6}>
-          <Card elevation={2}>
-            <CardHeader 
-              title="Upcoming Activities" 
-              action={
-                <Button size="small" color="primary">View All</Button>
-              }
-            />
-            <Divider />
-            <CardContent>
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Type</TableCell>
-                      <TableCell>Subject</TableCell>
-                      <TableCell>Due Date</TableCell>
-                      <TableCell>Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {dashboardData.activities.upcoming.length > 0 ? (
-                      dashboardData.activities.upcoming.slice(0, 5).map((activity) => (
-                        <TableRow key={activity.id}>
-                          <TableCell>{activity.type}</TableCell>
-                          <TableCell>{activity.subject}</TableCell>
-                          <TableCell>{formatDate(activity.due_date)}</TableCell>
-                          <TableCell>{activity.status.replace('_', ' ')}</TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={4} align="center">No upcoming activities</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="px-5 py-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Upcoming Activities</h3>
+            <button className="text-sm text-primary-main hover:text-primary-dark font-medium">
+              View All
+            </button>
+          </div>
+          <div className="p-5">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Subject</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Due Date</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {dashboardData.activities.upcoming.length > 0 ? (
+                    dashboardData.activities.upcoming.slice(0, 5).map((activity) => (
+                      <tr key={activity.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{activity.type}</td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{activity.subject}</td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatDate(activity.due_date)}</td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{activity.status.replace('_', ' ')}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-2 text-center text-sm text-gray-500 dark:text-gray-400">No upcoming activities</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
         
-        <Grid item xs={12} md={6}>
-          <Card elevation={2}>
-            <CardHeader 
-              title="Overdue Activities" 
-              action={
-                <Button size="small" color="primary">View All</Button>
-              }
-            />
-            <Divider />
-            <CardContent>
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Type</TableCell>
-                      <TableCell>Subject</TableCell>
-                      <TableCell>Due Date</TableCell>
-                      <TableCell>Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {dashboardData.activities.overdue.length > 0 ? (
-                      dashboardData.activities.overdue.slice(0, 5).map((activity) => (
-                        <TableRow key={activity.id}>
-                          <TableCell>{activity.type}</TableCell>
-                          <TableCell>{activity.subject}</TableCell>
-                          <TableCell>{formatDate(activity.due_date)}</TableCell>
-                          <TableCell>{activity.status.replace('_', ' ')}</TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={4} align="center">No overdue activities</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="px-5 py-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Overdue Activities</h3>
+            <button className="text-sm text-primary-main hover:text-primary-dark font-medium">
+              View All
+            </button>
+          </div>
+          <div className="p-5">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Subject</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Due Date</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {dashboardData.activities.overdue.length > 0 ? (
+                    dashboardData.activities.overdue.slice(0, 5).map((activity) => (
+                      <tr key={activity.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{activity.type}</td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{activity.subject}</td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatDate(activity.due_date)}</td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{activity.status.replace('_', ' ')}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-2 text-center text-sm text-gray-500 dark:text-gray-400">No overdue activities</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
       
       {/* Leads and Opportunities */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Card elevation={2}>
-            <CardHeader 
-              title="Leads by Status" 
-              action={
-                <Button size="small" color="primary">View Leads</Button>
-              }
-            />
-            <Divider />
-            <CardContent>
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Status</TableCell>
-                      <TableCell align="right">Count</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {dashboardData.leads.byStatus.map((status) => (
-                      <TableRow key={status.status}>
-                        <TableCell>{status.status.replace('_', ' ')}</TableCell>
-                        <TableCell align="right">{status.count}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="px-5 py-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Leads by Status</h3>
+            <button className="text-sm text-primary-main hover:text-primary-dark font-medium">
+              View Leads
+            </button>
+          </div>
+          <div className="p-5">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Count</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {dashboardData.leads.byStatus.map((status) => (
+                    <tr key={status.status} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        {status.status.replace('_', ' ')}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
+                        {status.count}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
         
-        <Grid item xs={12} md={6}>
-          <Card elevation={2}>
-            <CardHeader 
-              title="Opportunities by Stage" 
-              action={
-                <Button size="small" color="primary">View Opportunities</Button>
-              }
-            />
-            <Divider />
-            <CardContent>
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Stage</TableCell>
-                      <TableCell align="right">Count</TableCell>
-                      <TableCell align="right">Value</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {dashboardData.opportunities.byStage.map((stage) => (
-                      <TableRow key={stage.stage}>
-                        <TableCell>{stage.stage.replace('_', ' ')}</TableCell>
-                        <TableCell align="right">{stage.count}</TableCell>
-                        <TableCell align="right">{formatCurrency(stage.value)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Box>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="px-5 py-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Opportunities by Stage</h3>
+            <button className="text-sm text-primary-main hover:text-primary-dark font-medium">
+              View Opportunities
+            </button>
+          </div>
+          <div className="p-5">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Stage</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Count</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Value</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {dashboardData.opportunities.byStage.map((stage) => (
+                    <tr key={stage.stage} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        {stage.stage.replace('_', ' ')}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
+                        {stage.count}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">
+                        {formatCurrency(stage.value)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

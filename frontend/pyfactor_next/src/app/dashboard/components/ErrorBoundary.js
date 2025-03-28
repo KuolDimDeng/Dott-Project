@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, Button, Alert } from '@mui/material';
 import { logger } from '@/utils/logger';
 
 class ErrorBoundary extends React.Component {
@@ -89,51 +88,39 @@ class ErrorBoundary extends React.Component {
       
       // Render fallback UI
       return (
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: '100vh',
-            p: 3,
-            textAlign: 'center'
-          }}
-        >
-          <Alert severity="error" sx={{ mb: 3, maxWidth: 600 }}>
+        <div className="flex flex-col justify-center items-center min-h-screen p-6 text-center">
+          <div className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 p-4 rounded-md mb-6 max-w-xl">
             Something went wrong while loading the dashboard.
-          </Alert>
+          </div>
           
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 600 }}>
+          <p className="mb-6 text-gray-600 dark:text-gray-400 max-w-xl">
             {this.state.error?.message || 'An unexpected error occurred'}
-          </Typography>
+          </p>
           
-          {tooManyRetries ? (
-            <Typography variant="body2" color="error" sx={{ mb: 3 }}>
+          {tooManyRetries && (
+            <p className="mb-6 text-red-600 dark:text-red-400">
               We've tried several times but the issue persists. Please try reloading the page.
-            </Typography>
-          ) : null}
+            </p>
+          )}
           
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <div className="flex gap-4">
             {!tooManyRetries && (
-              <Button 
-                variant="contained" 
-                color="primary"
+              <button 
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 onClick={this.handleRetry}
               >
                 Try Again
-              </Button>
+              </button>
             )}
             
-            <Button 
-              variant="outlined" 
-              color="secondary"
+            <button 
+              className="px-4 py-2 border border-purple-600 text-purple-600 dark:text-purple-400 dark:border-purple-400 rounded-md hover:bg-purple-50 dark:hover:bg-purple-900/30 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
               onClick={this.handleReload}
             >
               Reload Dashboard
-            </Button>
-          </Box>
-        </Box>
+            </button>
+          </div>
+        </div>
       );
     }
 

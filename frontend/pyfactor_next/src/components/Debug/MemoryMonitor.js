@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Paper, Button, CircularProgress } from '@mui/material';
 import { getMemoryUsage, getMemoryTracking, clearMemoryTracking } from '@/utils/memoryDebug';
 
 /**
@@ -113,125 +112,107 @@ const MemoryMonitor = ({ pollInterval = 2000, maxSamples = 20 }) => {
   // If memory API is not available
   if (!memoryData) {
     return (
-      <Paper 
-        sx={{ 
-          p: 2, 
-          m: 2, 
-          backgroundColor: '#f5f5f5',
-          border: '1px solid #e0e0e0',
-          borderRadius: 2
-        }}
-      >
-        <Typography variant="body2" color="error">
+      <div className="p-4 m-4 bg-gray-100 border border-gray-200 rounded-lg">
+        <p className="text-sm text-red-500">
           Memory monitoring not available in this browser.
           Try Chrome with --enable-precise-memory-info flag.
-        </Typography>
-      </Paper>
+        </p>
+      </div>
     );
   }
   
   // Calculate memory usage percentage
   const memoryPercentage = parseFloat(memoryData.percentUsed);
-  const memoryColor = memoryPercentage > 80 ? 'error' : memoryPercentage > 60 ? 'warning' : 'success';
+  const memoryColorClass = memoryPercentage > 80 ? 'text-red-500' : memoryPercentage > 60 ? 'text-amber-500' : 'text-green-500';
   
   return (
-    <Paper 
-      sx={{ 
-        p: 2, 
-        m: 2, 
-        backgroundColor: '#f8f9fa',
-        border: '1px solid #e0e0e0',
-        borderRadius: 2,
-        position: 'fixed',
-        bottom: 0,
-        right: 0,
-        zIndex: 9999,
-        maxWidth: expanded ? 400 : 200,
-        transition: 'max-width 0.3s ease'
-      }}
-    >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-        <Typography variant="subtitle2" fontWeight="bold">Memory Monitor</Typography>
-        <Button 
-          size="small" 
-          variant="outlined" 
+    <div className={`p-4 m-4 bg-gray-50 border border-gray-200 rounded-lg fixed bottom-0 right-0 z-50 ${expanded ? 'w-96' : 'w-48'} transition-all duration-300`}>
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-sm font-bold">Memory Monitor</h3>
+        <button 
+          className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100"
           onClick={() => setExpanded(!expanded)}
         >
           {expanded ? 'Collapse' : 'Expand'}
-        </Button>
-      </Box>
+        </button>
+      </div>
       
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-        <CircularProgress 
-          variant="determinate" 
-          value={memoryPercentage} 
-          color={memoryColor}
-          size={24}
-          sx={{ mr: 1 }}
-        />
-        <Typography variant="body2">
+      <div className="flex items-center mb-2">
+        <div className="relative mr-2 w-6 h-6">
+          <svg className="w-6 h-6" viewBox="0 0 36 36">
+            <path
+              d="M18 2.0845
+                a 15.9155 15.9155 0 0 1 0 31.831
+                a 15.9155 15.9155 0 0 1 0 -31.831"
+              fill="none"
+              stroke="#e5e5e5"
+              strokeWidth="3"
+            />
+            <path
+              d="M18 2.0845
+                a 15.9155 15.9155 0 0 1 0 31.831
+                a 15.9155 15.9155 0 0 1 0 -31.831"
+              fill="none"
+              stroke={memoryPercentage > 80 ? '#ef4444' : memoryPercentage > 60 ? '#f59e0b' : '#22c55e'}
+              strokeWidth="3"
+              strokeDasharray={`${memoryPercentage}, 100`}
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
+        <span className={`text-xs ${memoryColorClass}`}>
           {memoryData.usedJSHeapSize} / {memoryData.jsHeapSizeLimit} ({memoryData.percentUsed})
-        </Typography>
-      </Box>
+        </span>
+      </div>
       
       {expanded && (
         <>
-          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+          <p className="text-xs mt-2 text-gray-500">
             Memory History ({memoryHistory.length} samples)
-          </Typography>
+          </p>
           
-          <Box sx={{ 
-            height: 60, 
-            display: 'flex', 
-            alignItems: 'flex-end',
-            borderBottom: '1px solid #e0e0e0',
-            mt: 1
-          }}>
+          <div className="h-16 flex items-end border-b border-gray-200 mt-2">
             {memoryHistory.map((entry, index) => {
               // Extract numeric value from memory string
               const memValue = parseFloat(entry.usedJSHeapSize);
               const percentage = isNaN(memValue) ? 0 : memValue / parseFloat(entry.jsHeapSizeLimit) * 100;
               
               // Determine color based on percentage
-              const barColor = percentage > 80 ? '#f44336' : percentage > 60 ? '#ff9800' : '#4caf50';
+              const barColor = percentage > 80 ? 'bg-red-500' : percentage > 60 ? 'bg-amber-500' : 'bg-green-500';
               
               return (
-                <Box 
+                <div 
                   key={index}
-                  sx={{
+                  className={`${barColor} mx-[1px]`}
+                  style={{
                     width: `${100 / maxSamples}%`,
-                    height: `${Math.min(percentage, 100)}%`,
-                    backgroundColor: barColor,
-                    mx: 0.1
+                    height: `${Math.min(percentage, 100)}%`
                   }}
                   title={`${entry.usedJSHeapSize} (${percentage.toFixed(2)}%)`}
                 />
               );
             })}
-          </Box>
+          </div>
           
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-            <Button 
-              size="small" 
-              variant="outlined" 
+          <div className="flex justify-between mt-4">
+            <button 
+              className={`px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               onClick={getTrackingData}
               disabled={loading}
             >
               {loading ? 'Loading...' : 'Analyze Memory'}
-            </Button>
+            </button>
             
-            <Button 
-              size="small" 
-              variant="outlined" 
-              color="error"
+            <button 
+              className="px-2 py-1 text-xs border border-red-300 text-red-500 rounded hover:bg-red-50"
               onClick={clearTracking}
             >
               Clear Data
-            </Button>
-          </Box>
+            </button>
+          </div>
         </>
       )}
-    </Paper>
+    </div>
   );
 };
 

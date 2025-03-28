@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Box, Button, TextField, Typography, Link, Alert, CircularProgress } from '@mui/material';
 import { useAuth } from '@/hooks/auth';
 import { logger } from '@/utils/logger';
 import { useSession } from '@/hooks/useSession';
@@ -250,97 +249,93 @@ export default function SignInForm() {
   return (
     <>
       <ConfigureAmplify />
-      <Box
-        component="form"
+      <form 
         onSubmit={handleSubmit}
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-          width: '100%',
-          maxWidth: 400,
-          mx: 'auto',
-          p: 3,
-        }}
+        className="flex flex-col gap-4 w-full max-w-md mx-auto p-6"
       >
-      <Typography variant="h5" component="h1" gutterBottom align="center">
-        Sign In
-      </Typography>
+        <h1 className="text-2xl font-bold text-center mb-2">
+          Sign In
+        </h1>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      <TextField
-        required
-        fullWidth
-        id="username"
-        name="username"
-        label="Email"
-        type="email"
-        autoComplete="email"
-        value={formData.username}
-        onChange={handleChange}
-        disabled={isLoading}
-        autoFocus
-      />
-
-      <TextField
-        required
-        fullWidth
-        id="password"
-        name="password"
-        label="Password"
-        type="password"
-        autoComplete="current-password"
-        value={formData.password}
-        onChange={handleChange}
-        disabled={isLoading}
-      />
-
-      <Button
-        type="submit"
-        fullWidth
-        variant="contained"
-        color="primary"
-        disabled={isLoading}
-        sx={{ mt: 2, minHeight: 42 }}
-      >
-        {isLoading ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CircularProgress size={20} color="inherit" />
-            {isRedirecting ? 'Redirecting...' : 'Signing in...'}
-          </Box>
-        ) : (
-          'Sign In'
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md mb-4">
+            {error}
+          </div>
         )}
-      </Button>
 
-      <Box sx={{ mt: 2, textAlign: 'center' }}>
-        <Link
-          href="/auth/forgot-password"
-          variant="body2"
-          sx={{ cursor: 'pointer', textDecoration: 'none' }}
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              required
+              id="username"
+              name="username"
+              type="email"
+              autoComplete="email"
+              value={formData.username}
+              onChange={handleChange}
+              disabled={isLoading}
+              autoFocus
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-light focus:ring-primary-light text-sm disabled:bg-gray-100 disabled:text-gray-500"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
+            <input
+              required
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              value={formData.password}
+              onChange={handleChange}
+              disabled={isLoading}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-light focus:ring-primary-light text-sm disabled:bg-gray-100 disabled:text-gray-500"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="mt-4 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-main hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Forgot password?
-        </Link>
-      </Box>
+          {isLoading ? (
+            <div className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+              <span>{isRedirecting ? 'Redirecting...' : 'Signing in...'}</span>
+            </div>
+          ) : (
+            'Sign In'
+          )}
+        </button>
 
-      <Box sx={{ mt: 2, textAlign: 'center' }}>
-        <Typography variant="body2">
-          Don&apos;t have an account?{' '}
-          <Link 
-            href="/auth/signup" 
-            variant="body2" 
-            sx={{ cursor: 'pointer', textDecoration: 'none' }}
+        <div className="mt-4 text-center">
+          <a
+            href="/auth/forgot-password"
+            className="text-sm text-primary-main hover:text-primary-dark"
           >
-            Sign up
-          </Link>
-        </Typography>
-      </Box>
-    </Box>
+            Forgot password?
+          </a>
+        </div>
+
+        <div className="mt-4 text-center">
+          <p className="text-sm text-gray-600">
+            Don&apos;t have an account?{' '}
+            <a 
+              href="/auth/signup" 
+              className="text-primary-main hover:text-primary-dark font-medium"
+            >
+              Sign up
+            </a>
+          </p>
+        </div>
+      </form>
     </>
   );
 }

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import Typography from '@mui/material/Typography';
 
 function DateTime() {
   const [dateTime, setDateTime] = useState(new Date());
@@ -27,9 +26,9 @@ function DateTime() {
   }, [dateTime]);
 
   return (
-    <Typography variant="body2" color="inherit">
+    <p className="text-sm text-gray-600 dark:text-gray-300">
       {formattedDateTime}
-    </Typography>
+    </p>
   );
 }
 

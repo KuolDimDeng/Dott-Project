@@ -1,151 +1,143 @@
 'use client';
 
-import * as React from 'react';
-import Card from '@mui/material/Card';
-import CardHeader from '@mui/material/CardHeader';
-import CardContent from '@mui/material/CardContent';
-import Avatar from '@mui/material/Avatar';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid';
-import { useTheme } from '@mui/system';
-
-const userTestimonials = [
-  {
-    avatar: <Avatar alt="Remy Sharp" src="/static/images/avatar/1.jpg" />,
-    name: 'Remy Sharp',
-    occupation: 'Senior Engineer',
-    testimonial:
-      "I absolutely love how versatile this product is! Whether I'm tackling work projects or indulging in my favorite hobbies, it seamlessly adapts to my changing needs. Its intuitive design has truly enhanced my daily routine, making tasks more efficient and enjoyable.",
-  },
-  {
-    avatar: <Avatar alt="Travis Howard" src="/static/images/avatar/2.jpg" />,
-    name: 'Travis Howard',
-    occupation: 'Lead Product Designer',
-    testimonial:
-      "One of the standout features of this product is the exceptional customer support. In my experience, the team behind this product has been quick to respond and incredibly helpful. It's reassuring to know that they stand firmly behind their product.",
-  },
-  {
-    avatar: <Avatar alt="Cindy Baker" src="/static/images/avatar/3.jpg" />,
-    name: 'Cindy Baker',
-    occupation: 'CTO',
-    testimonial:
-      'The level of simplicity and user-friendliness in this product has significantly simplified my life. I appreciate the creators for delivering a solution that not only meets but exceeds user expectations.',
-  },
-  {
-    avatar: <Avatar alt="Remy Sharp" src="/static/images/avatar/4.jpg" />,
-    name: 'Julia Stewart',
-    occupation: 'Senior Engineer',
-    testimonial:
-      "I appreciate the attention to detail in the design of this product. The small touches make a big difference, and it's evident that the creators focused on delivering a premium experience.",
-  },
-  {
-    avatar: <Avatar alt="Travis Howard" src="/static/images/avatar/5.jpg" />,
-    name: 'John Smith',
-    occupation: 'Product Designer',
-    testimonial:
-      "I've tried other similar products, but this one stands out for its innovative features. It's clear that the makers put a lot of thought into creating a solution that truly addresses user needs.",
-  },
-  {
-    avatar: <Avatar alt="Cindy Baker" src="/static/images/avatar/6.jpg" />,
-    name: 'Daniel Wolf',
-    occupation: 'CDO',
-    testimonial:
-      "The quality of this product exceeded my expectations. It's durable, well-designed, and built to last. Definitely worth the investment!",
-  },
-];
-
-const whiteLogos = [
-  'https://assets-global.website-files.com/61ed56ae9da9fd7e0ef0a967/6560628e8573c43893fe0ace_Sydney-white.svg',
-  'https://assets-global.website-files.com/61ed56ae9da9fd7e0ef0a967/655f4d520d0517ae8e8ddf13_Bern-white.svg',
-  'https://assets-global.website-files.com/61ed56ae9da9fd7e0ef0a967/655f46794c159024c1af6d44_Montreal-white.svg',
-  'https://assets-global.website-files.com/61ed56ae9da9fd7e0ef0a967/61f12e891fa22f89efd7477a_TerraLight.svg',
-  'https://assets-global.website-files.com/61ed56ae9da9fd7e0ef0a967/6560a09d1f6337b1dfed14ab_colorado-white.svg',
-  'https://assets-global.website-files.com/61ed56ae9da9fd7e0ef0a967/655f5caa77bf7d69fb78792e_Ankara-white.svg',
-];
-
-const darkLogos = [
-  'https://assets-global.website-files.com/61ed56ae9da9fd7e0ef0a967/6560628889c3bdf1129952dc_Sydney-black.svg',
-  'https://assets-global.website-files.com/61ed56ae9da9fd7e0ef0a967/655f4d4d8b829a89976a419c_Bern-black.svg',
-  'https://assets-global.website-files.com/61ed56ae9da9fd7e0ef0a967/655f467502f091ccb929529d_Montreal-black.svg',
-  'https://assets-global.website-files.com/61ed56ae9da9fd7e0ef0a967/61f12e911fa22f2203d7514c_TerraDark.svg',
-  'https://assets-global.website-files.com/61ed56ae9da9fd7e0ef0a967/6560a0990f3717787fd49245_colorado-black.svg',
-  'https://assets-global.website-files.com/61ed56ae9da9fd7e0ef0a967/655f5ca4e548b0deb1041c33_Ankara-black.svg',
-];
-
-const logoStyle = {
-  width: '64px',
-  opacity: 0.3,
-};
+import { useTranslation } from 'react-i18next';
+import Image from 'next/image';
 
 export default function Testimonials() {
-  const theme = useTheme();
-  const logos = theme.palette.mode === 'light' ? darkLogos : whiteLogos;
+  const { t } = useTranslation();
+
+  const testimonials = [
+    {
+      content: t(
+        'testimonials.quote1',
+        'Dott completely transformed our inventory management. We used to spend hours tracking products across different locations, but now everything is streamlined in one platform. The time savings alone made it worth the investment.'
+      ),
+      author: {
+        name: t('testimonials.author1.name', 'Sarah Johnson'),
+        role: t('testimonials.author1.role', 'Operations Manager'),
+        company: t('testimonials.author1.company', 'Retail Solutions Inc.'),
+        image: '/static/images/testimonials/avatar1.png',
+      },
+    },
+    {
+      content: t(
+        'testimonials.quote2',
+        'The reporting features are incredible. We can now visualize our sales data in real-time and make informed decisions quickly. Our quarterly planning meetings are now much more productive with these insights.'
+      ),
+      author: {
+        name: t('testimonials.author2.name', 'David Chen'),
+        role: t('testimonials.author2.role', 'CFO'),
+        company: t('testimonials.author2.company', 'Global Manufacturing Co.'),
+        image: '/static/images/testimonials/avatar2.png',
+      },
+    },
+    {
+      content: t(
+        'testimonials.quote3',
+        'As a growing e-commerce business, we needed a solution that could scale with us. Dott has been the perfect fit - it handled our 300% growth without missing a beat, and the customer support team has been exceptional every step of the way.'
+      ),
+      author: {
+        name: t('testimonials.author3.name', 'Emma Rodriguez'),
+        role: t('testimonials.author3.role', 'Founder & CEO'),
+        company: t('testimonials.author3.company', 'Bright Home Goods'),
+        image: '/static/images/testimonials/avatar3.png',
+      },
+    },
+  ];
+
+  // Placeholder for missing avatar images
+  const getInitials = (name) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
+  };
 
   return (
-    <Container
-      id="testimonials"
-      sx={{
-        pt: { xs: 4, sm: 12 },
-        pb: { xs: 8, sm: 16 },
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: { xs: 3, sm: 6 },
-      }}
-    >
-      <Box
-        sx={{
-          width: { sm: '100%', md: '60%' },
-          textAlign: { sm: 'left', md: 'center' },
-        }}
-      >
-        <Typography component="h2" variant="h4" color="text.primary">
-          Testimonials
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          See what our customers love about our products. Discover how we excel in efficiency,
-          durability, and satisfaction. Join us for quality, innovation, and reliable support.
-        </Typography>
-      </Box>
-      <Grid container spacing={2}>
-        {userTestimonials.map((testimonial, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index} sx={{ display: 'flex' }}>
-            <Card
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                flexGrow: 1,
-                p: 1,
-              }}
+    <section className="bg-white py-16 sm:py-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <h2 className="text-base font-semibold text-primary-main uppercase tracking-wide">
+            {t('testimonials.eyebrow', 'Testimonials')}
+          </h2>
+          <p className="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl lg:text-5xl">
+            {t('testimonials.heading', 'Trusted by businesses worldwide')}
+          </p>
+          <p className="mt-6 max-w-2xl text-xl text-gray-600 mx-auto">
+            {t(
+              'testimonials.subheading',
+              'See what our customers have to say about their experience using Dott to streamline their business operations.'
+            )}
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {testimonials.map((testimonial, idx) => (
+            <div
+              key={idx}
+              className="bg-white p-8 rounded-2xl shadow-md border border-gray-100 flex flex-col h-full hover:shadow-lg transition-shadow duration-300"
             >
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">
-                  {testimonial.testimonial}
-                </Typography>
-              </CardContent>
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  pr: 2,
-                }}
+              {/* Quote icon */}
+              <svg
+                className="h-10 w-10 text-primary-light mb-4"
+                fill="currentColor"
+                viewBox="0 0 32 32"
+                aria-hidden="true"
               >
-                <CardHeader
-                  avatar={testimonial.avatar}
-                  title={testimonial.name}
-                  subheader={testimonial.occupation}
-                />
-                <img src={logos[index]} alt={`Logo ${index + 1}`} style={logoStyle} />
-              </Box>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-    </Container>
+                <path d="M9.352 4C4.456 7.456 1 13.12 1 19.36c0 5.088 3.072 8.064 6.624 8.064 3.36 0 5.856-2.688 5.856-5.856 0-3.168-2.208-5.472-5.088-5.472-.576 0-1.344.096-1.536.192.48-3.264 3.552-7.104 6.624-9.024L9.352 4zm16.512 0c-4.8 3.456-8.256 9.12-8.256 15.36 0 5.088 3.072 8.064 6.624 8.064 3.264 0 5.856-2.688 5.856-5.856 0-3.168-2.304-5.472-5.184-5.472-.576 0-1.248.096-1.44.192.48-3.264 3.456-7.104 6.528-9.024L25.864 4z" />
+              </svg>
+
+              {/* Testimonial content */}
+              <blockquote className="flex-1">
+                <p className="text-lg text-gray-700 leading-relaxed mb-6">
+                  "{testimonial.content}"
+                </p>
+              </blockquote>
+
+              {/* Author info */}
+              <div className="flex items-center mt-4">
+                <div className="flex-shrink-0 h-12 w-12 relative">
+                  {testimonial.author.image ? (
+                    <Image
+                      className="h-12 w-12 rounded-full"
+                      src={testimonial.author.image}
+                      alt={testimonial.author.name}
+                      width={48}
+                      height={48}
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-full bg-primary-light/30 flex items-center justify-center text-primary-main font-bold">
+                      {getInitials(testimonial.author.name)}
+                    </div>
+                  )}
+                </div>
+                <div className="ml-4">
+                  <div className="text-base font-medium text-gray-900">
+                    {testimonial.author.name}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {testimonial.author.role}, {testimonial.author.company}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA Section */}
+        <div className="mt-16 text-center">
+          <p className="text-base font-medium text-gray-900 mb-4">
+            {t('testimonials.cta.text', 'Join thousands of satisfied customers already using Dott')}
+          </p>
+          <a
+            href="#pricing"
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary-main hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light"
+          >
+            {t('testimonials.cta.button', 'Get Started Today')}
+          </a>
+        </div>
+      </div>
+    </section>
   );
 }

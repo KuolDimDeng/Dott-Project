@@ -1,187 +1,140 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/components/LanguageSelector/LanguageSelector.js
 'use client';
 
-import { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Button, 
-  Menu, 
-  MenuItem, 
-  Typography,
-  TextField,
-  InputAdornment,
-} from '@mui/material';
-import LanguageIcon from '@mui/icons-material/Language';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import SearchIcon from '@mui/icons-material/Search';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
-// Language options
+// Language data with flags and native names
 const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Español' },
-    { code: 'fr', name: 'Français' },
-    { code: 'pt', name: 'Português' },
-    { code: 'de', name: 'Deutsch' },
-    { code: 'zh', name: '中文' },
-    { code: 'ar', name: 'العربية' },
-    { code: 'hi', name: 'हिन्दी' },
-    { code: 'ru', name: 'Русский' },
-    { code: 'ja', name: '日本語' },
-    { code: 'sw', name: 'Kiswahili' },
-    { code: 'tr', name: 'Türkçe' },
-    { code: 'id', name: 'Bahasa Indonesia' },
-    { code: 'vi', name: 'Tiếng Việt' },
-    { code: 'nl', name: 'Nederlands' },
-    { code: 'ha', name: 'Hausa' },
-    { code: 'yo', name: 'Yorùbá' },
-    { code: 'am', name: 'አማርኛ' },
-    { code: 'zu', name: 'isiZulu' },
-    { code: 'ko', name: '한국어' }
-  ];
+  { code: 'en', name: 'English', flag: '🇺🇸', native: 'English' },
+  { code: 'es', name: 'Spanish', flag: '🇪🇸', native: 'Español' },
+  { code: 'fr', name: 'French', flag: '🇫🇷', native: 'Français' },
+  { code: 'de', name: 'German', flag: '🇩🇪', native: 'Deutsch' },
+  { code: 'zh', name: 'Chinese', flag: '🇨🇳', native: '中文' },
+  { code: 'ja', name: 'Japanese', flag: '🇯🇵', native: '日本語' },
+  { code: 'ar', name: 'Arabic', flag: '🇦🇪', native: 'العربية' },
+];
 
 export default function LanguageSelector() {
-  const { i18n } = useTranslation();
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [currentLanguage, setCurrentLanguage] = useState(
-    languages.find(lang => lang.code === 'en')
-  );
-  const [searchQuery, setSearchQuery] = useState('');
-
+  const { t } = useTranslation();
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentLang, setCurrentLang] = useState(() => {
+    return languages.find(lang => lang.code === i18n.language) || languages[0];
+  });
+  
+  const dropdownRef = useRef(null);
+  
+  // Close dropdown when clicking outside
   useEffect(() => {
-    const detectUserLanguage = async () => {
-      try {
-        // First try to get from localStorage if user has a saved preference
-        const savedLang = localStorage.getItem('i18nextLng');
-        if (savedLang) {
-          const langObj = languages.find(lang => lang.code === savedLang);
-          if (langObj) {
-            setCurrentLanguage(langObj);
-            i18n.changeLanguage(langObj.code);
-            return;
-          }
-        }
-
-        // Get browser language
-        const browserLang = navigator.language.split('-')[0];
-        const matchedLang = languages.find(lang => lang.code === browserLang);
-        
-        if (matchedLang) {
-          setCurrentLanguage(matchedLang);
-          i18n.changeLanguage(matchedLang.code);
-          localStorage.setItem('i18nextLng', matchedLang.code);
-        }
-      } catch (error) {
-        console.error('Error detecting language:', error);
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
       }
-    };
-
-    detectUserLanguage();
-  }, [i18n]);
-
-  useEffect(() => {
-    // Update when i18n language changes externally
-    const langObj = languages.find(lang => lang.code === i18n.language);
-    if (langObj && langObj.code !== currentLanguage.code) {
-      setCurrentLanguage(langObj);
     }
-  }, [i18n.language, currentLanguage.code]);
-
-  const handleLanguageMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-    setSearchQuery('');
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
+  // Handle language change
+  const changeLanguage = (lang) => {
+    i18n.changeLanguage(lang.code);
+    setCurrentLang(lang);
+    setIsOpen(false);
+    setSearchTerm('');
+    
+    // Dispatch an event for other components that need to know about language changes
+    window.dispatchEvent(new CustomEvent('languageChange', { detail: { language: lang.code } }));
+    
+    // Save preference to localStorage
+    try {
+      localStorage.setItem('i18nextLng', lang.code);
+    } catch (e) {
+      console.error('Failed to save language preference:', e);
+    }
   };
-
-  const handleLanguageMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleLanguageChange = (language) => {
-    setCurrentLanguage(language);
-    i18n.changeLanguage(language.code);
-    localStorage.setItem('i18nextLng', language.code);
-    handleLanguageMenuClose();
-  };
-
-  const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
-  };
-
-  // Filter languages based on search query
-  const filteredLanguages = searchQuery.trim() 
-    ? languages.filter(lang => 
-        lang.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lang.code.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : languages;
+  
+  // Filter languages based on search term
+  const filteredLanguages = languages.filter(lang => 
+    lang.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    lang.native.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <Box>
-      <Button
-        color="inherit"
-        onClick={handleLanguageMenuOpen}
-        startIcon={<LanguageIcon />}
-        endIcon={<KeyboardArrowDownIcon />}
-        sx={{
-          minWidth: { xs: 'auto', sm: '120px' },
-          ml: { xs: 0, sm: 1 },
-          textTransform: 'none',
-        }}
+    <div className="relative" ref={dropdownRef}>
+      {/* Language selector button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 focus:outline-none"
+        aria-expanded={isOpen}
+        aria-haspopup="true"
       >
-        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-          {currentLanguage.name}
-        </Box>
-      </Button>
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleLanguageMenuClose}
-        PaperProps={{
-          elevation: 3,
-          sx: { 
-            maxHeight: 300,
-            width: '200px'
-          }
-        }}
-      >
-        <Box sx={{ p: 2, pb: 1 }}>
-          <TextField
-            fullWidth
-            placeholder="Search languages..."
-            size="small"
-            value={searchQuery}
-            onChange={handleSearchChange}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Box>
-        
-        {filteredLanguages.map((language) => (
-          <MenuItem 
-            key={language.code} 
-            onClick={() => handleLanguageChange(language)}
-            selected={currentLanguage.code === language.code}
-            sx={{
-              py: 1,
-              '&.Mui-selected': {
-                backgroundColor: 'rgba(3, 169, 244, 0.1)',
-              },
-              '&.Mui-selected:hover': {
-                backgroundColor: 'rgba(3, 169, 244, 0.15)',
-              },
-            }}
-          >
-            <Typography variant="body2">
-              {language.name}
-            </Typography>
-          </MenuItem>
-        ))}
-      </Menu>
-    </Box>
+        <span className="text-lg">{currentLang.flag}</span>
+        <span className="hidden md:inline">{currentLang.native}</span>
+        <svg
+          className={`h-5 w-5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      
+      {/* Dropdown */}
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
+          <div className="p-2">
+            {/* Search input */}
+            <div className="relative mb-2">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-primary-light focus:border-primary-light sm:text-sm"
+                placeholder={t('language.search', 'Search languages...')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            {/* Language list */}
+            <div className="max-h-60 overflow-y-auto">
+              {filteredLanguages.length > 0 ? (
+                <ul className="py-1">
+                  {filteredLanguages.map((lang) => (
+                    <li key={lang.code}>
+                      <button
+                        onClick={() => changeLanguage(lang)}
+                        className={`flex items-center w-full px-4 py-2 text-sm focus:outline-none ${
+                          currentLang.code === lang.code
+                            ? 'bg-primary-light/10 text-primary-main dark:bg-primary-dark/20 dark:text-primary-light'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <span className="text-lg mr-2">{lang.flag}</span>
+                        <span>{lang.native}</span>
+                        <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">({lang.name})</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="py-2 px-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+                  {t('language.noResults', 'No languages found')}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

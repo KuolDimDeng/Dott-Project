@@ -1,41 +1,42 @@
 // src/app/dashboard/components/APIIntegrations.js
 import React from 'react';
-import { Typography, Box, Link, Paper, Grid, Divider } from '@mui/material';
 
 const APIIntegrations = ({ onECommerceClick, onCRMClick }) => {
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
         API & Integrations
-      </Typography>
-      <Paper elevation={3} sx={{ p: 3, mt: 3 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom>
+      </h1>
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mt-6">
+        <div className="grid grid-cols-1 gap-6">
+          <div>
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               E-Commerce Platform API
-            </Typography>
-            <Link
+            </h2>
+            <a
               href="#"
               onClick={onECommerceClick}
-              sx={{ cursor: 'pointer', display: 'block', mt: 1 }}
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer mt-2 inline-block"
             >
               Click here
-            </Link>
-          </Grid>
-          <Grid item xs={12}>
-            <Divider sx={{ my: 2 }} />
-          </Grid>
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom>
+            </a>
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
+          <div>
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               CRM API
-            </Typography>
-            <Link href="#" onClick={onCRMClick} sx={{ cursor: 'pointer', display: 'block', mt: 1 }}>
+            </h2>
+            <a
+              href="#"
+              onClick={onCRMClick}
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer mt-2 inline-block"
+            >
               Click here
-            </Link>
-          </Grid>
-        </Grid>
-      </Paper>
-    </Box>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

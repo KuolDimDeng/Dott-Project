@@ -1,47 +1,47 @@
 import React from 'react';
-import { Box, Typography, Paper, Grid, TextField, Button, Switch, FormControlLabel, Divider } from '@mui/material';
+import { Button, TextField, Switch } from '@/components/replaced';
 
 const BusinessSettings = ({ selectedTab }) => {
   const renderContent = () => {
     switch (selectedTab) {
       case 0:
         return (
-          <Box>
-            <Typography variant="h6" gutterBottom>User Management</Typography>
-            <Paper elevation={1} sx={{ p: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>Team Members</Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="body1">Kuol Deng (You)</Typography>
-                    <Typography variant="body2" color="primary">Owner</Typography>
-                  </Box>
-                  <Divider />
-                </Grid>
-                <Grid item xs={12} sx={{ mt: 2 }}>
-                  <Button variant="contained" color="primary">
+          <div>
+            <h2 className="text-xl font-semibold mb-4">User Management</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium mb-4">Team Members</h3>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-base">Kuol Deng (You)</span>
+                    <span className="text-sm text-blue-600 dark:text-blue-400">Owner</span>
+                  </div>
+                  <div className="border-t border-gray-200 dark:border-gray-700"></div>
+                </div>
+                <div className="mt-4">
+                  <Button variant="primary">
                     Invite Team Member
                   </Button>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Box>
+                </div>
+              </div>
+            </div>
+          </div>
         );
       case 1:
         return (
-          <Box>
-            <Typography variant="h6" gutterBottom>Invoices and Estimates</Typography>
-            <Paper elevation={1} sx={{ p: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>Invoice Settings</Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Invoices and Estimates</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium mb-4">Invoice Settings</h3>
+              <div className="space-y-6">
+                <div>
                   <TextField
                     fullWidth
                     label="Invoice Prefix"
                     defaultValue="INV-"
                   />
-                </Grid>
-                <Grid item xs={12}>
+                </div>
+                <div>
                   <TextField
                     fullWidth
                     label="Invoice Footer Text"
@@ -49,166 +49,155 @@ const BusinessSettings = ({ selectedTab }) => {
                     rows={3}
                     defaultValue="Thank you for your business!"
                   />
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControlLabel
-                    control={<Switch defaultChecked />}
+                </div>
+                <div>
+                  <Switch
                     label="Automatically send payment reminders"
+                    defaultChecked
                   />
-                </Grid>
-                <Grid item xs={12}>
-                  <Button variant="contained" color="primary">
+                </div>
+                <div>
+                  <Button variant="primary">
                     Save Changes
                   </Button>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Box>
+                </div>
+              </div>
+            </div>
+          </div>
         );
       case 2:
         return (
-          <Box>
-            <Typography variant="h6" gutterBottom>Payments</Typography>
-            <Paper elevation={1} sx={{ p: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>Payment Methods</Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <FormControlLabel
-                    control={<Switch defaultChecked />}
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Payments</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium mb-4">Payment Methods</h3>
+              <div className="space-y-4">
+                <div>
+                  <Switch
                     label="Credit Card"
+                    defaultChecked
                   />
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControlLabel
-                    control={<Switch defaultChecked />}
+                </div>
+                <div>
+                  <Switch
                     label="Bank Transfer"
+                    defaultChecked
                   />
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControlLabel
-                    control={<Switch defaultChecked />}
+                </div>
+                <div>
+                  <Switch
                     label="Mobile Money"
+                    defaultChecked
                   />
-                </Grid>
-                <Grid item xs={12} sx={{ mt: 2 }}>
-                  <Button variant="contained" color="primary">
+                </div>
+                <div className="mt-6">
+                  <Button variant="primary">
                     Save Changes
                   </Button>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Box>
+                </div>
+              </div>
+            </div>
+          </div>
         );
       case 3:
         return (
-          <Box>
-            <Typography variant="h6" gutterBottom>Email Templates</Typography>
-            <Paper elevation={1} sx={{ p: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>Customize Email Templates</Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle2">Invoice Email</Typography>
-                    <TextField
-                      fullWidth
-                      label="Subject"
-                      defaultValue="Invoice #{invoice_number} from {business_name}"
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      fullWidth
-                      label="Body"
-                      multiline
-                      rows={5}
-                      defaultValue="Dear {client_name},\n\nPlease find attached invoice #{invoice_number} for {amount}.\n\nThanks for your business!\n{business_name}"
-                    />
-                  </Box>
-                </Grid>
-                <Grid item xs={12}>
-                  <Box>
-                    <Typography variant="subtitle2">Payment Reminder Email</Typography>
-                    <TextField
-                      fullWidth
-                      label="Subject"
-                      defaultValue="Payment Reminder: Invoice #{invoice_number}"
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      fullWidth
-                      label="Body"
-                      multiline
-                      rows={5}
-                      defaultValue="Dear {client_name},\n\nThis is a friendly reminder that invoice #{invoice_number} for {amount} is due on {due_date}.\n\nThanks,\n{business_name}"
-                    />
-                  </Box>
-                </Grid>
-                <Grid item xs={12}>
-                  <Button variant="contained" color="primary">
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Email Templates</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium mb-4">Customize Email Templates</h3>
+              <div className="space-y-8">
+                <div>
+                  <h4 className="text-base font-medium mb-3">Invoice Email</h4>
+                  <TextField
+                    fullWidth
+                    label="Subject"
+                    defaultValue="Invoice #{invoice_number} from {business_name}"
+                    className="mb-4"
+                  />
+                  <TextField
+                    fullWidth
+                    label="Body"
+                    multiline
+                    rows={5}
+                    defaultValue="Dear {client_name},\n\nPlease find attached invoice #{invoice_number} for {amount}.\n\nThanks for your business!\n{business_name}"
+                  />
+                </div>
+                <div>
+                  <h4 className="text-base font-medium mb-3">Payment Reminder Email</h4>
+                  <TextField
+                    fullWidth
+                    label="Subject"
+                    defaultValue="Payment Reminder: Invoice #{invoice_number}"
+                    className="mb-4"
+                  />
+                  <TextField
+                    fullWidth
+                    label="Body"
+                    multiline
+                    rows={5}
+                    defaultValue="Dear {client_name},\n\nThis is a friendly reminder that invoice #{invoice_number} for {amount} is due on {due_date}.\n\nThanks,\n{business_name}"
+                  />
+                </div>
+                <div>
+                  <Button variant="primary">
                     Save Templates
                   </Button>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Box>
+                </div>
+              </div>
+            </div>
+          </div>
         );
       case 4:
         return (
-          <Box>
-            <Typography variant="h6" gutterBottom>Custom Charge Settings</Typography>
-            <Paper elevation={1} sx={{ p: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>Custom Charges</Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2">Discounts</Typography>
-                    <FormControlLabel
-                      control={<Switch defaultChecked />}
-                      label="Enable Discounts"
-                    />
-                  </Box>
-                </Grid>
-                <Grid item xs={12}>
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2">Late Fees</Typography>
-                    <FormControlLabel
-                      control={<Switch defaultChecked />}
-                      label="Enable Late Fees"
-                    />
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Custom Charge Settings</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium mb-4">Custom Charges</h3>
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-base font-medium mb-2">Discounts</h4>
+                  <Switch
+                    label="Enable Discounts"
+                    defaultChecked
+                  />
+                </div>
+                <div>
+                  <h4 className="text-base font-medium mb-2">Late Fees</h4>
+                  <Switch
+                    label="Enable Late Fees"
+                    defaultChecked
+                  />
+                  <div className="mt-4">
                     <TextField
                       fullWidth
                       label="Default Late Fee Percentage"
                       defaultValue="5"
-                      InputProps={{
-                        endAdornment: <Typography variant="body1">%</Typography>,
-                      }}
-                      sx={{ mt: 2 }}
+                      endAdornment={<span>%</span>}
                     />
-                  </Box>
-                </Grid>
-                <Grid item xs={12}>
-                  <Box>
-                    <Typography variant="subtitle2">Shipping</Typography>
-                    <FormControlLabel
-                      control={<Switch defaultChecked />}
-                      label="Enable Shipping Charges"
-                    />
-                  </Box>
-                </Grid>
-                <Grid item xs={12}>
-                  <Button variant="contained" color="primary">
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-base font-medium mb-2">Shipping</h4>
+                  <Switch
+                    label="Enable Shipping Charges"
+                    defaultChecked
+                  />
+                </div>
+                <div className="mt-2">
+                  <Button variant="primary">
                     Save Settings
                   </Button>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Box>
+                </div>
+              </div>
+            </div>
+          </div>
         );
       default:
         return null;
     }
   };
 
-  return <Box>{renderContent()}</Box>;
+  return <div className="w-full">{renderContent()}</div>;
 };
 
 export default BusinessSettings;

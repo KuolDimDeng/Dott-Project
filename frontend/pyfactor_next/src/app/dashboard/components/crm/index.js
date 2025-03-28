@@ -6,19 +6,18 @@ import LeadsManagement from './LeadsManagement';
 // These components will be implemented later
 // For now, they'll just render a simple message
 import React from 'react';
-import { Box, Typography, Paper } from '@mui/material';
 
 const PlaceholderComponent = ({ title }) => (
-  <Box sx={{ p: 3 }}>
-    <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
+  <div className="p-6">
+    <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
       {title}
-    </Typography>
-    <Paper sx={{ p: 4, textAlign: 'center' }}>
-      <Typography variant="h6">
+    </h1>
+    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-8 text-center">
+      <h2 className="text-lg font-medium text-gray-700 dark:text-gray-300">
         This feature is coming soon. Check back later!
-      </Typography>
-    </Paper>
-  </Box>
+      </h2>
+    </div>
+  </div>
 );
 
 const OpportunitiesManagement = () => <PlaceholderComponent title="Opportunities Management" />;

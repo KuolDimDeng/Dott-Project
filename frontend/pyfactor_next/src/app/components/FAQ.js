@@ -1,230 +1,102 @@
 'use client';
 
-import React from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Divider,
-  Chip,
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import PublicIcon from '@mui/icons-material/Public';
-import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
-import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import i18nInstance from '../../i18n';
-
-const faqs = [
-  {
-    question: 'What is Dott?',
-    answer:
-      'Dott is a global business management platform that supports companies in over 100 countries. It combines accounting, payroll, HR, inventory management with barcode functionality, and diverse payment options including mobile money in a single intuitive solution.',
-    category: 'general',
-  },
-  {
-    question: 'How much does it cost?',
-    answer:
-      'We offer a Basic free plan for startups and a Professional plan at $15/month ($150/year). The Professional plan includes all features including barcode printing and scanner integration with no hidden fees. You can upgrade or downgrade at any time.',
-    category: 'pricing',
-     highlight: true,
-  },
-
-  {
-    question: 'Which countries do you support?',
-    answer:
-      'Dott supports businesses in over 100 countries worldwide, with special features for specific regions like mobile money integration in Africa, invoice factoring in US and Canada, and compliance tools for various regulatory environments.',
-    category: 'global',
-    highlight: true,
-  },
-  {
-    question: 'Does Dott support mobile money payments?',
-    answer:
-      'Yes! We support integration with popular mobile money platforms like M-Pesa, MTN Mobile Money, Airtel Money, and others across Africa and Asia. This allows your business to accept and process local payment methods with ease.',
-    category: 'payments',
-    highlight: true,
-  },
-  {
-    question: 'How does the barcode and inventory scanner feature work?',
-    answer:
-      'Our Professional plan includes the ability to generate and print barcodes for your inventory items and sync with Bluetooth barcode scanners for faster stock management. This feature is included at no additional cost and works seamlessly with our inventory management system.',
-    category: 'features',
-    highlight: true,
-  },
-  {
-    question: 'Is my data secure?',
-    answer:
-      'Absolutely. We use bank-level security encryption and follow industry best practices to protect your data. Our platform is hosted on secure cloud infrastructure with multiple layers of security, regional compliance features, and regular backups.',
-    category: 'security',
-  },
-  {
-    question: 'Can I import data from other systems?',
-    answer:
-      'Yes, you can import data from various formats including Excel, CSV, and other accounting platforms. We also provide migration assistance for businesses switching from other platforms, with support for international data formats.',
-    category: 'features',
-  },
-  {
-    question: 'What kind of support do you offer?',
-    answer:
-      'We provide customer support across multiple time zones via chat, email, and scheduled calls. Our team includes experts familiar with regional business practices to provide relevant assistance no matter where your business operates.',
-    category: 'support',
-  },
-  {
-    question: 'How does multi-currency support work?',
-    answer:
-      'Dott allows you to operate in multiple currencies simultaneously, with automatic exchange rate updates. You can invoice customers in their local currency, track expenses in different currencies, and generate reports in your preferred base currency.',
-    category: 'global',
-    highlight: true,
-  },
-];
-
-// Group FAQs by category
-const categoryOrder = ['general', 'pricing', 'global', 'features', 'payments', 'security', 'support'];
-const groupedFaqs = categoryOrder.map(category => ({
-  category,
-  items: faqs.filter(faq => faq.category === category)
-})).filter(group => group.items.length > 0);
-
-// Category labels
-const categoryLabels = {
-  general: 'General',
-  pricing: 'Pricing & Plans',
-  global: 'Global Business',
-  features: 'Features & Functionality',
-  payments: 'Payment Options',
-  security: 'Security & Compliance',
-  support: 'Support & Help'
-};
 
 export default function FAQ() {
   const { t } = useTranslation();
   
-  // Force re-render when language changes
-  const [, setRenderKey] = React.useState(0);
+  const faqs = [
+    {
+      question: t('faq.global.question', 'Does Dott work for businesses outside the US?'),
+      answer: t('faq.global.answer', 'Yes, Dott is designed to work globally. We support multiple currencies, languages, and regional payment methods. Our platform complies with tax regulations in various countries, allowing you to run your business anywhere in the world.')
+    },
+    {
+      question: t('faq.cost.question', 'How much does it cost?'),
+      answer: t('faq.cost.answer', 'We offer different pricing tiers based on your business needs. Our basic plan starts at $9.99/month, while our premium plan with advanced features costs $29.99/month. All plans include core features like inventory management, invoicing, and basic reporting. Visit our pricing page for a detailed comparison.')
+    },
+    {
+      question: t('faq.onboarding.question', 'How long does it take to set up?'),
+      answer: t('faq.onboarding.answer', 'Most businesses get up and running with Dott in less than a day. Our intuitive setup wizard guides you through the process, and our customer success team is available to help if you need assistance. If you\'re migrating from another system, we offer tools to import your existing data.')
+    },
+    {
+      question: t('faq.support.question', 'What kind of support do you offer?'),
+      answer: t('faq.support.answer', 'We provide 24/7 customer support via chat, email, and phone. Our team is available in multiple languages to assist businesses across different time zones. Premium plans include dedicated account managers and priority support.')
+    },
+    {
+      question: t('faq.data.question', 'Is my business data secure?'),
+      answer: t('faq.data.answer', 'Yes, we take security seriously. Dott uses bank-level encryption to protect your data, regular security audits, and complies with GDPR and other regional data protection regulations. Your business data is backed up regularly and stored securely in the cloud.')
+    },
+    {
+      question: t('faq.integration.question', 'Can I integrate with other tools I use?'),
+      answer: t('faq.integration.answer', 'Absolutely. Dott integrates with popular payment processors, accounting software, e-commerce platforms, and other business tools. We also offer an API for custom integrations. Check our integration page for a full list of supported services.')
+    }
+  ];
   
-  React.useEffect(() => {
-    const handleLanguageChange = () => {
-      setRenderKey(prev => prev + 1); // Force re-render
-    };
-    
-    window.addEventListener('languageChange', handleLanguageChange);
-    return () => {
-      window.removeEventListener('languageChange', handleLanguageChange);
-    };
-  }, []);
+  const [openFaq, setOpenFaq] = useState(null);
   
-  return (
-    <Box
-      id="faq"
-      sx={{
-        py: { xs: 8, sm: 12 },
-        bgcolor: 'background.paper',
-      }}
-    >
-      <Container maxWidth="md">
-        <Box sx={{ mb: { xs: 6, sm: 8 }, textAlign: 'center' }}>
-          <Typography
-            component="h2"
-            variant="h2"
-            sx={{
-              mb: 2,
-              background: (theme) =>
-                theme.palette.mode === 'light'
-                  ? 'linear-gradient(45deg, #1976d2, #2196f3)'
-                  : 'linear-gradient(45deg, #64b5f6, #90caf9)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            {t('faq_title', 'Frequently Asked Questions')}
-          </Typography>
-          <Typography
-            variant="h5"
-            color="text.secondary"
-            sx={{ maxWidth: 800, mx: 'auto', mb: 3 }}
-          >
-            {t('faq_subtitle', 'Got questions about our global business platform? We\'ve got answers.')}
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 1 }}>
-            <Chip icon={<PublicIcon />} label={t('chip_countries', '100+ Countries')} color="primary" variant="outlined" />
-            <Chip icon={<QrCodeScannerIcon />} label={t('chip_barcode', 'Barcode Integration')} color="primary" variant="outlined" />
-            <Chip icon={<CurrencyExchangeIcon />} label={t('chip_currency', 'Multi-Currency')} color="primary" variant="outlined" />
-          </Box>
-        </Box>
+  const toggleFaq = (index) => {
+    setOpenFaq(openFaq === index ? null : index);
+  };
 
-        <Box sx={{ mt: 4 }}>
-          {groupedFaqs.map((group, groupIndex) => (
-            <Box key={group.category} sx={{ mb: 4 }}>
-              {groupIndex > 0 && <Divider sx={{ my: 4 }} />}
-              <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
-                {t(`faq_category_${group.category}`, categoryLabels[group.category])}
-              </Typography>
-              
-              {group.items.map((faq, index) => (
-                <Accordion
-                  key={index}
-                  sx={{
-                    mb: 2,
-                    boxShadow: 'none',
-                    border: '1px solid',
-                    borderColor: faq.highlight ? 'primary.light' : 'divider',
-                    bgcolor: faq.highlight ? 'rgba(25, 118, 210, 0.04)' : 'transparent',
-                    '&:before': { display: 'none' },
-                    '&:hover': {
-                      bgcolor: faq.highlight ? 'rgba(25, 118, 210, 0.08)' : 'action.hover',
-                    },
-                  }}
-                >
-                  <AccordionSummary
-                    expandIcon={<ExpandMoreIcon />}
-                    sx={{
-                      '& .MuiAccordionSummary-content': {
-                        my: 2,
-                      },
-                    }}
-                  >
-                    <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                      {t(`faq_q_${faq.question.replace(/\s+/g, '_').toLowerCase().replace(/[?']/g, '')}`, faq.question)}
-                      {faq.highlight && (
-                        <Chip 
-                          size="small" 
-                          label={t('key_info', 'Key Info')}
-                          color="primary" 
-                          variant="outlined"
-                          sx={{ ml: 1, verticalAlign: 'middle' }}
-                        />
-                      )}
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        color: 'text.secondary',
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      {t(`faq_a_${faq.question.replace(/\s+/g, '_').toLowerCase().replace(/[?']/g, '')}`, faq.answer)}
-                    </Typography>
-                  </AccordionDetails>
-                </Accordion>
-              ))}
-            </Box>
-          ))}
-        </Box>
+  return (
+    <div id="faq" className="bg-white py-16 sm:py-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <h2 className="text-base font-semibold text-primary-main uppercase tracking-wide">
+            {t('faq.eyebrow', 'FAQ')}
+          </h2>
+          <p className="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl lg:text-5xl">
+            {t('faq.heading', 'Frequently asked questions')}
+          </p>
+          <p className="mt-6 max-w-2xl text-xl text-gray-600 mx-auto">
+            {t('faq.subheading', 'Find answers to common questions about our platform and services.')}
+          </p>
+        </div>
         
-        <Box sx={{ mt: 6, p: 3, bgcolor: 'rgba(25, 118, 210, 0.05)', borderRadius: 2, textAlign: 'center' }}>
-          <Typography variant="h6" gutterBottom>
-            {t('still_have_questions', 'Still have questions?')}
-          </Typography>
-          <Typography variant="body1">
-            {t('contact_support', 'Contact our global support team at support@dottapps.com')}
-          </Typography>
-        </Box>
-      </Container>
-    </Box>
+        <div className="mt-16 max-w-4xl mx-auto divide-y divide-gray-200">
+          {faqs.map((faq, index) => (
+            <div key={index} className="py-6">
+              <button
+                onClick={() => toggleFaq(index)}
+                className="flex justify-between items-center w-full text-left focus:outline-none"
+              >
+                <h3 className="text-xl font-medium text-gray-900">{faq.question}</h3>
+                <span className="ml-6 flex-shrink-0">
+                  <svg 
+                    className={`h-6 w-6 text-primary-main transform ${openFaq === index ? 'rotate-180' : 'rotate-0'} transition-transform duration-200 ease-in-out`} 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
+              </button>
+              <div 
+                className={`mt-2 transition-all duration-300 overflow-hidden ${
+                  openFaq === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                }`}
+              >
+                <p className="text-base text-gray-600">{faq.answer}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        <div className="mt-16 text-center">
+          <p className="text-base text-gray-600">
+            {t('faq.more.text', 'Still have questions?')}
+          </p>
+          <a
+            href="/contact"
+            className="mt-6 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary-main hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light"
+          >
+            {t('faq.more.contact', 'Contact Support')}
+          </a>
+        </div>
+      </div>
+    </div>
   );
 }

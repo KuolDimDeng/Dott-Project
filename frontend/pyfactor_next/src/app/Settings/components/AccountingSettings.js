@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Paper, Grid, TextField, MenuItem, Button, Divider } from '@mui/material';
+import { Button, TextField, Select } from '@/components/replaced';
 
 const AccountingSettings = ({ selectedTab }) => {
   const currencies = [
@@ -18,166 +18,143 @@ const AccountingSettings = ({ selectedTab }) => {
     { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD (ISO)' },
   ];
 
+  const symbolPositionOptions = [
+    { value: 'before', label: 'Before amount ($100.00)' },
+    { value: 'after', label: 'After amount (100.00$)' },
+  ];
+
   const renderContent = () => {
     switch (selectedTab) {
       case 0:
         return (
-          <Box>
-            <Typography variant="h6" gutterBottom>Dates and Currency</Typography>
-            <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>Currency Settings</Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    select
-                    fullWidth
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Dates and Currency</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+              <h3 className="text-lg font-medium mb-4">Currency Settings</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <Select
                     label="Default Currency"
                     defaultValue="USD"
-                  >
-                    {currencies.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
+                    options={currencies}
                     fullWidth
+                  />
+                </div>
+                <div>
+                  <Select
                     label="Currency Symbol Position"
-                    select
                     defaultValue="before"
-                  >
-                    <MenuItem value="before">Before amount ($100.00)</MenuItem>
-                    <MenuItem value="after">After amount (100.00$)</MenuItem>
-                  </TextField>
-                </Grid>
-              </Grid>
-            </Paper>
-            
-            <Paper elevation={1} sx={{ p: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>Date Format</Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    select
+                    options={symbolPositionOptions}
                     fullWidth
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium mb-4">Date Format</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <Select
                     label="Date Format"
                     defaultValue="MM/DD/YYYY"
-                  >
-                    {dateFormats.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
+                    options={dateFormats}
                     fullWidth
+                  />
+                </div>
+                <div>
+                  <TextField
                     label="Fiscal Year Start"
                     type="month"
                     defaultValue="2023-01"
-                    InputLabelProps={{
-                      shrink: true,
-                    }}
+                    fullWidth
                   />
-                </Grid>
-                <Grid item xs={12} sx={{ mt: 2 }}>
-                  <Button variant="contained" color="primary">
+                </div>
+                <div className="sm:col-span-2 mt-4">
+                  <Button variant="primary">
                     Save Settings
                   </Button>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Box>
+                </div>
+              </div>
+            </div>
+          </div>
         );
       case 1:
         return (
-          <Box>
-            <Typography variant="h6" gutterBottom>Sales Tax</Typography>
-            <Paper elevation={1} sx={{ p: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>Tax Settings</Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" gutterBottom>Default Tax</Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          label="Tax Name"
-                          defaultValue="Sales Tax"
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          label="Rate (%)"
-                          defaultValue="7.5"
-                          type="number"
-                          InputProps={{
-                            endAdornment: <Typography variant="body1">%</Typography>,
-                          }}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Box>
-                </Grid>
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Sales Tax</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium mb-4">Tax Settings</h3>
+              <div className="space-y-6">
+                <div className="mb-6">
+                  <h4 className="text-base font-medium mb-3">Default Tax</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <TextField
+                      fullWidth
+                      label="Tax Name"
+                      defaultValue="Sales Tax"
+                    />
+                    <TextField
+                      fullWidth
+                      label="Rate (%)"
+                      defaultValue="7.5"
+                      type="number"
+                      endAdornment={<span>%</span>}
+                    />
+                  </div>
+                </div>
                 
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="subtitle2" gutterBottom>Additional Tax Rates</Typography>
-                  <Box sx={{ mb: 3 }}>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={5}>
+                <div>
+                  <div className="border-t border-gray-200 dark:border-gray-700 my-6"></div>
+                  <h4 className="text-base font-medium mb-3">Additional Tax Rates</h4>
+                  <div className="mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                      <div className="sm:col-span-5">
                         <TextField
                           fullWidth
                           label="Tax Name"
                           defaultValue="State Tax"
                         />
-                      </Grid>
-                      <Grid item xs={12} sm={5}>
+                      </div>
+                      <div className="sm:col-span-5">
                         <TextField
                           fullWidth
                           label="Rate (%)"
                           defaultValue="4"
                           type="number"
-                          InputProps={{
-                            endAdornment: <Typography variant="body1">%</Typography>,
-                          }}
+                          endAdornment={<span>%</span>}
                         />
-                      </Grid>
-                      <Grid item xs={12} sm={2}>
-                        <Button variant="outlined" color="error" sx={{ mt: 1 }}>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Button variant="outlined" className="mt-2 text-red-600 border-red-600 hover:bg-red-50">
                           Remove
                         </Button>
-                      </Grid>
-                    </Grid>
-                  </Box>
+                      </div>
+                    </div>
+                  </div>
                   
-                  <Box sx={{ mt: 2, mb: 3 }}>
-                    <Button variant="outlined" color="primary">
+                  <div className="mt-4 mb-6">
+                    <Button variant="outlined">
                       Add Tax Rate
                     </Button>
-                  </Box>
-                </Grid>
+                  </div>
+                </div>
                 
-                <Grid item xs={12}>
-                  <Button variant="contained" color="primary">
+                <div>
+                  <Button variant="primary">
                     Save Tax Settings
                   </Button>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Box>
+                </div>
+              </div>
+            </div>
+          </div>
         );
       default:
         return null;
     }
   };
 
-  return <Box>{renderContent()}</Box>;
+  return <div className="w-full">{renderContent()}</div>;
 };
 
 export default AccountingSettings;

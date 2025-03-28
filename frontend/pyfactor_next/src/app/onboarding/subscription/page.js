@@ -194,7 +194,7 @@ export default function SubscriptionPage() {
         expiration.setDate(expiration.getDate() + 7); // 7 days
         
         // Set target based on plan
-        const targetStep = plan.id === 'free' ? 'setup' : 'payment';
+        const targetStep = plan.id === 'free' ? 'dashboard' : 'payment';
         
         // Update cookies with selected plan info
         document.cookie = `onboardingStep=${targetStep}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
@@ -248,13 +248,21 @@ export default function SubscriptionPage() {
             
           logger.debug('[SubscriptionPage] Navigating to:', targetRoute);
           
-          // Use window.location for more reliable navigation
+          // Force the navigation using window.location.replace for the most reliable redirect
+          // This completely replaces the current page in history
           if (typeof window !== 'undefined') {
-            // Add timestamp to prevent caching issues
-            window.location.href = `${targetRoute}?t=${Date.now()}`;
+            // Add timestamp and force flag to prevent caching issues and middleware interference
+            const timestamp = Date.now();
+            window.location.replace(`${targetRoute}?t=${timestamp}&force=true`);
+            
+            // Add a fallback in case the replace didn't trigger
+            setTimeout(() => {
+              logger.debug('[SubscriptionPage] Fallback navigation using href');
+              window.location.href = `${targetRoute}?t=${timestamp}&force=true&fallback=true`;
+            }, 500);
           } else {
             // Fallback to router if window is not available
-            router.push(targetRoute);
+            router.push(`${targetRoute}?t=${Date.now()}&force=true`);
           }
         } catch (error) {
           logger.error('[SubscriptionPage] Navigation error:', error);

@@ -212,217 +212,155 @@ export default function BusinessInfoPage() {
     if (formError) setFormError('');
   };
 
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
+  };
+
+  // Validate business info fields
+  const validateBusinessInfo = async (data) => {
+    // Check for required fields
+    if (!data.businessName || data.businessName.trim() === '') {
+      return false;
+    }
+    
+    if (!data.businessType || data.businessType === '') {
+      return false;
+    }
+    
+    // Additional validation can be added here
+    
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setFormError('');
 
     try {
-      // Validate required fields
-      const requiredFields = ['businessName', 'businessType', 'country', 'legalStructure', 'dateFounded'];
-      const missingFields = requiredFields.filter(field => !formData[field]);
-      
-      if (missingFields.length > 0) {
-        throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
-      }
-
       logger.debug('[BusinessInfo] Submitting form data');
-      
-      // ENHANCED: Step 1: Ensure cookies are set with proper values and debugging
-      try {
-        // Set cookies directly - important for navigation
-        const expiration = new Date();
-        expiration.setDate(expiration.getDate() + 7); // 7 days
-        
-        // Set onboarding status cookies with forced values for reliable redirection
-        const statusCookie = `onboardedStatus=BUSINESS_INFO; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-        const stepCookie = `onboardingStep=subscription; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-        
-        logger.debug('[BusinessInfo] Setting critical cookies:', {
-          statusCookie,
-          stepCookie
-        });
-        
-        document.cookie = statusCookie;
-        document.cookie = stepCookie;
-        
-        // Force verification of cookie setting - read back to confirm
-        setTimeout(() => {
-          const cookieStatus = document.cookie.split(';').find(c => c.trim().startsWith('onboardedStatus='))?.trim().split('=')[1];
-          const cookieStep = document.cookie.split(';').find(c => c.trim().startsWith('onboardingStep='))?.trim().split('=')[1];
-          
-          logger.debug('[BusinessInfo] Verified cookie values:', {
-            cookieStatus,
-            cookieStep,
-            expected: {
-              status: 'BUSINESS_INFO',
-              step: 'subscription'
-            }
-          });
-        }, 100);
-        
-        // Set business info cookies
-        document.cookie = `businessName=${encodeURIComponent(formData.businessName)}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-        document.cookie = `businessType=${encodeURIComponent(formData.businessType)}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-        document.cookie = `businessCountry=${encodeURIComponent(formData.country)}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-        document.cookie = `legalStructure=${encodeURIComponent(formData.legalStructure)}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-        
-        logger.debug('[BusinessInfo] Business info cookies set successfully');
-        
-        // Use API endpoint to set cookies server-side as well
-        fetch('/api/onboarding/business-info', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            ...formData,
-            // Add explicit status for server
-            _onboardingStatus: 'BUSINESS_INFO',
-            _onboardingStep: 'subscription'
-          })
-        })
-        .then(res => res.json())
-        .then(data => {
-          logger.debug('[BusinessInfo] API business info update successful:', data);
-        })
-        .catch(apiError => {
-          logger.error('[BusinessInfo] API business info update failed:', apiError);
-          // Continue since we already set cookies directly
-        });
-        
-        // Try to update Cognito attributes in the background without blocking
-        updateUserAttributes({
-          userAttributes: {
-            'custom:onboarding': 'BUSINESS_INFO',
-            'custom:updated_at': new Date().toISOString()
-          }
-        }).then(() => {
-          logger.debug('[BusinessInfo] Cognito attributes updated successfully');
-        }).catch(cognitoError => {
-          logger.error('[BusinessInfo] Failed to update Cognito attributes:', cognitoError);
-          // Don't throw error since we have cookies as a backup
-        });
-      } catch (cookieError) {
-        logger.error('[BusinessInfo] Failed to set cookies:', cookieError);
-        
-        // If direct cookie setting fails, try the API method
-        fetch('/api/onboarding/business-info', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            ...formData,
-            // Add explicit status for server
-            _onboardingStatus: 'BUSINESS_INFO',
-            _onboardingStep: 'subscription'
-          })
-        })
-        .then(res => res.json())
-        .then(data => {
-          logger.debug('[BusinessInfo] Fallback API business info update successful:', data);
-        })
-        .catch(apiError => {
-          logger.error('[BusinessInfo] Fallback API business info update failed:', apiError);
-          // Continue to next step of the process
-        });
-      }
-      
-      // Step 2: Try to update server-side state in background without waiting
-      onboardingService.updateState('business-info', {
-        ...formData,
-        onboardingStatus: 'BUSINESS_INFO',
-        onboardingStep: 'subscription'
-      })
-        .then(() => {
-          logger.debug('[BusinessInfo] Server state updated successfully');
-        })
-        .catch((stateError) => {
-          logger.error('[BusinessInfo] Server state update failed:', stateError);
-          
-          // Try the dedicated API endpoint as a backup
-          fetch('/api/onboarding/state', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              step: 'business-info',
-              data: formData,
-              status: 'BUSINESS_INFO',
-              nextStep: 'subscription'
-            })
-          })
-          .then(res => res.json())
-          .then(data => {
-            logger.debug('[BusinessInfo] API state endpoint backup succeeded:', data);
-          })
-          .catch(apiError => {
-            logger.error('[BusinessInfo] API state endpoint backup failed:', apiError);
-            // We still have cookies as our ultimate fallback
-          });
-        });
-      
-      // Step 3: Update local store
-      try {
-        await setBusinessInfo(formData);
-        logger.debug('[BusinessInfo] Local store updated successfully');
-      } catch (storeError) {
-        logger.warn('[BusinessInfo] Local store update failed:', storeError);
-        // Not critical, continue
-      }
-      
-      // ENHANCED: Force cookies one more time
-      const expiration = new Date();
-      expiration.setDate(expiration.getDate() + 7);
-      document.cookie = `onboardingStep=subscription; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-      document.cookie = `onboardedStatus=BUSINESS_INFO; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-      
-      // Show success message
-      toast.success('Business information saved successfully');
-      
-      // Use a simplified approach to navigation
-      logger.debug('[BusinessInfo] Using simplified navigation to subscription page');
-      
-      // Add a timestamp parameter to avoid URL cache
-      const timestamp = Date.now();
-      const redirectUrl = `/onboarding/subscription?ts=${timestamp}`;
-      
-      // ENHANCED: Set a flag indicating navigation is in progress
-      window.sessionStorage.setItem('navigatingTo', 'subscription');
-      window.sessionStorage.setItem('businessInfoSubmitted', 'true');
-      
-      // Force one final cookie set then navigate
-      setTimeout(() => {
-        document.cookie = `onboardingStep=subscription; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-        document.cookie = `onboardedStatus=BUSINESS_INFO; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-        
-        try {
-          logger.debug(`[BusinessInfo] Redirecting to ${redirectUrl} - final cookies:`, {
-            onboardingStep: document.cookie.split(';').find(c => c.trim().startsWith('onboardingStep='))?.trim().split('=')[1],
-            onboardedStatus: document.cookie.split(';').find(c => c.trim().startsWith('onboardedStatus='))?.trim().split('=')[1]
-          });
-          
-          // Force page refresh with new URL
-          window.location.href = redirectUrl;
-        } catch (navError) {
-          logger.error('[BusinessInfo] Direct navigation failed:', navError);
-          
-          // Final fallback - try router
-          try {
-            logger.debug('[BusinessInfo] Using router fallback');
-            router.push(redirectUrl);
-          } catch (routerError) {
-            logger.error('[BusinessInfo] Router fallback failed:', routerError);
-          }
-        }
-      }, 500);
 
+      // Validate the form data
+      const isValid = await validateBusinessInfo(formData);
+      if (!isValid) {
+        setFormError('Please fill in all required fields.');
+        setSubmitting(false);
+        return;
+      }
+
+      // First, set critical cookies immediately - this is crucial for navigation
+      const now = new Date();
+      const expiresDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      const statusCookie = `onboardedStatus=BUSINESS_INFO; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      const stepCookie = `onboardingStep=subscription; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      
+      document.cookie = statusCookie;
+      document.cookie = stepCookie;
+      
+      logger.debug('[BusinessInfo] Setting critical cookies: ', { statusCookie, stepCookie });
+
+      // Set business name and type cookies
+      document.cookie = `businessName=${encodeURIComponent(formData.businessName)}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      document.cookie = `businessType=${encodeURIComponent(formData.businessType)}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      
+      // Update Cognito user attributes with business info
+      const userAttributeUpdates = {
+        'custom:onboarding': 'BUSINESS_INFO',
+        'custom:attrversion': 'v1.0.0'
+      };
+      
+      if (formData.businessName) {
+        userAttributeUpdates['custom:businessname'] = formData.businessName;
+      }
+      
+      if (formData.businessType) {
+        userAttributeUpdates['custom:businesstype'] = formData.businessType;
+      }
+      
+      if (formData.country) {
+        userAttributeUpdates['custom:businesscountry'] = formData.country;
+      }
+      
+      if (formData.legalStructure) {
+        userAttributeUpdates['custom:legalstructure'] = formData.legalStructure;
+      }
+      
+      if (formData.dateFounded) {
+        userAttributeUpdates['custom:datefounded'] = formData.dateFounded;
+      }
+      
+      // Add business ID if we have one
+      const uuid = crypto.randomUUID();
+      userAttributeUpdates['custom:businessid'] = uuid;
+      
+      logger.debug('[Auth] Updating user attributes', { attributes: Object.keys(userAttributeUpdates) });
+      
+      // Do the update in the background to not block navigation
+      updateUserAttributes({ userAttributes: userAttributeUpdates })
+        .then(() => {
+          logger.debug('[Auth] User attributes updated successfully');
+          logger.debug('[BusinessInfo] Cognito attributes updated successfully');
+        })
+        .catch(error => {
+          logger.error('[Auth] Error updating user attributes:', error);
+        });
+
+      // Update the local store
+      setBusinessInfo(formData);
+      logger.debug('[OnboardingStore] Business info updated successfully');
+      
+      // Update the server state in the background
+      Promise.resolve().then(async () => {
+        try {
+          await onboardingService.updateState('business-info', {
+            businessName: formData.businessName,
+            businessType: formData.businessType,
+            country: formData.country,
+            legalStructure: formData.legalStructure,
+            dateFounded: formData.dateFounded,
+            businessId: crypto.randomUUID()
+          });
+          logger.debug('[BusinessInfo] Server state updated successfully');
+        } catch (serverError) {
+          logger.error('[BusinessInfo] Error updating server state (non-blocking):', serverError);
+        }
+      });
+
+      // Verify the cookie values before navigation
+      const cookieStatus = getCookie('onboardedStatus');
+      const cookieStep = getCookie('onboardingStep');
+      logger.debug('[BusinessInfo] Verified cookie values: ', {
+        cookieStatus,
+        cookieStep,
+        expected: {
+          status: 'BUSINESS_INFO',
+          step: 'subscription'
+        }
+      });
+
+      // Update local store
+      logger.debug('[BusinessInfo] Local store updated successfully');
+      
+      // Use simplified navigation to ensure we bypass middleware issues
+      logger.debug('[BusinessInfo] Using simplified navigation to subscription page');
+      const timestamp = Date.now();
+      
+      // Add a slight delay to ensure cookies are set before navigation
+      setTimeout(() => {
+        const finalCookies = {
+          onboardingStep: getCookie('onboardingStep'),
+          onboardedStatus: getCookie('onboardedStatus')
+        };
+        logger.debug(`[BusinessInfo] Redirecting to /onboarding/subscription?ts=${timestamp} - final cookies: `, finalCookies);
+        router.push(`/onboarding/subscription?ts=${timestamp}`);
+      }, 50);
+      
     } catch (error) {
-      logger.error('[BusinessInfo] Form submission failed:', error);
-      setFormError(error.message);
-      toast.error(error.message);
+      logger.error('[BusinessInfo] Error submitting form:', error);
+      setFormError('An error occurred while saving your business information. Please try again.');
       setSubmitting(false);
     }
   };

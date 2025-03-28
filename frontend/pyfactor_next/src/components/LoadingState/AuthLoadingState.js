@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession';
-import { Box, CircularProgress, Typography } from '@mui/material';
 import { logger } from '@/utils/logger';
 
 export function AuthLoadingState() {
@@ -11,21 +10,14 @@ export function AuthLoadingState() {
 
   if (status === 'loading') {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          gap: 2,
-        }}
+      <div
+        className="flex flex-col items-center justify-center min-h-screen gap-4"
       >
-        <CircularProgress />
-        <Typography variant="body1" color="textSecondary">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary-main"></div>
+        <p className="text-gray-600 dark:text-gray-300">
           Loading...
-        </Typography>
-      </Box>
+        </p>
+      </div>
     );
   }
 

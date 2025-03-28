@@ -14,6 +14,7 @@ import LoadingFallback from '@/components/ClientOnly/LoadingFallback';
 import { setupRenderDebugging } from '@/utils/debugReactRendering';
 import dynamic from 'next/dynamic';
 import ConfigureAmplify from '@/components/ConfigureAmplify';
+import DynamicComponents from '@/components/DynamicComponents';
 // Removed GlobalEventDebugger - was causing input field issues
 
 // Dynamically import the ReactErrorDebugger to avoid SSR issues
@@ -45,6 +46,16 @@ const checkCookieBasedAccess = (pathname) => {
   // Get onboarding status from cookies
   const onboardingStep = cookies.onboardingStep;
   const onboardedStatus = cookies.onboardedStatus;
+  const selectedPlan = cookies.selectedPlan;
+  const postSubscriptionAccess = cookies.postSubscriptionAccess;
+  
+  // Special case for dashboard after subscription
+  if (pathname === '/dashboard' && 
+      ((selectedPlan === 'free' && onboardedStatus === 'SUBSCRIPTION') || 
+       postSubscriptionAccess === 'true')) {
+    logger.info('[ClientLayout] Allowing dashboard access after free plan subscription');
+    return true;
+  }
   
   // Grant access based on cookies and pathname
   if (pathname.includes('business-info')) {
@@ -71,6 +82,7 @@ export default function ClientLayout({ children }) {
   const sessionCheckCache = useRef(new Map());
   const [isVerifying, setIsVerifying] = useState(true);
   const [tenantInitialized, setTenantInitialized] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Initialize debugging tools
   useEffect(() => {
@@ -269,6 +281,35 @@ export default function ClientLayout({ children }) {
           return true;
         }
         
+        // Special case for dashboard after free plan subscription
+        if (pathname === '/dashboard') {
+          // Check cookies to see if this is a post-subscription dashboard access
+          if (typeof window !== 'undefined') {
+            const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+              const parts = cookie.trim().split('=');
+              if (parts.length > 1) {
+                try {
+                  acc[parts[0].trim()] = decodeURIComponent(parts[1]);
+                } catch (e) {
+                  acc[parts[0].trim()] = parts[1];
+                }
+              }
+              return acc;
+            }, {});
+            
+            // Check for free plan subscription flow
+            if (cookies.selectedPlan === 'free' && 
+                (cookies.onboardedStatus === 'SUBSCRIPTION' || cookies.onboardedStatus === 'SETUP') && 
+                (cookies.onboardingStep === 'SETUP' || cookies.postSubscriptionAccess === 'true')) {
+              logger.info('[ClientLayout] Dashboard access from free plan subscription flow, allowing access');
+              sessionCheckCache.current.set(cacheKey, true);
+              setIsVerifying(false);
+              setIsAuthenticated(true);
+              return true;
+            }
+          }
+        }
+        
         // Special handling for onboarding routes - allow access if in onboarding flow
         if (pathname.startsWith('/onboarding/') || pathname === '/auth/verify-email' || pathname.startsWith('/auth/verify-email')) {
           logger.debug('[ClientLayout] Onboarding or verification route detected, using lenient session check');
@@ -424,10 +465,12 @@ export default function ClientLayout({ children }) {
     const verify = async () => {
       if (pathname && verifySession.current) {
         try {
-          await verifySession.current(pathname);
+          const sessionValid = await verifySession.current(pathname);
+          setIsAuthenticated(sessionValid);
         } catch (error) {
           logger.error('[ClientLayout] Error in session verification:', error);
           setIsVerifying(false);
+          setIsAuthenticated(false);
         }
       }
     };
@@ -470,6 +513,7 @@ export default function ClientLayout({ children }) {
         <ConfigureAmplify />
         <LoadingFallback>
           {children}
+          <DynamicComponents isAuthenticated={isAuthenticated} />
           {/* React Error Debugger disabled */}
         </LoadingFallback>
       </AuthErrorBoundary>
