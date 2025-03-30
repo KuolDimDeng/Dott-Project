@@ -15,16 +15,51 @@ export const metadata = {
 
 export default function Home() {
   return (
-    <main className="bg-white min-h-screen">
-      <AppBar />
-      <Hero />
-      <Features />
-      <Highlights />
-      <Testimonials />
-      <Pricing />
-      <FAQ />
-      <ContactForm />
-      <Footer />
+    <main className="min-h-screen">
+      {/* NavBar */}
+      <div className="sticky top-0 z-50 bg-white">
+        <AppBar />
+      </div>
+      
+      {/* Hero Section - Light blue gradient background */}
+      <div className="bg-gradient-to-b from-blue-50 to-white">
+        <Hero />
+      </div>
+      
+      {/* Features Section - Light neutral background */}
+      <div className="bg-gray-50">
+        <Features />
+      </div>
+      
+      {/* Highlights Section - Soft purple background */}
+      <div className="bg-purple-50">
+        <Highlights />
+      </div>
+      
+      {/* Testimonials Section - White background */}
+      <div className="bg-white">
+        <Testimonials />
+      </div>
+      
+      {/* Pricing Section - Light cyan background */}
+      <div className="bg-cyan-50">
+        <Pricing />
+      </div>
+      
+      {/* FAQ Section - Light amber background */}
+      <div className="bg-amber-50">
+        <FAQ />
+      </div>
+      
+      {/* Contact Form Section - Light green background */}
+      <div className="bg-green-50">
+        <ContactForm />
+      </div>
+      
+      {/* Footer */}
+      <div className="bg-white">
+        <Footer />
+      </div>
     </main>
   );
 }

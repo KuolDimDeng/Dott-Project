@@ -37,10 +37,11 @@ class DashboardSchemaSetupView(APIView):
     
     def post(self, request):
         """
-        Handle POST request to trigger schema setup with improved memory efficiency.
+        Handle POST request to trigger tenant creation and RLS setup.
+        This view no longer creates schemas since we've migrated to Row Level Security.
         """
         request_id = request.headers.get('X-Request-Id', str(uuid.uuid4()))
-        logger.info("Dashboard schema setup request initiated", extra={
+        logger.info("Dashboard tenant and RLS setup request initiated", extra={
             'request_id': request_id,
             'user_id': str(request.user.id) if request.user.is_authenticated else None,
             'timestamp': timezone.now().isoformat(),
@@ -70,14 +71,14 @@ class DashboardSchemaSetupView(APIView):
             force_setup = request_data.get('force_setup', False)
             
             if setup_done and not force_setup:
-                logger.info("Schema setup already completed according to setupdone flag", extra={
+                logger.info("Tenant and RLS setup already completed according to setupdone flag", extra={
                     'request_id': request_id,
                     'user_id': str(request.user.id)
                 })
                 
                 return Response({
                     'status': 'complete',
-                    'message': 'Schema setup already completed',
+                    'message': 'Tenant and RLS setup already completed',
                     'request_id': request_id
                 }, status=status.HTTP_200_OK)
             
@@ -135,7 +136,7 @@ class DashboardSchemaSetupView(APIView):
                 try:
                     consolidated_tenant = consolidate_user_tenants(request.user)
                     if consolidated_tenant:
-                        logger.info(f"[DASHBOARD-SETUP] Found consolidated tenant: {consolidated_tenant.schema_name}")
+                        logger.info(f"[DASHBOARD-SETUP] Found consolidated tenant: {consolidated_tenant.id}")
                 except Exception as e:
                     logger.error(f"[DASHBOARD-SETUP] Error consolidating tenants: {str(e)}")
                     
@@ -143,28 +144,27 @@ class DashboardSchemaSetupView(APIView):
                 pending_setup = {
                     'business_name': request.data.get('business_name', 'New Business'),
                     'tenant_id': None,
-                    'schema_name': None,
                     'setup_time': timezone.now().isoformat(),
                     'business_id': request.headers.get('X-Tenant-ID')
                 }
                 
-                # Check session for pending schema setup first
-                session_pending_setup = request.session.get('pending_schema_setup')
+                # Check session for pending setup first
+                session_pending_setup = request.session.get('pending_tenant_setup')
                 if session_pending_setup:
                     pending_setup.update(session_pending_setup)
                     logger.info(f"[DASHBOARD-SETUP] Found pending setup in session")
                 
                 with direct_conn.cursor() as cursor:
-                    # IMPROVED: Check if tenant exists - check both owner_id and regular user association
+                    # Check if tenant exists - check both owner_id and regular user association
                     cursor.execute("""
                         -- First check if user owns any tenant
-                        SELECT id, schema_name FROM custom_auth_tenant
+                        SELECT id FROM custom_auth_tenant
                         WHERE owner_id = %s
                         
                         UNION
                         
                         -- Then check if user is associated with any tenant
-                        SELECT t.id, t.schema_name 
+                        SELECT t.id 
                         FROM custom_auth_tenant t
                         JOIN custom_auth_user u ON u.tenant_id = t.id
                         WHERE u.id = %s
@@ -175,10 +175,9 @@ class DashboardSchemaSetupView(APIView):
                     tenant_record = cursor.fetchone()
                     
                     if tenant_record:
-                        tenant_id, schema_name = tenant_record
+                        tenant_id = tenant_record[0]
                         tenant = {
                             'id': tenant_id,
-                            'schema_name': schema_name
                         }
                         logger.info(f"Found existing tenant: {tenant_id} for user {request.user.email}")
                         
@@ -208,38 +207,20 @@ class DashboardSchemaSetupView(APIView):
                         
                         # Create a new tenant with safer SQL
                         tenant_id = str(uuid.uuid4())
-                        schema_name = f"tenant_{tenant_id.replace('-', '_')}"
                         created_on = timezone.now().isoformat()
-                        
-                        # First create the schema itself - this was missing before
-                        cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
-                        
-                        # Verify schema was created
-                        cursor.execute("""
-                            SELECT schema_name FROM information_schema.schemata
-                            WHERE schema_name = %s
-                        """, [schema_name])
-                        schema_exists = cursor.fetchone() is not None
-                        logger.info(f"Schema creation verified: {schema_exists}")
-                        
-                        # Set up permissions
-                        db_user = connection.settings_dict['USER']
-                        cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {db_user}')
-                        cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {db_user}')
-                        cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {db_user}')
                         
                         # Create the tenant record in the database
                         cursor.execute("""
                             INSERT INTO custom_auth_tenant (
-                                id, schema_name, name, created_on, owner_id, setup_status, 
-                                is_active, database_status
+                                id, name, created_on, owner_id, setup_status, 
+                                is_active
                             ) VALUES (
-                                %s, %s, %s, %s, %s, %s, 
-                                TRUE, %s
+                                %s, %s, %s, %s, %s, 
+                                TRUE
                             )
                         """, [
-                            tenant_id, schema_name, business_name, created_on, 
-                            str(request.user.id), 'not_started', 'not_created'
+                            tenant_id, business_name, created_on, 
+                            str(request.user.id), 'active'
                         ])
                         
                         # Also update the user to link to this tenant
@@ -251,13 +232,111 @@ class DashboardSchemaSetupView(APIView):
                         
                         tenant = {
                             'id': tenant_id,
-                            'schema_name': schema_name
                         }
-                        logger.info(f"Created new tenant: {tenant_id} with schema {schema_name} for user {request.user.email}")
+                        logger.info(f"Created new tenant: {tenant_id} for user {request.user.email}")
                     
                 # Update pending_setup with tenant information
                 pending_setup['tenant_id'] = str(tenant['id'])
-                pending_setup['schema_name'] = tenant['schema_name']
+                
+                # Apply RLS policies to tenant-aware tables
+                try:
+                    # Import RLS utilities
+                    from custom_auth.rls import set_tenant_in_db, create_rls_policy_for_table
+                    
+                    # Set current tenant context for RLS
+                    set_tenant_in_db(tenant_id)
+                    logger.info(f"Set tenant context to {tenant_id} for RLS application")
+                    
+                    # Get list of tenant-aware tables
+                    cursor.execute("""
+                        SELECT table_name 
+                        FROM information_schema.columns 
+                        WHERE column_name = 'tenant_id' 
+                        AND table_schema = 'public'
+                    """)
+                    
+                    tenant_tables = [row[0] for row in cursor.fetchall()]
+                    logger.info(f"Found {len(tenant_tables)} tenant-aware tables")
+                    
+                    # Apply RLS policies to tenant tables
+                    for table_name in tenant_tables:
+                        # Enable RLS on the table
+                        cursor.execute(f'ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY;')
+                        
+                        # Create tenant isolation policy
+                        cursor.execute(f"""
+                            DROP POLICY IF EXISTS tenant_isolation_policy ON {table_name};
+                            CREATE POLICY tenant_isolation_policy ON {table_name}
+                                USING (
+                                    tenant_id = current_setting('app.current_tenant_id')::uuid
+                                    OR current_setting('app.current_tenant_id', TRUE) IS NULL
+                                );
+                        """)
+                        logger.info(f"Applied RLS policy to table: {table_name}")
+                    
+                    logger.info(f"Successfully applied RLS policies to all tenant-aware tables")
+
+                    # Update user's onboarding status in Cognito
+                    try:
+                        import boto3
+                        from botocore.exceptions import ClientError
+                        
+                        cognito_client = boto3.client('cognito-idp', 
+                            region_name=settings.AWS_REGION,
+                            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+                        )
+                        
+                        # Check if user has cognito_sub
+                        if hasattr(request.user, 'cognito_sub') and request.user.cognito_sub:
+                            # Update Cognito attributes to mark onboarding as complete
+                            cognito_client.admin_update_user_attributes(
+                                UserPoolId=settings.COGNITO_USER_POOL_ID,
+                                Username=request.user.cognito_sub,
+                                UserAttributes=[
+                                    {
+                                        'Name': 'custom:onboarding',
+                                        'Value': 'COMPLETE'
+                                    },
+                                    {
+                                        'Name': 'custom:setupdone',
+                                        'Value': 'TRUE'
+                                    },
+                                    {
+                                        'Name': 'custom:updated_at',
+                                        'Value': timezone.now().isoformat()
+                                    }
+                                ]
+                            )
+                            logger.info(f"Updated Cognito attributes for user {request.user.id} - onboarding marked as COMPLETE")
+                        else:
+                            logger.warning(f"User {request.user.id} does not have a cognito_sub, could not update Cognito attributes")
+                            
+                        # Update OnboardingProgress record if it exists
+                        from onboarding.models import OnboardingProgress
+                        progress = OnboardingProgress.objects.filter(user=request.user).first()
+                        if progress:
+                            progress.onboarding_status = 'complete'
+                            progress.completed_at = timezone.now()
+                            progress.rls_setup_completed = True
+                            progress.rls_setup_timestamp = timezone.now()
+                            progress.save(update_fields=['onboarding_status', 'completed_at', 'rls_setup_completed', 'rls_setup_timestamp'])
+                            logger.info(f"Updated OnboardingProgress record for user {request.user.id}")
+                    except Exception as cognito_error:
+                        logger.error(f"Error updating Cognito attributes: {str(cognito_error)}", extra={
+                            'request_id': request_id,
+                            'error': str(cognito_error),
+                            'traceback': traceback.format_exc()
+                        })
+                        # Continue despite Cognito errors
+                        
+                except Exception as rls_error:
+                    logger.error(f"Error applying RLS policies: {str(rls_error)}", extra={
+                        'request_id': request_id,
+                        'error': str(rls_error),
+                        'traceback': traceback.format_exc()
+                    })
+                    # Continue despite RLS errors as they will be retried during management command execution
                     
             except Exception as tenant_error:
                 logger.error(f"Error creating/finding tenant: {str(tenant_error)}", extra={
@@ -358,7 +437,7 @@ class DashboardSchemaSetupView(APIView):
                 
                 # Save to session
                 try:
-                    request.session['pending_schema_setup'] = pending_setup
+                    request.session['pending_tenant_setup'] = pending_setup
                     request.session.modified = True
                 except Exception as session_error:
                     logger.warning("Failed to update session", extra={
@@ -372,7 +451,7 @@ class DashboardSchemaSetupView(APIView):
                     if profile:
                         if not profile.metadata:
                             profile.metadata = {}
-                        profile.metadata['pending_schema_setup'] = pending_setup
+                        profile.metadata['pending_tenant_setup'] = pending_setup
                         profile.save(update_fields=['metadata'])
                 except Exception as profile_error:
                     logger.warning("Failed to update profile metadata", extra={
@@ -383,17 +462,16 @@ class DashboardSchemaSetupView(APIView):
                 # Return a consistent JSON response
                 return Response({
                     'status': 'success',
-                    'message': 'Schema setup initiated',
+                    'message': 'Tenant and RLS setup initiated',
                     'task_id': task_id,
                     'request_id': request_id,
-                    'schema_name': tenant['schema_name'],
+                    'tenant_id': tenant['id'],
                     'source': source,
                     'force_setup': force_setup,
-                    'tenant_id': tenant['id']
                 }, status=status.HTTP_202_ACCEPTED)
                 
         except Exception as e:
-            logger.error("Error initiating schema setup", extra={
+            logger.error("Error initiating tenant and RLS setup", extra={
                 'request_id': request_id,
                 'error': str(e),
                 'error_type': type(e).__name__,
@@ -401,7 +479,7 @@ class DashboardSchemaSetupView(APIView):
             })
             return Response({
                 'status': 'error',
-                'message': f'Failed to initiate schema setup: {str(e)}',
+                'message': f'Failed to initiate tenant and RLS setup: {str(e)}',
                 'request_id': request_id
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         finally:

@@ -6,8 +6,9 @@ from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from users.models import Business
 from banking.models import BankAccount, BankTransaction
-
+from custom_auth.models import TenantAwareModel, TenantManager
 from purchases.models import Bill
+from sales.models import Invoice
 
 class AccountType(models.Model):
     ACCOUNT_TYPE_CHOICES = [
@@ -28,11 +29,7 @@ class AccountType(models.Model):
     def __str__(self):
         return self.name
 
-class AccountManager(models.Manager):
-    def get_queryset(self):
-        return super().get_queryset().using(self._db)
-
-class Account(models.Model):
+class Account(TenantAwareModel):
     ACCOUNT_TYPE_CHOICES = [
         ('Sales', 'Sales'),
         ('Accounts Receivable', 'Accounts Receivable'),
@@ -52,11 +49,12 @@ class Account(models.Model):
         ('pending_reconciliation', 'Pending Reconciliation')
     ]
     
-    account_number = models.CharField(max_length=20, null=True, unique=True)
+    account_number = models.CharField(max_length=20, null=True)
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="accounts", null=True)
     name = models.CharField(max_length=100)
     account_type = models.ForeignKey(AccountType, on_delete=models.CASCADE, related_name='accounts')
-    objects = AccountManager()
+    objects = TenantManager()
+    all_objects = models.Manager()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
@@ -67,9 +65,12 @@ class Account(models.Model):
     
     class Meta:
         indexes = [
-            models.Index(fields=['account_number']),
-            models.Index(fields=['business', 'account_type']),
-            models.Index(fields=['status']),
+            models.Index(fields=['tenant', 'account_number']),
+            models.Index(fields=['tenant', 'business', 'account_type']),
+            models.Index(fields=['tenant', 'status']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['tenant', 'account_number'], name='unique_account_number_per_tenant'),
         ]
         
     def __str__(self):
@@ -135,7 +136,7 @@ class Account(models.Model):
             
             return reconciliation
 
-class FinanceTransaction(models.Model):
+class FinanceTransaction(TenantAwareModel):
     TYPE_CHOICES = [
         ('credit', 'Credit'),
         ('debit', 'Debit'),
@@ -157,7 +158,7 @@ class FinanceTransaction(models.Model):
         ('adjustment', 'Adjustment')
     ]
     
-    transaction_id = models.CharField(max_length=50, unique=True)
+    transaction_id = models.CharField(max_length=50)
     date = models.DateField(default=timezone.now)
     description = models.CharField(max_length=255)
     account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='transactions')
@@ -167,7 +168,7 @@ class FinanceTransaction(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     notes = models.TextField(blank=True)
     receipt = models.FileField(upload_to='receipts/', blank=True, null=True)
-    invoice = models.OneToOneField('sales.Invoice', on_delete=models.SET_NULL, related_name='finance_transaction', null=True, blank=True)
+    invoice = models.OneToOneField(Invoice, on_delete=models.SET_NULL, related_name='finance_transaction', null=True, blank=True)
     bill = models.ForeignKey(Bill, on_delete=models.SET_NULL, related_name='finance_transactions', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -179,15 +180,21 @@ class FinanceTransaction(models.Model):
     business = models.ForeignKey('users.Business', on_delete=models.CASCADE, null=True)
     metadata = models.JSONField(default=dict, blank=True)
     
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
     class Meta:
         indexes = [
-            models.Index(fields=['transaction_id']),
-            models.Index(fields=['date']),
-            models.Index(fields=['status']),
-            models.Index(fields=['category']),
-            models.Index(fields=['business']),
+            models.Index(fields=['tenant', 'transaction_id']),
+            models.Index(fields=['tenant', 'account', 'date']),
+            models.Index(fields=['tenant', 'category', 'status']),
+            models.Index(fields=['tenant', 'business']),
         ]
-        
+        constraints = [
+            models.UniqueConstraint(fields=['tenant', 'transaction_id'], name='unique_transaction_id_per_tenant'),
+        ]
+    
     def __str__(self):
         return f"{self.transaction_id} - {self.description} ({self.amount})"
     
@@ -477,7 +484,7 @@ class AccountReconciliation(models.Model):
         ('rejected', 'Rejected')
     ]
     
-    bank_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE)
+    bank_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE, to_field="id", db_column="bank_account_id")
     account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True)
     reconciliation_date = models.DateField()
     statement_balance = models.DecimalField(max_digits=15, decimal_places=2)
@@ -1387,7 +1394,7 @@ class FixedAsset(models.Model):
         self.save()
         
         
-class Budget(models.Model):
+class Budget(TenantAwareModel):
     PERIOD_CHOICES = [
         ('monthly', 'Monthly'),
         ('quarterly', 'Quarterly'),
@@ -1436,27 +1443,23 @@ class Budget(models.Model):
     approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='approved_budgets')
     approved_at = models.DateTimeField(null=True, blank=True)
     
-    # Additional fields
-    description = models.TextField(blank=True)
-    notes = models.TextField(blank=True)
-    attachments = models.JSONField(default=dict, blank=True)
-    metadata = models.JSONField(default=dict, blank=True)
-    
-    # Audit fields
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_budgets')
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
     
     class Meta:
         indexes = [
-            models.Index(fields=['status']),
-            models.Index(fields=['business', 'fiscal_year']),
-            models.Index(fields=['category']),
+            models.Index(fields=['tenant', 'business', 'fiscal_year']),
+            models.Index(fields=['tenant', 'status']),
+            models.Index(fields=['tenant', 'category']),
         ]
-        unique_together = ('business', 'name', 'fiscal_year')
-
+        
     def __str__(self):
-        return f"{self.name} - {self.period} ({self.start_date} to {self.end_date})"
+        return f"{self.name} - {self.fiscal_year} ({self.get_status_display()})"
         
     def clean(self):
         if self.end_date <= self.start_date:

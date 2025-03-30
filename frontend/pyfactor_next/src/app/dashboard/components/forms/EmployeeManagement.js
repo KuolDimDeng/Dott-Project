@@ -1,49 +1,7 @@
+'use client';
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Tabs,
-  Tab,
-  Button,
-  TextField,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Switch,
-  FormControlLabel,
-  Select,
-  MenuItem,
-  Grid,
-  IconButton,
-  InputAdornment,
-  LinearProgress,
-  Alert,
-  Snackbar,
-  useTheme,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Chip,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-import { countries } from 'countries-list';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import SearchIcon from '@mui/icons-material/Search';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
-import SecurityIcon from '@mui/icons-material/Security';
 import { axiosInstance } from '@/lib/axiosConfig';
+import { countries } from 'countries-list';
 import { format, parseISO } from 'date-fns';
 import EmployeePermissions from './EmployeePermissions';
 
@@ -54,7 +12,6 @@ const EmployeeManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [payrollProgress, setPayrollProgress] = useState(10);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const theme = useTheme();
   const [openDialog, setOpenDialog] = useState(false);
   const [openPermissionsDialog, setOpenPermissionsDialog] = useState(false);
 
@@ -109,19 +66,6 @@ const EmployeeManagement = () => {
     fetchEmployees();
   }, []);
 
-  // Custom styled LinearProgress
-  const GreenLinearProgress = styled(LinearProgress)(({ theme }) => ({
-    height: 10,
-    borderRadius: 5,
-    [`&.MuiLinearProgress-colorPrimary`]: {
-      backgroundColor: theme.palette.grey[300],
-    },
-    [`& .MuiLinearProgress-bar`]: {
-      borderRadius: 5,
-      backgroundColor: '#4caf50', // green color
-    },
-  }));
-
   const fetchEmployees = async () => {
     try {
       const response = await axiosInstance.get(`/api/hr/employees/?q=${searchQuery}`);
@@ -131,7 +75,7 @@ const EmployeeManagement = () => {
     }
   };
 
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (newValue) => {
     setActiveTab(newValue);
   };
 
@@ -152,15 +96,15 @@ const EmployeeManagement = () => {
     }
   };
 
-  const handleDateChange = (name, date) => {
+  const handleDateChange = (name, value) => {
     setNewEmployee((prev) => ({
       ...prev,
-      [name]: date,
+      [name]: value,
     }));
   };
 
   const formatDate = (date) => {
-    if (!date) return null;
+    if (!date) return '';
     const parsedDate = typeof date === 'string' ? parseISO(date) : date;
     return format(parsedDate, 'yyyy-MM-dd');
   };
@@ -391,657 +335,835 @@ const EmployeeManagement = () => {
     }
   };
 
+  const handleSwitchChange = (name) => (e) => {
+    setNewEmployee((prev) => ({
+      ...prev,
+      [name]: e.target.checked,
+    }));
+  };
+
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-        <Box sx={{ position: 'relative', mt: 2, mb: 2 }}>
-          {/* Progress Bar Section */}
-          <Box sx={{ width: '50%' }}>
-            <GreenLinearProgress variant="determinate" value={payrollProgress} />
-          </Box>
-          <Typography variant="body2" color="text.secondary" align="left" sx={{ mt: 1 }}>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <div className="relative mt-4 mb-4">
+        {/* Progress Bar Section */}
+        <div className="w-1/2">
+          <div className="h-2.5 rounded-full bg-gray-200">
+            <div 
+              className="h-2.5 rounded-full bg-green-500" 
+              style={{ width: `${payrollProgress}%` }}
+            ></div>
+          </div>
+          <p className="mt-2 text-sm text-gray-600">
             Payroll setup {payrollProgress}% completed
-          </Typography>
+          </p>
+        </div>
 
-          {/* Image Section */}
-          <Box sx={{ position: 'absolute', right: 0, top: 0 }}>
-            <img
-              src="/static/images/good4.png"
-              alt="Good icon"
-              style={{
-                width: 100,
-                height: 100, // Adjust the size as needed
-                borderRadius: '50%', // If the image is circular
-                imageRendering: 'auto', // For smooth scaling
-                objectFit: 'contain', // Adjust how the image fits in the space
-              }}
-            />
-          </Box>
-        </Box>
+        {/* Image Section */}
+        <div className="absolute right-0 top-0">
+          <img
+            src="/static/images/good4.png"
+            alt="Good icon"
+            className="w-24 h-24 rounded-full object-contain"
+          />
+        </div>
+      </div>
 
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            '& .MuiTab-root': {
-              color: 'blue',
-              opacity: 0.7,
-              '&.Mui-selected': {
-                color: 'blue',
-                opacity: 1,
-              },
-            },
-          }}
-        >
-          <Tab label="Add Employee" />
-          <Tab label="Employee Details" />
-          <Tab label="View Employees" />
-        </Tabs>
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <div className="flex space-x-8">
+          <button
+            className={`py-2 px-1 border-b-2 ${
+              activeTab === 0
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleTabChange(0)}
+          >
+            Add Employee
+          </button>
+          <button
+            className={`py-2 px-1 border-b-2 ${
+              activeTab === 1
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleTabChange(1)}
+          >
+            Employee Details
+          </button>
+          <button
+            className={`py-2 px-1 border-b-2 ${
+              activeTab === 2
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleTabChange(2)}
+          >
+            View Employees
+          </button>
+        </div>
+      </div>
 
-        <Box sx={{ flexGrow: 1, mt: 2, overflow: 'auto' }}>
-          {activeTab === 0 && (
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <PersonAddIcon sx={{ fontSize: 30, mr: 1, color: '#000080' }} />
-                <Typography variant="h5" gutterBottom sx={{ mb: 0 }}>
-                  Add Employee
-                </Typography>
-              </Box>
-              <Typography variant="h8" gutterBottom sx={{ mb: 0 }}>
-                Add basic information about the employee.
-              </Typography>
+      <div className="mt-4 overflow-auto">
+        {activeTab === 0 && (
+          <div>
+            <div className="flex items-center mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 mr-2 text-blue-900" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+              </svg>
+              <h2 className="text-xl font-semibold">Add Employee</h2>
+            </div>
+            <p className="text-sm mb-6">Add basic information about the employee.</p>
 
-              <form onSubmit={handleCreateEmployee}>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <Paper elevation={3} sx={{ p: 3 }}>
-                      <Typography variant="h6" gutterBottom>
-                        Personal Information
-                      </Typography>
-                      <TextField
-                        label="First Name"
-                        name="first_name"
-                        value={newEmployee.first_name}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
+            <form onSubmit={handleCreateEmployee}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-medium mb-4">Personal Information</h3>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                    <input
+                      type="text"
+                      name="first_name"
+                      value={newEmployee.first_name}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                    <input
+                      type="text"
+                      name="middle_name"
+                      value={newEmployee.middle_name}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                    <input
+                      type="text"
+                      name="last_name"
+                      value={newEmployee.last_name}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={newEmployee.email}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                    <input
+                      type="date"
+                      name="dob"
+                      value={formatDate(newEmployee.dob)}
+                      onChange={(e) => handleDateChange('dob', e.target.value ? new Date(e.target.value) : null)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                    <select
+                      name="gender"
+                      value={newEmployee.gender}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="M">Male</option>
+                      <option value="F">Female</option>
+                      <option value="O">Other</option>
+                      <option value="N">Prefer not to say</option>
+                    </select>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Marital Status</label>
+                    <select
+                      name="marital_status"
+                      value={newEmployee.marital_status}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                    >
+                      <option value="">Select Status</option>
+                      <option value="S">Single</option>
+                      <option value="M">Married</option>
+                      <option value="D">Divorced</option>
+                      <option value="W">Widowed</option>
+                    </select>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
+                    <input
+                      type="text"
+                      name="nationality"
+                      value={newEmployee.nationality}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Street</label>
+                    <input
+                      type="text"
+                      name="street"
+                      value={newEmployee.street}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Postcode</label>
+                    <input
+                      type="text"
+                      name="postcode"
+                      value={newEmployee.postcode}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={newEmployee.city}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <input
+                      type="text"
+                      name="country"
+                      value={newEmployee.country}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Security Number Type</label>
+                    <select
+                      name="security_number_type"
+                      value={newEmployee.security_number_type}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                    >
+                      <option value="SSN">Social Security Number (US)</option>
+                      <option value="NIN">National Insurance Number (UK)</option>
+                      {/* Add other options as needed */}
+                    </select>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Security Number</label>
+                    <input
+                      type="text"
+                      name="security_number"
+                      value={newEmployee.security_number}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center mb-4">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        name="invite_to_onboard"
+                        checked={newEmployee.invite_to_onboard}
+                        onChange={handleSwitchChange('invite_to_onboard')}
+                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                       />
-                      <TextField
-                        label="Middle Name"
-                        name="middle_name"
-                        value={newEmployee.middle_name}
+                      <span className="ml-2 text-sm text-gray-700">Invite employee to onboard and enter their information</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-medium mb-4">Work Information</h3>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      name="date_joined"
+                      value={formatDate(newEmployee.date_joined)}
+                      onChange={(e) => handleDateChange('date_joined', e.target.value ? new Date(e.target.value) : null)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Wage Type</label>
+                    <select
+                      name="wage_type"
+                      value={newEmployee.wage_type}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                    >
+                      <option value="salary">Salary</option>
+                      <option value="wage">Wage</option>
+                    </select>
+                  </div>
+                  
+                  {newEmployee.wage_type === 'salary' ? (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Salary</label>
+                      <input
+                        type="number"
+                        name="salary"
+                        value={newEmployee.salary}
                         onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
+                        className="w-full p-2 border border-gray-300 rounded-md"
                       />
-                      <TextField
-                        label="Last Name"
-                        name="last_name"
-                        value={newEmployee.last_name}
+                    </div>
+                  ) : (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Wage Rate per Hour</label>
+                      <input
+                        type="number"
+                        name="wage_rate"
+                        value={newEmployee.wage_rate}
                         onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
+                        className="w-full p-2 border border-gray-300 rounded-md"
                       />
-                      <TextField
-                        label="Email"
-                        name="email"
-                        type="email"
-                        value={newEmployee.email}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                        required
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center mb-4">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        name="direct_deposit"
+                        checked={newEmployee.direct_deposit}
+                        onChange={handleSwitchChange('direct_deposit')}
+                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                       />
-                      <DatePicker
-                        label="Date of Birth"
-                        value={newEmployee.dob}
-                        onChange={(date) => handleDateChange('dob', date)}
-                        renderInput={(params) => (
-                          <TextField {...params} fullWidth margin="normal" />
-                        )}
+                      <span className="ml-2 text-sm text-gray-700">Direct Deposit</span>
+                    </label>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                    <input
+                      type="text"
+                      name="department"
+                      value={newEmployee.department}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                    <input
+                      type="text"
+                      name="job_title"
+                      value={newEmployee.job_title}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                    <select
+                      name="role"
+                      value={newEmployee.role}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                    >
+                      <option value="">Select Role</option>
+                      <option value="ADMIN">Admin</option>
+                      <option value="EMPLOYEE">Employee</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              <button
+                type="submit"
+                className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                disabled={
+                  !newEmployee.first_name ||
+                  !newEmployee.last_name ||
+                  !newEmployee.email ||
+                  !newEmployee.dob ||
+                  !newEmployee.date_joined
+                }
+              >
+                Add Employee
+              </button>
+            </form>
+          </div>
+        )}
+
+        {activeTab === 1 && (
+          <div>
+            <h2 className="text-2xl font-semibold mb-4">Employee Details</h2>
+            {selectedEmployee && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-medium mb-4">Personal Information</h3>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Employee Number</label>
+                    <input
+                      type="text"
+                      value={selectedEmployee.employee_number}
+                      className="w-full p-2 border border-gray-300 rounded-md bg-gray-100"
+                      disabled
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                    <input
+                      type="text"
+                      value={selectedEmployee.first_name}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                    <input
+                      type="text"
+                      value={selectedEmployee.middle_name || ''}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                    <input
+                      type="text"
+                      value={selectedEmployee.last_name}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                    <input
+                      type="text"
+                      value={new Date(selectedEmployee.dob).toLocaleDateString()}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={selectedEmployee.email}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                    <input
+                      type="text"
+                      value={selectedEmployee.gender}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Marital Status</label>
+                    <input
+                      type="text"
+                      value={selectedEmployee.marital_status}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
+                    <input
+                      type="text"
+                      value={selectedEmployee.nationality || ''}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Security Number Type</label>
+                    <input
+                      type="text"
+                      value={selectedEmployee.security_number_type}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Security Number</label>
+                    <input
+                      type="text"
+                      value={selectedEmployee.security_number || ''}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      readOnly
+                    />
+                  </div>
+                </div>
+                
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h3 className="text-lg font-medium mb-4">Work Information</h3>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                    <input
+                      type="text"
+                      value={selectedEmployee.job_title || ''}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                    <input
+                      type="text"
+                      value={selectedEmployee.department || ''}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date Joined</label>
+                    <input
+                      type="text"
+                      value={new Date(selectedEmployee.date_joined).toLocaleDateString()}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Wage Type</label>
+                    <input
+                      type="text"
+                      value={selectedEmployee.wage_type || ''}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      readOnly
+                    />
+                  </div>
+                  
+                  {selectedEmployee.wage_type === 'salary' ? (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Salary</label>
+                      <input
+                        type="text"
+                        value={selectedEmployee.salary || ''}
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                        readOnly
                       />
-                      <TextField
-                        select
-                        label="Gender"
-                        name="gender"
-                        value={newEmployee.gender}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                      >
-                        <MenuItem value="M">Male</MenuItem>
-                        <MenuItem value="F">Female</MenuItem>
-                        <MenuItem value="O">Other</MenuItem>
-                        <MenuItem value="N">Prefer not to say</MenuItem>
-                      </TextField>
-                      <TextField
-                        select
-                        label="Marital Status"
-                        name="marital_status"
-                        value={newEmployee.marital_status}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                      >
-                        <MenuItem value="S">Single</MenuItem>
-                        <MenuItem value="M">Married</MenuItem>
-                        <MenuItem value="D">Divorced</MenuItem>
-                        <MenuItem value="W">Widowed</MenuItem>
-                      </TextField>
-                      <TextField
-                        label="Nationality"
-                        name="nationality"
-                        value={newEmployee.nationality}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
+                    </div>
+                  ) : (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Wage Rate</label>
+                      <input
+                        type="text"
+                        value={selectedEmployee.wage_rate || ''}
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                        readOnly
                       />
-                      <TextField
-                        label="Street"
-                        name="street"
-                        value={newEmployee.street}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Postcode"
-                        name="postcode"
-                        value={newEmployee.postcode}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="City"
-                        name="city"
-                        value={newEmployee.city}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Country"
-                        name="country"
-                        value={newEmployee.country}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        select
-                        label="Security Number Type"
-                        name="security_number_type"
-                        value={newEmployee.security_number_type}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                      >
-                        <MenuItem value="SSN">Social Security Number (US)</MenuItem>
-                        <MenuItem value="NIN">National Insurance Number (UK)</MenuItem>
-                        {/* Add other options as needed */}
-                      </TextField>
-                      <TextField
-                        label="Security Number"
-                        name="security_number"
-                        value={newEmployee.security_number}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={newEmployee.invite_to_onboard}
-                            onChange={(e) =>
-                              setNewEmployee((prev) => ({
-                                ...prev,
-                                invite_to_onboard: e.target.checked,
-                              }))
-                            }
-                            name="invite_to_onboard"
-                          />
-                        }
-                        label="Invite employee to onboard and enter their information"
-                      />
-                    </Paper>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Paper elevation={3} sx={{ p: 3 }}>
-                      <Typography variant="h6" gutterBottom>
-                        Work Information
-                      </Typography>
-                      <DatePicker
-                        label="Start Date"
-                        value={newEmployee.date_joined}
-                        onChange={(date) => handleDateChange('date_joined', date)}
-                        renderInput={(params) => (
-                          <TextField {...params} fullWidth margin="normal" />
-                        )}
-                      />
-                      <TextField
-                        select
-                        label="Wage Type"
-                        name="wage_type"
-                        value={newEmployee.wage_type}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                      >
-                        <MenuItem value="salary">Salary</MenuItem>
-                        <MenuItem value="wage">Wage</MenuItem>
-                      </TextField>
-                      {newEmployee.wage_type === 'salary' ? (
-                        <TextField
-                          label="Salary"
-                          name="salary"
-                          type="number"
-                          value={newEmployee.salary}
-                          onChange={handleInputChange}
-                          fullWidth
-                          margin="normal"
-                        />
-                      ) : (
-                        <TextField
-                          label="Wage Rate per Hour"
-                          name="wage_rate"
-                          type="number"
-                          value={newEmployee.wage_rate}
-                          onChange={handleInputChange}
-                          fullWidth
-                          margin="normal"
-                        />
-                      )}
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={newEmployee.direct_deposit}
-                            onChange={(e) =>
-                              setNewEmployee((prev) => ({
-                                ...prev,
-                                direct_deposit: e.target.checked,
-                              }))
-                            }
-                            name="direct_deposit"
-                          />
-                        }
-                        label="Direct Deposit"
-                      />
-                      <TextField
-                        label="Department"
-                        name="department"
-                        value={newEmployee.department}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Job Title"
-                        name="job_title"
-                        value={newEmployee.job_title}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                      />
-                    </Paper>
-                  </Grid>
-                </Grid>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  sx={{ mt: 3 }}
-                  disabled={
-                    !newEmployee.first_name ||
-                    !newEmployee.last_name ||
-                    !newEmployee.email ||
-                    !newEmployee.dob ||
-                    !newEmployee.date_joined
-                  }
-                >
-                  Add Employee
-                </Button>
-              </form>
-            </Box>
-          )}
-          {activeTab === 1 && (
-            <Box>
-              <Typography variant="h4" gutterBottom>
-                Employee Details
-              </Typography>
-              {selectedEmployee && (
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <Paper elevation={3} sx={{ p: 3 }}>
-                      <Typography variant="h6" gutterBottom>
-                        Personal Information
-                      </Typography>
-                      <TextField
-                        label="Employee Number"
-                        value={selectedEmployee.employee_number}
-                        fullWidth
-                        margin="normal"
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center mb-4">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedEmployee.direct_deposit}
+                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-0"
                         disabled
                       />
-                      <TextField
-                        label="First Name"
-                        value={selectedEmployee.first_name}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Middle Name"
-                        value={selectedEmployee.middle_name}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Last Name"
-                        value={selectedEmployee.last_name}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Date of Birth"
-                        value={new Date(selectedEmployee.dob).toLocaleDateString()}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Email"
-                        name="email"
-                        type="email"
-                        value={selectedEmployee.email}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Gender"
-                        value={selectedEmployee.gender}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Marital Status"
-                        value={selectedEmployee.marital_status}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Nationality"
-                        value={selectedEmployee.nationality}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Security Number Type"
-                        value={selectedEmployee.security_number_type}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Security Number"
-                        value={selectedEmployee.security_number}
-                        fullWidth
-                        margin="normal"
-                      />
-                    </Paper>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Paper elevation={3} sx={{ p: 3 }}>
-                      <Typography variant="h6" gutterBottom>
-                        Work Information
-                      </Typography>
-                      <TextField
-                        label="Job Title"
-                        value={selectedEmployee.job_title}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Department"
-                        value={selectedEmployee.department}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Date Joined"
-                        value={new Date(selectedEmployee.date_joined).toLocaleDateString()}
-                        fullWidth
-                        margin="normal"
-                      />
-                      <TextField
-                        label="Wage Type"
-                        value={selectedEmployee.wage_type}
-                        fullWidth
-                        margin="normal"
-                      />
-                      {selectedEmployee.wage_type === 'salary' ? (
-                        <TextField
-                          label="Salary"
-                          value={selectedEmployee.salary}
-                          fullWidth
-                          margin="normal"
-                        />
-                      ) : (
-                        <TextField
-                          label="Wage Rate"
-                          value={selectedEmployee.wage_rate}
-                          fullWidth
-                          margin="normal"
-                        />
-                      )}
-                      <FormControlLabel
-                        control={<Switch checked={selectedEmployee.direct_deposit} />}
-                        label="Direct Deposit"
-                      />
-                    </Paper>
-                  </Grid>
-                </Grid>
-              )}
-            </Box>
-          )}
-          {activeTab === 2 && (
-            <Box>
-              <Typography variant="h4" gutterBottom>
-                View Employees
-              </Typography>
-              <TextField
-                fullWidth
-                variant="outlined"
+                      <span className="ml-2 text-sm text-gray-700">Direct Deposit</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 2 && (
+          <div>
+            <h2 className="text-2xl font-semibold mb-4">View Employees</h2>
+            <div className="relative mb-4">
+              <input
+                type="text"
                 placeholder="Search employees..."
                 value={searchQuery}
                 onChange={handleSearchChange}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={handleSearch}>
-                        <SearchIcon />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{ mb: 2 }}
+                className="w-full p-2 pl-10 border border-gray-300 rounded-md"
               />
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Employee Number</TableCell>
-                      <TableCell>Name</TableCell>
-                      <TableCell>Job Title</TableCell>
-                      <TableCell>Department</TableCell>
-                      <TableCell>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {employees.map((employee) => (
-                      <TableRow key={employee.id}>
-                        <TableCell>{employee.employee_number}</TableCell>
-                        <TableCell>{`${employee.first_name} ${employee.last_name}`}</TableCell>
-                        <TableCell>{employee.job_title}</TableCell>
-                        <TableCell>{employee.department}</TableCell>
-                        <TableCell>
-                          <IconButton onClick={() => handleEmployeeSelect(employee)}>
-                            <EditIcon />
-                          </IconButton>
-                          <IconButton onClick={() => handleOpenPermissionsDialog(employee)}>
-                            <SecurityIcon />
-                          </IconButton>
-                          <IconButton onClick={() => handleDelete(employee.id)}>
-                            <DeleteIcon />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Box>
-          )}
-        </Box>
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-        >
-          <Alert
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            severity={snackbar.severity}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-      </Box>
+              <button 
+                onClick={handleSearch}
+                className="absolute inset-y-0 right-0 px-3 flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white border border-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee Number</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {employees.map((employee) => (
+                    <tr key={employee.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.employee_number}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{`${employee.first_name} ${employee.last_name}`}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.job_title}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.department}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <button
+                          onClick={() => handleEmployeeSelect(employee)}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleOpenPermissionsDialog(employee)}
+                          className="text-green-600 hover:text-green-900"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(employee.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {selectedEmployee ? 'Edit Employee' : 'Add New Employee'}
-        </DialogTitle>
-        <DialogContent>
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="First Name"
-                  name="first_name"
-                  value={newEmployee.first_name}
-                  onChange={handleInputChange}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Last Name"
-                  name="last_name"
-                  value={newEmployee.last_name}
-                  onChange={handleInputChange}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Email"
-                  name="email"
-                  type="email"
-                  value={newEmployee.email}
-                  onChange={handleInputChange}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth required>
-                  <InputLabel>Role</InputLabel>
-                  <Select
+      {/* Snackbar/Toast Notification */}
+      {snackbar.open && (
+        <div 
+          className={`fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-lg ${
+            snackbar.severity === 'success' ? 'bg-green-500' : 'bg-red-500'
+          } text-white`}
+        >
+          <div className="flex items-center">
+            <span>{snackbar.message}</span>
+            <button 
+              onClick={() => setSnackbar({ ...snackbar, open: false })}
+              className="ml-4 text-white"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Employee Edit/Add Dialog */}
+      {openDialog && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium">
+                {selectedEmployee ? 'Edit Employee' : 'Add New Employee'}
+              </h3>
+            </div>
+            <div className="px-6 py-4">
+              <form className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                  <input
+                    type="text"
+                    name="first_name"
+                    value={newEmployee.first_name}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                  <input
+                    type="text"
+                    name="last_name"
+                    value={newEmployee.last_name}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={newEmployee.email}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <select
                     name="role"
                     value={newEmployee.role}
                     onChange={handleInputChange}
-                    label="Role"
+                    className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                    required
                   >
-                    <MenuItem value="ADMIN">Admin</MenuItem>
-                    <MenuItem value="EMPLOYEE">Employee</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Department"
-                  name="department"
-                  value={newEmployee.department}
-                  onChange={handleInputChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Phone Number"
-                  name="phone_number"
-                  value={newEmployee.phone_number}
-                  onChange={handleInputChange}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Address"
-                  name="address"
-                  value={newEmployee.address}
-                  onChange={handleInputChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  label="City"
-                  name="city"
-                  value={newEmployee.city}
-                  onChange={handleInputChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  label="Country"
-                  name="country"
-                  value={newEmployee.country}
-                  onChange={handleInputChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  label="Postcode"
-                  name="postcode"
-                  value={newEmployee.postcode}
-                  onChange={handleInputChange}
-                />
-              </Grid>
-            </Grid>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained" color="primary">
-            {selectedEmployee ? 'Update' : 'Add'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+                    <option value="">Select Role</option>
+                    <option value="ADMIN">Admin</option>
+                    <option value="EMPLOYEE">Employee</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                  <input
+                    type="text"
+                    name="department"
+                    value={newEmployee.department}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                  <input
+                    type="text"
+                    name="phone_number"
+                    value={newEmployee.phone_number}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={newEmployee.address}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={newEmployee.city}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                  <input
+                    type="text"
+                    name="country"
+                    value={newEmployee.country}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Postcode</label>
+                  <input
+                    type="text"
+                    name="postcode"
+                    value={newEmployee.postcode}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+              </form>
+            </div>
+            <div className="px-6 py-3 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={handleCloseDialog}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                {selectedEmployee ? 'Update' : 'Add'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {selectedEmployee && (
+      {/* Employee Permissions Dialog rendered by the EmployeePermissions component */}
+      {selectedEmployee && openPermissionsDialog && (
         <EmployeePermissions
           employee={selectedEmployee}
           open={openPermissionsDialog}
           onClose={handleClosePermissionsDialog}
         />
       )}
-    </LocalizationProvider>
+    </div>
   );
 };
 

@@ -1,7 +1,6 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/AnalysisPage.js
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { Select, MenuItem, Box, Grid } from '@mui/material';
 import axios from 'axios';
 
 const AnalysisPage = () => {
@@ -46,42 +45,55 @@ const AnalysisPage = () => {
   };
 
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
-          <Select value={xAxis} onChange={(e) => setXAxis(e.target.value)} fullWidth>
-            <MenuItem value="date">Date</MenuItem>
-            {/* Add more x-axis options */}
-          </Select>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Select value={yAxis} onChange={(e) => setYAxis(e.target.value)} fullWidth>
-            <MenuItem value="sales">Sales</MenuItem>
-            <MenuItem value="expenses">Expenses</MenuItem>
-            <MenuItem value="profit">Profit</MenuItem>
-          </Select>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Select
-            value={timeGranularity}
-            onChange={(e) => setTimeGranularity(e.target.value)}
-            fullWidth
+    <div className="p-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <select 
+            value={xAxis} 
+            onChange={(e) => setXAxis(e.target.value)} 
+            className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           >
-            <MenuItem value="month">Month</MenuItem>
-            <MenuItem value="year">Year</MenuItem>
-          </Select>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Select value={chartType} onChange={(e) => setChartType(e.target.value)} fullWidth>
-            <MenuItem value="line">Line Chart</MenuItem>
+            <option value="date">Date</option>
+            {/* Add more x-axis options */}
+          </select>
+        </div>
+        <div>
+          <select 
+            value={yAxis} 
+            onChange={(e) => setYAxis(e.target.value)} 
+            className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          >
+            <option value="sales">Sales</option>
+            <option value="expenses">Expenses</option>
+            <option value="profit">Profit</option>
+          </select>
+        </div>
+        <div>
+          <select 
+            value={timeGranularity} 
+            onChange={(e) => setTimeGranularity(e.target.value)} 
+            className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          >
+            <option value="month">Month</option>
+            <option value="year">Year</option>
+          </select>
+        </div>
+        <div>
+          <select 
+            value={chartType} 
+            onChange={(e) => setChartType(e.target.value)} 
+            className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          >
+            <option value="line">Line Chart</option>
             {/* Add more chart type options */}
-          </Select>
-        </Grid>
-        <Grid item xs={12}>
-          {renderChart()}
-        </Grid>
-      </Grid>
-    </Box>
+          </select>
+        </div>
+      </div>
+      
+      <div className="mt-6 overflow-x-auto">
+        {renderChart()}
+      </div>
+    </div>
   );
 };
 

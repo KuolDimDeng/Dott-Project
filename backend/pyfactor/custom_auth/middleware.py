@@ -15,6 +15,8 @@ from django.db import IntegrityError
 from custom_auth.utils import consolidate_user_tenants, acquire_user_lock, release_user_lock
 from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
+from .tenant_context import set_current_tenant, clear_current_tenant
+from .rls import set_tenant_in_db
 
 logger = logging.getLogger(__name__)
 
@@ -450,152 +452,75 @@ class OnboardingMiddleware:
             )
             return self.get_response(request)
 
-class TenantMiddleware:
+class TenantMiddleware(MiddlewareMixin):
     """
-    Middleware for handling tenant context in requests.
-    This middleware will:
-    1. Extract tenant information from the request
-    2. Set the current tenant for the duration of the request
-    3. Clean up tenant context after the request is processed
+    Middleware that sets the tenant context for the current request.
+    This middleware extracts the tenant ID from the request and sets it in thread-local storage.
     """
     
-    def __init__(self, get_response):
-        self.get_response = get_response
-        self.logger = logging.getLogger('Pyfactor')
-
-    def __call__(self, request):
-        # Generate a request ID for tracking
-        request_id = str(uuid.uuid4())[:8]
-        request.request_id = request_id
+    def process_request(self, request):
+        """
+        Extract tenant information from the request and set the tenant context.
         
-        self.logger.debug(f"[TENANT-MW-{request_id}] Processing request: {request.path}")
-        
-        # Check if this is a dashboard request - if so, we need to trigger schema setup
-        is_dashboard_request = '/dashboard' in request.path or '/api/dashboard' in request.path
-        
-        # Extract tenant information from the request
+        The tenant ID can be provided in different ways:
+        1. As a header (X-Tenant-ID)
+        2. In the request session
+        3. From the authenticated user's tenant
+        """
         tenant_id = None
-        schema_name = None
         
-        # Try to get tenant ID from headers first (highest priority)
-        tenant_id_header = request.headers.get('X-Tenant-ID')
-        schema_name_header = request.headers.get('X-Schema-Name')
+        # Clear any existing tenant context at the start of a new request
+        clear_current_tenant()
+        set_tenant_in_db(None)  # Clear the database tenant context
         
-        if tenant_id_header:
-            tenant_id = tenant_id_header
-            self.logger.debug(f"[TENANT-MW-{request_id}] Found tenant ID in header: {tenant_id}")
-            
-            # If schema name is also provided, use it
-            if schema_name_header:
-                schema_name = schema_name_header
-                self.logger.debug(f"[TENANT-MW-{request_id}] Found schema name in header: {schema_name}")
+        # Try to get tenant ID from header first
+        if 'HTTP_X_TENANT_ID' in request.META:
+            tenant_id = request.META.get('HTTP_X_TENANT_ID')
+            logger.debug(f"Tenant ID from header: {tenant_id}")
         
-        # If no tenant ID in headers, try to get from cookies
-        if not tenant_id:
-            tenant_id_cookie = request.COOKIES.get('tenantId')
-            if tenant_id_cookie:
-                tenant_id = tenant_id_cookie
-                self.logger.debug(f"[TENANT-MW-{request_id}] Found tenant ID in cookie: {tenant_id}")
-                
-                # Generate schema name from tenant ID
-                if tenant_id:
-                    schema_name = f"tenant_{tenant_id.replace('-', '_')}"
-                    self.logger.debug(f"[TENANT-MW-{request_id}] Generated schema name from cookie tenant ID: {schema_name}")
+        # If no tenant ID in header, try to get from session
+        if not tenant_id and hasattr(request, 'session') and 'tenant_id' in request.session:
+            tenant_id = request.session.get('tenant_id')
+            logger.debug(f"Tenant ID from session: {tenant_id}")
         
-        # Check for business ID header as a fallback
-        if not tenant_id:
-            business_id_header = request.headers.get('X-Business-ID')
-            if business_id_header:
-                tenant_id = business_id_header
-                self.logger.debug(f"[TENANT-MW-{request_id}] Using business ID as tenant ID: {tenant_id}")
-                
-                # Generate schema name from business ID
-                if tenant_id:
-                    schema_name = f"tenant_{tenant_id.replace('-', '_')}"
-                    self.logger.debug(f"[TENANT-MW-{request_id}] Generated schema name from business ID: {schema_name}")
+        # If still no tenant ID, try to get from the authenticated user
+        if not tenant_id and hasattr(request, 'user') and request.user.is_authenticated:
+            tenant_id = getattr(request.user, 'tenant_id', None)
+            logger.debug(f"Tenant ID from user: {tenant_id}")
         
-        # Store tenant information in the request for easy access
-        request.tenant_id = tenant_id
-        request.schema_name = schema_name
-        
-        # If we have a tenant ID, try to get the tenant from the database
-        tenant = None
-        if tenant_id and request.user.is_authenticated:
+        # Set the tenant context if we have a valid tenant ID
+        if tenant_id:
             try:
-                # First try to find tenant by ID
-                tenant = Tenant.objects.filter(id=tenant_id).first()
-                
+                # Verify this is a valid tenant
+                tenant = Tenant.objects.filter(id=tenant_id, is_active=True).first()
                 if tenant:
-                    self.logger.debug(f"[TENANT-MW-{request_id}] Found tenant by ID: {tenant.schema_name} (ID: {tenant.id})")
-                    
-                    # Verify ownership - if this tenant doesn't belong to the user, check for conflicts
-                    if tenant.owner_id != request.user.id:
-                        self.logger.warning(f"[TENANT-MW-{request_id}] Tenant {tenant.id} belongs to user {tenant.owner_id}, but current user is {request.user.id}")
-                        
-                        # Check if user has their own tenant
-                        user_tenant = Tenant.objects.filter(owner=request.user).first()
-                        if user_tenant and user_tenant.id != tenant.id:
-                            self.logger.warning(f"[TENANT-MW-{request_id}] User {request.user.id} has a different tenant: {user_tenant.schema_name} (ID: {user_tenant.id})")
-                            
-                            # Log this conflict for investigation
-                            self.logger.warning(f"[TENANT-MW-{request_id}] TENANT CONFLICT: Request specifies {tenant.schema_name} but user owns {user_tenant.schema_name}")
-                
-                # If not found by ID, try to find by schema name
-                elif schema_name:
-                    tenant = Tenant.objects.filter(schema_name=schema_name).first()
-                    if tenant:
-                        self.logger.debug(f"[TENANT-MW-{request_id}] Found tenant by schema name: {tenant.schema_name} (ID: {tenant.id})")
-                
-                # If still not found, try to find a tenant owned by this user
-                if not tenant:
-                    tenant = Tenant.objects.filter(owner=request.user).first()
-                    if tenant:
-                        self.logger.debug(f"[TENANT-MW-{request_id}] Using tenant owned by user: {tenant.schema_name} (ID: {tenant.id})")
-                
-                # As a last resort, try to consolidate tenants
-                if not tenant:
-                    try:
-                        from custom_auth.utils import consolidate_user_tenants
-                        tenant = consolidate_user_tenants(request.user)
-                        if tenant:
-                            self.logger.debug(f"[TENANT-MW-{request_id}] Using consolidated tenant: {tenant.schema_name} (ID: {tenant.id})")
-                    except Exception as e:
-                        self.logger.error(f"[TENANT-MW-{request_id}] Error consolidating tenants: {str(e)}")
-                
-                # Store the tenant in the request
-                if tenant:
-                    request.tenant = tenant
-                    
-                    # CRITICAL FIX: Set the tenant schema in thread local storage for database routing
-                    from pyfactor.db_routers import TenantSchemaRouter, local
-                    setattr(local, 'tenant_schema', tenant.schema_name)
-                    self.logger.debug(f"[TENANT-MW-{request_id}] Set thread local tenant schema to: {tenant.schema_name}")
-                    
-                    # Explicitly set the search path for this connection if we have a tenant
-                    try:
-                        from django.db import connection
-                        if not connection.in_atomic_block:  # Only if not already in a transaction
-                            with connection.cursor() as cursor:
-                                cursor.execute(f'SET search_path TO "{tenant.schema_name}",public')
-                                self.logger.debug(f"[TENANT-MW-{request_id}] Set database search path to: {tenant.schema_name}")
-                    except Exception as e:
-                        self.logger.error(f"[TENANT-MW-{request_id}] Error setting search path: {str(e)}")
-                        
+                    set_current_tenant(tenant_id)
+                    # Also set tenant in database session for RLS policies
+                    set_tenant_in_db(tenant_id)
+                    logger.debug(f"Set tenant context to: {tenant_id}")
+                else:
+                    logger.warning(f"Invalid or inactive tenant ID: {tenant_id}")
             except Exception as e:
-                self.logger.error(f"[TENANT-MW-{request_id}] Error finding tenant: {str(e)}")
+                logger.error(f"Error setting tenant context: {str(e)}")
         
-        # Handle dashboard request schema setup if needed
-        if is_dashboard_request and request.user.is_authenticated and (not tenant or tenant.database_status != 'active'):
-            self.logger.debug(f"[TENANT-MW-{request_id}] Dashboard request detected, may need schema setup")
-            # Continue with normal request processing (schema setup handled by views)
+        # Store tenant ID in request for easy access
+        request.tenant_id = tenant_id
         
-        # Process the request with tenant context established
-        response = self.get_response(request)
+        # Continue with request processing
+        return None
         
-        # Add tenant headers to the response for client tracking
-        if tenant:
-            response['X-Tenant-ID'] = str(tenant.id)
-            response['X-Schema-Name'] = tenant.schema_name
-            self.logger.debug(f"[TENANT-MW-{request_id}] Added tenant headers to response: ID={tenant.id}, Schema={tenant.schema_name}")
-        
+    def process_response(self, request, response):
+        """
+        Clear tenant context at the end of request processing.
+        """
+        clear_current_tenant()
+        set_tenant_in_db(None)  # Clear the database tenant context
         return response
+        
+    def process_exception(self, request, exception):
+        """
+        Clear tenant context in case of exceptions.
+        """
+        clear_current_tenant()
+        set_tenant_in_db(None)  # Clear the database tenant context
+        return None

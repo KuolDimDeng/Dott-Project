@@ -1,20 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Paper, CircularProgress, Button, Stack, Box, Grid, FormControl, InputLabel, Select, MenuItem, TableContainer, Table, TableHead, TableBody, TableRow, TableCell } from '@mui/material';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { DateRangePicker } from '@mui/x-date-pickers-pro';
-import { LocalizationProvider } from '@mui/x-date-pickers-pro';
-import { AdapterDateFns } from '@mui/x-date-pickers-pro/AdapterDateFns';
-import { TextField } from '@mui/material';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { toast } from 'react-toastify';
+import { format, isValid, parseISO } from 'date-fns';
 
 export default function ReportDisplay({ type = 'general' }) {
   const [reportType, setReportType] = useState('');
-  const [dateRange, setDateRange] = useState([null, null]);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -38,21 +34,18 @@ export default function ReportDisplay({ type = 'general' }) {
   const reportTypes = type === 'sales' ? salesReportTypes : generalReportTypes;
 
   const handleSubmit = async () => {
-    if (!reportType || !dateRange[0] || !dateRange[1]) {
+    if (!reportType || !startDate || !endDate) {
       toast.error('Please select report type and date range');
       return;
     }
 
     setLoading(true);
     try {
-      const formattedStartDate = dateRange[0].toISOString().split('T')[0];
-      const formattedEndDate = dateRange[1].toISOString().split('T')[0];
-
       const response = await axios.get('/api/reports/', {
         params: {
           type: reportType,
-          start_date: formattedStartDate,
-          end_date: formattedEndDate,
+          start_date: startDate,
+          end_date: endDate,
         },
       });
 
@@ -75,12 +68,15 @@ export default function ReportDisplay({ type = 'general' }) {
 
   const generateMockSalesReport = (reportType) => {
     let mockData = null;
+    const formattedStartDate = startDate ? format(new Date(startDate), 'MM/dd/yyyy') : '';
+    const formattedEndDate = endDate ? format(new Date(endDate), 'MM/dd/yyyy') : '';
+    const dateRangeStr = `${formattedStartDate} - ${formattedEndDate}`;
     
     switch(reportType) {
       case 'sales-by-customer':
         mockData = {
           title: 'Sales by Customer',
-          dateRange: `${dateRange[0].toLocaleDateString()} - ${dateRange[1].toLocaleDateString()}`,
+          dateRange: dateRangeStr,
           columns: ['Customer', 'Number of Orders', 'Total Amount', 'Average Order'],
           data: [
             ['Acme Corporation', 12, '$45,678.90', '$3,806.58'],
@@ -100,7 +96,7 @@ export default function ReportDisplay({ type = 'general' }) {
       case 'sales-by-product':
         mockData = {
           title: 'Sales by Product',
-          dateRange: `${dateRange[0].toLocaleDateString()} - ${dateRange[1].toLocaleDateString()}`,
+          dateRange: dateRangeStr,
           columns: ['Product', 'Quantity Sold', 'Total Revenue', 'Average Price'],
           data: [
             ['Product A', 156, '$15,600.00', '$100.00'],
@@ -120,7 +116,7 @@ export default function ReportDisplay({ type = 'general' }) {
       case 'sales-by-service':
         mockData = {
           title: 'Sales by Service',
-          dateRange: `${dateRange[0].toLocaleDateString()} - ${dateRange[1].toLocaleDateString()}`,
+          dateRange: dateRangeStr,
           columns: ['Service', 'Hours Billed', 'Total Revenue', 'Average Rate'],
           data: [
             ['Consulting', 250, '$37,500.00', '$150.00/hr'],
@@ -140,7 +136,7 @@ export default function ReportDisplay({ type = 'general' }) {
       case 'invoice-aging':
         mockData = {
           title: 'Invoice Aging Report',
-          dateRange: `${dateRange[0].toLocaleDateString()} - ${dateRange[1].toLocaleDateString()}`,
+          dateRange: dateRangeStr,
           columns: ['Customer', 'Invoice #', 'Date', 'Amount', 'Current', '1-30 Days', '31-60 Days', '61-90 Days', '>90 Days'],
           data: [
             ['Acme Corporation', 'INV-1001', '01/15/2023', '$5,678.90', '$5,678.90', '', '', '', ''],
@@ -163,7 +159,7 @@ export default function ReportDisplay({ type = 'general' }) {
       default:
         mockData = {
           title: 'Sales Report',
-          dateRange: `${dateRange[0].toLocaleDateString()} - ${dateRange[1].toLocaleDateString()}`,
+          dateRange: dateRangeStr,
           message: 'Sample report data not available for this report type'
         };
     }
@@ -171,136 +167,257 @@ export default function ReportDisplay({ type = 'general' }) {
     setReportData(mockData);
   };
 
+  const exportToPDF = () => {
+    if (!reportData) return;
+    
+    const doc = new jsPDF();
+    
+    // Add title and date range
+    doc.setFontSize(18);
+    doc.text(reportData.title, 14, 22);
+    doc.setFontSize(12);
+    doc.text(reportData.dateRange, 14, 30);
+    
+    if (reportData.message) {
+      doc.text(reportData.message, 14, 40);
+    } else {
+      // Create table with reportData
+      doc.autoTable({
+        head: [reportData.columns],
+        body: reportData.data,
+        startY: 40,
+        styles: { fontSize: 10, cellPadding: 3 },
+        headStyles: { fillColor: [66, 66, 66] }
+      });
+      
+      // Add summary if available
+      if (reportData.summary) {
+        const summaryY = doc.lastAutoTable.finalY + 15;
+        doc.setFontSize(14);
+        doc.text('Summary', 14, summaryY);
+        
+        const summaryData = Object.entries(reportData.summary).map(([key, value]) => {
+          return [
+            key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+            value
+          ];
+        });
+        
+        doc.autoTable({
+          body: summaryData,
+          startY: summaryY + 5,
+          theme: 'grid',
+          styles: { fontSize: 10 },
+          columnStyles: {
+            0: { fontStyle: 'bold' }
+          }
+        });
+      }
+    }
+    
+    // Save the PDF
+    doc.save(`${reportData.title.replace(/\s+/g, '_').toLowerCase()}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+  };
+  
+  const exportToCSV = () => {
+    if (!reportData) return;
+    
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    
+    if (reportData.message) {
+      const messageData = [[reportData.title], [reportData.dateRange], [reportData.message]];
+      const ws = XLSX.utils.aoa_to_sheet(messageData);
+      XLSX.utils.book_append_sheet(wb, ws, 'Report');
+    } else {
+      // Create worksheet with headers and data
+      const data = [
+        reportData.columns,
+        ...reportData.data
+      ];
+      
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, 'Report Data');
+      
+      // Add summary sheet if available
+      if (reportData.summary) {
+        const summaryData = [
+          ['Metric', 'Value'],
+          ...Object.entries(reportData.summary).map(([key, value]) => [
+            key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+            value
+          ])
+        ];
+        
+        const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+      }
+    }
+    
+    // Generate and save the file
+    const fileName = `${reportData.title.replace(/\s+/g, '_').toLowerCase()}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
   const renderReportData = () => {
     if (!reportData) return null;
 
     return (
-      <Box mt={3}>
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h5" gutterBottom>
-            {reportData.title}
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-            {reportData.dateRange}
-          </Typography>
+      <div className="mt-6">
+        <div className="rounded-lg bg-white p-6 shadow-md">
+          <h2 className="mb-2 text-xl font-semibold">{reportData.title}</h2>
+          <p className="mb-4 text-sm text-gray-600">{reportData.dateRange}</p>
 
           {reportData.message ? (
-            <Typography>{reportData.message}</Typography>
+            <p>{reportData.message}</p>
           ) : (
             <>
-              <TableContainer component={Paper} variant="outlined" sx={{ mt: 2, mb: 3 }}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
+              <div className="mb-6 mt-4 overflow-x-auto rounded-lg border border-gray-200">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
                       {reportData.columns.map((column, index) => (
-                        <TableCell key={index}>{column}</TableCell>
+                        <th 
+                          key={index}
+                          className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                        >
+                          {column}
+                        </th>
                       ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
                     {reportData.data.map((row, rowIndex) => (
-                      <TableRow key={rowIndex}>
+                      <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                         {row.map((cell, cellIndex) => (
-                          <TableCell key={cellIndex}>{cell}</TableCell>
+                          <td key={cellIndex} className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                            {cell}
+                          </td>
                         ))}
-                      </TableRow>
+                      </tr>
                     ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                  </tbody>
+                </table>
+              </div>
 
               {reportData.summary && (
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    Summary
-                  </Typography>
-                  <Grid container spacing={2}>
+                <div>
+                  <h3 className="mb-3 text-lg font-medium">Summary</h3>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
                     {Object.entries(reportData.summary).map(([key, value]) => (
-                      <Grid item xs={6} sm={3} key={key}>
-                        <Paper variant="outlined" sx={{ p: 2 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, function(str) { return str.toUpperCase(); })}
-                          </Typography>
-                          <Typography variant="h6">{value}</Typography>
-                        </Paper>
-                      </Grid>
+                      <div key={key} className="rounded-lg border border-gray-200 p-4">
+                        <p className="text-xs text-gray-500">
+                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, function(str) { return str.toUpperCase(); })}
+                        </p>
+                        <p className="mt-1 text-lg font-semibold">{value}</p>
+                      </div>
                     ))}
-                  </Grid>
-                </Box>
+                  </div>
+                </div>
               )}
             </>
           )}
 
-          <Box mt={3} display="flex" justifyContent="flex-end">
-            <Button variant="outlined" startIcon={<FileDownloadIcon />}>
+          <div className="mt-6 flex justify-end space-x-4">
+            <button 
+              onClick={exportToPDF}
+              className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              <svg className="mr-2 -ml-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
               Download PDF
-            </Button>
-            <Button variant="outlined" startIcon={<FileDownloadIcon />} sx={{ ml: 2 }}>
+            </button>
+            <button 
+              onClick={exportToCSV}
+              className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              <svg className="mr-2 -ml-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
               Download CSV
-            </Button>
-          </Box>
-        </Paper>
-      </Box>
+            </button>
+          </div>
+        </div>
+      </div>
     );
   };
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
+    <div>
+      <h1 className="mb-4 text-2xl font-bold">
         {type === 'sales' ? 'Sales Reports' : 'Reports'}
-      </Typography>
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Generate Report
-        </Typography>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <InputLabel>Report Type</InputLabel>
-              <Select
-                value={reportType}
-                onChange={(e) => setReportType(e.target.value)}
-                label="Report Type"
-              >
-                {reportTypes.map((type) => (
-                  <MenuItem key={type.value} value={type.value}>
-                    {type.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <DateRangePicker
-                startText="Start Date"
-                endText="End Date"
-                value={dateRange}
-                onChange={(newValue) => setDateRange(newValue)}
-                renderInput={(startProps, endProps) => (
-                  <>
-                    <TextField {...startProps} fullWidth />
-                    <Box sx={{ mx: 2 }}> to </Box>
-                    <TextField {...endProps} fullWidth />
-                  </>
-                )}
+      </h1>
+      <div className="rounded-lg bg-white p-6 shadow-md">
+        <h2 className="mb-4 text-lg font-medium">Generate Report</h2>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div>
+            <label htmlFor="reportType" className="mb-1 block text-sm font-medium text-gray-700">
+              Report Type
+            </label>
+            <select
+              id="reportType"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value)}
+            >
+              <option value="">Select Report Type</option>
+              {reportTypes.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="startDate" className="mb-1 block text-sm font-medium text-gray-700">
+                Start Date
+              </label>
+              <input
+                type="date"
+                id="startDate"
+                className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
               />
-            </LocalizationProvider>
-          </Grid>
-        </Grid>
-        <Box mt={3} display="flex" justifyContent="flex-end">
-          <Button
-            variant="contained"
-            color="primary"
+            </div>
+            <div>
+              <label htmlFor="endDate" className="mb-1 block text-sm font-medium text-gray-700">
+                End Date
+              </label>
+              <input
+                type="date"
+                id="endDate"
+                className="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-6 flex justify-end">
+          <button
+            className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             onClick={handleSubmit}
             disabled={loading}
           >
-            {loading ? <CircularProgress size={24} /> : 'Generate Report'}
-          </Button>
-        </Box>
-      </Paper>
+            {loading ? (
+              <>
+                <svg className="mr-3 -ml-1 h-5 w-5 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </>
+            ) : 'Generate Report'}
+          </button>
+        </div>
+      </div>
 
       {renderReportData()}
-    </Box>
+    </div>
   );
 }

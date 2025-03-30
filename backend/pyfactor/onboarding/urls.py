@@ -29,6 +29,7 @@ from .views import (
 from .views.setup import SetupStatusView, InitializeSetupView
 from .views.dashboard_setup import DashboardSchemaSetupView
 from .api.views.webhook_views import stripe_webhook  # Update this import path
+from .views.subscription import SubscriptionSaveView
 
 
 app_name = 'onboarding'
@@ -59,7 +60,7 @@ urlpatterns = [
     
     # Subscription routes
     path('subscription/validate/', ValidateSubscriptionAccessView.as_view(), name='validate-subscription'),
-    path('subscription/save/', csrf_exempt(SaveStep2View.as_view()), name='save-subscription'),
+    path('subscription/save/', SubscriptionSaveView.as_view(), name='subscription_save'),
     path('subscription/status/', SubscriptionStatusView.as_view(), name='subscription-status'),
     
     # Setup routes

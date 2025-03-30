@@ -2,30 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useToast } from '@/components/Toast/ToastProvider';
-import {
-  Box,
-  Typography,
-  Paper,
-  CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  useTheme,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 
 const AgedReceivables = () => {
   const [receivables, setReceivables] = useState([]);
   const [loading, setLoading] = useState(false);
   const [asOfDate, setAsOfDate] = useState(new Date());
   const toast = useToast();
-  const theme = useTheme();
 
   useEffect(() => {
     fetchAgedReceivables();
@@ -103,59 +85,70 @@ const AgedReceivables = () => {
   ];
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom>
-        Aged Receivables
-      </Typography>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <DatePicker
-          label="As of Date"
-          value={asOfDate}
-          onChange={(newValue) => setAsOfDate(newValue)}
-          renderInput={(params) => <TextField {...params} />}
-          sx={{ mb: 2 }}
+    <div className="bg-gray-50 p-6 rounded-lg">
+      <h1 className="text-2xl font-bold mb-4">Aged Receivables</h1>
+      
+      <div className="mb-4">
+        <label htmlFor="asOfDate" className="block text-sm font-medium text-gray-700 mb-1">
+          As of Date
+        </label>
+        <input
+          id="asOfDate"
+          type="date"
+          className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          value={asOfDate.toISOString().split('T')[0]}
+          onChange={(e) => setAsOfDate(new Date(e.target.value))}
         />
-      </LocalizationProvider>
-      <TableContainer component={Paper}>
-        <Table stickyHeader aria-label="sticky table">
-          <TableHead>
-            <TableRow>
-              {columns.map((column) => (
-                <TableCell
-                  key={column.id}
-                  align={column.align}
-                  style={{ minWidth: column.minWidth }}
-                >
-                  {column.label}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} align="center">
-                  <CircularProgress />
-                </TableCell>
-              </TableRow>
-            ) : (
-              receivables.map((row) => (
-                <TableRow hover role="checkbox" tabIndex={-1} key={row.invoice_number}>
-                  {columns.map((column) => {
-                    const value = row[column.id];
-                    return (
-                      <TableCell key={column.id} align={column.align}>
-                        {column.format && typeof value === 'number' ? column.format(value) : value}
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+      </div>
+      
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                {columns.map((column) => (
+                  <th
+                    key={column.id}
+                    scope="col"
+                    className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider ${column.align === 'right' ? 'text-right' : 'text-left'}`}
+                    style={{ minWidth: column.minWidth }}
+                  >
+                    {column.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loading ? (
+                <tr>
+                  <td colSpan={columns.length} className="px-6 py-4 text-center">
+                    <div className="flex justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                receivables.map((row) => (
+                  <tr key={row.invoice_number} className="hover:bg-gray-50">
+                    {columns.map((column) => {
+                      const value = row[column.id];
+                      return (
+                        <td 
+                          key={column.id} 
+                          className={`px-6 py-4 whitespace-nowrap text-sm text-gray-500 ${column.align === 'right' ? 'text-right' : 'text-left'}`}
+                        >
+                          {column.format && typeof value === 'number' ? column.format(value) : value}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 };
 

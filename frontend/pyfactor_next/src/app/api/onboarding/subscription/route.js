@@ -23,10 +23,22 @@ const parseCookies = (cookieHeader) => {
 export async function POST(request) {
   try {
     // Validate session using server utils
-    const { tokens, user } = await validateServerSession();
+    const sessionData = await validateServerSession();
+    const { tokens, user } = sessionData || {};
 
-    const accessToken = tokens.accessToken.toString();
-    const idToken = tokens.idToken.toString();
+    if (!tokens || !user) {
+      logger.error('[Subscription] Invalid session data:', {
+        hasTokens: !!tokens,
+        hasUser: !!user
+      });
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const accessToken = tokens.accessToken?.toString();
+    const idToken = tokens.idToken?.toString();
     const userId = user.userId;
     
     if (!accessToken || !idToken) {
@@ -794,13 +806,16 @@ export async function POST(request) {
     const expiration = new Date();
     expiration.setDate(expiration.getDate() + 7);
     
+    // Define a default body with fallback values for the error case
+    const defaultBody = { plan: 'free', interval: 'monthly' };
+    
     try {
       // Set essential cookies even in error case
-      const targetRoute = body.plan.toLowerCase() === 'free' ? 'SETUP' : 'payment';
+      const targetRoute = defaultBody.plan.toLowerCase() === 'free' ? 'SETUP' : 'payment';
       await cookieStore.set('onboardingStep', targetRoute, { path: '/', expires: expiration, sameSite: 'lax' });
       await cookieStore.set('onboardedStatus', 'SUBSCRIPTION', { path: '/', expires: expiration, sameSite: 'lax' });
-      await cookieStore.set('selectedPlan', body.plan.toLowerCase(), { path: '/', expires: expiration, sameSite: 'lax' });
-      await cookieStore.set('billingCycle', body.interval.toLowerCase(), { path: '/', expires: expiration, sameSite: 'lax' });
+      await cookieStore.set('selectedPlan', defaultBody.plan.toLowerCase(), { path: '/', expires: expiration, sameSite: 'lax' });
+      await cookieStore.set('billingCycle', defaultBody.interval.toLowerCase(), { path: '/', expires: expiration, sameSite: 'lax' });
       // Add post subscription access flag
       await cookieStore.set('postSubscriptionAccess', 'true', { path: '/', expires: expiration, sameSite: 'lax' });
       
@@ -813,10 +828,10 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
       message: 'Subscription processed with warnings',
-      plan: body.plan.toLowerCase(),
-      interval: body.interval.toLowerCase(),
-      next_step: body.plan.toLowerCase() === 'free' ? 'dashboard' : 'payment',
-      requires_payment: body.plan.toLowerCase() !== 'free'
+      plan: defaultBody.plan.toLowerCase(),
+      interval: defaultBody.interval.toLowerCase(),
+      next_step: defaultBody.plan.toLowerCase() === 'free' ? 'dashboard' : 'payment',
+      requires_payment: defaultBody.plan.toLowerCase() !== 'free'
     }, {
       status: 200 // Always 200 to continue frontend flow
     });

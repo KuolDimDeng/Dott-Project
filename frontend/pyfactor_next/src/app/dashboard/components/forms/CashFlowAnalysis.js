@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { Pie, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -60,7 +59,7 @@ export default function CashFlowAnalysis() {
     setTimeRange(event.target.value);
   };
 
-  if (!data) return <Typography>Loading...</Typography>;
+  if (!data) return <p className="text-lg text-center py-8">Loading...</p>;
 
   const latestData = data[data.length - 1];
   const operatingCashFlow = latestData.operating.total;
@@ -112,44 +111,71 @@ export default function CashFlowAnalysis() {
   const netCashFlow = operatingCashFlow + investingCashFlow + financingCashFlow;
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">
         Cash Flow Analysis
-      </Typography>
+      </h1>
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Time Range</InputLabel>
-        <Select value={timeRange} onChange={handleTimeRangeChange}>
+      <div className="mt-4 mb-6">
+        <label htmlFor="timeRange" className="block text-sm font-medium text-gray-700 mb-1">
+          Time Range
+        </label>
+        <select
+          id="timeRange"
+          value={timeRange}
+          onChange={handleTimeRangeChange}
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+        >
           {timeRanges.map((range) => (
-            <MenuItem key={range.value} value={range.value}>
+            <option key={range.value} value={range.value}>
               {range.label}
-            </MenuItem>
+            </option>
           ))}
-        </Select>
-      </FormControl>
+        </select>
+      </div>
 
-      <Box display="flex" justifyContent="space-between" mt={4}>
-        <Box width="45%">
-          <Typography variant="h6" gutterBottom>
+      <div className="flex flex-col md:flex-row justify-between mt-6 space-y-6 md:space-y-0 md:space-x-4">
+        <div className="w-full md:w-1/2">
+          <h2 className="text-lg font-medium mb-3">
             Cash Flow Breakdown
-          </Typography>
-          <Pie data={pieChartData} />
-        </Box>
-        <Box width="45%">
-          <Typography variant="h6" gutterBottom>
+          </h2>
+          <div className="p-4 bg-white rounded-lg shadow-md">
+            <Pie data={pieChartData} />
+          </div>
+        </div>
+        <div className="w-full md:w-1/2">
+          <h2 className="text-lg font-medium mb-3">
             Cash Flow Trends Over Time
-          </Typography>
-          <Line data={lineChartData} />
-        </Box>
-      </Box>
+          </h2>
+          <div className="p-4 bg-white rounded-lg shadow-md">
+            <Line data={lineChartData} />
+          </div>
+        </div>
+      </div>
 
-      <Typography variant="h6" mt={4}>
-        Summary
-      </Typography>
-      <Typography>Operating Cash Flow: ${formatAmount(operatingCashFlow)}</Typography>
-      <Typography>Investing Cash Flow: ${formatAmount(investingCashFlow)}</Typography>
-      <Typography>Financing Cash Flow: ${formatAmount(financingCashFlow)}</Typography>
-      <Typography>Net Cash Flow: ${formatAmount(netCashFlow)}</Typography>
-    </Box>
+      <div className="mt-8 p-4 bg-white rounded-lg shadow-md">
+        <h2 className="text-lg font-medium mb-3">
+          Summary
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-3 border rounded-md">
+            <p className="text-sm text-gray-500">Operating Cash Flow</p>
+            <p className="text-lg font-semibold">${formatAmount(operatingCashFlow)}</p>
+          </div>
+          <div className="p-3 border rounded-md">
+            <p className="text-sm text-gray-500">Investing Cash Flow</p>
+            <p className="text-lg font-semibold">${formatAmount(investingCashFlow)}</p>
+          </div>
+          <div className="p-3 border rounded-md">
+            <p className="text-sm text-gray-500">Financing Cash Flow</p>
+            <p className="text-lg font-semibold">${formatAmount(financingCashFlow)}</p>
+          </div>
+          <div className="p-3 border rounded-md bg-gray-50">
+            <p className="text-sm text-gray-500">Net Cash Flow</p>
+            <p className="text-lg font-semibold">${formatAmount(netCashFlow)}</p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

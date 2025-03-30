@@ -481,6 +481,17 @@ export default function ClientLayout({ children }) {
     return () => {};
   }, [pathname]);
 
+  // Initialize debug tools in development mode
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        logger.debug('[ClientLayout] Initialized debug tools');
+      } catch (error) {
+        logger.error('[ClientLayout] Error initializing debug tools:', error);
+      }
+    }
+  }, []);
+
   // Show loading state while verifying
   if (isVerifying && !isPublicRoute(pathname)) {
     return <LoadingFallback />;

@@ -6,6 +6,7 @@ import Providers from '@/providers';
 import LanguageProvider from '@/components/LanguageProvider/LanguageProvider.js';
 import { UserProvider } from '@/contexts/UserContext';
 import './globals.css';
+import DashboardApp from './DashboardApp';
 
 // Dynamic components will be loaded client-side by ClientLayout
 const inter = Inter({ subsets: ['latin'] });
@@ -32,8 +33,10 @@ export default function RootLayout({ children }) {
           <ThemeRegistry>
             <Providers>
               <LanguageProvider>
-                <ClientLayout>{children}</ClientLayout>
-                {/* DynamicComponents moved to ClientLayout for proper client-side rendering */}
+                <DashboardApp>
+                  <ClientLayout>{children}</ClientLayout>
+                  {/* DynamicComponents moved to ClientLayout for proper client-side rendering */}
+                </DashboardApp>
               </LanguageProvider>
             </Providers>
           </ThemeRegistry>

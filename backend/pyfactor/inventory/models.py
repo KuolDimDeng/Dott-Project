@@ -11,6 +11,7 @@ from io import BytesIO
 from barcode import Code128
 from barcode.writer import ImageWriter
 from .managers import OptimizedProductManager
+from custom_auth.models import TenantAwareModel, TenantManager
 
 class InventoryItem(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -159,76 +160,36 @@ class Item(models.Model):
         # Combine to create a unique code
         return f"{base}_{timestamp}_{random_str}"
 
-class Product(Item):
-    product_code = models.CharField(max_length=50, unique=True, editable=False, db_index=True)
-    department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, related_name='products')
-    stock_quantity = models.IntegerField(default=0, db_index=True)
-    reorder_level = models.IntegerField(default=0)
+class Product(TenantAwareModel):
+    """
+    Product model for inventory items.
+    This model is tenant-aware and will be filtered by the current tenant.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    sku = models.CharField(max_length=50, blank=True, null=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    quantity = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
     
-    # Use the default manager for backwards compatibility
-    objects = models.Manager()
+    # Add tenant-aware manager
+    objects = TenantManager()
+    # Add all_objects manager to access all products across tenants if needed
+    all_objects = models.Manager()
     
-    # Add the optimized manager
-    optimized = OptimizedProductManager()
-
+    def __str__(self):
+        return self.name
+        
     class Meta:
+        db_table = 'inventory_product'
         indexes = [
-            models.Index(fields=['name']),
-            models.Index(fields=['product_code']),
-            models.Index(fields=['stock_quantity', 'reorder_level']),
-            models.Index(fields=['is_for_sale', 'price']),
-            models.Index(fields=['created_at']),
-            # Add index for common filter combinations
-            models.Index(fields=['is_for_sale', 'stock_quantity']),
-            models.Index(fields=['department', 'stock_quantity']),
+            models.Index(fields=['tenant', 'name']),
+            models.Index(fields=['tenant', 'sku']),
         ]
-        app_label = 'inventory'
-
-    def save(self, *args, **kwargs):
-        import logging
-        import time
-        logger = logging.getLogger(__name__)
-        
-        start_time = time.time()
-        
-        # Log the current database connection and schema
-        from django.db import connection
-        from pyfactor.db_routers import TenantSchemaRouter
-        
-        # Get optimized connection for the current schema
-        with connection.cursor() as cursor:
-            cursor.execute('SHOW search_path')
-            current_schema = cursor.fetchone()[0]
-            logger.debug(f"Saving product in schema: {current_schema}, using connection: {connection.alias}")
-        
-        # Generate product code if needed
-        if not self.product_code:
-            self.product_code = self.generate_unique_code(self.name, 'product_code')
-        
-        try:
-            # Use the current connection with optimized schema handling
-            # Remove explicit 'default' connection to use the tenant's connection
-            
-            # Use a transaction for atomicity
-            from django.db import transaction
-            with transaction.atomic():
-                super().save(*args, **kwargs)
-                
-            logger.debug(f"Successfully saved product {self.name} with ID {self.id} in {time.time() - start_time:.4f}s")
-        except Exception as e:
-            logger.error(f"Error saving product: {str(e)}", exc_info=True)
-            raise
-
-    @classmethod
-    def from_db(cls, db, field_names, values):
-        instance = super().from_db(db, field_names, values)
-        instance._state.db = db
-        return instance
-    
-    def get_barcode_image(self):
-        rv = BytesIO()
-        Code128(self.product_code, writer=ImageWriter()).write(rv)
-        return rv.getvalue()
 
 class Service(Item):
     service_code = models.CharField(max_length=50, unique=True, editable=False, db_index=True)

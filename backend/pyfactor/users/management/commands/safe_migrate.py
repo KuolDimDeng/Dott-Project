@@ -1,4 +1,5 @@
 # yourapp/management/commands/safe_migrate.py
+import os
 import logging
 from django.core.management.base import BaseCommand
 from django.core.management import call_command

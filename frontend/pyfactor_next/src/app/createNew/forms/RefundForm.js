@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { TextField, Button, Grid, Typography } from '@mui/material';
 import { axiosInstance } from '@/lib/axiosConfig';
 
 const RefundForm = () => {
@@ -26,50 +25,66 @@ const RefundForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
-          <Typography variant="h6">Create Refund</Typography>
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
+    <form onSubmit={handleSubmit} className="w-full">
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-medium text-gray-900">Create Refund</h2>
+        </div>
+        
+        <div>
+          <label htmlFor="sale" className="block text-sm font-medium text-gray-700 mb-1">
+            Sale ID
+          </label>
+          <input
+            type="text"
+            id="sale"
             name="sale"
-            label="Sale ID"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             value={refund.sale}
             onChange={handleChange}
             required
           />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            name="amount"
-            label="Refund Amount"
+        </div>
+        
+        <div>
+          <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+            Refund Amount
+          </label>
+          <input
             type="number"
+            id="amount"
+            name="amount"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             value={refund.amount}
             onChange={handleChange}
             required
           />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
+        </div>
+        
+        <div>
+          <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-1">
+            Refund Reason
+          </label>
+          <textarea
+            id="reason"
             name="reason"
-            label="Refund Reason"
-            multiline
             rows={4}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             value={refund.reason}
             onChange={handleChange}
             required
           />
-        </Grid>
-        <Grid item xs={12}>
-          <Button type="submit" variant="contained" color="primary">
+        </div>
+        
+        <div>
+          <button
+            type="submit"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
             Create Refund
-          </Button>
-        </Grid>
-      </Grid>
+          </button>
+        </div>
+      </div>
     </form>
   );
 };

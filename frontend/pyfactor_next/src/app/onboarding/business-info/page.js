@@ -306,6 +306,27 @@ export default function BusinessInfoPage() {
         })
         .catch(error => {
           logger.error('[Auth] Error updating user attributes:', error);
+          
+          // If the update fails, try again with a fallback endpoint
+          fetch('/api/onboarding/fix-attributes', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              attributes: userAttributeUpdates
+            })
+          })
+          .then(response => {
+            if (response.ok) {
+              logger.debug('[BusinessInfo] Fallback attribute update succeeded');
+            } else {
+              logger.error('[BusinessInfo] Fallback attribute update failed:', response.status);
+            }
+          })
+          .catch(fallbackError => {
+            logger.error('[BusinessInfo] Fallback attribute update error:', fallbackError);
+          });
         });
 
       // Update the local store
@@ -344,20 +365,26 @@ export default function BusinessInfoPage() {
       // Update local store
       logger.debug('[BusinessInfo] Local store updated successfully');
       
-      // Use simplified navigation to ensure we bypass middleware issues
-      logger.debug('[BusinessInfo] Using simplified navigation to subscription page');
+      // GUARANTEED NAVIGATION TO SUBSCRIPTION PAGE
+      // Use both the router.push method AND a fallback for reliability
       const timestamp = Date.now();
+      const targetUrl = `/onboarding/subscription?ts=${timestamp}`;
       
-      // Add a slight delay to ensure cookies are set before navigation
+      logger.debug(`[BusinessInfo] Navigating to subscription page: ${targetUrl}`);
+      
+      // Primary navigation method
+      router.push(targetUrl);
+      
+      // Backup navigation method after a short delay
+      // This ensures that if the router.push has issues, we still get to the subscription page
       setTimeout(() => {
-        const finalCookies = {
-          onboardingStep: getCookie('onboardingStep'),
-          onboardedStatus: getCookie('onboardedStatus')
-        };
-        logger.debug(`[BusinessInfo] Redirecting to /onboarding/subscription?ts=${timestamp} - final cookies: `, finalCookies);
-        router.push(`/onboarding/subscription?ts=${timestamp}`);
-      }, 50);
-      
+        // Double-check we're not already on the subscription page
+        if (window.location.pathname !== '/onboarding/subscription') {
+          logger.debug('[BusinessInfo] Using fallback navigation to subscription page');
+          // Use direct browser navigation as ultimate fallback
+          window.location.href = targetUrl + '&fallback=true';
+        }
+      }, 800);
     } catch (error) {
       logger.error('[BusinessInfo] Error submitting form:', error);
       setFormError('An error occurred while saving your business information. Please try again.');

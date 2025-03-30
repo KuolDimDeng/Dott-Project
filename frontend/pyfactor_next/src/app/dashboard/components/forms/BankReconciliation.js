@@ -1,31 +1,5 @@
+'use client';
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Select,
-  MenuItem,
-  TextField,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Grid,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Alert,
-  CircularProgress,
-  useTheme,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import { axiosInstance } from '@/lib/axiosConfig';
 import Image from 'next/image';
 
@@ -45,7 +19,10 @@ const BankReconciliation = () => {
   const [interestEarned, setInterestEarned] = useState(0);
   const [connectedBanks, setConnectedBanks] = useState([]);
   const [loading, setLoading] = useState(false);
-  const theme = useTheme();
+  const [accordionStates, setAccordionStates] = useState({
+    adjustments: false,
+    unmatched: false
+  });
 
   useEffect(() => {
     fetchConnectedBanks();
@@ -122,6 +99,12 @@ const BankReconciliation = () => {
     }
   };
 
+  const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  };
+
   const handleMatch = (bankIndex, bookIndex) => {
     // Logic to match transactions
   };
@@ -142,249 +125,345 @@ const BankReconciliation = () => {
     // Logic to generate report
   };
 
+  const toggleAccordion = (section) => {
+    setAccordionStates(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <AccountBalanceIcon sx={{ fontSize: 40, mr: 2, color: 'primary.main' }} />
-              <Typography variant="h4" component="h1">
-                Bank Reconciliation
-              </Typography>
-            </Box>
-            <Typography variant="subtitle1" sx={{ ml: 7, color: 'text.secondary' }}>
-              Manage your bank reconciliation
-            </Typography>
-          </Box>
-          <Box>
-            <Image
-              src="/static/images/Recon.png"
-              alt="Reconciliation"
-              width={130}
-              height={130}
-              style={{ objectFit: 'contain' }}
-            />
-          </Box>
-        </Box>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
+        <div className="flex items-center">
+          <div className="mr-4 text-blue-600">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Bank Reconciliation</h1>
+            <p className="text-gray-600">Manage your bank reconciliation</p>
+          </div>
+        </div>
+        <div className="mt-4 md:mt-0">
+          <Image
+            src="/static/images/Recon.png"
+            alt="Reconciliation"
+            width={130}
+            height={130}
+            style={{ objectFit: 'contain' }}
+          />
+        </div>
+      </div>
 
-        {/* Header/Overview Section */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={3}>
-            <Select
-              fullWidth
-              value={bankAccount}
-              onChange={(e) => setBankAccount(e.target.value)}
-              displayEmpty
-            >
-              <MenuItem value="" disabled>
-                Select Bank Account
-              </MenuItem>
-              {connectedBanks.map((account) => (
-                <MenuItem key={account.account_id} value={account.account_id}>
-                  {account.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <DatePicker
-              label="Start Date"
-              value={startDate}
-              onChange={(newValue) => setStartDate(newValue)}
-              renderInput={(params) => <TextField {...params} fullWidth />}
-            />
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <DatePicker
-              label="End Date"
-              value={endDate}
-              onChange={(newValue) => setEndDate(newValue)}
-              renderInput={(params) => <TextField {...params} fullWidth />}
-            />
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <TextField
-              fullWidth
-              label="Ending Balance"
-              type="number"
-              value={endingBalance}
-              onChange={(e) => setEndingBalance(Number(e.target.value))}
-            />
-          </Grid>
-        </Grid>
+      {/* Header/Overview Section */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Bank Account</label>
+          <select
+            className="w-full p-2 border border-gray-300 rounded-md bg-white"
+            value={bankAccount}
+            onChange={(e) => setBankAccount(e.target.value)}
+          >
+            <option value="" disabled>Select Bank Account</option>
+            {connectedBanks.map((account) => (
+              <option key={account.account_id} value={account.account_id}>
+                {account.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+          <input
+            type="date"
+            className="w-full p-2 border border-gray-300 rounded-md"
+            value={formatDate(startDate)}
+            onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : null)}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+          <input
+            type="date"
+            className="w-full p-2 border border-gray-300 rounded-md"
+            value={formatDate(endDate)}
+            onChange={(e) => setEndDate(e.target.value ? new Date(e.target.value) : null)}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Ending Balance</label>
+          <input
+            type="number"
+            className="w-full p-2 border border-gray-300 rounded-md"
+            value={endingBalance}
+            onChange={(e) => setEndingBalance(Number(e.target.value))}
+          />
+        </div>
+      </div>
 
-        {/* Reconciliation Summary */}
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Reconciliation Summary
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={4}>
-              <Typography>Book Balance: ${bookBalance.toFixed(2)}</Typography>
-            </Grid>
-            <Grid item xs={4}>
-              <Typography>Difference: ${difference.toFixed(2)}</Typography>
-            </Grid>
-            <Grid item xs={4}>
-              <Typography>Adjusted Balance: ${adjustedBalance.toFixed(2)}</Typography>
-            </Grid>
-          </Grid>
-        </Paper>
+      {/* Reconciliation Summary */}
+      <div className="bg-gray-50 p-4 rounded-lg mb-6">
+        <h2 className="text-lg font-semibold mb-3">Reconciliation Summary</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <p className="text-gray-600">Book Balance:</p>
+            <p className="text-lg font-medium">${bookBalance.toFixed(2)}</p>
+          </div>
+          <div>
+            <p className="text-gray-600">Difference:</p>
+            <p className={`text-lg font-medium ${difference !== 0 ? 'text-red-600' : 'text-green-600'}`}>
+              ${difference.toFixed(2)}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-600">Adjusted Balance:</p>
+            <p className="text-lg font-medium">${adjustedBalance.toFixed(2)}</p>
+          </div>
+        </div>
+      </div>
 
-        {/* Transactions List */}
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <Typography variant="h6" gutterBottom>
-              Bank Transactions
-            </Typography>
-            {loading ? (
-              <CircularProgress />
-            ) : (
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Description</TableCell>
-                      <TableCell>Amount</TableCell>
-                      <TableCell>Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {bankTransactions.map((transaction, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                        <TableCell>{transaction.description}</TableCell>
-                        <TableCell>${transaction.amount.toFixed(2)}</TableCell>
-                        <TableCell>{transaction.status || 'Pending'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Typography variant="h6" gutterBottom>
-              Book Transactions
-            </Typography>
-            {loading ? (
-              <CircularProgress />
-            ) : (
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Description</TableCell>
-                      <TableCell>Amount</TableCell>
-                      <TableCell>Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {bookTransactions.map((transaction, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                        <TableCell>{transaction.description}</TableCell>
-                        <TableCell>${transaction.amount.toFixed(2)}</TableCell>
-                        <TableCell>{transaction.status || 'Posted'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </Grid>
-        </Grid>
+      {/* Transactions List */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <h2 className="text-lg font-semibold mb-3">Bank Transactions</h2>
+          {loading ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white border border-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {bankTransactions.map((transaction, index) => (
+                    <tr key={index}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(transaction.date).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {transaction.description}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${transaction.amount.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {transaction.status || 'Pending'}
+                      </td>
+                    </tr>
+                  ))}
+                  {bankTransactions.length === 0 && (
+                    <tr>
+                      <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
+                        No bank transactions found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold mb-3">Book Transactions</h2>
+          {loading ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white border border-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {bookTransactions.map((transaction, index) => (
+                    <tr key={index}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(transaction.date).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {transaction.description}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${transaction.amount.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {transaction.status || 'Posted'}
+                      </td>
+                    </tr>
+                  ))}
+                  {bookTransactions.length === 0 && (
+                    <tr>
+                      <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
+                        No book transactions found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
 
-        {/* Adjustment Section */}
-        <Accordion sx={{ mt: 3 }}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography>Adjustments</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Bank Fees"
+      {/* Adjustment Section */}
+      <div className="mb-6 border border-gray-200 rounded-lg">
+        <div
+          className="flex justify-between items-center p-4 cursor-pointer"
+          onClick={() => toggleAccordion('adjustments')}
+        >
+          <h3 className="text-lg font-medium">Adjustments</h3>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className={`h-5 w-5 transform ${accordionStates.adjustments ? 'rotate-180' : ''} transition-transform`}
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </div>
+        {accordionStates.adjustments && (
+          <div className="p-4 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bank Fees</label>
+                <input
                   type="number"
+                  className="w-full p-2 border border-gray-300 rounded-md"
                   value={bankFees}
                   onChange={(e) => setBankFees(Number(e.target.value))}
                 />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Interest Earned"
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Interest Earned</label>
+                <input
                   type="number"
+                  className="w-full p-2 border border-gray-300 rounded-md"
                   value={interestEarned}
                   onChange={(e) => setInterestEarned(Number(e.target.value))}
                 />
-              </Grid>
-              <Grid item xs={12}>
-                <Button variant="contained" onClick={handleAddMissingTransaction}>
-                  Add Missing Transaction
-                </Button>
-              </Grid>
-            </Grid>
-          </AccordionDetails>
-        </Accordion>
-
-        {/* Unmatched Transactions */}
-        <Accordion sx={{ mt: 3 }}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography>Unmatched Transactions</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Description</TableCell>
-                    <TableCell>Amount</TableCell>
-                    <TableCell>Source</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {unmatchedTransactions.map((transaction, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{transaction.date}</TableCell>
-                      <TableCell>{transaction.description}</TableCell>
-                      <TableCell>{transaction.amount}</TableCell>
-                      <TableCell>{transaction.source}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </AccordionDetails>
-        </Accordion>
-
-        {/* Finalize Section */}
-        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
-          <Button variant="outlined" onClick={handleSaveDraft}>
-            Save Draft
-          </Button>
-          <Button variant="contained" onClick={handleFinalize}>
-            Finalize & Reconcile
-          </Button>
-          <Button variant="outlined" onClick={handleGenerateReport}>
-            Generate Report
-          </Button>
-        </Box>
-
-        {/* Discrepancy Alerts */}
-        {difference !== 0 && (
-          <Alert severity="warning" sx={{ mt: 3 }}>
-            There is a discrepancy of ${Math.abs(difference).toFixed(2)} in your reconciliation.
-            Please review your transactions.
-          </Alert>
+              </div>
+            </div>
+            <button 
+              type="button"
+              onClick={handleAddMissingTransaction}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Add Missing Transaction
+            </button>
+          </div>
         )}
-      </Box>
-    </LocalizationProvider>
+      </div>
+
+      {/* Unmatched Transactions */}
+      <div className="mb-6 border border-gray-200 rounded-lg">
+        <div
+          className="flex justify-between items-center p-4 cursor-pointer"
+          onClick={() => toggleAccordion('unmatched')}
+        >
+          <h3 className="text-lg font-medium">Unmatched Transactions</h3>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className={`h-5 w-5 transform ${accordionStates.unmatched ? 'rotate-180' : ''} transition-transform`}
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </div>
+        {accordionStates.unmatched && (
+          <div className="p-4 border-t border-gray-200">
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white border border-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {unmatchedTransactions.map((transaction, index) => (
+                    <tr key={index}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{transaction.date}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{transaction.description}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{transaction.amount}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{transaction.source}</td>
+                    </tr>
+                  ))}
+                  {unmatchedTransactions.length === 0 && (
+                    <tr>
+                      <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
+                        No unmatched transactions found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Finalize Section */}
+      <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+        <button
+          type="button"
+          onClick={handleSaveDraft}
+          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+        >
+          Save Draft
+        </button>
+        <button
+          type="button"
+          onClick={handleFinalize}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Finalize & Reconcile
+        </button>
+        <button
+          type="button"
+          onClick={handleGenerateReport}
+          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+        >
+          Generate Report
+        </button>
+      </div>
+
+      {/* Discrepancy Alerts */}
+      {difference !== 0 && (
+        <div className="p-4 mb-4 bg-yellow-50 border border-yellow-200 rounded-md">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                There is a discrepancy of ${Math.abs(difference).toFixed(2)} in your reconciliation.
+                Please review your transactions.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

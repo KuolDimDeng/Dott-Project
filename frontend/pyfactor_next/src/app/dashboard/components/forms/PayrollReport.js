@@ -1,23 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Select,
-  MenuItem,
-  Button,
-  Grid,
-  TextField,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { format } from 'date-fns';
 import { axiosInstance } from '@/lib/axiosConfig';
 
 const PayrollReport = () => {
@@ -28,8 +10,8 @@ const PayrollReport = () => {
     department: '',
     employeeType: '',
   });
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     fetchDepartments();
@@ -49,8 +31,8 @@ const PayrollReport = () => {
       const response = await axiosInstance.get('/api/payroll/report/', {
         params: {
           ...filters,
-          startDate: startDate?.toISOString(),
-          endDate: endDate?.toISOString(),
+          startDate,
+          endDate,
         },
       });
       setPayrollData(response.data);
@@ -77,140 +59,181 @@ const PayrollReport = () => {
   };
 
   const calculateTotals = () => {
+    if (!payrollData || payrollData.length === 0) {
+      return { grossPay: 0, deductions: 0, netPay: 0, ytdGross: 0, ytdDeductions: 0, ytdNet: 0 };
+    }
+    
     return payrollData.reduce(
       (totals, employee) => ({
-        grossPay: totals.grossPay + employee.grossPay,
-        deductions: totals.deductions + employee.deductions,
-        netPay: totals.netPay + employee.netPay,
-        ytdGross: totals.ytdGross + employee.ytdGross,
-        ytdDeductions: totals.ytdDeductions + employee.ytdDeductions,
-        ytdNet: totals.ytdNet + employee.ytdNet,
+        grossPay: totals.grossPay + (employee.grossPay || 0),
+        deductions: totals.deductions + (employee.deductions || 0),
+        netPay: totals.netPay + (employee.netPay || 0),
+        ytdGross: totals.ytdGross + (employee.ytdGross || 0),
+        ytdDeductions: totals.ytdDeductions + (employee.ytdDeductions || 0),
+        ytdNet: totals.ytdNet + (employee.ytdNet || 0),
       }),
       { grossPay: 0, deductions: 0, netPay: 0, ytdGross: 0, ytdDeductions: 0, ytdNet: 0 }
     );
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          Payroll Report
-        </Typography>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Payroll Report</h1>
 
-        {/* Filters and Controls */}
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={3}>
-              <DatePicker
-                label="Start Date"
-                value={startDate}
-                onChange={setStartDate}
-                renderInput={(params) => <TextField {...params} fullWidth />}
-              />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <DatePicker
-                label="End Date"
-                value={endDate}
-                onChange={setEndDate}
-                renderInput={(params) => <TextField {...params} fullWidth />}
-              />
-            </Grid>
-            <Grid item xs={12} sm={2}>
-              <Select
-                fullWidth
-                name="department"
-                value={filters.department}
-                onChange={handleFilterChange}
-                displayEmpty
-              >
-                <MenuItem value="">All Departments</MenuItem>
-                {departments.map((dept) => (
-                  <MenuItem key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </Grid>
-            <Grid item xs={12} sm={2}>
-              <Select
-                fullWidth
-                name="employeeType"
-                value={filters.employeeType}
-                onChange={handleFilterChange}
-                displayEmpty
-              >
-                <MenuItem value="">All Employee Types</MenuItem>
-                <MenuItem value="fullTime">Full-Time</MenuItem>
-                <MenuItem value="partTime">Part-Time</MenuItem>
-                <MenuItem value="contract">Contract</MenuItem>
-              </Select>
-            </Grid>
-            <Grid item xs={12} sm={2}>
-              <Button variant="contained" color="primary" onClick={handleGenerateReport} fullWidth>
-                Generate Report
-              </Button>
-            </Grid>
-          </Grid>
-          <Box sx={{ mt: 2 }}>
-            <Button variant="outlined" onClick={() => handleExport('PDF')} sx={{ mr: 1 }}>
-              Export PDF
-            </Button>
-            <Button variant="outlined" onClick={() => handleExport('CSV')}>
-              Export CSV
-            </Button>
-          </Box>
-        </Paper>
-
-        {/* Main Payroll Table */}
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Employee Name</TableCell>
-                <TableCell>Employee ID</TableCell>
-                <TableCell align="right">Gross Pay</TableCell>
-                <TableCell align="right">Deductions</TableCell>
-                <TableCell align="right">Net Pay</TableCell>
-                <TableCell align="right">YTD Gross</TableCell>
-                <TableCell align="right">YTD Deductions</TableCell>
-                <TableCell align="right">YTD Net</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {payrollData.map((employee) => (
-                <TableRow key={employee.id}>
-                  <TableCell>{employee.name}</TableCell>
-                  <TableCell>{employee.employeeId}</TableCell>
-                  <TableCell align="right">${employee.grossPay.toFixed(2)}</TableCell>
-                  <TableCell align="right">${employee.deductions.toFixed(2)}</TableCell>
-                  <TableCell align="right">${employee.netPay.toFixed(2)}</TableCell>
-                  <TableCell align="right">${employee.ytdGross.toFixed(2)}</TableCell>
-                  <TableCell align="right">${employee.ytdDeductions.toFixed(2)}</TableCell>
-                  <TableCell align="right">${employee.ytdNet.toFixed(2)}</TableCell>
-                </TableRow>
+      {/* Filters and Controls */}
+      <div className="bg-white p-4 mb-6 rounded-lg shadow-md">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <input
+              type="date"
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <input
+              type="date"
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+            <select
+              name="department"
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              value={filters.department}
+              onChange={handleFilterChange}
+            >
+              <option value="">All Departments</option>
+              {departments.map((dept) => (
+                <option key={dept.id} value={dept.id}>
+                  {dept.name}
+                </option>
               ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            </select>
+          </div>
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Employee Type</label>
+            <select
+              name="employeeType"
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              value={filters.employeeType}
+              onChange={handleFilterChange}
+            >
+              <option value="">All Employee Types</option>
+              <option value="fullTime">Full-Time</option>
+              <option value="partTime">Part-Time</option>
+              <option value="contract">Contract</option>
+            </select>
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1 opacity-0">Generate</label>
+            <button
+              className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              onClick={handleGenerateReport}
+            >
+              Generate Report
+            </button>
+          </div>
+        </div>
+        <div className="mt-4 flex space-x-4">
+          <button
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            onClick={() => handleExport('PDF')}
+          >
+            <svg className="h-5 w-5 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export PDF
+          </button>
+          <button
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            onClick={() => handleExport('CSV')}
+          >
+            <svg className="h-5 w-5 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export CSV
+          </button>
+        </div>
+      </div>
 
-        {/* Summary Totals */}
-        <Paper sx={{ p: 2, mt: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Summary Totals
-          </Typography>
-          <Grid container spacing={2}>
-            {Object.entries(calculateTotals()).map(([key, value]) => (
-              <Grid item xs={6} sm={4} key={key}>
-                <Typography>
-                  {key.charAt(0).toUpperCase() + key.slice(1)}: ${value.toFixed(2)}
-                </Typography>
-              </Grid>
-            ))}
-          </Grid>
-        </Paper>
-      </Box>
-    </LocalizationProvider>
+      {/* Main Payroll Table */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Employee Name
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Employee ID
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Gross Pay
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Deductions
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Net Pay
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  YTD Gross
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  YTD Deductions
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  YTD Net
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {payrollData.length > 0 ? (
+                payrollData.map((employee) => (
+                  <tr key={employee.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.employeeId}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${(employee.grossPay || 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${(employee.deductions || 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${(employee.netPay || 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${(employee.ytdGross || 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${(employee.ytdDeductions || 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${(employee.ytdNet || 0).toFixed(2)}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="8" className="px-6 py-4 text-center text-sm text-gray-500">
+                    No payroll data available. Please select a date range and generate the report.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Summary Totals */}
+      <div className="bg-white rounded-lg shadow-md p-4 mt-6">
+        <h2 className="text-lg font-medium mb-4">Summary Totals</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {Object.entries(calculateTotals()).map(([key, value]) => (
+            <div key={key} className="p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-500">{key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}</p>
+              <p className="text-lg font-semibold">${value.toFixed(2)}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };
 

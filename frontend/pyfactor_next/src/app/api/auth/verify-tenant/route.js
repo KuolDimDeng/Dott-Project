@@ -9,14 +9,18 @@ import { cookies } from 'next/headers';
 /**
  * Server-safe method to get email-to-tenant mapping
  * @param {string} email - Email to check
- * @returns {string|null} Tenant ID if found or null
+ * @returns {Promise<string|null>} Tenant ID if found or null
  */
 async function getEmailToTenantMapping(email) {
   try {
     // For server-side, we can only check the backend API
-    // We can't use localStorage here since it's server-side code
     const accessToken = await getAccessToken();
     const headers = await getAuthHeaders();
+    
+    if (!accessToken) {
+      logger.warn('[verify-tenant] No access token available for email check');
+      return null;
+    }
     
     try {
       const emailCheckResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/check-email`, {
@@ -62,6 +66,16 @@ export async function POST(request) {
     // Get auth headers for backend requests
     const authHeaders = await getAuthHeaders();
     const accessToken = await getAccessToken();
+    
+    // If we don't have an access token, return an error
+    if (!accessToken) {
+      logger.error('[verify-tenant] No access token available');
+      return NextResponse.json({
+        success: false,
+        message: 'Authentication required',
+        error: 'No access token available'
+      }, { status: 401 });
+    }
 
     // First check if a tenant already exists for this user on the backend
     try {
@@ -78,6 +92,14 @@ export async function POST(request) {
         logger.info('[verify-tenant] Found existing tenant for user:', { 
           userId, 
           tenantId: existingTenantId
+        });
+      
+        // Store the tenant ID in a cookie for future server-side access
+        const cookieStore = cookies();
+        await cookieStore.set('tenantId', existingTenantId, { 
+          path: '/',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+          sameSite: 'strict'
         });
       
         return NextResponse.json({
@@ -122,6 +144,14 @@ export async function POST(request) {
         tenantId: existingTenantId
       });
       
+      // Store the tenant ID in a cookie for future server-side access
+      const cookieStore = cookies();
+      await cookieStore.set('tenantId', existingTenantId, { 
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        sameSite: 'strict'
+      });
+      
       return NextResponse.json({
         success: true,
         message: 'Tenant verified by email',
@@ -149,17 +179,27 @@ export async function POST(request) {
         
         // If the tenant exists but belongs to another user
         if (tenantCheckResponse.data.exists && tenantCheckResponse.data.correctTenantId) {
+          const correctTenantId = tenantCheckResponse.data.correctTenantId;
+          
           logger.warn('[verify-tenant] Tenant belongs to another user, using correct tenant ID:', { 
             providedTenantId: tenantId,
-            correctTenantId: tenantCheckResponse.data.correctTenantId
+            correctTenantId
+          });
+          
+          // Store the correct tenant ID in a cookie
+          const cookieStore = cookies();
+          await cookieStore.set('tenantId', correctTenantId, { 
+            path: '/',
+            maxAge: 60 * 60 * 24 * 7, // 7 days
+            sameSite: 'strict'
           });
           
           return NextResponse.json({
             success: true,
             message: 'Using correct tenant for user',
-            tenantId: tenantCheckResponse.data.correctTenantId,
-            correctTenantId: tenantCheckResponse.data.correctTenantId,
-            schemaName: `tenant_${tenantCheckResponse.data.correctTenantId.replace(/-/g, '_')}`,
+            tenantId: correctTenantId,
+            correctTenantId,
+            schemaName: `tenant_${correctTenantId.replace(/-/g, '_')}`,
             source: 'tenant_correction'
           });
         }
@@ -170,8 +210,7 @@ export async function POST(request) {
       // Store the mapping for future reference in the backend
       if (email) {
         try {
-          // Instead of using localStorage which isn't available on server,
-          // make an API call to associate the email with the tenant
+          // Make an API call to associate the email with the tenant
           await axios.post(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/associate-email`, {
             email,
             tenantId
@@ -190,6 +229,14 @@ export async function POST(request) {
           logger.error('[verify-tenant] Error associating email with tenant in backend:', { error: e.message });
         }
       }
+      
+      // Store the tenant ID in a cookie
+      const cookieStore = cookies();
+      await cookieStore.set('tenantId', tenantId, { 
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        sameSite: 'strict'
+      });
       
       return NextResponse.json({
         success: true,
@@ -226,6 +273,14 @@ export async function POST(request) {
           schemaName
         });
         
+        // Store the new tenant ID in a cookie
+        const cookieStore = cookies();
+        await cookieStore.set('tenantId', newTenantId, { 
+          path: '/',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+          sameSite: 'strict'
+        });
+        
         // Store the mapping for future reference in the backend
         if (email) {
           try {
@@ -251,35 +306,42 @@ export async function POST(request) {
         
         return NextResponse.json({
           success: true,
-          message: 'New tenant created',
+          message: 'Created new tenant for user',
           tenantId: newTenantId,
-          schemaName: schemaName,
-          source: 'created_new'
+          schemaName,
+          source: 'created'
         });
       } else {
-        throw new Error('Failed to create tenant: Invalid response from backend');
+        logger.error('[verify-tenant] Failed to create new tenant:', createResponse.data);
+        
+        return NextResponse.json({
+          success: false,
+          message: 'Failed to create new tenant',
+          error: createResponse.data
+        }, { status: 500 });
       }
-    } catch (createError) {
-      logger.error('[verify-tenant] Error creating tenant on backend:', { 
-        error: createError.message,
-        response: createError.response?.data
+    } catch (error) {
+      logger.error('[verify-tenant] Error creating new tenant:', { 
+        error: error.message,
+        status: error.response?.status,
+        data: error.response?.data
       });
       
       return NextResponse.json({
         success: false,
-        message: 'Failed to create tenant',
-        error: createError.message
+        message: 'Error creating new tenant',
+        error: error.message
       }, { status: 500 });
     }
   } catch (error) {
-    logger.error('[verify-tenant] Unexpected error in verify-tenant API:', { 
+    logger.error('[verify-tenant] Unhandled error in verify-tenant route:', { 
       error: error.message,
-      stack: error.stack
+      stack: error.stack 
     });
     
     return NextResponse.json({
       success: false,
-      message: 'Unexpected error in verify-tenant API',
+      message: 'Unhandled error in verify-tenant route',
       error: error.message
     }, { status: 500 });
   }

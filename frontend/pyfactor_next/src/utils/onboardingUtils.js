@@ -2,6 +2,7 @@ import { fetchAuthSession, getCurrentUser, updateUserAttributes } from 'aws-ampl
 import { logger } from '@/utils/logger';
 import { getRefreshedAccessToken, isTokenExpired } from '@/utils/auth';
 import { jwtDecode } from 'jwt-decode';
+import { fetchUserAttributes } from '@/config/amplifyUnified';
 
 export async function validateSession(providedTokens) {
   try {
@@ -333,26 +334,259 @@ export async function completeOnboarding() {
   }
 }
 
+/**
+ * Gets the onboarding status from multiple sources and ensures they are in sync
+ * Prioritizes the Cognito attributes as the source of truth
+ * 
+ * @returns {Promise<Object>} The onboarding status data
+ */
 export async function getOnboardingStatus() {
   try {
-    // Validate session first
-    const { user } = await validateSession();
-
-    const attributes = user.attributes || {};
-    const currentStep = attributes['custom:onboarding'] || 'NOT_STARTED';
-    const setupDone = attributes['custom:setupdone'] === 'TRUE';
-
-    return {
-      currentStep,
-      setupDone,
-      attributes
+    const logger = console;
+    logger.debug('[getOnboardingStatus] Checking onboarding status from multiple sources');
+    
+    let statusData = {
+      status: null,
+      step: null,
+      setupDone: false,
+      nextStep: null,
+      sourcesPriority: []
     };
+    
+    // Get status from Cognito attributes (highest priority)
+    try {
+      const userAttributes = await fetchUserAttributes();
+      if (userAttributes) {
+        statusData.cognitoStatus = userAttributes['custom:onboarding'];
+        statusData.cognitoSetupDone = userAttributes['custom:setupdone'] === 'TRUE';
+        statusData.sourcesPriority.push('cognito');
+        
+        // Cognito is the source of truth, so set the status from here if available
+        if (statusData.cognitoStatus) {
+          statusData.status = statusData.cognitoStatus;
+          statusData.setupDone = statusData.cognitoSetupDone;
+        }
+        
+        logger.debug('[getOnboardingStatus] Retrieved from Cognito:', {
+          status: statusData.cognitoStatus,
+          setupDone: statusData.cognitoSetupDone
+        });
+      }
+    } catch (cognitoError) {
+      logger.warn('[getOnboardingStatus] Error getting status from Cognito:', cognitoError);
+    }
+    
+    // Get status from cookies (medium priority)
+    try {
+      const getCookie = (name) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+      };
+      
+      statusData.cookieStatus = getCookie('onboardedStatus');
+      statusData.cookieStep = getCookie('onboardingStep');
+      statusData.sourcesPriority.push('cookies');
+      
+      // If we don't have Cognito data, use cookie data
+      if (!statusData.status && statusData.cookieStatus) {
+        statusData.status = statusData.cookieStatus;
+        statusData.step = statusData.cookieStep;
+      }
+      
+      logger.debug('[getOnboardingStatus] Retrieved from cookies:', {
+        status: statusData.cookieStatus,
+        step: statusData.cookieStep
+      });
+    } catch (cookieError) {
+      logger.warn('[getOnboardingStatus] Error getting status from cookies:', cookieError);
+    }
+    
+    // Check local storage as last resort (lowest priority)
+    try {
+      statusData.localStorageStatus = localStorage.getItem('onboardedStatus');
+      statusData.localStorageStep = localStorage.getItem('onboardingStep');
+      statusData.sourcesPriority.push('localStorage');
+      
+      // Only use localStorage if we have no other data
+      if (!statusData.status && statusData.localStorageStatus) {
+        statusData.status = statusData.localStorageStatus;
+        statusData.step = statusData.localStorageStep;
+      }
+      
+      logger.debug('[getOnboardingStatus] Retrieved from localStorage:', {
+        status: statusData.localStorageStatus,
+        step: statusData.localStorageStep
+      });
+    } catch (storageError) {
+      logger.warn('[getOnboardingStatus] Error getting status from localStorage:', storageError);
+    }
+    
+    // Determine if there's inconsistency between sources
+    const inconsistent = (
+      (statusData.cognitoStatus && statusData.cookieStatus && statusData.cognitoStatus !== statusData.cookieStatus) ||
+      (statusData.cognitoStatus && statusData.localStorageStatus && statusData.cognitoStatus !== statusData.localStorageStatus) ||
+      (statusData.cookieStatus && statusData.localStorageStatus && statusData.cookieStatus !== statusData.localStorageStatus)
+    );
+    
+    // If we detect inconsistency, synchronize all sources to match Cognito (source of truth)
+    if (inconsistent && statusData.cognitoStatus) {
+      logger.info('[getOnboardingStatus] Detected inconsistent status, synchronizing to Cognito:', {
+        cognito: statusData.cognitoStatus,
+        cookie: statusData.cookieStatus,
+        localStorage: statusData.localStorageStatus
+      });
+      
+      await synchronizeOnboardingStatus(statusData.cognitoStatus, statusData.cognitoSetupDone);
+      
+      // Update our return values to reflect the synchronized state
+      statusData.status = statusData.cognitoStatus;
+      statusData.cookieStatus = statusData.cognitoStatus;
+      statusData.localStorageStatus = statusData.cognitoStatus;
+    }
+    
+    // Map status to step if not already set
+    if (statusData.status && !statusData.step) {
+      switch (statusData.status) {
+        case 'NOT_STARTED':
+          statusData.step = 'business-info';
+          break;
+        case 'BUSINESS_INFO':
+          statusData.step = 'subscription';
+          break;
+        case 'SUBSCRIPTION':
+          statusData.step = 'payment';
+          break;
+        case 'PAYMENT':
+          statusData.step = 'setup';
+          break;
+        case 'SETUP':
+        case 'COMPLETE':
+          statusData.step = 'dashboard';
+          break;
+        default:
+          statusData.step = 'business-info';
+      }
+    }
+    
+    // Set default values if nothing was found
+    if (!statusData.status) {
+      statusData.status = 'NOT_STARTED';
+      statusData.step = 'business-info';
+    }
+    
+    return statusData;
   } catch (error) {
-    logger.error('[OnboardingUtils] Failed to get status:', {
-      error: error.message,
-      code: error.code
-    });
-    throw error;
+    console.error('[getOnboardingStatus] Error retrieving onboarding status:', error);
+    // Return a default status in case of error
+    return {
+      status: 'NOT_STARTED',
+      step: 'business-info',
+      setupDone: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Synchronizes onboarding status across all storage mechanisms
+ * 
+ * @param {string} status - The status to set
+ * @param {boolean} setupDone - Whether setup is done
+ * @returns {Promise<void>}
+ */
+async function synchronizeOnboardingStatus(status, setupDone) {
+  try {
+    const logger = console;
+    logger.debug('[synchronizeOnboardingStatus] Synchronizing status to:', status);
+    
+    // Determine the appropriate step for the status
+    let step = 'business-info';
+    switch (status) {
+      case 'BUSINESS_INFO':
+        step = 'subscription';
+        break;
+      case 'SUBSCRIPTION':
+        step = 'payment';
+        break;
+      case 'PAYMENT':
+        step = 'setup';
+        break;
+      case 'SETUP':
+      case 'COMPLETE':
+        step = 'dashboard';
+        break;
+    }
+    
+    // Update cookies
+    try {
+      const expiration = new Date();
+      expiration.setDate(expiration.getDate() + 30); // 30 days
+      document.cookie = `onboardedStatus=${status}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+      document.cookie = `onboardingStep=${step}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+      logger.debug('[synchronizeOnboardingStatus] Updated cookies');
+    } catch (cookieError) {
+      logger.warn('[synchronizeOnboardingStatus] Error updating cookies:', cookieError);
+    }
+    
+    // Update localStorage
+    try {
+      localStorage.setItem('onboardedStatus', status);
+      localStorage.setItem('onboardingStep', step);
+      localStorage.setItem('cognitoOnboardingStatus', status);
+      localStorage.setItem('cognitoSetupDone', setupDone ? 'TRUE' : 'FALSE');
+      logger.debug('[synchronizeOnboardingStatus] Updated localStorage');
+    } catch (storageError) {
+      logger.warn('[synchronizeOnboardingStatus] Error updating localStorage:', storageError);
+    }
+    
+    // Attempt to update Cognito via server endpoint if our status is different
+    try {
+      const userAttributes = await fetchUserAttributes();
+      if (userAttributes && userAttributes['custom:onboarding'] !== status) {
+        logger.info('[synchronizeOnboardingStatus] Updating Cognito attributes via API');
+        
+        // Try server-side update
+        const response = await fetch('/api/user/update-attributes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            attributes: {
+              'custom:onboarding': status,
+              'custom:setupdone': setupDone ? 'TRUE' : 'FALSE'
+            }
+          })
+        });
+        
+        if (response.ok) {
+          logger.info('[synchronizeOnboardingStatus] Server-side attribute update successful');
+        } else {
+          logger.warn('[synchronizeOnboardingStatus] Server-side attribute update failed');
+        }
+      }
+    } catch (serverError) {
+      logger.warn('[synchronizeOnboardingStatus] Error updating Cognito via API:', serverError);
+    }
+    
+    // Dispatch an event for components to listen to
+    try {
+      window.dispatchEvent(new CustomEvent('onboardingStatusUpdated', {
+        detail: {
+          status,
+          step,
+          setupDone,
+          source: 'synchronizeOnboardingStatus'
+        }
+      }));
+      logger.debug('[synchronizeOnboardingStatus] Dispatched status update event');
+    } catch (eventError) {
+      logger.warn('[synchronizeOnboardingStatus] Error dispatching status update event:', eventError);
+    }
+  } catch (error) {
+    console.error('[synchronizeOnboardingStatus] Error synchronizing onboarding status:', error);
   }
 }
 

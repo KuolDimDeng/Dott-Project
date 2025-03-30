@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator, MaxLengthValidator
 from users.models import Business
+from django.conf import settings
 
 User = get_user_model()
 
@@ -49,36 +50,34 @@ class OnboardingProgress(models.Model):
         on_delete=models.CASCADE,
         related_name='onboarding_progress'
     )
-    # Temporarily replace ForeignKey with UUIDField to break circular dependency
-    # business = models.ForeignKey(
-    #     Business,
-    #     on_delete=models.SET_NULL,
-    #     null=True,
-    #     blank=True,
-    #     related_name='onboarding_records'
-    # )
-    business_id = models.UUIDField(null=True, blank=True)  # Store the UUID of the business
+    business = models.ForeignKey(
+        Business,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='onboarding_progresses'
+    )
 
     # Status fields matching Cognito attributes
     onboarding_status = models.CharField(
-        max_length=256,  # Matches Cognito constraint
+        max_length=50,
         choices=ONBOARDING_STATUS_CHOICES,
-        default='notstarted'
+        default='business-info'
     )
     account_status = models.CharField(
-        max_length=9,  # Matches Cognito constraint
+        max_length=20,
         choices=ACCOUNT_STATUS_CHOICES,
         default='pending',
         validators=[MinLengthValidator(6)]  # Matches Cognito constraint
     )
     user_role = models.CharField(
-        max_length=10,  # Matches Cognito constraint
+        max_length=20,
         choices=USER_ROLE_CHOICES,
         default='owner',
         validators=[MinLengthValidator(4)]  # Matches Cognito constraint
     )
     subscription_plan = models.CharField(
-        max_length=12,  # Matches Cognito constraint
+        max_length=20,
         choices=PLAN_CHOICES,
         default='free',
         validators=[MinLengthValidator(4)]  # Matches Cognito constraint
@@ -86,15 +85,14 @@ class OnboardingProgress(models.Model):
 
     # Progress tracking
     current_step = models.CharField(
-        max_length=256,
+        max_length=50,
         choices=ONBOARDING_STATUS_CHOICES,
-        default='notstarted'
+        default='business-info'
     )
     next_step = models.CharField(
-        max_length=256,
+        max_length=50,
         choices=ONBOARDING_STATUS_CHOICES,
-        null=True,
-        blank=True
+        default='subscription'
     )
     completed_steps = models.JSONField(default=list)
     last_active_step = models.CharField(
@@ -111,6 +109,36 @@ class OnboardingProgress(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
     database_setup_task_id = models.CharField(max_length=255, null=True, blank=True)
 
+    # Subscription and plan data
+    selected_plan = models.CharField(
+        max_length=20,
+        choices=PLAN_CHOICES,
+        default='free',
+        validators=[MinLengthValidator(4)]  # Matches Cognito constraint
+    )
+    subscription_status = models.CharField(max_length=20, null=True, blank=True)
+    billing_cycle = models.CharField(max_length=20, null=True, blank=True, default='monthly')
+
+    # Payment tracking
+    payment_completed = models.BooleanField(default=False)
+    payment_method = models.CharField(max_length=50, null=True, blank=True)
+    payment_id = models.CharField(max_length=100, null=True, blank=True)
+    payment_timestamp = models.DateTimeField(null=True, blank=True)
+
+    # RLS setup tracking
+    rls_setup_completed = models.BooleanField(default=False)
+    rls_setup_timestamp = models.DateTimeField(null=True, blank=True)
+
+    # Setup status tracking  
+    setup_completed = models.BooleanField(default=False)
+    setup_timestamp = models.DateTimeField(null=True, blank=True)
+    setup_error = models.TextField(null=True, blank=True)
+
+    # Schema information (for existing schemas during migration to RLS)
+    schema_name = models.CharField(max_length=63, null=True, blank=True)
+
+    # Metadata
+    metadata = models.JSONField(default=dict, null=True, blank=True)
 
     # Version tracking
     attribute_version = models.CharField(
@@ -121,22 +149,9 @@ class OnboardingProgress(models.Model):
     # Preferences (2-2048 chars in Cognito)
     preferences = models.JSONField(
         default=dict,
-        help_text='User preferences stored as JSON'
-    )
-
-    # Error tracking
-    setup_error = models.TextField(
+        help_text='User preferences stored as JSON',
         null=True,
-        blank=True,
-        help_text='Last setup error message'
-    )
-
-    # Plan selection
-    selected_plan = models.CharField(
-        max_length=12,  # Matches Cognito constraint
-        choices=PLAN_CHOICES,
-        default='free',
-        validators=[MinLengthValidator(4)]  # Matches Cognito constraint
+        blank=True
     )
 
     class Meta:

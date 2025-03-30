@@ -496,116 +496,80 @@ LOGLEVEL = os.getenv('DJANGO_LOGLEVEL', 'DEBUG').upper()
 # Import custom logging filters
 from pyfactor.log_filters import DeduplicationFilter
 
+# Update logging configuration to include specialized loggers for auth and tenant validation
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
- 
     'formatters': {
-        'default': {
-            'format': '%(asctime)s %(levelname)s %(message)s',
-        },
         'verbose': {
-            'format': '%(asctime)s %(levelname)s [%(name)s:%(lineno)s] %(message)s',
+            'format': '%(levelname)s %(asctime)s %(module)s %(message)s',
         },
-        'colored': {
-            'format': '\033[1;34m%(levelname)s\033[0m %(asctime)s \033[1;33m%(name)s\033[0m %(message)s',
-        },
-        'sql': {
-            'format': '\033[1;36mSQL\033[0m %(asctime)s [%(duration).3f] %(message)s',
+        'json': {
+            'format': '%(asctime)s %(levelname)s %(name)s %(message)s',
+            'datefmt': '%Y-%m-%dT%H:%M:%S%z',
+            'class': 'pythonjsonlogger.jsonlogger.JsonFormatter',
         },
     },
     'filters': {
         'require_debug_true': {
             '()': 'django.utils.log.RequireDebugTrue',
         },
-        'deduplication_filter': {
-            '()': 'pyfactor.log_filters.DeduplicationFilter',
-            'capacity': 200,
-        },
     },
     'handlers': {
         'console': {
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'formatter': 'colored',
-        },
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': '/Users/kuoldeng/projectx/backend/pyfactor/debug.log',
             'formatter': 'verbose',
-            'mode': 'w',  # 'w' mode overwrites the file on each run
         },
-        'sql_file': {
+        'json_console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'json',  # Now use the JSON formatter since the package is installed
+        },
+        'auth_file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': '/Users/kuoldeng/projectx/backend/pyfactor/debug.log',
-            'formatter': 'sql',
-            'mode': 'a',  # 'a' mode appends to the file
+            'filename': os.path.join(BASE_DIR, 'logs', 'auth.log'),
+            'formatter': 'verbose',
         },
         'tenant_file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': '/Users/kuoldeng/projectx/backend/pyfactor/debug.log',
+            'filename': os.path.join(BASE_DIR, 'logs', 'tenant.log'),
             'formatter': 'verbose',
-            'mode': 'a',  # 'a' mode appends to the file
         },
     },
     'loggers': {
-        '': {  # Root logger
-            'handlers': ['console', 'file'],
-            'level': LOGLEVEL,
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': True,
         },
-        'django': {
-            'handlers': ['console', 'file'],
-            'level': LOGLEVEL,
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': False,
         },
-        'django.db.backends': {  # Database query logging
-            'handlers': ['console', 'sql_file'],
-            'level': 'DEBUG',  # Set to DEBUG to see all SQL queries
-            'propagate': False,
-            'filters': ['deduplication_filter'],  # Avoid duplicate logs
-        },
-        'pyfactor': {
-            'handlers': ['console', 'file'],
+        'custom_auth': {
+            'handlers': ['console', 'auth_file'],
             'level': 'DEBUG',
             'propagate': False,
         },
-        'pyfactor.db_routers': {  # Router-specific logging
+        'custom_auth.api': {
             'handlers': ['console', 'tenant_file'],
             'level': 'DEBUG',
             'propagate': False,
         },
-        'custom_auth.middleware': {  # Tenant middleware logging
-            'handlers': ['console', 'tenant_file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'inventory': {  # Inventory app logging
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'finance.utils': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': False,
+        'onboarding': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
         },
     },
 }
 
-LOGGING['loggers']['custom_auth.tenant'] = {
-    'handlers': ['console', 'file'],
-    'level': 'DEBUG',
-    'propagate': False,
-}
-# Then add custom loggers
-LOGGING['loggers']['custom_auth'] = {
-    'handlers': ['console', 'file'],
-    'level': 'DEBUG',
-    'propagate': False,
-}
+# Ensure the logs directory exists
+os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
 
 # Cognito Authentication Settings
 COGNITO_AWS_REGION = AWS_REGION
@@ -771,10 +735,10 @@ if DEBUG and not IS_ASGI:  # Make sure DEBUG is True as well
     ]
 
 # Add database routers
-DATABASE_ROUTERS = [
-    'pyfactor.db_routers.TenantSchemaRouter',   # Schema-based tenant router
-    'taxes.db_router.TaxDatabaseRouter'         # Tax database router
-]
+# DATABASE_ROUTERS = [
+#     'pyfactor.db_routers.TenantSchemaRouter',   # Schema-based tenant router
+#     'taxes.db_router.TaxDatabaseRouter'         # Tax database router
+# ]
 
 DATABASES = {
     'default': {

@@ -66,82 +66,79 @@ export async function POST(request) {
       });
     }
     
-    // Set onboarding cookies if provided
-    if (onboardingStep) {
-      response.cookies.set('onboardingStep', onboardingStep, cookieOptions);
-      logger.debug('[API] Set onboardingStep cookie:', { onboardingStep });
-    }
+    // Extract onboarding status from token for verification
+    let cognitoOnboardingStatus = null;
+    let cognitoSetupDone = false;
     
-    if (onboardedStatus) {
-      response.cookies.set('onboardedStatus', onboardedStatus, cookieOptions);
-      logger.debug('[API] Set onboardedStatus cookie:', { onboardedStatus });
-    } else {
-      // Try to extract onboarding status from the ID token if not provided
-      try {
-        const decodedToken = parseJwt(idToken);
-        const customAttributes = decodedToken['custom:onboarding'] || decodedToken['custom:onboarding_status'];
-        
-        if (customAttributes) {
-          response.cookies.set('onboardedStatus', customAttributes, cookieOptions);
-          response.cookies.set('onboardingStep', customAttributes === 'NOT_STARTED' ? 'business-info' : 
-            customAttributes === 'BUSINESS_INFO' ? 'subscription' :
-            customAttributes === 'SUBSCRIPTION' ? 'payment' :
-            customAttributes === 'PAYMENT' ? 'setup' : 'dashboard', cookieOptions);
-          
-          logger.debug('[API] Set onboarding cookies from token:', { 
-            onboardedStatus: customAttributes,
-            onboardingStep: response.cookies.get('onboardingStep')
-          });
-        } else {
-          // Set default NOT_STARTED status for fresh users
-          response.cookies.set('onboardedStatus', 'NOT_STARTED', cookieOptions);
-          response.cookies.set('onboardingStep', 'business-info', cookieOptions);
-          
-          logger.debug('[API] Set default onboarding cookies for new user');
-        }
-      } catch (parseError) {
-        logger.warn('[API] Failed to parse JWT for onboarding status:', parseError);
-        
-        // Set default NOT_STARTED status as fallback
-        response.cookies.set('onboardedStatus', 'NOT_STARTED', cookieOptions);
-        response.cookies.set('onboardingStep', 'business-info', cookieOptions);
-        
-        logger.debug('[API] Set default onboarding cookies after JWT parse error');
-      }
-    }
-    
-    // Set setupCompleted cookie if provided
-    if (setupCompleted !== undefined) {
-      response.cookies.set('setupCompleted', setupCompleted ? 'true' : 'false', {
-        ...cookieOptions,
-        maxAge: 30 * 24 * 60 * 60 // 30 days - longer expiry for this cookie
+    try {
+      const decodedToken = parseJwt(idToken);
+      cognitoOnboardingStatus = decodedToken['custom:onboarding'];
+      cognitoSetupDone = decodedToken['custom:setupdone'] === 'TRUE';
+      
+      logger.debug('[API] Extracted onboarding status from token:', { 
+        cognitoOnboardingStatus,
+        cognitoSetupDone
       });
-      logger.debug('[API] Set setupCompleted cookie:', { setupCompleted });
-    } else {
-      // Try to determine if setup is completed from token or other parameters
-      try {
-        const decodedToken = parseJwt(idToken);
-        const setupDone = decodedToken['custom:setupdone'] === 'TRUE';
-        const onboardingComplete =
-          decodedToken['custom:onboarding'] === 'COMPLETE' ||
-          onboardingStep === 'complete' ||
-          onboardedStatus === 'COMPLETE';
-        
-        if (setupDone || onboardingComplete) {
-          response.cookies.set('setupCompleted', 'true', {
-            ...cookieOptions,
-            maxAge: 30 * 24 * 60 * 60 // 30 days
-          });
-          logger.debug('[API] Set setupCompleted cookie from token data:', {
-            setupDone,
-            onboardingComplete
-          });
-        }
-      } catch (parseError) {
-        logger.warn('[API] Failed to parse JWT for setup status:', parseError);
-      }
+    } catch (parseError) {
+      logger.warn('[API] Failed to parse JWT for onboarding status:', parseError);
     }
     
+    // Determine the correct onboarding state based on all available information
+    // Priority: 1. Explicit parameters, 2. Cognito attributes, 3. Default for new users
+    let finalOnboardingStatus = onboardedStatus || cognitoOnboardingStatus || 'NOT_STARTED';
+    let finalOnboardingStep = null;
+    
+    // Ensure onboardingStatus and onboardingStep are consistent with each other
+    if (finalOnboardingStatus === 'COMPLETE') {
+      finalOnboardingStep = onboardingStep || 'complete';
+      
+      // Double-check: If step is not 'complete' but status is 'COMPLETE', we have inconsistent state
+      if (finalOnboardingStep !== 'complete' && finalOnboardingStep !== 'dashboard') {
+        logger.warn('[API] Inconsistent onboarding state detected: status is COMPLETE but step is not complete', {
+          status: finalOnboardingStatus,
+          step: finalOnboardingStep
+        });
+        
+        // For safety, override to a consistent state based on Cognito
+        if (cognitoOnboardingStatus === 'COMPLETE') {
+          finalOnboardingStep = 'complete';
+        } else {
+          // If Cognito says not complete, trust that over the inconsistent cookies
+          finalOnboardingStatus = cognitoOnboardingStatus || 'NOT_STARTED';
+          finalOnboardingStep = onboardingStep || 'business-info';
+        }
+      }
+    } else {
+      // For non-complete states, make sure step matches status
+      finalOnboardingStep = onboardingStep || (
+        finalOnboardingStatus === 'NOT_STARTED' ? 'business-info' :
+        finalOnboardingStatus === 'BUSINESS_INFO' ? 'subscription' :
+        finalOnboardingStatus === 'SUBSCRIPTION' ? 'payment' :
+        finalOnboardingStatus === 'PAYMENT' ? 'setup' : 
+        finalOnboardingStatus === 'INCOMPLETE' ? 'business-info' : 'business-info'
+      );
+    }
+    
+    // Set the determined onboarding cookies
+    response.cookies.set('onboardingStep', finalOnboardingStep, cookieOptions);
+    response.cookies.set('onboardedStatus', finalOnboardingStatus, cookieOptions);
+    
+    logger.debug('[API] Set final onboarding cookies:', { 
+      onboardingStep: finalOnboardingStep,
+      onboardedStatus: finalOnboardingStatus
+    });
+    
+    // Set setupCompleted cookie based on determined state
+    const isSetupComplete = setupCompleted !== undefined ? 
+      !!setupCompleted : 
+      (cognitoSetupDone || finalOnboardingStatus === 'COMPLETE');
+    
+    response.cookies.set('setupCompleted', isSetupComplete ? 'true' : 'false', {
+      ...cookieOptions,
+      maxAge: 30 * 24 * 60 * 60 // 30 days - longer expiry for this cookie
+    });
+    
+    logger.debug('[API] Set setupCompleted cookie:', { setupCompleted: isSetupComplete });
     logger.debug('[API] Auth cookies set successfully');
     
     return response;

@@ -24,7 +24,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <div id="hero" className="relative overflow-hidden bg-white">
+    <div id="hero" className="relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 z-0">
         <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary-light/10 blur-3xl"></div>

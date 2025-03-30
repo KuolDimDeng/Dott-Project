@@ -1,36 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  TextField,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Typography,
-  IconButton,
-  Grid,
-  Autocomplete,
-  Paper,
-  Tooltip,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
-import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { dateFormat } from '@/utils/formatters';
 import { useToast } from '@/components/Toast/ToastProvider';
+import { format } from 'date-fns';
 
 const SalesForm = ({ onClose }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Check if screen is mobile on mount and when window resizes
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  }, []);
   const [sale, setSale] = useState({
     customer: '',
     date: new Date(),
@@ -50,7 +40,7 @@ const SalesForm = ({ onClose }) => {
 
   const fetchCustomers = async () => {
     try {
-      const response = await useApi.get('/api/customers/');
+      const response = await axiosInstance.get('/api/customers/');
       setCustomers(response.data);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -60,7 +50,7 @@ const SalesForm = ({ onClose }) => {
 
   const fetchProducts = async () => {
     try {
-      const response = await useApi.get('/api/products/');
+      const response = await axiosInstance.get('/api/products/');
       setProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -131,7 +121,7 @@ const SalesForm = ({ onClose }) => {
 
   const handleBarcodeSubmit = async () => {
     try {
-      const response = await useApi.get(`/api/products/barcode/${barcodeInput}/`);
+      const response = await axiosInstance.get(`/api/products/barcode/${barcodeInput}/`);
       const scannedProduct = response.data;
 
       // Add the scanned product to the items list
@@ -158,7 +148,7 @@ const SalesForm = ({ onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await useApi.post('/api/sales/create/', sale);
+      const response = await axiosInstance.post('/api/sales/create/', sale);
       console.log('Sale created:', response.data);
       toast.success('Sale created successfully');
       onClose();
@@ -169,141 +159,215 @@ const SalesForm = ({ onClose }) => {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, backgroundColor: theme.palette.background.paper }}>
-      <Box display="flex" alignItems="center" mb={2}>
-        <PointOfSaleIcon sx={{ fontSize: 40, color: theme.palette.primary.main, mr: 2 }} />
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Create Sale
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            Record a new sale transaction
-          </Typography>
-        </Box>
-      </Box>
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="flex items-center mb-4">
+        <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <div className="ml-4">
+          <h1 className="text-2xl font-bold text-gray-900">Create Sale</h1>
+          <p className="text-sm text-gray-500">Record a new sale transaction</p>
+        </div>
+      </div>
 
-      <form onSubmit={handleSubmit}>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <Autocomplete
-              freeSolo
-              options={customers}
-              getOptionLabel={(option) => {
-                if (typeof option === 'string') {
-                  return option;
-                }
-                return option.customerName || '';
-              }}
-              renderInput={(params) => <TextField {...params} label="Customer" required />}
-              value={customers.find((c) => c.id === sale.customer) || null}
-              onChange={handleCustomerChange}
-              onInputChange={(event, newInputValue) => {
-                if (!customers.some((c) => c.customerName === newInputValue)) {
-                  setSale({ ...sale, customer: newInputValue });
-                }
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <DatePicker
-                label="Sale Date"
-                value={sale.date}
-                onChange={handleDateChange}
-                renderInput={(params) => <TextField {...params} fullWidth />}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+          <div className="sm:col-span-6">
+            <label htmlFor="customer" className="block text-sm font-medium text-gray-700">
+              Customer
+            </label>
+            <div className="mt-1">
+              <select 
+                id="customer"
+                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                value={sale.customer}
+                onChange={(e) => setSale({ ...sale, customer: e.target.value })}
+                required
+              >
+                <option value="">Select a customer</option>
+                {customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.customerName || customer.name || `Customer #${customer.id}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="sm:col-span-3">
+            <label htmlFor="sale-date" className="block text-sm font-medium text-gray-700">
+              Sale Date
+            </label>
+            <div className="mt-1">
+              <input
+                type="date"
+                id="sale-date"
+                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                value={sale.date ? format(sale.date, 'yyyy-MM-dd') : ''}
+                onChange={(e) => handleDateChange(new Date(e.target.value))}
+                required
               />
-            </LocalizationProvider>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel>Payment Method</InputLabel>
-              <Select
+            </div>
+          </div>
+
+          <div className="sm:col-span-3">
+            <label htmlFor="payment-method" className="block text-sm font-medium text-gray-700">
+              Payment Method
+            </label>
+            <div className="mt-1">
+              <select
+                id="payment-method"
                 name="payment_method"
+                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
                 value={sale.payment_method}
                 onChange={handleChange}
                 required
               >
-                <MenuItem value="cash">Cash</MenuItem>
-                <MenuItem value="credit_card">Credit Card</MenuItem>
-                <MenuItem value="bank_transfer">Bank Transfer</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12}>
-            <Box display="flex" alignItems="center">
-              <TextField
-                label="Scan Barcode"
-                value={barcodeInput}
-                onChange={handleBarcodeInputChange}
-                onKeyPress={handleBarcodeInputChange}
-                fullWidth
-              />
-              <IconButton onClick={handleBarcodeSubmit} color="primary">
-                <QrCodeScannerIcon />
-              </IconButton>
-            </Box>
-          </Grid>
-          <Grid item xs={12}>
-            <Typography variant="h6">Sale Items</Typography>
-            {sale.items.map((item, index) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <FormControl sx={{ mr: 1, flexGrow: 1 }}>
-                  <InputLabel>Product</InputLabel>
-                  <Select
-                    value={item.product}
-                    onChange={(e) => handleItemChange(index, 'product', e.target.value)}
-                    required
+                <option value="">Select a payment method</option>
+                <option value="cash">Cash</option>
+                <option value="credit_card">Credit Card</option>
+                <option value="bank_transfer">Bank Transfer</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="sm:col-span-6">
+            <div className="flex items-center">
+              <div className="flex-grow">
+                <label htmlFor="barcode" className="block text-sm font-medium text-gray-700">
+                  Scan Barcode
+                </label>
+                <div className="mt-1 flex rounded-md shadow-sm">
+                  <input
+                    type="text"
+                    id="barcode"
+                    className="focus:ring-blue-500 focus:border-blue-500 flex-grow block w-full min-w-0 rounded-none rounded-l-md sm:text-sm border-gray-300"
+                    value={barcodeInput}
+                    onChange={handleBarcodeInputChange}
+                    onKeyPress={handleBarcodeInputChange}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleBarcodeSubmit}
+                    className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm hover:bg-gray-100"
                   >
-                    {products.map((product) => (
-                      <MenuItem key={product.id} value={product.id}>
-                        {product.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <TextField
-                  type="number"
-                  label="Quantity"
-                  value={item.quantity}
-                  onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value))}
-                  sx={{ mr: 1, width: '100px' }}
-                  required
-                />
-                <TextField
-                  type="number"
-                  label="Unit Price"
-                  value={item.unit_price}
-                  onChange={(e) =>
-                    handleItemChange(index, 'unit_price', parseFloat(e.target.value))
-                  }
-                  sx={{ mr: 1, width: '120px' }}
-                  required
-                />
-                <IconButton onClick={() => removeItem(index)} color="secondary">
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            ))}
-            <Button startIcon={<AddIcon />} onClick={addItem}>
-              Add Item
-            </Button>
-          </Grid>
-          <Grid item xs={12}>
-            <Typography variant="h6">Total Amount: ${sale.total_amount.toFixed(2)}</Typography>
-          </Grid>
-          <Grid item xs={12}>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Button type="submit" variant="contained" color="primary" size="large">
-                Create Sale
-              </Button>
-              <Button onClick={onClose} variant="outlined" color="secondary">
-                Cancel
-              </Button>
-            </Box>
-          </Grid>
-        </Grid>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm2 2V5h1v1H5zM3 13a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1v-3zm2 2v-1h1v1H5zM13 3a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1V4a1 1 0 00-1-1h-3zm1 2v1h1V5h-1z" clipRule="evenodd" />
+                      <path d="M11 4a1 1 0 10-2 0v1a1 1 0 002 0V4zM10 7a1 1 0 011 1v1h2a1 1 0 110 2h-3a1 1 0 01-1-1V8a1 1 0 011-1zM16 9a1 1 0 100 2 1 1 0 000-2zM9 13a1 1 0 011-1h1a1 1 0 110 2v2a1 1 0 11-2 0v-3zM7 11a1 1 0 100-2H4a1 1 0 100 2h3zM17 13a1 1 0 01-1 1h-2a1 1 0 110-2h2a1 1 0 011 1zM16 17a1 1 0 100-2h-3a1 1 0 100 2h3z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="sm:col-span-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-2">Sale Items</h2>
+            <div className="space-y-4">
+              {sale.items.map((item, index) => (
+                <div key={index} className="flex items-center flex-wrap md:flex-nowrap space-y-2 md:space-y-0 space-x-0 md:space-x-2 p-3 border border-gray-200 rounded-md">
+                  <div className="w-full md:w-1/2">
+                    <label htmlFor={`product-${index}`} className="block text-sm font-medium text-gray-700">
+                      Product
+                    </label>
+                    <select
+                      id={`product-${index}`}
+                      className="mt-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                      value={item.product}
+                      onChange={(e) => handleItemChange(index, 'product', e.target.value)}
+                      required
+                    >
+                      <option value="">Select a product</option>
+                      {products.map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-1/3 md:w-1/6">
+                    <label htmlFor={`quantity-${index}`} className="block text-sm font-medium text-gray-700">
+                      Quantity
+                    </label>
+                    <input
+                      type="number"
+                      id={`quantity-${index}`}
+                      className="mt-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                      value={item.quantity}
+                      onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value))}
+                      min="1"
+                      required
+                    />
+                  </div>
+                  <div className="w-1/2 md:w-1/6">
+                    <label htmlFor={`price-${index}`} className="block text-sm font-medium text-gray-700">
+                      Unit Price
+                    </label>
+                    <input
+                      type="number"
+                      id={`price-${index}`}
+                      className="mt-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                      value={item.unit_price}
+                      onChange={(e) => handleItemChange(index, 'unit_price', parseFloat(e.target.value))}
+                      step="0.01"
+                      min="0"
+                      required
+                    />
+                  </div>
+                  <div className="flex items-end justify-end w-full md:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => removeItem(index)}
+                      className="mt-4 inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-100 text-red-500 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addItem}
+                className="mt-2 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="-ml-0.5 mr-2 h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                Add Item
+              </button>
+            </div>
+          </div>
+
+          <div className="sm:col-span-6">
+            <div className="py-4 border-t border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Total Amount: <span className="text-blue-600">${sale.total_amount.toFixed(2)}</span>
+              </h2>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-between pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Create Sale
+          </button>
+        </div>
       </form>
-    </Paper>
+    </div>
   );
 };
 

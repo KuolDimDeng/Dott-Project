@@ -11,8 +11,12 @@ from django.conf import settings
 from rest_framework import authentication
 from rest_framework.exceptions import AuthenticationFailed
 from .models import User
+from django.contrib.auth import get_user_model
+
+from .cognito import cognito_client
 
 logger = logging.getLogger(__name__)
+User = get_user_model()
 
 class CognitoAuthentication(authentication.BaseAuthentication):
     def __init__(self):
@@ -38,17 +42,53 @@ class CognitoAuthentication(authentication.BaseAuthentication):
 
     def authenticate(self, request):
         try:
-            # Get token from Authorization header
             auth_header = request.headers.get('Authorization')
+            
             if not auth_header:
                 return None
-
+                
             parts = auth_header.split()
+            
             if len(parts) != 2 or parts[0].lower() != 'bearer':
                 return None
-
+                
             token = parts[1]
             
+            # Store the request for later use
+            self.request = request
+            
+            # First do a quick validation by decoding the token
+            try:
+                decoded = jwt.decode(token, options={"verify_signature": False})
+                # Store the decoded token for later use
+                self.decoded_token = decoded
+                
+                # Check expiration manually
+                exp = decoded.get('exp')
+                if exp and datetime.datetime.fromtimestamp(exp) < datetime.datetime.now():
+                    logger.warning("[Auth] Token is expired", {
+                        'exp': exp,
+                        'now': datetime.datetime.now().timestamp()
+                    })
+                    
+                    # If in development mode, we might accept expired tokens
+                    is_development = settings.DEBUG
+                    if not is_development:
+                        raise AuthenticationFailed({
+                            'code': 'token_expired',
+                            'message': 'Your session has expired. Please sign in again.'
+                        })
+            except Exception as e:
+                logger.error("[Auth] Token decode failed", {
+                    'error': str(e),
+                    'token_length': len(token) if token else 0
+                })
+                raise AuthenticationFailed({
+                    'code': 'invalid_token',
+                    'message': 'Invalid authentication token',
+                    'detail': str(e)
+                })
+
             # Check if we're in development mode
             is_development = getattr(settings, 'DEBUG', False)
             
@@ -220,17 +260,48 @@ class CognitoAuthentication(authentication.BaseAuthentication):
     def get_or_create_user(self, cognito_user):
         """Create or update local user from Cognito data"""
         # Extract user data
-        attributes = cognito_user.get('Attributes', {})
+        attributes = cognito_user.get('UserAttributes', []) 
+        if not attributes and 'Attributes' in cognito_user:
+            attributes = cognito_user.get('Attributes', [])
+            
         attr_dict = {attr['Name']: attr['Value'] for attr in attributes}
         
         # Get email and sub
         email = attr_dict.get('email')
         cognito_sub = cognito_user.get('Username')
         
-        if not email:
-            logger.error("[Auth] No email in Cognito user data")
-            raise AuthenticationFailed('Invalid Cognito user data: no email')
+        # ENHANCED ERROR HANDLING: Try to extract email from token if not in attributes
+        if not email and hasattr(self, 'request') and self.request:
+            logger.warning("[Auth] No email in Cognito user attributes, trying fallback methods")
             
+            # Try to get from decoded token if available
+            if hasattr(self, 'decoded_token') and self.decoded_token:
+                token_email = self.decoded_token.get('email')
+                if token_email:
+                    logger.info(f"[Auth] Found email in decoded token: {token_email}")
+                    email = token_email
+            
+            # Try to get from ID token if available
+            if not email and hasattr(self, 'request') and self.request.headers.get('X-Id-Token'):
+                try:
+                    id_token = self.request.headers.get('X-Id-Token')
+                    id_token_payload = jwt.decode(id_token, options={"verify_signature": False})
+                    token_email = id_token_payload.get('email')
+                    if token_email:
+                        logger.info(f"[Auth] Found email in ID token: {token_email}")
+                        email = token_email
+                except Exception as e:
+                    logger.warning(f"[Auth] Error extracting email from ID token: {str(e)}")
+        
+        if not email:
+            logger.error("[Auth] No email found in Cognito user data or tokens")
+            # INSTEAD OF FAILING, set a placeholder email if we have cognito_sub
+            if cognito_sub:
+                logger.warning(f"[Auth] Using placeholder email for cognito_sub: {cognito_sub}")
+                email = f"{cognito_sub}@placeholder.auth"
+            else:
+                raise AuthenticationFailed('Invalid Cognito user data: no email or user ID')
+        
         # Always include cognito_sub - remove the column check that was causing issues
         user = None
         created = False

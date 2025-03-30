@@ -1,19 +1,12 @@
 import React from 'react';
-import { Box, Typography } from '@mui/material';
 
 const HomePage = () => {
   return (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="100vh"
-      sx={{ backgroundColor: 'background.default', p: 3, borderRadius: 2 }}
-    >
-      <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
+    <div className="flex justify-center items-center min-h-screen bg-gray-50 p-6 rounded-lg">
+      <h1 className="text-2xl font-bold text-gray-800">
         This is home page
-      </Typography>
-    </Box>
+      </h1>
+    </div>
   );
 };
 

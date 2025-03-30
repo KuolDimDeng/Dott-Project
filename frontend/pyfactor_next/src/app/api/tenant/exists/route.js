@@ -1,148 +1,72 @@
 import { NextResponse } from 'next/server';
-import { logger } from '@/utils/logger';
-import { getAccessToken } from '@/utils/tokenUtils';
-import { getAuthHeaders } from '@/utils/authHeaders';
 import axios from 'axios';
+import { getLogger } from '@/utils/logger';
+import { cookies } from 'next/headers';
+
+const logger = getLogger('tenant-exists-api');
 
 /**
  * API route to check if a tenant exists
- * This is used during signup and tenant verification to prevent duplicate tenants
+ * This acts as a proxy to the backend API
  */
 export async function POST(request) {
   try {
-    // Get tenant ID from request body
-    const body = await request.json();
-    const { tenantId } = body;
-
-    if (!tenantId) {
-      return NextResponse.json({
-        success: false,
-        message: 'TenantId is required'
+    // Get request body
+    const requestData = await request.json();
+    
+    if (!requestData.tenantId) {
+      logger.error('No tenant ID provided');
+      return NextResponse.json({ 
+        exists: false,
+        error: 'No tenant ID provided' 
       }, { status: 400 });
     }
-
-    logger.debug('[tenant-exists] Checking if tenant exists:', { 
-      tenantId
-    });
-
-    // Get auth headers for backend requests
-    const authHeaders = await getAuthHeaders();
-    const accessToken = await getAccessToken();
-
-    // Call the backend API to check if the tenant exists
-    try {
-      // First try the new tenant exists endpoint
-      try {
-        const existsResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/tenant/exists/`, {
-          tenantId
-        }, {
-          headers: {
-            ...authHeaders,
-            Authorization: `Bearer ${accessToken}`
-          }
-        });
-        
-        if (existsResponse.data) {
-          logger.info('[tenant-exists] Tenant existence check from endpoint:', {
-            tenantId,
-            exists: existsResponse.data.exists,
-            correctTenantId: existsResponse.data.correctTenantId
-          });
-          
-          return NextResponse.json({
-            success: true,
-            message: existsResponse.data.message || 'Tenant check completed',
-            exists: existsResponse.data.exists,
-            correctTenantId: existsResponse.data.correctTenantId,
-            source: 'tenant-exists-endpoint'
-          });
-        }
-      } catch (existsError) {
-        logger.warn('[tenant-exists] Could not use tenant exists endpoint, falling back to detail API:', {
-          error: existsError.message
-        });
-        // Continue to fallback approach
-      }
-      
-      // Fallback: try to get tenant details directly
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/${tenantId}/`, {
-        headers: {
-          ...authHeaders,
-          Authorization: `Bearer ${accessToken}`
-        }
-      });
-
-      if (response.data) {
-        logger.info('[tenant-exists] Tenant exists (from detail API):', {
-          tenantId,
-          correctTenantId: response.data.id || tenantId
-        });
-
-        return NextResponse.json({
-          success: true,
-          message: 'Tenant exists',
-          exists: true,
-          correctTenantId: response.data.id || tenantId,
-          source: 'tenant-detail-api'
-        });
-      } else {
-        logger.info('[tenant-exists] Tenant does not exist:', {
-          tenantId
-        });
-
-        return NextResponse.json({
-          success: true,
-          message: 'Tenant does not exist',
-          exists: false
-        });
-      }
-    } catch (error) {
-      logger.error('[tenant-exists] Error calling backend API:', {
-        error: error.message,
-        status: error.response?.status,
-        data: error.response?.data
-      });
-
-      // Expanded fallback list - hardcoded tenant IDs are always valid
-      const knownTestTenants = [
-        '18609ed2-1a46-4d50-bc4e-483d6e3405ff',  // Primary fallback
-        'b7fee399-ffca-4151-b636-94ccb65b3cd0',  // Alternative 1
-        '1cb7418e-34e7-40b7-b165-b79654efe21f',  // Alternative 2
-        '57149e65-fb15-4cdc-8fe7-6d33efbebb08'   // From the logs
-      ];
-      
-      if (knownTestTenants.includes(tenantId)) {
-        logger.info('[tenant-exists] Using fallback for known test tenant:', {
-          tenantId
-        });
-        
-        return NextResponse.json({
-          success: true,
-          message: 'Tenant exists (fallback)',
-          exists: true,
-          correctTenantId: tenantId,
-          source: 'fallback'
-        });
-      }
-
-      // Return a failure response but don't block the client
-      return NextResponse.json({
-        success: false,
-        message: 'Failed to check tenant existence',
-        exists: false,
-        error: error.message
-      });
+    
+    // Get auth credentials from cookies
+    const cookieStore = cookies();
+    const idToken = cookieStore.get('idToken')?.value;
+    const sessionCookie = cookieStore.get('pyfactor_session')?.value;
+    
+    if (!idToken && !sessionCookie) {
+      logger.error('No authentication token found');
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    
+    // Get backend URL from environment variable
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const apiUrl = `${backendUrl}/api/tenant/exists/`;
+    
+    // Extract headers from original request
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Add authorization headers
+    if (idToken) {
+      headers['Authorization'] = `Bearer ${idToken}`;
+    }
+    
+    // Make request to backend
+    const response = await axios.post(apiUrl, requestData, { headers });
+    
+    // Return the response data
+    return NextResponse.json(response.data);
   } catch (error) {
-    logger.error('[tenant-exists] Unexpected error:', {
-      error: error.message,
-      stack: error.stack
-    });
-
-    return NextResponse.json({
-      success: false,
-      message: 'Unexpected error in tenant-exists API',
-      error: error.message
-    }, { status: 500 });
+    // Check if error is an Axios error
+    if (error.response) {
+      // Forward the status code and error message from the backend
+      const statusCode = error.response.status;
+      const errorData = error.response.data;
+      
+      logger.error(`Backend returned error ${statusCode}:`, errorData);
+      return NextResponse.json(errorData, { status: statusCode });
+    }
+    
+    // Handle other errors
+    logger.error('Error checking tenant existence:', error);
+    return NextResponse.json(
+      { exists: false, error: 'Failed to check tenant existence', detail: error.message },
+      { status: 500 }
+    );
   }
 } 

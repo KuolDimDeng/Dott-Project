@@ -1,32 +1,5 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/EstimateForm.js
+'use client';
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Grid,
-  Paper,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
-  IconButton,
-  Divider,
-  CircularProgress,
-  Snackbar,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import PreviewIcon from '@mui/icons-material/Preview';
-import SaveIcon from '@mui/icons-material/Save';
-import Alert from '@mui/material/Alert';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { toast } from 'react-toastify';
@@ -39,8 +12,6 @@ import {
 } from '../actions/estimateActions';
 
 const EstimateForm = ({ onSave, onPreview, initialData }) => {
-  const theme = useTheme();
-
   const [estimate, setEstimate] = useState(
     initialData || {
       title: 'Estimate',
@@ -311,7 +282,8 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
     setEstimate({ ...estimate, [name]: value });
   };
 
-  const handleDateChange = (date, name) => {
+  const handleDateChange = (event, name) => {
+    const date = event.target.value ? new Date(event.target.value) : null;
     setEstimate({ ...estimate, [name]: date });
   };
 
@@ -376,249 +348,330 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
     return estimate.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
   };
 
+  const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  };
+
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-        <Typography variant="h4" gutterBottom>
-          Create New Estimate
-        </Typography>
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              fullWidth
-              label="Estimate Title"
-              name="title"
-              value={estimate.title}
-              onChange={handleInputChange}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h2 className="text-2xl font-semibold mb-4">Create New Estimate</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Estimate Title</label>
+          <input
+            type="text"
+            className="w-full p-2 border border-gray-300 rounded-md"
+            name="title"
+            value={estimate.title}
+            onChange={handleInputChange}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Logo Upload</label>
+          <div className="flex items-center">
             <input
-              accept="image/*"
-              style={{ display: 'none' }}
-              id="logo-upload"
               type="file"
+              id="logo-upload"
+              className="hidden"
+              accept="image/*"
               onChange={handleLogoUpload}
             />
-            <label htmlFor="logo-upload">
-              <Button variant="outlined" component="span" startIcon={<CloudUploadIcon />}>
-                Upload Logo
-              </Button>
+            <label
+              htmlFor="logo-upload"
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+              Upload Logo
             </label>
-            {estimate.logo && <Typography>{estimate.logo.name}</Typography>}
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Summary"
-              name="summary"
-              value={estimate.summary}
-              onChange={handleInputChange}
+            {estimate.logo && <span className="ml-2">{estimate.logo.name}</span>}
+          </div>
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Summary</label>
+          <textarea
+            className="w-full p-2 border border-gray-300 rounded-md"
+            rows={3}
+            name="summary"
+            value={estimate.summary}
+            onChange={handleInputChange}
+          ></textarea>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+          <select
+            className={`w-full p-2 border ${customersError ? 'border-red-500' : 'border-gray-300'} rounded-md bg-white`}
+            name="customerRef"
+            value={estimate.customerRef}
+            onChange={handleCustomerChange}
+          >
+            <option value="">Select a customer</option>
+            {customers.map((customer) => (
+              <option key={customer.id} value={String(customer.id)}>
+                {customer.customerName || `${customer.first_name} ${customer.last_name}`}
+              </option>
+            ))}
+          </select>
+          {customersError && <p className="mt-1 text-sm text-red-500">{customersError}</p>}
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <input
+              type="date"
+              className="w-full p-2 border border-gray-300 rounded-md"
+              value={formatDate(estimate.date)}
+              onChange={(e) => handleDateChange(e, 'date')}
             />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel>Customer</InputLabel>
-              <Select
-                name="customerRef"
-                value={estimate.customerRef}
-                onChange={handleCustomerChange}
-                error={!!customersError}
-              >
-                <MenuItem value="">
-                  <em>Select a customer</em>
-                </MenuItem>
-                {customers.map((customer) => (
-                  <MenuItem key={customer.id} value={String(customer.id)}>
-                    {customer.customerName || `${customer.first_name} ${customer.last_name}`}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            {customersError && (
-              <Typography color="error" variant="caption">
-                {customersError}
-              </Typography>
-            )}
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <DatePicker
-              label="Date"
-              value={estimate.date}
-              onChange={(date) => handleDateChange(date, 'date')}
-              renderInput={(params) => <TextField {...params} fullWidth />}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Valid Until</label>
+            <input
+              type="date"
+              className="w-full p-2 border border-gray-300 rounded-md"
+              value={formatDate(estimate.valid_until)}
+              onChange={(e) => handleDateChange(e, 'valid_until')}
             />
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <DatePicker
-              label="Valid Until"
-              value={estimate.valid_until}
-              onChange={(date) => handleDateChange(date, 'valid_until')}
-              renderInput={(params) => <TextField {...params} fullWidth />}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom>
-              Items
-            </Typography>
-            {estimate.items.map((item, index) => (
-              <Box key={index} sx={{ display: 'flex', mb: 2 }}>
-                <FormControl sx={{ mr: 2, flexGrow: 1 }}>
-                  <InputLabel>Product/Service</InputLabel>
-                  <Select
-                    value={item.product}
-                    onChange={(e) => handleItemChange(index, 'product', e.target.value)}
-                  >
-                    <MenuItem value="">Select a product/service</MenuItem>
+          </div>
+        </div>
+        <div className="md:col-span-2">
+          <h3 className="text-lg font-medium mb-2">Items</h3>
+          {estimate.items.map((item, index) => (
+            <div key={index} className="flex flex-wrap items-center mb-4 gap-2">
+              <div className="flex-1 min-w-[200px]">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product/Service</label>
+                <select
+                  className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                  value={item.product}
+                  onChange={(e) => handleItemChange(index, 'product', e.target.value)}
+                >
+                  <option value="">Select a product/service</option>
+                  <optgroup label="Products">
                     {products.map((product) => (
-                      <MenuItem key={product.id} value={product.id}>
+                      <option key={product.id} value={product.id}>
                         {product.name}
-                      </MenuItem>
+                      </option>
                     ))}
+                  </optgroup>
+                  <optgroup label="Services">
                     {services.map((service) => (
-                      <MenuItem key={service.id} value={service.id}>
+                      <option key={service.id} value={service.id}>
                         {service.name}
-                      </MenuItem>
+                      </option>
                     ))}
-                  </Select>
-                </FormControl>
-                <TextField
-                  label="Description"
+                  </optgroup>
+                </select>
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded-md"
                   value={item.description || ''}
                   onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                  fullWidth
                   required
                 />
-                <TextField
-                  sx={{ mr: 2, width: '100px' }}
+              </div>
+              <div className="w-24">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                <input
                   type="number"
-                  label="Quantity"
+                  className="w-full p-2 border border-gray-300 rounded-md"
                   value={item.quantity}
                   onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
                 />
-                <TextField
-                  sx={{ mr: 2, width: '150px' }}
+              </div>
+              <div className="w-32">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Unit Price</label>
+                <input
                   type="number"
-                  label="Unit Price"
+                  className="w-full p-2 border border-gray-300 rounded-md"
                   value={item.unitPrice}
                   onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
                 />
-                <IconButton onClick={() => handleItemRemove(index)}>
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            ))}
-            <Button startIcon={<AddIcon />} onClick={handleItemAdd}>
-              Add Item
-            </Button>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField
-              fullWidth
-              type="number"
-              label="Discount"
-              name="discount"
-              value={estimate.discount}
-              onChange={handleInputChange}
-            />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <FormControl fullWidth>
-              <InputLabel>Currency</InputLabel>
-              <Select name="currency" value={estimate.currency} onChange={handleInputChange}>
-                <MenuItem value="USD">USD</MenuItem>
-                <MenuItem value="EUR">EUR</MenuItem>
-                <MenuItem value="GBP">GBP</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField
-              fullWidth
-              label="Total Amount"
-              value={estimate.totalAmount ? estimate.totalAmount.toFixed(2) : '0.00'}
-              disabled
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Footer"
-              name="footer"
-              value={estimate.footer}
-              onChange={handleInputChange}
-            />
-          </Grid>
-          <Grid item xs={12}>
+              </div>
+              <div className="mt-5">
+                <button 
+                  type="button" 
+                  onClick={() => handleItemRemove(index)}
+                  className="text-red-500 hover:text-red-700 p-1"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={handleItemAdd}
+            className="flex items-center text-blue-600 hover:text-blue-800"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Add Item
+          </button>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Discount</label>
+          <input
+            type="number"
+            className="w-full p-2 border border-gray-300 rounded-md"
+            name="discount"
+            value={estimate.discount}
+            onChange={handleInputChange}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+          <select
+            className="w-full p-2 border border-gray-300 rounded-md bg-white"
+            name="currency"
+            value={estimate.currency}
+            onChange={handleInputChange}
+          >
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Total Amount</label>
+          <input
+            type="text"
+            className="w-full p-2 border border-gray-300 rounded-md bg-gray-100"
+            value={estimate.totalAmount ? estimate.totalAmount.toFixed(2) : '0.00'}
+            disabled
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Footer</label>
+          <textarea
+            className="w-full p-2 border border-gray-300 rounded-md"
+            rows={3}
+            name="footer"
+            value={estimate.footer}
+            onChange={handleInputChange}
+          ></textarea>
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Attachments</label>
+          <div className="flex items-center">
             <input
-              accept="*/*"
-              style={{ display: 'none' }}
-              id="attachment-upload"
-              multiple
               type="file"
+              id="attachment-upload"
+              className="hidden"
+              multiple
               onChange={handleAttachmentUpload}
             />
-            <label htmlFor="attachment-upload">
-              <Button variant="outlined" component="span" startIcon={<CloudUploadIcon />}>
-                Attach Documents
-              </Button>
-            </label>
-            {estimate.attachments.map((file, index) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                <Typography>{file.name}</Typography>
-                <IconButton onClick={() => handleAttachmentRemove(index)}>
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            ))}
-          </Grid>
-          <Grid item xs={12}>
-            <Button
-              variant="contained"
-              startIcon={<PreviewIcon />}
-              onClick={handlePreview}
-              sx={{ mr: 2 }}
+            <label
+              htmlFor="attachment-upload"
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+              Attach Documents
+            </label>
+          </div>
+          {estimate.attachments.map((file, index) => (
+            <div key={index} className="flex items-center mt-2">
+              <span className="mr-2">{file.name}</span>
+              <button
+                type="button"
+                onClick={() => handleAttachmentRemove(index)}
+                className="text-red-500 hover:text-red-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="md:col-span-2">
+          <div className="flex space-x-4">
+            <button
+              type="button"
+              onClick={handlePreview}
+              className="px-4 py-2 flex items-center bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+              </svg>
               Preview
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<SaveIcon />}
+            </button>
+            <button
+              type="button"
               onClick={handleSave}
               disabled={loading}
+              className="px-4 py-2 flex items-center bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {loading ? <CircularProgress size={24} /> : 'Save and Continue'}
-            </Button>
-          </Grid>
-        </Grid>
-        <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError('')}>
-          <Alert onClose={() => setError('')} severity="error" sx={{ width: '100%' }}>
+              {loading ? (
+                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              )}
+              Save and Continue
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Error and Success Messages */}
+      {error && (
+        <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md flex items-center justify-between">
+          <div className="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
             {error}
-          </Alert>
-        </Snackbar>
-        <Snackbar
-          open={!!successMessage}
-          autoHideDuration={6000}
-          onClose={() => setSuccessMessage('')}
-        >
-          <Alert onClose={() => setSuccessMessage('')} severity="success" sx={{ width: '100%' }}>
+          </div>
+          <button type="button" onClick={() => setError('')} className="text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="mt-4 p-3 bg-green-100 text-green-700 rounded-md flex items-center justify-between">
+          <div className="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
             {successMessage}
-          </Alert>
-        </Snackbar>
-        <EstimatePreviewModal
-          isOpen={isPreviewModalOpen}
-          onClose={() => setIsPreviewModalOpen(false)}
-          estimateId={estimateId} // Make sure this is correct
-          onSave={handleSaveEstimate}
-          onPrint={handlePrintEstimate}
-          onEmail={handleEmailEstimate}
-        />
-      </Box>
-    </LocalizationProvider>
+          </div>
+          <button type="button" onClick={() => setSuccessMessage('')} className="text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Preview Modal */}
+      <EstimatePreviewModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        estimateId={estimateId}
+        onSave={handleSaveEstimate}
+        onPrint={handlePrintEstimate}
+        onEmail={handleEmailEstimate}
+      />
+    </div>
   );
 };
 

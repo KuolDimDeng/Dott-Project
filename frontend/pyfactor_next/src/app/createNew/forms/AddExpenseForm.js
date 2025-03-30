@@ -1,20 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  TextField,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
-  InputAdornment,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useToast } from '@/components/Toast/ToastProvider';
+import { format } from 'date-fns';
 
 const AddExpenseForm = ({ onClose }) => {
   const [date, setDate] = useState(null);
@@ -44,7 +32,7 @@ const AddExpenseForm = ({ onClose }) => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await useApi.get('http://localhost:8000/api/profile/');
+      const response = await axiosInstance.get('http://localhost:8000/api/profile/');
       setUserDatabase(response.data.database_name);
       logger.log('User profile:', response.data);
       logger.log('User database:', response.data.database_name);
@@ -74,7 +62,8 @@ const AddExpenseForm = ({ onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const formattedDate = date.toISOString().split('T')[0];
+    // Format date directly from the date object
+    const formattedDate = date ? format(date, 'yyyy-MM-dd') : '';
 
     const formData = new FormData();
     formData.append('date', formattedDate);
@@ -125,111 +114,166 @@ const AddExpenseForm = ({ onClose }) => {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit}>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <DatePicker
-          label="Date"
-          value={date}
-          onChange={(newDate) => setDate(newDate)}
-          renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="mb-4">
+        <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+          Date
+        </label>
+        <input
+          type="date"
+          id="date"
+          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          value={date ? format(date, 'yyyy-MM-dd') : ''}
+          onChange={(e) => setDate(new Date(e.target.value))}
         />
-      </LocalizationProvider>
+      </div>
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Account</InputLabel>
-        <Select value={account} onChange={handleAccountChange}>
-          <MenuItem value="Cash on Hand">Cash on Hand</MenuItem>
-          <MenuItem value="Checking Account">Checking Account</MenuItem>
-          <MenuItem value="Savings Account">Savings Account</MenuItem>
-          <MenuItem value="Credit Card">Credit Card</MenuItem>
-          <MenuItem value="Accounts Payable">Accounts Payable</MenuItem>
-        </Select>
-      </FormControl>
+      <div className="mb-4">
+        <label htmlFor="account" className="block text-sm font-medium text-gray-700 mb-1">
+          Account
+        </label>
+        <select
+          id="account"
+          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          value={account}
+          onChange={handleAccountChange}
+        >
+          <option value="">Select an account</option>
+          <option value="Cash on Hand">Cash on Hand</option>
+          <option value="Checking Account">Checking Account</option>
+          <option value="Savings Account">Savings Account</option>
+          <option value="Credit Card">Credit Card</option>
+          <option value="Accounts Payable">Accounts Payable</option>
+        </select>
+      </div>
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Type</InputLabel>
-        <Select value={type} onChange={handleTypeChange}>
-          <MenuItem value="Withdrawal">Withdrawal</MenuItem>
-          <MenuItem value="Deposit">Deposit</MenuItem>
-        </Select>
-      </FormControl>
+      <div className="mb-4">
+        <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
+          Type
+        </label>
+        <select
+          id="type"
+          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          value={type}
+          onChange={handleTypeChange}
+        >
+          <option value="">Select a type</option>
+          <option value="Withdrawal">Withdrawal</option>
+          <option value="Deposit">Deposit</option>
+        </select>
+      </div>
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Account Type</InputLabel>
-        <Select value={accountType} onChange={handleAccountTypeChange}>
-          <MenuItem value="Expense">Expense</MenuItem>
-          <MenuItem value="Accounts Payable">Accounts Payable</MenuItem>
-          <MenuItem value="Utilities">Utilities</MenuItem>
-          <MenuItem value="Rent">Rent</MenuItem>
-          <MenuItem value="Supplies">Supplies</MenuItem>
-          <MenuItem value="Payroll">Payroll</MenuItem>
-        </Select>
-      </FormControl>
+      <div className="mb-4">
+        <label htmlFor="accountType" className="block text-sm font-medium text-gray-700 mb-1">
+          Account Type
+        </label>
+        <select
+          id="accountType"
+          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          value={accountType}
+          onChange={handleAccountTypeChange}
+        >
+          <option value="">Select an account type</option>
+          <option value="Expense">Expense</option>
+          <option value="Accounts Payable">Accounts Payable</option>
+          <option value="Utilities">Utilities</option>
+          <option value="Rent">Rent</option>
+          <option value="Supplies">Supplies</option>
+          <option value="Payroll">Payroll</option>
+        </select>
+      </div>
 
-      <TextField
-        label="Amount"
-        fullWidth
-        margin="normal"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
+      <div className="mb-4">
+        <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+          Amount
+        </label>
+        <input
+          type="number"
+          id="amount"
+          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          step="0.01"
+        />
+      </div>
 
-      <TextField
-        label="Sales Tax Percentage"
-        fullWidth
-        margin="normal"
-        value={salesTaxPercentage}
-        onChange={(e) => setSalesTaxPercentage(e.target.value)}
-        type="number"
-        InputProps={{
-          endAdornment: <InputAdornment position="end">%</InputAdornment>,
-        }}
-      />
+      <div className="mb-4">
+        <label htmlFor="salesTaxPercentage" className="block text-sm font-medium text-gray-700 mb-1">
+          Sales Tax Percentage
+        </label>
+        <div className="relative rounded-md shadow-sm">
+          <input
+            type="number"
+            id="salesTaxPercentage"
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 pr-12"
+            value={salesTaxPercentage}
+            onChange={(e) => setSalesTaxPercentage(e.target.value)}
+            step="0.01"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <span className="text-gray-500">%</span>
+          </div>
+        </div>
+      </div>
 
-      <TextField
-        label="Calculated Sales Tax"
-        fullWidth
-        margin="normal"
-        value={calculatedSalesTax}
-        InputProps={{
-          readOnly: true,
-        }}
-      />
+      <div className="mb-4">
+        <label htmlFor="calculatedSalesTax" className="block text-sm font-medium text-gray-700 mb-1">
+          Calculated Sales Tax
+        </label>
+        <input
+          type="text"
+          id="calculatedSalesTax"
+          className="w-full rounded-md border-gray-300 bg-gray-100 shadow-sm"
+          value={calculatedSalesTax}
+          readOnly
+        />
+      </div>
 
-      <TextField
-        label="Notes"
-        fullWidth
-        margin="normal"
-        multiline
-        rows={4}
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-      />
+      <div className="mb-4">
+        <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+          Notes
+        </label>
+        <textarea
+          id="notes"
+          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          rows={4}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </div>
 
-      <Box mt={2}>
+      <div className="mb-4">
         <input
           accept="image/*,application/pdf"
-          style={{ display: 'none' }}
+          className="hidden"
           id="receipt-upload"
           type="file"
           onChange={handleReceiptChange}
         />
         <label htmlFor="receipt-upload">
-          <Button variant="contained" color="primary" component="span">
+          <span className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
             Upload Receipt
-          </Button>
+          </span>
         </label>
-      </Box>
+        {receipt && <span className="ml-2 text-sm text-gray-600">{receipt.name}</span>}
+      </div>
 
-      <Box display="flex" justifyContent="flex-end" mt={2}>
-        <Button variant="contained" color="primary" type="submit">
-          Save
-        </Button>
-        <Button variant="text" onClick={onClose} sx={{ ml: 1 }}>
+      <div className="flex justify-end space-x-2">
+        <button
+          type="button"
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          onClick={onClose}
+        >
           Cancel
-        </Button>
-      </Box>
-    </Box>
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Save
+        </button>
+      </div>
+    </form>
   );
 };
 

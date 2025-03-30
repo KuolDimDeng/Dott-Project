@@ -1,38 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Tabs,
-  Tab,
-  Button,
-  TextField,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Menu,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  Grid,
-  IconButton,
-  useTheme,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { format } from 'date-fns';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useNotification } from '@/context/NotificationContext';
@@ -118,7 +85,8 @@ const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
     }));
   };
 
-  const handleDateChange = (date) => {
+  const handleDateChange = (e) => {
+    const date = e.target.value ? new Date(e.target.value) : null;
     setNewInvoice((prev) => ({
       ...prev,
       date: date,
@@ -274,285 +242,496 @@ const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-        <Typography variant="h4" gutterBottom>
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h1 className="text-2xl font-bold mb-4">
           Invoice Management
-        </Typography>
-        <Tabs value={activeTab} onChange={handleTabChange}>
-          <Tab label="Create" />
-          <Tab label="Details" />
-          <Tab label="List" />
-        </Tabs>
+        </h1>
+        <div className="border-b border-gray-200">
+          <nav className="flex -mb-px">
+            <button
+              className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
+                activeTab === 0
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={(e) => handleTabChange(e, 0)}
+            >
+              Create
+            </button>
+            <button
+              className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
+                activeTab === 1
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={(e) => handleTabChange(e, 1)}
+            >
+              Details
+            </button>
+            <button
+              className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
+                activeTab === 2
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={(e) => handleTabChange(e, 2)}
+            >
+              List
+            </button>
+          </nav>
+        </div>
 
         {activeTab === 0 && (
-          <Box mt={3}>
-            <Typography variant="h6" gutterBottom>
+          <div className="mt-6">
+            <h2 className="text-lg font-semibold mb-4">
               Create Invoice
-            </Typography>
-            <form onSubmit={handleCreateInvoice}>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <FormControl fullWidth>
-                    <InputLabel>Customer</InputLabel>
-                    <Select
-                      name="customer"
-                      value={newInvoice.customer}
-                      onChange={handleInputChange}
-                    >
-                      {customers.map((customer) => (
-                        <MenuItem key={customer.id} value={customer.id}>
-                          {customer.customerName}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <DatePicker
-                    label="Date"
-                    value={newInvoice.date}
+            </h2>
+            <form onSubmit={handleCreateInvoice} className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer
+                  </label>
+                  <select
+                    id="customer"
+                    name="customer"
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    value={newInvoice.customer}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">Select a customer</option>
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.customerName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="invoice-date" className="block text-sm font-medium text-gray-700 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    id="invoice-date"
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    value={newInvoice.date ? format(newInvoice.date, 'yyyy-MM-dd') : ''}
                     onChange={handleDateChange}
-                    renderInput={(params) => <TextField {...params} fullWidth />}
                   />
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>
+                </div>
+                <div>
+                  <h3 className="text-base font-medium mb-3">
                     Items
-                  </Typography>
-                  {newInvoice.items.map((item, index) => (
-                    <Box key={index} sx={{ display: 'flex', mb: 2 }}>
-                      <FormControl sx={{ mr: 2, flexGrow: 1 }}>
-                        <InputLabel>Product/Service</InputLabel>
-                        <Select
-                          value={item.product}
-                          onChange={(e) => handleItemChange(index, 'product', e.target.value)}
-                        >
-                          {products.map((product) => (
-                            <MenuItem key={product.id} value={product.id}>
-                              {product.name}
-                            </MenuItem>
-                          ))}
-                          {services.map((service) => (
-                            <MenuItem key={service.id} value={service.id}>
-                              {service.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <TextField
-                        sx={{ mr: 2, width: '100px' }}
-                        type="number"
-                        label="Quantity"
-                        value={item.quantity}
-                        onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                      />
-                      <TextField
-                        sx={{ mr: 2, width: '150px' }}
-                        type="number"
-                        label="Unit Price"
-                        value={item.unitPrice}
-                        onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                      />
-                      <IconButton onClick={() => handleItemRemove(index)}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  ))}
-                  <Button startIcon={<AddIcon />} onClick={handleItemAdd}>
+                  </h3>
+                  <div className="space-y-4">
+                    {newInvoice.items.map((item, index) => (
+                      <div key={index} className="flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-md">
+                        <div className="sm:flex-grow">
+                          <label htmlFor={`item-product-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                            Product/Service
+                          </label>
+                          <select
+                            id={`item-product-${index}`}
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            value={item.product}
+                            onChange={(e) => handleItemChange(index, 'product', e.target.value)}
+                          >
+                            <option value="">Select a product/service</option>
+                            <optgroup label="Products">
+                              {products.map((product) => (
+                                <option key={product.id} value={product.id}>
+                                  {product.name}
+                                </option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Services">
+                              {services.map((service) => (
+                                <option key={service.id} value={service.id}>
+                                  {service.name}
+                                </option>
+                              ))}
+                            </optgroup>
+                          </select>
+                        </div>
+                        <div className="w-full sm:w-28">
+                          <label htmlFor={`item-quantity-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                            Quantity
+                          </label>
+                          <input
+                            id={`item-quantity-${index}`}
+                            type="number"
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            value={item.quantity}
+                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                            min="1"
+                            step="1"
+                          />
+                        </div>
+                        <div className="w-full sm:w-36">
+                          <label htmlFor={`item-unitPrice-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                            Unit Price
+                          </label>
+                          <input
+                            id={`item-unitPrice-${index}`}
+                            type="number"
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            value={item.unitPrice}
+                            onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+                        <div className="flex items-end justify-end sm:w-10 pb-1">
+                          <button 
+                            type="button"
+                            onClick={() => handleItemRemove(index)}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-100 text-red-500 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={handleItemAdd}
+                    className="mt-4 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="-ml-0.5 mr-2 h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                    </svg>
                     Add Item
-                  </Button>
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Discount"
+                  </button>
+                </div>
+                <div>
+                  <label htmlFor="discount" className="block text-sm font-medium text-gray-700 mb-1">
+                    Discount
+                  </label>
+                  <input
+                    id="discount"
                     name="discount"
                     type="number"
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     value={newInvoice.discount}
                     onChange={handleInputChange}
-                    fullWidth
+                    min="0"
+                    step="0.01"
                   />
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControl fullWidth>
-                    <InputLabel>Currency</InputLabel>
-                    <Select
-                      name="currency"
-                      value={newInvoice.currency}
-                      onChange={handleInputChange}
-                    >
-                      <MenuItem value="USD">USD</MenuItem>
-                      <MenuItem value="EUR">EUR</MenuItem>
-                      <MenuItem value="GBP">GBP</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Total Amount"
+                </div>
+                
+                <div>
+                  <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">
+                    Currency
+                  </label>
+                  <select
+                    id="currency"
+                    name="currency"
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    value={newInvoice.currency}
+                    onChange={handleInputChange}
+                  >
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label htmlFor="totalAmount" className="block text-sm font-medium text-gray-700 mb-1">
+                    Total Amount
+                  </label>
+                  <input
+                    id="totalAmount"
+                    type="text"
+                    className="w-full rounded-md border-gray-300 bg-gray-100 shadow-sm"
                     value={newInvoice.totalAmount.toFixed(2)}
-                    fullWidth
-                    disabled
+                    readOnly
                   />
-                </Grid>
-                <Grid item xs={12}>
-                  <Button type="submit" variant="contained" color="primary">
+                </div>
+                
+                <div className="pt-4">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
                     Create Invoice
-                  </Button>
-                </Grid>
-              </Grid>
+                  </button>
+                </div>
+              </div>
             </form>
-          </Box>
+          </div>
         )}
 
         {activeTab === 1 && (
-          <Box mt={3}>
-            <Typography variant="h6" gutterBottom>
+          <div className="mt-6">
+            <h2 className="text-lg font-semibold mb-4">
               Invoice Details
-            </Typography>
+            </h2>
             {selectedInvoice ? (
-              <Box>
-                <TextField
-                  label="Invoice Number"
-                  value={selectedInvoice.invoice_num}
-                  fullWidth
-                  margin="normal"
-                  disabled
-                />
-                <TextField
-                  label="Customer"
-                  value={selectedInvoice.customer}
-                  fullWidth
-                  margin="normal"
-                  disabled={!isEditing}
-                />
-                <TextField
-                  label="Date"
-                  type="date"
-                  value={selectedInvoice.date}
-                  fullWidth
-                  margin="normal"
-                  disabled={!isEditing}
-                  InputLabelProps={{ shrink: true }}
-                />
-                <TextField
-                  label="Total Amount"
-                  value={selectedInvoice.totalAmount}
-                  fullWidth
-                  margin="normal"
-                  disabled
-                />
-                <TextField
-                  label="Discount"
-                  value={selectedInvoice.discount}
-                  fullWidth
-                  margin="normal"
-                  disabled={!isEditing}
-                />
-                <TextField
-                  label="Currency"
-                  value={selectedInvoice.currency}
-                  fullWidth
-                  margin="normal"
-                  disabled={!isEditing}
-                />
-                {isEditing ? (
-                  <Box mt={2}>
-                    <Button variant="contained" color="primary" onClick={handleSaveEdit}>
-                      Save
-                    </Button>
-                    <Button variant="contained" color="secondary" onClick={handleCancelEdit}>
-                      Cancel
-                    </Button>
-                  </Box>
-                ) : (
-                  <Box mt={2}>
-                    <Button variant="contained" color="primary" onClick={handleEdit}>
-                      Edit
-                    </Button>
-                    <Button variant="contained" color="secondary" onClick={handleDelete}>
-                      Delete
-                    </Button>
-                  </Box>
-                )}
-              </Box>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="invoice-number" className="block text-sm font-medium text-gray-700 mb-1">
+                    Invoice Number
+                  </label>
+                  <input
+                    id="invoice-number"
+                    type="text"
+                    className="w-full rounded-md border-gray-300 bg-gray-100 shadow-sm"
+                    value={selectedInvoice.invoice_num}
+                    readOnly
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="detail-customer" className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer
+                  </label>
+                  <input
+                    id="detail-customer"
+                    type="text"
+                    className={`w-full rounded-md border-gray-300 shadow-sm ${!isEditing ? 'bg-gray-100' : 'focus:border-blue-500 focus:ring-blue-500'}`}
+                    value={selectedInvoice.customer}
+                    readOnly={!isEditing}
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="detail-date" className="block text-sm font-medium text-gray-700 mb-1">
+                    Date
+                  </label>
+                  <input
+                    id="detail-date"
+                    type="date"
+                    className={`w-full rounded-md border-gray-300 shadow-sm ${!isEditing ? 'bg-gray-100' : 'focus:border-blue-500 focus:ring-blue-500'}`}
+                    value={selectedInvoice.date}
+                    readOnly={!isEditing}
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="detail-total" className="block text-sm font-medium text-gray-700 mb-1">
+                    Total Amount
+                  </label>
+                  <input
+                    id="detail-total"
+                    type="text"
+                    className="w-full rounded-md border-gray-300 bg-gray-100 shadow-sm"
+                    value={selectedInvoice.totalAmount}
+                    readOnly
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="detail-discount" className="block text-sm font-medium text-gray-700 mb-1">
+                    Discount
+                  </label>
+                  <input
+                    id="detail-discount"
+                    type="number"
+                    className={`w-full rounded-md border-gray-300 shadow-sm ${!isEditing ? 'bg-gray-100' : 'focus:border-blue-500 focus:ring-blue-500'}`}
+                    value={selectedInvoice.discount}
+                    readOnly={!isEditing}
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="detail-currency" className="block text-sm font-medium text-gray-700 mb-1">
+                    Currency
+                  </label>
+                  <input
+                    id="detail-currency"
+                    type="text"
+                    className={`w-full rounded-md border-gray-300 shadow-sm ${!isEditing ? 'bg-gray-100' : 'focus:border-blue-500 focus:ring-blue-500'}`}
+                    value={selectedInvoice.currency}
+                    readOnly={!isEditing}
+                  />
+                </div>
+                
+                <div className="pt-4 flex space-x-4">
+                  {isEditing ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleSaveEdit}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleEdit}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
             ) : (
-              <Typography>Select an invoice from the list to view details</Typography>
+              <p className="text-gray-500">Select an invoice from the list to view details</p>
             )}
-          </Box>
+          </div>
         )}
 
         {activeTab === 2 && (
-          <Box mt={3}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6">Invoice List</Typography>
-              <Button
-                variant="outlined"
-                onClick={handleExportClick}
-                endIcon={<ArrowDropDownIcon />}
-              >
-                Export
-              </Button>
-              <Menu
-                anchorEl={exportAnchorEl}
-                open={Boolean(exportAnchorEl)}
-                onClose={handleExportClose}
-              >
-                <MenuItem onClick={() => handleExport('PDF')}>PDF</MenuItem>
-                <MenuItem onClick={() => handleExport('CSV')}>CSV</MenuItem>
-                <MenuItem onClick={() => handleExport('Excel')}>Excel</MenuItem>
-              </Menu>
-            </Box>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Invoice Number</TableCell>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Total Amount</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
+          <div className="mt-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">
+                Invoice List
+              </h2>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={handleExportClick}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Export
+                  <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 -mr-1 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                
+                {Boolean(exportAnchorEl) && (
+                  <div className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                    <div className="py-1" role="menu" aria-orientation="vertical">
+                      <button 
+                        className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
+                        onClick={() => handleExport('PDF')}
+                      >
+                        PDF
+                      </button>
+                      <button 
+                        className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
+                        onClick={() => handleExport('CSV')}
+                      >
+                        CSV
+                      </button>
+                      <button 
+                        className="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 w-full text-left"
+                        onClick={() => handleExport('Excel')}
+                      >
+                        Excel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Invoice Number
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Customer
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total Amount
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
                   {invoices.map((invoice) => (
-                    <TableRow key={invoice.id} onClick={() => handleInvoiceSelect(invoice)}>
-                      <TableCell>{invoice.invoice_num}</TableCell>
-                      <TableCell>{invoice.customer}</TableCell>
-                      <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
-                      <TableCell>
+                    <tr 
+                      key={invoice.id} 
+                      onClick={() => handleInvoiceSelect(invoice)}
+                      className="hover:bg-gray-50 cursor-pointer"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {invoice.invoice_num}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {invoice.customer}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(invoice.date).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {invoice.totalAmount} {invoice.currency}
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
 
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={() => setDeleteDialogOpen(false)}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-          <DialogTitle id="alert-dialog-title">{'Confirm Delete'}</DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              Are you sure you want to delete this invoice?
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmDelete} color="secondary" autoFocus>
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
-    </LocalizationProvider>
+        {deleteDialogOpen && (
+          <div className="fixed inset-0 overflow-y-auto z-50">
+            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+              </div>
+
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+              
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <svg className="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                        Confirm Delete
+                      </h3>
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-500">
+                          Are you sure you want to delete this invoice? This action cannot be undone.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button type="button" 
+                    onClick={handleConfirmDelete}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
+                    Delete
+                  </button>
+                  <button type="button" 
+                    onClick={() => setDeleteDialogOpen(false)}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
   );
 };
 

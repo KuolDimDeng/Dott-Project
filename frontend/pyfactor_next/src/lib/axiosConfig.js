@@ -28,18 +28,44 @@ const API_URL = '';  // Remove '/api' to avoid duplicate in the path
 // for use in server components and API routes
 const serverAxiosInstance = axios.create({
   baseURL: API_URL,
-  timeout: 15000,
+  timeout: 30000, // Increased from 15000 to 30000 ms to handle slow service responses
   headers: {
     'Content-Type': 'application/json',
   }
 });
 
-logger.debug('[AxiosConfig] Server axios instance initialized');
+// FIX: Add proper BACKEND_URL configuration for server-side requests
+// Make sure backend requests always have a valid URL
+serverAxiosInstance.interceptors.request.use(
+  (config) => {
+    // Set a proper base URL for backend API requests
+    if (config.url?.startsWith('/api/') && !config.baseURL) {
+      // Use environment variable or fallback to localhost
+      const backendUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
+      
+      // Log the baseURL being used for debugging
+      logger.debug('[AxiosConfig] Setting backend URL for server request:', { 
+        url: config.url,
+        backendUrl
+      });
+      
+      // Update the config with the correct baseURL
+      config.baseURL = backendUrl;
+    }
+    
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+logger.debug('[AxiosConfig] Server axios instance initialized with enhanced URL handling');
 
 // Regular axios instance with interceptors for client-side use
 const axiosInstance = axios.create({
   baseURL: API_URL,
-  timeout: 15000, // Increased from 8000 to 15000 ms to handle service creation
+  timeout: 30000, // Increased from 15000 to 30000 ms to handle slow service responses
   headers: {
     'Content-Type': 'application/json',
   }
@@ -47,8 +73,101 @@ const axiosInstance = axios.create({
 
 logger.debug('[AxiosConfig] Client axios instance initialized with baseURL:', API_URL);
 
-// Export the axios instances
-export { axiosInstance, serverAxiosInstance };
+// Helper function to add retry capability for failed requests
+const retryRequest = async (originalConfig) => {
+  // Create a new config object with the same properties as the original
+  const retryConfig = { ...originalConfig };
+  
+  // Initialize retry count or increment it
+  retryConfig.retryCount = (retryConfig.retryCount || 0) + 1;
+  const maxRetries = retryConfig.maxRetries || 3;
+  
+  // Log the retry attempt
+  logger.info(`[AxiosConfig] Retrying request (${retryConfig.retryCount}/${maxRetries}):`, {
+    url: retryConfig.url,
+    method: retryConfig.method
+  });
+  
+  // If we've reached the max retries, throw an error
+  if (retryConfig.retryCount > maxRetries) {
+    logger.error('[AxiosConfig] Max retries exceeded:', {
+      url: retryConfig.url,
+      method: retryConfig.method,
+      retries: retryConfig.retryCount
+    });
+    throw new Error(`Request failed after ${maxRetries} retries`);
+  }
+  
+  // Increase timeout with each retry
+  retryConfig.timeout = retryConfig.timeout * 1.5;
+  
+  // Add a delay before retrying (exponential backoff)
+  const delay = Math.min(1000 * Math.pow(2, retryConfig.retryCount - 1), 10000);
+  await new Promise(resolve => setTimeout(resolve, delay));
+  
+  // Make the retry request
+  return axiosInstance(retryConfig);
+};
+
+/**
+ * Creates an enhanced Axios instance with built-in retry capabilities
+ * @param {Object} config - Axios configuration object
+ * @returns {AxiosInstance} Enhanced Axios instance
+ */
+export const createEnhancedAxiosInstance = (config = {}) => {
+  const defaultConfig = {
+    baseURL: API_URL,
+    timeout: 30000,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    ...config
+  };
+  
+  // Create the instance
+  const instance = axios.create(defaultConfig);
+  
+  // Add response interceptor for automatic retry
+  instance.interceptors.response.use(
+    // Return successful responses as-is
+    response => response,
+    // Handle errors with automatic retry for specific cases
+    async error => {
+      // Get the original request configuration
+      const originalConfig = error.config;
+      
+      // Only retry idempotent requests (GET, HEAD) or if explicitly marked as retriable
+      const isIdempotent = originalConfig.method === 'get' || originalConfig.method === 'head';
+      const isRetriable = originalConfig.retriable === true;
+      
+      if ((!originalConfig) || (!originalConfig._retry && (isIdempotent || isRetriable)) && 
+          (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
+        // Mark as retried to prevent infinite retry loops
+        originalConfig._retry = true;
+        
+        try {
+          logger.info(`[AxiosConfig] Automatically retrying request: ${originalConfig.url}`);
+          return await retryRequest(originalConfig);
+        } catch (retryError) {
+          logger.error(`[AxiosConfig] Auto-retry failed: ${originalConfig.url}`, retryError);
+          return Promise.reject(retryError);
+        }
+      }
+      
+      return Promise.reject(error);
+    }
+  );
+  
+  return instance;
+};
+
+// Create an enhanced instance for critical API areas
+export const enhancedAxiosInstance = createEnhancedAxiosInstance({
+  timeout: 40000, // Longer timeout for critical operations
+});
+
+// Export the axios instances and retry function
+export { axiosInstance, serverAxiosInstance, retryRequest };
 
 // Helper function to check if the current path is an onboarding route that should use lenient access
 const isLenientAccessRoute = (pathname) => {

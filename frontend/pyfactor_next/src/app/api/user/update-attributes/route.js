@@ -35,7 +35,8 @@ export async function POST(request) {
       'custom:onboarding',
       'custom:setupdone',
       'custom:subplan',
-      'custom:updated_at'
+      'custom:updated_at',
+      'custom:businessid'
     ];
     
     // Filter out attributes that are not allowed
@@ -53,6 +54,20 @@ export async function POST(request) {
         { error: 'No valid attributes to update' },
         { status: 400 }
       );
+    }
+    
+    // Special handling for onboarding attributes - set all related attributes
+    if (filteredAttributes['custom:onboarding'] === 'COMPLETE' || filteredAttributes['custom:setupdone'] === 'TRUE') {
+      // Ensure both attributes are set together
+      filteredAttributes['custom:onboarding'] = 'COMPLETE';
+      filteredAttributes['custom:setupdone'] = 'TRUE';
+      
+      // Set updated_at timestamp if not already set
+      if (!filteredAttributes['custom:updated_at']) {
+        filteredAttributes['custom:updated_at'] = new Date().toISOString();
+      }
+      
+      logger.info('[API] Setting complete onboarding attributes:', filteredAttributes);
     }
     
     // Get AWS credentials from environment variables

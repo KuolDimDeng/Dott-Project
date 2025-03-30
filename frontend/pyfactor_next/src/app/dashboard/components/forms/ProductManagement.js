@@ -1,97 +1,55 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-// Import Tailwind components
-import { 
-  Box, 
-  Button, 
-  Typography, 
-  Paper, 
-  TextField,
-  FormControl,
-  InputLabel,
-  Checkbox,
-  Alert,
-  CircularProgress
-} from '@/components/ui/TailwindComponents';
-
-// Keep advanced MUI components for now that may not have Tailwind equivalents
-import Tab from '@mui/material/Tab';
-import Tabs from '@mui/material/Tabs';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import FormGroup from '@mui/material/FormGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import QrCodeIcon from '@mui/icons-material/QrCode';
+import React, { useState, useEffect, Fragment } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import BarcodeGenerator from '@/components/BarcodeGenerator';
-import { DataGrid } from '@mui/x-data-grid';
-import { styled } from '@mui/material/styles';
+
+// Custom QR code icon using SVG
+const QrCodeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm2 2V5h1v1H5zM3 13a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1v-3zm2 2v-1h1v1H5zM13 3a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1V4a1 1 0 00-1-1h-3zm1 2v1h1V5h-1z" clipRule="evenodd" />
+    <path d="M11 4a1 1 0 10-2 0v1a1 1 0 002 0V4zM10 7a1 1 0 011 1v1h2a1 1 0 110 2h-3a1 1 0 01-1-1V8a1 1 0 011-1zM16 9a1 1 0 100 2 1 1 0 000-2zM9 13a1 1 0 011-1h1a1 1 0 110 2v2a1 1 0 11-2 0v-3zM7 11a1 1 0 100-2H4a1 1 0 100 2h3zM17 13a1 1 0 01-1 1h-2a1 1 0 110-2h2a1 1 0 011 1zM16 17a1 1 0 100-2h-3a1 1 0 100 2h3z" />
+  </svg>
+);
+import { useTable, usePagination, useSortBy } from 'react-table';
 import { axiosInstance } from '@/lib/axiosConfig';
 import PropTypes from 'prop-types';
 import { useNotification } from '@/context/NotificationContext';
 
-// Styled component for modern form layout
-const ModernFormLayout = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(3),
-  backgroundColor: theme.palette.mode === 'dark' ? '#1a2027' : '#fff',
-  borderRadius: theme.shape.borderRadius,
-  boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
-  overflow: 'hidden',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: theme.spacing(3),
-  '& h3': {
-    margin: 0,
-    fontWeight: 600,
-    fontSize: '1.25rem',
-  },
-  '& .statusBar': {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing(3),
-  },
-  '& .statusTag': {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '4px 8px',
-    borderRadius: '4px',
-    fontSize: '0.75rem',
-    fontWeight: 500,
-  },
-  '& .statusTag.active': {
-    backgroundColor: '#ecfdf5',
-    color: '#047857',
-  },
-  '& .statusTag.inactive': {
-    backgroundColor: '#fef2f2',
-    color: '#b91c1c',
-  },
-  '& .formActions': {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    marginTop: theme.spacing(3),
-    gap: theme.spacing(2),
-  },
-}));
-
-// Create a fallback checkbox component in case MUI Checkbox fails to load
-const FallbackCheckbox = ({ checked, onChange, name }) => {
+// Modern Form Layout component using Tailwind classes
+const ModernFormLayout = ({ children, title, subtitle, onSubmit, isLoading, submitLabel }) => {
   return (
-    <input
-      type="checkbox"
-      checked={checked}
-      onChange={onChange}
-      name={name}
-      style={{ 
-        width: '18px', 
-        height: '18px',
-        marginRight: '8px'
-      }}
-    />
+    <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col gap-4 p-6">
+      {(title || subtitle) && (
+        <div className="mb-4">
+          {title && <h3 className="text-xl font-semibold m-0">{title}</h3>}
+          {subtitle && <p className="text-gray-500 text-sm mt-1">{subtitle}</p>}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+};
+
+// Tailwind checkbox component
+const TailwindCheckbox = ({ checked, onChange, name, label }) => {
+  return (
+    <div className="flex items-center">
+      <input
+        id={name}
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        name={name}
+        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+      />
+      {label && (
+        <label htmlFor={name} className="ml-2 text-sm text-gray-700">
+          {label}
+        </label>
+      )}
+    </div>
   );
 };
 
@@ -183,18 +141,8 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
   const [editStockQuantity, setEditStockQuantity] = useState('');
   const [editReorderLevel, setEditReorderLevel] = useState('');
 
-  // Check if Checkbox is available from MUI
-  const [checkboxComponent, setCheckboxComponent] = useState(null);
-  
-  useEffect(() => {
-    // Try to use MUI Checkbox, fallback to custom component if not available
-    if (typeof Checkbox !== 'undefined') {
-      setCheckboxComponent(() => Checkbox);
-    } else {
-      console.warn('MUI Checkbox not available, using fallback');
-      setCheckboxComponent(() => FallbackCheckbox);
-    }
-  }, []);
+  // Use Tailwind checkbox component
+  const checkboxComponent = TailwindCheckbox;
 
   useEffect(() => {
     if (activeTab === 2) {
@@ -960,175 +908,450 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     );
   };
 
-  // Render the products list
+  // Render the products list using react-table and Tailwind
   const renderProductsList = () => {
+    const columns = React.useMemo(
+      () => [
+        {
+          Header: 'Code',
+          accessor: row => row.product_code || row.productCode || `P-${row.id}`,
+          id: 'product_code',
+        },
+        {
+          Header: 'Name',
+          accessor: row => row.name || 'Unnamed Product',
+          id: 'name',
+        },
+        {
+          Header: 'Price',
+          accessor: 'price',
+          Cell: ({ value }) => `$${value || 0}`,
+        },
+        {
+          Header: 'Stock',
+          accessor: row => row.stock_quantity || row.stockQuantity || 0,
+          id: 'stock_quantity',
+        },
+        {
+          Header: 'Actions',
+          id: 'actions',
+          Cell: ({ row }) => (
+            <div className="flex space-x-2">
+              <button 
+                className="px-2 py-1 text-xs font-medium rounded border border-blue-700 text-blue-700 hover:bg-blue-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewDetails(row.original);
+                }}
+              >
+                View
+              </button>
+              <button 
+                className="px-2 py-1 text-xs font-medium rounded border border-purple-700 text-purple-700 hover:bg-purple-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditClick(row.original);
+                }}
+              >
+                Edit
+              </button>
+              <button 
+                className="px-2 py-1 text-xs font-medium rounded border border-red-700 text-red-700 hover:bg-red-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteProduct(row.original.id);
+                }}
+              >
+                Delete
+              </button>
+              <button 
+                className="px-2 py-1 text-xs font-medium rounded border border-green-700 text-green-700 hover:bg-green-50 flex items-center"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleGenerateBarcode(row.original);
+                }}
+              >
+                <span className="mr-1">QR</span>
+              </button>
+            </div>
+          ),
+        },
+      ],
+      []
+    );
+
+    const data = React.useMemo(() => products || [], [products]);
+    
+    const {
+      getTableProps,
+      getTableBodyProps,
+      headerGroups,
+      page,
+      prepareRow,
+      canPreviousPage,
+      canNextPage,
+      pageOptions,
+      pageCount,
+      gotoPage,
+      nextPage,
+      previousPage,
+      setPageSize,
+      state: { pageIndex, pageSize },
+    } = useTable(
+      { 
+        columns, 
+        data,
+        initialState: { pageIndex: 0, pageSize: 10 },
+      },
+      useSortBy,
+      usePagination
+    );
+
     return (
       <div>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h5" component="h1">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-gray-800">
             Products List
-          </Typography>
-          <Button 
-            variant="contained" 
-            color="primary"
+          </h2>
+          <button 
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => {
               setIsEditing(false);
               setActiveTab(0);
             }}
           >
             + Create New Product
-          </Button>
-        </Box>
+          </button>
+        </div>
         
-        <Paper elevation={3} sx={{ height: 500, width: '100%' }}>
-          <DataGrid
-            rows={products || []}
-            columns={dataGridColumns}
-            pageSize={10}
-            rowsPerPageOptions={[5, 10, 25]}
-            disableSelectionOnClick
-            loading={isLoading}
-            getRowId={(row) => {
-              if (!row) return Math.random().toString(36).substr(2, 9);
-              return row.id?.toString() || row._id?.toString() || Math.random().toString(36).substr(2, 9);
-            }}
-            sx={{ 
-              '& .MuiDataGrid-row:hover': {
-                backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                cursor: 'pointer'
-              }
-            }}
-            onRowClick={(params) => {
-              if (!params || !params.row) return;
-              console.log('Row clicked:', params.row);
-              setSelectedProduct(params.row);
-            }}
-          />
-        </Paper>
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-96">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table {...getTableProps()} className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    {headerGroups.map(headerGroup => (
+                      <tr {...headerGroup.getHeaderGroupProps()}>
+                        {headerGroup.headers.map(column => (
+                          <th
+                            {...column.getHeaderProps(column.getSortByToggleProps())}
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            {column.render('Header')}
+                            <span>
+                              {column.isSorted
+                                ? column.isSortedDesc
+                                  ? ' ▼'
+                                  : ' ▲'
+                                : ''}
+                            </span>
+                          </th>
+                        ))}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody
+                    {...getTableBodyProps()}
+                    className="bg-white divide-y divide-gray-200"
+                  >
+                    {page.map((row, i) => {
+                      prepareRow(row);
+                      return (
+                        <tr
+                          {...row.getRowProps()}
+                          className="hover:bg-gray-50 cursor-pointer"
+                          onClick={() => setSelectedProduct(row.original)}
+                        >
+                          {row.cells.map(cell => {
+                            return (
+                              <td
+                                {...cell.getCellProps()}
+                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                              >
+                                {cell.render('Cell')}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Pagination */}
+              <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div className="flex-1 flex justify-between sm:hidden">
+                  <button
+                    onClick={() => previousPage()}
+                    disabled={!canPreviousPage}
+                    className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                      !canPreviousPage ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => nextPage()}
+                    disabled={!canNextPage}
+                    className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                      !canNextPage ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Showing <span className="font-medium">{pageIndex * pageSize + 1}</span> to{' '}
+                      <span className="font-medium">
+                        {Math.min((pageIndex + 1) * pageSize, data.length)}
+                      </span>{' '}
+                      of <span className="font-medium">{data.length}</span> products
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                      <button
+                        onClick={() => gotoPage(0)}
+                        disabled={!canPreviousPage}
+                        className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
+                          !canPreviousPage ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="sr-only">First</span>
+                        {'<<'}
+                      </button>
+                      <button
+                        onClick={() => previousPage()}
+                        disabled={!canPreviousPage}
+                        className={`relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium ${
+                          !canPreviousPage ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="sr-only">Previous</span>
+                        {'<'}
+                      </button>
+                      <button
+                        onClick={() => nextPage()}
+                        disabled={!canNextPage}
+                        className={`relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium ${
+                          !canNextPage ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="sr-only">Next</span>
+                        {'>'}
+                      </button>
+                      <button
+                        onClick={() => gotoPage(pageCount - 1)}
+                        disabled={!canNextPage}
+                        className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
+                          !canNextPage ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="sr-only">Last</span>
+                        {'>>'}
+                      </button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     );
   };
 
-  // Barcode Dialog
+  // Barcode Dialog with Headless UI
   const renderBarcodeDialog = () => {
     return (
-      <Dialog 
-        open={isBarcodeDialogOpen} 
-        onClose={() => setBarcodeDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle className="border-b pb-2">
-          <div className="flex items-center">
-            <QrCodeIcon className="mr-2" />
-            Product QR Code
-          </div>
-        </DialogTitle>
-        <DialogContent>
-          {currentBarcodeProduct && (
-            <Box sx={{ p: 3 }} className="print-container">
-              <div className="text-center">
-                <Typography variant="h5" className="font-bold mb-1">
-                  {currentBarcodeProduct.name}
-                </Typography>
-                <Typography variant="body1" color="textSecondary" className="mb-2">
-                  Code: {currentBarcodeProduct.product_code}
-                </Typography>
-                
-                {currentBarcodeProduct.description && (
-                  <Typography variant="body2" color="textSecondary" className="mb-4 max-w-md mx-auto">
-                    {currentBarcodeProduct.description}
-                  </Typography>
-                )}
-              </div>
-              
-              <div className="flex justify-center my-6">
-                <div className="qr-code-container p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
-                  <BarcodeGenerator 
-                    value={currentBarcodeProduct.product_code || currentBarcodeProduct.id.toString()}
-                    size={250}
-                    productInfo={{
-                      name: currentBarcodeProduct.name,
-                      price: `$${currentBarcodeProduct.price}`,
-                      id: currentBarcodeProduct.id
-                    }}
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 mt-4 print-details">
-                <div className="col-span-1">
-                  <Typography variant="subtitle2" className="text-gray-500">Price</Typography>
-                  <Typography variant="body1" className="font-medium">${currentBarcodeProduct.price}</Typography>
-                </div>
-                {currentBarcodeProduct.stock_quantity !== undefined && (
-                  <div className="col-span-1">
-                    <Typography variant="subtitle2" className="text-gray-500">Stock</Typography>
-                    <Typography variant="body1" className="font-medium">{currentBarcodeProduct.stock_quantity}</Typography>
-                  </div>
-                )}
-              </div>
-              
-              <div className="print-instructions mt-6 border-t border-gray-200 pt-4">
-                <Typography variant="body2" className="text-gray-600">
-                  <span className="font-medium">Scan Instructions:</span> Scan this code with any QR reader to quickly access product information for inventory management.
-                </Typography>
-              </div>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions className="border-t p-3">
-          <Typography variant="body2" color="textSecondary" className="mr-auto hidden-print">
-            Click Print to save or print this QR code
-          </Typography>
-          <Button onClick={() => setBarcodeDialogOpen(false)}>Close</Button>
-          <Button 
-            variant="contained" 
-            color="primary"
-            startIcon={<span role="img" aria-label="print">🖨️</span>}
-            onClick={() => {
-              // Add a class to body for print styling
-              document.body.classList.add('printing-qr-code');
-              // Print using browser print
-              window.print();
-              // Remove class after printing
-              setTimeout(() => {
-                document.body.classList.remove('printing-qr-code');
-              }, 1000);
-            }}
+      <Transition.Root show={isBarcodeDialogOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-10" onClose={() => setBarcodeDialogOpen(false)}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
           >
-            Print QR Code
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                enterTo="opacity-100 translate-y-0 sm:scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              >
+                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                  {/* Header */}
+                  <div className="border-b border-gray-200 px-4 py-3 sm:px-6">
+                    <div className="flex items-center">
+                      <QrCodeIcon />
+                      <Dialog.Title as="h3" className="ml-2 text-base font-semibold leading-6 text-gray-900">
+                        Product QR Code
+                      </Dialog.Title>
+                    </div>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="px-4 py-5 sm:px-6">
+                    {currentBarcodeProduct && (
+                      <div className="print-container">
+                        <div className="text-center">
+                          <h3 className="text-lg font-bold mb-1">
+                            {currentBarcodeProduct.name}
+                          </h3>
+                          <p className="text-sm text-gray-500 mb-2">
+                            Code: {currentBarcodeProduct.product_code}
+                          </p>
+                          
+                          {currentBarcodeProduct.description && (
+                            <p className="text-sm text-gray-500 mb-4 max-w-md mx-auto">
+                              {currentBarcodeProduct.description}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="flex justify-center my-6">
+                          <div className="qr-code-container p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
+                            <BarcodeGenerator 
+                              value={currentBarcodeProduct.product_code || currentBarcodeProduct.id.toString()}
+                              size={250}
+                              productInfo={{
+                                name: currentBarcodeProduct.name,
+                                price: `$${currentBarcodeProduct.price}`,
+                                id: currentBarcodeProduct.id
+                              }}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 mt-4 print-details">
+                          <div>
+                            <p className="text-xs text-gray-500">Price</p>
+                            <p className="font-medium">${currentBarcodeProduct.price}</p>
+                          </div>
+                          {currentBarcodeProduct.stock_quantity !== undefined && (
+                            <div>
+                              <p className="text-xs text-gray-500">Stock</p>
+                              <p className="font-medium">{currentBarcodeProduct.stock_quantity}</p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="print-instructions mt-6 border-t border-gray-200 pt-4">
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Scan Instructions:</span> Scan this code with any QR reader to quickly access product information for inventory management.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Footer */}
+                  <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-gray-200">
+                    <button
+                      type="button"
+                      className="inline-flex w-full justify-center items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto"
+                      onClick={() => {
+                        // Add a class to body for print styling
+                        document.body.classList.add('printing-qr-code');
+                        // Print using browser print
+                        window.print();
+                        // Remove class after printing
+                        setTimeout(() => {
+                          document.body.classList.remove('printing-qr-code');
+                        }, 1000);
+                      }}
+                    >
+                      <span role="img" aria-label="print" className="mr-1">🖨️</span>
+                      Print QR Code
+                    </button>
+                    <button
+                      type="button"
+                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                      onClick={() => setBarcodeDialogOpen(false)}
+                    >
+                      Close
+                    </button>
+                    <p className="text-xs text-gray-500 mr-auto hidden-print mt-2 sm:mt-0 sm:flex sm:items-center">
+                      Click Print to save or print this QR code
+                    </p>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition.Root>
     );
   };
 
   return (
-    <Box sx={{ width: '100%', pt: 3 }}>
-      <Paper sx={{ width: '100%' }}>
-        <Tabs 
-          value={activeTab}
-          onChange={handleTabChange}
-          indicatorColor="primary"
-          textColor="primary"
-          variant="fullWidth"
-        >
-          <Tab label={isEditing ? "Edit Product" : "Create Product"} />
-          <Tab label="Product Details" disabled={!selectedProduct} />
-          <Tab label="Products List" />
-        </Tabs>
-      </Paper>
+    <div className="w-full pt-6">
+      <div className="bg-white rounded-lg shadow-sm w-full overflow-hidden">
+        <div className="border-b">
+          <nav className="flex -mb-px">
+            <button
+              className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
+                activeTab === 0
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={(e) => handleTabChange(e, 0)}
+            >
+              {isEditing ? "Edit Product" : "Create Product"}
+            </button>
+            <button
+              className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
+                !selectedProduct
+                  ? 'text-gray-400 border-transparent cursor-not-allowed'
+                  : activeTab === 1
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={(e) => selectedProduct && handleTabChange(e, 1)}
+              disabled={!selectedProduct}
+            >
+              Product Details
+            </button>
+            <button
+              className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
+                activeTab === 2
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={(e) => handleTabChange(e, 2)}
+            >
+              Products List
+            </button>
+          </nav>
+        </div>
+      </div>
       
-      <Box sx={{ mt: 3 }}>
+      <div className="mt-6">
         {activeTab === 0 && renderCreateForm()}
         {activeTab === 1 && renderProductDetails()}
         {activeTab === 2 && renderProductsList()}
-      </Box>
+      </div>
       
       {/* Barcode Dialog */}
       {renderBarcodeDialog()}
-    </Box>
+    </div>
   );
 };
 

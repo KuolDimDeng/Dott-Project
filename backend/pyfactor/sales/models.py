@@ -19,6 +19,8 @@ from barcode import Code128
 from barcode.writer import ImageWriter
 from crm.models import Customer
 from inventory.models import Product, Service, CustomChargePlan, Department
+from django.utils.functional import cached_property
+from custom_auth.models import TenantAwareModel, TenantManager
 
 
 logger = get_logger()
@@ -29,9 +31,9 @@ def get_current_datetime():
 def default_due_datetime():
     return get_current_datetime() + timedelta(days=30)
 
-class Invoice(models.Model):
+class Invoice(TenantAwareModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    invoice_num = models.CharField(max_length=20, unique=True, editable=False)
+    invoice_num = models.CharField(max_length=20, editable=False)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='invoices')
     totalAmount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     date = models.DateField(default=timezone.now)
@@ -48,26 +50,37 @@ class Invoice(models.Model):
     is_paid = models.BooleanField(default=False)
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     currency = models.CharField(max_length=3, default='USD')
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant', 'invoice_num']),
+            models.Index(fields=['tenant', 'customer']),
+            models.Index(fields=['tenant', 'status']),
+            models.Index(fields=['tenant', 'is_paid', 'due_date']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['tenant', 'invoice_num'], name='unique_invoice_num_per_tenant'),
+        ]
 
     def __str__(self):
         return self.invoice_num
-
-    @classmethod
-    def generate_invoice_number(cls):
-        while True:
-            uuid_part = uuid.uuid4().hex[-8:].upper()
-            invoice_num = f'INV{uuid_part}'
-            if not cls.objects.filter(invoice_num=invoice_num).exists():
-                return invoice_num
-            # If it exists, generate a new one with a random suffix
-            random_suffix = ''.join(random.choices('0123456789ABCDEF', k=4))
-            invoice_num = f'INV{uuid_part}-{random_suffix}'
-            if not cls.objects.filter(invoice_num=invoice_num).exists():
-                return invoice_num
-
+        
     def save(self, *args, **kwargs):
         if not self.invoice_num:
-            self.invoice_num = self.generate_invoice_number()
+            # Generate a unique invoice number
+            prefix = "INV-"
+            random_suffix = ''.join(random.choices('0123456789', k=6))
+            self.invoice_num = f"{prefix}{random_suffix}"
+            
+            # Ensure uniqueness within tenant
+            while Invoice.objects.filter(tenant=self.tenant, invoice_num=self.invoice_num).exists():
+                random_suffix = ''.join(random.choices('0123456789', k=6))
+                self.invoice_num = f"{prefix}{random_suffix}"
+                
         super().save(*args, **kwargs)
 
     def clean(self):
@@ -193,9 +206,9 @@ class EstimateAttachment(models.Model):
             raise ValidationError('Estimate amount must be positive.')
 
 
-class SalesOrder(models.Model):
+class SalesOrder(TenantAwareModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    order_number = models.CharField(max_length=50, unique=True, editable=False)
+    order_number = models.CharField(max_length=50, editable=False)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     currency = models.CharField(max_length=3, default='USD')
@@ -205,25 +218,34 @@ class SalesOrder(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     totalAmount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        ordering = ['-date']
+        indexes = [
+            models.Index(fields=['tenant', 'order_number']),
+            models.Index(fields=['tenant', 'customer']),
+            models.Index(fields=['tenant', 'date']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['tenant', 'order_number'], name='unique_order_number_per_tenant'),
+        ]
 
     def save(self, *args, **kwargs):
         if not self.order_number:
-            self.order_number = self.generate_order_number()
+            # Generate a unique order number within tenant
+            prefix = "SO-"
+            random_suffix = ''.join(random.choices('0123456789ABCDEF', k=8))
+            self.order_number = f"{prefix}{random_suffix}"
+            
+            # Ensure uniqueness within tenant
+            while SalesOrder.objects.filter(tenant=self.tenant, order_number=self.order_number).exists():
+                random_suffix = ''.join(random.choices('0123456789ABCDEF', k=8))
+                self.order_number = f"{prefix}{random_suffix}"
+                
         super().save(*args, **kwargs)
-
-    @staticmethod
-    def generate_order_number():
-        while True:
-            uuid_part = uuid.uuid4().hex[:8].upper()
-            order_number = f"SO-{uuid_part}"
-            if not SalesOrder.objects.filter(order_number=order_number).exists():
-                return order_number
-            # If it exists, generate a new one with a random suffix
-            random_suffix = ''.join(random.choices('0123456789ABCDEF', k=4))
-            order_number = f"SO-{uuid_part}-{random_suffix}"
-            if not SalesOrder.objects.filter(order_number=order_number).exists():
-                return order_number
-
 
     def calculate_total_amount(self):
         total = sum(item.subtotal() for item in self.items.all())
@@ -234,14 +256,10 @@ class SalesOrder(models.Model):
         if self.amount is not None and self.amount <= 0:
             raise ValidationError('Sales order amount must be positive.')
 
-    class Meta:
-        ordering = ['-date']
-        app_label = 'sales'
-
     def __str__(self):
         return f"Sales Order {self.order_number}"
         
-class SalesOrderItem(models.Model):
+class SalesOrderItem(TenantAwareModel):
     sales_order = models.ForeignKey(SalesOrder, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
     service = models.ForeignKey(Service, on_delete=models.SET_NULL, null=True, blank=True)
@@ -249,18 +267,24 @@ class SalesOrderItem(models.Model):
     quantity = models.IntegerField(default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        ordering = ['id']
+        indexes = [
+            models.Index(fields=['tenant', 'sales_order']),
+        ]
+    
     def __str__(self):
         return f"SalesOrderItem {self.id} for SalesOrder {self.sales_order_id}"
 
     def subtotal(self):
         return self.quantity * self.unit_price
 
-    class Meta:
-        ordering = ['id']
-        app_label = 'sales'
 
-
-class Sale(models.Model):
+class Sale(TenantAwareModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
@@ -272,13 +296,32 @@ class Sale(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True)
     invoice = models.OneToOneField('Invoice', on_delete=models.SET_NULL, null=True, related_name='sale')
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant', 'customer']),
+            models.Index(fields=['tenant', 'payment_method']),
+            models.Index(fields=['tenant', 'created_at']),
+        ]
 
-class SaleItem(models.Model):
+class SaleItem(TenantAwareModel):
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
-
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant', 'sale']),
+        ]
 
     def save(self, *args, **kwargs):
         self.total_amount = self.product.price * self.quantity

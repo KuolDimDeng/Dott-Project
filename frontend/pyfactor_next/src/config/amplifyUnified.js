@@ -3,8 +3,8 @@
 // Important: Use the correct import paths for Amplify v6
 import { Amplify } from 'aws-amplify';
 import { signIn, signOut, confirmSignUp, signUp, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
-import { fetchAuthSession, getCurrentUser, fetchUserAttributes, resendSignUpCode } from 'aws-amplify/auth';
-import { signInWithRedirect } from 'aws-amplify/auth';
+import { fetchAuthSession, getCurrentUser, fetchUserAttributes, resendSignUpCode, updateUserAttributes } from 'aws-amplify/auth';
+import { signInWithRedirect, sendUserAttributeVerificationCode, confirmUserAttribute, setUpTOTP } from 'aws-amplify/auth';
 import { Hub as AmplifyHub } from 'aws-amplify/utils';
 import { logger } from '@/utils/logger';
 
@@ -185,6 +185,10 @@ export {
   fetchUserAttributes,
   signInWithRedirect,
   resendSignUpCode,
+  updateUserAttributes,
+  sendUserAttributeVerificationCode,
+  confirmUserAttribute,
+  setUpTOTP
 };
 
 // Backward compatibility function - does nothing since we configure once at the beginning

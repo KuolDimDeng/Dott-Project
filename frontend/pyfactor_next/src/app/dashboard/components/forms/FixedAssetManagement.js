@@ -1,36 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  useTheme,
-  Box,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { axiosInstance } from '@/lib/axiosConfig';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useToast } from '@/components/Toast/ToastProvider';
 
 const FixedAssetManagement = () => {
   const [assets, setAssets] = useState([]);
   const [open, setOpen] = useState(false);
-  const theme = useTheme();
 
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [formData, setFormData] = useState({
@@ -104,144 +78,205 @@ const FixedAssetManagement = () => {
   };
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom>
-        Fixed Asset Management
-      </Typography>
-      <Button
-        variant="contained"
-        color="primary"
+    <div className="bg-gray-50 p-6 rounded-lg">
+      <h1 className="text-2xl font-bold mb-4">Fixed Asset Management</h1>
+      
+      <button
+        className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 mb-4"
         onClick={() => handleOpen()}
-        style={{ marginBottom: '1rem' }}
       >
         Add New Asset
-      </Button>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Asset Type</TableCell>
-              <TableCell>Acquisition Date</TableCell>
-              <TableCell>Acquisition Cost</TableCell>
-              <TableCell>Book Value</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {assets.map((asset) => (
-              <TableRow key={asset.id}>
-                <TableCell>{asset.name}</TableCell>
-                <TableCell>{asset.asset_type}</TableCell>
-                <TableCell>{asset.acquisition_date}</TableCell>
-                <TableCell>${asset.acquisition_cost}</TableCell>
-                <TableCell>${asset.book_value}</TableCell>
-                <TableCell>
-                  <Button variant="outlined" color="primary" onClick={() => handleOpen(asset)}>
-                    Edit
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>{selectedAsset ? 'Edit Asset' : 'Add New Asset'}</DialogTitle>
-        <DialogContent>
-          <TextField
-            name="name"
-            label="Asset Name"
-            fullWidth
-            value={formData.name}
-            onChange={handleChange}
-            margin="normal"
-          />
-          <TextField
-            name="asset_type"
-            label="Asset Type"
-            fullWidth
-            value={formData.asset_type}
-            onChange={handleChange}
-            margin="normal"
-          />
-          <TextField
-            name="acquisition_date"
-            label="Acquisition Date"
-            type="date"
-            fullWidth
-            value={formData.acquisition_date}
-            onChange={handleChange}
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            name="acquisition_cost"
-            label="Acquisition Cost"
-            type="number"
-            fullWidth
-            value={formData.acquisition_cost}
-            onChange={handleChange}
-            margin="normal"
-          />
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Depreciation Method</InputLabel>
-            <Select
-              name="depreciation_method"
-              value={formData.depreciation_method}
-              onChange={handleChange}
-            >
-              <MenuItem value="SL">Straight Line</MenuItem>
-              <MenuItem value="DB">Declining Balance</MenuItem>
-              <MenuItem value="SYD">Sum of Years Digits</MenuItem>
-              <MenuItem value="UOP">Units of Production</MenuItem>
-            </Select>
-          </FormControl>
-          <TextField
-            name="useful_life"
-            label="Useful Life (years)"
-            type="number"
-            fullWidth
-            value={formData.useful_life}
-            onChange={handleChange}
-            margin="normal"
-          />
-          <TextField
-            name="salvage_value"
-            label="Salvage Value"
-            type="number"
-            fullWidth
-            value={formData.salvage_value}
-            onChange={handleChange}
-            margin="normal"
-          />
-          <TextField
-            name="location"
-            label="Location"
-            fullWidth
-            value={formData.location}
-            onChange={handleChange}
-            margin="normal"
-          />
-          <TextField
-            name="asset_tag"
-            label="Asset Tag"
-            fullWidth
-            value={formData.asset_tag}
-            onChange={handleChange}
-            margin="normal"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} color="primary">
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      </button>
+      
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Type</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acquisition Date</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acquisition Cost</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Book Value</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {assets.map((asset) => (
+                <tr key={asset.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{asset.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{asset.asset_type}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{asset.acquisition_date}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${asset.acquisition_cost}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${asset.book_value}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <button 
+                      className="text-indigo-600 hover:text-indigo-900 border border-indigo-600 px-3 py-1 rounded-md"
+                      onClick={() => handleOpen(asset)}
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      {/* Dialog for adding/editing assets */}
+      {open && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold">{selectedAsset ? 'Edit Asset' : 'Add New Asset'}</h2>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="p-4 space-y-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Asset Name</label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="asset_type" className="block text-sm font-medium text-gray-700 mb-1">Asset Type</label>
+                <input
+                  id="asset_type"
+                  name="asset_type"
+                  type="text"
+                  className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  value={formData.asset_type}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="acquisition_date" className="block text-sm font-medium text-gray-700 mb-1">Acquisition Date</label>
+                <input
+                  id="acquisition_date"
+                  name="acquisition_date"
+                  type="date"
+                  className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  value={formData.acquisition_date}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="acquisition_cost" className="block text-sm font-medium text-gray-700 mb-1">Acquisition Cost</label>
+                <input
+                  id="acquisition_cost"
+                  name="acquisition_cost"
+                  type="number"
+                  step="0.01"
+                  className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  value={formData.acquisition_cost}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="depreciation_method" className="block text-sm font-medium text-gray-700 mb-1">Depreciation Method</label>
+                <select
+                  id="depreciation_method"
+                  name="depreciation_method"
+                  className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  value={formData.depreciation_method}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select Method</option>
+                  <option value="SL">Straight Line</option>
+                  <option value="DB">Declining Balance</option>
+                  <option value="SYD">Sum of Years Digits</option>
+                  <option value="UOP">Units of Production</option>
+                </select>
+              </div>
+              
+              <div>
+                <label htmlFor="useful_life" className="block text-sm font-medium text-gray-700 mb-1">Useful Life (years)</label>
+                <input
+                  id="useful_life"
+                  name="useful_life"
+                  type="number"
+                  className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  value={formData.useful_life}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="salvage_value" className="block text-sm font-medium text-gray-700 mb-1">Salvage Value</label>
+                <input
+                  id="salvage_value"
+                  name="salvage_value"
+                  type="number"
+                  step="0.01"
+                  className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  value={formData.salvage_value}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <input
+                  id="location"
+                  name="location"
+                  type="text"
+                  className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  value={formData.location}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="asset_tag" className="block text-sm font-medium text-gray-700 mb-1">Asset Tag</label>
+                <input
+                  id="asset_tag"
+                  name="asset_tag"
+                  type="text"
+                  className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  value={formData.asset_tag}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-5 pt-5 border-t border-gray-200">
+                <button
+                  type="button"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  onClick={handleClose}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

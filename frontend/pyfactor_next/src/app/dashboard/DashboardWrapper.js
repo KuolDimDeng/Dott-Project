@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Dashboard from './DashboardContent';
 import { logger } from '@/utils/logger';
+import { useTenantInitialization } from '@/hooks/useTenantInitialization';
+import { fetchUserAttributes } from 'aws-amplify/auth';
 
 /**
  * Dashboard Wrapper Component
@@ -11,7 +13,11 @@ import { logger } from '@/utils/logger';
  * when the dashboard first loads.
  */
 const DashboardWrapper = ({ children }) => {
+  const { updateCognitoOnboardingStatus } = useTenantInitialization();
   const [setupStatus, setSetupStatus] = useState('pending');
+  const [cognitoUpdateNeeded, setCognitoUpdateNeeded] = useState(false);
+  const hasRunSetup = useRef(false);
+  const isLoggedIn = true; // Simplified since we're in the dashboard
 
   // Add an effect to check schema setup status when component mounts
   useEffect(() => {
@@ -36,269 +42,274 @@ const DashboardWrapper = ({ children }) => {
         localStorage.setItem('setupTimestamp', Date.now().toString());
         logger.info('[Dashboard] Created missing setup status in localStorage');
       }
+      
+      // Check Cognito attributes on mount
+      checkCognitoAttributes();
     } catch (e) {
       logger.error('[Dashboard] Error accessing localStorage:', e);
     }
   }, []);
+  
+  // New function to check Cognito attributes
+  const checkCognitoAttributes = async () => {
+    try {
+      const userAttributes = await fetchUserAttributes();
+      const onboardingStatus = userAttributes['custom:onboarding'];
+      const setupDone = userAttributes['custom:setupdone'];
+      
+      logger.info('[Dashboard] Cognito attributes check:', {
+        onboarding: onboardingStatus,
+        setupDone: setupDone
+      });
+      
+      // If either attribute is not set correctly, we need to update
+      if (onboardingStatus !== 'COMPLETE' || setupDone !== 'TRUE') {
+        logger.info('[Dashboard] Cognito attributes need update:', {
+          onboarding: onboardingStatus,
+          setupDone: setupDone
+        });
+        setCognitoUpdateNeeded(true);
+      }
+    } catch (error) {
+      logger.error('[Dashboard] Error checking Cognito attributes:', error);
+    }
+  };
 
   // Effect for schema setup triggering
   useEffect(() => {
-    logger.info('[Dashboard] Schema setup effect triggered');
-    
     const triggerSchemaSetup = async () => {
-      // Create a session key to prevent multiple setups in one session
-      const hasSetupBeenRunKey = 'schemaSetupAlreadyRunInSession';
-      const setupRunInSession = sessionStorage.getItem(hasSetupBeenRunKey) === 'true';
-      
-      // If we've already run setup in this session, don't do it again
-      if (setupRunInSession) {
+      if (hasRunSetup.current) {
         logger.info('[Dashboard] Schema setup already run in this session, skipping');
         return;
       }
       
+      // Mark as run to prevent duplicate calls
+      hasRunSetup.current = true;
+      
       try {
-        // Try to get tenant ID from cookies or localStorage for passing to the API
-        let tenantId = null;
+        logger.debug('[Dashboard] Triggering schema setup');
+        
+        // Fetch user attributes to check onboarding status and tenant ID
+        let userAttributes;
         try {
-          // Try to get from localStorage first
-          tenantId = localStorage.getItem('tenantId');
+          userAttributes = await fetchUserAttributes();
+        } catch (authError) {
+          // Handle authentication errors specifically
+          logger.error('[Dashboard] Authentication error fetching user attributes:', authError);
           
-          // If not in localStorage, try cookies
-          if (!tenantId) {
-            const cookies = document.cookie.split(';');
-            for (const cookie of cookies) {
-              const [name, value] = cookie.trim().split('=');
-              if (name === 'tenantId') {
-                tenantId = value;
-                break;
-              }
+          // Check if it's an authentication error
+          if (authError.toString().includes('User needs to be authenticated') || 
+              authError.toString().includes('UnAuthenticated') ||
+              authError.toString().includes('Token expired')) {
+            logger.warn('[Dashboard] Authentication token invalid or expired, redirecting to sign-in');
+            
+            // Clear any stale auth data
+            if (typeof localStorage !== 'undefined') {
+              localStorage.removeItem('accessToken');
+              localStorage.removeItem('idToken');
             }
+            
+            // Set a cookie to indicate auth error for debugging
+            document.cookie = `authError=true; path=/; max-age=300`;
+            
+            // Redirect to sign-in page with return URL
+            const returnUrl = encodeURIComponent(window.location.pathname);
+            window.location.href = `/auth/signin?returnUrl=${returnUrl}&authError=true`;
+            return;
           }
           
-          // Get user info from localStorage if available
-          const userDataStr = localStorage.getItem('userData');
-          const userData = userDataStr ? JSON.parse(userDataStr) : null;
-          
-          logger.debug('[Dashboard] Tenant ID for setup:', { 
-            tenantId,
-            hasUserData: !!userData
-          });
-        } catch (e) {
-          logger.warn('[Dashboard] Error getting tenant ID:', e);
+          // For non-auth errors, continue but mark setup as failed
+          setSetupStatus('failed');
+          throw authError;
         }
         
-        // Check if we should force schema setup
-        let skipForceSetup = false;
-        try {
-          // First check session storage - if we've done setup in this browser session, skip
-          if (setupRunInSession) {
-            skipForceSetup = true;
-            logger.info('[Dashboard] Setup already run in this session, skipping force_setup');
-          }
-          
-          // Next check localStorage for setup status
-          const setupDoneStr = localStorage.getItem('setupDone');
-          const setupTimestamp = localStorage.getItem('setupTimestamp');
-          const userDataStr = localStorage.getItem('userData');
-          const userData = userDataStr ? JSON.parse(userDataStr) : null;
-          
-          // If localStorage indicates setup was done, skip force setup
-          if (setupDoneStr === 'true' && setupTimestamp) {
-            skipForceSetup = true;
-            logger.info('[Dashboard] Setup marked as done in localStorage, skipping force_setup');
-          }
-          
-          // Also check if user profile indicates setup is done
-          if (userData?.onboardingStatus === "COMPLETE") {
-            skipForceSetup = true;
-            logger.info('[Dashboard] User onboarding status is COMPLETE, skipping force_setup');
-          }
-          
-          logger.info('[Dashboard] Force setup decision:', { 
-            skipForceSetup, 
-            willForceSetup: !skipForceSetup 
-          });
-        } catch (e) {
-          logger.warn('[Dashboard] Error checking setup status:', e);
-          // Default to not forcing setup on errors
-          skipForceSetup = true;
-        }
+        const onboardingStatus = userAttributes['custom:onboarding'];
+        const setupDone = userAttributes['custom:setupdone'];
+        const cognitoTenantId = userAttributes['custom:businessid'];
         
-        // Set session flag to prevent redundant setups in the same session
-        sessionStorage.setItem(hasSetupBeenRunKey, 'true');
-        
-        // Prepare request body with force_setup=false by default
-        const requestBody = { 
-          force_setup: false, // Default to not forcing setup
-          tenant_id: tenantId,
-          source: 'dashboard' 
+        // Check localStorage and cookies for tenant ID
+        const localStorageTenantId = localStorage.getItem('tenantId');
+        const getCookie = (name) => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop().split(';').shift();
+          return null;
         };
+        const cookieTenantId = getCookie('tenantId');
         
-        // Only set force_setup=true if we really need to force it
-        if (!skipForceSetup) {
-          requestBody.force_setup = true;
-          logger.info('[Dashboard] Will force schema setup in this request');
-        }
-        
-        logger.info('[Dashboard] Sending setup trigger request:', requestBody);
-        
-        // Make the API call with available data
-        const response = await fetch('/api/onboarding/setup/trigger/', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'X-Request-Id': crypto.randomUUID()
-          },
-          body: JSON.stringify(requestBody),
-          credentials: 'include' // This ensures cookies are sent with the request
+        // Log tenant ID from different sources for debugging
+        logger.info('[Dashboard] Tenant ID check before setup:', {
+          cognito: cognitoTenantId || 'not set',
+          localStorage: localStorageTenantId || 'not set',
+          cookie: cookieTenantId || 'not set'
         });
         
-        console.log('[Dashboard] Fetch response received:', response.status);
+        // Detect tenant ID mismatch
+        const tenantIdMismatch = cognitoTenantId && localStorageTenantId && cognitoTenantId !== localStorageTenantId;
+        if (tenantIdMismatch) {
+          logger.warn('[Dashboard] Tenant ID mismatch detected:', {
+            cognito: cognitoTenantId,
+            localStorage: localStorageTenantId,
+            cookie: cookieTenantId,
+          });
+          
+          // Fix localStorage and cookies to match Cognito
+          localStorage.setItem('tenantId', cognitoTenantId);
+          document.cookie = `tenantId=${cognitoTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+          logger.info('[Dashboard] Fixed tenant ID inconsistency using Cognito ID:', cognitoTenantId);
+        }
         
-        // Check content type to avoid parsing errors
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const errorText = await response.text();
-          console.error('[Dashboard] Non-JSON response:', errorText.substring(0, 500));
-          setSetupStatus('error');
+        logger.info('[Dashboard] Current Cognito status before setup:', {
+          onboarding: onboardingStatus || 'not set',
+          setupDone: setupDone || 'not set',
+          tenantId: cognitoTenantId || 'not set'
+        });
+        
+        // If already complete according to Cognito (which is the source of truth), no need to run
+        if (onboardingStatus === 'COMPLETE' && setupDone === 'TRUE') {
+          logger.info('[Dashboard] Onboarding already complete according to Cognito, skipping schema setup');
+          setSetupStatus('already-complete');
           return;
         }
         
-        const data = await response.json();
-        console.log('[Dashboard] Response data:', data);
+        // Flag that we definitely need to update Cognito attributes
+        setCognitoUpdateNeeded(true);
         
-        if (response.ok) {
-          // Success cases
-          if (data.status === 'complete') {
-            // Setup is already complete
-            logger.info('[Dashboard] Schema setup already completed');
-            setSetupStatus('complete');
-            
-            // Mark setup as done in both localStorage and sessionStorage
-            try {
-              const timestamp = Date.now().toString();
-              localStorage.setItem('setupDone', 'true');
-              localStorage.setItem('setupTimestamp', timestamp);
-              sessionStorage.setItem('schemaSetupAlreadyRunInSession', 'true');
-              
-              logger.info('[Dashboard] Marked schema setup as complete');
-            } catch (e) {
-              logger.warn('[Dashboard] Error storing setup status:', e);
-            }
-          } else if (data.status === 'pending' || data.status === 'in_progress') {
-            // Setup is pending or in progress
-            logger.info('[Dashboard] Schema setup is in progress');
-            setSetupStatus('in_progress');
-            
-            // Store task ID if available
-            if (data.task_id) {
-              sessionStorage.setItem('schemaSetupTaskId', data.task_id);
-            }
-          } else if (data.status === 'success' && data.task_id) {
-            // We have a task ID, store it for later reference
-            sessionStorage.setItem('schemaSetupTaskId', data.task_id);
-            logger.debug('[Dashboard] Schema setup triggered successfully:', data);
-            setSetupStatus('in_progress');
-          } else if (data.status === 'already_setup') {
-            // Legacy status for backward compatibility
-            logger.info('[Dashboard] Schema already fully set up:', data);
-            setSetupStatus('complete');
-            
-            // Mark setup as done in both localStorage and sessionStorage
-            try {
-              const timestamp = Date.now().toString();
-              localStorage.setItem('setupDone', 'true');
-              localStorage.setItem('setupTimestamp', timestamp);
-              sessionStorage.setItem('schemaSetupAlreadyRunInSession', 'true');
-              
-              logger.info('[Dashboard] Marked schema setup as complete (already_setup)');
-            } catch (e) {
-              logger.warn('[Dashboard] Error storing setup status:', e);
-            }
-          } else {
-            // Default success case
-            logger.debug('[Dashboard] Schema setup triggered with status:', data.status);
-            setSetupStatus(data.status || 'unknown');
-          }
-        } else {
-          // Handle specific error cases
-          if (response.status === 404 && data.message === 'No pending schema setup found') {
-            // This is actually expected for users with setupDone=TRUE
-            logger.info('[Dashboard] Schema setup not needed (already done)');
-            setSetupStatus('complete');
-            
-            // Mark setup as done in both localStorage and sessionStorage
-            try {
-              const timestamp = Date.now().toString();
-              localStorage.setItem('setupDone', 'true');
-              localStorage.setItem('setupTimestamp', timestamp);
-              sessionStorage.setItem('schemaSetupAlreadyRunInSession', 'true');
-              
-              logger.info('[Dashboard] Marked schema setup as complete (404 response)');
-            } catch (e) {
-              logger.warn('[Dashboard] Error storing setup status:', e);
-            }
-          } else if (response.status === 401) {
-            // Authentication issue
-            console.error('[Dashboard] Authentication required for schema setup');
-            setSetupStatus('auth_error');
-          } else {
-            // Generic error
-            logger.warn('[Dashboard] Failed to trigger schema setup:', data);
-            setSetupStatus('error');
-          }
+        // Make API call to trigger schema setup
+        setSetupStatus('in-progress');
+        const response = await fetch('/api/dashboard/trigger-schema-setup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tenantId: cognitoTenantId // Explicitly pass Cognito tenant ID if available
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Failed to trigger schema setup: ${errorData.message || response.status}`);
+        }
+        
+        const data = await response.json();
+        logger.debug('[Dashboard] Schema setup triggered successfully:', data);
+        
+        // Always set flag to update Cognito directly for redundancy
+        setCognitoUpdateNeeded(true);
+        
+        setSetupStatus('completed');
+        
+        // Force immediate Cognito update check 
+        setTimeout(() => {
+          checkCognitoAttributes();
+        }, 1000);
+        
+        // Reload the page after a successful setup (to ensure tenant is properly loaded)
+        if (data.schemaCreated) {
+          logger.info('[Dashboard] Schema was newly created, will reload page in 3 seconds');
+          setTimeout(() => {
+            window.location.reload();
+          }, 3000);
         }
       } catch (error) {
-        // Non-critical error, log but don't disrupt user experience
-        console.error('[Dashboard] Error triggering schema setup:', error);
         logger.error('[Dashboard] Error triggering schema setup:', error);
-        setSetupStatus('error');
+        setSetupStatus('failed');
+        // Still try to update Cognito
+        setCognitoUpdateNeeded(true);
       }
     };
     
-    // Call the function to trigger schema setup
+    // Only run once when component mounts
+    logger.info('[Dashboard] Schema setup effect triggered');
     triggerSchemaSetup();
-    
-    // Set up polling for status updates
-    const statusInterval = setInterval(async () => {
-      if (setupStatus !== 'in_progress') {
-        clearInterval(statusInterval);
-        return;
-      }
+  }, []);
+  
+  // Handle Cognito attribute update if needed
+  useEffect(() => {
+    const updateCognitoIfNeeded = async () => {
+      if (!cognitoUpdateNeeded) return;
       
       try {
-        const response = await fetch('/api/onboarding/setup/status/', {
-          credentials: 'include',
-        });
+        logger.info('[Dashboard] Attempting to update Cognito attributes directly');
+        const success = await updateCognitoOnboardingStatus();
         
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status === 'complete') {
-            setSetupStatus('complete');
-            clearInterval(statusInterval);
-            
-            // Mark setup as done in both localStorage and sessionStorage
+        if (success) {
+          logger.info('[Dashboard] Successfully updated Cognito attributes');
+          setCognitoUpdateNeeded(false);
+          
+          // Double-check after a delay to ensure changes propagated
+          setTimeout(async () => {
             try {
-              const timestamp = Date.now().toString();
-              localStorage.setItem('setupDone', 'true');
-              localStorage.setItem('setupTimestamp', timestamp);
-              sessionStorage.setItem('schemaSetupAlreadyRunInSession', 'true');
+              const userAttributes = await fetchUserAttributes();
+              logger.info('[Dashboard] Verified Cognito attributes after update:', {
+                onboarding: userAttributes['custom:onboarding'],
+                setupDone: userAttributes['custom:setupdone']
+              });
+            } catch (error) {
+              logger.error('[Dashboard] Error verifying Cognito attributes after update:', error);
               
-              logger.info('[Dashboard] Marked schema setup as complete (from polling)');
-            } catch (e) {
-              logger.warn('[Dashboard] Error storing setup status:', e);
+              // Handle authentication errors
+              if (error.toString().includes('User needs to be authenticated') || 
+                  error.toString().includes('UnAuthenticated') ||
+                  error.toString().includes('Token expired')) {
+                logger.warn('[Dashboard] Authentication token invalid or expired during verification');
+                
+                // Clear any stale auth data
+                if (typeof localStorage !== 'undefined') {
+                  localStorage.removeItem('accessToken');
+                  localStorage.removeItem('idToken');
+                }
+                
+                // Redirect to sign-in page with return URL
+                const returnUrl = encodeURIComponent(window.location.pathname);
+                window.location.href = `/auth/signin?returnUrl=${returnUrl}&authError=true`;
+                return;
+              }
             }
-          }
+          }, 2000);
+        } else {
+          logger.error('[Dashboard] Failed to update Cognito attributes directly');
+          // Retry after a delay
+          setTimeout(() => {
+            logger.info('[Dashboard] Retrying Cognito attribute update...');
+            setCognitoUpdateNeeded(true);
+          }, 5000);
         }
       } catch (error) {
-        console.error('[Dashboard] Error checking setup status:', error);
+        logger.error('[Dashboard] Error updating Cognito attributes:', error);
+        
+        // Handle authentication errors
+        if (error.toString().includes('User needs to be authenticated') || 
+            error.toString().includes('UnAuthenticated') ||
+            error.toString().includes('Token expired')) {
+          logger.warn('[Dashboard] Authentication token invalid or expired during update');
+          
+          // Clear any stale auth data
+          if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('idToken');
+          }
+          
+          // Redirect to sign-in page with return URL
+          const returnUrl = encodeURIComponent(window.location.pathname);
+          window.location.href = `/auth/signin?returnUrl=${returnUrl}&authError=true`;
+          return;
+        }
+        
+        // For other errors, retry after a delay
+        setTimeout(() => {
+          logger.info('[Dashboard] Retrying Cognito attribute update after error...');
+          setCognitoUpdateNeeded(true);
+        }, 5000);
       }
-    }, 5000);
+    };
     
-    // Clean up interval on unmount
-    return () => clearInterval(statusInterval);
-  }, [setupStatus]);
-  
+    if (cognitoUpdateNeeded) {
+      updateCognitoIfNeeded();
+    }
+  }, [cognitoUpdateNeeded, updateCognitoOnboardingStatus]);
+
   return (
     <Dashboard setupStatus={setupStatus}>
       {children}

@@ -1,3 +1,4 @@
+// This file is server-side only - do not import in client components
 import { cookies, headers } from 'next/headers';
 import { logger } from '@/utils/logger';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
@@ -55,56 +56,78 @@ export async function validateServerSession(providedTokens) {
       clientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID
     });
 
-    // Verify access token
-    const payload = await verifier.verify(accessToken);
-    
-    // Extract all custom attributes from the token payload
-    const customAttributes = {};
-    Object.keys(payload).forEach(key => {
-      if (key.startsWith('custom:')) {
-        customAttributes[key] = payload[key];
-      }
-    });
-    
-    // Create user object from token payload and cookies
-    const user = {
-      userId: payload.sub,
-      username: payload.username,
-      attributes: {
-        ...customAttributes,
-        sub: payload.sub,
-        email: payload.email,
-        'custom:onboarding': payload['custom:onboarding'] || onboardedStatus || 'NOT_STARTED',
-        'custom:businessid': payload['custom:businessid'] || tenantId
-      }
-    };
-    
-    // Log the user attributes for debugging
-    logger.debug('[ServerUtils] User attributes:', {
-      fromToken: {
-        onboarding: payload['custom:onboarding'],
-        businessId: payload['custom:businessid']
-      },
-      fromCookies: {
+    try {
+      const verifiedToken = await verifier.verify(accessToken);
+      logger.debug('[ServerUtils] Token verified successfully');
+      
+      return {
+        verified: true,
+        username: verifiedToken.username || verifiedToken.sub,
+        sub: verifiedToken.sub,
+        accessToken,
+        idToken,
+        onboardingStep,
         onboardedStatus,
         tenantId
-      },
-      final: {
-        onboarding: user.attributes['custom:onboarding'],
-        businessId: user.attributes['custom:businessid']
-      }
-    });
-
-    const tokens = {
-      accessToken: { toString: () => accessToken },
-      idToken: { toString: () => idToken }
-    };
-
-    logger.debug('[ServerUtils] Session tokens validated');
-
-    return { tokens, user };
+      };
+    } catch (verifyError) {
+      logger.error('[ServerUtils] Token verification failed:', verifyError);
+      throw new Error(`Token verification failed: ${verifyError.message}`);
+    }
   } catch (error) {
     logger.error('[ServerUtils] Session validation failed:', error);
     throw error;
+  }
+}
+
+export async function getServerUserFromToken(token) {
+  try {
+    if (!token) {
+      logger.error('[ServerUtils] No token provided for user extraction');
+      return null;
+    }
+    
+    // Parse the token - this is simplified and NOT proper verification
+    // For real security, use the verifier from validateServerSession
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = Buffer.from(base64, 'base64').toString('utf8');
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        logger.error('[ServerUtils] Error parsing JWT:', e);
+        return null;
+      }
+    }
+    
+    const decodedToken = parseJwt(token);
+    if (!decodedToken) {
+      return null;
+    }
+    
+    const username = decodedToken.username || decodedToken['cognito:username'] || decodedToken.sub;
+    const email = decodedToken.email || null;
+    const sub = decodedToken.sub;
+    
+    // Extract custom attributes if they exist
+    const customAttributes = {};
+    Object.keys(decodedToken).forEach(key => {
+      if (key.startsWith('custom:')) {
+        const customKey = key.replace('custom:', '');
+        customAttributes[customKey] = decodedToken[key];
+      }
+    });
+    
+    return {
+      username,
+      email,
+      sub,
+      ...customAttributes,
+      _raw: decodedToken
+    };
+  } catch (error) {
+    logger.error('[ServerUtils] Error getting user from token:', error);
+    return null;
   }
 }

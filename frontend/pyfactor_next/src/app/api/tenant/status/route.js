@@ -1,157 +1,295 @@
 import { NextResponse } from 'next/server';
-import { validateServerSession } from '@/utils/serverAuth';
-import { serverAxiosInstance } from '@/lib/axiosConfig';
+import { validateServerSession } from '@/utils/serverUtils';
 import { logger } from '@/utils/logger';
-import { cookies } from 'next/headers';
+import { serverAxiosInstance } from '@/lib/axios/serverConfig';
 
-export async function GET(request) {
+export async function POST(request) {
   try {
-    // Get auth session
-    let session;
-    try {
-      session = await validateServerSession();
-      logger.debug('[API:tenant/status] Session validated successfully', { 
-        hasSession: !!session,
-        hasTokens: session?.tokens ? 'yes' : 'no'
-      });
-    } catch (error) {
-      logger.error('[API:tenant/status] Session validation failed', {
-        error: error.message,
-        stack: error.stack
-      });
+    // Validate server session
+    const sessionValidation = await validateServerSession();
+    if (!sessionValidation.user) {
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'Authentication required' }, 
         { status: 401 }
       );
     }
-
-    if (!session || !session.tokens?.accessToken) {
-      logger.error('[API:tenant/status] Missing tokens in session', { 
-        session: session ? 'exists' : 'missing',
-        accessToken: session?.tokens?.accessToken ? 'exists' : 'missing'
-      });
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    // Extract tenant ID from cookies or headers
-    const cookieStore = cookies();
-    let tenantId = cookieStore.get('tenantId')?.value;
-    if (!tenantId) {
-      tenantId = request.headers.get('x-tenant-id');
-    }
-
-    if (!tenantId) {
-      logger.error('[API:tenant/status] No tenant ID found in cookies or headers');
-      return NextResponse.json(
-        { error: 'No tenant ID available' },
-        { status: 400 }
-      );
-    }
-
-    const schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
-    logger.info('[API:tenant/status] Tenant status check - triggering schema creation:', { 
-      tenantId,
-      schemaName
-    });
-
-    // Prepare headers with auth tokens
-    const headers = {
-      'Authorization': `Bearer ${session.tokens.accessToken}`,
-      'X-Id-Token': session.tokens.idToken,
-      'Content-Type': 'application/json',
-      'X-Tenant-ID': tenantId,
-      'X-Schema-Name': schemaName
+    
+    const { user, tokens } = sessionValidation;
+    const userId = user.sub || user.userId;
+    const userEmail = user.email;
+    
+    // Extract request data
+    const body = await request.json();
+    const { tenantId: requestTenantId, checkOnly = false, forceSync = false } = body;
+    
+    // Collect all potential tenant IDs from different sources for consistency check
+    const potentialTenantIds = {
+      cognito: user.attributes?.['custom:businessid'],
+      request: requestTenantId,
+      cookie: request.cookies.get('tenantId')?.value,
     };
-
-    try {
-      // First check if schema exists using a direct endpoint to avoid initialization if already present
-      const checkResponse = await serverAxiosInstance.get(
-        '/api/tenant/exists/', 
-        { headers }
-      );
-      
-      logger.debug('[API:tenant/status] Schema existence check response:', checkResponse.data);
-      
-      if (checkResponse.data.exists && checkResponse.data.schema_exists) {
-        logger.info('[API:tenant/status] Tenant schema already exists, returning success');
-        return NextResponse.json({
-          success: true,
-          message: 'Tenant schema already exists',
-          schema_exists: true,
-          schema_name: schemaName,
-          tenant_id: tenantId
-        });
-      }
-    } catch (checkError) {
-      logger.warn('[API:tenant/status] Schema existence check failed, proceeding to creation', {
-        error: checkError.message
-      });
-      // Continue to creation attempt if check fails
-    }
-
-    // Call dashboard schema setup endpoint directly instead of the /tenant/ensure-schema endpoint
-    try {
-      logger.debug('[API:tenant/status] Calling dashboard schema setup endpoint');
-      
-      const response = await serverAxiosInstance.post(
-        '/api/dashboard/schema-setup/',
-        { 
-          tenantId,
-          force: true // Force schema creation even if it exists
-        },
-        { headers }
-      );
-      
-      logger.info('[API:tenant/status] Schema setup response:', response.data);
-      
-      return NextResponse.json({
-        success: true,
-        message: 'Tenant schema creation triggered',
-        ...response.data
-      });
-    } catch (setupError) {
-      logger.error('[API:tenant/status] Schema setup request failed', {
-        error: setupError.message,
-        response: setupError.response?.data,
-        status: setupError.response?.status
-      });
-      
-      // Fall back to a lighter-weight tenant creation endpoint if dashboard setup fails
-      try {
-        const fallbackResponse = await serverAxiosInstance.post(
-          '/api/tenant/create/',
-          { tenantId },
-          { headers }
-        );
-        
-        logger.info('[API:tenant/status] Fallback tenant creation successful:', fallbackResponse.data);
-        
-        return NextResponse.json({
-          success: true,
-          message: 'Tenant schema created via fallback',
-          ...fallbackResponse.data
-        });
-      } catch (fallbackError) {
-        throw new Error(`Both schema setup and fallback creation failed: ${fallbackError.message}`);
-      }
-    }
-  } catch (error) {
-    logger.error('[API:tenant/status] Error processing request:', {
-      error: error.message,
-      stack: error.stack,
-      cause: error.cause?.message
+    
+    logger.info('[API] Tenant status check with potential IDs:', {
+      cognito: potentialTenantIds.cognito,
+      request: potentialTenantIds.request,
+      cookie: potentialTenantIds.cookie,
+      userId,
+      userEmail,
+      checkOnly,
+      forceSync
     });
     
+    // Priority order: Cognito ID > Request ID > Cookie ID
+    // CRITICAL: Cognito is the source of truth for tenant ID
+    let finalTenantId = potentialTenantIds.cognito || 
+                       potentialTenantIds.request || 
+                       potentialTenantIds.cookie;
+    
+    // Log mismatch if there's any inconsistency
+    if (potentialTenantIds.cognito && 
+        (potentialTenantIds.cognito !== potentialTenantIds.request || 
+         potentialTenantIds.cognito !== potentialTenantIds.cookie)) {
+      logger.warn('[API] Tenant ID mismatch detected:', {
+        cognito: potentialTenantIds.cognito,
+        request: potentialTenantIds.request,
+        cookie: potentialTenantIds.cookie,
+        using: finalTenantId
+      });
+    }
+    
+    // If no valid tenant ID is found, generate a deterministic one based on user ID
+    if (!finalTenantId) {
+      const { v5: uuidv5 } = require('uuid');
+      const TENANT_NAMESPACE = '9a551c44-4ade-4f89-b078-0af8be794c23';
+      
+      // Generate tenant ID deterministically from user ID
+      finalTenantId = uuidv5(userId, TENANT_NAMESPACE);
+      
+      logger.warn('[API] No valid tenant ID found, generating deterministic ID from user ID:', {
+        userId,
+        generatedId: finalTenantId
+      });
+      
+      // Sync the new tenant ID to Cognito if needed
+      if (forceSync || !potentialTenantIds.cognito) {
+        try {
+          // Update Cognito with this generated ID
+          logger.info('[API] Syncing generated tenant ID to Cognito:', finalTenantId);
+          
+          await serverAxiosInstance({
+            method: 'POST',
+            url: '/api/user/update-attributes',
+            headers: {
+              Authorization: `Bearer ${tokens.accessToken}`
+            },
+            data: {
+              attributes: {
+                'custom:businessid': finalTenantId
+              }
+            }
+          });
+          
+          logger.info('[API] Successfully synced tenant ID to Cognito');
+        } catch (syncError) {
+          logger.error('[API] Failed to sync tenant ID to Cognito:', syncError);
+        }
+      }
+    }
+    
+    // Sync to Cognito if requested or if there's a mismatch
+    if (forceSync && potentialTenantIds.cognito !== finalTenantId) {
+      try {
+        logger.info('[API] Force syncing tenant ID to Cognito:', finalTenantId);
+        
+        await serverAxiosInstance({
+          method: 'POST',
+          url: '/api/user/update-attributes',
+          headers: {
+            Authorization: `Bearer ${tokens.accessToken}`
+          },
+          data: {
+            attributes: {
+              'custom:businessid': finalTenantId
+            }
+          }
+        });
+        
+        logger.info('[API] Successfully force synced tenant ID to Cognito');
+      } catch (syncError) {
+        logger.error('[API] Failed to force sync tenant ID to Cognito:', syncError);
+      }
+    }
+    
+    // Check if schema exists by making a request to the backend
+    const schemaCheckUrl = '/api/dashboard/check-schema';
+    logger.info(`[API] Checking if schema exists for tenant ID: ${finalTenantId}`);
+    
+    try {
+      const schemaCheckResponse = await serverAxiosInstance({
+        method: 'POST',
+        url: schemaCheckUrl,
+        headers: {
+          Authorization: `Bearer ${tokens.accessToken}`,
+          'x-tenant-id': finalTenantId
+        },
+        data: {
+          tenantId: finalTenantId
+        }
+      });
+      
+      const schemaExists = schemaCheckResponse.data.exists;
+      logger.info(`[API] Schema check result: ${schemaExists ? 'exists' : 'does not exist'}`);
+      
+      // If only checking schema existence, return now
+      if (checkOnly) {
+        return NextResponse.json({
+          tenantId: finalTenantId,
+          schemaExists,
+          potentialIds: potentialTenantIds
+        });
+      }
+      
+      // Otherwise, proceed with schema setup if needed
+      if (!schemaExists) {
+        logger.info('[API] Schema does not exist, initiating schema setup');
+        
+        try {
+          // Try different schema setup endpoints with fallbacks
+          let schemaSetupResponse;
+          
+          try {
+            // First try the preferred endpoint
+            schemaSetupResponse = await serverAxiosInstance({
+              method: 'POST',
+              url: '/api/dashboard/schema-setup',
+              headers: {
+                Authorization: `Bearer ${tokens.accessToken}`,
+                'x-tenant-id': finalTenantId
+              },
+              data: {
+                tenantId: finalTenantId
+              },
+              timeout: 30000 // Increase timeout for schema creation
+            });
+            
+            logger.info('[API] Schema setup successful via dashboard endpoint');
+          } catch (primaryError) {
+            logger.warn('[API] Primary schema setup failed, trying fallback:', primaryError.message);
+            
+            // Fallback to older endpoint if primary fails
+            schemaSetupResponse = await serverAxiosInstance({
+              method: 'POST',
+              url: '/api/tenant/create',
+              headers: {
+                Authorization: `Bearer ${tokens.accessToken}`,
+                'x-tenant-id': finalTenantId
+              },
+              data: {
+                tenantId: finalTenantId,
+                forceMigration: true
+              },
+              timeout: 30000 // Increase timeout for schema creation
+            });
+            
+            logger.info('[API] Schema setup successful via fallback endpoint');
+          }
+          
+          // Update Cognito attributes to mark onboarding as complete
+          try {
+            logger.info('[API] Updating Cognito attributes after schema setup');
+            
+            await serverAxiosInstance({
+              method: 'POST',
+              url: '/api/user/update-attributes',
+              headers: {
+                Authorization: `Bearer ${tokens.accessToken}`
+              },
+              data: {
+                attributes: {
+                  'custom:businessid': finalTenantId,
+                  'custom:onboarding': 'COMPLETE',
+                  'custom:setupdone': 'TRUE'
+                }
+              }
+            });
+            
+            logger.info('[API] Successfully updated Cognito onboarding attributes');
+          } catch (attributeError) {
+            logger.error('[API] Failed to update Cognito attributes:', attributeError);
+          }
+          
+          // Return success response
+          const response = NextResponse.json({
+            tenantId: finalTenantId,
+            schemaExists: true,
+            schemaCreated: true,
+            message: 'Tenant schema setup completed successfully',
+            onboardingComplete: true
+          });
+          
+          // Set cookies for client-side consistency
+          response.cookies.set('tenantId', finalTenantId, {
+            path: '/',
+            maxAge: 60 * 60 * 24 * 30 // 30 days
+          });
+          
+          response.cookies.set('onboardedStatus', 'COMPLETE', {
+            path: '/',
+            maxAge: 60 * 60 * 24 * 30 // 30 days
+          });
+          
+          response.cookies.set('onboardingStep', 'dashboard', {
+            path: '/',
+            maxAge: 60 * 60 * 24 * 30 // 30 days
+          });
+          
+          return response;
+        } catch (setupError) {
+          logger.error('[API] Failed to set up schema:', setupError);
+          
+          return NextResponse.json(
+            { 
+              error: 'Failed to set up tenant schema',
+              message: setupError.message,
+              tenantId: finalTenantId,
+              clientShouldUpdateCognito: true 
+            },
+            { status: 500 }
+          );
+        }
+      } else {
+        // Schema exists, return success and set cookies for consistency
+        const response = NextResponse.json({
+          tenantId: finalTenantId,
+          schemaExists: true,
+          message: 'Tenant schema already exists'
+        });
+        
+        // Set cookies for client-side consistency
+        response.cookies.set('tenantId', finalTenantId, {
+          path: '/',
+          maxAge: 60 * 60 * 24 * 30 // 30 days
+        });
+        
+        return response;
+      }
+    } catch (error) {
+      logger.error('[API] Error checking schema status:', error);
+      
+      return NextResponse.json(
+        { 
+          error: 'Failed to check schema status',
+          message: error.message,
+          tenantId: finalTenantId
+        },
+        { status: 500 }
+      );
+    }
+  } catch (error) {
+    logger.error('[API] Error in tenant status endpoint:', error);
+    
     return NextResponse.json(
-      { 
-        success: false,
-        error: 'Failed to create tenant schema',
-        message: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      },
+      { error: 'Internal server error', message: error.message },
       { status: 500 }
     );
   }

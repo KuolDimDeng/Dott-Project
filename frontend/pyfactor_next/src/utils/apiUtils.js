@@ -2,121 +2,178 @@
  * Utility functions for API routes
  */
 import { logger } from './logger';
-import { getTenantId } from './tenantUtils';
-import { cookies } from 'next/headers';
+// Use dynamic import for server components
 
 /**
- * Extract authentication tokens and tenant ID from request
- * 
- * @param {Request} request - The incoming request object
- * @returns {Object} Object containing accessToken, idToken, and tenantId
+ * Helper function to check if code is running on server
+ * @returns {boolean} True if running on server
+ */
+export const isServer = () => typeof window === 'undefined';
+
+/**
+ * Extract tokens from the request
+ * @param {Request} request - The incoming request
+ * @returns {Object} Object containing the extracted tokens
  */
 export async function getTokens(request) {
   logger.debug('[ApiUtils] Extracting tokens from request');
+
+  let accessToken = null;
+  let idToken = null;
+  let tenantId = null;
   
-  try {
-    // Initialize default return values
-    let accessToken = null;
-    let idToken = null;
-    let tenantId = null;
-    
-    // Try to get tokens from authorization headers first
+  // Check if authorization header exists
+  if (request && request.headers) {
     const authHeader = request.headers.get('authorization');
-    const idTokenHeader = request.headers.get('x-id-token');
-    const tenantIdHeader = request.headers.get('x-tenant-id');
-    
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      accessToken = authHeader.split(' ')[1];
+      accessToken = authHeader.substring(7);
+      logger.debug('[ApiUtils] Found access token in Authorization header');
     }
     
-    if (idTokenHeader) {
-      idToken = idTokenHeader;
+    // Check other potential headers
+    idToken = request.headers.get('x-id-token') || null;
+    if (idToken) {
+      logger.debug('[ApiUtils] Found ID token in x-id-token header');
     }
     
-    if (tenantIdHeader) {
-      tenantId = tenantIdHeader;
+    tenantId = request.headers.get('x-tenant-id') || null;
+    if (tenantId) {
+      logger.debug('[ApiUtils] Found tenant ID in x-tenant-id header');
     }
-    
-    // If not in headers, try to get from cookies
-    if (!accessToken || !idToken || !tenantId) {
-      try {
-        const cookieStore = cookies();
-        
-        if (!accessToken) {
-          // Try multiple potential cookie names
-          accessToken = cookieStore.get('accessToken')?.value || 
-                        cookieStore.get('access_token')?.value || 
-                        cookieStore.get('CognitoIdentityServiceProvider.*_accessToken')?.value;
-        }
-        
-        if (!idToken) {
-          // Try multiple potential cookie names
-          idToken = cookieStore.get('idToken')?.value || 
-                   cookieStore.get('id_token')?.value || 
-                   cookieStore.get('CognitoIdentityServiceProvider.*_idToken')?.value;
-        }
-        
-        if (!tenantId) {
-          tenantId = cookieStore.get('tenantId')?.value || 
-                    cookieStore.get('businessId')?.value;
-        }
-        
-        // Log all cookies for debugging (only in dev)
-        if (process.env.NODE_ENV === 'development') {
-          const allCookies = cookieStore.getAll();
-          logger.debug(`[ApiUtils] Found ${allCookies.length} cookies in request`);
-          allCookies.forEach(cookie => {
-            if (!cookie.name.toLowerCase().includes('token')) {
-              logger.debug(`[ApiUtils] Cookie: ${cookie.name}`);
-            } else {
-              logger.debug(`[ApiUtils] Auth Cookie present: ${cookie.name}`);
-            }
-          });
-        }
-        
-        // If still not found, parse raw cookie header (fallback)
-        if ((!accessToken || !idToken) && request.headers.has('cookie')) {
-          const cookieHeader = request.headers.get('cookie');
-          const cookiePairs = cookieHeader.split(';');
-          
-          cookiePairs.forEach(pair => {
-            const [name, value] = pair.trim().split('=');
-            if (name && value) {
-              if (name.includes('accessToken') && !accessToken) {
-                accessToken = value;
-              } else if (name.includes('idToken') && !idToken) {
-                idToken = value;
-              } else if (name.includes('tenantId') && !tenantId) {
-                tenantId = value;
-              }
-            }
-          });
-        }
-      } catch (cookieError) {
-        logger.error('[ApiUtils] Error accessing cookies:', cookieError);
+  }
+  
+  // If not in headers, try to get from cookies
+  if (!accessToken || !idToken || !tenantId) {
+    try {
+      // Dynamic import for server-side cookies
+      const { cookies } = await import('next/headers');
+      const cookieStore = cookies();
+      
+      if (!accessToken) {
+        // Try multiple potential cookie names
+        accessToken = cookieStore.get('accessToken')?.value || 
+                      cookieStore.get('access_token')?.value || 
+                      cookieStore.get('CognitoIdentityServiceProvider.*_accessToken')?.value;
       }
       
-      // If still not found and if we're on the server, use tenantId fallback
+      if (!idToken) {
+        // Try multiple potential cookie names
+        idToken = cookieStore.get('idToken')?.value || 
+                 cookieStore.get('id_token')?.value || 
+                 cookieStore.get('CognitoIdentityServiceProvider.*_idToken')?.value;
+      }
+      
       if (!tenantId) {
-        try {
-          // Hardcoded fallback tenant ID for server-side requests
-          tenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-          logger.debug('[ApiUtils] Using fallback tenant ID on server-side');
-        } catch (e) {
-          logger.debug('[ApiUtils] Error getting tenant ID from utils:', e);
+        tenantId = cookieStore.get('tenantId')?.value || 
+                  cookieStore.get('businessId')?.value;
+      }
+      
+      // Log all cookies for debugging (only in dev)
+      if (process.env.NODE_ENV === 'development') {
+        const allCookies = cookieStore.getAll();
+        logger.debug(`[ApiUtils] Found ${allCookies.length} cookies in request`);
+        allCookies.forEach(cookie => {
+          if (!cookie.name.toLowerCase().includes('token')) {
+            logger.debug(`[ApiUtils] Cookie: ${cookie.name}`);
+          } else {
+            logger.debug(`[ApiUtils] Auth Cookie present: ${cookie.name}`);
+          }
+        });
+      }
+    } catch (error) {
+      logger.warn('[ApiUtils] Error accessing cookies:', error.message);
+    }
+  }
+  
+  // If still no tokens, try to get from request cookies manually
+  if ((!accessToken || !idToken) && request && request.cookies) {
+    try {
+      // Some Next.js versions provide cookies directly on request
+      if (typeof request.cookies.get === 'function') {
+        if (!accessToken) {
+          accessToken = request.cookies.get('accessToken')?.value;
+        }
+        if (!idToken) {
+          idToken = request.cookies.get('idToken')?.value;
+        }
+        if (!tenantId) {
+          tenantId = request.cookies.get('tenantId')?.value;
         }
       }
+    } catch (error) {
+      logger.warn('[ApiUtils] Error accessing request cookies directly:', error.message);
     }
-    
-    logger.debug('[ApiUtils] Tokens extracted:', {
-      hasAccessToken: !!accessToken,
-      hasIdToken: !!idToken,
-      hasTenantId: !!tenantId
-    });
-    
-    return { accessToken, idToken, tenantId };
+  }
+  
+  return {
+    accessToken,
+    idToken,
+    tenantId
+  };
+}
+
+/**
+ * Get API base URL
+ * @returns {string} The base URL for API calls
+ */
+export function getApiBaseUrl() {
+  // In development, use the local API
+  // In production, use the deployed API URL from env vars
+  if (process.env.NODE_ENV === 'development') {
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  }
+  
+  return process.env.NEXT_PUBLIC_API_URL || '';
+}
+
+/**
+ * Create authorization headers with token
+ * @param {string} token - The auth token
+ * @param {string} tenantId - Optional tenant ID
+ * @returns {Headers} Headers object with authorization
+ */
+export function createAuthHeaders(token, tenantId = null) {
+  const headers = new Headers({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  });
+  
+  if (tenantId) {
+    headers.append('X-Tenant-ID', tenantId);
+  }
+  
+  return headers;
+}
+
+/**
+ * Handle API error responses
+ * @param {Response} response - The API response
+ * @returns {Promise<Object>} The error object
+ */
+export async function handleApiError(response) {
+  try {
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const errorData = await response.json();
+      return { 
+        status: response.status, 
+        message: errorData.detail || errorData.message || errorData.error || 'Unknown API error',
+        errors: errorData.errors || null,
+        data: errorData
+      };
+    } else {
+      const text = await response.text();
+      return { 
+        status: response.status, 
+        message: text || 'API error with non-JSON response',
+        raw: text
+      };
+    }
   } catch (error) {
-    logger.error('[ApiUtils] Error extracting tokens:', error);
-    return { accessToken: null, idToken: null, tenantId: null };
+    return { 
+      status: response.status || 500, 
+      message: `Failed to parse API error: ${error.message}`,
+      originalError: error.toString()
+    };
   }
 } 

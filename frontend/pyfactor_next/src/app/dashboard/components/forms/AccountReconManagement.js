@@ -1,39 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  IconButton,
-  Toolbar,
-  InputAdornment,
-  Drawer,
-  List,
-  ListItem,
-  ListItemText,
-  Checkbox,
-  useTheme,
-} from '@mui/material';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { axiosInstance } from '@/lib/axiosConfig';
 
 const AccountReconManagement = () => {
   const [reconciliations, setReconciliations] = useState([]);
   const [loading, setLoading] = useState(false);
-  const theme = useTheme();
 
   const [formData, setFormData] = useState({
     bank_account: '',
@@ -62,8 +32,8 @@ const AccountReconManagement = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleDateChange = (date) => {
-    setFormData({ ...formData, reconciliation_date: date });
+  const handleDateChange = (e) => {
+    setFormData({ ...formData, reconciliation_date: e.target.value });
   };
 
   const handleSubmit = async (event) => {
@@ -89,77 +59,160 @@ const AccountReconManagement = () => {
   };
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom>
-        Account Reconciliation
-      </Typography>
-      <Paper component="form" onSubmit={handleSubmit} sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-          <TextField
-            name="bank_account"
-            label="Bank Account ID"
-            value={formData.bank_account}
-            onChange={handleInputChange}
-            required
-          />
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DatePicker
-              label="Reconciliation Date"
-              value={formData.reconciliation_date}
-              onChange={handleDateChange}
-              renderInput={(params) => <TextField {...params} required />}
+    <div className="bg-gray-50 p-6 rounded-lg">
+      <h1 className="text-2xl font-bold mb-4">Account Reconciliation</h1>
+      
+      <form onSubmit={handleSubmit} className="mb-6 bg-white p-4 rounded-lg shadow-md">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label htmlFor="bank_account" className="block text-sm font-medium text-gray-700 mb-1">
+              Bank Account ID
+            </label>
+            <input
+              id="bank_account"
+              name="bank_account"
+              type="text"
+              className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              value={formData.bank_account}
+              onChange={handleInputChange}
+              required
             />
-          </LocalizationProvider>
-          <TextField
-            name="statement_balance"
-            label="Statement Balance"
-            type="number"
-            value={formData.statement_balance}
-            onChange={handleInputChange}
-            required
-          />
-          <TextField
-            name="book_balance"
-            label="Book Balance"
-            type="number"
-            value={formData.book_balance}
-            onChange={handleInputChange}
-            required
-          />
-          <Button type="submit" variant="contained" color="primary">
+          </div>
+          
+          <div>
+            <label htmlFor="reconciliation_date" className="block text-sm font-medium text-gray-700 mb-1">
+              Reconciliation Date
+            </label>
+            <input
+              id="reconciliation_date"
+              name="reconciliation_date"
+              type="date"
+              className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              value={formData.reconciliation_date || ''}
+              onChange={handleDateChange}
+              required
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="statement_balance" className="block text-sm font-medium text-gray-700 mb-1">
+              Statement Balance
+            </label>
+            <input
+              id="statement_balance"
+              name="statement_balance"
+              type="number"
+              step="0.01"
+              className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              value={formData.statement_balance}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="book_balance" className="block text-sm font-medium text-gray-700 mb-1">
+              Book Balance
+            </label>
+            <input
+              id="book_balance"
+              name="book_balance"
+              type="number"
+              step="0.01"
+              className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              value={formData.book_balance}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+        </div>
+        
+        <div className="mt-4">
+          <button 
+            type="submit" 
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
             Create Reconciliation
-          </Button>
-        </Box>
-      </Paper>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Bank Account</TableCell>
-              <TableCell>Reconciliation Date</TableCell>
-              <TableCell>Statement Balance</TableCell>
-              <TableCell>Book Balance</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {reconciliations.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>{row.bank_account.account_number}</TableCell>
-                <TableCell>{row.reconciliation_date}</TableCell>
-                <TableCell>{row.statement_balance}</TableCell>
-                <TableCell>{row.book_balance}</TableCell>
-                <TableCell>{row.is_reconciled ? 'Reconciled' : 'Pending'}</TableCell>
-                <TableCell>
-                  <Button onClick={() => handleReconcile(row.id)}>Reconcile</Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+          </button>
+        </div>
+      </form>
+      
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Bank Account
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Reconciliation Date
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Statement Balance
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Book Balance
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center">
+                    <div className="flex justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                    </div>
+                  </td>
+                </tr>
+              ) : reconciliations.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                    No reconciliations found
+                  </td>
+                </tr>
+              ) : (
+                reconciliations.map((row) => (
+                  <tr key={row.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {row.bank_account.account_number}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {row.reconciliation_date}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {row.statement_balance}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {row.book_balance}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${row.is_reconciled ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                        {row.is_reconciled ? 'Reconciled' : 'Pending'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button 
+                        onClick={() => handleReconcile(row.id)}
+                        className="text-indigo-600 hover:text-indigo-900"
+                      >
+                        Reconcile
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 };
 

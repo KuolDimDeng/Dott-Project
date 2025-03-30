@@ -5,6 +5,9 @@ import dynamic from 'next/dynamic';
 import React, { useEffect, useState, Suspense } from 'react';
 import { logger } from '@/utils/logger';
 import { ErrorBoundary } from 'react-error-boundary';
+import { useRouter } from 'next/navigation';
+import { fetchAuthSession, signOut } from 'aws-amplify/auth';
+import { initAxiosDebug } from '@/utils/debugAxios';
 
 // Dynamically load components with Next.js dynamic import
 const KeyboardFixerLoader = dynamic(
@@ -63,6 +66,110 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 
 export default function DashboardLayout({ children }) {
     const [showDebugger, setShowDebugger] = useState(false);
+    const router = useRouter();
+    
+    // Check for authentication errors early
+    useEffect(() => {
+        const checkAuthentication = async () => {
+            try {
+                // Try to get the current session
+                const authSession = await fetchAuthSession();
+                
+                // If we don't have valid tokens, redirect to sign in
+                if (!authSession?.tokens?.idToken || !authSession?.tokens?.accessToken) {
+                    logger.warn('[DashboardLayout] No valid session tokens found');
+                    
+                    // Clear any stale auth data
+                    if (typeof localStorage !== 'undefined') {
+                        localStorage.removeItem('accessToken');
+                        localStorage.removeItem('idToken');
+                    }
+                    
+                    // Redirect to sign-in page with return URL
+                    const returnUrl = encodeURIComponent(window.location.pathname);
+                    router.replace(`/auth/signin?returnUrl=${returnUrl}&authError=expired`);
+                    return;
+                }
+                
+                // Check if token is near expiration (within 5 minutes)
+                const expiresAt = authSession.tokens.accessToken.payload.exp * 1000;
+                const now = Date.now();
+                const timeToExpire = expiresAt - now;
+                
+                // If token expires in less than 5 minutes, try to refresh
+                if (timeToExpire < 5 * 60 * 1000) {
+                    logger.warn('[DashboardLayout] Token near expiration, redirecting to sign in');
+                    
+                    // Clear any stale auth data
+                    if (typeof localStorage !== 'undefined') {
+                        localStorage.removeItem('accessToken');
+                        localStorage.removeItem('idToken');
+                    }
+                    
+                    // Sign out first to clear the session
+                    try {
+                        await signOut();
+                        logger.info('[DashboardLayout] Signed out successfully due to expiring token');
+                    } catch (signOutError) {
+                        logger.error('[DashboardLayout] Error signing out:', signOutError);
+                    }
+                    
+                    // Redirect to sign-in page with return URL
+                    const returnUrl = encodeURIComponent(window.location.pathname);
+                    router.replace(`/auth/signin?returnUrl=${returnUrl}&auth=expired`);
+                    return;
+                }
+            } catch (error) {
+                logger.error('[DashboardLayout] Authentication check failed:', error);
+                
+                // If there's any auth error, redirect to login
+                const returnUrl = encodeURIComponent(window.location.pathname);
+                router.replace(`/auth/signin?returnUrl=${returnUrl}&authError=general`);
+            }
+        };
+        
+        checkAuthentication();
+    }, [router]);
+    
+    // Check onboarding status on mount
+    useEffect(() => {
+        const verifyOnboardingComplete = () => {
+            try {
+                // Get onboarding status from cookies
+                const getCookie = (name) => {
+                    const value = `; ${document.cookie}`;
+                    const parts = value.split(`; ${name}=`);
+                    if (parts.length === 2) return parts.pop().split(';').shift();
+                    return '';
+                };
+                
+                const onboardingStatus = getCookie('onboardedStatus');
+                const onboardingStep = getCookie('onboardingStep');
+                
+                logger.debug('[DashboardLayout] Verifying onboarding status:', {
+                    onboardingStatus,
+                    onboardingStep
+                });
+                
+                // If user is still in business info step, redirect to subscription
+                if (onboardingStatus === 'BUSINESS_INFO' || 
+                    (onboardingStep === 'subscription' && onboardingStatus !== 'COMPLETE')) {
+                    logger.warn('[DashboardLayout] User attempted to access dashboard without completing subscription');
+                    
+                    // Add a timestamp to avoid caching issues
+                    const timestamp = Date.now();
+                    
+                    // Redirect to subscription page
+                    router.replace(`/onboarding/subscription?ts=${timestamp}&from=dashboard`);
+                }
+            } catch (error) {
+                logger.error('[DashboardLayout] Error checking onboarding status:', error);
+                // Continue rendering dashboard as fallback
+            }
+        };
+        
+        verifyOnboardingComplete();
+    }, [router]);
     
     // Disable the debugger by default
     useEffect(() => {
@@ -183,6 +290,17 @@ export default function DashboardLayout({ children }) {
         };
     }, []);
     
+    // Initialize debug tools in development
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'development') {
+            try {
+                initAxiosDebug();
+            } catch (error) {
+                console.error('Failed to initialize Axios debug tools:', error);
+            }
+        }
+    }, []);
+    
     return (
         <div className="text-gray-900 bg-gray-50 min-h-screen">
             <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => {
@@ -196,7 +314,29 @@ export default function DashboardLayout({ children }) {
                     */}
                     <Suspense fallback={null}>
                       {React.createElement(
-                        React.lazy(() => import('./fixInputEvent')), 
+                        React.lazy(() => {
+                          return new Promise((resolve) => {
+                            // Add timeout handling to prevent blocking the UI
+                            const timeoutId = setTimeout(() => {
+                              logger.warn('[Dashboard] Input fixer import timed out, skipping');
+                              // Resolve with an empty component if the import times out
+                              resolve({ default: () => null });
+                            }, 5000);
+                            
+                            // Try to import the component
+                            import('./fixInputEvent')
+                              .then(module => {
+                                clearTimeout(timeoutId);
+                                resolve(module);
+                              })
+                              .catch(error => {
+                                clearTimeout(timeoutId);
+                                logger.error('[Dashboard] Error loading input fixer:', error);
+                                // Resolve with an empty component on error
+                                resolve({ default: () => null });
+                              });
+                          });
+                        }),
                         {}
                       )}
                     </Suspense>
@@ -207,8 +347,26 @@ export default function DashboardLayout({ children }) {
                         React.lazy(() => {
                           // Small delay to stagger the loading
                           return new Promise(resolve => {
+                            // Add timeout handling to prevent blocking the UI
+                            const timeoutId = setTimeout(() => {
+                              logger.warn('[Dashboard] Keyboard fixer import timed out, skipping');
+                              // Resolve with an empty component if the import times out
+                              resolve({ default: () => null });
+                            }, 5000);
+                            
+                            // Small delay to stagger the loading
                             setTimeout(() => {
-                              resolve(import('./components/forms/fixed/KeyboardEventFixer'));
+                              import('./components/forms/fixed/KeyboardEventFixer')
+                                .then(module => {
+                                  clearTimeout(timeoutId);
+                                  resolve(module);
+                                })
+                                .catch(error => {
+                                  clearTimeout(timeoutId);
+                                  logger.error('[Dashboard] Error loading keyboard fixer:', error);
+                                  // Resolve with an empty component on error
+                                  resolve({ default: () => null });
+                                });
                             }, 300);
                           });
                         }),
@@ -219,7 +377,28 @@ export default function DashboardLayout({ children }) {
                     {/* Add diagnostics component to help identify input issues */}
                     <Suspense fallback={null}>
                       {React.createElement(
-                        React.lazy(() => import('./RootDiagnostics')),
+                        React.lazy(() => {
+                          return new Promise(resolve => {
+                            // Add timeout handling to prevent blocking the UI
+                            const timeoutId = setTimeout(() => {
+                              logger.warn('[Dashboard] Diagnostics import timed out, skipping');
+                              // Resolve with an empty component if the import times out
+                              resolve({ default: () => null });
+                            }, 5000);
+                            
+                            import('./RootDiagnostics')
+                              .then(module => {
+                                clearTimeout(timeoutId);
+                                resolve(module);
+                              })
+                              .catch(error => {
+                                clearTimeout(timeoutId);
+                                logger.error('[Dashboard] Error loading diagnostics:', error);
+                                // Resolve with an empty component on error
+                                resolve({ default: () => null });
+                              });
+                          });
+                        }),
                         {}
                       )}
                     </Suspense>

@@ -1,9 +1,67 @@
+"""
+Base models for the custom_auth application.
+Includes User, Tenant, and other core models.
+"""
 #Users/kuoldeng/projectx/backend/pyfactor/custom_auth/models.py
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
 import uuid
+from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
+# Import tenant context
+from .tenant_context import get_current_tenant
+
+class TenantAwareModel(models.Model):
+    """
+    Abstract base model for all tenant-aware models.
+    Automatically filters queries by the current tenant.
+    All models that need to be tenant-specific should inherit from this.
+    """
+    tenant = models.ForeignKey(
+        'custom_auth.Tenant',
+        on_delete=models.CASCADE,
+        db_index=True,
+        related_name='+',  # Prevent reverse relation
+        help_text="The tenant this record belongs to"
+    )
+    
+    class Meta:
+        abstract = True
+    
+    def save(self, *args, **kwargs):
+        """
+        Override save to automatically set the tenant if not provided.
+        """
+        if not self.tenant_id:
+            current_tenant = get_current_tenant()
+            if current_tenant:
+                self.tenant_id = current_tenant
+        super().save(*args, **kwargs)
+
+class TenantManager(models.Manager):
+    """
+    Manager for tenant-aware models.
+    Automatically filters queries by the current tenant.
+    """
+    def get_queryset(self):
+        """
+        Override get_queryset to filter by tenant.
+        """
+        queryset = super().get_queryset()
+        current_tenant = get_current_tenant()
+        if current_tenant:
+            queryset = queryset.filter(tenant_id=current_tenant)
+        return queryset
+        
+    def all_tenants(self):
+        """
+        Return all records across all tenants.
+        Use with caution.
+        """
+        return super().get_queryset()
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -31,7 +89,6 @@ class UserManager(BaseUserManager):
 
 class Tenant(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    schema_name = models.CharField(max_length=63, unique=True)
     name = models.CharField(max_length=100)
     # Use UUID field directly to completely break circular dependency
     owner_id = models.UUIDField(null=True, blank=True)
@@ -58,35 +115,30 @@ class Tenant(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     
-    # Move these fields from UserProfile as they're tenant-specific
-    database_status = models.CharField(
-        max_length=50,
-        default='not_created',
-        choices=[
-            ('not_created', 'Not Created'),
-            ('pending', 'Pending'),
-            ('active', 'Active'),
-            ('inactive', 'Inactive'),
-            ('error', 'Error')
-        ]
-    )
+    # Tenant status fields
     setup_status = models.CharField(
         max_length=20,
         choices=[
             ('not_started', 'Not Started'),
             ('pending', 'Pending'),
             ('in_progress', 'In Progress'),
+            ('active', 'Active'),
             ('complete', 'Complete'),
             ('error', 'Error'),
         ],
         default='not_started'
     )
+    
+    # RLS-specific fields
+    rls_enabled = models.BooleanField(default=True, help_text="Whether Row Level Security is enabled for this tenant")
+    rls_setup_date = models.DateTimeField(null=True, blank=True, help_text="When RLS was first set up for this tenant")
+    
+    # These fields are still relevant for tenant management
     last_setup_attempt = models.DateTimeField(null=True, blank=True)
     setup_error_message = models.TextField(null=True, blank=True)
-    last_health_check = models.DateTimeField(null=True, blank=True)
-    setup_task_id = models.CharField(max_length=255, null=True, blank=True)
     storage_quota_bytes = models.BigIntegerField(default=2 * 1024 * 1024 * 1024)  # Default 2GB in bytes
-     # Add archive tracking fields
+    
+    # Add archive tracking fields
     last_archive_date = models.DateTimeField(null=True, blank=True)
     archive_retention_days = models.IntegerField(default=2555)  # 7 years default
     
@@ -104,15 +156,13 @@ class Tenant(models.Model):
         default='pending'
     )
 
-
-
     class Meta:
         db_table = 'custom_auth_tenant'
 
     def __str__(self):
         return self.name
 
-      # Helper methods for quota management
+    # Helper methods for quota management
     @property
     def storage_quota_gb(self):
         return self.storage_quota_bytes / (1024 * 1024 * 1024)

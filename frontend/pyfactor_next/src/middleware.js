@@ -1,108 +1,265 @@
 import { NextResponse } from 'next/server';
-import acceptLanguage from 'accept-language';
-import { i18n } from '../next-i18next.config.mjs';
+import { logger } from '@/utils/logger';
 
-// Set up accept-language with supported locales
-acceptLanguage.languages(i18n.locales);
-
-// Public routes that don't require authentication
+// Define public routes that don't require authentication
 const PUBLIC_ROUTES = [
   '/',
   '/auth/signin',
   '/auth/signup',
-  '/auth/forgot',
-  '/auth/reset',
   '/auth/forgot-password',
   '/auth/reset-password',
   '/auth/verify',
-  '/auth/verify-email',
   '/auth/callback',
-  '/privacy',
-  '/terms',
-  '/cookies',
-  '/contact',
-  '/about',
-  '/careers',
-  '/press',
-  '/blog',
-  '/favicon.ico'
-];
-
-// Public API routes that don't require authentication
-const PUBLIC_API_ROUTES = [
-  '/api/auth/check-existing-email',
-  '/api/onboarding/setup/trigger',
-  '/api/onboarding/setup/status',
-  '/api/auth/set-cookies',
   '/api/auth/callback',
-  '/api/onboarding/redirect',
-  '/api/user/profile'
+  '/_next',
+  '/favicon.ico',
+  '/manifest.json',
+  '/images',
+  '/fonts',
+  '/static',
+  '/docs'
 ];
 
-// Onboarding routes with their progression order
-const ONBOARDING_ROUTES = [
-  '/onboarding/business-info',
-  '/onboarding/subscription',
-  '/onboarding/payment',
-  '/onboarding/setup'
+// Define public API routes
+const PUBLIC_API_ROUTES = [
+  '/api/auth/signin',
+  '/api/auth/signup',
+  '/api/auth/reset-password',
+  '/api/auth/verify',
+  '/api/auth/callback',
+  '/api/auth/set-cookies',
+  '/api/auth/refresh'
 ];
 
-// Mapping of onboarding status to allowed paths
-const ALLOWED_PATHS = {
-  'NOT_STARTED': ['/onboarding/business-info'],
-  'BUSINESS_INFO': ['/onboarding/business-info', '/onboarding/subscription'],
-  'SUBSCRIPTION': ['/onboarding/business-info', '/onboarding/subscription', '/onboarding/payment', '/dashboard'],
-  'PAYMENT': ['/onboarding/business-info', '/onboarding/subscription', '/onboarding/payment', '/onboarding/setup'],
-  'SETUP': ['/onboarding/business-info', '/onboarding/subscription', '/onboarding/payment', '/onboarding/setup', '/dashboard'],
-  'COMPLETE': ['/dashboard']
-};
+// Define the onboarding steps in the required order
+const ONBOARDING_STEPS = [
+  'business-info',
+  'subscription',
+  'payment',
+  'setup',
+  'complete'
+];
 
-// Map status to next step
-const STATUS_TO_STEP = {
-  'NOT_STARTED': '/onboarding/business-info',
-  'BUSINESS_INFO': '/onboarding/subscription',
-  'SUBSCRIPTION': (cookies) => {
-    // Check if user has free plan selected
-    const selectedPlan = cookies.get('selectedPlan')?.value;
-    // If free plan, skip payment and go to dashboard
-    if (selectedPlan === 'free' || cookies.get('freePlanSelected')?.value === 'true') {
-      return '/dashboard';
+// Improved helper function to check if a route matches any patterns
+function routeMatches(pathname, patterns) {
+  return patterns.some(pattern => {
+    if (pattern.endsWith('*')) {
+      const prefix = pattern.slice(0, -1);
+      return pathname.startsWith(prefix);
     }
-    // Otherwise go to payment
+    return pathname === pattern;
+  });
+}
+
+// Helper function to get the current onboarding step from the URL
+function getOnboardingStepFromUrl(pathname) {
+  const parts = pathname.split('/');
+  if (parts.length >= 3 && parts[1] === 'onboarding') {
+    return parts[2];
+  }
+  return null;
+}
+
+// Helper to get the next onboarding step
+function getNextOnboardingStep(currentStep, selectedPlan) {
+  const currentIndex = ONBOARDING_STEPS.indexOf(currentStep);
+  if (currentIndex === -1) return 'business-info';
+  
+  // Skip payment for free plan
+  if (currentStep === 'subscription' && selectedPlan === 'free') {
+    return 'setup';
+  }
+  
+  // Go to the next step or dashboard if we've completed all steps
+  if (currentIndex < ONBOARDING_STEPS.length - 1) {
+    return ONBOARDING_STEPS[currentIndex + 1];
+  }
+  
+  return 'dashboard';
+}
+
+// Helper to check if a user should be redirected based on their onboarding status
+function shouldRedirectOnboarding(pathname, cookies) {
+  // Allow direct access to auth pages or non-onboarding pages
+  if (!pathname.includes('/onboarding/')) return null;
+  
+  // Get current onboarding step from URL
+  const urlStep = getOnboardingStepFromUrl(pathname);
+  if (!urlStep) return null;
+  
+  // Get steps from cookies
+  const cookieStep = cookies.get('onboardingStep')?.value;
+  const onboardingStatus = cookies.get('onboardedStatus')?.value;
+  const selectedPlan = cookies.get('selectedPlan')?.value;
+  
+  logger.debug('[Middleware] Checking onboarding navigation', {
+    urlStep,
+    cookieStep,
+    onboardingStatus,
+    selectedPlan,
+    pathname
+  });
+  
+  // If force parameter is present, allow the navigation
+  const url = new URL(pathname, 'http://localhost');
+  if (url.searchParams.get('force') === 'true') {
+    logger.debug('[Middleware] Force parameter present, allowing navigation');
+    return null;
+  }
+  
+  // Special case: Allow business-info access for new users
+  if (urlStep === 'business-info' && (!onboardingStatus || onboardingStatus === 'NOT_STARTED')) {
+    return null;
+  }
+  
+  // Check if trying to skip ahead
+  const urlStepIndex = ONBOARDING_STEPS.indexOf(urlStep);
+  const expectedStepIndex = cookieStep ? ONBOARDING_STEPS.indexOf(cookieStep) : 0;
+  
+  if (urlStepIndex > expectedStepIndex && expectedStepIndex >= 0) {
+    logger.debug('[Middleware] Attempting to skip ahead in onboarding flow', {
+      urlStepIndex,
+      expectedStepIndex,
+      urlStep,
+      cookieStep
+    });
+    
+    // Redirect to the expected step
+    return cookieStep ? `/onboarding/${cookieStep}` : '/onboarding/business-info';
+  }
+  
+  // Allow backward navigation
+  if (urlStepIndex <= expectedStepIndex) {
+    return null;
+  }
+  
+  // Default: no redirection needed
+  return null;
+}
+
+// Check if a user has completed onboarding based on their cookies or session
+export function isOnboardingComplete(session) {
+  if (!session) return false;
+
+  // If it's a cookies object
+  if (session.get) {
+    const onboardingStatus = session.get('onboardedStatus')?.value;
+    const setupCompleted = session.get('setupCompleted')?.value;
+    
+    // Only consider onboarding complete if explicitly set to COMPLETE
+    return onboardingStatus === 'COMPLETE' || setupCompleted === 'true';
+  }
+  
+  // If it's a session object with attributes
+  // Explicit check for "COMPLETE" - any other value (including null, undefined, or "INCOMPLETE") means onboarding is not complete
+  return session.attributes?.['custom:onboarding'] === 'COMPLETE';
+}
+
+// Get the appropriate onboarding step for redirection
+export function getOnboardingRedirectPath(cookies) {
+  const onboardingStep = cookies.get('onboardingStep')?.value;
+  const onboardingStatus = cookies.get('onboardedStatus')?.value;
+  
+  // If we have a specific step, use it (unless it's 'dashboard' or 'complete')
+  if (onboardingStep && !['dashboard', 'complete'].includes(onboardingStep)) {
+    return `/onboarding/${onboardingStep}`;
+  }
+  
+  // Otherwise derive the step from status
+  if (onboardingStatus === 'BUSINESS_INFO') {
+    return '/onboarding/subscription';
+  } else if (onboardingStatus === 'SUBSCRIPTION') {
     return '/onboarding/payment';
-  },
-  'PAYMENT': '/onboarding/setup',
-  'SETUP': '/dashboard',
-  'COMPLETE': '/dashboard'
-};
+  } else if (onboardingStatus === 'PAYMENT') {
+    return '/onboarding/setup';
+  } else {
+    // Default to business-info for new users or any unknown state
+    return '/onboarding/business-info';
+  }
+}
+
+// Determine if a user should be redirected to onboarding
+export function shouldRedirectToOnboarding(pathname, cookies) {
+  // Public routes, auth routes, and onboarding routes don't need redirection
+  if (isPublicRoute(pathname)) return false;
+  if (pathname.startsWith('/auth')) return false;
+  if (pathname.startsWith('/onboarding')) return false;
+
+  // If not onboarded, user should be redirected
+  const isOnboarded = isOnboardingComplete(cookies);
+  
+  if (!isOnboarded) {
+    return getOnboardingRedirectPath(cookies);
+  }
+  
+  return false;
+}
+
+// Helper function to check if a route is public
+export function isPublicRoute(pathname) {
+  return PUBLIC_ROUTES.some(route => pathname.startsWith(route));
+}
 
 export function middleware(request) {
   // Get the pathname from the URL
-  const pathname = request.nextUrl.pathname;
-  const origin = request.nextUrl.origin;
-  
-  // Check for force flag in URL - bypass middleware checks if present
-  if (request.nextUrl.searchParams.has('force')) {
-    console.log(`[Middleware] Force flag detected in URL, bypassing middleware checks for: ${pathname}`);
+  const { pathname } = request.nextUrl;
+  const isApiRoute = pathname.startsWith('/api/');
+
+  // Log middleware request for debugging
+  if (process.env.NODE_ENV === 'development') {
+    logger.debug(`[Middleware] Processing ${pathname}`, {
+      cookies: request.cookies.getAll().map(c => c.name),
+      hasAuthToken: !!request.cookies.get('authToken')?.value
+    });
+  }
+
+  // Allow public routes
+  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
     return NextResponse.next();
   }
-  
-  // Check for signin redirect loop - important safeguard
-  if (pathname === '/auth/signin' && request.nextUrl.searchParams.has('from')) {
-    console.log(`[Middleware] Detected potential redirect loop at signin page with 'from' parameter, bypassing middleware`);
-    return NextResponse.next();
+
+  // Forward directly to dashboard if on root
+  if (pathname === '/') {
+    // Check for auth cookie
+    const authToken = request.cookies.get('authToken')?.value;
+    const idToken = request.cookies.get('idToken')?.value;
+
+    if (authToken || idToken) {
+      // Check onboarding status
+      const onboardingStatus = request.cookies.get('onboardedStatus')?.value;
+      const onboardingStep = request.cookies.get('onboardingStep')?.value;
+      const setupCompleted = request.cookies.get('setupCompleted')?.value;
+      
+      logger.debug('[Middleware] Root path with auth, checking redirection', {
+        onboardingStatus,
+        onboardingStep,
+        setupCompleted
+      });
+
+      // If setup is completed or onboarding is complete, go to dashboard
+      if (setupCompleted === 'true' || onboardingStatus === 'COMPLETE') {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+
+      // If user is in onboarding, direct them to the appropriate step
+      return NextResponse.redirect(new URL(getOnboardingRedirectPath(request.cookies), request.url));
+    }
+
+    // If not authenticated, redirect to sign in
+    return NextResponse.redirect(new URL('/auth/signin', request.url));
   }
-  
-  // Always pass through for public routes
-  const isPublicRoute = PUBLIC_ROUTES.some(route => 
-    pathname === route || pathname.startsWith(`${route}/`));
-  
-  if (isPublicRoute) {
-    return NextResponse.next();
+
+  // Check if the user needs to be redirected to onboarding
+  const onboardingRedirectPath = shouldRedirectToOnboarding(pathname, request.cookies);
+  if (onboardingRedirectPath) {
+    logger.debug('[Middleware] Redirecting to onboarding', {
+      from: pathname,
+      to: onboardingRedirectPath
+    });
+    return NextResponse.redirect(new URL(onboardingRedirectPath, request.url));
   }
   
   // For protected API routes, verify token
-  // (simplified; in production, you'd verify the token more thoroughly)
   if (pathname.startsWith('/api/')) {
     // Check for public API routes first
     if (PUBLIC_API_ROUTES.some(route => pathname.startsWith(route))) {
@@ -120,7 +277,7 @@ export function middleware(request) {
       
       // Add special headers for onboarding routes
       if (pathname.includes('business-info') || pathname.includes('state')) {
-        console.log(`[Middleware] Adding lenient access headers for onboarding API route: ${pathname}`);
+        logger.debug(`[Middleware] Adding lenient access headers for onboarding API route: ${pathname}`);
         newResponse.headers.set('X-Lenient-Access', 'true');
         newResponse.headers.set('X-Allow-Partial', 'true');
         newResponse.headers.set('X-Onboarding-Route', 'true');
@@ -153,157 +310,17 @@ export function middleware(request) {
   // Clone headers
   const response = NextResponse.next();
   
-  // Step 1: Check if user is authenticated for non-public routes
-  // Check for Cognito tokens since authToken might not be set yet
-  const idToken = request.cookies.get('CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.LastAuthUser')?.value;
-  const authToken = request.cookies.get('authToken')?.value;
-  
-  if (!idToken && !authToken) {
-    // User is not authenticated, redirect to signin with the intended destination
-    console.log(`[Middleware] User not authenticated, redirecting to sign in`);
-    url.pathname = '/auth/signin';
-    url.searchParams.set('from', pathname);
-    return NextResponse.redirect(url);
-  }
-  
-  // Set default onboarding values if authenticated but values missing
-  if (idToken && !request.cookies.get('onboardedStatus')?.value) {
-    console.log(`[Middleware] Found Cognito tokens but no onboarding status, setting defaults`);
-    
-    response.cookies.set('onboardedStatus', 'NOT_STARTED', {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7 // 7 days
-    });
-    
-    response.cookies.set('onboardingStep', 'business-info', {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7 // 7 days
-    });
-  }
-  
-  // Check for status mismatch between Cognito token and cookies - fix if necessary
-  try {
-    // Extract status from ID token if available
-    const cognito_idToken = request.cookies.get('idToken')?.value;
-    if (cognito_idToken) {
-      // Simple decode without verification (middleware context only)
-      const tokenParts = cognito_idToken.split('.');
-      if (tokenParts.length === 3) {
-        try {
-          const tokenPayload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
-          const cognitoOnboardingStatus = tokenPayload['custom:onboarding'];
-          const cookieOnboardingStatus = request.cookies.get('onboardedStatus')?.value;
-          
-          // If there's a mismatch and Cognito has a valid status, update the cookie
-          if (cognitoOnboardingStatus && cognitoOnboardingStatus !== cookieOnboardingStatus) {
-            console.log(`[Middleware] Fixing onboarding status mismatch: Cognito=${cognitoOnboardingStatus}, Cookie=${cookieOnboardingStatus}`);
-            
-            response.cookies.set('onboardedStatus', cognitoOnboardingStatus, {
-              path: '/',
-              maxAge: 60 * 60 * 24 * 7 // 7 days
-            });
-            
-            // Also update step based on status
-            let nextStep = 'business-info';
-            if (cognitoOnboardingStatus === 'BUSINESS_INFO') {
-              nextStep = 'subscription';
-            } else if (cognitoOnboardingStatus === 'SUBSCRIPTION') {
-              nextStep = 'payment';
-            } else if (cognitoOnboardingStatus === 'PAYMENT') {
-              nextStep = 'setup';
-            } else if (cognitoOnboardingStatus === 'SETUP' || cognitoOnboardingStatus === 'COMPLETE') {
-              nextStep = 'dashboard';
-            }
-            
-            response.cookies.set('onboardingStep', nextStep, {
-              path: '/',
-              maxAge: 60 * 60 * 24 * 7 // 7 days
-            });
-          }
-        } catch (tokenParseError) {
-          console.error(`[Middleware] Error parsing token:`, tokenParseError.message);
-        }
-      }
-    }
-  } catch (tokenError) {
-    console.error(`[Middleware] Error processing token:`, tokenError.message);
-  }
-  
-  // Step 4: Handle onboarding routes
-  if (pathname.startsWith('/onboarding/') || pathname === '/dashboard') {
-    // Get onboarding status
-    const onboardedStatus = request.cookies.get('onboardedStatus')?.value || 'NOT_STARTED';
-    const onboardingStep = request.cookies.get('onboardingStep')?.value || 'business-info';
-    
-    console.log(`[Middleware] Onboarding route check: ${pathname}`, {
-      status: onboardedStatus,
-      step: onboardingStep,
-      allCookies: [...request.cookies.getAll()].map(c => `${c.name}=${c.value}`).join('; ')
-    });
-    
-    // Handle completed onboarding
-    if (onboardedStatus === 'COMPLETE' && pathname !== '/dashboard') {
-      console.log(`[Middleware] User has COMPLETE status, redirecting to dashboard`);
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-    
-    // Special case for business-info page - always allow access
-    if (pathname === '/onboarding/business-info') {
-      console.log(`[Middleware] Allowing access to business-info page`);
-      return response;
-    }
-    
-    // Special case for subscription page - explicitly allow if status is BUSINESS_INFO
-    if (pathname === '/onboarding/subscription' && onboardedStatus === 'BUSINESS_INFO') {
-      console.log('[Middleware] Explicitly allowing access to subscription page with BUSINESS_INFO status');
-      return response;
-    }
-    
-    // Simple path validation based on current status
-    const allowedPaths = ALLOWED_PATHS[onboardedStatus] || ['/onboarding/business-info'];
-    
-    if (!allowedPaths.includes(pathname)) {
-      // If current path is not allowed, redirect to the appropriate step
-      const nextStep = typeof STATUS_TO_STEP[onboardedStatus] === 'function' 
-        ? STATUS_TO_STEP[onboardedStatus](request.cookies) 
-        : STATUS_TO_STEP[onboardedStatus] || '/onboarding/business-info';
-        
-      console.log(`[Middleware] Invalid path for status, redirecting:`, {
-        currentPath: pathname,
-        status: onboardedStatus,
-        step: onboardingStep,
-        nextStep,
-        allowedPaths
-      });
-      
-      return NextResponse.redirect(new URL(nextStep, request.url));
-    } else {
-      console.log(`[Middleware] Path ${pathname} is allowed for status ${onboardedStatus}`);
-    }
-  }
-  
-  // Special case for dashboard - redirect to onboarding if not complete
+  // Handle response based on pathname
   if (pathname === '/dashboard') {
-    const onboardedStatus = request.cookies.get('onboardedStatus')?.value;
-    
-    // Allow dashboard access for these statuses
-    const allowDashboard = ['SETUP', 'COMPLETE'];
-    
-    // Also allow dashboard access for free plan users with SUBSCRIPTION status
-    const selectedPlan = request.cookies.get('selectedPlan')?.value;
-    const isFreePlan = selectedPlan === 'free' || request.cookies.get('freePlanSelected')?.value === 'true';
-    
-    if (!allowDashboard.includes(onboardedStatus) && !(onboardedStatus === 'SUBSCRIPTION' && isFreePlan)) {
-      console.log(`[Middleware] User not ready for dashboard, status: ${onboardedStatus}`);
-      
-      const nextStep = typeof STATUS_TO_STEP[onboardedStatus] === 'function' 
-        ? STATUS_TO_STEP[onboardedStatus](request.cookies) 
-        : STATUS_TO_STEP[onboardedStatus] || '/onboarding/business-info';
-        
-      return NextResponse.redirect(new URL(nextStep, request.url));
+    // Check if user has completed onboarding
+    if (!isOnboardingComplete(request.cookies)) {
+      logger.debug('[Middleware] User trying to access dashboard but onboarding not complete');
+      const redirectPath = getOnboardingRedirectPath(request.cookies);
+      return NextResponse.redirect(new URL(redirectPath, request.url));
     }
   }
   
+  // Return the modified response
   return response;
 }
 

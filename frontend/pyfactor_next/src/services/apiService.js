@@ -1,4 +1,4 @@
-import { axiosInstance } from '@/lib/axiosConfig';
+import { axiosInstance, retryRequest } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { getTenantContext, extractTenantFromResponse } from '@/utils/tenantContext';
 import { dataCache } from '@/utils/enhancedCache';
@@ -150,12 +150,14 @@ export const fetchData = async (endpoint, options = {}) => {
     headers = {},
     fallbackData = null,
     showErrorNotification = true,
-    timeout = 15000,
+    timeout = 30000,
     forceRefresh = false,
     tenantOverride = null,
     customMessage,
     notify = true,
-    skipAuthCheck = false
+    skipAuthCheck = false,
+    maxRetries = 2,
+    enableRetry = true
   } = options;
   
   try {
@@ -200,7 +202,7 @@ export const fetchData = async (endpoint, options = {}) => {
           'X-Allow-Partial': 'true'
         } : {})
       },
-      timeout
+      timeout: timeout || 30000
     });
     
     // Extract tenant info from response
@@ -213,40 +215,61 @@ export const fetchData = async (endpoint, options = {}) => {
     
     return response.data;
   } catch (error) {
-    // Check if this is a lenient access route or endpoint
-    const isLenientRoute = typeof window !== 'undefined' && isLenientAccessRoute(window.location.pathname);
-    const isLenientApiEndpoint = isLenientEndpoint(endpoint);
-    const shouldUseLenientAccess = isLenientRoute || isLenientApiEndpoint || skipAuthCheck;
+    // Get tenant headers for potential retry (need to define here since it may not be available in the try block scope)
+    const tenantHeaders = tenantOverride 
+      ? { 'X-Tenant-ID': tenantOverride }
+      : getRequestTenantHeaders();
     
-    // If it's a lenient route, we'll be more forgiving with errors
-    if (shouldUseLenientAccess) {
-      logger.warn(`[ApiService] Error on lenient route ${endpoint}, using fallback:`, {
-        error: error.message,
-        status: error.response?.status
-      });
-      
-      // For profile requests during onboarding, return a minimal profile
-      if (endpoint.includes('/api/user/profile')) {
-        return {
-          email: '',
-          name: '',
-          tenant_id: '18609ed2-1a46-4d50-bc4e-483d6e3405ff',
-          business: { id: '', name: '', type: '' },
-          completedOnboarding: false,
-          onboardingStep: 'business-info',
-          isOnboardingFlow: true
+    // Check if it's a timeout error and we should retry
+    if (enableRetry && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
+      try {
+        logger.warn(`[ApiService] Request timed out for ${endpoint}, attempting retry...`);
+        
+        // Create retry config based on the original request
+        const retryConfig = {
+          url: normalizeEndpoint(endpoint),
+          method: 'get',
+          params,
+          headers: {
+            ...tenantHeaders,
+            ...headers,
+            ...(shouldUseLenientAccess ? { 
+              'X-Lenient-Access': 'true',
+              'X-Allow-Partial': 'true'
+            } : {})
+          },
+          timeout,
+          maxRetries
         };
+        
+        // Attempt to retry the request
+        const retryResponse = await retryRequest(retryConfig);
+        
+        // Update cache if needed
+        if (useCache && cacheTTL !== null && retryResponse.data) {
+          dataCache.set(normalizedEndpoint, params, retryResponse.data, cacheTTL);
+        }
+        
+        // Extract tenant info if present
+        const extractedTenant = extractTenantFromResponse(retryResponse);
+        if (extractedTenant) {
+          logger.debug('[ApiService] Extracted tenant from retry response:', extractedTenant);
+        }
+        
+        return retryResponse.data;
+      } catch (retryError) {
+        logger.error('[ApiService] All retry attempts failed:', { 
+          url: endpoint, 
+          error: retryError.message 
+        });
+        // Fall through to normal error handling
       }
-      
-      // For other lenient endpoints, return fallback data or null
-      return fallbackData !== null ? fallbackData : null;
     }
     
     return handleApiError(error, {
       fallbackData,
       showNotification: showErrorNotification,
-      customMessage,
-      rethrow: fallbackData === null
+      customMessage
     });
   }
 };
@@ -264,7 +287,9 @@ export const postData = async (endpoint, data = {}, options = {}) => {
     invalidateCache = [],
     fallbackData = null,
     showErrorNotification = true,
-    timeout = 15000
+    timeout = 30000,
+    maxRetries = 2,
+    enableRetry = true
   } = options;
   
   try {
@@ -305,6 +330,47 @@ export const postData = async (endpoint, data = {}, options = {}) => {
     
     return response.data;
   } catch (error) {
+    // Get tenant headers for potential retry
+    const tenantHeaders = getRequestTenantHeaders();
+    
+    // Check if it's a timeout error and we should retry
+    if (enableRetry && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
+      try {
+        logger.warn(`[ApiService] POST request timed out for ${endpoint}, attempting retry...`);
+        
+        // Create retry config based on the original request
+        const retryConfig = {
+          url: normalizeEndpoint(endpoint),
+          method: 'post',
+          data,
+          params: {},
+          headers: {
+            ...tenantHeaders,
+            ...headers,
+          },
+          timeout,
+          maxRetries
+        };
+        
+        // Attempt to retry the request
+        const retryResponse = await retryRequest(retryConfig);
+        
+        // Extract tenant info if present
+        const extractedTenant = extractTenantFromResponse(retryResponse);
+        if (extractedTenant) {
+          logger.debug('[ApiService] Extracted tenant from retry response:', extractedTenant);
+        }
+        
+        return retryResponse.data;
+      } catch (retryError) {
+        logger.error('[ApiService] All retry attempts failed:', { 
+          url: endpoint, 
+          error: retryError.message 
+        });
+        // Fall through to normal error handling
+      }
+    }
+    
     logger.error('[ApiService] POST request failed:', {
       endpoint,
       error: error.message,
@@ -333,7 +399,9 @@ export const putData = async (endpoint, data = {}, options = {}) => {
     invalidateCache = [],
     fallbackData = null,
     showErrorNotification = true,
-    timeout = 15000
+    timeout = 30000,
+    maxRetries = 2,
+    enableRetry = true
   } = options;
   
   try {
@@ -366,6 +434,46 @@ export const putData = async (endpoint, data = {}, options = {}) => {
     
     return response.data;
   } catch (error) {
+    // Get tenant headers for potential retry
+    const tenantHeaders = getRequestTenantHeaders();
+    
+    // Check if it's a timeout error and we should retry
+    if (enableRetry && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
+      try {
+        logger.warn(`[ApiService] PUT request timed out for ${endpoint}, attempting retry...`);
+        
+        // Create retry config based on the original request
+        const retryConfig = {
+          url: normalizeEndpoint(endpoint),
+          method: 'put',
+          data,
+          headers: {
+            ...tenantHeaders,
+            ...headers,
+          },
+          timeout,
+          maxRetries
+        };
+        
+        // Attempt to retry the request
+        const retryResponse = await retryRequest(retryConfig);
+        
+        // Extract tenant info if present
+        const extractedTenant = extractTenantFromResponse(retryResponse);
+        if (extractedTenant) {
+          logger.debug('[ApiService] Extracted tenant from retry response:', extractedTenant);
+        }
+        
+        return retryResponse.data;
+      } catch (retryError) {
+        logger.error('[ApiService] All retry attempts failed:', { 
+          url: endpoint, 
+          error: retryError.message 
+        });
+        // Fall through to normal error handling
+      }
+    }
+    
     return handleApiError(error, {
       fallbackData,
       showNotification: showErrorNotification,
@@ -386,7 +494,9 @@ export const deleteData = async (endpoint, options = {}) => {
     invalidateCache = [],
     fallbackData = null,
     showErrorNotification = true,
-    timeout = 15000
+    timeout = 30000,
+    maxRetries = 2,
+    enableRetry = true
   } = options;
   
   try {
@@ -407,6 +517,9 @@ export const deleteData = async (endpoint, options = {}) => {
       timeout
     });
     
+    // Extract tenant info from response if available
+    extractTenantFromResponse(response);
+    
     // Invalidate cache if specified
     if (invalidateCache.length > 0) {
       invalidateCache.forEach(pattern => {
@@ -416,6 +529,45 @@ export const deleteData = async (endpoint, options = {}) => {
     
     return response.data;
   } catch (error) {
+    // Get tenant headers for potential retry
+    const tenantHeaders = getRequestTenantHeaders();
+    
+    // Check if it's a timeout error and we should retry
+    if (enableRetry && (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))) {
+      try {
+        logger.warn(`[ApiService] DELETE request timed out for ${endpoint}, attempting retry...`);
+        
+        // Create retry config based on the original request
+        const retryConfig = {
+          url: normalizeEndpoint(endpoint),
+          method: 'delete',
+          headers: {
+            ...tenantHeaders,
+            ...headers,
+          },
+          timeout,
+          maxRetries
+        };
+        
+        // Attempt to retry the request
+        const retryResponse = await retryRequest(retryConfig);
+        
+        // Extract tenant info if present
+        const extractedTenant = extractTenantFromResponse(retryResponse);
+        if (extractedTenant) {
+          logger.debug('[ApiService] Extracted tenant from retry response:', extractedTenant);
+        }
+        
+        return retryResponse.data;
+      } catch (retryError) {
+        logger.error('[ApiService] All retry attempts failed:', { 
+          url: endpoint, 
+          error: retryError.message 
+        });
+        // Fall through to normal error handling
+      }
+    }
+    
     return handleApiError(error, {
       fallbackData,
       showNotification: showErrorNotification,

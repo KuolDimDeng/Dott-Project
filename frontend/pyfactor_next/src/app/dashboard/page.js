@@ -1,9 +1,6 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/page.js
-'use client';
-
-import React, { Suspense } from 'react';
-import DashboardContent from './DashboardContent';
-import Loading from './loading';
+import React from 'react';
+import DashboardClient from './DashboardClient';
 
 /**
  * Dashboard Page Component
@@ -12,12 +9,14 @@ import Loading from './loading';
  * It uses code splitting and progressive loading to reduce memory usage.
  * It also checks for schema setup status and shows appropriate loading states.
  */
+
+// Server component for metadata
+export const metadata = {
+  title: 'Dashboard',
+  description: 'PyFactor Dashboard',
+};
+
 export default function DashboardPage() {
-  return (
-    <div className="w-full min-h-screen bg-white">
-      <Suspense fallback={<Loading />}>
-        <DashboardContent />
-      </Suspense>
-    </div>
-  );
+  // The server component imports the client component that handles the dynamic import
+  return <DashboardClient />;
 }

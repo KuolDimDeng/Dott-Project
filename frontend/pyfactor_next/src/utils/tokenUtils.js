@@ -2,7 +2,8 @@
  * Utility functions for handling authentication tokens
  */
 import { logger } from './logger';
-import { cookies, headers } from 'next/headers';
+// Remove static import of server components
+// import { cookies, headers } from 'next/headers';
 
 /**
  * Check if code is running on server side
@@ -11,98 +12,178 @@ import { cookies, headers } from 'next/headers';
 const isServer = () => typeof window === 'undefined';
 
 /**
- * Get the current access token - CLIENT VERSION
- * Tries multiple sources: auth context, cookies, localStorage
- * @returns {Promise<string|null>} The access token or null if not found
+ * Gets a valid access token for API requests with proper error handling and validation
+ * @returns {Promise<string>} A valid access token
  */
 export async function getAccessToken() {
-  // Use the server or client implementation based on environment
+  // Use server or client implementation based on environment
   return isServer() ? getServerAccessToken() : getClientAccessToken();
 }
 
 /**
- * Get access token on the client side
- * @returns {Promise<string|null>} The access token or null
+ * Gets a valid access token on the client side
+ * @returns {Promise<string>} A valid access token
  */
 async function getClientAccessToken() {
   try {
-    // Try to get from auth context first (most reliable)
+    // Check for cached token first
+    const cachedToken = sessionStorage.getItem('accessToken');
+    const cachedTokenExpiry = sessionStorage.getItem('accessTokenExpiry');
+    
+    // If we have a cached token that's not expired, use it
+    if (cachedToken && cachedTokenExpiry) {
+      const expiryTime = parseInt(cachedTokenExpiry, 10);
+      // Add a 5-minute buffer to ensure token doesn't expire during use
+      const now = Date.now() + (5 * 60 * 1000); 
+      
+      if (expiryTime > now) {
+        console.log('[tokenUtils] Using cached access token');
+        return cachedToken;
+      }
+      
+      console.log('[tokenUtils] Cached token expired, refreshing');
+    }
+    
+    // Get token from Auth service
+    const Auth = (await import('@aws-amplify/auth')).default;
+    const session = await Auth.currentSession();
+    
+    if (!session) {
+      console.error('[tokenUtils] No current session available');
+      // Try fallback to cookies or localStorage
+      const localToken = localStorage.getItem('authToken') || getCookie('idToken');
+      if (localToken) {
+        console.log('[tokenUtils] Using fallback token from local storage/cookies');
+        return localToken;
+      }
+      throw new Error('No authentication session available');
+    }
+    
+    // Get and validate access token
+    const token = session.getAccessToken().getJwtToken();
+    
+    if (!token) {
+      console.error('[tokenUtils] Failed to get access token from session');
+      throw new Error('Failed to get access token');
+    }
+    
+    // Decode token to get expiry time
+    const tokenParts = token.split('.');
+    if (tokenParts.length === 3) {
+      try {
+        const payload = JSON.parse(atob(tokenParts[1]));
+        if (payload.exp) {
+          // Store token with expiry for future use
+          sessionStorage.setItem('accessToken', token);
+          sessionStorage.setItem('accessTokenExpiry', payload.exp * 1000);
+          console.log(`[tokenUtils] Token cached with expiry ${new Date(payload.exp * 1000).toISOString()}`);
+        }
+      } catch (decodeError) {
+        console.warn('[tokenUtils] Could not decode token for caching:', decodeError.message);
+      }
+    }
+    
+    return token;
+  } catch (error) {
+    console.error('[tokenUtils] Error getting access token:', error);
+    
+    // Fallback to cookies
     try {
-      // Import from contexts directly since we don't have authUtils
-      const { useAuthContext } = await import('@/contexts/AuthContext.js');
-      const authContext = useAuthContext();
-      if (authContext && authContext.session && authContext.session.tokens) {
-        const token = authContext.session.tokens.accessToken;
-        if (token) {
-          return token;
-        }
+      const idToken = getCookie('idToken');
+      if (idToken) {
+        console.log('[tokenUtils] Using idToken from cookies as fallback');
+        return idToken;
       }
-    } catch (e) {
-      logger.debug('[TokenUtils] Error getting token from auth context:', e);
-    }
-
-    // Try to get from cookies
-    if (typeof document !== 'undefined') {
-      const cookies = document.cookie.split(';');
-      const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('accessToken='));
-      if (tokenCookie) {
-        const token = tokenCookie.split('=')[1].trim();
-        if (token) {
-          return token;
-        }
+      
+      const authToken = getCookie('authToken');
+      if (authToken) {
+        console.log('[tokenUtils] Using authToken from cookies as fallback');
+        return authToken;
       }
+    } catch (cookieError) {
+      console.error('[tokenUtils] Cookie fallback failed:', cookieError);
     }
+    
+    // Second fallback to localStorage
+    try {
+      const localToken = localStorage.getItem('authToken') || localStorage.getItem('idToken');
+      if (localToken) {
+        console.log('[tokenUtils] Using token from localStorage as fallback');
+        return localToken;
+      }
+    } catch (storageError) {
+      console.error('[tokenUtils] localStorage fallback failed:', storageError);
+    }
+    
+    // If all else fails, throw error to be handled by caller
+    throw new Error(`Failed to get access token: ${error.message}`);
+  }
+}
 
-    // Try to get from localStorage as last resort
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('accessToken');
+/**
+ * Gets a valid access token on the server side
+ * @returns {Promise<string>} A valid access token
+ */
+async function getServerAccessToken() {
+  try {
+    logger.debug('[tokenUtils] Getting access token on server');
+    
+    // Try to get from cookies using next/headers - dynamically imported
+    try {
+      const { cookies, headers } = await import('next/headers');
+      
+      const cookieStore = cookies();
+      const token = cookieStore.get('accessToken')?.value || cookieStore.get('idToken')?.value;
       if (token) {
+        logger.debug('[tokenUtils] Using token from server cookies');
         return token;
       }
+      
+      // Try to get from authorization header
+      const headersList = headers();
+      const authHeader = headersList.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        logger.debug('[tokenUtils] Using token from authorization header');
+        return token;
+      }
+      
+      // Also check x-access-token or x-id-token headers
+      const accessToken = headersList.get('x-access-token');
+      if (accessToken) {
+        logger.debug('[tokenUtils] Using token from x-access-token header');
+        return accessToken;
+      }
+      
+      const idToken = headersList.get('x-id-token');
+      if (idToken) {
+        logger.debug('[tokenUtils] Using token from x-id-token header');
+        return idToken;
+      }
+    } catch (importError) {
+      logger.warn('[tokenUtils] Cannot import server headers/cookies:', importError.message);
     }
-
-    logger.warn('[TokenUtils] No access token found from any source');
+    
+    logger.warn('[tokenUtils] No token found on server side');
     return null;
   } catch (error) {
-    logger.error('[TokenUtils] Error getting access token:', error);
+    logger.error('[tokenUtils] Error getting server access token:', error);
     return null;
   }
 }
 
 /**
- * Get access token on the server side
- * @returns {Promise<string|null>} The access token or null
+ * Helper function to get a cookie by name (client-side only)
+ * @param {string} name - Cookie name
+ * @returns {string|null} Cookie value or null if not found
  */
-async function getServerAccessToken() {
-  try {
-    // Try to get from cookies using next/headers
-    try {
-      const cookieStore = await cookies();
-      const token = cookieStore.get('accessToken')?.value;
-      if (token) {
-        return token;
-      }
-    } catch (e) {
-      logger.debug('[TokenUtils] Error getting token from server cookies:', e);
-    }
-
-    // Try to get from authorization header
-    try {
-      const headersList = headers();
-      const authHeader = headersList.get('authorization');
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        return authHeader.substring(7);
-      }
-    } catch (e) {
-      logger.debug('[TokenUtils] Error getting token from server headers:', e);
-    }
-
-    logger.warn('[TokenUtils] No access token found from server sources');
-    return null;
-  } catch (error) {
-    logger.error('[TokenUtils] Error getting server access token:', error);
-    return null;
-  }
+function getCookie(name) {
+  if (typeof document === 'undefined') return null;
+  
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
 }
 
 /**
@@ -169,26 +250,24 @@ async function getClientIdToken() {
  */
 async function getServerIdToken() {
   try {
-    // Try to get from cookies using next/headers
+    // Try to get from cookies using next/headers - dynamically imported
     try {
+      const { cookies, headers } = await import('next/headers');
+      
       const cookieStore = cookies();
       const token = cookieStore.get('idToken')?.value;
       if (token) {
         return token;
       }
-    } catch (e) {
-      logger.debug('[TokenUtils] Error getting ID token from server cookies:', e);
-    }
-
-    // Try to get from x-id-token header
-    try {
+      
+      // Try to get from x-id-token header
       const headersList = headers();
       const idToken = headersList.get('x-id-token');
       if (idToken) {
         return idToken;
       }
-    } catch (e) {
-      logger.debug('[TokenUtils] Error getting ID token from server headers:', e);
+    } catch (importError) {
+      logger.debug('[TokenUtils] Cannot import server headers/cookies:', importError.message);
     }
 
     logger.warn('[TokenUtils] No ID token found from server sources');

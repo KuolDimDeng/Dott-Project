@@ -1,28 +1,11 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/AddIncomeForm.js
 
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  TextField,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
-  InputAdornment,
-  Modal,
-  List,
-  ListItem,
-  ListItemText,
-  Typography,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useToast } from '@/components/Toast/ToastProvider';
 import UnpaidInvoicesList from '../../dashboard/components/lists/UnpaidInvoicesList'; // Adjust the import path as needed
+import { format } from 'date-fns';
 
 const AddIncomeForm = ({ onClose }) => {
   const [date, setDate] = useState(null);
@@ -67,7 +50,7 @@ const AddIncomeForm = ({ onClose }) => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await useApi.get('/api/profile/');
+      const response = await axiosInstance.get('/api/profile/');
       setUserDatabase(response.data.database_name);
       logger.log('User profile:', response.data);
       logger.log('User database:', response.data.database_name);
@@ -81,7 +64,7 @@ const AddIncomeForm = ({ onClose }) => {
 
   const fetchUnpaidInvoices = async () => {
     try {
-      const response = await useApi.get('/api/unpaid-invoices/');
+      const response = await axiosInstance.get('/api/unpaid-invoices/');
       if (Array.isArray(response.data)) {
         setUnpaidInvoices(response.data);
       } else {
@@ -127,7 +110,8 @@ const AddIncomeForm = ({ onClose }) => {
       return;
     }
 
-    const formattedDate = date.toISOString().split('T')[0];
+    // Format date directly from the date object
+    const formattedDate = date ? format(date, 'yyyy-MM-dd') : '';
 
     const formData = new FormData();
     formData.append('date', formattedDate);
@@ -178,127 +162,164 @@ const AddIncomeForm = ({ onClose }) => {
   };
 
   if (error) {
-    return <Typography color="error">{error}</Typography>;
+    return <p className="text-red-500">{error}</p>;
   }
 
   return (
-    <Box component="form" onSubmit={handleSubmit}>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <DatePicker
-          label="Date"
-          value={date}
-          onChange={(newDate) => setDate(newDate)}
-          renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="mb-4">
+        <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+          Date
+        </label>
+        <input
+          type="date"
+          id="date"
+          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          value={date ? format(date, 'yyyy-MM-dd') : ''}
+          onChange={(e) => setDate(new Date(e.target.value))}
         />
-      </LocalizationProvider>
+      </div>
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Account</InputLabel>
-        <Select value={account} onChange={handleAccountChange}>
+      <div className="mb-4">
+        <label htmlFor="account" className="block text-sm font-medium text-gray-700 mb-1">
+          Account
+        </label>
+        <select
+          id="account"
+          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          value={account}
+          onChange={handleAccountChange}
+        >
+          <option value="">Select an account</option>
           {accountOptions.map((option) => (
-            <MenuItem key={option} value={option}>
+            <option key={option} value={option}>
               {option}
-            </MenuItem>
+            </option>
           ))}
-        </Select>
-      </FormControl>
+        </select>
+      </div>
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Type</InputLabel>
-        <Select value={type} onChange={handleTypeChange}>
-          <MenuItem value="Deposit">Deposit</MenuItem>
-          <MenuItem value="Withdrawal">Withdrawal</MenuItem>
-        </Select>
-      </FormControl>
+      <div className="mb-4">
+        <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
+          Type
+        </label>
+        <select
+          id="type"
+          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          value={type}
+          onChange={handleTypeChange}
+        >
+          <option value="">Select a type</option>
+          <option value="Deposit">Deposit</option>
+          <option value="Withdrawal">Withdrawal</option>
+        </select>
+      </div>
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Account Type</InputLabel>
-        <Select value={accountType} onChange={handleAccountTypeChange}>
+      <div className="mb-4">
+        <label htmlFor="accountType" className="block text-sm font-medium text-gray-700 mb-1">
+          Account Type
+        </label>
+        <select
+          id="accountType"
+          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          value={accountType}
+          onChange={handleAccountTypeChange}
+        >
+          <option value="">Select an account type</option>
           {accountTypeOptions.map((option) => (
-            <MenuItem key={option} value={option}>
+            <option key={option} value={option}>
               {option}
-            </MenuItem>
+            </option>
           ))}
-        </Select>
-      </FormControl>
+        </select>
+      </div>
 
-      <TextField
-        label="Amount"
-        fullWidth
-        margin="normal"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        InputProps={{
-          startAdornment: <InputAdornment position="start">$</InputAdornment>,
-        }}
-      />
+      <div className="mb-4">
+        <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+          Amount
+        </label>
+        <div className="relative rounded-md shadow-sm">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span className="text-gray-500">$</span>
+          </div>
+          <input
+            type="number"
+            id="amount"
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 pl-7"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            step="0.01"
+          />
+        </div>
+      </div>
 
       {selectedInvoice && (
-        <Typography variant="body2" sx={{ mt: 1 }}>
+        <p className="text-sm text-gray-600 mt-1">
           Selected Invoice: #{selectedInvoice.id} - ${selectedInvoice.amount}
-        </Typography>
+        </p>
       )}
 
-      <TextField
-        label="Notes"
-        fullWidth
-        margin="normal"
-        multiline
-        rows={2}
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-      />
+      <div className="mb-4">
+        <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+          Notes
+        </label>
+        <textarea
+          id="notes"
+          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          rows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </div>
 
-      <Box mt={2}>
+      <div className="mb-4">
         <input
           accept="image/*,application/pdf"
-          style={{ display: 'none' }}
+          className="hidden"
           id="receipt-upload"
           type="file"
           onChange={handleReceiptChange}
         />
         <label htmlFor="receipt-upload">
-          <Button variant="contained" color="primary" component="span">
+          <span className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
             Upload Receipt
-          </Button>
+          </span>
         </label>
-      </Box>
+        {receipt && <span className="ml-2 text-sm text-gray-600">{receipt.name}</span>}
+      </div>
 
-      <Box display="flex" justifyContent="flex-end" mt={2}>
-        <Button variant="contained" color="primary" type="submit">
-          Save
-        </Button>
-        <Button variant="text" onClick={onClose} sx={{ ml: 1 }}>
-          Cancel
-        </Button>
-      </Box>
-
-      <Modal
-        open={showUnpaidInvoices}
-        onClose={() => setShowUnpaidInvoices(false)}
-        aria-labelledby="unpaid-invoices-modal"
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 400,
-            bgcolor: 'background.paper',
-            boxShadow: 24,
-            p: 4,
-            maxHeight: '80vh',
-            overflow: 'auto',
-          }}
+      <div className="flex justify-end space-x-2">
+        <button
+          type="button"
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          onClick={onClose}
         >
-          <Typography id="unpaid-invoices-modal" variant="h6" component="h2">
-            Select Unpaid Invoice
-          </Typography>
-          <UnpaidInvoicesList onSelect={handleInvoiceSelect} />
-        </Box>
-      </Modal>
-    </Box>
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Save
+        </button>
+      </div>
+
+      {showUnpaidInvoices && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-auto">
+            <h2 className="text-lg font-medium mb-4">Select Unpaid Invoice</h2>
+            <UnpaidInvoicesList onSelect={handleInvoiceSelect} />
+            <button
+              type="button"
+              className="mt-4 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              onClick={() => setShowUnpaidInvoices(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </form>
   );
 };
 

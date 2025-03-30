@@ -1,8 +1,18 @@
 import { logger } from './logger';
 
+// Don't import server-side modules directly
+// These will be dynamically imported when needed in server contexts
+// import { cookies, headers } from 'next/headers';
+
 let currentTenantId = null;
 let currentAccessToken = null;
 let currentIdToken = null;
+
+/**
+ * Check if code is running on server side
+ * @returns {boolean} True if running on server
+ */
+const isServer = () => typeof window === 'undefined';
 
 /**
  * Set the current tokens
@@ -18,8 +28,8 @@ export function setTokens(tokens) {
     logger.debug('[TenantUtils] ID token set');
   }
   
-  // Store tokens in localStorage for persistence
-  if (typeof window !== 'undefined' && (tokens?.accessToken || tokens?.idToken)) {
+  // Store tokens in localStorage for persistence (client-side only)
+  if (!isServer() && (tokens?.accessToken || tokens?.idToken)) {
     try {
       // Store only what has been provided and keep existing values otherwise
       const existingTokens = JSON.parse(localStorage.getItem('tokens') || '{}');
@@ -42,6 +52,47 @@ export function setTokens(tokens) {
  * @returns {Promise<string>} The access token
  */
 async function getAccessToken() {
+  // Server-side token retrieval
+  if (isServer()) {
+    try {
+      logger.debug('[TenantUtils] Server-side getAccessToken called');
+      // Dynamically import server-only modules
+      try {
+        // Only attempt to import in server context
+        const { cookies, headers } = await import('next/headers');
+        
+        // Try to get from cookies
+        const cookieStore = cookies();
+        const token = cookieStore.get('accessToken')?.value;
+        if (token) {
+          logger.debug('[TenantUtils] Retrieved access token from server cookies');
+          return token;
+        }
+        
+        // Try to get from headers
+        const headersList = headers();
+        const authHeader = headersList.get('authorization');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          return authHeader.substring(7);
+        }
+        
+        const accessToken = headersList.get('x-access-token');
+        if (accessToken) {
+          return accessToken;
+        }
+      } catch (importError) {
+        logger.warn('[TenantUtils] Cannot import server headers/cookies in client context:', importError.message);
+      }
+      
+      logger.warn('[TenantUtils] No access token available on server');
+      return null;
+    } catch (error) {
+      logger.error('[TenantUtils] Error getting access token on server:', error);
+      return null;
+    }
+  }
+  
+  // Client-side token retrieval
   if (!currentAccessToken) {
     // Try to get from localStorage
     try {
@@ -70,6 +121,42 @@ async function getAccessToken() {
  * @returns {Promise<string>} The ID token
  */
 async function getIdToken() {
+  // Server-side token retrieval
+  if (isServer()) {
+    try {
+      logger.debug('[TenantUtils] Server-side getIdToken called');
+      // Dynamically import server-only modules
+      try {
+        // Only attempt to import in server context
+        const { cookies, headers } = await import('next/headers');
+        
+        // Try to get from cookies
+        const cookieStore = cookies();
+        const token = cookieStore.get('idToken')?.value;
+        if (token) {
+          logger.debug('[TenantUtils] Retrieved ID token from server cookies');
+          return token;
+        }
+        
+        // Try to get from headers
+        const headersList = headers();
+        const idToken = headersList.get('x-id-token');
+        if (idToken) {
+          return idToken;
+        }
+      } catch (importError) {
+        logger.warn('[TenantUtils] Cannot import server headers/cookies in client context:', importError.message);
+      }
+      
+      logger.warn('[TenantUtils] No ID token available on server');
+      return null;
+    } catch (error) {
+      logger.error('[TenantUtils] Error getting ID token on server:', error);
+      return null;
+    }
+  }
+  
+  // Client-side token retrieval
   if (!currentIdToken) {
     // Try to get from localStorage
     try {
@@ -467,201 +554,182 @@ export function clearTenantId() {
 }
 
 /**
- * Gets the current tenant ID from cookies or localStorage
- * @returns {string|null} The tenant ID or null if not found
+ * Gets the current tenant ID from appropriate sources
+ * @returns {string|null} The current tenant ID
  */
 export const getTenantId = () => {
-  // Client-side only
-  if (typeof window === 'undefined') {
-    logger.debug('[TenantUtils] Running server-side, no tenant ID available');
-    return null;
+  // Server-side tenant ID retrieval
+  if (isServer()) {
+    try {
+      logger.debug('[TenantUtils] Server-side getTenantId called');
+      // Dynamically import server-only modules
+      try {
+        // Only attempt to import in server context
+        const { cookies, headers } = require('next/headers');
+        
+        // Try to get from request headers
+        const headersList = headers();
+        const tenantId = headersList.get('x-tenant-id');
+        if (tenantId) {
+          logger.debug('[TenantUtils] Retrieved tenant ID from server headers');
+          return tenantId;
+        }
+        
+        // Try to get from cookies
+        const cookieStore = cookies();
+        const tenantIdCookie = cookieStore.get('tenantId')?.value;
+        if (tenantIdCookie) {
+          logger.debug('[TenantUtils] Retrieved tenant ID from server cookies');
+          return tenantIdCookie;
+        }
+      } catch (importError) {
+        logger.debug('[TenantUtils] Server headers/cookies import failed:', importError.message);
+      }
+      
+      logger.debug('[TenantUtils] No tenant ID available on server');
+      return null;
+    } catch (error) {
+      logger.error('[TenantUtils] Error getting tenant ID on server:', error);
+      return null;
+    }
   }
   
-  // First check if we have a cached tenant ID
+  // Client-side tenant ID retrieval - existing logic
   if (currentTenantId) {
-    logger.debug(`[TenantUtils] Using cached tenant ID: ${currentTenantId}`);
     return currentTenantId;
   }
   
-  // Try to get from cookie first
-  const cookies = document.cookie.split(';');
-  logger.debug(`[TenantUtils] Checking cookies: ${cookies.length} cookies found`);
-  const tenantCookie = cookies.find(cookie => cookie.trim().startsWith('tenantId='));
-  if (tenantCookie) {
-    const tenantId = tenantCookie.split('=')[1].trim();
-    logger.debug(`[TenantUtils] Found tenant ID in cookie: ${tenantId}`);
-    
-    // Initialize validation if we find a tenant ID - this is async but we'll return immediately
-    // and let the validation run in the background. Next call will use validated tenant.
-    validateAndFixTenantId(tenantId).then(validatedTenantId => {
-      if (validatedTenantId !== tenantId) {
-        logger.warn(`[TenantUtils] Tenant ID validation changed ID from ${tenantId} to ${validatedTenantId}`);
-      }
-    }).catch(error => {
-      logger.error('[TenantUtils] Error validating tenant ID from cookie:', error);
-    });
-    
-    return tenantId;
-  }
-  
-  // Try to get from user attributes in localStorage
+  // Try to get from localStorage
   try {
-    const userDataStr = localStorage.getItem('userData');
-    logger.debug(`[TenantUtils] Checking userData in localStorage: ${userDataStr ? 'found' : 'not found'}`);
-    if (userDataStr) {
-      const userData = JSON.parse(userDataStr);
-      logger.debug(`[TenantUtils] Parsed userData keys: ${Object.keys(userData || {}).join(', ')}`);
-      if (userData && userData['custom:businessid']) {
-        const tenantId = userData['custom:businessid'];
-        logger.debug(`[TenantUtils] Found tenant ID in user attributes: ${tenantId}`);
-        
-        // Initialize validation - async but return immediately
-        validateAndFixTenantId(tenantId).then(validatedTenantId => {
-          if (validatedTenantId !== tenantId) {
-            logger.warn(`[TenantUtils] Tenant ID validation changed ID from ${tenantId} to ${validatedTenantId}`);
-          }
-        }).catch(error => {
-          logger.error('[TenantUtils] Error validating tenant ID from user attributes:', error);
-        });
-        
-        return tenantId;
-      }
+    const tenantId = localStorage.getItem('tenantId');
+    if (tenantId) {
+      currentTenantId = tenantId;
+      return tenantId;
     }
   } catch (error) {
-    logger.error('[TenantUtils] Error parsing user data from localStorage:', error);
+    logger.error('[TenantUtils] Error retrieving tenant ID from localStorage:', error);
   }
   
-  // Fallback to direct localStorage value
-  const tenantId = localStorage.getItem('tenantId');
-  logger.debug(`[TenantUtils] Checking tenantId in localStorage: ${tenantId ? tenantId : 'not found'}`);
-  if (tenantId) {
-    logger.debug(`[TenantUtils] Found tenant ID in localStorage: ${tenantId}`);
-    
-    // Initialize validation - async but return immediately
-    validateAndFixTenantId(tenantId).then(validatedTenantId => {
-      if (validatedTenantId !== tenantId) {
-        logger.warn(`[TenantUtils] Tenant ID validation changed ID from ${tenantId} to ${validatedTenantId}`);
-      }
-    }).catch(error => {
-      logger.error('[TenantUtils] Error validating tenant ID from localStorage:', error);
-    });
-    
-    return tenantId;
-  }
-  
-  // Check if we have a business ID in the URL
+  // Try to get from URL query parameter
   try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const businessId = urlParams.get('businessId');
-    logger.debug(`[TenantUtils] Checking URL for businessId: ${businessId ? businessId : 'not found'}`);
-    if (businessId) {
-      logger.debug(`[TenantUtils] Found business ID in URL: ${businessId}`);
-      // Store it for future use
-      storeTenantInfo(businessId);
-      
-      // Initialize validation - async but return immediately
-      validateAndFixTenantId(businessId).then(validatedTenantId => {
-        if (validatedTenantId !== businessId) {
-          logger.warn(`[TenantUtils] Tenant ID validation changed ID from ${businessId} to ${validatedTenantId}`);
-        }
-      }).catch(error => {
-        logger.error('[TenantUtils] Error validating tenant ID from URL:', error);
-      });
-      
-      return businessId;
+    const params = new URLSearchParams(window.location.search);
+    const tenantId = params.get('tenant_id');
+    if (tenantId) {
+      logger.debug('[TenantUtils] Found tenant ID in URL parameters');
+      currentTenantId = tenantId;
+      return tenantId;
     }
   } catch (error) {
-    logger.error('[TenantUtils] Error checking URL for business ID:', error);
+    logger.error('[TenantUtils] Error retrieving tenant ID from URL:', error);
   }
   
-  // Fallback to known good tenant if all else fails
-  logger.warn('[TenantUtils] No tenant ID found from any source. Using fallback.');
+  // Try to get from cookies
+  try {
+    const cookies = document.cookie.split(';');
+    const tenantCookie = cookies.find(cookie => cookie.trim().startsWith('tenantId='));
+    if (tenantCookie) {
+      const tenantId = tenantCookie.split('=')[1].trim();
+      logger.debug('[TenantUtils] Found tenant ID in cookies');
+      currentTenantId = tenantId;
+      return tenantId;
+    }
+  } catch (error) {
+    logger.error('[TenantUtils] Error retrieving tenant ID from cookies:', error);
+  }
   
-  // List of known good tenant IDs to try
-  const knownTenantIds = [
-    '18609ed2-1a46-4d50-bc4e-483d6e3405ff',  // Primary fallback
-    'b7fee399-ffca-4151-b636-94ccb65b3cd0',  // Alternative 1
-    '1cb7418e-34e7-40b7-b165-b79654efe21f'   // Alternative 2
-  ];
-  
-  // Use the primary fallback (we'll add API validation in a later version)
-  const fallbackTenantId = knownTenantIds[0];
-  
-  // Store fallback tenant ID for future use
-  storeTenantInfo(fallbackTenantId);
-  logger.info(`[TenantUtils] Using fallback tenant ID: ${fallbackTenantId}`);
-  return fallbackTenantId;
+  logger.debug('[TenantUtils] No tenant ID found');
+  return null;
 };
 
 /**
- * Gets the schema name for the current tenant or a specific tenant ID
- * @param {string} [tenantId] - Optional tenant ID, uses current tenant if not provided
- * @returns {string|null} The schema name or null if tenant ID not found or invalid
+ * Gets the schema name for a tenant
+ * @param {string} [tenantId] - Optional tenant ID, defaults to the current tenant
+ * @returns {string|null} The schema name
  */
 export const getSchemaName = (tenantId) => {
-  // If no tenant ID provided, use the current tenant ID
-  const tId = tenantId || getTenantId();
-  
-  if (!tId) {
-    logger.debug('[TenantUtils] No tenant ID found, cannot generate schema name');
-    return null;
+  // Server-side schema name retrieval
+  if (isServer()) {
+    try {
+      logger.debug('[TenantUtils] Server-side getSchemaName called');
+      // Dynamically import server-only modules
+      try {
+        // Only attempt to import in server context
+        const { headers } = require('next/headers');
+        
+        // Try to get from request headers
+        const headersList = headers();
+        const schemaName = headersList.get('x-schema-name');
+        if (schemaName) {
+          return schemaName;
+        }
+        
+        // If we have a tenant ID, derive schema name
+        const tid = tenantId || headersList.get('x-tenant-id');
+        if (tid) {
+          return `tenant_${tid.replace(/-/g, '_')}`;
+        }
+      } catch (importError) {
+        logger.debug('[TenantUtils] Server headers import failed:', importError.message);
+      }
+      
+      return null;
+    } catch (error) {
+      logger.error('[TenantUtils] Error getting schema name on server:', error);
+      return null;
+    }
   }
   
-  // Validate the tenant ID
-  const validatedId = validateTenantIdFormat(tId);
-  if (!validatedId) {
-    logger.warn(`[TenantUtils] Invalid tenant ID format: ${tId}, cannot generate schema name`);
-    return null;
+  // Client-side schema name retrieval - existing logic
+  const tid = tenantId || getTenantId();
+  if (!tid) return null;
+  
+  try {
+    // Try to get from localStorage first
+    const storedSchemaName = localStorage.getItem(`schemaName_${tid}`);
+    if (storedSchemaName) {
+      return storedSchemaName;
+    }
+  } catch (error) {
+    logger.debug('[TenantUtils] Error retrieving schema name from localStorage:', error);
   }
   
-  // Convert tenant ID to schema name format (replace hyphens with underscores)
-  const schemaName = `tenant_${validatedId.replace(/-/g, '_')}`;
-  logger.debug(`[TenantUtils] Generated schema name: ${schemaName} from tenant ID: ${validatedId}`);
-  return schemaName;
+  // Default to standard format
+  return `tenant_${tid.replace(/-/g, '_')}`;
 };
 
 /**
- * Stores tenant information in both cookie and localStorage for redundancy
- * @param {string} tenantId The tenant ID to store
+ * Stores tenant information
+ * @param {string} tenantId - The tenant ID to store
+ * @returns {void}
  */
 export const storeTenantInfo = (tenantId) => {
   if (!tenantId) {
-    logger.warn('[TenantUtils] Attempted to store empty tenant ID');
+    logger.error('[TenantUtils] Cannot store empty tenant ID');
     return;
   }
   
-  if (typeof window === 'undefined') {
-    logger.debug('[TenantUtils] Running server-side, cannot store tenant info');
+  if (isServer()) {
+    // Server-side: Just log we can't store on server
+    logger.debug('[TenantUtils] Cannot store tenant info on server side');
     return;
   }
   
-  logger.debug(`[TenantUtils] Storing tenant ID: ${tenantId}`);
-  
-  // Set in-memory variable first
+  // Client-side tenant storage - existing logic
   currentTenantId = tenantId;
   
-  // Store in cookie (accessible server-side)
-  document.cookie = `tenantId=${tenantId}; path=/; max-age=31536000`; // 1 year
-  
-  // Store in localStorage (client-side only)
-  localStorage.setItem('tenantId', tenantId);
-  
-  // Also try to update user data if it exists
   try {
-    const userDataStr = localStorage.getItem('userData');
-    if (userDataStr) {
-      const userData = JSON.parse(userDataStr);
-      if (userData) {
-        userData['custom:businessid'] = tenantId;
-        localStorage.setItem('userData', JSON.stringify(userData));
-        logger.debug('[TenantUtils] Updated tenant ID in user data');
-      }
-    }
+    // Store in localStorage for persistence
+    localStorage.setItem('tenantId', tenantId);
+    
+    // Store in cookie as well for cross-page access
+    const date = new Date();
+    date.setTime(date.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 day expiry
+    document.cookie = `tenantId=${tenantId};expires=${date.toUTCString()};path=/;SameSite=Strict`;
+    
+    logger.debug('[TenantUtils] Tenant info stored:', { tenantId });
   } catch (error) {
-    logger.error('[TenantUtils] Error updating user data with tenant ID:', error);
+    logger.error('[TenantUtils] Error storing tenant info:', error);
   }
-  
-  logger.debug('[TenantUtils] Tenant info stored successfully');
 };
 
 /**
