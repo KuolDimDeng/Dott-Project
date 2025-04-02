@@ -1,44 +1,8 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/BankingDashboard.js
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Button,
-  Typography,
-  Grid,
-  TextField,
-  List,
-  ListItem,
-  ListItemText,
-  CircularProgress,
-  Card,
-  CardContent,
-  CardActions,
-  InputAdornment,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Link,
-  useTheme,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import DownloadIcon from '@mui/icons-material/Download';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import SearchIcon from '@mui/icons-material/Search';
 import { axiosInstance } from '@/lib/axiosConfig';
-import NextLink from 'next/link';
-
-const StyledCard = styled(Card)(({ theme }) => ({
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'space-between',
-}));
+import Link from 'next/link';
 
 const BankingDashboard = () => {
   const [accounts, setAccounts] = useState([]);
@@ -49,7 +13,6 @@ const BankingDashboard = () => {
   const [endDate, setEndDate] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [connectedBank, setConnectedBank] = useState(null);
-  const theme = useTheme();
 
   const fetchBankingAccounts = useCallback(async () => {
     try {
@@ -131,187 +94,210 @@ const BankingDashboard = () => {
   );
 
   if (loading) {
-    return <CircularProgress />;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   if (error) {
-    return <Typography color="error">{error}</Typography>;
+    return (
+      <div className="text-red-600 p-4">
+        {error}
+      </div>
+    );
   }
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-        <AccountBalanceIcon sx={{ mr: 2, fontSize: 40 }} />
-        Banking Dashboard
-      </Typography>
-      <Typography variant="subtitle1" gutterBottom sx={{ ml: 6, mb: 3, color: 'text.secondary' }}>
+    <div className="bg-white p-6 rounded-lg">
+      <div className="flex items-center mb-2">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mr-3 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+        </svg>
+        <h1 className="text-2xl font-bold">Banking Dashboard</h1>
+      </div>
+      
+      <p className="ml-12 mb-6 text-gray-600">
         Manage your accounts, download transactions, and view recent activity
-      </Typography>
-      <Typography variant="h6" gutterBottom sx={{ mb: 3, color: 'primary.main' }}>
+      </p>
+      
+      <h2 className="text-xl font-semibold mb-4 text-indigo-600">
         Connected Bank: {connectedBank || 'None'}
         {!connectedBank && (
-          <Typography component="span" variant="body1" sx={{ ml: 2 }}>
+          <span className="ml-2 font-normal text-base text-gray-700">
             Please link a banking institution
-            <NextLink href="/connect-bank" passHref>
-              <Link sx={{ ml: 1 }}>here</Link>
-            </NextLink>
-            .
-          </Typography>
+            <Link href="/connect-bank" className="ml-1 text-blue-600 hover:underline">here</Link>.
+          </span>
         )}
-      </Typography>
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <StyledCard>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Bank Accounts
-              </Typography>
+      </h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="col-span-1">
+          <div className="bg-white shadow rounded-lg h-full flex flex-col justify-between">
+            <div className="p-6 flex-grow">
+              <h3 className="text-lg font-semibold mb-4">Bank Accounts</h3>
               {accounts.length > 0 ? (
-                <List>
+                <ul className="divide-y divide-gray-200">
                   {accounts.map((account) => (
-                    <ListItem key={account.account_id}>
-                      <ListItemText
-                        primary={account.name}
-                        secondary={`Balance: $${account.balances?.current || 'N/A'}`}
-                      />
-                    </ListItem>
+                    <li key={account.account_id} className="py-3">
+                      <p className="font-medium">{account.name}</p>
+                      <p className="text-sm text-gray-600">Balance: ${account.balances?.current || 'N/A'}</p>
+                    </li>
                   ))}
-                </List>
+                </ul>
               ) : (
-                <Typography>
-                  No accounts found. Please connect a bank account to get started.
-                </Typography>
+                <p>No accounts found. Please connect a bank account to get started.</p>
               )}
-            </CardContent>
-            <CardActions>
-              <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchBankingAccounts}>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200">
+              <button 
+                onClick={fetchBankingAccounts}
+                className="flex items-center text-indigo-600 hover:text-indigo-800 border border-indigo-600 px-4 py-2 rounded-md"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                </svg>
                 Refresh Accounts
-              </Button>
-            </CardActions>
-          </StyledCard>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <StyledCard>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Download Transactions
-              </Typography>
-              <TextField
-                label="Start Date"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                fullWidth
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-                disabled={!connectedBank}
-              />
-              <TextField
-                label="End Date"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                fullWidth
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-                disabled={!connectedBank}
-              />
-            </CardContent>
-            <CardActions>
-              <Button
-                variant="contained"
-                startIcon={<DownloadIcon />}
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="col-span-1">
+          <div className="bg-white shadow rounded-lg h-full flex flex-col justify-between">
+            <div className="p-6 flex-grow">
+              <h3 className="text-lg font-semibold mb-4">Download Transactions</h3>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className={`w-full p-2 border border-gray-300 rounded-md ${!connectedBank ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-indigo-500 focus:border-indigo-500'}`}
+                  disabled={!connectedBank}
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className={`w-full p-2 border border-gray-300 rounded-md ${!connectedBank ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-indigo-500 focus:border-indigo-500'}`}
+                  disabled={!connectedBank}
+                />
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 border-t border-gray-200">
+              <button
                 onClick={handleDownload}
                 disabled={!connectedBank || !startDate || !endDate}
-                fullWidth
+                className={`w-full flex justify-center items-center px-4 py-2 rounded-md ${
+                  !connectedBank || !startDate || !endDate
+                    ? 'bg-indigo-300 cursor-not-allowed text-white'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                }`}
               >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
                 Download Transactions
-              </Button>
-            </CardActions>
-          </StyledCard>
-        </Grid>
-        <Grid item xs={12}>
-          <StyledCard>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Recent Transactions
-              </Typography>
-              <TextField
-                fullWidth
-                variant="outlined"
-                placeholder="Search transactions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{ mb: 2 }}
-                disabled={!connectedBank}
-              />
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="col-span-1 md:col-span-2">
+          <div className="bg-white shadow rounded-lg h-full flex flex-col justify-between">
+            <div className="p-6 flex-grow">
+              <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
+              
+              <div className="relative mb-4">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search transactions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`w-full pl-10 p-2 border border-gray-300 rounded-md ${!connectedBank ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-indigo-500 focus:border-indigo-500'}`}
+                  disabled={!connectedBank}
+                />
+              </div>
+              
               {connectedBank ? (
-                <TableContainer component={Paper}>
-                  <Table sx={{ minWidth: 650 }} aria-label="transactions table">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>
-                          <strong>Description</strong>
-                        </TableCell>
-                        <TableCell align="right">
-                          <strong>Date</strong>
-                        </TableCell>
-                        <TableCell align="right">
-                          <strong>Amount</strong>
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Description
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
                       {filteredTransactions.length > 0 ? (
                         filteredTransactions.map((transaction) => (
-                          <TableRow
-                            key={transaction.id}
-                            sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                          >
-                            <TableCell component="th" scope="row">
+                          <tr key={transaction.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {transaction.description}
-                            </TableCell>
-                            <TableCell align="right">
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
                               {new Date(transaction.date).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell align="right">${transaction.amount.toFixed(2)}</TableCell>
-                          </TableRow>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                              ${transaction.amount.toFixed(2)}
+                            </td>
+                          </tr>
                         ))
                       ) : (
-                        <TableRow>
-                          <TableCell colSpan={3} align="center">
+                        <tr>
+                          <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
                             No transactions found.
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                       )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                    </tbody>
+                  </table>
+                </div>
               ) : (
-                <Typography>Please connect a bank account to view recent transactions.</Typography>
+                <p className="text-gray-600">Please connect a bank account to view recent transactions.</p>
               )}
-            </CardContent>
-            <CardActions>
-              <Button
-                variant="outlined"
-                startIcon={<RefreshIcon />}
+            </div>
+            
+            <div className="px-6 py-4 border-t border-gray-200">
+              <button
                 onClick={fetchRecentTransactions}
                 disabled={!connectedBank}
+                className={`flex items-center px-4 py-2 rounded-md ${
+                  !connectedBank
+                    ? 'border border-gray-300 text-gray-400 cursor-not-allowed'
+                    : 'text-indigo-600 hover:text-indigo-800 border border-indigo-600'
+                }`}
               >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                </svg>
                 Refresh Transactions
-              </Button>
-            </CardActions>
-          </StyledCard>
-        </Grid>
-      </Grid>
-    </Box>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -6,6 +6,13 @@ import { fetchUserAttributes, fetchAuthSession } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { usePathname, useRouter } from 'next/navigation';
 import { isPublicRoute } from '@/lib/authUtils';
+import { 
+  COGNITO_ATTRIBUTES,
+  COOKIE_NAMES, 
+  STORAGE_KEYS,
+  ONBOARDING_STATUS,
+  ONBOARDING_STEPS
+} from '@/constants/onboarding';
 
 /**
  * Global dashboard app component that runs at the application level
@@ -26,24 +33,89 @@ const DashboardApp = ({ children }) => {
         return;
       }
       
-      // Check cookies for onboarding status
-      const onboardingStatus = document.cookie.split('; ')
-        .find(row => row.startsWith('onboardedStatus='))
-        ?.split('=')[1];
+      // Helper to get cookie value
+      const getCookie = (name) => {
+        const value = document.cookie.split('; ')
+          .find(row => row.startsWith(`${name}=`))
+          ?.split('=')[1];
+        return value;
+      };
       
-      const onboardingStep = document.cookie.split('; ')
-        .find(row => row.startsWith('onboardingStep='))
-        ?.split('=')[1];
+      // Check cookies for onboarding status
+      const onboardingStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS);
+      const onboardingStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP);
+      const setupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED);
+      const freePlanSelected = getCookie(COOKIE_NAMES.FREE_PLAN_SELECTED);
+      
+      // Check localStorage as well
+      let localStorageOnboarding = null;
+      let localStorageSetupDone = null;
+      
+      try {
+        localStorageOnboarding = localStorage.getItem(STORAGE_KEYS.ONBOARDING_STATUS);
+        localStorageSetupDone = localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED) === 'true';
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+      
+      // Consider user onboarded if ANY of these indicators are true
+      const isOnboarded = 
+        onboardingStatus === ONBOARDING_STATUS.COMPLETE || 
+        setupCompleted === 'true' || 
+        freePlanSelected === 'true' ||
+        localStorageOnboarding === ONBOARDING_STATUS.COMPLETE ||
+        localStorageSetupDone === true ||
+        onboardingStep === ONBOARDING_STEPS.COMPLETE;
       
       logger.debug('[DashboardApp] Client-side onboarding check:', { 
         onboardingStatus, 
         onboardingStep,
+        setupCompleted,
+        freePlanSelected,
+        localStorageOnboarding,
+        localStorageSetupDone,
+        isOnboarded,
         pathname 
       });
+
+      // **CRITICAL FIX**: If cookies indicate user is onboarded, allow dashboard access
+      // regardless of other indicators
+      if (pathname.includes('/dashboard') && 
+          (onboardingStatus === ONBOARDING_STATUS.COMPLETE || setupCompleted === 'true' || 
+           freePlanSelected === 'true' || onboardingStep === ONBOARDING_STEPS.COMPLETE)) {
+        logger.info('[DashboardApp] Cookies indicate user is onboarded, allowing dashboard access');
+        return; // Exit and allow access
+      }
+
+      // Check URL parameters for new accounts
+      const urlParams = new URLSearchParams(window.location.search);
+      const isNewAccount = urlParams.get('newAccount') === 'true';
+      const planSelected = urlParams.get('plan');
+      
+      // If coming from onboarding flow with plan selection, 
+      // consider this as completed onboarding
+      if (pathname.includes('/dashboard') && isNewAccount && planSelected) {
+        logger.info('[DashboardApp] New account with plan detected, setting onboarding completion');
+        document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/`;
+        document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/`;
+        document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.COMPLETE}; path=/`;
+        if (planSelected === 'free') {
+          document.cookie = `${COOKIE_NAMES.FREE_PLAN_SELECTED}=true; path=/`;
+        }
+        
+        try {
+          localStorage.setItem(STORAGE_KEYS.ONBOARDING_STATUS, ONBOARDING_STATUS.COMPLETE);
+          localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETED, 'true');
+        } catch (e) {
+          // Ignore localStorage errors
+        }
+        
+        return; // Allow dashboard access
+      }
       
       // If not onboarded and trying to access dashboard, redirect to onboarding
-      if (pathname.includes('/dashboard') && onboardingStatus !== 'COMPLETE') {
-        const redirectPath = onboardingStep && onboardingStep !== 'dashboard' && onboardingStep !== 'complete'
+      if (pathname.includes('/dashboard') && !isOnboarded) {
+        const redirectPath = onboardingStep && onboardingStep !== ONBOARDING_STEPS.DASHBOARD && onboardingStep !== ONBOARDING_STEPS.COMPLETE
           ? `/onboarding/${onboardingStep}`
           : '/onboarding/business-info';
         
@@ -71,6 +143,43 @@ const DashboardApp = ({ children }) => {
       }
       
       try {
+        // **CRITICAL FIX**: First check if cookies indicate onboarding is complete
+        // If so, allow dashboard access immediately without waiting for Cognito
+        const getCookie = (name) => {
+          const value = document.cookie.split('; ')
+            .find(row => row.startsWith(`${name}=`))
+            ?.split('=')[1];
+          return value;
+        };
+        
+        const cookieOnboardingStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS);
+        const cookieSetupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED);
+        
+        if (pathname.startsWith('/dashboard') && 
+            (cookieOnboardingStatus === ONBOARDING_STATUS.COMPLETE || cookieSetupCompleted === 'true')) {
+          logger.info('[DashboardApp] Cookies indicate onboarding complete, proceeding with dashboard');
+          setInitialCheckComplete(true);
+          
+          // We'll still fetch and update attributes in the background, but don't redirect
+          fetchUserAttributes().catch(() => ({})).then(attrs => {
+            if (attrs && (attrs[COGNITO_ATTRIBUTES.ONBOARDING_STATUS] !== ONBOARDING_STATUS.COMPLETE || attrs[COGNITO_ATTRIBUTES.SETUP_COMPLETED] !== 'TRUE')) {
+              logger.info('[DashboardApp] Updating Cognito attributes in background');
+              fetch('/api/user/update-attributes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  attributes: {
+                    [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.COMPLETE,
+                    [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'TRUE'
+                  }
+                })
+              }).catch(e => logger.warn('Failed to update attributes:', e));
+            }
+          });
+          
+          return; // Exit early and allow dashboard access
+        }
+        
         // Check current Cognito attributes
         const userAttributes = await fetchUserAttributes().catch(error => {
           logger.warn('[DashboardApp] Error fetching user attributes:', {
@@ -80,9 +189,9 @@ const DashboardApp = ({ children }) => {
           return {}; // Return empty object to continue with defaults
         });
         
-        const onboardingStatus = userAttributes['custom:onboarding'];
-        const setupDone = userAttributes['custom:setupdone'];
-        const businessId = userAttributes['custom:businessid'] || '';
+        const onboardingStatus = userAttributes[COGNITO_ATTRIBUTES.ONBOARDING_STATUS];
+        const setupDone = userAttributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED];
+        const businessId = userAttributes[COGNITO_ATTRIBUTES.BUSINESS_ID] || '';
         
         logger.info('[DashboardApp] Checking Cognito attributes for onboarding status:', {
           onboarding: onboardingStatus || 'not set',
@@ -92,9 +201,94 @@ const DashboardApp = ({ children }) => {
         
         setInitialCheckComplete(true);
         
+        // Also check cookies and localStorage to see if user is truly onboarded
+        // Helper to get cookie value
+        const getCookie = (name) => {
+          const value = document.cookie.split('; ')
+            .find(row => row.startsWith(`${name}=`))
+            ?.split('=')[1];
+          return value;
+        };
+        
+        // Check all possible indicators of completed onboarding
+        const cookieOnboardingStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS);
+        const cookieSetupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED);
+        const cookieFreePlan = getCookie(COOKIE_NAMES.FREE_PLAN_SELECTED);
+        const cookieOnboardingStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP);
+        
+        // Check localStorage too
+        let localStorageOnboarded = false;
+        try {
+          localStorageOnboarded = 
+            localStorage.getItem(STORAGE_KEYS.ONBOARDING_STATUS) === ONBOARDING_STATUS.COMPLETE || 
+            localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED) === 'true';
+        } catch (e) {
+          // Ignore localStorage errors
+        }
+        
+        // Consider onboarded if ANY indicator shows completion
+        const isFullyOnboardedByAnySource = 
+          onboardingStatus === ONBOARDING_STATUS.COMPLETE || 
+          setupDone === 'TRUE' ||
+          cookieOnboardingStatus === ONBOARDING_STATUS.COMPLETE ||
+          cookieSetupCompleted === 'true' ||
+          cookieFreePlan === 'true' ||
+          cookieOnboardingStep === ONBOARDING_STEPS.COMPLETE ||
+          localStorageOnboarded;
+          
+        logger.debug('[DashboardApp] Combined onboarding indicators:', {
+          cognitoOnboarding: onboardingStatus,
+          cognitoSetupDone: setupDone,
+          cookieOnboardingStatus,
+          cookieSetupCompleted,
+          cookieFreePlan,
+          cookieOnboardingStep,
+          localStorageOnboarded,
+          isFullyOnboardedByAnySource,
+          currentPath: pathname
+        });
+        
+        // Critical change: If on dashboard and cookies indicate onboarding complete,
+        // skip redirection regardless of Cognito attributes
+        if (pathname.startsWith('/dashboard') && 
+            (cookieOnboardingStatus === ONBOARDING_STATUS.COMPLETE || 
+             cookieSetupCompleted === 'true' || 
+             cookieFreePlan === 'true' ||
+             cookieOnboardingStep === ONBOARDING_STEPS.COMPLETE ||
+             localStorageOnboarded)) {
+          logger.info('[DashboardApp] Onboarding complete in cookies/localStorage, allowing dashboard access');
+          
+          // CRITICAL FIX: Always update Cognito attributes to match cookie state
+          // This prevents race conditions where Cognito might not be updated yet
+          logger.info('[DashboardApp] Proactively updating Cognito to match cookies/localStorage state');
+          try {
+            const result = await fetch('/api/user/update-attributes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                attributes: {
+                  [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.COMPLETE,
+                  [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'TRUE'
+                },
+                forceUpdate: true
+              })
+            });
+            
+            if (result.ok) {
+              logger.info('[DashboardApp] Successfully updated Cognito attributes to match cookies');
+            } else {
+              logger.warn('[DashboardApp] Failed to update Cognito attributes:', await result.text());
+            }
+          } catch (error) {
+            logger.error('[DashboardApp] Error updating attributes:', error);
+          }
+          
+          return; // Exit early, allow dashboard access
+        }
+        
         // For new users or users with incomplete onboarding, redirect to onboarding
         const isNewUser = !onboardingStatus || onboardingStatus === '';
-        const isOnboardingIncomplete = onboardingStatus !== 'COMPLETE';
+        const isOnboardingIncomplete = !isFullyOnboardedByAnySource;
         
         if ((isNewUser || isOnboardingIncomplete) && !pathname.startsWith('/onboarding')) {
           logger.info(`[DashboardApp] ${isNewUser ? 'New user' : 'Incomplete onboarding'} detected, handling redirection`);
@@ -110,7 +304,7 @@ const DashboardApp = ({ children }) => {
                 },
                 body: JSON.stringify({
                   attributes: {
-                    'custom:onboarding': 'INCOMPLETE'
+                    [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.IN_PROGRESS
                   }
                 })
               });
@@ -122,8 +316,8 @@ const DashboardApp = ({ children }) => {
           }
           
           // Also update cookies to match Cognito state
-          document.cookie = `onboardedStatus=${isNewUser ? 'INCOMPLETE' : onboardingStatus}; path=/`;
-          document.cookie = `onboardingStep=business-info; path=/`;
+          document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${isNewUser ? ONBOARDING_STATUS.IN_PROGRESS : onboardingStatus}; path=/`;
+          document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.BUSINESS_INFO}; path=/`;
           
           // Redirect to onboarding
           const redirectPath = '/onboarding/business-info';
@@ -143,7 +337,7 @@ const DashboardApp = ({ children }) => {
         }
         
         // If attributes are not set to COMPLETE, attempt an update
-        if (onboardingStatus !== 'COMPLETE' || setupDone !== 'TRUE') {
+        if (onboardingStatus !== ONBOARDING_STATUS.COMPLETE || setupDone !== 'TRUE') {
           logger.info('[DashboardApp] Onboarding attributes need update, attempting now');
           
           // Try server-side update first via regular API
@@ -157,8 +351,8 @@ const DashboardApp = ({ children }) => {
               },
               body: JSON.stringify({
                 attributes: {
-                  'custom:onboarding': 'COMPLETE',
-                  'custom:setupdone': 'TRUE'
+                  [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.COMPLETE,
+                  [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'TRUE'
                 }
               })
             });

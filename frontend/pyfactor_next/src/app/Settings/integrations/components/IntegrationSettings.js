@@ -1,14 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Typography,
-  Button,
-  Box,
-  TextField,
-  CircularProgress,
-  Tabs,
-  Tab,
-  Paper,
-} from '@mui/material';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { useToast } from '@/components/Toast/ToastProvider';
 
@@ -51,10 +41,10 @@ const IntegrationSettings = React.memo(
 
     const handleConnectionStatus = (status, platform) => {
       if (status === 'success' && platform === 'shopify') {
-        addMessage('Successfully connected to Shopify!', 'info');
+        toast.info('Successfully connected to Shopify!');
         setIsShopifyConnected(true);
       } else if (status === 'error' && platform === 'shopify') {
-        addMessage('Failed to connect to Shopify. Please try again.', 'error');
+        toast.error('Failed to connect to Shopify. Please try again.');
         setIsShopifyConnected(false);
       }
       setCurrentPlatform('shopify');
@@ -72,15 +62,14 @@ const IntegrationSettings = React.memo(
     const handleConnectWooCommerce = async () => {
       setConnecting(true);
       try {
-        const response = await useApi.post(
+        const response = await axiosInstance.post(
           '/api/integrations/connect-woocommerce/',
           wooCommerceData
         );
-        addMessage(response.data.message, 'info');
+        toast.info(response.data.message);
       } catch (error) {
-        addMessage(
-          error.response?.data?.message || 'An error occurred while connecting to WooCommerce',
-          'error'
+        toast.error(
+          error.response?.data?.message || 'An error occurred while connecting to WooCommerce'
         );
       } finally {
         setConnecting(false);
@@ -90,135 +79,176 @@ const IntegrationSettings = React.memo(
     const initiateShopifyOAuth = async () => {
       setConnecting(true);
       try {
-        const response = await useApi.post('/api/integrations/initiate-shopify-oauth/', {
+        const response = await axiosInstance.post('/api/integrations/initiate-shopify-oauth/', {
           shop: shopifyData.shop,
         });
         if (response.data.authUrl) {
           window.location.href = response.data.authUrl;
         } else {
-          addMessage('Failed to initiate Shopify OAuth: No auth URL received', 'error');
+          toast.error('Failed to initiate Shopify OAuth: No auth URL received');
         }
       } catch (error) {
-        addMessage(
-          error.response?.data?.message || 'An error occurred while initiating Shopify OAuth',
-          'error'
+        toast.error(
+          error.response?.data?.message || 'An error occurred while initiating Shopify OAuth'
         );
       } finally {
         setConnecting(false);
       }
     };
 
-    const handleTabChange = (event, newValue) => {
+    const handleTabChange = (newValue) => {
       setCurrentPlatform(newValue);
     };
 
     console.log('IntegrationSettings rendering content', { businessData });
 
     return (
-      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', p: 3 }}>
-        <Paper elevation={3} sx={{ p: 3 }}>
-          <Typography variant="h4" gutterBottom>
+      <div className="bg-white min-h-screen p-6">
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h4 className="text-2xl font-semibold mb-4">
             {title || 'Integrations Settings'}
-          </Typography>
+          </h4>
           {isShopifyConnected && (
-            <Typography variant="body1" sx={{ color: 'green', mb: 2 }}>
+            <p className="text-green-600 mb-4">
               Connected to Shopify
-            </Typography>
+            </p>
           )}
           {businessData && businessData.business_type?.toLowerCase() === 'ecommerce' && (
             <>
-              <Tabs
-                value={currentPlatform}
-                onChange={handleTabChange}
-                aria-label="e-commerce platforms"
-              >
-                {PLATFORMS.map((platform) => (
-                  <Tab key={platform.value} label={platform.label} value={platform.value} />
-                ))}
-              </Tabs>
-              <Box mt={3}>
+              <div className="border-b border-gray-200">
+                <nav className="flex -mb-px">
+                  {PLATFORMS.map((platform) => (
+                    <button
+                      key={platform.value}
+                      className={`py-2 px-4 font-medium text-sm mr-8 ${
+                        currentPlatform === platform.value
+                          ? 'border-b-2 border-blue-500 text-blue-600'
+                          : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                      onClick={() => handleTabChange(platform.value)}
+                    >
+                      {platform.label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+              <div className="mt-6">
                 {currentPlatform === 'woocommerce' && (
                   <>
-                    <Typography variant="h5">WooCommerce</Typography>
-                    <Typography variant="body1" mt={1}>
+                    <h5 className="text-xl font-semibold">WooCommerce</h5>
+                    <p className="mt-2 text-gray-700">
                       Connect to your WooCommerce store here.
-                    </Typography>
-                    <Box component="form" noValidate autoComplete="off" mt={2}>
-                      <TextField
-                        fullWidth
-                        margin="normal"
-                        name="url"
-                        label="WooCommerce Store URL"
-                        value={wooCommerceData.url}
-                        onChange={(e) => handleInputChange(e, 'woocommerce')}
-                      />
-                      <TextField
-                        fullWidth
-                        margin="normal"
-                        name="consumer_key"
-                        label="Consumer Key"
-                        value={wooCommerceData.consumer_key}
-                        onChange={(e) => handleInputChange(e, 'woocommerce')}
-                      />
-                      <TextField
-                        fullWidth
-                        margin="normal"
-                        name="consumer_secret"
-                        label="Consumer Secret"
-                        type="password"
-                        value={wooCommerceData.consumer_secret}
-                        onChange={(e) => handleInputChange(e, 'woocommerce')}
-                      />
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={handleConnectWooCommerce}
-                        disabled={connecting}
-                        sx={{ mt: 2 }}
-                      >
-                        {connecting ? <CircularProgress size={24} /> : 'Connect to WooCommerce'}
-                      </Button>
-                    </Box>
+                    </p>
+                    <form className="mt-4 space-y-4" noValidate autoComplete="off">
+                      <div>
+                        <label htmlFor="woo-url" className="block text-sm font-medium text-gray-700 mb-1">
+                          WooCommerce Store URL
+                        </label>
+                        <input
+                          id="woo-url"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          name="url"
+                          value={wooCommerceData.url}
+                          onChange={(e) => handleInputChange(e, 'woocommerce')}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="consumer-key" className="block text-sm font-medium text-gray-700 mb-1">
+                          Consumer Key
+                        </label>
+                        <input
+                          id="consumer-key"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          name="consumer_key"
+                          value={wooCommerceData.consumer_key}
+                          onChange={(e) => handleInputChange(e, 'woocommerce')}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="consumer-secret" className="block text-sm font-medium text-gray-700 mb-1">
+                          Consumer Secret
+                        </label>
+                        <input
+                          id="consumer-secret"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          name="consumer_secret"
+                          type="password"
+                          value={wooCommerceData.consumer_secret}
+                          onChange={(e) => handleInputChange(e, 'woocommerce')}
+                        />
+                      </div>
+                      <div>
+                        <button
+                          type="button"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                          onClick={handleConnectWooCommerce}
+                          disabled={connecting}
+                        >
+                          {connecting ? (
+                            <div className="flex items-center justify-center">
+                              <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span>Connecting...</span>
+                            </div>
+                          ) : 'Connect to WooCommerce'}
+                        </button>
+                      </div>
+                    </form>
                   </>
                 )}
                 {currentPlatform === 'shopify' && (
                   <>
-                    <Typography variant="h5">Shopify</Typography>
-                    <Typography variant="body1" mt={1}>
+                    <h5 className="text-xl font-semibold">Shopify</h5>
+                    <p className="mt-2 text-gray-700">
                       Connect to your Shopify store here.
-                    </Typography>
-                    <Box component="form" noValidate autoComplete="off" mt={2}>
-                      <TextField
-                        fullWidth
-                        margin="normal"
-                        name="shop"
-                        label="Shopify Store URL"
-                        value={shopifyData.shop}
-                        onChange={(e) => handleInputChange(e, 'shopify')}
-                        placeholder="yourstore.myshopify.com"
-                      />
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={initiateShopifyOAuth}
-                        disabled={connecting}
-                        sx={{ mt: 2 }}
-                      >
-                        {connecting ? <CircularProgress size={24} /> : 'Connect to Shopify'}
-                      </Button>
-                    </Box>
+                    </p>
+                    <form className="mt-4 space-y-4" noValidate autoComplete="off">
+                      <div>
+                        <label htmlFor="shopify-url" className="block text-sm font-medium text-gray-700 mb-1">
+                          Shopify Store URL
+                        </label>
+                        <input
+                          id="shopify-url"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          name="shop"
+                          value={shopifyData.shop}
+                          onChange={(e) => handleInputChange(e, 'shopify')}
+                          placeholder="yourstore.myshopify.com"
+                        />
+                      </div>
+                      <div>
+                        <button
+                          type="button"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                          onClick={initiateShopifyOAuth}
+                          disabled={connecting}
+                        >
+                          {connecting ? (
+                            <div className="flex items-center justify-center">
+                              <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span>Connecting...</span>
+                            </div>
+                          ) : 'Connect to Shopify'}
+                        </button>
+                      </div>
+                    </form>
                   </>
                 )}
-              </Box>
+              </div>
             </>
           )}
           {(!businessData || businessData.business_type?.toLowerCase() !== 'ecommerce') && (
-            <Typography variant="body1">
+            <p className="text-gray-700">
               Integration settings are only available for e-commerce businesses.
-            </Typography>
+            </p>
           )}
-        </Paper>
-      </Box>
+        </div>
+      </div>
     );
   }
 );

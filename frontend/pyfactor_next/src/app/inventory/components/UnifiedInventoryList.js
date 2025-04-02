@@ -1,22 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
-import {
-  Box, Typography, Paper, Button, TextField, CircularProgress,
-  Alert, Snackbar, Pagination, Chip, FormControlLabel, Switch,
-  Grid, InputAdornment, Badge, Tab, Tabs, Divider, IconButton,
-  Menu, MenuItem, ListItemIcon, ListItemText, Tooltip, Dialog
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import DeleteIcon from '@mui/icons-material/Delete';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import ViewModuleIcon from '@mui/icons-material/ViewModule';
-import ViewCompactIcon from '@mui/icons-material/ViewCompact';
 import { unifiedInventoryService } from '@/services/unifiedInventoryService';
 import { logger } from '@/utils/logger';
+
+// Import Heroicons
+import {
+  PlusIcon, ArrowPathIcon, FunnelIcon, TrashIcon, 
+  CloudArrowUpIcon, CloudArrowDownIcon, ListBulletIcon, 
+  Squares2X2Icon, ViewColumnsIcon, MagnifyingGlassIcon, 
+  XMarkIcon, CheckIcon, ExclamationTriangleIcon, 
+  PaperAirplaneIcon
+} from '@heroicons/react/24/outline';
 
 // Lazy load components for better initial load performance
 const ProductTable = lazy(() => import('./ProductTable'));
@@ -76,7 +69,7 @@ const UnifiedInventoryList = ({ initialCreateForm = false }) => {
 
   // State for bulk actions
   const [selectedItems, setSelectedItems] = useState([]);
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [bulkMenuOpen, setBulkMenuOpen] = useState(false);
 
   // State for snackbar
   const [snackbar, setSnackbar] = useState({
@@ -154,7 +147,7 @@ const UnifiedInventoryList = ({ initialCreateForm = false }) => {
   };
 
   // Handle page change
-  const handlePageChange = (event, newPage) => {
+  const handlePageChange = (newPage) => {
     setPage(newPage);
   };
 
@@ -183,7 +176,7 @@ const UnifiedInventoryList = ({ initialCreateForm = false }) => {
   };
 
   // Handle display mode change
-  const handleDisplayModeChange = (event, newMode) => {
+  const handleDisplayModeChange = (newMode) => {
     if (newMode !== null) {
       setDisplayMode(newMode);
     }
@@ -276,21 +269,16 @@ const UnifiedInventoryList = ({ initialCreateForm = false }) => {
     }
   };
 
-  // Open bulk actions menu
-  const handleOpenBulkMenu = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  // Close bulk actions menu
-  const handleCloseBulkMenu = () => {
-    setAnchorEl(null);
+  // Toggle bulk actions menu
+  const handleToggleBulkMenu = () => {
+    setBulkMenuOpen(!bulkMenuOpen);
   };
 
   // Perform bulk delete
   const handleBulkDelete = async () => {
     try {
       setLoading(true);
-      handleCloseBulkMenu();
+      setBulkMenuOpen(false);
       
       const result = await unifiedInventoryService.bulkDeleteProducts(selectedItems);
       
@@ -355,149 +343,202 @@ const UnifiedInventoryList = ({ initialCreateForm = false }) => {
   }, [searchQuery, filtersApplied]);
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <div className="w-full">
       {/* Statistics Widget */}
-      <Suspense fallback={<Box sx={{ height: 150, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <CircularProgress />
-      </Box>}>
+      <Suspense fallback={
+        <div className="h-[150px] flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        </div>
+      }>
         <ProductStatsWidget stats={statsData} loading={statsLoading} />
       </Suspense>
 
       {/* Action Bar */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6} md={8}>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AddIcon />}
+      <div className="bg-white p-4 rounded-lg shadow mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+          <div className="sm:col-span-8">
+            <div className="flex flex-wrap gap-2">
+              <button
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 onClick={() => handleOpenFormDialog()}
               >
+                <PlusIcon className="h-4 w-4 mr-2" />
                 Add Product
-              </Button>
+              </button>
               
-              <Button
-                variant="outlined"
-                startIcon={<RefreshIcon />}
+              <button
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 onClick={handleRefresh}
                 disabled={loading}
               >
+                <ArrowPathIcon className="h-4 w-4 mr-2" />
                 Refresh
-              </Button>
+              </button>
               
-              <Button
-                variant="outlined"
-                startIcon={<FilterListIcon />}
+              <button
+                className={`inline-flex items-center px-3 py-2 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                  filtersApplied 
+                    ? "text-indigo-700 border-indigo-300 bg-indigo-50 hover:bg-indigo-100" 
+                    : "text-gray-700 border-gray-300 bg-white hover:bg-gray-50"
+                }`}
                 onClick={handleToggleFilters}
-                color={filtersApplied ? "primary" : "inherit"}
               >
+                <FunnelIcon className="h-4 w-4 mr-2" />
                 Filters
-              </Button>
+              </button>
               
               {selectedItems.length > 0 && (
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  startIcon={<Badge badgeContent={selectedItems.length} color="primary">
-                    <DeleteIcon />
-                  </Badge>}
-                  onClick={handleOpenBulkMenu}
-                >
-                  Bulk Actions
-                </Button>
+                <div className="relative">
+                  <button
+                    className="inline-flex items-center px-3 py-2 border border-indigo-300 text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    onClick={handleToggleBulkMenu}
+                  >
+                    <span className="relative mr-2">
+                      <TrashIcon className="h-4 w-4" />
+                      <span className="absolute -top-2 -right-2 inline-flex items-center justify-center h-4 w-4 text-xs font-bold text-white bg-indigo-600 rounded-full">
+                        {selectedItems.length}
+                      </span>
+                    </span>
+                    Bulk Actions
+                  </button>
+                  
+                  {/* Bulk Actions Menu */}
+                  {bulkMenuOpen && (
+                    <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                      <div className="py-1" role="menu" aria-orientation="vertical">
+                        <button
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 flex items-center"
+                          role="menuitem"
+                          onClick={handleBulkDelete}
+                        >
+                          <TrashIcon className="h-4 w-4 mr-3 text-gray-500" />
+                          Delete Selected ({selectedItems.length})
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
-            </Box>
-          </Grid>
+            </div>
+          </div>
           
-          <Grid item xs={12} sm={6} md={4}>
-            <Box sx={{ display: 'flex', gap: 1, justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
-              <Tooltip title="Import Products">
-                <IconButton onClick={handleOpenImportDialog}>
-                  <CloudUploadIcon />
-                </IconButton>
-              </Tooltip>
+          <div className="sm:col-span-4">
+            <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
+              <button
+                className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                onClick={handleOpenImportDialog}
+                title="Import Products"
+              >
+                <CloudArrowUpIcon className="h-5 w-5" />
+              </button>
               
-              <Tooltip title="Export Products">
-                <IconButton onClick={handleOpenExportDialog}>
-                  <CloudDownloadIcon />
-                </IconButton>
-              </Tooltip>
+              <button
+                className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                onClick={handleOpenExportDialog}
+                title="Export Products"
+              >
+                <CloudArrowDownIcon className="h-5 w-5" />
+              </button>
               
-              <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+              <div className="h-6 border-l border-gray-300 mx-1"></div>
               
-              <Tooltip title="Table View">
-                <IconButton 
-                  color={viewMode === 'table' ? 'primary' : 'default'}
-                  onClick={() => handleViewModeChange('table')}
-                >
-                  <ViewListIcon />
-                </IconButton>
-              </Tooltip>
+              <button
+                className={`p-2 rounded-md hover:bg-gray-100 ${
+                  viewMode === 'table' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => handleViewModeChange('table')}
+                title="Table View"
+              >
+                <ListBulletIcon className="h-5 w-5" />
+              </button>
               
-              <Tooltip title="Grid View">
-                <IconButton 
-                  color={viewMode === 'grid' ? 'primary' : 'default'}
-                  onClick={() => handleViewModeChange('grid')}
-                >
-                  <ViewModuleIcon />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          </Grid>
-        </Grid>
+              <button
+                className={`p-2 rounded-md hover:bg-gray-100 ${
+                  viewMode === 'grid' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => handleViewModeChange('grid')}
+                title="Grid View"
+              >
+                <Squares2X2Icon className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Search Box */}
-        <Box sx={{ mt: 2 }}>
-          <TextField
-            fullWidth
-            placeholder="Search products by name, code, or description..."
-            value={searchQuery}
-            onChange={handleSearch}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-              endAdornment: searchQuery && (
-                <InputAdornment position="end">
-                  <IconButton 
-                    size="small" 
-                    onClick={() => setSearchQuery('')}
-                    title="Clear search"
-                  >
-                    <Box sx={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'gray' }}>✕</Box>
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
-            size="small"
-            sx={{ backgroundColor: 'white' }}
-          />
-        </Box>
+        <div className="mt-4">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="Search products by name, code, or description..."
+              value={searchQuery}
+              onChange={handleSearch}
+            />
+            {searchQuery && (
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="h-5 w-5 text-gray-400 hover:text-gray-500"
+                  title="Clear search"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
         
         {/* Display Mode Tabs */}
-        <Box sx={{ mt: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs
-            value={displayMode}
-            onChange={handleDisplayModeChange}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{ '& .MuiTab-root': { minWidth: 'auto', px: 2 } }}
-          >
-            <Tab value="ultra" label="Compact" icon={<ViewCompactIcon />} iconPosition="start" />
-            <Tab value="standard" label="Standard" icon={<ViewListIcon />} iconPosition="start" />
-            <Tab value="detailed" label="Detailed" icon={<ViewModuleIcon />} iconPosition="start" />
-          </Tabs>
-        </Box>
-      </Paper>
+        <div className="mt-4 border-b border-gray-200">
+          <div className="flex overflow-x-auto">
+            <button
+              className={`pb-2 px-4 text-sm font-medium inline-flex items-center ${
+                displayMode === 'ultra'
+                  ? 'border-b-2 border-indigo-500 text-indigo-600' 
+                  : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={() => handleDisplayModeChange('ultra')}
+            >
+              <ViewColumnsIcon className="h-4 w-4 mr-2" />
+              Compact
+            </button>
+            <button
+              className={`pb-2 px-4 text-sm font-medium inline-flex items-center ${
+                displayMode === 'standard'
+                  ? 'border-b-2 border-indigo-500 text-indigo-600' 
+                  : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={() => handleDisplayModeChange('standard')}
+            >
+              <ListBulletIcon className="h-4 w-4 mr-2" />
+              Standard
+            </button>
+            <button
+              className={`pb-2 px-4 text-sm font-medium inline-flex items-center ${
+                displayMode === 'detailed'
+                  ? 'border-b-2 border-indigo-500 text-indigo-600' 
+                  : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={() => handleDisplayModeChange('detailed')}
+            >
+              <Squares2X2Icon className="h-4 w-4 mr-2" />
+              Detailed
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Filters Panel */}
       {showFilters && (
-        <Suspense fallback={<Box sx={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <CircularProgress size={24} />
-        </Box>}>
+        <Suspense fallback={
+          <div className="h-[100px] flex items-center justify-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+          </div>
+        }>
           <ProductFiltersPanel 
             filters={filters} 
             onFilterChange={handleFilterChange} 
@@ -508,56 +549,88 @@ const UnifiedInventoryList = ({ initialCreateForm = false }) => {
 
       {/* Error Alert */}
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+        <div className="mb-4 rounded-md bg-red-50 p-4 border border-red-200">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-red-800">{error}</p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Active Filters */}
       {hasActiveFilters && (
-        <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        <div className="mb-4 flex flex-wrap gap-2">
           {searchQuery && (
-            <Chip 
-              label={`Search: ${searchQuery}`} 
-              onDelete={() => setSearchQuery('')}
-              size="small"
-            />
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-0.5 text-sm font-medium text-gray-800">
+              Search: {searchQuery}
+              <button
+                type="button"
+                className="ml-1 inline-flex flex-shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-500"
+                onClick={() => setSearchQuery('')}
+              >
+                <XMarkIcon className="h-3 w-3" />
+              </button>
+            </span>
           )}
           
           {filters.category_id && (
-            <Chip 
-              label={`Category Filter`} 
-              onDelete={() => handleFilterChange({...filters, category_id: ''})}
-              size="small"
-            />
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-0.5 text-sm font-medium text-gray-800">
+              Category Filter
+              <button
+                type="button"
+                className="ml-1 inline-flex flex-shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-500"
+                onClick={() => handleFilterChange({...filters, category_id: ''})}
+              >
+                <XMarkIcon className="h-3 w-3" />
+              </button>
+            </span>
           )}
           
           {filters.supplier_id && (
-            <Chip 
-              label={`Supplier Filter`} 
-              onDelete={() => handleFilterChange({...filters, supplier_id: ''})}
-              size="small"
-            />
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-0.5 text-sm font-medium text-gray-800">
+              Supplier Filter
+              <button
+                type="button"
+                className="ml-1 inline-flex flex-shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-500"
+                onClick={() => handleFilterChange({...filters, supplier_id: ''})}
+              >
+                <XMarkIcon className="h-3 w-3" />
+              </button>
+            </span>
           )}
           
           {filters.location_id && (
-            <Chip 
-              label={`Location Filter`} 
-              onDelete={() => handleFilterChange({...filters, location_id: ''})}
-              size="small"
-            />
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-0.5 text-sm font-medium text-gray-800">
+              Location Filter
+              <button
+                type="button"
+                className="ml-1 inline-flex flex-shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-500"
+                onClick={() => handleFilterChange({...filters, location_id: ''})}
+              >
+                <XMarkIcon className="h-3 w-3" />
+              </button>
+            </span>
           )}
           
           {filters.include_inactive && (
-            <Chip 
-              label="Including Inactive" 
-              onDelete={() => handleFilterChange({...filters, include_inactive: false})}
-              size="small"
-            />
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-0.5 text-sm font-medium text-gray-800">
+              Including Inactive
+              <button
+                type="button"
+                className="ml-1 inline-flex flex-shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-500"
+                onClick={() => handleFilterChange({...filters, include_inactive: false})}
+              >
+                <XMarkIcon className="h-3 w-3" />
+              </button>
+            </span>
           )}
           
-          <Button 
-            size="small" 
+          <button 
+            className="text-sm text-indigo-600 hover:text-indigo-500"
             onClick={() => {
               setSearchQuery('');
               handleFilterChange({
@@ -569,35 +642,37 @@ const UnifiedInventoryList = ({ initialCreateForm = false }) => {
             }}
           >
             Clear All
-          </Button>
-        </Box>
+          </button>
+        </div>
       )}
 
       {/* Loading Indicator */}
       {initialLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-          <CircularProgress />
-        </Box>
+        <div className="flex justify-center my-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+        </div>
       ) : (
         <>
           {/* No Products Message */}
           {products.length === 0 ? (
-            <Box sx={{ textAlign: 'center', p: 4, backgroundColor: 'white', borderRadius: 1 }}>
-              <Typography variant="h6" color="text.secondary">
+            <div className="text-center p-8 bg-white rounded-lg shadow">
+              <h3 className="text-lg font-medium text-gray-500">
                 No products found
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              </h3>
+              <p className="mt-2 text-sm text-gray-500">
                 {hasActiveFilters 
                   ? 'Try changing your search or filters'
                   : 'Click "Add Product" to create your first product'}
-              </Typography>
-            </Box>
+              </p>
+            </div>
           ) : (
             <>
               {/* Products Display */}
-              <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-                <CircularProgress />
-              </Box>}>
+              <Suspense fallback={
+                <div className="flex justify-center my-8">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+                </div>
+              }>
                 {viewMode === 'table' ? (
                   <ProductTable
                     products={products}
@@ -625,23 +700,88 @@ const UnifiedInventoryList = ({ initialCreateForm = false }) => {
               </Suspense>
               
               {/* Pagination */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, pb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
+              <div className="flex flex-col sm:flex-row justify-between items-center mt-4 pb-4">
+                <p className="text-sm text-gray-500 mb-4 sm:mb-0">
                   Showing {Math.min((page - 1) * limit + 1, totalItems)} - {Math.min(page * limit, totalItems)} of {totalItems} items
-                </Typography>
+                </p>
                 
                 {totalPages > 1 && (
-                  <Pagination
-                    count={totalPages}
-                    page={page}
-                    onChange={handlePageChange}
-                    color="primary"
-                    showFirstButton
-                    showLastButton
-                    disabled={loading}
-                  />
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handlePageChange(1)}
+                      disabled={page === 1 || loading}
+                      className={`px-2 py-1 border rounded-md ${
+                        page === 1 || loading
+                          ? 'text-gray-400 border-gray-200 cursor-not-allowed'
+                          : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      First
+                    </button>
+                    <button
+                      onClick={() => handlePageChange(page - 1)}
+                      disabled={page === 1 || loading}
+                      className={`px-2 py-1 border rounded-md ${
+                        page === 1 || loading
+                          ? 'text-gray-400 border-gray-200 cursor-not-allowed'
+                          : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      Previous
+                    </button>
+                    
+                    <div className="flex space-x-1">
+                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                        const pageNumber = page <= 3
+                          ? i + 1
+                          : page >= totalPages - 2
+                            ? totalPages - 4 + i
+                            : page - 2 + i;
+                            
+                        if (pageNumber > 0 && pageNumber <= totalPages) {
+                          return (
+                            <button
+                              key={pageNumber}
+                              onClick={() => handlePageChange(pageNumber)}
+                              className={`w-8 h-8 flex items-center justify-center border rounded-md ${
+                                page === pageNumber
+                                  ? 'bg-indigo-600 text-white border-indigo-600'
+                                  : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              {pageNumber}
+                            </button>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+                    
+                    <button
+                      onClick={() => handlePageChange(page + 1)}
+                      disabled={page === totalPages || loading}
+                      className={`px-2 py-1 border rounded-md ${
+                        page === totalPages || loading
+                          ? 'text-gray-400 border-gray-200 cursor-not-allowed'
+                          : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      Next
+                    </button>
+                    <button
+                      onClick={() => handlePageChange(totalPages)}
+                      disabled={page === totalPages || loading}
+                      className={`px-2 py-1 border rounded-md ${
+                        page === totalPages || loading
+                          ? 'text-gray-400 border-gray-200 cursor-not-allowed'
+                          : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      Last
+                    </button>
+                  </div>
                 )}
-              </Box>
+              </div>
             </>
           )}
         </>
@@ -689,61 +829,84 @@ const UnifiedInventoryList = ({ initialCreateForm = false }) => {
       </Suspense>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={handleCloseDeleteDialog}
-      >
-        <Box sx={{ p: 2 }}>
-          <Typography variant="h6">Confirm Delete</Typography>
-          <Typography variant="body1" sx={{ mt: 2 }}>
-            Are you sure you want to delete this product? This action cannot be undone.
-          </Typography>
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
-            <Button 
-              color="error" 
-              variant="contained" 
-              onClick={handleDeleteConfirm}
-              disabled={loading}
-            >
-              {loading ? <CircularProgress size={24} /> : 'Delete'}
-            </Button>
-          </Box>
-        </Box>
-      </Dialog>
-
-      {/* Bulk Actions Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleCloseBulkMenu}
-      >
-        <MenuItem onClick={handleBulkDelete}>
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>
-            Delete Selected ({selectedItems.length})
-          </ListItemText>
-        </MenuItem>
-      </Menu>
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 z-10 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={handleCloseDeleteDialog}></div>
+            
+            {/* Center modal */}
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                      Confirm Delete
+                    </h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Are you sure you want to delete this product? This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={handleDeleteConfirm}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    'Delete'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={handleCloseDeleteDialog}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-      >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbar.severity} 
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+      {snackbar.open && (
+        <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 rounded-md py-2 px-4 shadow-lg flex items-center ${
+          snackbar.severity === 'success' ? 'bg-green-500 text-white' :
+          snackbar.severity === 'error' ? 'bg-red-500 text-white' :
+          snackbar.severity === 'warning' ? 'bg-amber-500 text-white' :
+          'bg-blue-500 text-white'
+        }`}>
+          <span className="mr-2">
+            {snackbar.severity === 'success' ? <CheckIcon className="h-5 w-5" /> : 
+             snackbar.severity === 'error' ? <ExclamationTriangleIcon className="h-5 w-5" /> : 
+             snackbar.severity === 'warning' ? <ExclamationTriangleIcon className="h-5 w-5" /> : 
+             <PaperAirplaneIcon className="h-5 w-5" />}
+          </span>
+          <p>{snackbar.message}</p>
+          <button 
+            onClick={handleCloseSnackbar}
+            className="ml-4 focus:outline-none text-white opacity-50 hover:opacity-100"
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+    </div>
   );
 };
 
-export default UnifiedInventoryList; 
+export default UnifiedInventoryList;

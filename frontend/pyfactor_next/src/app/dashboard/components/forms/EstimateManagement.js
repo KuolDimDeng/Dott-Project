@@ -1,42 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Tabs,
-  useTheme,
-  Tab,
-  Button,
-  TextField,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Menu,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  IconButton,
-  Grid,
-  InputAdornment,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import React, { useState, useEffect, Fragment } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useToast } from '@/components/Toast/ToastProvider';
+import DatePickerWrapper from '@/components/ui/DatePickerWrapper';
 
 const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
   const [activeTab, setActiveTab] = useState(isNewEstimate ? 0 : 2);
@@ -59,14 +25,13 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedEstimate, setEditedEstimate] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [exportAnchorEl, setExportAnchorEl] = useState(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [userSchema, setUserSchema] = useState('');
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
   const [customersLoading, setCustomersLoading] = useState(true);
   const [customersError, setCustomersError] = useState(null);
-  const theme = useTheme();
 
   useEffect(() => {
     fetchCustomers();
@@ -235,7 +200,7 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
     }
   };
 
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (newValue) => {
     setActiveTab(newValue);
   };
 
@@ -440,12 +405,12 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
     }
   };
 
-  const handleExportClick = (event) => {
-    setExportAnchorEl(event.currentTarget);
+  const handleExportClick = () => {
+    setExportMenuOpen(!exportMenuOpen);
   };
 
   const handleExportClose = () => {
-    setExportAnchorEl(null);
+    setExportMenuOpen(false);
   };
 
   const handleExport = (format) => {
@@ -454,401 +419,646 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
     handleExportClose();
   };
 
-  const buttonStyle = {
-    color: '#000080',
-    borderColor: '#000080',
-    '&:hover': {
-      backgroundColor: '#000080',
-      color: 'white',
-    },
-  };
-
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-        <Typography variant="h4" gutterBottom>
-          Estimate Management
-        </Typography>
-        <Tabs value={activeTab} onChange={handleTabChange}>
-          <Tab label="Create" />
-          <Tab label="Details" />
-          <Tab label="List" />
-        </Tabs>
+    <div className="bg-gray-50 p-6 rounded-lg">
+      <h1 className="text-2xl font-semibold mb-4">
+        Estimate Management
+      </h1>
+      
+      {/* Tabs */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="flex -mb-px">
+          <button 
+            onClick={() => handleTabChange(0)} 
+            className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
+              activeTab === 0 
+                ? 'text-blue-600 border-blue-600 bg-blue-50' 
+                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Create
+          </button>
+          <button 
+            onClick={() => handleTabChange(1)} 
+            className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
+              activeTab === 1 
+                ? 'text-blue-600 border-blue-600 bg-blue-50' 
+                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Details
+          </button>
+          <button 
+            onClick={() => handleTabChange(2)} 
+            className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
+              activeTab === 2 
+                ? 'text-blue-600 border-blue-600 bg-blue-50' 
+                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            List
+          </button>
+        </nav>
+      </div>
 
-        {activeTab === 0 && (
-          <Box mt={3}>
-            <Typography variant="h6" gutterBottom>
-              Create Estimate
-            </Typography>
-            <form onSubmit={handleCreateEstimate}>
-              <TextField
-                label="Title"
-                name="title"
-                value={newEstimate.title}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-                required
-              />
-              <TextField
-                label="Summary"
-                name="summary"
-                value={newEstimate.summary}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-                multiline
-                rows={3}
-              />
-
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Customer</InputLabel>
-                  <Select
-                    name="customerRef"
-                    value={newEstimate.customerRef}
-                    onChange={handleCustomerChange}
-                    error={!!customersError}
-                  >
-                    <MenuItem value="">
-                      <em>Select a customer</em>
-                    </MenuItem>
-                    {customers.map((customer) => (
-                      <MenuItem key={customer.id} value={String(customer.id)}>
-                        {customer.customerName || `${customer.first_name} ${customer.last_name}`}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                {customersError && (
-                  <Typography color="error" variant="caption">
-                    {customersError}
-                  </Typography>
-                )}
-              </Grid>
-
-              <DatePicker
-                label="Date"
-                value={newEstimate.date}
-                onChange={(date) => handleDateChange(date, 'date')}
-                slotProps={{ textField: { fullWidth: true, margin: "normal" } }}
-              />
-              <DatePicker
-                label="Valid Until"
-                value={newEstimate.valid_until}
-                onChange={(date) => handleDateChange(date, 'valid_until')}
-                slotProps={{ textField: { fullWidth: true, margin: "normal" } }}
-              />
-
-              <Typography variant="h6" gutterBottom>
-                Items
-              </Typography>
-              {newEstimate.items.map((item, index) => (
-                <Box key={index} sx={{ display: 'flex', mb: 2 }}>
-                  <FormControl sx={{ mr: 2, flexGrow: 1 }}>
-                    <InputLabel>Product/Service</InputLabel>
-                    <Select
-                      value={item.product}
-                      onChange={(e) => handleItemChange(index, 'product', e.target.value)}
-                    >
-                      {products.map((product) => (
-                        <MenuItem key={product.id} value={product.id}>
-                          {product.name}
-                        </MenuItem>
-                      ))}
-                      {services.map((service) => (
-                        <MenuItem key={service.id} value={service.id}>
-                          {service.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <TextField
-                    sx={{ mr: 2, width: '100px' }}
-                    type="number"
-                    label="Quantity"
-                    value={item.quantity}
-                    onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                  />
-                  <TextField
-                    sx={{ mr: 2, width: '150px' }}
-                    type="number"
-                    label="Unit Price"
-                    value={item.unitPrice}
-                    onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                  />
-                  <IconButton onClick={() => handleItemRemove(index)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Box>
-              ))}
-              <Button startIcon={<AddIcon />} onClick={handleItemAdd}>
-                Add Item
-              </Button>
-
-              <TextField
-                label="Discount"
-                name="discount"
-                type="number"
-                value={newEstimate.discount}
-                onChange={handleDiscountChange}
-                fullWidth
-                margin="normal"
-              />
-
-              <TextField
-                label="Total Amount"
-                value={newEstimate.totalAmount.toFixed(2)}
-                fullWidth
-                margin="normal"
-                disabled
-              />
-
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Currency</InputLabel>
-                <Select name="currency" value={newEstimate.currency} onChange={handleInputChange}>
-                  <MenuItem value="USD">USD</MenuItem>
-                  <MenuItem value="EUR">EUR</MenuItem>
-                  <MenuItem value="GBP">GBP</MenuItem>
-                </Select>
-              </FormControl>
-
-              <TextField
-                label="Footer"
-                name="footer"
-                value={newEstimate.footer}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-                multiline
-                rows={3}
-              />
-
-              <Button type="submit" variant="contained" color="primary">
-                Create Estimate
-              </Button>
-            </form>
-          </Box>
-        )}
-
-        {activeTab === 1 && (
-          <Box mt={3}>
-            <Typography variant="h6" gutterBottom>
-              Estimate Details
-            </Typography>
-            {selectedEstimate ? (
-              <Box>
-                <TextField
-                  label="Title"
+      {/* Create Estimate Form */}
+      {activeTab === 0 && (
+        <div className="mt-6">
+          <h2 className="text-lg font-medium mb-4">
+            Create Estimate
+          </h2>
+          <form onSubmit={handleCreateEstimate}>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  id="title"
                   name="title"
-                  value={isEditing ? editedEstimate.title : selectedEstimate.title}
+                  value={newEstimate.title}
                   onChange={handleInputChange}
-                  fullWidth
-                  margin="normal"
-                  disabled={!isEditing}
+                  required
+                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border"
                 />
-                <TextField
-                  label="Summary"
+              </div>
+              
+              <div>
+                <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-1">
+                  Summary
+                </label>
+                <textarea
+                  id="summary"
                   name="summary"
-                  value={isEditing ? editedEstimate.summary : selectedEstimate.summary}
+                  rows="3"
+                  value={newEstimate.summary}
                   onChange={handleInputChange}
-                  fullWidth
-                  margin="normal"
-                  multiline
-                  rows={3}
-                  disabled={!isEditing}
-                />
-                <TextField
-                  label="Customer"
-                  name="customer_name"
-                  value={isEditing ? editedEstimate.customer_name : selectedEstimate.customer_name}
-                  onChange={handleInputChange}
-                  fullWidth
-                  margin="normal"
-                  disabled={!isEditing}
-                />
-                <TextField
-                  label="Date"
-                  name="date"
-                  type="date"
-                  value={isEditing ? editedEstimate.date : selectedEstimate.date}
-                  onChange={handleInputChange}
-                  fullWidth
-                  margin="normal"
-                  disabled={!isEditing}
-                  InputLabelProps={{ shrink: true }}
-                />
-                <TextField
-                  label="Valid Until"
-                  name="valid_until"
-                  type="date"
-                  value={isEditing ? editedEstimate.valid_until : selectedEstimate.valid_until}
-                  onChange={handleInputChange}
-                  fullWidth
-                  margin="normal"
-                  disabled={!isEditing}
-                  InputLabelProps={{ shrink: true }}
-                />
-                {console.log('Rendering estimate details:', selectedEstimate)}
+                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border"
+                ></textarea>
+              </div>
 
-                <TextField
-                  label="Total Amount"
-                  name="totalAmount"
-                  value={
-                    isEditing
-                      ? editedEstimate.totalAmount || '0.00'
-                      : selectedEstimate.totalAmount
-                        ? Number(selectedEstimate.totalAmount).toFixed(2)
-                        : '0.00'
-                  }
-                  onChange={handleInputChange}
-                  fullWidth
-                  margin="normal"
-                  disabled={!isEditing}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">{selectedEstimate.currency}</InputAdornment>
-                    ),
-                  }}
-                />
-                <TextField
-                  label="Discount"
-                  name="discount"
-                  type="number"
-                  value={isEditing ? editedEstimate.discount : selectedEstimate.discount}
-                  onChange={handleInputChange}
-                  fullWidth
-                  margin="normal"
-                  disabled={!isEditing}
-                />
-                <TextField
-                  label="Currency"
-                  name="currency"
-                  value={isEditing ? editedEstimate.currency : selectedEstimate.currency}
-                  onChange={handleInputChange}
-                  fullWidth
-                  margin="normal"
-                  disabled={!isEditing}
-                />
-                <TextField
-                  label="Footer"
-                  name="footer"
-                  value={isEditing ? editedEstimate.footer : selectedEstimate.footer}
-                  onChange={handleInputChange}
-                  fullWidth
-                  margin="normal"
-                  multiline
-                  rows={3}
-                  disabled={!isEditing}
-                />
-                {isEditing ? (
-                  <Box mt={2}>
-                    <Button variant="contained" color="primary" onClick={handleSaveEdit}>
-                      Save
-                    </Button>
-                    <Button variant="contained" color="secondary" onClick={handleCancelEdit}>
-                      Cancel
-                    </Button>
-                  </Box>
-                ) : (
-                  <Box mt={2}>
-                    <Button variant="contained" color="primary" onClick={handleEdit}>
-                      Edit
-                    </Button>
-                    <Button variant="contained" color="secondary" onClick={handleDelete}>
-                      Delete
-                    </Button>
-                  </Box>
+              <div className="w-full md:w-1/2">
+                <label htmlFor="customerRef" className="block text-sm font-medium text-gray-700 mb-1">
+                  Customer
+                </label>
+                <select
+                  id="customerRef"
+                  name="customerRef"
+                  value={newEstimate.customerRef}
+                  onChange={handleCustomerChange}
+                  className={`w-full rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border ${customersError ? 'border-red-500' : 'border-gray-300'}`}
+                >
+                  <option value="">Select a customer</option>
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={String(customer.id)}>
+                      {customer.customerName || `${customer.first_name} ${customer.last_name}`}
+                    </option>
+                  ))}
+                </select>
+                {customersError && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {customersError}
+                  </p>
                 )}
-              </Box>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+                    Date
+                  </label>
+                  <DatePickerWrapper
+                    id="date"
+                    selected={newEstimate.date}
+                    onChange={(date) => handleDateChange(date, 'date')}
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="valid_until" className="block text-sm font-medium text-gray-700 mb-1">
+                    Valid Until
+                  </label>
+                  <DatePickerWrapper
+                    id="valid_until"
+                    selected={newEstimate.valid_until}
+                    onChange={(date) => handleDateChange(date, 'valid_until')}
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <h3 className="text-md font-medium mb-2">Items</h3>
+                
+                {newEstimate.items.map((item, index) => (
+                  <div key={index} className="flex flex-wrap items-center mb-4 gap-3">
+                    <div className="grow lg:max-w-md">
+                      <label htmlFor={`product-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                        Product/Service
+                      </label>
+                      <select
+                        id={`product-${index}`}
+                        value={item.product}
+                        onChange={(e) => handleItemChange(index, 'product', e.target.value)}
+                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border"
+                      >
+                        <option value="">Select a product/service</option>
+                        {products.map((product) => (
+                          <option key={product.id} value={product.id}>
+                            {product.name}
+                          </option>
+                        ))}
+                        {services.map((service) => (
+                          <option key={service.id} value={service.id}>
+                            {service.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="w-24">
+                      <label htmlFor={`quantity-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                        Quantity
+                      </label>
+                      <input
+                        id={`quantity-${index}`}
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border"
+                      />
+                    </div>
+                    
+                    <div className="w-32">
+                      <label htmlFor={`unitPrice-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                        Unit Price
+                      </label>
+                      <input
+                        id={`unitPrice-${index}`}
+                        type="number"
+                        value={item.unitPrice}
+                        onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
+                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border"
+                      />
+                    </div>
+                    
+                    <div className="flex items-end">
+                      <button 
+                        type="button"
+                        onClick={() => handleItemRemove(index)}
+                        className="p-2 text-red-600 hover:text-red-800 focus:outline-none mt-5"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                
+                <button 
+                  type="button" 
+                  onClick={handleItemAdd}
+                  className="flex items-center text-blue-600 hover:text-blue-800 focus:outline-none"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Add Item
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="discount" className="block text-sm font-medium text-gray-700 mb-1">
+                    Discount
+                  </label>
+                  <input
+                    type="number"
+                    id="discount"
+                    name="discount"
+                    value={newEstimate.discount}
+                    onChange={handleDiscountChange}
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="totalAmount" className="block text-sm font-medium text-gray-700 mb-1">
+                    Total Amount
+                  </label>
+                  <input
+                    type="text"
+                    id="totalAmount"
+                    value={newEstimate.totalAmount.toFixed(2)}
+                    disabled
+                    className="w-full rounded-md border-gray-300 shadow-sm bg-gray-50 sm:text-sm py-2 px-3 border"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">
+                  Currency
+                </label>
+                <select
+                  id="currency"
+                  name="currency"
+                  value={newEstimate.currency}
+                  onChange={handleInputChange}
+                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border"
+                >
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="footer" className="block text-sm font-medium text-gray-700 mb-1">
+                  Footer
+                </label>
+                <textarea
+                  id="footer"
+                  name="footer"
+                  rows="3"
+                  value={newEstimate.footer}
+                  onChange={handleInputChange}
+                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border"
+                ></textarea>
+              </div>
+
+              <div className="mt-4">
+                <button 
+                  type="submit" 
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  Create Estimate
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
+
+        {/* Estimate Details Tab */}
+        {activeTab === 1 && (
+          <div className="mt-6">
+            <h2 className="text-lg font-medium mb-4">
+              Estimate Details
+            </h2>
+            {selectedEstimate ? (
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="title-view" className="block text-sm font-medium text-gray-700 mb-1">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    id="title-view"
+                    name="title"
+                    value={isEditing ? editedEstimate.title : selectedEstimate.title}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`w-full rounded-md shadow-sm sm:text-sm py-2 px-3 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="summary-view" className="block text-sm font-medium text-gray-700 mb-1">
+                    Summary
+                  </label>
+                  <textarea
+                    id="summary-view"
+                    name="summary"
+                    rows="3"
+                    value={isEditing ? editedEstimate.summary : selectedEstimate.summary}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`w-full rounded-md shadow-sm sm:text-sm py-2 px-3 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                  ></textarea>
+                </div>
+                
+                <div>
+                  <label htmlFor="customer-view" className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer
+                  </label>
+                  <input
+                    type="text"
+                    id="customer-view"
+                    name="customer_name"
+                    value={isEditing ? editedEstimate.customer_name : selectedEstimate.customer_name}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`w-full rounded-md shadow-sm sm:text-sm py-2 px-3 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="date-view" className="block text-sm font-medium text-gray-700 mb-1">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      id="date-view"
+                      name="date"
+                      value={isEditing ? editedEstimate.date : selectedEstimate.date}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className={`w-full rounded-md shadow-sm sm:text-sm py-2 px-3 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="valid-until-view" className="block text-sm font-medium text-gray-700 mb-1">
+                      Valid Until
+                    </label>
+                    <input
+                      type="date"
+                      id="valid-until-view"
+                      name="valid_until"
+                      value={isEditing ? editedEstimate.valid_until : selectedEstimate.valid_until}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className={`w-full rounded-md shadow-sm sm:text-sm py-2 px-3 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label htmlFor="total-amount-view" className="block text-sm font-medium text-gray-700 mb-1">
+                      Total Amount
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">{selectedEstimate.currency}</span>
+                      </div>
+                      <input
+                        type="text"
+                        id="total-amount-view"
+                        name="totalAmount"
+                        value={
+                          isEditing
+                            ? editedEstimate.totalAmount || '0.00'
+                            : selectedEstimate.totalAmount
+                              ? Number(selectedEstimate.totalAmount).toFixed(2)
+                              : '0.00'
+                        }
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        className={`w-full rounded-md shadow-sm sm:text-sm py-2 pl-12 pr-3 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="discount-view" className="block text-sm font-medium text-gray-700 mb-1">
+                      Discount
+                    </label>
+                    <input
+                      type="number"
+                      id="discount-view"
+                      name="discount"
+                      value={isEditing ? editedEstimate.discount : selectedEstimate.discount}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className={`w-full rounded-md shadow-sm sm:text-sm py-2 px-3 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="currency-view" className="block text-sm font-medium text-gray-700 mb-1">
+                      Currency
+                    </label>
+                    <input
+                      type="text"
+                      id="currency-view"
+                      name="currency"
+                      value={isEditing ? editedEstimate.currency : selectedEstimate.currency}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className={`w-full rounded-md shadow-sm sm:text-sm py-2 px-3 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label htmlFor="footer-view" className="block text-sm font-medium text-gray-700 mb-1">
+                    Footer
+                  </label>
+                  <textarea
+                    id="footer-view"
+                    name="footer"
+                    rows="3"
+                    value={isEditing ? editedEstimate.footer : selectedEstimate.footer}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`w-full rounded-md shadow-sm sm:text-sm py-2 px-3 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+                  ></textarea>
+                </div>
+                
+                <div className="flex mt-6 gap-3">
+                  {isEditing ? (
+                    <>
+                      <button 
+                        type="button" 
+                        onClick={handleSaveEdit}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      >
+                        Save
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={handleCancelEdit}
+                        className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button 
+                        type="button" 
+                        onClick={handleEdit}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={handleDelete}
+                        className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
             ) : (
-              <Typography>Select an estimate from the list to view details</Typography>
+              <p className="text-gray-500 italic">Select an estimate from the list to view details</p>
             )}
-          </Box>
+          </div>
         )}
 
+        {/* Estimate List Tab */}
         {activeTab === 2 && (
-          <Box mt={3}>
+          <div className="mt-6">
             {console.log('Rendering estimate list:', estimates)}
 
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6">Estimate List</Typography>
-              <Button
-                variant="outlined"
-                onClick={handleExportClick}
-                endIcon={<ArrowDropDownIcon />}
-                sx={buttonStyle}
-              >
-                Export
-              </Button>
-              <Menu
-                anchorEl={exportAnchorEl}
-                open={Boolean(exportAnchorEl)}
-                onClose={handleExportClose}
-              >
-                <MenuItem onClick={() => handleExport('PDF')}>PDF</MenuItem>
-                <MenuItem onClick={() => handleExport('CSV')}>CSV</MenuItem>
-                <MenuItem onClick={() => handleExport('Excel')}>Excel</MenuItem>
-              </Menu>
-            </Box>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Title</TableCell>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Total Amount</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {estimates.map((estimate) => (
-                    <TableRow key={estimate.id} onClick={() => handleEstimateSelect(estimate)}>
-                      <TableCell>{estimate.title}</TableCell>
-                      <TableCell>{estimate.customer_name}</TableCell>
-                      <TableCell>{new Date(estimate.date).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        {console.log('Estimate in list row:', estimate)}
-                        {estimate.totalAmount
-                          ? Number(estimate.totalAmount).toFixed(2)
-                          : '0.00'}{' '}
-                        {estimate.currency}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-medium">
+                Estimate List
+              </h2>
+              
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={handleExportClick}
+                  className="border border-blue-800 text-blue-800 hover:bg-blue-800 hover:text-white px-4 py-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center"
+                >
+                  Export
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {exportMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg z-10">
+                    <div className="py-1">
+                      <button 
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => handleExport('PDF')}
+                      >
+                        PDF
+                      </button>
+                      <button 
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => handleExport('CSV')}
+                      >
+                        CSV
+                      </button>
+                      <button 
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => handleExport('Excel')}
+                      >
+                        Excel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Title
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Customer
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total Amount
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {estimates.map((estimate) => (
+                      <tr 
+                        key={estimate.id} 
+                        onClick={() => handleEstimateSelect(estimate)}
+                        className="hover:bg-gray-50 cursor-pointer"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {estimate.title}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {estimate.customer_name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(estimate.date).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {console.log('Estimate in list row:', estimate)}
+                          {estimate.totalAmount
+                            ? Number(estimate.totalAmount).toFixed(2)
+                            : '0.00'}{' '}
+                          {estimate.currency}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         )}
 
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={() => setDeleteDialogOpen(false)}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-          <DialogTitle id="alert-dialog-title">{'Confirm Delete'}</DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              Are you sure you want to delete this estimate?
-              <br />
-              Title: {selectedEstimate?.title}
-              <br />
-              Customer: {selectedEstimate?.customer}
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmDelete} color="error" autoFocus>
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
-    </LocalizationProvider>
+        {/* Delete Confirmation Dialog */}
+        {deleteDialogOpen && (
+          <div className="fixed inset-0 overflow-y-auto z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+              
+              {/* This element is to trick the browser into centering the modal contents. */}
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+              
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <svg className="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                        Confirm Delete
+                      </h3>
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-500">
+                          Are you sure you want to delete this estimate?
+                          <br />
+                          Title: {selectedEstimate?.title}
+                          <br />
+                          Customer: {selectedEstimate?.customer_name}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button 
+                    type="button" 
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                    onClick={handleConfirmDelete}
+                  >
+                    Delete
+                  </button>
+                  <button 
+                    type="button" 
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                    onClick={() => setDeleteDialogOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
   );
 };
 

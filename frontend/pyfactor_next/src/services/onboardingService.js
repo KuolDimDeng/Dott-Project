@@ -10,21 +10,36 @@ const BASE_URL = '/api/onboarding'
  * Ensures that API requests include proper tokens and handles auth retries
  */
 const enhancedFetch = async (url, options = {}) => {
-  const maxRetries = 3;
+  const maxRetries = 2;
   let retryCount = 0;
   
   const attemptFetch = async () => {
     try {
+      // Check if we're requesting business-info data specifically
+      const isBusinessInfoRequest = url.includes('business-info') || 
+                                   (url.includes('state') && options.headers?.['X-Business-Info'] === 'true') ||
+                                   (url.includes('verify-state') && url.includes('business-info'));
+      
+      // Check if we're in an unauthenticated context
+      const hasAuthCookie = typeof document !== 'undefined' && 
+                           (document.cookie.includes('idToken=') || 
+                            document.cookie.includes('accessToken='));
+      
+      // Skip token refresh attempts for business-info pages when not authenticated
+      const shouldSkipAuthAttempts = isBusinessInfoRequest && !hasAuthCookie;
+      
       // First try to get a valid session
       let tokens = null;
       try {
-        const authSession = await fetchAuthSession();
-        tokens = authSession.tokens;
+        if (!shouldSkipAuthAttempts) {
+          const authSession = await fetchAuthSession();
+          tokens = authSession.tokens;
+        }
       } catch (sessionError) {
         logger.warn('[OnboardingService] Error fetching auth session:', sessionError.message);
       }
       
-      if (!tokens?.idToken) {
+      if (!tokens?.idToken && !shouldSkipAuthAttempts) {
         logger.debug('[OnboardingService] No valid session, attempting refresh');
         
         try {
@@ -44,6 +59,7 @@ const enhancedFetch = async (url, options = {}) => {
       // Set up headers with auth tokens and cookies
       const headers = {
         ...(options.headers || {}),
+        'X-Request-ID': `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
       };
       
       // Use tokens if available
@@ -75,7 +91,6 @@ const enhancedFetch = async (url, options = {}) => {
       headers['X-Onboarding-Route'] = 'true';
       
       // Check if it's a business-info or partial request
-      const isBusinessInfoRequest = url.includes('business-info') || url.includes('allowPartial=true');
       const isOnboardingStep = url.includes('/onboarding/') || url.includes('step=');
       
       if (isBusinessInfoRequest || isOnboardingStep) {
@@ -83,48 +98,66 @@ const enhancedFetch = async (url, options = {}) => {
         headers['X-Lenient-Access'] = 'true';
       }
       
-      // Perform the fetch with tokens
-      const response = await fetch(url, {
-        ...options,
-        headers
-      });
-      
-      // If unauthorized and we have retries left, try again
-      if (response.status === 401 && retryCount < maxRetries) {
-        retryCount++;
-        logger.warn(`[OnboardingService] 401 response, retrying (${retryCount}/${maxRetries})`);
-        
-        // For business-info requests, try a special fallback approach if we're still getting 401s
-        if (retryCount >= 2 && isBusinessInfoRequest) {
-          logger.warn('[OnboardingService] Using fallback approach for business-info request');
-          // Special business-info fallback - add marker header and skip token validation
-          headers['X-Bypass-Auth'] = 'true';
-          headers['X-Business-Info-Fallback'] = 'true';
-          
-          return fetch(url, {
-            ...options,
-            headers
-          });
-        }
-        
-        // Force session refresh before retry
-        await refreshUserSession();
-        
-        // Add delay with exponential backoff
-        const delay = 500 * Math.pow(2, retryCount - 1);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        
-        return attemptFetch();
+      // Add cache prevention for repeated requests
+      if (!url.includes('?')) {
+        url = `${url}?_t=${Date.now()}`;
+      } else {
+        url = `${url}&_t=${Date.now()}`;
       }
       
-      return response;
+      // Perform the fetch with tokens and timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      
+      try {
+        const response = await fetch(url, {
+          ...options,
+          headers,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        // If unauthorized and we have retries left, try again
+        if (response.status === 401 && retryCount < maxRetries) {
+          retryCount++;
+          logger.warn(`[OnboardingService] 401 response, retrying (${retryCount}/${maxRetries})`);
+          
+          // For business-info requests, try a special fallback approach if we're still getting 401s
+          if (retryCount >= 1 && isBusinessInfoRequest) {
+            logger.warn('[OnboardingService] Using fallback approach for business-info request');
+            // Special business-info fallback - add marker header and skip token validation
+            headers['X-Bypass-Auth'] = 'true';
+            headers['X-Business-Info-Fallback'] = 'true';
+            
+            clearTimeout(timeoutId);
+            return fetch(url, {
+              ...options,
+              headers
+            });
+          }
+          
+          // Force session refresh before retry
+          await refreshUserSession();
+          
+          // Add delay with reduced exponential backoff (300ms base with less aggressive scaling)
+          const delay = 300 * Math.pow(1.5, retryCount - 1);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          
+          return attemptFetch();
+        }
+        
+        return response;
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
+      }
     } catch (error) {
       if (retryCount < maxRetries) {
         retryCount++;
         logger.warn(`[OnboardingService] Fetch error, retrying (${retryCount}/${maxRetries}): ${error.message}`);
         
-        // Add delay with exponential backoff
-        const delay = 500 * Math.pow(2, retryCount - 1);
+        // Add delay with reduced exponential backoff (300ms base with less aggressive scaling)
+        const delay = 300 * Math.pow(1.5, retryCount - 1);
         await new Promise(resolve => setTimeout(resolve, delay));
         
         return attemptFetch();
@@ -143,74 +176,262 @@ const enhancedFetch = async (url, options = {}) => {
  * and synchronous state updates
  */
 export const onboardingService = {
+  // Cache for verification requests to prevent loops
+  _verificationCache: {},
+  _stateCacheTimestamp: null,
+  _lastStateResponse: null,
+  _stateRequestCount: 0,
+  _stateCacheKey: null,
+  
   /**
-   * Get current onboarding state from server
+   * Verify if the current state is valid for the requested step
+   * With caching to prevent repeated calls
    */
-  async getState(options = {}) {
-    logger.debug('[OnboardingService] Fetching onboarding state');
+  async verifyState(requestedStep, options = {}) {
+    logger.debug('[OnboardingService] Verifying state for step', { requestedStep });
     
-    const { allowPartial = true, forBusinessInfo = false } = options;
+    const cacheKey = `verify_${requestedStep}_${JSON.stringify(options)}`;
+    const now = Date.now();
     
+    // If we have a cached response less than 5 seconds old, use it
+    if (this._verificationCache[cacheKey] && 
+        now - this._verificationCache[cacheKey].timestamp < 5000) {
+      logger.debug('[OnboardingService] Using cached verification result');
+      return this._verificationCache[cacheKey].data;
+    }
+    
+    // Otherwise make a new request
     try {
-      const queryParams = [];
+      // Force a fallback for business-info when too many attempts
+      const requestCount = this._verificationCache[`count_${requestedStep}`] || 0;
+      this._verificationCache[`count_${requestedStep}`] = requestCount + 1;
       
-      if (allowPartial) {
-        queryParams.push('allowPartial=true');
+      // If we've tried this step more than 3 times, use a fallback response
+      if (requestCount >= 3 && requestedStep === 'business-info') {
+        logger.warn(`[OnboardingService] Too many verification attempts for ${requestedStep}, using fallback`);
+        const fallbackResponse = {
+          isValid: true,
+          isPartial: true,
+          userData: {},
+          autoFallback: true
+        };
+        
+        // Cache the fallback response
+        this._verificationCache[cacheKey] = {
+          timestamp: now,
+          data: fallbackResponse
+        };
+        
+        return fallbackResponse;
       }
       
-      if (forBusinessInfo) {
-        queryParams.push('step=business-info');
+      // Add timestamp to cache buster
+      const timestamp = Date.now();
+      const queryParams = [`ts=${timestamp}`];
+      
+      if (requestedStep) {
+        queryParams.push(`step=${requestedStep}`);
       }
       
       const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
-      const response = await enhancedFetch(`${BASE_URL}/state${queryString}`);
       
-      if (!response.ok) {
-        const error = await response.json();
-        logger.error('[OnboardingService] Failed to fetch state:', error);
-        
-        // Create fallback for business-info page
-        if (forBusinessInfo || allowPartial) {
-          logger.debug('[OnboardingService] Using fallback for state retrieval');
-          return {
-            status: 'NOT_STARTED',
-            currentStep: 'business-info',
-            userData: {
-              email: '',
-              businessName: '',
-              businessType: ''
+      // Set up a race with a timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      try {
+        const response = await Promise.race([
+          enhancedFetch(`${BASE_URL}/verify-state${queryString}`, {
+            method: 'GET',
+            headers: {
+              ...(options.headers || {}),
+              'Cache-Control': 'no-cache',
             },
-            isAuthenticated: false,
-            isPartial: true
-          };
+            signal: controller.signal
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Verification request timeout')), 3000)
+          )
+        ]);
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to verify state: ${response.status} ${response.statusText}`);
         }
         
-        throw new Error(error.message || 'Failed to get onboarding state');
-      }
-
-      const data = await response.json();
-      logger.debug('[OnboardingService] State retrieved', { data });
-      return data;
-    } catch (error) {
-      logger.error('[OnboardingService] Error in getState:', error);
-      
-      // Create fallback for business-info page
-      if (forBusinessInfo || allowPartial) {
-        logger.debug('[OnboardingService] Using fallback after state retrieval error');
-        return {
-          status: 'NOT_STARTED',
-          currentStep: 'business-info',
-          userData: {
-            email: '',
-            businessName: '',
-            businessType: ''
-          },
-          isAuthenticated: false,
-          isPartial: true
+        const data = await response.json();
+        
+        // Cache the result
+        this._verificationCache[cacheKey] = {
+          timestamp: now,
+          data
         };
+        
+        return data;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
+    } catch (error) {
+      logger.warn('[OnboardingService] State verification failed:', error);
+      
+      // Return a fallback response with isValid to prevent blocking the UI
+      const fallbackResponse = {
+        isValid: true,
+        isPartial: true,
+        userData: {},
+        error: error.message
+      };
+      
+      // Cache the fallback response too to prevent repeated failed requests
+      this._verificationCache[cacheKey] = {
+        timestamp: now,
+        data: fallbackResponse
+      };
+      
+      return fallbackResponse;
+    }
+  },
+  
+  /**
+   * Get current onboarding state from server
+   * With caching to prevent repeated calls
+   */
+  async getState(options = {}) {
+    // Check if we have a cached state response that's less than 3 seconds old
+    const now = Date.now();
+    const cacheKey = JSON.stringify(options);
+    
+    if (this._lastStateResponse && 
+        this._stateCacheTimestamp && 
+        now - this._stateCacheTimestamp < 3000 &&
+        this._stateCacheKey === cacheKey) {
+      logger.debug('[OnboardingService] Using cached state response');
+      return this._lastStateResponse;
+    }
+    
+    try {
+      // Default options
+      const {
+        allowPartial = false,
+        includeUserData = true,
+        forBusinessInfo = false,
+        ...restOptions
+      } = options;
+      
+      // Count state requests to prevent infinite loops
+      const requestCount = this._stateRequestCount || 0;
+      this._stateRequestCount = requestCount + 1;
+      
+      // Return a minimally viable response if we've made too many requests
+      if (requestCount > 5) {
+        logger.warn('[OnboardingService] Too many state requests, using fallback response');
+        const fallbackResponse = {
+          currentStep: 'business-info',
+          userData: {},
+          isPartial: true,
+          isFallback: true
+        };
+        
+        // Cache the fallback
+        this._lastStateResponse = fallbackResponse;
+        this._stateCacheTimestamp = now;
+        this._stateCacheKey = cacheKey;
+        
+        return fallbackResponse;
       }
       
-      throw error;
+      // Prepare query parameters
+      const queryParams = [
+        `t=${Date.now()}`, // Cache buster
+        `partial=${allowPartial ? 'true' : 'false'}`,
+        `userData=${includeUserData ? 'true' : 'false'}`
+      ];
+      
+      if (forBusinessInfo) {
+        queryParams.push('businessInfo=true');
+      }
+      
+      const queryString = `?${queryParams.join('&')}`;
+      
+      // Set up a race with a timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      try {
+        const response = await Promise.race([
+          enhancedFetch(`${BASE_URL}/state${queryString}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(restOptions.headers || {}),
+              'X-Request-Purpose': 'onboarding-state'
+            },
+            signal: controller.signal
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('State request timeout')), 3000)
+          )
+        ]);
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          // For business info, generate a minimally viable response
+          if (forBusinessInfo && response.status === 401) {
+            logger.warn('[OnboardingService] Auth error for business-info state, using fallback');
+            const fallbackData = {
+              currentStep: 'business-info',
+              userData: {},
+              isPartial: true,
+              authFallback: true
+            };
+            
+            // Cache the fallback
+            this._lastStateResponse = fallbackData;
+            this._stateCacheTimestamp = now;
+            this._stateCacheKey = cacheKey;
+            
+            return fallbackData;
+          }
+          
+          throw new Error(`Failed to get state: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Cache the response
+        this._lastStateResponse = data;
+        this._stateCacheTimestamp = now;
+        this._stateCacheKey = cacheKey;
+        
+        // Reset request counter on success
+        this._stateRequestCount = 0;
+        
+        return data;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
+    } catch (error) {
+      logger.warn('[OnboardingService] Error getting state:', error);
+      
+      // Always return a usable response to prevent UI blockage
+      const fallbackResponse = {
+        currentStep: 'business-info',
+        userData: {},
+        isPartial: true,
+        error: error.message,
+        fallback: true
+      };
+      
+      // Cache the fallback too
+      this._lastStateResponse = fallbackResponse;
+      this._stateCacheTimestamp = now;
+      this._stateCacheKey = cacheKey;
+      
+      return fallbackResponse;
     }
   },
 
@@ -360,66 +581,6 @@ export const onboardingService = {
       logger.debug('[OnboardingService] Local state updated successfully');
     } catch (error) {
       logger.error('[OnboardingService] Error updating local state:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Verify if current state is valid for requested step
-   */
-  async verifyState(requestedStep) {
-    logger.debug('[OnboardingService] Verifying state for step', { requestedStep });
-    
-    try {
-      // For business-info, add special handling to always allow access
-      const isBusinessInfo = requestedStep === 'business-info';
-      const url = `${BASE_URL}/verify-state?step=${requestedStep}${isBusinessInfo ? '&allowPartial=true' : ''}`;
-      
-      const response = await enhancedFetch(url);
-      
-      if (!response.ok) {
-        const error = await response.json();
-        logger.error('[OnboardingService] State verification failed:', error);
-        
-        // Special handling for business-info to always return a valid response
-        if (isBusinessInfo) {
-          logger.debug('[OnboardingService] Using fallback for business-info verification');
-          return {
-            isValid: true,
-            userData: {
-              email: '',
-              onboardingStatus: 'NOT_STARTED',
-              businessName: '',
-              businessType: ''
-            },
-            isPartial: true
-          };
-        }
-        
-        throw new Error(error.message || 'Failed to verify onboarding state');
-      }
-
-      const data = await response.json();
-      logger.debug('[OnboardingService] State verification successful', { data });
-      return data;
-    } catch (error) {
-      logger.error('[OnboardingService] Error in verifyState:', error);
-      
-      // For business-info, always return a valid response even if verification fails
-      if (requestedStep === 'business-info') {
-        logger.debug('[OnboardingService] Using fallback for business-info after verification error');
-        return {
-          isValid: true,
-          userData: {
-            email: '',
-            onboardingStatus: 'NOT_STARTED',
-            businessName: '',
-            businessType: ''
-          },
-          isPartial: true
-        };
-      }
-      
       throw error;
     }
   },

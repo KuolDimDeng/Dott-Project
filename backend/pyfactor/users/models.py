@@ -31,6 +31,7 @@ class Business(models.Model):
     Business details are stored in a separate BusinessDetails model.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner_id = models.UUIDField(verbose_name='Owner ID', null=True, blank=True)
     name = models.CharField(max_length=255)  # This matches the actual column in your DB
     # business_type field is now handled by the BusinessDetails model
     created_at = models.DateTimeField(auto_now_add=True)
@@ -337,13 +338,24 @@ class UserProfile(models.Model):
     # Add metadata field to store additional information like pending schema setup
     metadata = models.JSONField(default=dict, blank=True, null=True)
     
- 
+    # Schema setup tracking fields
+    setup_task_id = models.CharField(max_length=255, null=True, blank=True)
+    setup_status = models.CharField(max_length=20, default='not_started',
+                                  choices=[
+                                      ('not_started', 'Not Started'),
+                                      ('pending', 'Pending'),
+                                      ('in_progress', 'In Progress'),
+                                      ('complete', 'Complete'),
+                                      ('error', 'Error'),
+                                  ])
+    setup_started_at = models.DateTimeField(null=True, blank=True)
+    setup_completed_at = models.DateTimeField(null=True, blank=True) 
+    setup_error = models.TextField(null=True, blank=True)
     
     # Move these fields to the Tenant model as they're tenant-specific
     # Remove:
     # - database_name
     # - database_status
-    # - setup_status
     # - last_setup_attempt
     # - setup_error_message
     # - database_setup_task_id

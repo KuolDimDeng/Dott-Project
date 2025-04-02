@@ -1,22 +1,19 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/page.js
-import React from 'react';
 import DashboardClient from './DashboardClient';
 
 /**
  * Dashboard Page Component
  *
  * This is the main entry point for the dashboard.
- * It uses code splitting and progressive loading to reduce memory usage.
- * It also checks for schema setup status and shows appropriate loading states.
+ * A server component that exports metadata and renders the client component.
  */
 
-// Server component for metadata
 export const metadata = {
-  title: 'Dashboard',
-  description: 'PyFactor Dashboard',
+  title: 'PyFactor Dashboard',
+  description: 'Manage your business finances with PyFactor',
 };
 
+// Server component that simply renders the client component
 export default function DashboardPage() {
-  // The server component imports the client component that handles the dynamic import
   return <DashboardClient />;
 }

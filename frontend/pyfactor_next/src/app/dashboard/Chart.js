@@ -1,9 +1,15 @@
 'use client';
 import * as React from 'react';
-import { useTheme } from '@mui/material/styles';
-import { LineChart, axisClasses } from '@mui/x-charts';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import Title from './Title';
-import { Box } from '@mui/material';
 
 // Generate Sales Data
 function createData(time, amount) {
@@ -23,55 +29,48 @@ const data = [
 ];
 
 export default function Chart() {
-  const theme = useTheme();
-
   return (
-    <React.Fragment>
+    <div>
       <Title>Today</Title>
-      <Box width="100%" flexGrow={1} overflow="hidden">
-        <LineChart
-          dataset={data}
-          margin={{ top: 16, right: 20, left: 70, bottom: 30 }}
-          xAxis={[
-            {
-              scaleType: 'point',
-              dataKey: 'time',
-              tickNumber: 2,
-              tickLabelStyle: theme.typography.body2,
-            },
-          ]}
-          yAxis={[
-            {
-              label: 'Sales ($)',
-              labelStyle: {
-                ...theme.typography.body1,
-                fill: theme.palette.text.primary,
-              },
-              tickLabelStyle: theme.typography.body2,
-              max: 2500,
-              tickNumber: 3,
-            },
-          ]}
-          series={[
-            {
-              dataKey: 'amount',
-              showMark: false,
-              color: theme.palette.primary.light,
-            },
-          ]}
-          sx={{
-            [`.${axisClasses.root} line`]: {
-              stroke: theme.palette.text.secondary,
-            },
-            [`.${axisClasses.root} text`]: {
-              fill: theme.palette.text.secondary,
-            },
-            [`& .${axisClasses.left} .${axisClasses.label}`]: {
-              transform: 'translateX(-25px)',
-            },
-          }}
-        />
-      </Box>
-    </React.Fragment>
+      <div className="w-full h-[300px] mt-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={data}
+            margin={{
+              top: 16,
+              right: 16,
+              bottom: 24,
+              left: 24,
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis 
+              dataKey="time" 
+              tick={{ fontSize: 12 }}
+              tickCount={2}
+            />
+            <YAxis
+              label={{ 
+                value: 'Sales ($)', 
+                angle: -90, 
+                position: 'insideLeft', 
+                style: { textAnchor: 'middle', fontSize: 12 } 
+              }}
+              tick={{ fontSize: 12 }}
+              domain={[0, 2500]}
+              tickCount={4}
+            />
+            <Tooltip />
+            <Line
+              type="monotone"
+              dataKey="amount"
+              stroke="#4f46e5" // indigo-600
+              dot={false}
+              activeDot={{ r: 8 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography } from '@/components/ui/TailwindComponents';
-import { logger, UserMessage } from '@/utils/logger';
+import { logger } from '@/utils/logger';
 
 const CreateOptions = ({ onOptionSelect }) => {
   const createOptions = [

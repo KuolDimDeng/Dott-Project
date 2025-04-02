@@ -1,15 +1,10 @@
 import React from 'react';
-import {
-  Grid, Card, CardMedia, CardContent, Typography, Box,
-  Checkbox, IconButton, Skeleton, Tooltip, Chip, CardActions
-} from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import WarningIcon from '@mui/icons-material/Warning';
-import CategoryIcon from '@mui/icons-material/Category';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import LocalOfferIcon from '@mui/icons-material/LocalOffer';
+import Link from 'next/link';
+import { 
+  PencilIcon, TrashIcon, EyeIcon, 
+  ExclamationTriangleIcon, TagIcon, 
+  ShoppingBagIcon, ArchiveBoxIcon, FolderIcon
+} from '@heroicons/react/24/outline';
 
 /**
  * ProductGrid Component
@@ -28,226 +23,181 @@ const ProductGrid = ({
   // Render loading skeletons
   const renderSkeletons = () => {
     return Array(8).fill(0).map((_, index) => (
-      <Grid item xs={12} sm={6} md={4} lg={3} key={`skeleton-${index}`}>
-        <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ position: 'relative' }}>
-            <Skeleton variant="rectangular" width="100%" height={200} />
-            <Box sx={{ position: 'absolute', top: 10, left: 10 }}>
-              <Skeleton variant="circular" width={30} height={30} />
-            </Box>
-          </Box>
-          <CardContent sx={{ flexGrow: 1 }}>
-            <Skeleton variant="text" width="80%" height={28} />
-            <Skeleton variant="text" width="40%" height={20} sx={{ mt: 1 }} />
-            <Skeleton variant="text" width="60%" height={20} sx={{ mt: 1 }} />
-          </CardContent>
-          <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
-            <Skeleton variant="text" width={60} height={24} />
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Skeleton variant="circular" width={30} height={30} />
-              <Skeleton variant="circular" width={30} height={30} />
-              <Skeleton variant="circular" width={30} height={30} />
-            </Box>
-          </CardActions>
-        </Card>
-      </Grid>
+      <div key={`skeleton-${index}`} className="col-span-12 sm:col-span-6 md:col-span-4 lg:col-span-3">
+        <div className="h-full flex flex-col bg-white rounded-lg shadow">
+          <div className="relative">
+            <div className="w-full h-[200px] bg-gray-200 animate-pulse"></div>
+            <div className="absolute top-2.5 left-2.5">
+              <div className="w-8 h-8 rounded-full bg-gray-300 animate-pulse"></div>
+            </div>
+          </div>
+          <div className="flex-grow p-4">
+            <div className="w-4/5 h-7 bg-gray-300 rounded animate-pulse mb-2"></div>
+            <div className="w-2/5 h-5 bg-gray-200 rounded animate-pulse mt-2"></div>
+            <div className="w-3/5 h-5 bg-gray-200 rounded animate-pulse mt-2"></div>
+          </div>
+          <div className="flex justify-between px-4 pb-4">
+            <div className="w-[60px] h-6 bg-gray-200 rounded animate-pulse"></div>
+            <div className="flex gap-1">
+              <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
+              <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
+              <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     ));
   };
   
   return (
-    <Grid container spacing={2}>
+    <div className="grid grid-cols-12 gap-4">
       {loading ? (
         renderSkeletons()
       ) : (
         products.map((item) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
-            <Card sx={{ 
-              height: '100%', 
-              display: 'flex', 
-              flexDirection: 'column',
-              position: 'relative',
-              transition: 'transform 0.2s, box-shadow 0.2s',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: (theme) => theme.shadows[6],
-              }
-            }}>
+          <div key={item.id} className="col-span-12 sm:col-span-6 md:col-span-4 lg:col-span-3">
+            <div className="h-full flex flex-col bg-white rounded-lg shadow relative transition-all duration-200 hover:translate-y-[-4px] hover:shadow-lg">
               {/* Checkbox for selection */}
-              <Box sx={{ position: 'absolute', top: 8, left: 8, zIndex: 1 }}>
-                <Checkbox
+              <div className="absolute top-2 left-2 z-10">
+                <input
+                  type="checkbox"
                   checked={selectedItems.includes(item.id)}
                   onChange={() => onToggleSelect(item.id)}
-                  sx={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                    borderRadius: '50%',
-                    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.9)' }
-                  }}
+                  className="h-5 w-5 rounded bg-white/70 hover:bg-white/90 transition-colors duration-200 focus:ring-blue-500"
                 />
-              </Box>
+              </div>
               
               {/* Product status indicators */}
-              <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
                 {!item.is_active && (
-                  <Chip 
-                    size="small" 
-                    label="Inactive" 
-                    color="error" 
-                    sx={{ fontSize: '0.7rem' }} 
-                  />
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    Inactive
+                  </span>
                 )}
                 
                 {item.stock_quantity !== undefined && 
                  item.reorder_level !== undefined && 
                  item.stock_quantity < item.reorder_level && (
-                  <Chip 
-                    size="small" 
-                    icon={<WarningIcon />} 
-                    label="Low Stock" 
-                    color="warning" 
-                    sx={{ fontSize: '0.7rem' }} 
-                  />
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                    <ExclamationTriangleIcon className="w-3 h-3 mr-1" />
+                    Low Stock
+                  </span>
                 )}
-              </Box>
+              </div>
               
               {/* Product Image */}
-              <CardMedia
-                component="div"
-                sx={{
-                  height: 200,
-                  backgroundColor: '#f5f5f5',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer'
-                }}
+              <div 
+                className="h-[200px] bg-gray-100 flex items-center justify-center cursor-pointer"
                 onClick={() => onViewDetails(item.id)}
               >
                 {item.image_url ? (
                   <img 
                     src={item.image_url} 
                     alt={item.name}
-                    style={{ 
-                      maxHeight: '100%', 
-                      maxWidth: '100%', 
-                      objectFit: 'contain' 
-                    }}
+                    className="max-h-full max-w-full object-contain"
                   />
                 ) : (
-                  <Box sx={{ textAlign: 'center' }}>
-                    <InventoryIcon sx={{ fontSize: 60, color: 'text.secondary', opacity: 0.5 }} />
-                    <Typography variant="caption" color="text.secondary" display="block">
+                  <div className="text-center">
+                    <ArchiveBoxIcon className="w-16 h-16 text-gray-400 opacity-50 mx-auto" />
+                    <span className="text-xs text-gray-500 block">
                       No image
-                    </Typography>
-                  </Box>
+                    </span>
+                  </div>
                 )}
-              </CardMedia>
+              </div>
               
               {/* Product Details */}
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Typography 
-                  variant="h6" 
-                  component="h2" 
-                  sx={{ 
-                    mb: 1, 
-                    fontWeight: 500, 
-                    fontSize: '1rem',
-                    cursor: 'pointer',
-                    '&:hover': { textDecoration: 'underline' }
-                  }}
+              <div className="flex-grow p-4">
+                <h2 
+                  className="mb-2 font-medium text-base cursor-pointer hover:underline"
                   onClick={() => onViewDetails(item.id)}
                 >
                   {item.name}
-                </Typography>
+                </h2>
                 
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary"
-                    sx={{ display: 'flex', alignItems: 'center' }}
-                  >
-                    <LocalOfferIcon fontSize="small" sx={{ mr: 0.5, opacity: 0.7 }} />
+                <div className="flex items-center mb-2">
+                  <span className="text-sm text-gray-600 flex items-center">
+                    <TagIcon className="w-4 h-4 mr-1.5 opacity-70" />
                     ${typeof item.price === 'number'
                       ? item.price.toFixed(2)
                       : parseFloat(item.price || 0).toFixed(2)}
-                  </Typography>
-                </Box>
+                  </span>
+                </div>
                 
                 {displayMode !== 'ultra' && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Typography 
-                      variant="body2" 
-                      color="text.secondary"
-                      sx={{ display: 'flex', alignItems: 'center' }}
-                    >
-                      <InventoryIcon fontSize="small" sx={{ mr: 0.5, opacity: 0.7 }} />
+                  <div className="flex items-center mb-2">
+                    <span className="text-sm text-gray-600 flex items-center">
+                      <ShoppingBagIcon className="w-4 h-4 mr-1.5 opacity-70" />
                       Stock: {item.stock_quantity || 0}
-                    </Typography>
-                  </Box>
+                    </span>
+                  </div>
                 )}
                 
                 {displayMode === 'detailed' && (
                   <>
                     {item.category_name && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <Typography 
-                          variant="body2" 
-                          color="text.secondary"
-                          sx={{ display: 'flex', alignItems: 'center' }}
-                        >
-                          <CategoryIcon fontSize="small" sx={{ mr: 0.5, opacity: 0.7 }} />
+                      <div className="flex items-center mb-2">
+                        <span className="text-sm text-gray-600 flex items-center">
+                          <FolderIcon className="w-4 h-4 mr-1.5 opacity-70" />
                           {item.category_name}
-                        </Typography>
-                      </Box>
+                        </span>
+                      </div>
                     )}
                     
                     {item.product_code && (
-                      <Typography variant="caption" color="text.secondary" display="block">
+                      <span className="text-xs text-gray-500 block">
                         SKU: {item.product_code}
-                      </Typography>
+                      </span>
                     )}
                   </>
                 )}
-              </CardContent>
+              </div>
               
               {/* Actions */}
-              <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
-                <Tooltip title="View Details">
-                  <IconButton size="small" onClick={() => onViewDetails(item.id)}>
-                    <VisibilityIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+              <div className="flex justify-end px-4 pb-4">
+                <button 
+                  className="p-1.5 rounded-full text-gray-600 hover:bg-gray-100 transition-colors"
+                  title="View Details"
+                  onClick={() => onViewDetails(item.id)}
+                >
+                  <EyeIcon className="w-5 h-5" />
+                </button>
                 
-                <Tooltip title="Edit Product">
-                  <IconButton size="small" onClick={() => onEdit(item)}>
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+                <button 
+                  className="p-1.5 rounded-full text-gray-600 hover:bg-gray-100 transition-colors"
+                  title="Edit Product"
+                  onClick={() => onEdit(item)}
+                >
+                  <PencilIcon className="w-5 h-5" />
+                </button>
                 
-                <Tooltip title="Delete Product">
-                  <IconButton size="small" onClick={() => onDelete(item.id)}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </CardActions>
-            </Card>
-          </Grid>
+                <button 
+                  className="p-1.5 rounded-full text-gray-600 hover:bg-gray-100 transition-colors"
+                  title="Delete Product"
+                  onClick={() => onDelete(item.id)}
+                >
+                  <TrashIcon className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
         ))
       )}
       
       {products.length === 0 && !loading && (
-        <Grid item xs={12}>
-          <Box sx={{ textAlign: 'center', p: 4, backgroundColor: 'white', borderRadius: 1 }}>
-            <Typography variant="h6" color="text.secondary">
+        <div className="col-span-12">
+          <div className="text-center p-8 bg-white rounded">
+            <h3 className="text-lg font-medium text-gray-500">
               No products found
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            </h3>
+            <p className="text-sm text-gray-500 mt-2">
               Try changing your search or filters
-            </Typography>
-          </Box>
-        </Grid>
+            </p>
+          </div>
+        </div>
       )}
-    </Grid>
+    </div>
   );
 };
 
-export default ProductGrid; 
+export default ProductGrid;

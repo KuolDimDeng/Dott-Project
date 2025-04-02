@@ -12,6 +12,8 @@ from rest_framework import authentication
 from rest_framework.exceptions import AuthenticationFailed
 from .models import User
 from django.contrib.auth import get_user_model
+from asgiref.sync import sync_to_async
+import asyncio
 
 from .cognito import cognito_client
 
@@ -19,85 +21,73 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 class CognitoAuthentication(authentication.BaseAuthentication):
+    """
+    Custom authentication class for AWS Cognito.
+    Validates Cognito tokens and creates or updates local users.
+    """
+    
     def __init__(self):
+        """Initialize Cognito client"""
+        logger.info("[Auth] CognitoAuthentication initialized")
+        
+        # Assuming boto3 is thread-safe
         try:
-            self.cognito_client = boto3.client(
-                'cognito-idp',
-                region_name=settings.AWS_REGION,
-                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
-            )
-            
-            logger.info("[Auth] CognitoAuthentication initialized", {
-                'region': settings.AWS_REGION,
-                'user_pool_id': settings.COGNITO_USER_POOL_ID
-            })
+            if getattr(settings, 'USE_AWS_AUTH', True):
+                self.cognito_client = boto3.client(
+                    'cognito-idp',
+                    region_name=settings.AWS_REGION,
+                    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+                )
+            else:
+                logger.warning("[Auth] AWS Authentication disabled in settings")
+                self.cognito_client = None
         except Exception as e:
-            logger.error("[Auth] Failed to initialize Cognito client", {
-                'error': str(e),
-                'type': type(e).__name__,
-                'region': settings.AWS_REGION
-            })
-            raise
-
+            logger.error(f"[Auth] Error initializing Cognito client: {str(e)}")
+            self.cognito_client = None
+    
     def authenticate(self, request):
+        """
+        Synchronous authenticate method for DRF compatibility.
+        This is what DRF will call directly.
+        """
+        # Check if we're in a Django async view
         try:
-            auth_header = request.headers.get('Authorization')
-            
-            if not auth_header:
+            # We need to handle this entirely synchronously for DRF
+            # Never return a coroutine from this method
+            return self._authenticate_sync(request)
+        except Exception as e:
+            logger.error(f"[Auth] Authentication error: {str(e)}")
+            return None
+    
+    async def _authenticate_async(self, request):
+        """
+        Asynchronous authenticate method for ASGI context.
+        """
+        # Store request reference for later use in get_or_create_user
+        self.request = request
+        
+        try:
+            # Get token from Authorization header
+            auth_header = request.headers.get('Authorization', '')
+            if not auth_header.startswith('Bearer '):
+                # No token or invalid format
+                logger.debug("[Auth] No Bearer token in request")
                 return None
                 
-            parts = auth_header.split()
-            
-            if len(parts) != 2 or parts[0].lower() != 'bearer':
+            token = auth_header.split(' ')[1]
+            if not token:
+                # Empty token
+                logger.debug("[Auth] Empty token")
                 return None
                 
-            token = parts[1]
-            
-            # Store the request for later use
-            self.request = request
-            
-            # First do a quick validation by decoding the token
             try:
-                decoded = jwt.decode(token, options={"verify_signature": False})
-                # Store the decoded token for later use
-                self.decoded_token = decoded
+                # First, try to decode and verify the token without Cognito service
+                # This helps catch basic issues before making API calls
                 
-                # Check expiration manually
-                exp = decoded.get('exp')
-                if exp and datetime.datetime.fromtimestamp(exp) < datetime.datetime.now():
-                    logger.warning("[Auth] Token is expired", {
-                        'exp': exp,
-                        'now': datetime.datetime.now().timestamp()
-                    })
-                    
-                    # If in development mode, we might accept expired tokens
-                    is_development = settings.DEBUG
-                    if not is_development:
-                        raise AuthenticationFailed({
-                            'code': 'token_expired',
-                            'message': 'Your session has expired. Please sign in again.'
-                        })
-            except Exception as e:
-                logger.error("[Auth] Token decode failed", {
-                    'error': str(e),
-                    'token_length': len(token) if token else 0
-                })
-                raise AuthenticationFailed({
-                    'code': 'invalid_token',
-                    'message': 'Invalid authentication token',
-                    'detail': str(e)
-                })
-
-            # Check if we're in development mode
-            is_development = getattr(settings, 'DEBUG', False)
-            
-            # Validate token with Cognito
-            try:
-                # First validate token locally before calling Cognito
-                if not token.startswith('eyJ') or token.count('.') != 2:
-                    raise AuthenticationFailed('Invalid JWT format')
-
+                # Check if we're in development mode to handle expired tokens gracefully
+                is_development = getattr(settings, 'DEBUG', False)
+                
                 # Decode token header to get key ID
                 header = json.loads(base64.urlsafe_b64decode(token.split('.')[0] + '==='))
                 kid = header.get('kid')
@@ -159,6 +149,7 @@ class CognitoAuthentication(authentication.BaseAuthentication):
 
                 # Check if we're in development mode
                 is_development = getattr(settings, 'DEBUG', False)
+                enforce_aws_auth = getattr(settings, 'USE_AWS_AUTH', True)
                 
                 try:
                     # Now verify with Cognito service
@@ -169,14 +160,15 @@ class CognitoAuthentication(authentication.BaseAuthentication):
                     })
                     
                     # Get or create Django user
-                    user = self.get_or_create_user(user_data)
+                    user = await self.get_or_create_user_async(user_data)
                     return (user, token)
                 except ClientError as e:
                     # Check if this is an expired token error in development mode
                     error_code = e.response['Error']['Code']
                     error_msg = e.response['Error'].get('Message', str(e))
                     
-                    if is_development and (
+                    # Check if we should bypass AWS auth in development (only if explicitly set)
+                    if is_development and not enforce_aws_auth and (
                         'expired' in error_msg.lower() or
                         'token is invalid' in error_msg.lower()
                     ):
@@ -225,6 +217,195 @@ class CognitoAuthentication(authentication.BaseAuthentication):
                                 })
                         
                         # Get or create Django user using mock data
+                        user = await self.get_or_create_user_async(mock_user_data)
+                        return (user, decoded)
+                    else:
+                        # In production or for other errors, raise the exception
+                        raise
+
+            except ClientError as e:
+                error_code = e.response['Error']['Code']
+                error_msg = e.response['Error'].get('Message', str(e))
+                
+                logger.error("[Auth] Token validation failed", {
+                    'error_code': error_code,
+                    'error_message': error_msg
+                })
+
+                raise AuthenticationFailed({
+                    'code': 'token_validation_failed',
+                    'message': 'Please sign in again',
+                    'detail': 'Your session has expired or is invalid'
+                })
+
+        except Exception as e:
+            logger.error("[Auth] Unexpected authentication error", {
+                'error': str(e),
+                'type': type(e).__name__
+            })
+            raise AuthenticationFailed({
+                'code': 'authentication_error',
+                'message': 'Authentication failed',
+                'detail': str(e)
+            })
+    
+    def _authenticate_sync(self, request):
+        """
+        Fully synchronous implementation of authenticate
+        """
+        # Store request reference for later use in get_or_create_user
+        self.request = request
+        
+        try:
+            # Get token from Authorization header
+            auth_header = request.headers.get('Authorization', '')
+            if not auth_header.startswith('Bearer '):
+                # No token or invalid format
+                logger.debug("[Auth] No Bearer token in request")
+                return None
+                
+            token = auth_header.split(' ')[1]
+            if not token:
+                # Empty token
+                logger.debug("[Auth] Empty token")
+                return None
+                
+            try:
+                # First, try to decode and verify the token without Cognito service
+                # This helps catch basic issues before making API calls
+                
+                # Check if we're in development mode to handle expired tokens gracefully
+                is_development = getattr(settings, 'DEBUG', False)
+                
+                # Decode token header to get key ID
+                header = json.loads(base64.urlsafe_b64decode(token.split('.')[0] + '==='))
+                kid = header.get('kid')
+                if not kid:
+                    raise AuthenticationFailed('Missing key ID in token header')
+
+                # Get JWKS from Cognito
+                jwks_url = f'https://cognito-idp.{settings.AWS_REGION}.amazonaws.com/{settings.COGNITO_USER_POOL_ID}/.well-known/jwks.json'
+                jwks_response = requests.get(jwks_url)
+                jwks_response.raise_for_status()
+                jwks = jwks_response.json()
+
+                # Find matching public key
+                public_key = None
+                for key in jwks['keys']:
+                    if key['kid'] == kid:
+                        public_key = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(key))
+                        break
+                if not public_key:
+                    raise AuthenticationFailed('No matching public key found')
+
+                # Verify token signature and claims
+                try:
+                    decoded = jwt.decode(
+                        token,
+                        public_key,
+                        algorithms=['RS256'],
+                        issuer=f'https://cognito-idp.{settings.AWS_REGION}.amazonaws.com/{settings.COGNITO_USER_POOL_ID}',
+                        options={
+                            'require_exp': True,
+                            'verify_aud': False,  # Make audience verification optional
+                            'verify_signature': True
+                        }
+                    )
+                except jwt.ExpiredSignatureError:
+                    if is_development:
+                        # In development mode, decode without verification for expired tokens
+                        logger.warning("[Auth] Token expired but continuing in development mode")
+                        decoded = jwt.decode(
+                            token,
+                            options={
+                                'verify_signature': False,
+                                'verify_exp': False
+                            }
+                        )
+                    else:
+                        # In production, strictly enforce token expiration
+                        raise AuthenticationFailed('Token has expired')
+
+                # Verify audience if present
+                if 'aud' in decoded and decoded['aud'] != settings.COGNITO_APP_CLIENT_ID:
+                    raise AuthenticationFailed('Invalid audience claim')
+
+                # Verify token is not expired (already handled above, but keeping for clarity)
+                now = datetime.datetime.utcnow().timestamp()
+                
+                if decoded['exp'] < now and not is_development:
+                    raise AuthenticationFailed('Token has expired')
+
+                # Check if we're in development mode
+                is_development = getattr(settings, 'DEBUG', False)
+                enforce_aws_auth = getattr(settings, 'USE_AWS_AUTH', True)
+                
+                try:
+                    # Now verify with Cognito service
+                    user_data = self.cognito_client.get_user(AccessToken=token)
+                    
+                    logger.debug("[Auth] Token validation successful", {
+                        'username': user_data.get('Username')
+                    })
+                    
+                    # Get or create Django user - directly, not async
+                    user = self.get_or_create_user(user_data)
+                    return (user, token)
+                except ClientError as e:
+                    # Check if this is an expired token error in development mode
+                    error_code = e.response['Error']['Code']
+                    error_msg = e.response['Error'].get('Message', str(e))
+                    
+                    # Check if we should bypass AWS auth in development (only if explicitly set)
+                    if is_development and not enforce_aws_auth and (
+                        'expired' in error_msg.lower() or
+                        'token is invalid' in error_msg.lower()
+                    ):
+                        # In development mode, extract user info from the decoded token
+                        logger.warning("[Auth] Token expired but continuing in development mode", {
+                            'exp': decoded.get('exp'),
+                            'now': datetime.datetime.utcnow().timestamp(),
+                            'error_code': error_code,
+                            'error_message': error_msg
+                        })
+                        
+                        # Extract user info from token
+                        cognito_sub = decoded.get('sub')
+                        if not cognito_sub:
+                            raise AuthenticationFailed('Missing sub claim in token')
+                        
+                        # Create mock user_data structure
+                        mock_user_data = {
+                            'Username': cognito_sub,
+                            'UserAttributes': []
+                        }
+                        
+                        # Add email from ID token if available
+                        id_token = request.headers.get('X-Id-Token')
+                        if id_token:
+                            try:
+                                id_token_payload = jwt.decode(id_token, options={'verify_signature': False})
+                                if 'email' in id_token_payload:
+                                    mock_user_data['UserAttributes'].append({
+                                        'Name': 'email',
+                                        'Value': id_token_payload['email']
+                                    })
+                                if 'given_name' in id_token_payload:
+                                    mock_user_data['UserAttributes'].append({
+                                        'Name': 'given_name',
+                                        'Value': id_token_payload['given_name']
+                                    })
+                                if 'family_name' in id_token_payload:
+                                    mock_user_data['UserAttributes'].append({
+                                        'Name': 'family_name',
+                                        'Value': id_token_payload['family_name']
+                                    })
+                            except Exception as id_err:
+                                logger.warning("[Auth] Error decoding ID token in development mode", {
+                                    'error': str(id_err)
+                                })
+                        
+                        # Get or create Django user using mock data - directly, not async
                         user = self.get_or_create_user(mock_user_data)
                         return (user, decoded)
                     else:
@@ -256,7 +437,8 @@ class CognitoAuthentication(authentication.BaseAuthentication):
                 'message': 'Authentication failed',
                 'detail': str(e)
             })
-
+    
+    # Define synchronous method
     def get_or_create_user(self, cognito_user):
         """Create or update local user from Cognito data"""
         # Extract user data
@@ -297,53 +479,118 @@ class CognitoAuthentication(authentication.BaseAuthentication):
             logger.error("[Auth] No email found in Cognito user data or tokens")
             # INSTEAD OF FAILING, set a placeholder email if we have cognito_sub
             if cognito_sub:
-                logger.warning(f"[Auth] Using placeholder email for cognito_sub: {cognito_sub}")
-                email = f"{cognito_sub}@placeholder.auth"
+                email = f"{cognito_sub}@placeholder.pyfactor.com"
+                logger.warning(f"[Auth] Using placeholder email: {email}")
             else:
-                raise AuthenticationFailed('Invalid Cognito user data: no email or user ID')
+                # If we don't even have cognito_sub, we really can't proceed
+                raise AuthenticationFailed('No email or cognito sub found in authentication data')
         
-        # Always include cognito_sub - remove the column check that was causing issues
-        user = None
-        created = False
+        # Extract other attributes
+        first_name = attr_dict.get('given_name', '')
+        last_name = attr_dict.get('family_name', '')
+        
+        # Get additional custom attributes but only use ones that exist on the User model
+        user_model_fields = [f.name for f in User._meta.get_fields()]
+        
+        # Extract custom attributes that might be needed for the business/tenant models
+        # but don't try to set them on the User model
+        business_attributes = {}
+        user_custom_attributes = {}
+        
+        for key, value in attr_dict.items():
+            if key.startswith('custom:'):
+                custom_name = key.replace('custom:', '')
+                if custom_name in user_model_fields:
+                    # Set only attributes that exist in the User model
+                    user_custom_attributes[custom_name] = value
+                else:
+                    # Store other attributes for potential business use
+                    business_attributes[custom_name] = value
         
         try:
-            # Try to find user by email
-            try:
-                user = User.objects.get(email=email)
-                # Always update the cognito_sub regardless of whether it was None before
-                if user.cognito_sub != cognito_sub:
-                    user.cognito_sub = cognito_sub
-                    user.save(update_fields=['cognito_sub'])
-                    logger.info(f"[Auth] Updated cognito_sub for user {email} to {cognito_sub}")
-            except User.DoesNotExist:
-                # Create new user
-                logger.debug(f"[Auth] Creating new user with email: {email}")
-                
-                user = User.objects.create(
+            # Try to get existing user
+            user = None
+            
+            # First try to find by cognito_sub if we have it
+            if cognito_sub:
+                try:
+                    user = User.objects.get(cognito_sub=cognito_sub)
+                except User.DoesNotExist:
+                    logger.debug(f"[Auth] No user found with cognito_sub: {cognito_sub}")
+            
+            # If not found, try by email
+            if not user and email:
+                try:
+                    user = User.objects.get(email=email)
+                except User.DoesNotExist:
+                    logger.debug(f"[Auth] No user found with email: {email}")
+                except User.MultipleObjectsReturned:
+                    # If multiple users with same email, try to find one with matching cognito_sub
+                    if cognito_sub:
+                        matching_users = User.objects.filter(email=email, cognito_sub=cognito_sub)
+                        if matching_users.exists():
+                            user = matching_users.first()
+                        else:
+                            # Get first user if no match
+                            user = User.objects.filter(email=email).first()
+                            logger.warning(f"[Auth] Multiple users with email {email}, using first one")
+            
+            # If still not found, create new user
+            if not user:
+                logger.info(f"[Auth] Creating new user with email: {email}")
+                user = User.objects.create_user(
                     email=email,
-                    cognito_sub=cognito_sub,
-                    first_name=attr_dict.get('given_name', ''),
-                    last_name=attr_dict.get('family_name', ''),
-                    is_active=True
+                    username=email,  # Use email as username
+                    first_name=first_name,
+                    last_name=last_name,
+                    cognito_sub=cognito_sub
                 )
-                created = True
-
-            if created:
-                logger.info("[Auth] Created new user", {
-                    'email': email,
-                    'cognito_sub': cognito_sub
-                })
             else:
-                logger.info("[Auth] Updated existing user", {
-                    'email': email,
-                    'cognito_sub': cognito_sub
-                })
-
+                # Update existing user with latest data
+                update_fields = []
+                
+                # Only update names if provided and different
+                if first_name and user.first_name != first_name:
+                    user.first_name = first_name
+                    update_fields.append('first_name')
+                
+                if last_name and user.last_name != last_name:
+                    user.last_name = last_name
+                    update_fields.append('last_name')
+                
+                # Set or update cognito_sub if it's not set or different
+                if cognito_sub and getattr(user, 'cognito_sub', None) != cognito_sub:
+                    user.cognito_sub = cognito_sub
+                    update_fields.append('cognito_sub')
+                
+                # Update custom attributes if they exist in the User model
+                for attr_name, attr_value in user_custom_attributes.items():
+                    try:
+                        if hasattr(user, attr_name):
+                            setattr(user, attr_name, attr_value)
+                            update_fields.append(attr_name)
+                    except Exception as e:
+                        logger.warning(f"[Auth] Failed to set attribute {attr_name} on user: {str(e)}")
+                
+                # Save user if any fields updated
+                if update_fields:
+                    user.save(update_fields=update_fields)
+            
+            # Store business attributes in request for potential later use
+            if hasattr(self, 'request') and self.request and business_attributes:
+                self.request.business_attributes = business_attributes
+            
             return user
             
         except Exception as e:
             logger.error(f"[Auth] Error creating/updating user: {str(e)}")
-            raise AuthenticationFailed(f'Failed to create/update user: {str(e)}')
+            raise
+    
+    # Create an async wrapper for the get_or_create_user method
+    get_or_create_user_async = sync_to_async(get_or_create_user)
 
     def authenticate_header(self, request):
-        return 'Bearer'
+        """
+        Return authentication header format for WWW-Authenticate response
+        """
+        return 'Bearer realm="api"'

@@ -3,6 +3,13 @@ import { logger } from '@/utils/logger';
 import { getRefreshedAccessToken, isTokenExpired } from '@/utils/auth';
 import { jwtDecode } from 'jwt-decode';
 import { fetchUserAttributes } from '@/config/amplifyUnified';
+import { 
+  COGNITO_ATTRIBUTES,
+  COOKIE_NAMES, 
+  STORAGE_KEYS,
+  ONBOARDING_STATUS,
+  ONBOARDING_STEPS
+} from '@/constants/onboarding';
 
 export async function validateSession(providedTokens) {
   try {
@@ -714,3 +721,178 @@ export async function validatePayment(data) {
 
   return formattedAttributes;
 }
+
+/**
+ * Gets a cookie value by name
+ * @param {string} name - The cookie name
+ * @returns {string|null} The cookie value or null if not found
+ */
+export const getCookie = (name) => {
+  if (typeof document === 'undefined') return null;
+  
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+};
+
+/**
+ * Sets a cookie with the specified name and value
+ * @param {string} name - The cookie name
+ * @param {string} value - The cookie value
+ * @param {number} maxAge - Cookie max age in seconds (default 30 days)
+ */
+export const setCookie = (name, value, maxAge = 60 * 60 * 24 * 30) => {
+  if (typeof document === 'undefined') return;
+  
+  document.cookie = `${name}=${value}; path=/; max-age=${maxAge}; samesite=lax`;
+};
+
+/**
+ * Gets an item from localStorage with error handling
+ * @param {string} key - The localStorage key
+ * @returns {string|null} The value or null if not found or error occurs
+ */
+export const getLocalStorage = (key) => {
+  try {
+    return localStorage.getItem(key);
+  } catch (e) {
+    logger.warn('[onboardingUtils] Error reading from localStorage:', e);
+    return null;
+  }
+};
+
+/**
+ * Sets an item in localStorage with error handling
+ * @param {string} key - The localStorage key
+ * @param {string} value - The value to store
+ * @returns {boolean} True if successful, false otherwise
+ */
+export const setLocalStorage = (key, value) => {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    logger.warn('[onboardingUtils] Error writing to localStorage:', e);
+    return false;
+  }
+};
+
+/**
+ * Updates the onboarding status across all storage mechanisms (Cognito, cookies, localStorage)
+ * @param {string} status - The new onboarding status, use ONBOARDING_STATUS constants
+ * @param {Object} options - Additional options
+ * @param {boolean} options.updateCognito - Whether to update Cognito attributes (default true)
+ * @param {boolean} options.wait - Whether to wait for Cognito update to complete (default false)
+ * @returns {Promise<boolean>} True if successful
+ */
+export const updateOnboardingStatus = async (status, options = {}) => {
+  const { updateCognito = true, wait = false } = options;
+  
+  try {
+    // Always update cookies and localStorage as fallbacks
+    setCookie(COOKIE_NAMES.ONBOARDING_STATUS, status);
+    setLocalStorage(STORAGE_KEYS.ONBOARDING_STATUS, status);
+    
+    // Set additional cookies/storage based on status
+    if (status === ONBOARDING_STATUS.COMPLETE) {
+      setCookie(COOKIE_NAMES.SETUP_COMPLETED, 'true');
+      setCookie(COOKIE_NAMES.ONBOARDING_STEP, ONBOARDING_STEPS.COMPLETE);
+      setLocalStorage(STORAGE_KEYS.SETUP_COMPLETED, 'true');
+    }
+    
+    // Update Cognito if requested
+    if (updateCognito) {
+      const updateAttributes = async () => {
+        try {
+          // Prepare attributes to update
+          const userAttributes = {
+            [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: status
+          };
+          
+          // Add extra attributes for complete status
+          if (status === ONBOARDING_STATUS.COMPLETE) {
+            userAttributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED] = 'TRUE';
+          }
+          
+          // Update attributes
+          await updateUserAttributes({
+            userAttributes 
+          });
+          
+          logger.debug('[onboardingUtils] Cognito attributes updated successfully:', { status });
+          return true;
+        } catch (error) {
+          logger.warn('[onboardingUtils] Error updating Cognito attributes:', error);
+          return false;
+        }
+      };
+      
+      // Either wait for update or do it in background
+      if (wait) {
+        const success = await updateAttributes();
+        return success;
+      } else {
+        // Fire and forget
+        updateAttributes().catch(error => {
+          logger.error('[onboardingUtils] Background Cognito update failed:', error);
+        });
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    logger.error('[onboardingUtils] Failed to update onboarding status:', error);
+    return false;
+  }
+};
+
+/**
+ * Checks if the user has completed onboarding by examining all sources
+ * @returns {boolean} True if onboarding is complete
+ */
+export const isOnboardingComplete = () => {
+  try {
+    // Check cookies first (most reliable client-side indicator)
+    const cookieStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS);
+    const cookieSetupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED);
+    const cookieOnboardingStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP);
+    
+    // Check localStorage as backup
+    const localStorageStatus = getLocalStorage(STORAGE_KEYS.ONBOARDING_STATUS);
+    const localStorageSetupCompleted = getLocalStorage(STORAGE_KEYS.SETUP_COMPLETED);
+    
+    // Return true if ANY source indicates completion
+    return (
+      cookieStatus === ONBOARDING_STATUS.COMPLETE ||
+      cookieSetupCompleted === 'true' ||
+      cookieOnboardingStep === ONBOARDING_STEPS.COMPLETE ||
+      localStorageStatus === ONBOARDING_STATUS.COMPLETE ||
+      localStorageSetupCompleted === 'true'
+    );
+  } catch (error) {
+    logger.error('[onboardingUtils] Error checking onboarding status:', error);
+    return false;
+  }
+};
+
+/**
+ * Gets the current onboarding step (for routing)
+ * @returns {string} The current onboarding step path
+ */
+export const getCurrentOnboardingStep = () => {
+  // Get from cookie first, fallback to localStorage
+  const cookieStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP);
+  
+  if (cookieStep) {
+    return cookieStep;
+  }
+  
+  // If no specific step found but onboarding is complete, return complete
+  if (isOnboardingComplete()) {
+    return ONBOARDING_STEPS.COMPLETE;
+  }
+  
+  // Default to first step
+  return ONBOARDING_STEPS.BUSINESS_INFO;
+};

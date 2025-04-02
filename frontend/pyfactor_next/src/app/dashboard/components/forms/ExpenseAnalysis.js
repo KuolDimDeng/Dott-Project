@@ -1,16 +1,5 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import {
-  Typography,
-  Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Paper,
-  Tabs,
-  Tab,
-} from '@mui/material';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -80,7 +69,7 @@ export default function ExpenseAnalysis() {
     setActiveTab(newValue);
   };
 
-  if (!data) return <Typography>Loading...</Typography>;
+  if (!data) return <p className="text-gray-600 p-4">Loading...</p>;
 
   const expensesOverTimeData = {
     labels: data.expensesOverTime.map((item) => item.date),
@@ -123,68 +112,118 @@ export default function ExpenseAnalysis() {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>
+    <div className="bg-white p-6 rounded-lg shadow-md">
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">
         Expense Analysis
-      </Typography>
+      </h2>
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Time Range</InputLabel>
-        <Select value={timeRange} onChange={handleTimeRangeChange}>
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Time Range
+        </label>
+        <select
+          value={timeRange}
+          onChange={handleTimeRangeChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        >
           {timeRanges.map((range) => (
-            <MenuItem key={range.value} value={range.value}>
+            <option key={range.value} value={range.value}>
               {range.label}
-            </MenuItem>
+            </option>
           ))}
-        </Select>
-      </FormControl>
+        </select>
+      </div>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} aria-label="expense analysis tabs">
-          <Tab label="Expenses Over Time" />
-          <Tab label="Expenses by Category" />
-          <Tab label="Expenses by Vendor" />
-          <Tab label="Summary" />
-        </Tabs>
-      </Box>
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="flex -mb-px">
+          <button
+            onClick={(e) => handleTabChange(e, 0)}
+            className={`py-2 px-4 text-center border-b-2 font-medium text-sm ${
+              activeTab === 0
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Expenses Over Time
+          </button>
+          <button
+            onClick={(e) => handleTabChange(e, 1)}
+            className={`py-2 px-4 text-center border-b-2 font-medium text-sm ${
+              activeTab === 1
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Expenses by Category
+          </button>
+          <button
+            onClick={(e) => handleTabChange(e, 2)}
+            className={`py-2 px-4 text-center border-b-2 font-medium text-sm ${
+              activeTab === 2
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Expenses by Vendor
+          </button>
+          <button
+            onClick={(e) => handleTabChange(e, 3)}
+            className={`py-2 px-4 text-center border-b-2 font-medium text-sm ${
+              activeTab === 3
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Summary
+          </button>
+        </nav>
+      </div>
 
       {activeTab === 0 && (
-        <Box>
-          <Typography variant="h6" gutterBottom>
+        <div>
+          <h3 className="text-lg font-medium text-gray-800 mb-4">
             Expenses Over Time
-          </Typography>
-          <Line data={expensesOverTimeData} />
-        </Box>
+          </h3>
+          <div className="h-80">
+            <Line data={expensesOverTimeData} />
+          </div>
+        </div>
       )}
 
       {activeTab === 1 && (
-        <Box>
-          <Typography variant="h6" gutterBottom>
+        <div>
+          <h3 className="text-lg font-medium text-gray-800 mb-4">
             Expenses by Category
-          </Typography>
-          <Pie data={expensesByCategoryData} />
-        </Box>
+          </h3>
+          <div className="h-80">
+            <Pie data={expensesByCategoryData} />
+          </div>
+        </div>
       )}
 
       {activeTab === 2 && (
-        <Box>
-          <Typography variant="h6" gutterBottom>
+        <div>
+          <h3 className="text-lg font-medium text-gray-800 mb-4">
             Expenses by Vendor
-          </Typography>
-          <Bar data={expensesByVendorData} />
-        </Box>
+          </h3>
+          <div className="h-80">
+            <Bar data={expensesByVendorData} />
+          </div>
+        </div>
       )}
 
       {activeTab === 3 && (
-        <Box>
-          <Typography variant="h6" gutterBottom>
+        <div>
+          <h3 className="text-lg font-medium text-gray-800 mb-4">
             Summary
-          </Typography>
-          <Typography>Total Expenses: ${formatAmount(data.totalExpenses)}</Typography>
-          <Typography>Average Expense: ${formatAmount(data.averageExpense)}</Typography>
-          <Typography>Number of Expenses: {data.numberOfExpenses}</Typography>
-        </Box>
+          </h3>
+          <div className="space-y-2">
+            <p className="text-gray-700">Total Expenses: <span className="font-medium">${formatAmount(data.totalExpenses)}</span></p>
+            <p className="text-gray-700">Average Expense: <span className="font-medium">${formatAmount(data.averageExpense)}</span></p>
+            <p className="text-gray-700">Number of Expenses: <span className="font-medium">{data.numberOfExpenses}</span></p>
+          </div>
+        </div>
       )}
-    </Paper>
+    </div>
   );
 }

@@ -1,21 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Table,
-  useTheme,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Typography,
-} from '@mui/material';
 import { axiosInstance } from '@/lib/axiosConfig';
 
 export default function BalanceSheet() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-  const theme = useTheme();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,33 +24,41 @@ export default function BalanceSheet() {
     fetchData();
   }, []);
 
-  if (error) return <Typography color="error">Error: {error}</Typography>;
-  if (!data) return <Typography>Loading...</Typography>;
+  if (error) return <p className="text-red-600 font-medium">Error: {error}</p>;
+  if (!data) return <p className="text-gray-600">Loading...</p>;
 
   if (Object.keys(data).length === 0) {
-    return <Typography>No data available for the current date.</Typography>;
+    return <p className="text-gray-600">No data available for the current date.</p>;
   }
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Item</TableCell>
-              <TableCell align="right">Amount</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+    <div className="bg-white p-6 rounded-lg shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Item
+              </th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Amount
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
             {Object.entries(data).map(([key, value]) => (
-              <TableRow key={key}>
-                <TableCell>{key}</TableCell>
-                <TableCell align="right">{value}</TableCell>
-              </TableRow>
+              <tr key={key} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {key}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                  {value}
+                </td>
+              </tr>
             ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }

@@ -6,17 +6,11 @@ import { useSession } from '@/hooks/useSession';
 import { useForm } from 'react-hook-form';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 import { validateSession } from '@/utils/onboardingUtils';
-import {
-  Box,
-  Typography,
-  Alert,
-  Button,
-  CircularProgress,
-} from '@mui/material';
 import { LoadingStateWithProgress } from '@/components/LoadingState';
 import { useOnboarding } from './hooks/useOnboarding';
 import { logger } from '@/utils/logger';
 import PropTypes from 'prop-types';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 // Onboarding-specific error fallback
 const OnboardingErrorFallback = memo(function OnboardingErrorFallback({
@@ -51,38 +45,48 @@ const OnboardingErrorFallback = memo(function OnboardingErrorFallback({
   };
 
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="100vh"
-      p={3}
-      gap={2}
-    >
-      <Alert
-        severity="error"
-        action={
-          <Button
-            color="inherit"
-            size="small"
+    <div className="flex flex-col justify-center items-center min-h-screen p-6 gap-4">
+      <div className="max-w-lg w-full bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 relative">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium">Error in Step {stepNumber}</h3>
+            <div className="mt-2 text-sm">
+              {error?.message || 'Failed to load onboarding'}
+            </div>
+          </div>
+        </div>
+        <div className="mt-4">
+          <button
+            className={`px-4 py-2 rounded-md text-sm font-medium ${
+              isResetting ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-100 text-red-800 hover:bg-red-200'
+            }`}
             onClick={handleReset}
             disabled={isResetting}
           >
-            {isResetting ? <CircularProgress size={20} /> : 'Try Again'}
-          </Button>
-        }
-        sx={{ maxWidth: 500, width: '100%' }}
-      >
-        Error in Step {stepNumber}:{' '}
-        {error?.message || 'Failed to load onboarding'}
-      </Alert>
-      <Typography variant="body2" color="text.secondary" align="center">
+            {isResetting ? (
+              <div className="flex items-center">
+                <div className="w-4 h-4 mr-2">
+                  <LoadingSpinner size="small" />
+                </div>
+                <span>Processing...</span>
+              </div>
+            ) : (
+              'Try Again'
+            )}
+          </button>
+        </div>
+      </div>
+      <div className="text-sm text-gray-500 text-center">
         Please try again or contact support if the problem persists.
         <br />
         Error Reference: {errorId}
-      </Typography>
-    </Box>
+      </div>
+    </div>
   );
 });
 
@@ -226,20 +230,12 @@ const OnboardingContent = memo(function OnboardingContent() {
   
   // Show loading while redirecting
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="100vh"
-      p={3}
-      gap={2}
-    >
-      <Typography variant="h6" align="center" gutterBottom>
+    <div className="flex flex-col justify-center items-center min-h-screen p-6 gap-4">
+      <h2 className="text-xl font-semibold text-center mb-4">
         Redirecting to {currentStepLower || 'your next step'}...
-      </Typography>
-      <CircularProgress />
-    </Box>
+      </h2>
+      <LoadingSpinner size="large" />
+    </div>
   );
 });
 

@@ -1,9 +1,281 @@
 'use client';
+
 import React, { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import BarcodeGenerator from '@/components/BarcodeGenerator';
+import { useTable, usePagination, useSortBy } from 'react-table';
+import PropTypes from 'prop-types';
+import { useNotification } from '@/context/NotificationContext';
+import { axiosInstance } from '@/lib/axiosConfig';
+
+// Import UI components needed for the Tailwind version
+const Typography = ({ variant, component, className, color, children, ...props }) => {
+  let baseClasses = '';
+  
+  // Handle variants
+  if (variant === 'h4' || (component === 'h1' && !variant)) {
+    baseClasses = 'text-2xl font-bold';
+  } else if (variant === 'h5') {
+    baseClasses = 'text-xl font-semibold';
+  } else if (variant === 'h6') {
+    baseClasses = 'text-lg font-medium';
+  } else if (variant === 'subtitle1' || variant === 'subtitle2') {
+    baseClasses = 'text-sm font-medium';
+  } else if (variant === 'body1') {
+    baseClasses = 'text-base';
+  } else if (variant === 'body2') {
+    baseClasses = 'text-sm';
+  }
+  
+  // Handle colors
+  if (color === 'textSecondary') {
+    baseClasses += ' text-gray-500';
+  } else if (color === 'primary') {
+    baseClasses += ' text-blue-600';
+  } else if (color === 'error') {
+    baseClasses += ' text-red-600';
+  }
+  
+  const Tag = component || 'p';
+  
+  return (
+    <Tag className={`${baseClasses} ${className || ''}`} {...props}>
+      {children}
+    </Tag>
+  );
+};
+
+const Alert = ({ severity, className, children }) => {
+  let bgColor = 'bg-blue-50';
+  let borderColor = 'border-blue-400';
+  let textColor = 'text-blue-800';
+  
+  if (severity === 'error') {
+    bgColor = 'bg-red-50';
+    borderColor = 'border-red-400';
+    textColor = 'text-red-800';
+  } else if (severity === 'warning') {
+    bgColor = 'bg-yellow-50';
+    borderColor = 'border-yellow-400';
+    textColor = 'text-yellow-800';
+  } else if (severity === 'success') {
+    bgColor = 'bg-green-50';
+    borderColor = 'border-green-400';
+    textColor = 'text-green-800';
+  } else if (severity === 'info') {
+    bgColor = 'bg-blue-50';
+    borderColor = 'border-blue-400';
+    textColor = 'text-blue-800';
+  }
+  
+  return (
+    <div className={`p-4 mb-4 ${bgColor} border-l-4 ${borderColor} ${textColor} ${className || ''}`}>
+      {children}
+    </div>
+  );
+};
+
+const Paper = ({ elevation, className, children }) => {
+  const shadowClass = elevation === 3 ? 'shadow-md' : 'shadow-sm';
+  
+  return (
+    <div className={`bg-white rounded-lg ${shadowClass} ${className || ''}`}>
+      {children}
+    </div>
+  );
+};
+
+const FormControl = ({ component, fullWidth, className, children }) => {
+  const width = fullWidth ? 'w-full' : '';
+  const Tag = component || 'div';
+  
+  return (
+    <Tag className={`${width} ${className || ''}`}>
+      {children}
+    </Tag>
+  );
+};
+
+const FormGroup = ({ row, className, children }) => {
+  const direction = row ? 'flex flex-row' : 'flex flex-col';
+  
+  return (
+    <div className={`${direction} ${className || ''}`}>
+      {children}
+    </div>
+  );
+};
+
+const FormControlLabel = ({ control, label }) => {
+  return (
+    <label className="inline-flex items-center">
+      {control}
+      <span className="ml-2">{label}</span>
+    </label>
+  );
+};
+
+const TextField = ({ label, fullWidth, multiline, rows, value, onChange, required, placeholder, name, type, inputProps, variant, className, onClick, autoComplete }) => {
+  const width = fullWidth ? 'w-full' : '';
+  
+  return (
+    <div className={`mb-4 ${width} ${className || ''}`}>
+      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}{required && <span className="text-red-500 ml-1">*</span>}</label>}
+      {multiline ? (
+        <textarea
+          name={name}
+          value={value}
+          onChange={onChange}
+          onClick={onClick}
+          placeholder={placeholder}
+          rows={rows || 3}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+        />
+      ) : (
+        <input
+          type={type || 'text'}
+          name={name}
+          value={value}
+          onChange={onChange}
+          onClick={onClick}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          {...inputProps}
+        />
+      )}
+    </div>
+  );
+};
+
+const Button = ({ variant, color, size, onClick, disabled, type, className, startIcon, children }) => {
+  let baseClasses = 'inline-flex items-center justify-center rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2';
+  
+  // Size classes
+  if (size === 'small') {
+    baseClasses += ' px-2.5 py-1.5 text-xs';
+  } else if (size === 'large') {
+    baseClasses += ' px-6 py-3 text-base';
+  } else {
+    baseClasses += ' px-4 py-2 text-sm'; // Medium (default)
+  }
+  
+  // Variant and color classes
+  if (variant === 'contained') {
+    if (color === 'primary') {
+      baseClasses += ' bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500';
+    } else if (color === 'secondary') {
+      baseClasses += ' bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500';
+    } else if (color === 'error') {
+      baseClasses += ' bg-red-600 text-white hover:bg-red-700 focus:ring-red-500';
+    } else if (color === 'info') {
+      baseClasses += ' bg-sky-600 text-white hover:bg-sky-700 focus:ring-sky-500';
+    } else {
+      baseClasses += ' bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500';
+    }
+  } else if (variant === 'outlined') {
+    if (color === 'primary') {
+      baseClasses += ' border border-blue-500 text-blue-700 hover:bg-blue-50 focus:ring-blue-500';
+    } else if (color === 'secondary') {
+      baseClasses += ' border border-purple-500 text-purple-700 hover:bg-purple-50 focus:ring-purple-500';
+    } else if (color === 'error') {
+      baseClasses += ' border border-red-500 text-red-700 hover:bg-red-50 focus:ring-red-500';
+    } else if (color === 'info') {
+      baseClasses += ' border border-sky-500 text-sky-700 hover:bg-sky-50 focus:ring-sky-500';
+    } else {
+      baseClasses += ' border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500';
+    }
+  } else {
+    // Text variant
+    if (color === 'primary') {
+      baseClasses += ' text-blue-700 hover:bg-blue-50 focus:ring-blue-500';
+    } else if (color === 'secondary') {
+      baseClasses += ' text-purple-700 hover:bg-purple-50 focus:ring-purple-500';
+    } else if (color === 'error') {
+      baseClasses += ' text-red-700 hover:bg-red-50 focus:ring-red-500';
+    } else {
+      baseClasses += ' text-gray-700 hover:bg-gray-50 focus:ring-gray-500';
+    }
+  }
+  
+  // Disabled state
+  if (disabled) {
+    baseClasses = baseClasses.replace(/hover:[^ ]*/g, '');
+    baseClasses += ' opacity-50 cursor-not-allowed';
+  }
+  
+  return (
+    <button
+      type={type || 'button'}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      className={`${baseClasses} ${className || ''}`}
+    >
+      {startIcon && <span className="mr-2">{startIcon}</span>}
+      {children}
+    </button>
+  );
+};
+
+const CircularProgress = ({ size, color, className }) => {
+  const sizeClass = size === 'small' ? 'h-4 w-4' : 'h-6 w-6';
+  const colorClass = color === 'inherit' ? 'text-current' : 'text-blue-600';
+  
+  return (
+    <svg className={`animate-spin ${sizeClass} ${colorClass} ${className || ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+  );
+};
+
+// Simple fallback checkbox in case we need it
+const FallbackCheckbox = ({ checked, onChange, name, label }) => {
+  return (
+    <div className="flex items-center">
+      <input
+        id={name}
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        name={name}
+        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+      />
+      {label && (
+        <label htmlFor={name} className="ml-2 text-sm text-gray-700">
+          {label}
+        </label>
+      )}
+    </div>
+  );
+};
+
+// Dialog components to match MUI's Dialog components
+const DialogTitle = ({ className, children }) => {
+  return (
+    <div className={`px-6 py-4 border-b ${className || ''}`}>
+      <h3 className="text-lg font-medium text-gray-900">{children}</h3>
+    </div>
+  );
+};
+
+const DialogContent = ({ className, children }) => {
+  return (
+    <div className={`px-6 py-4 ${className || ''}`}>
+      {children}
+    </div>
+  );
+};
+
+const DialogActions = ({ className, children }) => {
+  return (
+    <div className={`px-6 py-4 border-t flex justify-end space-x-2 ${className || ''}`}>
+      {children}
+    </div>
+  );
+};
 
 // Custom QR code icon using SVG
 const QrCodeIcon = () => (
@@ -12,10 +284,6 @@ const QrCodeIcon = () => (
     <path d="M11 4a1 1 0 10-2 0v1a1 1 0 002 0V4zM10 7a1 1 0 011 1v1h2a1 1 0 110 2h-3a1 1 0 01-1-1V8a1 1 0 011-1zM16 9a1 1 0 100 2 1 1 0 000-2zM9 13a1 1 0 011-1h1a1 1 0 110 2v2a1 1 0 11-2 0v-3zM7 11a1 1 0 100-2H4a1 1 0 100 2h3zM17 13a1 1 0 01-1 1h-2a1 1 0 110-2h2a1 1 0 011 1zM16 17a1 1 0 100-2h-3a1 1 0 100 2h3z" />
   </svg>
 );
-import { useTable, usePagination, useSortBy } from 'react-table';
-import { axiosInstance } from '@/lib/axiosConfig';
-import PropTypes from 'prop-types';
-import { useNotification } from '@/context/NotificationContext';
 
 // Modern Form Layout component using Tailwind classes
 const ModernFormLayout = ({ children, title, subtitle, onSubmit, isLoading, submitLabel }) => {

@@ -22,7 +22,7 @@ async function getSafeTenantId() {
     if (isServer()) {
       try {
         // Server-side: Try to get from request headers
-        const headersList = nextHeaders();
+        const headersList = await nextHeaders();
         const tenantId = headersList.get('x-tenant-id');
         if (tenantId) return tenantId;
       } catch (e) {
@@ -48,7 +48,7 @@ async function getSafeSchemaName() {
     if (isServer()) {
       try {
         // Server-side: Try to get from request headers
-        const headersList = nextHeaders();
+        const headersList = await nextHeaders();
         const schemaName = headersList.get('x-schema-name');
         if (schemaName) return schemaName;
       } catch (e) {

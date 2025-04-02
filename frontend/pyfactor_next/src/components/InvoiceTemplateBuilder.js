@@ -1,6 +1,5 @@
 // InvoiceTemplateBuilder.js
-import React, { useState } from 'react';
-import { Box, Typography, Button, Input, MenuItem, Select, Grid } from '@mui/material';
+import React from 'react';
 import InvoicePreview from './InvoicePreview';
 
 const InvoiceTemplateBuilder = ({
@@ -17,52 +16,73 @@ const InvoiceTemplateBuilder = ({
   handleInvoiceItemChange,
 }) => {
   return (
-    <Grid container spacing={3}>
-      <Grid item xs={8}>
-        <Box>
-          <Typography variant="h4" gutterBottom>
+    <div className="grid grid-cols-12 gap-6">
+      <div className="col-span-12 md:col-span-8">
+        <div>
+          <h1 className="text-2xl font-semibold mb-2">
             Let's create the perfect template
-          </Typography>
-          <Typography variant="body1">First impressions make all the difference.</Typography>
+          </h1>
+          <p className="text-gray-600">First impressions make all the difference.</p>
 
-          <Box mt={4}>
-            <Typography variant="h6">1. Add a logo</Typography>
-            <Input type="file" onChange={handleLogoUpload} />
-            {logo && <img src={logo} alt="Logo Preview" style={{ maxWidth: '200px' }} />}
-          </Box>
+          <div className="mt-8">
+            <h2 className="text-lg font-medium mb-2">1. Add a logo</h2>
+            <input 
+              type="file" 
+              onChange={handleLogoUpload}
+              className="border border-gray-300 rounded p-2 w-full"
+            />
+            {logo && (
+              <img 
+                src={logo} 
+                alt="Logo Preview" 
+                className="max-w-[200px] mt-2" 
+              />
+            )}
+          </div>
 
-          <Box mt={4}>
-            <Typography variant="h6">2. Choose an accent color</Typography>
-            <Input
+          <div className="mt-8">
+            <h2 className="text-lg font-medium mb-2">2. Choose an accent color</h2>
+            <input
               type="text"
               value={accentColor}
               onChange={handleAccentColorChange}
               placeholder="Hex"
+              className="border border-gray-300 rounded p-2 w-full"
             />
-          </Box>
+          </div>
 
-          <Box mt={4}>
-            <Typography variant="h6">3. Choose a template</Typography>
-            <Select value={template} onChange={handleTemplateChange}>
-              <MenuItem value="Contemporary">Contemporary</MenuItem>
-              <MenuItem value="Modern">Modern</MenuItem>
-              <MenuItem value="Classic">Classic</MenuItem>
-            </Select>
-          </Box>
+          <div className="mt-8">
+            <h2 className="text-lg font-medium mb-2">3. Choose a template</h2>
+            <select 
+              value={template} 
+              onChange={handleTemplateChange}
+              className="border border-gray-300 rounded p-2 w-full bg-white"
+            >
+              <option value="Contemporary">Contemporary</option>
+              <option value="Modern">Modern</option>
+              <option value="Classic">Classic</option>
+            </select>
+          </div>
 
-          <Box mt={4}>
-            <Typography variant="h6">4. Add Invoice Items</Typography>
-            <Button variant="contained" color="primary" onClick={handleAddInvoiceItem}>
+          <div className="mt-8">
+            <h2 className="text-lg font-medium mb-2">4. Add Invoice Items</h2>
+            <button 
+              className="bg-primary-main hover:bg-primary-dark text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-light transition-colors"
+              onClick={handleAddInvoiceItem}
+            >
               Add Item
-            </Button>
+            </button>
+            
             {invoiceItems.map((item, index) => (
-              <Box key={index} mt={2} display="flex" gap={2}>
-                <Input
+              <div key={index} className="mt-4 flex flex-col md:flex-row gap-4">
+                <input
+                  className="border border-gray-300 rounded p-2 flex-grow"
                   placeholder="Description"
                   value={item.description}
                   onChange={(e) => handleInvoiceItemChange(index, 'description', e.target.value)}
                 />
-                <Input
+                <input
+                  className="border border-gray-300 rounded p-2 w-24"
                   type="number"
                   placeholder="Quantity"
                   value={item.quantity}
@@ -70,7 +90,8 @@ const InvoiceTemplateBuilder = ({
                     handleInvoiceItemChange(index, 'quantity', parseFloat(e.target.value))
                   }
                 />
-                <Input
+                <input
+                  className="border border-gray-300 rounded p-2 w-32"
                   type="number"
                   placeholder="Unit Price"
                   value={item.unitPrice}
@@ -78,19 +99,25 @@ const InvoiceTemplateBuilder = ({
                     handleInvoiceItemChange(index, 'unitPrice', parseFloat(e.target.value))
                   }
                 />
-                <Typography variant="body1">Amount: {item.amount}</Typography>
-              </Box>
+                <div className="flex items-center">
+                  <p className="text-gray-700">Amount: {item.amount}</p>
+                </div>
+              </div>
             ))}
-          </Box>
+          </div>
 
-          <Box mt={4}>
-            <Button variant="contained" color="primary" onClick={handleClose}>
+          <div className="mt-8">
+            <button 
+              className="bg-primary-main hover:bg-primary-dark text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-light transition-colors"
+              onClick={handleClose}
+            >
               Close Builder
-            </Button>
-          </Box>
-        </Box>
-      </Grid>
-      <Grid item xs={4}>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div className="col-span-12 md:col-span-4">
         <InvoicePreview
           logo={logo}
           accentColor={accentColor}
@@ -98,8 +125,8 @@ const InvoiceTemplateBuilder = ({
           userData={userData}
           invoiceItems={invoiceItems}
         />
-      </Grid>
-    </Grid>
+      </div>
+    </div>
   );
 };
 

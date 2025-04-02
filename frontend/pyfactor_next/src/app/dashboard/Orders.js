@@ -1,10 +1,4 @@
 import * as React from 'react';
-import Link from '@mui/material/Link';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
 import Title from './Title';
 
 // Generate Order Data
@@ -26,33 +20,39 @@ function preventDefault(event) {
 
 export default function Orders() {
   return (
-    <React.Fragment>
+    <div>
       <Title>Recent Orders</Title>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>Date</TableCell>
-            <TableCell>Name</TableCell>
-            <TableCell>Ship To</TableCell>
-            <TableCell>Payment Method</TableCell>
-            <TableCell align="right">Sale Amount</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.map((row) => (
-            <TableRow key={row.id}>
-              <TableCell>{row.date}</TableCell>
-              <TableCell>{row.name}</TableCell>
-              <TableCell>{row.shipTo}</TableCell>
-              <TableCell>{row.paymentMethod}</TableCell>
-              <TableCell align="right">{`$${row.amount}`}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <Link color="primary" href="#" onClick={preventDefault} sx={{ mt: 3 }}>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ship To</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sale Amount</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {rows.map((row) => (
+              <tr key={row.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.date}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.shipTo}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.paymentMethod}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{`$${row.amount}`}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <a 
+        href="#" 
+        onClick={preventDefault} 
+        className="inline-block mt-4 text-indigo-600 hover:text-indigo-900"
+      >
         See more orders
-      </Link>
-    </React.Fragment>
+      </a>
+    </div>
   );
 }

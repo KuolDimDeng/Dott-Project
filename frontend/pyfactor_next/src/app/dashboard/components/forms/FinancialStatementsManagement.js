@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Tabs, Tab, Box, useTheme } from '@mui/material';
 import ProfitAndLoss from './ProfitAndLoss';
 import BalanceSheet from './BalanceSheet';
 import CashFlow from './CashFlow';
@@ -9,42 +8,77 @@ function TabPanel(props) {
   return (
     <div
       role="tabpanel"
-      hidden={value !== index}
+      className={value !== index ? 'hidden' : ''}
       id={`financial-tabpanel-${index}`}
       aria-labelledby={`financial-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <div className="p-6">{children}</div>}
     </div>
   );
 }
 
 export default function FinancialStatementsManagement() {
-  const [value, setValue] = useState(0);
-  const theme = useTheme();
+  const [activeTab, setActiveTab] = useState(0);
 
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
+  const handleTabClick = (tabIndex) => {
+    setActiveTab(tabIndex);
   };
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={value} onChange={handleChange} aria-label="financial statements tabs">
-          <Tab label="Profit and Loss" />
-          <Tab label="Balance Sheet" />
-          <Tab label="Cash Flow" />
-        </Tabs>
-      </Box>
-      <TabPanel value={value} index={0}>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <div className="border-b border-gray-200">
+        <nav className="flex -mb-px" aria-label="financial statements tabs">
+          <button 
+            onClick={() => handleTabClick(0)}
+            className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
+              activeTab === 0
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            id="financial-tab-0"
+            aria-controls="financial-tabpanel-0"
+            aria-selected={activeTab === 0}
+          >
+            Profit and Loss
+          </button>
+          <button 
+            onClick={() => handleTabClick(1)}
+            className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
+              activeTab === 1
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            id="financial-tab-1"
+            aria-controls="financial-tabpanel-1"
+            aria-selected={activeTab === 1}
+          >
+            Balance Sheet
+          </button>
+          <button 
+            onClick={() => handleTabClick(2)}
+            className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
+              activeTab === 2
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            id="financial-tab-2"
+            aria-controls="financial-tabpanel-2"
+            aria-selected={activeTab === 2}
+          >
+            Cash Flow
+          </button>
+        </nav>
+      </div>
+      <TabPanel value={activeTab} index={0}>
         <ProfitAndLoss />
       </TabPanel>
-      <TabPanel value={value} index={1}>
+      <TabPanel value={activeTab} index={1}>
         <BalanceSheet />
       </TabPanel>
-      <TabPanel value={value} index={2}>
+      <TabPanel value={activeTab} index={2}>
         <CashFlow />
       </TabPanel>
-    </Box>
+    </div>
   );
 }

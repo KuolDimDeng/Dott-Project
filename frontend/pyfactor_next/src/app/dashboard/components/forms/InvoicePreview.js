@@ -1,16 +1,4 @@
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-} from '@mui/material';
-import { Button } from '@mui/material';
 
 const InvoicePreview = ({
   logo,
@@ -39,122 +27,96 @@ const InvoicePreview = ({
   };
 
   return (
-    <Paper style={{ padding: '1rem' }}>
-      <Box display="flex" flexDirection="column" alignItems="center" gap={2} mb={2}>
-        <Typography variant="h4" style={{ color: accentColor }}>
+    <div className="bg-white p-4 rounded-lg shadow">
+      <div className="flex flex-col items-center gap-2 mb-4">
+        <h1 className="text-2xl font-bold" style={{ color: accentColor }}>
           INVOICE
-        </Typography>
-        <Typography variant="body1">Invoice # for your recent order</Typography>
-      </Box>
-      <Box display="grid" gap={1} textAlign="center" mb={2}>
-        <Typography variant="body2">{business_name}</Typography>
-        <Typography variant="body2">{email}</Typography>
-        <Typography variant="body2">{business_name}.com</Typography>
-      </Box>
-      <Box
-        borderTop={1}
-        borderBottom={1}
-        py={2}
-        px={4}
-        display="grid"
-        gap={2}
-        textAlign="left"
-        mb={2}
-      >
-        <Box display="flex" justifyContent="space-between">
-          <Typography variant="body2" fontWeight="bold">
-            Invoice number
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            #123456
-          </Typography>
-        </Box>
-        <Box display="flex" justifyContent="space-between">
-          <Typography variant="body2" fontWeight="bold">
-            Issue date
-          </Typography>
-          <Typography variant="body2">{new Date().toLocaleDateString()}</Typography>
-        </Box>
-        <Box display="flex" justifyContent="space-between">
-          <Typography variant="body2" fontWeight="bold">
-            Due date
-          </Typography>
-          <Typography variant="body2">
+        </h1>
+        <p className="text-base">Invoice # for your recent order</p>
+      </div>
+      
+      <div className="grid gap-1 text-center mb-4">
+        <p className="text-sm">{business_name}</p>
+        <p className="text-sm">{email}</p>
+        <p className="text-sm">{business_name}.com</p>
+      </div>
+      
+      <div className="border-t border-b py-4 px-6 grid gap-2 text-left mb-4">
+        <div className="flex justify-between">
+          <p className="text-sm font-semibold">Invoice number</p>
+          <p className="text-sm text-gray-600">#123456</p>
+        </div>
+        <div className="flex justify-between">
+          <p className="text-sm font-semibold">Issue date</p>
+          <p className="text-sm">{new Date().toLocaleDateString()}</p>
+        </div>
+        <div className="flex justify-between">
+          <p className="text-sm font-semibold">Due date</p>
+          <p className="text-sm">
             {new Date(new Date().setDate(new Date().getDate() + 7)).toLocaleDateString()}
-          </Typography>
-        </Box>
-      </Box>
-      <Box borderTop={1} py={2} px={4} display="grid" gap={2} textAlign="left" mb={2}>
-        <Typography variant="body2" fontWeight="bold">
-          Bill to
-        </Typography>
-        <Box display="grid" gap={1}>
-          <Typography variant="body2">{`${first_name} ${last_name}`}</Typography>
-          <Typography variant="body2">{business_name}</Typography>
-          <Typography variant="body2">{`${address}, ${city}, ${state} ${zip_code}`}</Typography>
-          <Typography variant="body2">{`Phone: ${phone}`}</Typography>
-        </Box>
-      </Box>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell style={{ fontWeight: 'bold' }}>Item</TableCell>
-              <TableCell style={{ fontWeight: 'bold' }}>Description</TableCell>
-              <TableCell style={{ fontWeight: 'bold' }}>Quantity</TableCell>
-              <TableCell style={{ fontWeight: 'bold' }}>Unit Price</TableCell>
-              <TableCell style={{ fontWeight: 'bold' }}>Total</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+          </p>
+        </div>
+      </div>
+      
+      <div className="border-t py-4 px-6 grid gap-2 text-left mb-4">
+        <p className="text-sm font-semibold">Bill to</p>
+        <div className="grid gap-1">
+          <p className="text-sm">{`${first_name} ${last_name}`}</p>
+          <p className="text-sm">{business_name}</p>
+          <p className="text-sm">{`${address}, ${city}, ${state} ${zip_code}`}</p>
+          <p className="text-sm">{`Phone: ${phone}`}</p>
+        </div>
+      </div>
+      
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
             {invoiceItems.map((item, index) => (
-              <TableRow key={index}>
-                <TableCell>{getItemName(item)}</TableCell>
-                <TableCell>{item.description}</TableCell>
-                <TableCell>{item.quantity}</TableCell>
-                <TableCell>${item.unitPrice?.toFixed(2) || '0.00'}</TableCell>
-                <TableCell>${(item.quantity * item.unitPrice || 0).toFixed(2)}</TableCell>
-              </TableRow>
+              <tr key={index}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getItemName(item)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.description}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.quantity}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.unitPrice?.toFixed(2) || '0.00'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(item.quantity * item.unitPrice || 0).toFixed(2)}</td>
+              </tr>
             ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <Box
-        borderTop={1}
-        borderBottom={1}
-        py={2}
-        px={4}
-        display="grid"
-        gap={2}
-        textAlign="right"
-        mt={2}
-      >
-        <Box display="flex" justifyContent="space-between">
-          <Typography variant="body2">Subtotal</Typography>
-          <Typography variant="body2">${subtotal.toFixed(2)}</Typography>
-        </Box>
-        <Box display="flex" justifyContent="space-between">
-          <Typography variant="body2">Tax (10%)</Typography>
-          <Typography variant="body2">${tax.toFixed(2)}</Typography>
-        </Box>
-        <Box display="flex" justifyContent="space-between">
-          <Typography variant="body2" fontWeight="bold">
-            Total
-          </Typography>
-          <Typography variant="body2" fontWeight="bold">
-            ${total.toFixed(2)}
-          </Typography>
-        </Box>
-      </Box>
-      <Box display="flex" justifyContent="flex-end" mt={2}>
-        <Button variant="outlined" color="primary" style={{ marginRight: '0.5rem' }}>
+          </tbody>
+        </table>
+      </div>
+      
+      <div className="border-t border-b py-4 px-6 grid gap-2 text-right mt-4">
+        <div className="flex justify-between">
+          <p className="text-sm">Subtotal</p>
+          <p className="text-sm">${subtotal.toFixed(2)}</p>
+        </div>
+        <div className="flex justify-between">
+          <p className="text-sm">Tax (10%)</p>
+          <p className="text-sm">${tax.toFixed(2)}</p>
+        </div>
+        <div className="flex justify-between">
+          <p className="text-sm font-semibold">Total</p>
+          <p className="text-sm font-semibold">${total.toFixed(2)}</p>
+        </div>
+      </div>
+      
+      <div className="flex justify-end mt-4">
+        <button className="mr-2 px-4 py-2 border border-blue-500 text-blue-500 rounded hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
           Edit
-        </Button>
-        <Button variant="contained" color="primary">
+        </button>
+        <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
           Download
-        </Button>
-      </Box>
-    </Paper>
+        </button>
+      </div>
+    </div>
   );
 };
 

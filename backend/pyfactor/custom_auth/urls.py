@@ -26,6 +26,7 @@ from rest_framework.permissions import AllowAny
 from custom_auth.views.signup import SignupView as APISignupView
 from custom_auth.views.tenant import TenantVerifyView, TenantCreateView
 from custom_auth.api.views.tenant_views import TenantDetailView
+from custom_auth.views.token_views import TokenRefreshView
 
 # Import directly from the main_views.py file
 from .main_views import (
@@ -61,12 +62,16 @@ urlpatterns = [
     # Registration and Signup
     path('register/', RegisterView.as_view(), name='register'),
     path('signup/', SignUpView.as_view(), name='signup'),
+    path('auth/signup/', SignUpView.as_view(), name='auth_signup'),
 
     # Token Management
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('token/blacklist/', TokenBlacklistView.as_view(), name='token_blacklist'),
     path('auth-token/', CustomAuthToken.as_view(), name='auth_token'),
+
+    # Add new API endpoint for token refresh
+    path('api/auth/refresh/', TokenRefreshView.as_view(), name='api_token_refresh'),
 
     # Password Reset Flow
     path('forgot-password/', ForgotPasswordView.as_view(), name='forgot_password'),

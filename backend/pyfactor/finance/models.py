@@ -65,12 +65,12 @@ class Account(TenantAwareModel):
     
     class Meta:
         indexes = [
-            models.Index(fields=['tenant', 'account_number']),
-            models.Index(fields=['tenant', 'business', 'account_type']),
-            models.Index(fields=['tenant', 'status']),
+            models.Index(fields=['tenant_id', 'account_number']),
+            models.Index(fields=['tenant_id', 'business', 'account_type']),
+            models.Index(fields=['tenant_id', 'status']),
         ]
         constraints = [
-            models.UniqueConstraint(fields=['tenant', 'account_number'], name='unique_account_number_per_tenant'),
+            models.UniqueConstraint(fields=['tenant_id', 'account_number'], name='unique_account_number_per_tenant'),
         ]
         
     def __str__(self):
@@ -186,13 +186,13 @@ class FinanceTransaction(TenantAwareModel):
     
     class Meta:
         indexes = [
-            models.Index(fields=['tenant', 'transaction_id']),
-            models.Index(fields=['tenant', 'account', 'date']),
-            models.Index(fields=['tenant', 'category', 'status']),
-            models.Index(fields=['tenant', 'business']),
+            models.Index(fields=['tenant_id', 'transaction_id']),
+            models.Index(fields=['tenant_id', 'account', 'date']),
+            models.Index(fields=['tenant_id', 'category', 'status']),
+            models.Index(fields=['tenant_id', 'business']),
         ]
         constraints = [
-            models.UniqueConstraint(fields=['tenant', 'transaction_id'], name='unique_transaction_id_per_tenant'),
+            models.UniqueConstraint(fields=['tenant_id', 'transaction_id'], name='unique_transaction_id_per_tenant'),
         ]
     
     def __str__(self):
@@ -1453,9 +1453,9 @@ class Budget(TenantAwareModel):
     
     class Meta:
         indexes = [
-            models.Index(fields=['tenant', 'business', 'fiscal_year']),
-            models.Index(fields=['tenant', 'status']),
-            models.Index(fields=['tenant', 'category']),
+            models.Index(fields=['tenant_id', 'business', 'fiscal_year']),
+            models.Index(fields=['tenant_id', 'status']),
+            models.Index(fields=['tenant_id', 'category']),
         ]
         
     def __str__(self):

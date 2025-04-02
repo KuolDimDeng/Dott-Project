@@ -1,34 +1,6 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  TextField,
-  Button,
-  Snackbar,
-  Alert,
-  Grid,
-  Paper,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  CircularProgress,
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import SearchIcon from '@mui/icons-material/Search';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import EmailIcon from '@mui/icons-material/Email';
-import DescriptionIcon from '@mui/icons-material/Description';
-import VideocamIcon from '@mui/icons-material/Videocam';
-import BookIcon from '@mui/icons-material/Book';
 import { axiosInstance } from '@/lib/axiosConfig';
 import Image from 'next/image';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import HelpIcon from '@mui/icons-material/Help';
 
 const faqs = [
   {
@@ -108,14 +80,6 @@ const faqs = [
   },
 ];
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#0d47a1', // Navy blue color
-    },
-  },
-});
-
 const HelpCenter = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [name, setName] = useState('');
@@ -160,191 +124,208 @@ const HelpCenter = () => {
   };
 
   return (
-    <ThemeProvider theme={theme}>
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <HelpIcon sx={{ fontSize: 45, color: theme.palette.primary.main, mr: 1 }} />
-          <Typography variant="h4" gutterBottom>
-            Help Center
-          </Typography>
-        </Box>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
-            <Paper elevation={3} sx={{ p: 2, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Search for Help
-              </Typography>
-              <Box sx={{ display: 'flex', mb: 2 }}>
-                <TextField
-                  fullWidth
-                  variant="outlined"
-                  placeholder="Search for help topics..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                />
-                <Button
-                  variant="contained"
-                  onClick={handleSearch}
-                  sx={{
-                    ml: 1,
-                    color: 'white',
-                    backgroundColor: '#0d47a1',
-                    '&:hover': {
-                      backgroundColor: '#002171',
-                    },
-                  }}
-                >
-                  <SearchIcon />
-                </Button>
-              </Box>
-            </Paper>
+    <div className="p-6">
+      <div className="flex items-center mb-6">
+        <svg className="h-11 w-11 text-blue-900 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h1 className="text-2xl font-semibold">Help Center</h1>
+      </div>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Frequently Asked Questions
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {filteredFaqs.length} {filteredFaqs.length === 1 ? 'result' : 'results'} found
-              </Typography>
-            </Box>
-            
-            {filteredFaqs.length === 0 ? (
-              <Paper elevation={1} sx={{ p: 3, textAlign: 'center' }}>
-                <Typography variant="body1" color="text.secondary">
-                  No results found for "{searchTerm}". Try a different search term or browse our help topics below.
-                </Typography>
-              </Paper>
-            ) : (
-              filteredFaqs.map((faq, index) => (
-                <Accordion key={index}>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography
-                      sx={{
-                        fontWeight: 'bold',
-                        color: theme.palette.primary.main,
-                      }}
-                    >
-                      {faq.question}
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography>{faq.answer}</Typography>
-                  </AccordionDetails>
-                </Accordion>
-              ))
-            )}
-            
-            {/* FAQ Image */}
-            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-              <Image
-                src="/static/images/FAQ.png"
-                alt="FAQ Illustration"
-                width={300}
-                height={200}
-                style={{ maxWidth: '100%', height: 'auto' }}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        {/* Left column - FAQs */}
+        <div className="md:col-span-8">
+          <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+            <h2 className="text-lg font-medium mb-2">Search for Help</h2>
+            <div className="flex">
+              <input
+                type="text"
+                placeholder="Search for help topics..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                className="flex-grow px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
-            </Box>
-          </Grid>
+              <button
+                onClick={handleSearch}
+                className="px-4 py-2 bg-blue-900 text-white rounded-r-md hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            </div>
+          </div>
 
-          <Grid item xs={12} md={4}>
-            <Paper elevation={3} sx={{ p: 2, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Quick Links
-              </Typography>
-              <List>
-                <ListItem button component="a" href="/tutorials">
-                  <ListItemIcon>
-                    <VideocamIcon color="primary" />
-                  </ListItemIcon>
-                  <ListItemText primary="Video Tutorials" />
-                </ListItem>
-                <ListItem button component="a" href="/user-guide">
-                  <ListItemIcon>
-                    <BookIcon color="primary" />
-                  </ListItemIcon>
-                  <ListItemText primary="User Guide" />
-                </ListItem>
-                <ListItem button component="a" href="/blog">
-                  <ListItemIcon>
-                    <DescriptionIcon color="primary" />
-                  </ListItemIcon>
-                  <ListItemText primary="Blog & Tips" />
-                </ListItem>
-              </List>
-            </Paper>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium">Frequently Asked Questions</h2>
+            <p className="text-sm text-gray-500">
+              {filteredFaqs.length} {filteredFaqs.length === 1 ? 'result' : 'results'} found
+            </p>
+          </div>
+          
+          {filteredFaqs.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+              <p className="text-gray-600">
+                No results found for "{searchTerm}". Try a different search term or browse our help topics below.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredFaqs.map((faq, index) => (
+                <div key={index} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                  <details className="group">
+                    <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-4 focus:outline-none">
+                      <span className="text-blue-900 font-semibold">{faq.question}</span>
+                      <span className="transition group-open:rotate-180">
+                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </span>
+                    </summary>
+                    <div className="p-4 pt-0 text-gray-700">
+                      <p>{faq.answer}</p>
+                    </div>
+                  </details>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* FAQ Image */}
+          <div className="mt-8 flex justify-center">
+            <Image
+              src="/static/images/FAQ.png"
+              alt="FAQ Illustration"
+              width={300}
+              height={200}
+              style={{ maxWidth: '100%', height: 'auto' }}
+            />
+          </div>
+        </div>
 
-            <Paper elevation={3} sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Contact Support
-              </Typography>
-              <form onSubmit={handleSubmit}>
-                <TextField
-                  fullWidth
-                  label="Name"
-                  variant="outlined"
+        {/* Right column - Quick links and contact form */}
+        <div className="md:col-span-4">
+          <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+            <h2 className="text-lg font-medium mb-3">Quick Links</h2>
+            <ul className="space-y-2">
+              <li>
+                <a href="/tutorials" className="flex items-center p-2 hover:bg-gray-50 rounded-md group">
+                  <svg className="h-5 w-5 text-blue-900 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span className="group-hover:text-blue-900">Video Tutorials</span>
+                </a>
+              </li>
+              <li>
+                <a href="/user-guide" className="flex items-center p-2 hover:bg-gray-50 rounded-md group">
+                  <svg className="h-5 w-5 text-blue-900 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                  <span className="group-hover:text-blue-900">User Guide</span>
+                </a>
+              </li>
+              <li>
+                <a href="/blog" className="flex items-center p-2 hover:bg-gray-50 rounded-md group">
+                  <svg className="h-5 w-5 text-blue-900 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  </svg>
+                  <span className="group-hover:text-blue-900">Blog & Tips</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-4">
+            <h2 className="text-lg font-medium mb-4">Contact Support</h2>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                  id="name"
+                  type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  margin="normal"
                   required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
-                <TextField
-                  fullWidth
-                  label="Email"
-                  variant="outlined"
+              </div>
+              <div className="mb-4">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  id="email"
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  margin="normal"
                   required
-                  type="email"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
-                <TextField
-                  fullWidth
-                  label="Message"
-                  variant="outlined"
+              </div>
+              <div className="mb-4">
+                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                <textarea
+                  id="message"
+                  rows="4"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  margin="normal"
                   required
-                  multiline
-                  rows={4}
-                />
-                {error && (
-                  <Typography color="error" variant="body2" sx={{ mt: 1 }}>
-                    {error}
-                  </Typography>
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                ></textarea>
+              </div>
+              
+              {error && (
+                <div className="mb-4 text-sm text-red-600">
+                  {error}
+                </div>
+              )}
+              
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-900 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
                 )}
-                <Button
-                  type="submit"
-                  variant="contained"
-                  startIcon={isLoading ? null : <EmailIcon />}
-                  disabled={isLoading}
-                  sx={{
-                    color: 'white',
-                    mt: 2,
-                    backgroundColor: '#0d47a1',
-                    '&:hover': {
-                      backgroundColor: '#002171',
-                    },
-                  }}
-                >
-                  {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Send Message'}
-                </Button>
-              </form>
-              <Typography variant="body2" sx={{ mt: 2, fontStyle: 'italic' }}>
-                We aim to respond to all inquiries within 24 hours.
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
+                {isLoading ? 'Sending...' : 'Send Message'}
+              </button>
+            </form>
+            <p className="mt-4 text-sm text-gray-500 italic">
+              We aim to respond to all inquiries within 24 hours.
+            </p>
+          </div>
+        </div>
+      </div>
 
-        <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackbarOpen(false)}>
-          <Alert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
-            Your message has been sent successfully. We'll get back to you within 24 hours.
-          </Alert>
-        </Snackbar>
-      </Box>
-    </ThemeProvider>
+      {/* Success notification */}
+      {snackbarOpen && (
+        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg">
+          <div className="flex items-center">
+            <svg className="h-6 w-6 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p>Your message has been sent successfully. We'll get back to you within 24 hours.</p>
+              <button 
+                onClick={() => setSnackbarOpen(false)}
+                className="absolute top-2 right-2 text-white"
+              >
+                <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

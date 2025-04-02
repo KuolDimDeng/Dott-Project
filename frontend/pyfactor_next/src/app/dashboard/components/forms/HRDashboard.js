@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Grid, Button, Tab, Tabs } from '@mui/material';
 import EmployeeTaxManagement from './taxes/EmployeeTaxManagement';
 
 /**
@@ -20,54 +19,54 @@ function HRDashboard({ section = 'dashboard' }) {
       case 'dashboard':
         return (
           <>
-            <Typography variant="h4" gutterBottom>
+            <h1 className="text-2xl font-bold mb-4">
               HR Dashboard
-            </Typography>
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
-                  <Typography variant="h6" gutterBottom>
+            </h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="col-span-1">
+                <div className="bg-white rounded-lg shadow p-6 h-full">
+                  <h2 className="text-lg font-semibold mb-3">
                     Employee Overview
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </h2>
+                  <p className="text-gray-600 text-sm">
                     No employee data to display.
-                  </Typography>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
-                  <Typography variant="h6" gutterBottom>
+                  </p>
+                </div>
+              </div>
+              <div className="col-span-1">
+                <div className="bg-white rounded-lg shadow p-6 h-full">
+                  <h2 className="text-lg font-semibold mb-3">
                     Recent HR Activities
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </h2>
+                  <p className="text-gray-600 text-sm">
                     No recent activities to display.
-                  </Typography>
-                </Paper>
-              </Grid>
-              <Grid item xs={12}>
-                <Paper elevation={2} sx={{ p: 3 }}>
-                  <Typography variant="h6" gutterBottom>
+                  </p>
+                </div>
+              </div>
+              <div className="col-span-1 md:col-span-2">
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h2 className="text-lg font-semibold mb-3">
                     HR Analytics
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </h2>
+                  <p className="text-gray-600 text-sm">
                     No analytics data available.
-                  </Typography>
-                </Paper>
-              </Grid>
-            </Grid>
+                  </p>
+                </div>
+              </div>
+            </div>
           </>
         );
       case 'timesheets':
         return (
           <>
-            <Typography variant="h4" gutterBottom>
+            <h1 className="text-2xl font-bold mb-4">
               Timesheets
-            </Typography>
-            <Paper elevation={2} sx={{ p: 3 }}>
-              <Typography variant="body2" color="text.secondary">
+            </h1>
+            <div className="bg-white rounded-lg shadow p-6">
+              <p className="text-gray-600 text-sm">
                 Timesheet management will be available soon.
-              </Typography>
-            </Paper>
+              </p>
+            </div>
           </>
         );
       case 'taxes':
@@ -75,42 +74,42 @@ function HRDashboard({ section = 'dashboard' }) {
       case 'benefits':
         return (
           <>
-            <Typography variant="h4" gutterBottom>
+            <h1 className="text-2xl font-bold mb-4">
               Employee Benefits
-            </Typography>
-            <Paper elevation={2} sx={{ p: 3 }}>
-              <Typography variant="body2" color="text.secondary">
+            </h1>
+            <div className="bg-white rounded-lg shadow p-6">
+              <p className="text-gray-600 text-sm">
                 Benefits management will be available soon.
-              </Typography>
-            </Paper>
+              </p>
+            </div>
           </>
         );
       case 'reports':
         return (
           <>
-            <Typography variant="h4" gutterBottom>
+            <h1 className="text-2xl font-bold mb-4">
               HR Reports
-            </Typography>
-            <Paper elevation={2} sx={{ p: 3 }}>
-              <Typography variant="body2" color="text.secondary">
+            </h1>
+            <div className="bg-white rounded-lg shadow p-6">
+              <p className="text-gray-600 text-sm">
                 HR reports will be available soon.
-              </Typography>
-            </Paper>
+              </p>
+            </div>
           </>
         );
       default:
         return (
-          <Typography variant="h4" gutterBottom>
+          <h1 className="text-2xl font-bold mb-4">
             Unknown HR Section
-          </Typography>
+          </h1>
         );
     }
   };
 
   return (
-    <Box sx={{ p: 1 }}>
+    <div className="p-4">
       {renderSection()}
-    </Box>
+    </div>
   );
 }
 

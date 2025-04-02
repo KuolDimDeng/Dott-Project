@@ -28,12 +28,13 @@ export function useLandingPageStatus() {
         const { tokens } = await fetchAuthSession();
         
         if (!tokens?.idToken) {
+          logger.debug('[LandingStatus] No valid tokens found, user is not authenticated');
           setStatus({
             isLoading: false,
             isAuthenticated: false,
             needsOnboarding: false,
             onboardingStatus: null,
-            error: null
+            error: 'No valid authentication tokens found'
           });
           return;
         }
@@ -41,7 +42,29 @@ export function useLandingPageStatus() {
         // Get current user using v6 API
         const user = await getCurrentUser();
         if (!user) {
-          throw new Error('No current user found');
+          logger.debug('[LandingStatus] No current user found, user is not authenticated');
+          setStatus({
+            isLoading: false,
+            isAuthenticated: false,
+            needsOnboarding: false,
+            onboardingStatus: null,
+            error: 'No current user found'
+          });
+          return;
+        }
+
+        // Verify token is not expired
+        const tokenPayload = JSON.parse(atob(tokens.idToken.split('.')[1]));
+        if (tokenPayload.exp * 1000 < Date.now()) {
+          logger.debug('[LandingStatus] Token is expired, user is not authenticated');
+          setStatus({
+            isLoading: false,
+            isAuthenticated: false,
+            needsOnboarding: false,
+            onboardingStatus: null,
+            error: 'Authentication token expired'
+          });
+          return;
         }
 
         // Check onboarding status
@@ -51,8 +74,12 @@ export function useLandingPageStatus() {
         // Load onboarding state
         await loadOnboardingState();
 
-        // Refresh session to ensure tokens are up to date
-        await refreshSession();
+        // Only refresh session if token is about to expire (within 5 minutes)
+        const fiveMinutesFromNow = Date.now() + 5 * 60 * 1000;
+        if (tokenPayload.exp * 1000 < fiveMinutesFromNow) {
+          logger.debug('[LandingStatus] Token about to expire, refreshing session');
+          await refreshSession();
+        }
 
         // Start polling if user is in onboarding
         if (!setupDone) {
@@ -71,11 +98,13 @@ export function useLandingPageStatus() {
 
         logger.debug('[LandingStatus] Status updated:', {
           setupDone,
-          onboardingStatus
+          onboardingStatus,
+          isAuthenticated: true
         });
 
       } catch (error) {
         logger.error('[LandingStatus] Error checking status:', error);
+        // Ensure we set isAuthenticated to false on any error
         setStatus({
           isLoading: false,
           isAuthenticated: false,

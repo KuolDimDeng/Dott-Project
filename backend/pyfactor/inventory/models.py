@@ -187,8 +187,8 @@ class Product(TenantAwareModel):
     class Meta:
         db_table = 'inventory_product'
         indexes = [
-            models.Index(fields=['tenant', 'name']),
-            models.Index(fields=['tenant', 'sku']),
+            models.Index(fields=['tenant_id', 'name']),
+            models.Index(fields=['tenant_id', 'sku']),
         ]
 
 class Service(Item):

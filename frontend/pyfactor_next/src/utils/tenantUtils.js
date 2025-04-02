@@ -1,3 +1,5 @@
+"use strict";
+
 import { logger } from './logger';
 
 // Don't import server-side modules directly
@@ -7,6 +9,7 @@ import { logger } from './logger';
 let currentTenantId = null;
 let currentAccessToken = null;
 let currentIdToken = null;
+let currentSchemaName = null;
 
 /**
  * Check if code is running on server side
@@ -56,34 +59,7 @@ async function getAccessToken() {
   if (isServer()) {
     try {
       logger.debug('[TenantUtils] Server-side getAccessToken called');
-      // Dynamically import server-only modules
-      try {
-        // Only attempt to import in server context
-        const { cookies, headers } = await import('next/headers');
-        
-        // Try to get from cookies
-        const cookieStore = cookies();
-        const token = cookieStore.get('accessToken')?.value;
-        if (token) {
-          logger.debug('[TenantUtils] Retrieved access token from server cookies');
-          return token;
-        }
-        
-        // Try to get from headers
-        const headersList = headers();
-        const authHeader = headersList.get('authorization');
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-          return authHeader.substring(7);
-        }
-        
-        const accessToken = headersList.get('x-access-token');
-        if (accessToken) {
-          return accessToken;
-        }
-      } catch (importError) {
-        logger.warn('[TenantUtils] Cannot import server headers/cookies in client context:', importError.message);
-      }
-      
+      // Server-side token handling - simplified to avoid dynamic imports
       logger.warn('[TenantUtils] No access token available on server');
       return null;
     } catch (error) {
@@ -125,29 +101,7 @@ async function getIdToken() {
   if (isServer()) {
     try {
       logger.debug('[TenantUtils] Server-side getIdToken called');
-      // Dynamically import server-only modules
-      try {
-        // Only attempt to import in server context
-        const { cookies, headers } = await import('next/headers');
-        
-        // Try to get from cookies
-        const cookieStore = cookies();
-        const token = cookieStore.get('idToken')?.value;
-        if (token) {
-          logger.debug('[TenantUtils] Retrieved ID token from server cookies');
-          return token;
-        }
-        
-        // Try to get from headers
-        const headersList = headers();
-        const idToken = headersList.get('x-id-token');
-        if (idToken) {
-          return idToken;
-        }
-      } catch (importError) {
-        logger.warn('[TenantUtils] Cannot import server headers/cookies in client context:', importError.message);
-      }
-      
+      // Server-side token handling - simplified to avoid dynamic imports
       logger.warn('[TenantUtils] No ID token available on server');
       return null;
     } catch (error) {
@@ -558,87 +512,16 @@ export function clearTenantId() {
  * @returns {string|null} The current tenant ID
  */
 export const getTenantId = () => {
-  // Server-side tenant ID retrieval
-  if (isServer()) {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    // First try to get from localStorage
     try {
-      logger.debug('[TenantUtils] Server-side getTenantId called');
-      // Dynamically import server-only modules
-      try {
-        // Only attempt to import in server context
-        const { cookies, headers } = require('next/headers');
-        
-        // Try to get from request headers
-        const headersList = headers();
-        const tenantId = headersList.get('x-tenant-id');
-        if (tenantId) {
-          logger.debug('[TenantUtils] Retrieved tenant ID from server headers');
-          return tenantId;
-        }
-        
-        // Try to get from cookies
-        const cookieStore = cookies();
-        const tenantIdCookie = cookieStore.get('tenantId')?.value;
-        if (tenantIdCookie) {
-          logger.debug('[TenantUtils] Retrieved tenant ID from server cookies');
-          return tenantIdCookie;
-        }
-      } catch (importError) {
-        logger.debug('[TenantUtils] Server headers/cookies import failed:', importError.message);
-      }
-      
-      logger.debug('[TenantUtils] No tenant ID available on server');
-      return null;
-    } catch (error) {
-      logger.error('[TenantUtils] Error getting tenant ID on server:', error);
-      return null;
+      const stored = window.localStorage.getItem('tenantId');
+      if (stored) return stored;
+    } catch (e) {
+      // Ignore localStorage errors
     }
   }
-  
-  // Client-side tenant ID retrieval - existing logic
-  if (currentTenantId) {
-    return currentTenantId;
-  }
-  
-  // Try to get from localStorage
-  try {
-    const tenantId = localStorage.getItem('tenantId');
-    if (tenantId) {
-      currentTenantId = tenantId;
-      return tenantId;
-    }
-  } catch (error) {
-    logger.error('[TenantUtils] Error retrieving tenant ID from localStorage:', error);
-  }
-  
-  // Try to get from URL query parameter
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const tenantId = params.get('tenant_id');
-    if (tenantId) {
-      logger.debug('[TenantUtils] Found tenant ID in URL parameters');
-      currentTenantId = tenantId;
-      return tenantId;
-    }
-  } catch (error) {
-    logger.error('[TenantUtils] Error retrieving tenant ID from URL:', error);
-  }
-  
-  // Try to get from cookies
-  try {
-    const cookies = document.cookie.split(';');
-    const tenantCookie = cookies.find(cookie => cookie.trim().startsWith('tenantId='));
-    if (tenantCookie) {
-      const tenantId = tenantCookie.split('=')[1].trim();
-      logger.debug('[TenantUtils] Found tenant ID in cookies');
-      currentTenantId = tenantId;
-      return tenantId;
-    }
-  } catch (error) {
-    logger.error('[TenantUtils] Error retrieving tenant ID from cookies:', error);
-  }
-  
-  logger.debug('[TenantUtils] No tenant ID found');
-  return null;
+  return currentTenantId;
 };
 
 /**
@@ -646,55 +529,17 @@ export const getTenantId = () => {
  * @param {string} [tenantId] - Optional tenant ID, defaults to the current tenant
  * @returns {string|null} The schema name
  */
-export const getSchemaName = (tenantId) => {
-  // Server-side schema name retrieval
-  if (isServer()) {
+export const getSchemaName = () => {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    // First try to get from localStorage
     try {
-      logger.debug('[TenantUtils] Server-side getSchemaName called');
-      // Dynamically import server-only modules
-      try {
-        // Only attempt to import in server context
-        const { headers } = require('next/headers');
-        
-        // Try to get from request headers
-        const headersList = headers();
-        const schemaName = headersList.get('x-schema-name');
-        if (schemaName) {
-          return schemaName;
-        }
-        
-        // If we have a tenant ID, derive schema name
-        const tid = tenantId || headersList.get('x-tenant-id');
-        if (tid) {
-          return `tenant_${tid.replace(/-/g, '_')}`;
-        }
-      } catch (importError) {
-        logger.debug('[TenantUtils] Server headers import failed:', importError.message);
-      }
-      
-      return null;
-    } catch (error) {
-      logger.error('[TenantUtils] Error getting schema name on server:', error);
-      return null;
+      const stored = window.localStorage.getItem('schemaName');
+      if (stored) return stored;
+    } catch (e) {
+      // Ignore localStorage errors
     }
   }
-  
-  // Client-side schema name retrieval - existing logic
-  const tid = tenantId || getTenantId();
-  if (!tid) return null;
-  
-  try {
-    // Try to get from localStorage first
-    const storedSchemaName = localStorage.getItem(`schemaName_${tid}`);
-    if (storedSchemaName) {
-      return storedSchemaName;
-    }
-  } catch (error) {
-    logger.debug('[TenantUtils] Error retrieving schema name from localStorage:', error);
-  }
-  
-  // Default to standard format
-  return `tenant_${tid.replace(/-/g, '_')}`;
+  return currentSchemaName;
 };
 
 /**
@@ -738,51 +583,15 @@ export const storeTenantInfo = (tenantId) => {
  * @returns {string|null} The tenant ID or null if not found
  */
 export const getTenantFromResponse = (response) => {
-  if (!response) {
-    logger.warn('[TenantUtils] No response object provided to getTenantFromResponse');
-    return null;
-  }
+  if (!response || !response.headers) return null;
   
-  if (!response.headers) {
-    logger.warn('[TenantUtils] Response has no headers');
-    return null;
-  }
+  const tenantId = response.headers['x-tenant-id'] || null;
+  const schemaName = response.headers['x-schema-name'] || null;
   
-  logger.debug('[TenantUtils] Checking response headers for tenant information');
+  if (tenantId) setTenantId(tenantId);
+  if (schemaName) setSchemaName(schemaName);
   
-  // Check for tenant ID in response headers
-  let tenantId;
-  
-  // Handle different header access methods (Axios vs Fetch)
-  if (typeof response.headers.get === 'function') {
-    // Fetch API style
-    tenantId = response.headers.get('x-tenant-id');
-    logger.debug(`[TenantUtils] Fetch API headers - tenant ID: ${tenantId || 'not found'}`);
-  } else {
-    // Axios style
-    tenantId = response.headers['x-tenant-id'];
-    logger.debug(`[TenantUtils] Axios headers - tenant ID: ${tenantId || 'not found'}`);
-  }
-  
-  // Also check for business ID in response body
-  try {
-    if (response.data && response.data.businessId) {
-      tenantId = response.data.businessId;
-      logger.debug(`[TenantUtils] Found business ID in response body: ${tenantId}`);
-    }
-  } catch (error) {
-    logger.error('[TenantUtils] Error checking response body for business ID:', error);
-  }
-  
-  if (tenantId) {
-    logger.debug(`[TenantUtils] Found tenant ID in response: ${tenantId}`);
-    // Store the tenant ID for future use
-    storeTenantInfo(tenantId);
-    return tenantId;
-  }
-  
-  logger.debug('[TenantUtils] No tenant ID found in response');
-  return null;
+  return tenantId;
 };
 
 /**
@@ -1175,3 +984,44 @@ export const validateTenantIdFormat = (tenantId, logErrors = true) => {
   
   return tenantId;
 };
+
+/**
+ * Set the current tenant ID
+ * @param {string} tenantId - The tenant ID to set
+ */
+export const setTenantId = (tenantId) => {
+  logger.debug(`[TenantUtils] Setting tenant ID: ${tenantId}`);
+  currentTenantId = tenantId;
+  
+  // Store in localStorage for persistence (client-side only)
+  if (!isServer() && tenantId) {
+    try {
+      localStorage.setItem('tenantId', tenantId);
+      logger.debug('[TenantUtils] Tenant ID saved in localStorage');
+    } catch (error) {
+      logger.error('[TenantUtils] Error storing tenant ID in localStorage:', error);
+    }
+  }
+};
+
+/**
+ * Set the current schema name
+ * @param {string} schemaName - The schema name to set
+ */
+export const setSchemaName = (schemaName) => {
+  logger.debug(`[TenantUtils] Setting schema name: ${schemaName}`);
+  currentSchemaName = schemaName;
+  
+  // Store in localStorage for persistence (client-side only)
+  if (!isServer() && schemaName) {
+    try {
+      localStorage.setItem('schemaName', schemaName);
+      logger.debug('[TenantUtils] Schema name saved in localStorage');
+    } catch (error) {
+      logger.error('[TenantUtils] Error storing schema name in localStorage:', error);
+    }
+  }
+};
+
+// These functions are already exported using ES Module syntax above
+// No need for additional exports here

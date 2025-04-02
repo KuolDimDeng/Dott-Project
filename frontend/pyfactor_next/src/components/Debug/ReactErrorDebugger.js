@@ -70,14 +70,10 @@ const ReactErrorDebugger = ({ enabled = true }) => {
     // Install our error handler
     window.onerror = enhancedErrorHandler;
     
-    // Also patch React's error handler if possible
-    try {
-      const React = require('react');
-      const ReactDOM = require('react-dom');
-      
-      // Check if we can access React's internal error handler
-      if (ReactDOM.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
-        const internals = ReactDOM.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+    // Try to find React internals through window
+    if (window.ReactDOM && window.ReactDOM.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
+      try {
+        const internals = window.ReactDOM.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         
         // Store original showErrorDialog if it exists
         const originalShowErrorDialog = internals.showErrorDialog;
@@ -110,9 +106,9 @@ const ReactErrorDebugger = ({ enabled = true }) => {
           
           logger.debug('[ReactErrorDebugger] Successfully patched React error handler');
         }
+      } catch (error) {
+        logger.error('[ReactErrorDebugger] Failed to patch React error handler:', error);
       }
-    } catch (error) {
-      logger.error('[ReactErrorDebugger] Failed to patch React error handler:', error);
     }
     
     // Add global access to errors
@@ -252,47 +248,29 @@ const ReactErrorDebugger = ({ enabled = true }) => {
                 borderRadius: '4px'
               }}
             >
-              <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#d32f2f' }}>
-                {error.message}
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                {new Date(error.timestamp).toLocaleTimeString()} - {error.message || 'Unknown error'}
               </div>
-              <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>
-                {new Date(error.timestamp).toLocaleString()} - {error.source} {error.lineno ? `(${error.lineno}:${error.colno})` : ''}
-              </div>
-              <details>
-                <summary style={{ cursor: 'pointer', color: '#2196f3' }}>Stack trace</summary>
+              {error.source && (
+                <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>
+                  Source: {error.source} {error.lineno ? `(${error.lineno}:${error.colno})` : ''}
+                </div>
+              )}
+              {error.stack && (
                 <pre
                   style={{
-                    fontSize: '11px',
-                    backgroundColor: '#f8f8f8',
+                    margin: '8px 0',
                     padding: '8px',
+                    backgroundColor: '#f9f9f9',
+                    border: '1px solid #eee',
+                    borderRadius: '2px',
                     overflow: 'auto',
-                    maxHeight: '200px',
-                    marginTop: '4px',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-all'
+                    fontSize: '10px',
+                    maxHeight: '100px'
                   }}
                 >
                   {error.stack}
                 </pre>
-              </details>
-              {error.componentStack && (
-                <details>
-                  <summary style={{ cursor: 'pointer', color: '#2196f3', marginTop: '4px' }}>Component stack</summary>
-                  <pre
-                    style={{
-                      fontSize: '11px',
-                      backgroundColor: '#f8f8f8',
-                      padding: '8px',
-                      overflow: 'auto',
-                      maxHeight: '200px',
-                      marginTop: '4px',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-all'
-                    }}
-                  >
-                    {error.componentStack}
-                  </pre>
-                </details>
               )}
             </div>
           ))

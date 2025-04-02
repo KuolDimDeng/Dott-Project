@@ -1,19 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Typography,
-  Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-} from '@mui/material';
 import { Bar, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -80,7 +65,7 @@ export default function BudgetVsActualAnalysis() {
     setTimeRange(event.target.value);
   };
 
-  if (!data) return <Typography>Loading...</Typography>;
+  if (!data) return <p className="text-gray-600 text-lg">Loading...</p>;
 
   const barChartData = {
     labels: data.map((item) => item.account_name),
@@ -114,65 +99,101 @@ export default function BudgetVsActualAnalysis() {
   };
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h1 className="text-2xl font-bold text-gray-800 mb-4">
         Budget vs Actual Analysis
-      </Typography>
+      </h1>
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Time Range</InputLabel>
-        <Select value={timeRange} onChange={handleTimeRangeChange}>
+      <div className="mt-4">
+        <label htmlFor="timeRange" className="block text-sm font-medium text-gray-700 mb-1">
+          Time Range
+        </label>
+        <select
+          id="timeRange"
+          value={timeRange}
+          onChange={handleTimeRangeChange}
+          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        >
           {timeRanges.map((range) => (
-            <MenuItem key={range.value} value={range.value}>
+            <option key={range.value} value={range.value}>
               {range.label}
-            </MenuItem>
+            </option>
           ))}
-        </Select>
-      </FormControl>
+        </select>
+      </div>
 
-      <TableContainer component={Paper} sx={{ marginTop: 4 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Account</TableCell>
-              <TableCell align="right">Budgeted</TableCell>
-              <TableCell align="right">Actual</TableCell>
-              <TableCell align="right">Variance</TableCell>
-              <TableCell align="right">Variance %</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {data.map((item, index) => (
-              <TableRow key={index}>
-                <TableCell>{item.account_name}</TableCell>
-                <TableCell align="right">${formatAmount(item.budgeted_amount)}</TableCell>
-                <TableCell align="right">${formatAmount(item.actual_amount)}</TableCell>
-                <TableCell align="right">
-                  ${formatAmount(item.actual_amount - item.budgeted_amount)}
-                </TableCell>
-                <TableCell align="right">
-                  {calculateVariance(item.budgeted_amount, item.actual_amount)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <div className="mt-8 overflow-x-auto rounded-lg border border-gray-200">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Account
+              </th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Budgeted
+              </th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actual
+              </th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Variance
+              </th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Variance %
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data.map((item, index) => {
+              const variance = item.actual_amount - item.budgeted_amount;
+              const isPositiveVariance = variance >= 0;
+              
+              return (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {item.account_name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                    ${formatAmount(item.budgeted_amount)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                    ${formatAmount(item.actual_amount)}
+                  </td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm text-right ${
+                    isPositiveVariance ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    ${formatAmount(variance)}
+                  </td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${
+                    isPositiveVariance ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {calculateVariance(item.budgeted_amount, item.actual_amount)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
-      <Box display="flex" justifyContent="space-between" mt={4}>
-        <Box width="45%">
-          <Typography variant="h6" gutterBottom>
+      <div className="flex flex-col lg:flex-row justify-between mt-8 gap-6">
+        <div className="w-full lg:w-1/2">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">
             Budget vs Actual Comparison
-          </Typography>
-          <Bar data={barChartData} />
-        </Box>
-        <Box width="45%">
-          <Typography variant="h6" gutterBottom>
+          </h2>
+          <div className="relative h-80">
+            <Bar data={barChartData} />
+          </div>
+        </div>
+        <div className="w-full lg:w-1/2">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">
             Variance Trend
-          </Typography>
-          <Line data={lineChartData} />
-        </Box>
-      </Box>
-    </Box>
+          </h2>
+          <div className="relative h-80">
+            <Line data={lineChartData} />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

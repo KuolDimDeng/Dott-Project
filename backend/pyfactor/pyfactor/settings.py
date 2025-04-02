@@ -116,6 +116,10 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# Always enforce AWS Cognito Authentication even in development mode
+USE_AWS_AUTH = True
+COGNITO_TOKEN_VERIFY = True
+
 DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': lambda request: False,
 }
@@ -598,22 +602,21 @@ logging.config.dictConfig(LOGGING)
 
 
 MIDDLEWARE = [
-    #'custom_auth.connection_limiter.ConnectionLimiterMiddleware',  # Connection limiter for emergency situations
-    #'custom_auth.connection_pool.ConnectionPoolMiddleware',  # Efficient connection pooling
-    #'custom_auth.tenant_metrics.QueryMetricsMiddleware',  # Collect tenant usage metrics
     'django.middleware.security.SecurityMiddleware',
-    'custom_auth.cors.CorsMiddleware',  # Use our new CORS middleware
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'custom_auth.middleware.TokenRefreshMiddleware',  # Add Token Refresh Middleware
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'custom_auth.middleware.RowLevelSecurityMiddleware',  # Add RLS middleware
+    'onboarding.middleware.SchemaNameMiddleware',
     'allauth.account.middleware.AccountMiddleware',
     'custom_auth.middleware.RequestIDMiddleware',
-    'custom_auth.tenant_middleware.EnhancedTenantMiddleware',  # Use our enhanced tenant middleware
-    'custom_auth.middleware.TenantMiddleware',  # Keep the original for backward compatibility
-    'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',  # Check and trigger migrations for dashboard access
+    'custom_auth.middleware.TenantMiddleware',
+    'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',
 ]
 
 # Maximum number of database connections allowed

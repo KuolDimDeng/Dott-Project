@@ -1,20 +1,26 @@
 'use client';
 
-import React from 'react';
-import { Typography, Box, Container, Paper, Divider, useTheme, useMediaQuery, Button } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 const TermsOfUse = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const router = useRouter();
+  const [fromDashboard, setFromDashboard] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
-  // Check if user came from dashboard to show proper back button
-  const [fromDashboard, setFromDashboard] = React.useState(false);
-  
-  React.useEffect(() => {
+  useEffect(() => {
+    // Check if screen is mobile size
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    // Initial check
+    checkIfMobile();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkIfMobile);
+    
     // Check for referrer on client side
     if (typeof window !== 'undefined') {
       try {
@@ -30,6 +36,10 @@ const TermsOfUse = () => {
         console.error("Error checking referrer:", error);
       }
     }
+    
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
   }, []);
   
   const handleBackClick = () => {
@@ -52,64 +62,39 @@ const TermsOfUse = () => {
   };
 
   const SectionTitle = ({ children }) => (
-    <Typography
-      variant={isMobile ? 'h6' : 'h5'}
-      gutterBottom
-      sx={{
-        fontWeight: 'bold',
-        color: theme.palette.primary.main,
-        mt: 3,
-        mb: 2,
-      }}
-    >
+    <h2 className={`font-bold text-blue-700 ${isMobile ? 'text-lg' : 'text-xl'} mt-6 mb-4`}>
       {children}
-    </Typography>
+    </h2>
   );
 
   const SectionContent = ({ children }) => (
-    <Typography
-      variant="body1"
-      paragraph
-      sx={{
-        lineHeight: 1.6,
-        color: theme.palette.text.secondary,
-      }}
-    >
+    <p className="mb-4 leading-relaxed text-gray-600">
       {children}
-    </Typography>
+    </p>
   );
   
   const SubsectionTitle = ({ children }) => (
-    <Typography
-      variant="h6"
-      gutterBottom
-      sx={{
-        fontWeight: 'bold',
-        color: theme.palette.text.primary,
-        mt: 2,
-        mb: 1,
-        fontSize: isMobile ? '1rem' : '1.1rem',
-      }}
-    >
+    <h3 className={`font-bold text-gray-800 mt-4 mb-2 ${isMobile ? 'text-base' : 'text-lg'}`}>
       {children}
-    </Typography>
+    </h3>
   );
 
   return (
-    <Container maxWidth="md">
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 4 }}>
-        <Button 
-          startIcon={<ArrowBackIcon />} 
+    <div className="max-w-4xl mx-auto px-4 sm:px-6">
+      <div className="flex justify-between items-center mt-8">
+        <button 
           onClick={handleBackClick}
-          variant="outlined"
-          sx={{ mb: 2 }}
+          className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mb-2"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
           {fromDashboard ? 'Back to Dashboard' : 'Back to Home'}
-        </Button>
+        </button>
         
-        <Box 
+        <div 
           onClick={handleBackClick} 
-          sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          className="cursor-pointer flex items-center"
         >
           <Image
             src="/static/images/PyfactorLandingpage.png"
@@ -118,32 +103,19 @@ const TermsOfUse = () => {
             height={50}
             style={{ objectFit: 'contain' }}
           />
-        </Box>
-      </Box>
+        </div>
+      </div>
       
-      <Paper
-        elevation={3}
-        sx={{
-          mt: 2,
-          mb: 5,
-          p: isMobile ? 3 : 5,
-          borderRadius: 2,
-        }}
-      >
-        <Typography
-          variant={isMobile ? 'h4' : 'h3'}
-          gutterBottom
-          align="center"
-          sx={{ fontWeight: 'bold', mb: 3 }}
-        >
+      <div className="mt-4 mb-12 bg-white rounded-lg shadow-lg p-6 sm:p-10">
+        <h1 className={`text-center font-bold ${isMobile ? 'text-2xl' : 'text-3xl'} mb-3`}>
           Terms of Use
-        </Typography>
+        </h1>
 
-        <Typography variant="subtitle1" color="textSecondary" align="center" paragraph>
+        <p className="text-center text-gray-600 mb-6">
           Effective as of: {new Date().toLocaleDateString()}
-        </Typography>
+        </p>
 
-        <Divider sx={{ my: 3 }} />
+        <hr className="my-6 border-t border-gray-200" />
 
         <SectionContent>
           Welcome to Dott, a service provided by Dott LLC. This Terms of Use Agreement
@@ -214,38 +186,26 @@ const TermsOfUse = () => {
         <SectionContent>
           You agree to use Dott only for lawful purposes and in accordance with this Agreement. You agree not to use Dott:
         </SectionContent>
-        <Box component="ul" sx={{ pl: 4 }}>
-          <Box component="li">
-            <Typography variant="body1" paragraph>
-              In any way that violates any applicable federal, state, local, or international law or regulation.
-            </Typography>
-          </Box>
-          <Box component="li">
-            <Typography variant="body1" paragraph>
-              To transmit any material that is unlawful, threatening, abusive, libelous, defamatory, obscene, or otherwise objectionable.
-            </Typography>
-          </Box>
-          <Box component="li">
-            <Typography variant="body1" paragraph>
-              To impersonate or attempt to impersonate Dott LLC, a Dott LLC employee, another user, or any other person or entity.
-            </Typography>
-          </Box>
-          <Box component="li">
-            <Typography variant="body1" paragraph>
-              To engage in any activity that interferes with or disrupts the services (or the servers and networks connected to the services).
-            </Typography>
-          </Box>
-          <Box component="li">
-            <Typography variant="body1" paragraph>
-              To attempt to circumvent any security measures implemented by Dott LLC.
-            </Typography>
-          </Box>
-          <Box component="li">
-            <Typography variant="body1" paragraph>
-              For money laundering, terrorist financing, or any other illegal financial activities.
-            </Typography>
-          </Box>
-        </Box>
+        <ul className="list-disc pl-8 mb-6">
+          <li className="mb-2 text-gray-600">
+            In any way that violates any applicable federal, state, local, or international law or regulation.
+          </li>
+          <li className="mb-2 text-gray-600">
+            To transmit any material that is unlawful, threatening, abusive, libelous, defamatory, obscene, or otherwise objectionable.
+          </li>
+          <li className="mb-2 text-gray-600">
+            To impersonate or attempt to impersonate Dott LLC, a Dott LLC employee, another user, or any other person or entity.
+          </li>
+          <li className="mb-2 text-gray-600">
+            To engage in any activity that interferes with or disrupts the services (or the servers and networks connected to the services).
+          </li>
+          <li className="mb-2 text-gray-600">
+            To attempt to circumvent any security measures implemented by Dott LLC.
+          </li>
+          <li className="mb-2 text-gray-600">
+            For money laundering, terrorist financing, or any other illegal financial activities.
+          </li>
+        </ul>
 
         <SectionTitle>6. Payment and Financial Services</SectionTitle>
         <SectionContent>
@@ -404,21 +364,25 @@ const TermsOfUse = () => {
         <SectionContent>
           If you have any questions about this Agreement, please contact us at:
         </SectionContent>
-        <Box sx={{ pl: 2, borderLeft: `4px solid ${theme.palette.primary.main}`, mt: 2 }}>
-          <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
+        
+        <div className="pl-4 border-l-4 border-blue-700 mt-4 text-gray-700 italic">
+          <address className="not-italic text-sm">
             Dott LLC
             <br />
             800 N King Street
+            <br />
             Suite 304 #2797
+            <br />
             Wilmington, DE 19801
+            <br />
             United States
-
+            <br />
             <br />
             Email: support@dottapps.com
-          </Typography>
-        </Box>
-      </Paper>
-    </Container>
+          </address>
+        </div>
+      </div>
+    </div>
   );
 };
 

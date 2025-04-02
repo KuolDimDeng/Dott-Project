@@ -1,68 +1,46 @@
 'use client';
 
-import React from 'react';
-import {
-  Typography,
-  Box,
-  Container,
-  Paper,
-  Divider,
-  useTheme,
-  useMediaQuery,
-  List,
-  ListItem,
-  ListItemText,
-  Button
-} from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 const CookiePolicy = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const router = useRouter();
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    // Check if screen is mobile size
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    // Initial check
+    checkIfMobile();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  }, []);
 
   const SectionTitle = ({ children }) => (
-    <Typography
-      variant={isMobile ? 'h6' : 'h5'}
-      sx={{
-        fontWeight: 'bold',
-        color: theme.palette.primary.main,
-        mt: 4,
-        mb: 2,
-      }}
-    >
+    <h2 className={`font-bold text-blue-700 ${isMobile ? 'text-lg' : 'text-xl'} mt-8 mb-4`}>
       {children}
-    </Typography>
+    </h2>
   );
 
   const SectionContent = ({ children }) => (
-    <Typography
-      variant="body1"
-      sx={{
-        mb: 3,
-        lineHeight: 1.6,
-        color: theme.palette.text.secondary,
-      }}
-    >
+    <p className="mb-6 leading-relaxed text-gray-600">
       {children}
-    </Typography>
+    </p>
   );
-
+  
   const SubsectionTitle = ({ children }) => (
-    <Typography
-      variant="h6"
-      sx={{
-        fontWeight: 'bold',
-        color: theme.palette.text.primary,
-        mt: 2,
-        mb: 1,
-        fontSize: isMobile ? '1rem' : '1.1rem',
-      }}
-    >
+    <h3 className={`font-bold text-gray-800 mt-4 mb-2 ${isMobile ? 'text-base' : 'text-lg'}`}>
       {children}
-    </Typography>
+    </h3>
   );
 
   const cookieSections = [
@@ -150,20 +128,21 @@ const CookiePolicy = () => {
   ];
 
   return (
-    <Container maxWidth="md">
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 4 }}>
-        <Button 
-          startIcon={<ArrowBackIcon />} 
+    <div className="max-w-4xl mx-auto px-4 sm:px-6">
+      <div className="flex justify-between items-center mt-8">
+        <button 
           onClick={() => router.push('/')}
-          variant="outlined"
-          sx={{ mb: 2 }}
+          className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mb-2"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
           Back to Home
-        </Button>
+        </button>
         
-        <Box 
+        <div 
           onClick={() => router.push('/')} 
-          sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          className="cursor-pointer flex items-center"
         >
           <Image
             src="/static/images/PyfactorLandingpage.png"
@@ -172,77 +151,61 @@ const CookiePolicy = () => {
             height={50}
             style={{ objectFit: 'contain' }}
           />
-        </Box>
-      </Box>
+        </div>
+      </div>
       
-      <Paper
-        elevation={3}
-        sx={{
-          mt: 2,
-          mb: 5,
-          p: isMobile ? 3 : 5,
-          borderRadius: 2,
-        }}
-      >
-        <Typography
-          variant={isMobile ? 'h4' : 'h3'}
-          align="center"
-          sx={{ fontWeight: 'bold', mb: 2 }}
-        >
+      <div className="mt-4 mb-12 bg-white rounded-lg shadow-lg p-6 sm:p-10">
+        <h1 className={`text-center font-bold ${isMobile ? 'text-2xl' : 'text-3xl'} mb-2`}>
           Cookie Policy
-        </Typography>
+        </h1>
 
-        <Typography variant="subtitle1" color="textSecondary" align="center" sx={{ mb: 4 }}>
+        <p className="text-center text-gray-600 mb-8">
           Effective as of: {new Date().toLocaleDateString()}
-        </Typography>
+        </p>
 
-        <Divider sx={{ mb: 4 }} />
+        <hr className="mb-8 border-t border-gray-200" />
 
-        <SectionContent>
+        <p className="mb-6 leading-relaxed text-gray-600">
           This Cookie Policy explains how Dott LLC ("we", "us", or "our") uses cookies and similar technologies to recognize you when you visit our website at www.dottapps.com or use our mobile applications ("Services"). It explains what these technologies are and why we use them, as well as your rights to control our use of them.
-        </SectionContent>
+        </p>
 
-        <List>
+        <ul className="space-y-6">
           {cookieSections.map((section, index) => (
-            <ListItem key={index} sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 2 }}>
+            <li key={index} className="py-4">
               <SectionTitle>{section.title}</SectionTitle>
               <SectionContent>{section.content}</SectionContent>
               
               {section.subsections && section.subsections.map((subsection, subIndex) => (
-                <Box key={subIndex} sx={{ width: '100%', mb: 2 }}>
+                <div key={subIndex} className="w-full mb-4">
                   <SubsectionTitle>{subsection.title}</SubsectionTitle>
                   <SectionContent>{subsection.content}</SectionContent>
-                </Box>
+                </div>
               ))}
               
-              {index !== cookieSections.length - 1 && <Divider sx={{ width: '100%', mt: 2 }} />}
-            </ListItem>
+              {index !== cookieSections.length - 1 && <hr className="w-full mt-4 border-t border-gray-200" />}
+            </li>
           ))}
-        </List>
+        </ul>
 
-        <Box
-          sx={{
-            bgcolor: theme.palette.background.default,
-            p: 3,
-            borderRadius: 1,
-            border: `1px solid ${theme.palette.divider}`,
-          }}
-        >
-          <Typography variant="body2" component="address" sx={{ fontStyle: 'normal' }}>
+        <div className="bg-gray-50 p-6 rounded-md border border-gray-200 mt-8">
+          <address className="not-italic text-sm">
             <strong>Dott LLC</strong>
             <br />
             800 N King Street
+            <br />
             Suite 304 #2797
+            <br />
             Wilmington, DE 19801
+            <br />
             United States            
             <br />
             Email: support@dottapps.com
             <br />
             Website: www.dottapps.com
-          </Typography>
-        </Box>
-      </Paper>
-    </Container>
+          </address>
+        </div>
+      </div>
+    </div>
   );
 };
 

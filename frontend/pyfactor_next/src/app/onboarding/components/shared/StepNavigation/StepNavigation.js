@@ -4,8 +4,7 @@ import { useRouter } from 'next/navigation';
 import React, { memo, useCallback, useState } from 'react';
 import { useSession } from '@/hooks/useSession';
 import PropTypes from 'prop-types';
-import { Button, CircularProgress, Box } from '@mui/material';
-import { NavigationContainer } from './StepNavigation.styles';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import { logger } from '@/utils/logger';
 import { updateUserAttributes } from '@/config/amplifyUnified';
 
@@ -73,32 +72,37 @@ const StepNavigation = memo(({ onNext, onBack, nextLabel = 'Next', backLabel = '
   }, [onBack, session, update]);
 
   return (
-    <NavigationContainer>
-      <Box sx={{ display: 'flex', gap: 2 }}>
+    <div className="flex justify-between items-center mt-8 gap-4">
+      <div className="flex gap-2">
         {onBack && (
-          <Button
-            variant="outlined"
+          <button
+            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleBack}
             disabled={isSubmitting || loading}
           >
             {backLabel}
-          </Button>
+          </button>
         )}
         {onNext && (
-          <Button
-            variant="contained"
+          <button
+            className="px-4 py-2 bg-primary-main text-white rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleNext}
             disabled={isSubmitting || loading}
           >
             {isSubmitting || loading ? (
-              <CircularProgress size={24} />
+              <div className="flex items-center justify-center">
+                <div className="w-5 h-5 mr-2">
+                  <LoadingSpinner size="small" />
+                </div>
+                <span>Processing...</span>
+              </div>
             ) : (
               nextLabel
             )}
-          </Button>
+          </button>
         )}
-      </Box>
-    </NavigationContainer>
+      </div>
+    </div>
   );
 });
 

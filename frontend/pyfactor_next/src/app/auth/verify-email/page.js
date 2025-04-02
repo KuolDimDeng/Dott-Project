@@ -216,14 +216,14 @@ export default function VerifyEmail() {
       const result = await confirmSignUp(email, code);
       
       logger.debug('[VerifyEmail] Sign up confirmation result:', result);
-      logger.debug('[VerifyEmail] Sign up confirmed successfully, redirecting to dashboard');
+      logger.debug('[VerifyEmail] Sign up confirmed successfully, redirecting to sign in...');
       
-      setSuccess('Email verified successfully! Redirecting to dashboard...');
+      setSuccess('Email verified successfully! Redirecting to sign in page...');
       
-      // Redirect to dashboard after a short delay
+      // Redirect to sign-in page after a short delay
       setTimeout(() => {
-        logger.debug('[VerifyEmail] Redirecting to dashboard');
-        router.push('/dashboard');
+        logger.debug('[VerifyEmail] Redirecting to sign in page');
+        router.push('/auth/signin');
       }, 1500);
     } catch (error) {
       // Log specific error details

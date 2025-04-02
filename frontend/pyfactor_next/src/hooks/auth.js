@@ -16,6 +16,10 @@ import {
   resendSignUpCode as authResendSignUpCode
 } from '@/config/amplifyUnified';
 import { useSession } from './useSession';
+import { setupHubDeduplication } from '@/utils/refreshUserSession';
+
+// Initialize Hub protection on import
+setupHubDeduplication();
 
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 2000;
@@ -66,64 +70,9 @@ export function useAuth() {
     try {
       logger.debug('[Auth] Starting sign in for user:', email);
       
-      // Try to use enhanced sign in function
-      try {
-        const { enhancedSignIn } = await import('@/config/amplifyUnified');
-        
-        if (enhancedSignIn) {
-          logger.debug('[Auth] Using enhanced signIn function');
-          
-          const result = await enhancedSignIn(email, password, {
-            authFlowType: AUTH_FLOWS.USER_SRP
-          });
-          
-          logger.debug('[Auth] Enhanced signIn completed successfully:', {
-            isSignedIn: result.isSignedIn,
-            nextStep: result.nextStep?.signInStep
-          });
-          
-          try {
-            // Try to get the user's attributes
-            const userAttributes = await fetchUserAttributes();
-            logger.debug('[Auth] User attributes fetched:', userAttributes);
-            
-            // If we have user attributes, check onboarding status
-            const onboardingStatus = userAttributes['custom:onboarding'] || 'NOT_STARTED';
-            const setupDone = userAttributes['custom:setupdone'] || 'FALSE';
-            
-            logger.debug('[Auth] User onboarding status:', {
-              onboardingStatus,
-              setupDone
-            });
-            
-            // Refresh the session context
-            refreshSession();
-            
-            return {
-              success: true,
-              isComplete: true,
-              userInfo: {
-                attributes: userAttributes,
-                onboardingStatus,
-                setupDone,
-                email: userAttributes.email || email
-              }
-            };
-          } catch (attributesError) {
-            // If we can't get attributes, just return basic success
-            logger.warn('[Auth] Could not fetch user attributes:', attributesError);
-            
-            return {
-              success: true,
-              isComplete: true,
-              nextStep: 'SIGNED_IN'
-            };
-          }
-        }
-      } catch (importError) {
-        logger.debug('[Auth] Failed to import enhancedSignIn, falling back to standard flow:', importError);
-        // If enhancedSignIn isn't available, continue with standard flow
-      }
+      // Static import of enhancedSignIn is preferred over dynamic import to avoid issues
+      logger.debug('[Auth] Using standard sign in flow');
+      // Skip the dynamic import attempt and go straight to standard flow
       
       // Fall back to standard sign in if enhanced version fails
       const signInResult = await retryOperation(async () => {
@@ -306,11 +255,11 @@ export function useAuth() {
         }
       }
       
-      // Use enhanced sign up for better error handling
-      const { enhancedSignUp } = await import('@/config/amplifyUnified');
+      // Static import is preferred over dynamic import
+      logger.debug('[Auth] Using standard sign up flow');
       
       try {
-        const result = await (enhancedSignUp ? enhancedSignUp(signUpParams) : authSignUp(signUpParams));
+        const result = await authSignUp(signUpParams);
         
         logger.debug('[Auth] Sign up result:', {
           success: result.isSignUpComplete,
@@ -356,77 +305,8 @@ export function useAuth() {
         codeLength: code?.length
       });
 
-      // Try to use the enhanced version if available
-      try {
-        const { enhancedConfirmSignUp } = await import('@/config/amplifyUnified');
-        
-        if (enhancedConfirmSignUp) {
-          logger.debug('[Auth] Using enhanced confirmSignUp function');
-          
-          const result = await enhancedConfirmSignUp({
-            username: email,
-            confirmationCode: code
-          });
-          
-          logger.debug('[Auth] Enhanced confirmSignUp result:', result);
-          
-          if (!result.success) {
-            throw new Error(result.error || 'Confirmation failed');
-          }
-          
-          // Create user in Django backend after successful confirmation
-          logger.debug('[Auth] Confirmation successful, creating user in backend');
-          
-          try {
-            // Create user in Django backend
-            const userData = {
-              email: email,
-              cognitoId: result.userId,
-              userRole: 'OWNER',
-              is_already_verified: true  // Add this flag to indicate no need for another verification code
-            };
-            
-            logger.debug('[Auth] Sending user data to backend:', userData);
-            
-            const response = await fetch('/api/auth/signup', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(userData)
-            });
-    
-            if (!response.ok) {
-              const errorData = await response.json();
-              logger.error('[Auth] Backend API error:', {
-                status: response.status,
-                statusText: response.statusText,
-                error: errorData
-              });
-              throw new Error(errorData.message || `Backend API error: ${response.status} ${response.statusText}`);
-            }
-    
-            const backendResult = await response.json();
-            logger.debug('[Auth] Backend user creation completed successfully:', backendResult);
-            
-            return {
-              success: true,
-              isComplete: result.isSignUpComplete,
-              nextStep: result.nextStep,
-              userId: result.userId || backendResult.userId
-            };
-          } catch (backendError) {
-            logger.error('[Auth] Backend user creation failed:', {
-              error: backendError.message,
-              stack: backendError.stack
-            });
-            throw backendError;
-          }
-        }
-      } catch (importError) {
-        logger.debug('[Auth] Failed to import enhancedConfirmSignUp, falling back to standard flow:', importError);
-        // Continue with the standard flow if enhanced function isn't available
-      }
+      // Static import is preferred over dynamic import
+      logger.debug('[Auth] Using standard confirmation flow');
 
       // Fall back to the standard flow (using authConfirmSignUp directly)
       logger.debug('[Auth] Using standard confirmation flow');
@@ -589,6 +469,9 @@ export function useAuth() {
   }, []);
 
   useEffect(() => {
+    // Make sure Hub protection is initialized
+    setupHubDeduplication();
+    
     const handleAuthEvents = async ({ payload }) => {
       logger.debug('[Auth] Auth event received:', payload.event);
       
@@ -620,22 +503,62 @@ export function useAuth() {
 
         case 'tokenRefresh':
           try {
-            const sessionResponse = await authFetchAuthSession({
-              forceRefresh: true
-            });
-
-            logger.debug('[Auth] Session fetched after token refresh:', sessionResponse);
-
-            if (sessionResponse.success && sessionResponse.session?.tokens?.idToken) {
-              setSession(sessionResponse.session);
-              if (!refreshingRef.current) {
-                await refreshSession();
+            // Check if we've had too many refresh attempts
+            const refreshCount = parseInt(sessionStorage.getItem('tokenRefreshCount') || '0', 10);
+            const lastRefreshTime = parseInt(sessionStorage.getItem('lastTokenRefreshTime') || '0', 10);
+            const now = Date.now();
+            
+            // Global lock to prevent concurrent refresh attempts
+            if (window.__tokenRefreshInProgress) {
+              logger.debug('[Auth] Token refresh already in progress, skipping');
+              return;
+            }
+            
+            // If we've refreshed more than 3 times in 30 seconds, stop to prevent loops
+            if (refreshCount >= 3 && (now - lastRefreshTime) < 30000) {
+              logger.error('[Auth] Too many token refresh attempts in short period, stopping refresh cycle');
+              sessionStorage.setItem('tokenRefreshCount', '0');
+              // Add a longer cooldown period
+              window.__tokenRefreshCooldown = now + 60000; // 1 minute cooldown
+              return;
+            }
+            
+            // Check if we're in cooldown period
+            if (window.__tokenRefreshCooldown && now < window.__tokenRefreshCooldown) {
+              logger.warn('[Auth] Token refresh in cooldown period, skipping');
+              return;
+            }
+            
+            // Set global refresh lock
+            window.__tokenRefreshInProgress = true;
+            
+            try {
+              // Update refresh count and timestamp
+              sessionStorage.setItem('tokenRefreshCount', (refreshCount + 1).toString());
+              sessionStorage.setItem('lastTokenRefreshTime', now.toString());
+              
+              logger.debug('[Auth] Handling token refresh, attempt:', refreshCount + 1);
+              
+              // Add a small delay to prevent rapid consecutive refreshes
+              if (refreshCount > 0) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
               }
-              logger.debug('[Auth] Session refreshed successfully');
+              
+              const sessionResponse = await authFetchAuthSession({
+                forceRefresh: true
+              });
+              
+              logger.debug('[Auth] Session fetched after token refresh:', sessionResponse);
+            } finally {
+              // Always clear the lock
+              window.__tokenRefreshInProgress = false;
             }
           } catch (error) {
-            logger.error('[Auth] Token refresh failed:', error);
-            router.push('/auth/signin');
+            logger.error('[Auth] Error during token refresh:', error);
+            // Clear the lock in case of error
+            if (typeof window !== 'undefined') {
+              window.__tokenRefreshInProgress = false;
+            }
           }
           break;
 

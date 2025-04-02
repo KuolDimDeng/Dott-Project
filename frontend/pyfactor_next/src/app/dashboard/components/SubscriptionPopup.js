@@ -1,28 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  Button, 
-  Typography, 
-  Grid, 
-  Card, 
-  CardContent, 
-  CardActions, 
-  Box, 
-  List, 
-  ListItem, 
-  ListItemIcon, 
-  ListItemText, 
-  CircularProgress, 
-  FormControl, 
-  RadioGroup, 
-  Radio, 
-  FormControlLabel
-} from '@mui/material';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import CloseIcon from '@mui/icons-material/Close';
+import React, { useState, useEffect, Fragment } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
+import { CheckCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/hooks/auth';
 import { useSnackbar } from '@/hooks/useSnackbar';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
@@ -125,236 +103,203 @@ const SubscriptionPopup = ({ open, onClose }) => {
     },
   ];
   
+  // Helper function for plan color classes
+  const getPlanColorClasses = (planId) => {
+    const colorMap = {
+      free: { text: 'text-gray-600', bg: 'bg-gray-600', border: 'border-gray-600' },
+      professional: { text: 'text-blue-600', bg: 'bg-blue-600', border: 'border-blue-600' },
+      enterprise: { text: 'text-indigo-600', bg: 'bg-indigo-600', border: 'border-indigo-600' }
+    };
+    
+    return colorMap[planId] || colorMap.free;
+  };
+
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose}
-      maxWidth="lg"
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          p: 2,
-        }
-      }}
-    >
-      <DialogTitle>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h4" fontWeight={600}>
-            Choose Your Plan
-          </Typography>
-          <Button onClick={onClose} sx={{ minWidth: 'auto', p: 1 }}>
-            <CloseIcon />
-          </Button>
-        </Box>
-      </DialogTitle>
-      
-      <Box sx={{ px: 3, pb: 2 }}>
-        <FormControl component="fieldset">
-          <RadioGroup
-            row
-            name="billingCycle"
-            value={billingCycle}
-            onChange={handleBillingCycleChange}
-          >
-            <FormControlLabel value="monthly" control={<Radio />} label="Monthly Billing" />
-            <FormControlLabel 
-              value="yearly" 
-              control={<Radio />} 
-              label={
-                <Box display="flex" alignItems="center">
-                  <Typography>Annual Billing</Typography>
-                  <Box 
-                    sx={{ 
-                      ml: 1, 
-                      bgcolor: 'success.main', 
-                      color: 'white', 
-                      px: 1, 
-                      py: 0.5, 
-                      borderRadius: 1, 
-                      fontSize: '0.75rem',
-                      fontWeight: 'bold'
-                    }}
+    <Transition.Root show={open} as={Fragment}>
+      <Dialog as="div" className="relative z-10" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 z-10 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              enterTo="opacity-100 translate-y-0 sm:scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            >
+              <Dialog.Panel className="relative transform overflow-hidden rounded-xl bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-5xl sm:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <Dialog.Title as="h3" className="text-2xl font-semibold leading-6 text-gray-900">
+                    Choose Your Plan
+                  </Dialog.Title>
+                  <button
+                    type="button"
+                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none"
+                    onClick={onClose}
                   >
-                    SAVE 15%
-                  </Box>
-                </Box>
-              } 
-            />
-          </RadioGroup>
-        </FormControl>
-      </Box>
-      
-      <DialogContent>
-        <Grid container spacing={3}>
-          {plans.map((plan) => (
-            <Grid item xs={12} sm={4} key={plan.id}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  position: 'relative',
-                  borderRadius: 3,
-                  overflow: 'visible',
-                  boxShadow: selectedPlan === plan.id 
-                    ? '0 8px 24px rgba(0,0,0,0.12)' 
-                    : '0 2px 12px rgba(0,0,0,0.08)',
-                  transition: 'all 0.3s ease',
-                  transform: selectedPlan === plan.id ? 'translateY(-8px)' : 'none',
-                  '&:hover': {
-                    transform: 'translateY(-5px)',
-                    boxShadow: '0 8px 28px rgba(0,0,0,0.15)',
-                  },
-                  ...(selectedPlan === plan.id && {
-                    border: '2px solid',
-                    borderColor: getPlanColor(plan.id),
-                  }),
-                }}
-              >
-                {/* Popular badge */}
-                {plan.id === 'professional' && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: -12,
-                      right: 24,
-                      backgroundColor: getPlanColor('professional'),
-                      color: 'white',
-                      px: 2,
-                      py: 0.5,
-                      borderRadius: 10,
-                      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                      zIndex: 1
-                    }}
-                  >
-                    <Typography variant="caption" fontWeight="bold">
-                      POPULAR
-                    </Typography>
-                  </Box>
-                )}
+                    <span className="sr-only">Close</span>
+                    <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                  </button>
+                </div>
                 
-                {/* Best value badge */}
-                {plan.id === 'enterprise' && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: -12,
-                      right: 24,
-                      backgroundColor: getPlanColor('enterprise'),
-                      color: 'white',
-                      px: 2,
-                      py: 0.5,
-                      borderRadius: 10,
-                      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                      zIndex: 1
-                    }}
-                  >
-                    <Typography variant="caption" fontWeight="bold">
-                      BEST VALUE
-                    </Typography>
-                  </Box>
-                )}
+                <div className="px-4 pb-4">
+                  <div className="flex items-center space-x-4">
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        className="form-radio h-4 w-4 text-indigo-600"
+                        name="billingCycle"
+                        value="monthly"
+                        checked={billingCycle === 'monthly'}
+                        onChange={handleBillingCycleChange}
+                      />
+                      <span className="ml-2">Monthly Billing</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        className="form-radio h-4 w-4 text-indigo-600"
+                        name="billingCycle"
+                        value="yearly"
+                        checked={billingCycle === 'yearly'}
+                        onChange={handleBillingCycleChange}
+                      />
+                      <span className="ml-2 flex items-center">
+                        Annual Billing
+                        <span className="ml-2 bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">
+                          SAVE 15%
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
                 
-                <CardContent sx={{ flexGrow: 1, p: 3 }}>
-                  <Typography gutterBottom variant="h5" component="h2" fontWeight={600}>
-                    {plan.name}
-                  </Typography>
-                  <Typography variant="h4" sx={{ color: getPlanColor(plan.id) }} gutterBottom fontWeight={700}>
-                    ${plan.price[billingCycle]}
-                    <Typography
-                      component="span"
-                      variant="subtitle1"
-                      color="text.secondary"
-                      sx={{ ml: 0.5, fontWeight: 400 }}
-                    >
-                      {billingCycle === 'monthly' ? '/month' : '/year'}
-                    </Typography>
-                  </Typography>
+                <div className="px-4 pb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {plans.map((plan) => {
+                      const colorClasses = getPlanColorClasses(plan.id);
+                      const isSelected = selectedPlan === plan.id;
+                      const isCurrentPlan = userData?.subscription_type === plan.id;
+                      
+                      return (
+                        <div 
+                          key={plan.id}
+                          className={`relative flex flex-col h-full bg-white rounded-xl overflow-visible transition-all duration-300 
+                            ${isSelected ? 'transform -translate-y-2 shadow-xl' : 'shadow-md hover:shadow-xl hover:-translate-y-1'} 
+                            ${isSelected ? `border-2 ${colorClasses.border}` : 'border border-gray-200'}`}
+                        >
+                          {/* Popular badge */}
+                          {plan.id === 'professional' && (
+                            <div className="absolute -top-3 right-6 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md z-10">
+                              POPULAR
+                            </div>
+                          )}
+                          
+                          {/* Best value badge */}
+                          {plan.id === 'enterprise' && (
+                            <div className="absolute -top-3 right-6 bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md z-10">
+                              BEST VALUE
+                            </div>
+                          )}
+                          
+                          <div className="flex-grow p-6">
+                            <h2 className="text-xl font-semibold mb-2">
+                              {plan.name}
+                            </h2>
+                            <p className={`text-2xl font-bold mb-2 ${colorClasses.text}`}>
+                              ${plan.price[billingCycle]}
+                              <span className="text-sm text-gray-500 font-normal ml-1">
+                                {billingCycle === 'monthly' ? '/month' : '/year'}
+                              </span>
+                            </p>
+                            
+                            {/* Plan features */}
+                            <ul className="mt-4 space-y-2">
+                              {plan.features.map((feature, index) => (
+                                <li key={index} className="flex items-start">
+                                  <CheckCircleIcon className={`h-5 w-5 ${colorClasses.text} mr-2 flex-shrink-0 mt-0.5`} />
+                                  <span>{feature}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          
+                          <div className="p-6 pt-0">
+                            <button
+                              type="button"
+                              onClick={() => handlePlanSelect(plan.id)}
+                              disabled={isSubmitting}
+                              className={`w-full py-3 px-4 rounded-lg font-medium transition-all focus:outline-none 
+                                ${isSelected 
+                                  ? `${colorClasses.bg} text-white shadow-md`
+                                  : `bg-white border ${colorClasses.border} ${colorClasses.text}`
+                                }`}
+                            >
+                              {isSubmitting && isSelected ? (
+                                <svg className="animate-spin h-5 w-5 mx-auto text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              ) : (
+                                isCurrentPlan ? 'Current Plan' : 'Select Plan'
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                <div className="flex justify-center px-4 py-3 mt-4">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-6 py-3 mr-4 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none"
+                  >
+                    Cancel
+                  </button>
                   
-                  {/* Plan features */}
-                  <List sx={{ mt: 2 }}>
-                    {plan.features.map((feature, index) => (
-                      <ListItem key={index} sx={{ px: 0, py: 0.5 }}>
-                        <ListItemIcon sx={{ minWidth: '30px' }}>
-                          <CheckCircleOutlineIcon sx={{ color: getPlanColor(plan.id) }} />
-                        </ListItemIcon>
-                        <ListItemText primary={feature} />
-                      </ListItem>
-                    ))}
-                  </List>
-                </CardContent>
-                <CardActions sx={{ p: 3, pt: 0 }}>
-                  <Button
-                    fullWidth
-                    variant={selectedPlan === plan.id ? 'contained' : 'outlined'}
-                    onClick={() => handlePlanSelect(plan.id)}
-                    disabled={isSubmitting}
-                    sx={{ 
-                      py: 1.2,
-                      borderRadius: 2,
-                      textTransform: 'none',
-                      fontSize: '1rem',
-                      fontWeight: 500,
-                      ...(selectedPlan === plan.id ? {
-                        bgcolor: getPlanColor(plan.id),
-                        '&:hover': { bgcolor: getPlanColor(plan.id) },
-                        boxShadow: '0 4px 10px rgba(0,0,0,0.15)'
-                      } : {
-                        color: getPlanColor(plan.id),
-                        borderColor: getPlanColor(plan.id)
-                      })
-                    }}
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || selectedPlan === userData?.subscription_type}
+                    className={`inline-flex justify-center rounded-md border border-transparent px-6 py-3 text-base font-medium text-white shadow-sm focus:outline-none
+                      ${getPlanColorClasses(selectedPlan).bg}
+                      ${isSubmitting || selectedPlan === userData?.subscription_type 
+                        ? 'opacity-50 cursor-not-allowed' 
+                        : 'hover:bg-opacity-90'}
+                    `}
                   >
-                    {isSubmitting && selectedPlan === plan.id ? (
-                      <CircularProgress size={24} />
+                    {isSubmitting ? (
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
                     ) : (
-                      userData?.subscription_type === plan.id ? 'Current Plan' : 'Select Plan'
+                      'Confirm Selection'
                     )}
-                  </Button>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </DialogContent>
-      
-      <DialogActions sx={{ p: 3, justifyContent: 'center' }}>
-        <Button 
-          onClick={onClose}
-          variant="outlined" 
-          sx={{ 
-            mr: 2, 
-            px: 4, 
-            py: 1.2, 
-            borderRadius: 2,
-            textTransform: 'none',
-            fontSize: '1rem'
-          }}
-        >
-          Cancel
-        </Button>
-        <Button 
-          onClick={handleSubmit}
-          variant="contained" 
-          disabled={isSubmitting || selectedPlan === userData?.subscription_type}
-          sx={{ 
-            px: 4, 
-            py: 1.2, 
-            borderRadius: 2,
-            textTransform: 'none',
-            fontSize: '1rem',
-            bgcolor: getPlanColor(selectedPlan),
-            '&:hover': { bgcolor: getPlanColor(selectedPlan) },
-          }}
-        >
-          {isSubmitting ? (
-            <CircularProgress size={24} />
-          ) : (
-            'Confirm Selection'
-          )}
-        </Button>
-      </DialogActions>
-    </Dialog>
+                  </button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
+      </Dialog>
+    </Transition.Root>
   );
 };
 

@@ -128,42 +128,7 @@ async function getServerAccessToken() {
   try {
     logger.debug('[tokenUtils] Getting access token on server');
     
-    // Try to get from cookies using next/headers - dynamically imported
-    try {
-      const { cookies, headers } = await import('next/headers');
-      
-      const cookieStore = cookies();
-      const token = cookieStore.get('accessToken')?.value || cookieStore.get('idToken')?.value;
-      if (token) {
-        logger.debug('[tokenUtils] Using token from server cookies');
-        return token;
-      }
-      
-      // Try to get from authorization header
-      const headersList = headers();
-      const authHeader = headersList.get('authorization');
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.substring(7);
-        logger.debug('[tokenUtils] Using token from authorization header');
-        return token;
-      }
-      
-      // Also check x-access-token or x-id-token headers
-      const accessToken = headersList.get('x-access-token');
-      if (accessToken) {
-        logger.debug('[tokenUtils] Using token from x-access-token header');
-        return accessToken;
-      }
-      
-      const idToken = headersList.get('x-id-token');
-      if (idToken) {
-        logger.debug('[tokenUtils] Using token from x-id-token header');
-        return idToken;
-      }
-    } catch (importError) {
-      logger.warn('[tokenUtils] Cannot import server headers/cookies:', importError.message);
-    }
-    
+    // Server-side token handling - simplified to avoid dynamic imports
     logger.warn('[tokenUtils] No token found on server side');
     return null;
   } catch (error) {
@@ -250,26 +215,7 @@ async function getClientIdToken() {
  */
 async function getServerIdToken() {
   try {
-    // Try to get from cookies using next/headers - dynamically imported
-    try {
-      const { cookies, headers } = await import('next/headers');
-      
-      const cookieStore = cookies();
-      const token = cookieStore.get('idToken')?.value;
-      if (token) {
-        return token;
-      }
-      
-      // Try to get from x-id-token header
-      const headersList = headers();
-      const idToken = headersList.get('x-id-token');
-      if (idToken) {
-        return idToken;
-      }
-    } catch (importError) {
-      logger.debug('[TokenUtils] Cannot import server headers/cookies:', importError.message);
-    }
-
+    // Server-side token handling - simplified to avoid dynamic imports
     logger.warn('[TokenUtils] No ID token found from server sources');
     return null;
   } catch (error) {

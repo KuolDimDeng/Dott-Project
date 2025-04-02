@@ -1,9 +1,88 @@
 import { fetchAuthSession, getCurrentUser, signOut } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 import { parseJwt } from '@/lib/authUtils';
+import { Hub } from '@/config/amplifyUnified';
 
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 1000;
+
+// Global state to track refresh attempts
+let isRefreshing = false;
+let lastRefreshTime = 0;
+const MIN_REFRESH_INTERVAL = 60000; // 1 minute minimum between refreshes
+let refreshPromise = null;
+let lastSuccessfulRefresh = 0;
+const TOKEN_CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+let refreshAttemptCount = 0;
+const MAX_REFRESH_ATTEMPTS = 3;
+const REFRESH_ATTEMPT_RESET_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+// Add this new function to better manage the Hub listener issue
+// This will patch the AWS Amplify Hub system to deduplicate tokenRefresh events
+export function setupHubDeduplication() {
+  if (typeof window === 'undefined') return;
+  
+  // Initialize our Hub protection if it doesn't exist
+  if (!window.__hubProtectionInitialized) {
+    logger.debug('[Hub Protection] Setting up token refresh event deduplication');
+    
+    // Get original Hub dispatch function
+    const originalHubDispatch = Hub.dispatch;
+    
+    // Keep track of recent events to deduplicate them
+    const recentEvents = new Map();
+    const MAX_EVENTS = 25; // Maximum number of recent events to track
+    const DEDUPLICATION_WINDOW = 2000; // 2 seconds window for deduplication
+    
+    // Monkey patch Hub.dispatch to deduplicate events
+    Hub.dispatch = function dedupedDispatch(channel, payload) {
+      // Only intercept auth channel
+      if (channel === 'auth') {
+        // Only deduplicate tokenRefresh events
+        if (payload.event === 'tokenRefresh') {
+          const now = Date.now();
+          
+          // Create a key based on event name
+          const eventKey = `${payload.event}`;
+          
+          // Check if we've seen this event very recently
+          if (recentEvents.has(eventKey)) {
+            const lastTimestamp = recentEvents.get(eventKey);
+            
+            // If the event was seen very recently, drop it
+            if (now - lastTimestamp < DEDUPLICATION_WINDOW) {
+              logger.debug(`[Hub Protection] Dropping duplicate event: ${payload.event} (${now - lastTimestamp}ms ago)`);
+              return;
+            }
+          }
+          
+          // Update event timestamp
+          recentEvents.set(eventKey, now);
+          
+          // If map is too large, remove oldest entries
+          if (recentEvents.size > MAX_EVENTS) {
+            const oldestKey = Array.from(recentEvents.keys())[0];
+            recentEvents.delete(oldestKey);
+          }
+        }
+      }
+      
+      // Call original dispatch function
+      return originalHubDispatch.call(this, channel, payload);
+    };
+    
+    window.__hubProtectionInitialized = true;
+    logger.debug('[Hub Protection] Hub event deduplication initialized');
+  }
+}
+
+// Call the setup function immediately
+setupHubDeduplication();
+
+// Reset refresh attempt count periodically
+setInterval(() => {
+  refreshAttemptCount = 0;
+}, REFRESH_ATTEMPT_RESET_INTERVAL);
 
 const setCookie = (name, value, options = {}) => {
   try {
@@ -70,114 +149,248 @@ const clearCookie = (name) => {
   }
 };
 
-export async function refreshUserSession() {
-  let retryCount = 0;
-  const maxRetries = MAX_RETRIES;
+/**
+ * Refreshes the user session and returns the tokens
+ * Now with improved error handling, fallback mechanisms, and debounce protection
+ */
+export const refreshUserSession = async () => {
+  const now = Date.now();
+  const requestId = crypto.randomUUID();
   
-  async function attemptRefresh() {
+  // Global lock system across multiple files
+  if (typeof window !== 'undefined' && window.__tokenRefreshInProgress) {
+    logger.debug('[refreshUserSession] Global token refresh lock detected, skipping', { requestId });
+    
+    // Display status message in console for debugging
+    console.log('%c[PyFactor] Token refresh in progress...', 'color: #2563eb; font-weight: bold;');
+    
+    // Return cached tokens if available
+    if (typeof localStorage !== 'undefined') {
+      const idToken = localStorage.getItem('idToken');
+      const accessToken = localStorage.getItem('accessToken');
+      const tokenTimestamp = localStorage.getItem('tokenTimestamp');
+      
+      if (idToken && accessToken && tokenTimestamp) {
+        const tokenAge = now - parseInt(tokenTimestamp, 10);
+        if (tokenAge < TOKEN_CACHE_DURATION) {
+          return {
+            tokens: {
+              idToken: { toString: () => idToken },
+              accessToken: { toString: () => accessToken }
+            },
+            isFromCache: true
+          };
+        }
+      }
+    }
+    
+    // If we don't have cached tokens, wait for the lock to clear
+    // Don't wait more than 3 seconds to avoid deadlocks
     try {
-      logger.debug(`[RefreshSession] Attempting to refresh session (attempt ${retryCount + 1}/${maxRetries})`);
-      
-      try {
-        const currentSession = await fetchAuthSession();
-        if (currentSession?.tokens?.idToken) {
-          const decodedToken = parseJwt(currentSession.tokens.idToken.toString());
-          const tokenExpiry = decodedToken.exp * 1000;
-          const now = Date.now();
-          const timeRemaining = tokenExpiry - now;
-          
-          if (timeRemaining > 10 * 60 * 1000) {
-            logger.debug(`[RefreshSession] Current token still valid for ${Math.round(timeRemaining/60000)} minutes, using it`);
-            
-            storeTokensInCookies(currentSession.tokens);
-            return true;
+      await new Promise((resolve, reject) => {
+        const checkLock = () => {
+          if (!window.__tokenRefreshInProgress) {
+            resolve();
           }
-          
-          logger.debug(`[RefreshSession] Current token expiring soon (${Math.round(timeRemaining/60000)} minutes), forcing refresh`);
-        }
-      } catch (currentSessionError) {
-        logger.warn('[RefreshSession] Error checking current session:', currentSessionError);
-      }
-      
-      const { tokens, hasValidSession } = await fetchAuthSession({ forceRefresh: true });
-      
-      if (!hasValidSession || !tokens?.idToken) {
-        logger.warn('[RefreshSession] No valid session after refresh attempt');
-        
-        try {
-          const user = await getCurrentUser();
-          if (user) {
-            logger.debug('[RefreshSession] Got user without tokens, preserving some state');
-            setCookie('userId', user.userId, { maxAge: 7 * 24 * 60 * 60, sameSite: 'lax' });
-            setCookie('hasUser', 'true', { maxAge: 7 * 24 * 60 * 60, sameSite: 'lax' });
-          }
-        } catch (userError) {
-          logger.warn('[RefreshSession] Could not get current user:', userError);
-        }
-        
-        if (retryCount < maxRetries - 1) {
-          retryCount++;
-          const delay = RETRY_DELAY * Math.pow(2, retryCount - 1);
-          logger.debug(`[RefreshSession] Retrying after ${delay}ms`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          return attemptRefresh();
-        }
-        
-        if (document.cookie.includes('idToken=') || document.cookie.includes('accessToken=')) {
-          logger.warn('[RefreshSession] No valid session but found token cookies, attempting to work with those');
-          return true;
-        }
-        
-        try {
-          logger.warn('[RefreshSession] Max retries reached, signing out');
-          await signOut();
-        } catch (signOutError) {
-          logger.error('[RefreshSession] Error during sign-out after failed refresh:', signOutError);
-        }
-        return false;
-      }
-
-      storeTokensInCookies(tokens);
-      
-      logger.info('[RefreshSession] Successfully refreshed session');
-      return true;
-    } catch (error) {
-      logger.error('[RefreshSession] Failed to refresh session:', {
-        error: error.message,
-        name: error.name,
-        code: error.code,
-        attempt: retryCount + 1
+        };
+        const interval = setInterval(checkLock, 100);
+        setTimeout(() => {
+          clearInterval(interval);
+          reject(new Error('Timeout waiting for refresh lock'));
+        }, 3000);
       });
-      
-      if (retryCount < maxRetries - 1) {
-        retryCount++;
-        const delay = RETRY_DELAY * Math.pow(2, retryCount - 1);
-        logger.debug(`[RefreshSession] Retrying after ${delay}ms`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return attemptRefresh();
-      }
-      
-      if (retryCount === maxRetries - 1) {
-        logger.debug('[RefreshSession] Final retry with longer delay...');
-        retryCount++;
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        return attemptRefresh();
-      }
-      
-      if (error.name === 'NotAuthorizedException' || error.name === 'TokenExpiredError') {
-        try {
-          await signOut();
-        } catch (signOutError) {
-          logger.error('[RefreshSession] Error during sign-out after failed refresh:', signOutError);
-        }
-      }
-      
-      return false;
+    } catch (error) {
+      logger.warn('[refreshUserSession] Timeout waiting for refresh lock', { requestId });
     }
   }
   
-  return attemptRefresh();
-}
+  // Check if we're in global cooldown period
+  if (typeof window !== 'undefined' && window.__tokenRefreshCooldown && now < window.__tokenRefreshCooldown) {
+    logger.warn('[refreshUserSession] In global cooldown period, skipping refresh', { requestId });
+    
+    // Return cached tokens if available
+    if (typeof localStorage !== 'undefined') {
+      const idToken = localStorage.getItem('idToken');
+      const accessToken = localStorage.getItem('accessToken');
+      const tokenTimestamp = localStorage.getItem('tokenTimestamp');
+      
+      if (idToken && accessToken && tokenTimestamp) {
+        const tokenAge = now - parseInt(tokenTimestamp, 10);
+        if (tokenAge < TOKEN_CACHE_DURATION) {
+          return {
+            tokens: {
+              idToken: { toString: () => idToken },
+              accessToken: { toString: () => accessToken }
+            },
+            isFromCache: true
+          };
+        }
+      }
+    }
+    
+    return null;
+  }
+  
+  // Check if we've exceeded max refresh attempts
+  if (refreshAttemptCount >= MAX_REFRESH_ATTEMPTS) {
+    logger.error('[refreshUserSession] Too many refresh attempts, stopping refresh cycle', { 
+      requestId,
+      attemptCount: refreshAttemptCount
+    });
+    
+    // Set global cooldown
+    if (typeof window !== 'undefined') {
+      window.__tokenRefreshCooldown = now + 60000; // 1 minute cooldown
+    }
+    
+    return null;
+  }
+  
+  // Check if we have valid cached tokens first
+  if (typeof localStorage !== 'undefined') {
+    const idToken = localStorage.getItem('idToken');
+    const accessToken = localStorage.getItem('accessToken');
+    const tokenTimestamp = localStorage.getItem('tokenTimestamp');
+    
+    if (idToken && accessToken && tokenTimestamp) {
+      const tokenAge = now - parseInt(tokenTimestamp, 10);
+      // Use cached tokens if they're less than 15 minutes old
+      if (tokenAge < TOKEN_CACHE_DURATION) {
+        logger.debug('[refreshUserSession] Using cached tokens', { 
+          tokenAge,
+          requestId 
+        });
+        return {
+          tokens: {
+            idToken: { toString: () => idToken },
+            accessToken: { toString: () => accessToken }
+          },
+          isFromCache: true
+        };
+      }
+    }
+  }
+  
+  // Debounce mechanism to prevent multiple simultaneous refresh attempts
+  if (isRefreshing) {
+    logger.debug('[refreshUserSession] Session refresh already in progress, returning existing promise', { requestId });
+    return refreshPromise;
+  }
+  
+  // Throttle refreshes to avoid infinite loops
+  if (now - lastRefreshTime < MIN_REFRESH_INTERVAL) {
+    logger.warn('[refreshUserSession] Too many refresh attempts, throttling', { 
+      timeSinceLastRefresh: now - lastRefreshTime,
+      minInterval: MIN_REFRESH_INTERVAL,
+      requestId 
+    });
+    
+    // Return cached tokens if available
+    if (typeof localStorage !== 'undefined') {
+      const idToken = localStorage.getItem('idToken');
+      const accessToken = localStorage.getItem('accessToken');
+      const tokenTimestamp = localStorage.getItem('tokenTimestamp');
+      
+      if (idToken && accessToken && tokenTimestamp) {
+        const tokenAge = now - parseInt(tokenTimestamp, 10);
+        // Only use cached tokens if they're less than 15 minutes old
+        if (tokenAge < TOKEN_CACHE_DURATION) {
+          logger.debug('[refreshUserSession] Using cached tokens due to throttling', { 
+            tokenAge,
+            requestId 
+          });
+          return {
+            tokens: {
+              idToken: { toString: () => idToken },
+              accessToken: { toString: () => accessToken }
+            },
+            isFromCache: true
+          };
+        }
+      }
+    }
+    
+    // If we get here, we need to wait
+    await new Promise(resolve => setTimeout(resolve, MIN_REFRESH_INTERVAL));
+    return refreshUserSession(); // Retry after waiting
+  }
+  
+  // Set refresh state
+  isRefreshing = true;
+  if (typeof window !== 'undefined') {
+    window.__tokenRefreshInProgress = true;
+  }
+  lastRefreshTime = now;
+  refreshAttemptCount++;
+  
+  // Create a new promise for this refresh attempt
+  refreshPromise = (async () => {
+    try {
+      logger.debug('[refreshUserSession] Attempting to refresh session', { 
+        requestId,
+        attemptCount: refreshAttemptCount
+      });
+      
+      // First try to get current user
+      const currentUser = await getCurrentUser().catch(error => {
+        logger.warn('[refreshUserSession] getCurrentUser error', { 
+          error: error.message, 
+          requestId 
+        });
+        return null;
+      });
+      
+      if (!currentUser) {
+        logger.warn('[refreshUserSession] No current user found', { requestId });
+        throw new Error('No authenticated user');
+      }
+      
+      // Then fetch the auth session to get fresh tokens
+      const session = await fetchAuthSession();
+      
+      if (!session?.tokens?.idToken) {
+        logger.warn('[refreshUserSession] Fetched session missing tokens', { requestId });
+        throw new Error('No valid tokens in session');
+      }
+      
+      // Cache tokens in localStorage for fallback
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem('idToken', session.tokens.idToken.toString());
+          localStorage.setItem('accessToken', session.tokens.accessToken.toString());
+          localStorage.setItem('tokenTimestamp', Date.now().toString());
+          lastSuccessfulRefresh = Date.now();
+        } catch (storageError) {
+          logger.warn('[refreshUserSession] Error storing tokens in localStorage', { 
+            error: storageError.message, 
+            requestId 
+          });
+        }
+      }
+      
+      logger.debug('[refreshUserSession] Session refreshed successfully', { requestId });
+      return session;
+    } catch (error) {
+      logger.error('[refreshUserSession] Error refreshing session', { 
+        error: error.message,
+        stack: error.stack,
+        requestId
+      });
+      throw error;
+    } finally {
+      // Reset refresh state after a delay to prevent immediate retries
+      setTimeout(() => {
+        isRefreshing = false;
+        refreshPromise = null;
+        if (typeof window !== 'undefined') {
+          window.__tokenRefreshInProgress = false;
+        }
+      }, 5000); // 5 second cooldown
+    }
+  })();
+  
+  return refreshPromise;
+};
 
 function storeTokensInCookies(tokens) {
   try {

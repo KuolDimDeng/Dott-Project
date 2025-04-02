@@ -367,9 +367,11 @@ export function Subscription({ metadata }) {
             }
           });
           
-          // Start schema setup in background by submitting to API
-          // Use a non-blocking fetch that doesn't await
-          fetch('/api/onboarding/subscription/save', {
+          // MODIFIED: Ensure tenant is set up before redirecting
+          setError('Setting up your account, please wait...');
+          
+          // Call the API to initialize tenant setup and wait for it to complete
+          const setupResponse = await fetch('/api/onboarding/subscription/save', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -377,21 +379,59 @@ export function Subscription({ metadata }) {
             body: JSON.stringify({
               plan: normalizedPlanId,
               interval: billingInterval,
-              background_setup: true
+              background_setup: false,  // Changed to false to wait for completion
+              business_name: businessData.businessName,
+              business_type: businessData.businessType
             }),
-          }).then(response => {
-            return response.json();
-          }).then(data => {
-            logger.debug('[Subscription] Free plan background setup initiated:', data);
-          }).catch(e => {
-            logger.error('[Subscription] Free plan background setup error:', e);
           });
+          
+          if (!setupResponse.ok) {
+            const errorData = await setupResponse.json();
+            logger.error('[Subscription] Tenant setup failed:', errorData);
+            throw new Error(errorData.message || 'Failed to set up your account');
+          }
+          
+          const setupData = await setupResponse.json();
+          logger.info('[Subscription] Tenant setup completed:', setupData);
+          
+          // Verify that tenant was created successfully before continuing
+          const tenantVerifyResponse = await fetch('/api/auth/verify-tenant', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              tenantId: setupData.tenantId || setupData.data?.tenantId,
+              userId: user?.sub,
+              email: user?.email,
+            })
+          });
+          
+          if (!tenantVerifyResponse.ok) {
+            const errorData = await tenantVerifyResponse.json();
+            logger.error('[Subscription] Tenant verification failed:', errorData);
+            throw new Error(errorData.message || 'Failed to verify your account');
+          }
+          
+          const tenantData = await tenantVerifyResponse.json();
+          logger.info('[Subscription] Tenant verified successfully:', tenantData);
+          
+          // Update setup status
+          if (typeof document !== 'undefined') {
+            const expiration = new Date();
+            expiration.setDate(expiration.getDate() + 7);
+            document.cookie = `setupCompleted=true; path=/; expires=${expiration.toUTCString()}`;
+            document.cookie = `onboardedStatus=COMPLETE; path=/; expires=${expiration.toUTCString()}`;
+            document.cookie = `tenantId=${tenantData.tenantId}; path=/; expires=${expiration.toUTCString()}`;
+          }
           
           // Set success message
           setError('Redirecting to dashboard...');
           
-          // Redirect to dashboard immediately without waiting for setup completion
-          router.push('/dashboard');
+          // Small delay to ensure cookies are set before redirect
+          setTimeout(() => {
+            router.push('/dashboard');
+          }, 1000);
         } catch (e) {
           logger.error('[Subscription] Free plan setup failed:', e);
           setError(`Failed to set up free plan: ${e.message}`);

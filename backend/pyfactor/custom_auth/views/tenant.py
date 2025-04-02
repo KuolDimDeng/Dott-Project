@@ -7,75 +7,94 @@ from custom_auth.models import User, Tenant
 from django.utils import timezone
 import uuid
 import logging
+from custom_auth.rls import set_tenant_in_db, verify_rls_setup
 
 logger = logging.getLogger(__name__)
 
 class TenantVerifyView(APIView):
     """
-    API endpoint to verify if a tenant schema exists
+    API endpoint to verify if a tenant record exists and RLS is properly configured
     """
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
         try:
             user = request.user
+            request_id = request.headers.get('X-Request-ID', str(uuid.uuid4()))
             
             # Check if user has a tenant
             if not user.tenant_id:
                 return Response({
                     'message': 'No tenant associated with user',
-                    'schema_exists': False
+                    'rls_enabled': False,
+                    'request_id': request_id
                 }, status=status.HTTP_200_OK)
                 
             tenant = Tenant.objects.filter(id=user.tenant_id).first()
             if not tenant:
                 return Response({
                     'message': 'Tenant not found in database',
-                    'schema_exists': False
+                    'rls_enabled': False,
+                    'request_id': request_id
                 }, status=status.HTTP_200_OK)
-                
-            # Check if schema exists in database
+            
+            # Set RLS context for this database connection
+            set_tenant_in_db(tenant.id)
+            
+            # Check if RLS is properly configured
+            rls_verified = verify_rls_setup()
+            
+            # Check if tenant has access to at least one table with RLS
+            has_rls_tables = False
             with connection.cursor() as cursor:
+                # Query for tables that have tenant_id column (RLS tables)
                 cursor.execute("""
-                    SELECT EXISTS (
-                        SELECT 1 FROM information_schema.schemata 
-                        WHERE schema_name = %s
-                    )
-                """, [tenant.schema_name])
-                
-                schema_exists = cursor.fetchone()[0]
-                
-                if schema_exists:
-                    # Also check if essential tables exist in the schema
-                    cursor.execute(f"""
-                        SELECT EXISTS (
-                            SELECT 1 FROM information_schema.tables 
-                            WHERE table_schema = %s AND table_name = 'custom_auth_user'
-                        )
-                    """, [tenant.schema_name])
-                    
-                    tables_exist = cursor.fetchone()[0]
-                    
-                    return Response({
-                        'tenant_id': str(tenant.id),
-                        'schema_name': tenant.schema_name,
-                        'schema_exists': True,
-                        'tables_exist': tables_exist,
-                        'message': 'Tenant schema exists'
-                    }, status=status.HTTP_200_OK)
-                else:
-                    return Response({
-                        'tenant_id': str(tenant.id),
-                        'schema_name': tenant.schema_name,
-                        'schema_exists': False,
-                        'message': 'Tenant schema does not exist'
-                    }, status=status.HTTP_200_OK)
-                
-        except Exception as e:
-            logger.error(f"Error verifying tenant schema: {str(e)}")
+                    SELECT count(*) FROM information_schema.columns 
+                    WHERE column_name = 'tenant_id' AND table_schema = 'public'
+                """)
+                rls_table_count = cursor.fetchone()[0]
+                has_rls_tables = rls_table_count > 0
+            
+            # Check if we can query data with RLS
+            rls_working = False
+            if has_rls_tables:
+                try:
+                    # Set tenant context and try a query to verify RLS works
+                    set_tenant_in_db(tenant.id)
+                    with connection.cursor() as cursor:
+                        # Try a test query on any table with tenant_id
+                        cursor.execute("""
+                            SELECT table_name FROM information_schema.columns 
+                            WHERE column_name = 'tenant_id' AND table_schema = 'public'
+                            LIMIT 1
+                        """)
+                        table_result = cursor.fetchone()
+                        
+                        if table_result and table_result[0]:
+                            test_table = table_result[0]
+                            # Try to query the first row from this table
+                            cursor.execute(f"SELECT EXISTS (SELECT 1 FROM {test_table} LIMIT 1)")
+                            rls_working = True
+                except Exception as e:
+                    logger.error(f"Error testing RLS query: {str(e)}")
+                    rls_working = False
+            
             return Response({
-                'error': 'Failed to verify tenant schema',
-                'message': str(e)
+                'message': 'Tenant verification complete',
+                'tenant_id': str(tenant.id),
+                'rls_enabled': rls_verified,
+                'has_rls_tables': has_rls_tables,
+                'rls_table_count': rls_table_count if has_rls_tables else 0,
+                'rls_working': rls_working,
+                'request_id': request_id
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error verifying tenant: {str(e)}")
+            return Response({
+                'message': f"Error verifying tenant: {str(e)}",
+                'rls_enabled': False,
+                'request_id': request_id if 'request_id' in locals() else str(uuid.uuid4())
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

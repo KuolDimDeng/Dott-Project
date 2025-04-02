@@ -12,9 +12,12 @@ from urllib.parse import parse_qs
 from django.db import connection
 from pyfactor.logging_config import get_logger
 from functools import wraps
+import logging
+from onboarding.utils import get_schema_name_from_tenant_id
+from django.utils.deprecation import MiddlewareMixin
 
 User = get_user_model()
-logger = get_logger()
+logger = logging.getLogger(__name__)
 
 def database_retry(max_retries=3, delay=1):
     def decorator(func):
@@ -146,3 +149,75 @@ class WebSocketAuthMiddleware(BaseMiddleware):
 
 def WebSocketAuthMiddlewareStack(inner):
     return WebSocketAuthMiddleware(inner)
+
+def get_schema_name_from_tenant_id(tenant_id):
+    """
+    Generate a schema name from a tenant ID for backward compatibility.
+    
+    Args:
+        tenant_id: The tenant UUID
+        
+    Returns:
+        A schema name in the format 'tenant_uuid' with hyphens replaced by underscores
+    """
+    if not tenant_id:
+        return None
+    
+    # Convert tenant_id to string and replace hyphens with underscores
+    tenant_id_str = str(tenant_id).replace('-', '_')
+    return f"tenant_{tenant_id_str}"
+
+class SchemaNameMiddleware:
+    """
+    Middleware to handle the removal of schema_name column by providing
+    a consistent way to get the schema name from a tenant ID.
+    
+    This adds a method to the Tenant model instance dynamically to provide
+    backward compatibility with code that expects tenant.schema_name.
+    """
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+        
+    def __call__(self, request):
+        # Add schema_name property to Tenant model
+        from custom_auth.models import Tenant
+        
+        # Only add if it doesn't already exist
+        if not hasattr(Tenant, 'schema_name'):
+            # Add a property that generates the schema name from the ID
+            Tenant.schema_name = property(lambda self: get_schema_name_from_tenant_id(self.id))
+            logger.info("Added schema_name property to Tenant model")
+            
+        # Call the next middleware
+        response = self.get_response(request)
+        return response
+
+
+class AsyncSchemaTenantMiddleware:
+    """
+    Middleware to handle setting tenant context in async views.
+    Uses sync_to_async to work in async context.
+    """
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+        
+    async def __call__(self, scope, receive, send):
+        # Process the request
+        response = await self.get_response(scope, receive, send)
+        return response
+    
+    @sync_to_async
+    def set_tenant_context(self, tenant_id):
+        """Set the tenant context in the database session."""
+        with connection.cursor() as cursor:
+            cursor.execute("SET app.current_tenant = %s", [str(tenant_id)])
+            logger.debug(f"Set tenant context to {tenant_id}")
+            
+    @sync_to_async
+    def clear_tenant_context(self):
+        """Clear the tenant context from the database session."""
+        with connection.cursor() as cursor:
+            cursor.execute("SET app.current_tenant = NULL")
+            logger.debug("Cleared tenant context")

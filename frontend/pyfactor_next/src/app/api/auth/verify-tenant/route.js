@@ -79,48 +79,57 @@ export async function POST(request) {
 
     // First check if a tenant already exists for this user on the backend
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/current`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/current`, {
+        method: 'GET',
         headers: {
-          ...authHeaders,
-          Authorization: `Bearer ${accessToken}`
+          'Content-Type': 'application/json',
+          ...authHeaders
         }
       });
 
-      // If user already has a tenant, use it
-      if (response.data && response.data.id) {
-        const existingTenantId = response.data.id;
-        logger.info('[verify-tenant] Found existing tenant for user:', { 
-          userId, 
-          tenantId: existingTenantId
-        });
-      
-        // Store the tenant ID in a cookie for future server-side access
-        const cookieStore = cookies();
-        await cookieStore.set('tenantId', existingTenantId, { 
-          path: '/',
-          maxAge: 60 * 60 * 24 * 7, // 7 days
-          sameSite: 'strict'
-        });
-      
-        return NextResponse.json({
-          success: true,
-          message: 'Using existing tenant for user',
-          tenantId: existingTenantId,
-          correctTenantId: existingTenantId,
-          schemaName: response.data.schema_name || `tenant_${existingTenantId.replace(/-/g, '_')}`,
-          source: 'user_lookup'
-        });
+      if (!response.ok) {
+        if (response.status !== 404) {
+          logger.error('[verify-tenant] Error checking for existing tenant:', {
+            status: response.status
+          });
+        } else {
+          logger.info('[verify-tenant] No existing tenant found for user');
+        }
+        // Continue with the rest of the function
+      } else {
+        // Process the successful response
+        const data = await response.json();
+        
+        // If user already has a tenant, use it
+        if (data && data.tenantId) {
+          const existingTenantId = data.tenantId;
+          logger.info('[verify-tenant] Found existing tenant for user:', { 
+            userId, 
+            tenantId: existingTenantId
+          });
+        
+          // Store the tenant ID in a cookie for future server-side access
+          const cookieStore = await cookies();
+          await cookieStore.set('tenantId', existingTenantId, { 
+            path: '/',
+            maxAge: 60 * 60 * 24 * 7, // 7 days
+            sameSite: 'strict'
+          });
+        
+          return NextResponse.json({
+            success: true,
+            message: 'Using existing tenant for user',
+            tenantId: existingTenantId,
+            correctTenantId: existingTenantId,
+            schemaName: `tenant_${existingTenantId.replace(/-/g, '_')}`,
+            source: 'user_lookup'
+          });
+        }
       }
     } catch (error) {
-      // If the API returns 404, it means no tenant exists for this user
-      if (error.response && error.response.status !== 404) {
-        logger.error('[verify-tenant] Error checking for existing tenant:', { 
-          error: error.message,
-          status: error.response?.status
-        });
-      } else {
-        logger.info('[verify-tenant] No existing tenant found for user');
-      }
+      logger.error('[verify-tenant] Exception checking for existing tenant:', { 
+        error: error.message
+      });
     }
 
     // Check email-to-tenant mapping as a fallback
@@ -145,7 +154,7 @@ export async function POST(request) {
       });
       
       // Store the tenant ID in a cookie for future server-side access
-      const cookieStore = cookies();
+      const cookieStore = await cookies();
       await cookieStore.set('tenantId', existingTenantId, { 
         path: '/',
         maxAge: 60 * 60 * 24 * 7, // 7 days
@@ -168,18 +177,26 @@ export async function POST(request) {
       
       // Verify this tenant exists and isn't assigned to another user
       try {
-        const tenantCheckResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/exists`, {
-          tenantId
-        }, {
+        // Use our temporary tenant/exists endpoint with fetch instead of axios
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/exists`, {
+          method: 'POST',
           headers: {
-            ...authHeaders,
-            Authorization: `Bearer ${accessToken}`
-          }
+            'Content-Type': 'application/json',
+            ...authHeaders
+          },
+          body: JSON.stringify({ tenantId })
         });
         
+        // Proper error handling for the response
+        if (!response.ok) {
+          throw new Error(`Tenant check failed with status: ${response.status}`);
+        }
+        
+        const tenantCheckResponse = await response.json();
+        
         // If the tenant exists but belongs to another user
-        if (tenantCheckResponse.data.exists && tenantCheckResponse.data.correctTenantId) {
-          const correctTenantId = tenantCheckResponse.data.correctTenantId;
+        if (tenantCheckResponse.exists && tenantCheckResponse.correctTenantId) {
+          const correctTenantId = tenantCheckResponse.correctTenantId;
           
           logger.warn('[verify-tenant] Tenant belongs to another user, using correct tenant ID:', { 
             providedTenantId: tenantId,
@@ -187,7 +204,7 @@ export async function POST(request) {
           });
           
           // Store the correct tenant ID in a cookie
-          const cookieStore = cookies();
+          const cookieStore = await cookies();
           await cookieStore.set('tenantId', correctTenantId, { 
             path: '/',
             maxAge: 60 * 60 * 24 * 7, // 7 days
@@ -203,35 +220,36 @@ export async function POST(request) {
             source: 'tenant_correction'
           });
         }
-      } catch (e) {
-        logger.error('[verify-tenant] Error checking tenant existence:', { error: e.message });
-      }
-      
-      // Store the mapping for future reference in the backend
-      if (email) {
-        try {
-          // Make an API call to associate the email with the tenant
-          await axios.post(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/associate-email`, {
-            email,
-            tenantId
-          }, {
-            headers: {
-              ...authHeaders,
-              Authorization: `Bearer ${accessToken}`
-            }
+        
+        // If the tenant exists, store it and return success
+        if (tenantCheckResponse.exists) {
+          logger.info('[verify-tenant] Tenant exists, storing in cookie:', { tenantId });
+          
+          // Store the tenant ID in a cookie
+          const cookieStore = await cookies();
+          await cookieStore.set('tenantId', tenantId, { 
+            path: '/',
+            maxAge: 60 * 60 * 24 * 7, // 7 days
+            sameSite: 'strict'
           });
           
-          logger.debug('[verify-tenant] Associated email with tenant ID in backend:', { 
-            email, 
-            tenantId
+          return NextResponse.json({
+            success: true,
+            message: 'Tenant verified',
+            tenantId: tenantId,
+            schemaName: `tenant_${tenantId.replace(/-/g, '_')}`,
+            source: 'tenant_exists'
           });
-        } catch (e) {
-          logger.error('[verify-tenant] Error associating email with tenant in backend:', { error: e.message });
         }
+      } catch (e) {
+        logger.error('[verify-tenant] Error checking tenant existence:', { error: e.message });
+        // Continue execution - we'll create a new tenant below
       }
       
-      // Store the tenant ID in a cookie
-      const cookieStore = cookies();
+      // If we reach here, the tenant doesn't exist or couldn't be verified
+      // Store the tenant ID in a cookie anyway and proceed with onboarding
+      logger.info('[verify-tenant] Using provided tenant ID with no verification:', { tenantId });
+      const cookieStore = await cookies();
       await cookieStore.set('tenantId', tenantId, { 
         path: '/',
         maxAge: 60 * 60 * 24 * 7, // 7 days
@@ -240,10 +258,10 @@ export async function POST(request) {
       
       return NextResponse.json({
         success: true,
-        message: 'Tenant verified',
+        message: 'Using provided tenant ID',
         tenantId: tenantId,
         schemaName: `tenant_${tenantId.replace(/-/g, '_')}`,
-        source: 'provided'
+        source: 'provided_unverified'
       });
     }
     
@@ -266,7 +284,8 @@ export async function POST(request) {
       
       if (createResponse.data && createResponse.data.success) {
         const newTenantId = createResponse.data.data.id;
-        const schemaName = createResponse.data.data.schema_name;
+        // Generate schema name from tenant ID instead of relying on backend
+        const schemaName = `tenant_${newTenantId.replace(/-/g, '_')}`;
         
         logger.info('[verify-tenant] Successfully created new tenant on backend:', {
           tenantId: newTenantId,
@@ -274,7 +293,7 @@ export async function POST(request) {
         });
         
         // Store the new tenant ID in a cookie
-        const cookieStore = cookies();
+        const cookieStore = await cookies();
         await cookieStore.set('tenantId', newTenantId, { 
           path: '/',
           maxAge: 60 * 60 * 24 * 7, // 7 days

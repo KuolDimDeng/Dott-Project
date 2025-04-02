@@ -149,17 +149,34 @@ function CrispChat({ isAuthenticated }) {
         const script = document.createElement('script');
         script.src = 'https://client.crisp.chat/l.js';
         script.async = true;
-        script.onload = initializeCrisp;
+        
+        // Add a delay before initializing to ensure the script has time to load properly
+        script.onload = () => {
+          logger.debug('Crisp script loaded successfully, waiting before initialization');
+          setTimeout(initializeCrisp, 500); // Add a 500ms delay before initialization
+        };
+        
         script.onerror = (error) => {
           logger.error('Failed to load Crisp script:', error);
+          // Attempt to reload after a delay
+          setTimeout(() => {
+            logger.debug('Attempting to reload Crisp script after failure');
+            const retryScript = document.createElement('script');
+            retryScript.src = 'https://client.crisp.chat/l.js';
+            retryScript.async = true;
+            retryScript.onload = initializeCrisp;
+            document.head.appendChild(retryScript);
+          }, 2000);
         };
+        
         document.head.appendChild(script);
         logger.debug('Crisp script appended to head');
       } else {
         logger.debug('Crisp script already exists');
         // Only initialize if Crisp is not already initialized
         if (!window.$crisp?.is) {
-          initializeCrisp();
+          // Add a delay before initializing to ensure the script is fully loaded
+          setTimeout(initializeCrisp, 300);
         }
       }
     } catch (error) {

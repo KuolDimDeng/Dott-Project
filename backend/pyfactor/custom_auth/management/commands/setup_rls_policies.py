@@ -1,292 +1,203 @@
 """
-Management command to set up Row Level Security (RLS) policies for tenant-aware tables.
+Management command to set up Row Level Security policies on tenant-aware tables.
 """
 
 import logging
 from django.core.management.base import BaseCommand
-from django.apps import apps
 from django.db import connection
-from custom_auth.models import TenantAwareModel
-from custom_auth.rls import setup_tenant_context_in_db, create_rls_policy_for_table
+from django.apps import apps
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = 'Sets up Row Level Security (RLS) policies for all tenant-aware tables'
+    help = 'Sets up PostgreSQL Row Level Security policies on tenant-aware tables'
 
     def add_arguments(self, parser):
         parser.add_argument(
             '--force',
             action='store_true',
-            help='Force recreation of all RLS policies, even if they already exist',
+            dest='force',
+            help='Force recreation of policies even if they already exist',
+        )
+        parser.add_argument(
+            '--table',
+            type=str,
+            dest='table',
+            help='Only apply policies to a specific table',
+        )
+        parser.add_argument(
+            '--app',
+            type=str,
+            dest='app',
+            help='Only apply policies to tables in a specific app',
         )
         parser.add_argument(
             '--dry-run',
             action='store_true',
-            help='Print the SQL that would be executed without actually executing it',
+            dest='dry_run',
+            help='Show SQL that would be executed without making changes',
         )
-        parser.add_argument(
-            '--create-trigger',
-            action='store_true',
-            help='Create a PostgreSQL trigger to apply RLS policies when new tables are created',
-        )
-
-    def setup_rls_trigger(self, dry_run=False):
-        """
-        Create a PostgreSQL event trigger that will apply RLS policies 
-        to newly created tables if they contain a tenant_id column.
-        """
-        self.stdout.write("Setting up RLS event trigger for future table creation...")
-        
-        if dry_run:
-            self.stdout.write("Would create the following PostgreSQL function and trigger (dry run):")
-            self.stdout.write("""
-CREATE OR REPLACE FUNCTION apply_rls_to_new_tables()
-RETURNS event_trigger AS $$
-DECLARE
-    obj record;
-    table_name text;
-    has_tenant_id boolean;
-BEGIN
-    FOR obj IN SELECT * FROM pg_event_trigger_ddl_commands() WHERE command_tag='CREATE TABLE' LOOP
-        table_name := obj.object_identity;
-        
-        -- Check if the new table has a tenant_id column
-        EXECUTE format('SELECT EXISTS (
-            SELECT 1 FROM information_schema.columns
-            WHERE table_schema = %L AND table_name = %L AND column_name = %L
-        )', 'public', table_name, 'tenant_id')
-        INTO has_tenant_id;
-        
-        IF has_tenant_id THEN
-            -- Apply RLS to the table
-            EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', table_name);
-            
-            -- Create the tenant isolation policy
-            EXECUTE format('
-                CREATE POLICY tenant_isolation_policy ON %I
-                USING (
-                    tenant_id = current_setting(''app.current_tenant_id'')::uuid
-                    OR current_setting(''app.current_tenant_id'', TRUE) IS NULL
-                )', 
-                table_name
-            );
-            
-            RAISE NOTICE 'Automatically applied RLS to new table %', table_name;
-        END IF;
-    END LOOP;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create the event trigger
-DROP EVENT TRIGGER IF EXISTS table_creation_trigger;
-CREATE EVENT TRIGGER table_creation_trigger ON ddl_command_end
-WHEN TAG IN ('CREATE TABLE')
-EXECUTE PROCEDURE apply_rls_to_new_tables();
-            """)
-            return True
-        
-        try:
-            with connection.cursor() as cursor:
-                # Create the function
-                cursor.execute("""
-CREATE OR REPLACE FUNCTION apply_rls_to_new_tables()
-RETURNS event_trigger AS $$
-DECLARE
-    obj record;
-    table_name text;
-    has_tenant_id boolean;
-BEGIN
-    FOR obj IN SELECT * FROM pg_event_trigger_ddl_commands() WHERE command_tag='CREATE TABLE' LOOP
-        table_name := obj.object_identity;
-        
-        -- Check if the new table has a tenant_id column
-        EXECUTE format('SELECT EXISTS (
-            SELECT 1 FROM information_schema.columns
-            WHERE table_schema = %L AND table_name = %L AND column_name = %L
-        )', 'public', table_name, 'tenant_id')
-        INTO has_tenant_id;
-        
-        IF has_tenant_id THEN
-            -- Apply RLS to the table
-            EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', table_name);
-            
-            -- Create the tenant isolation policy
-            EXECUTE format('
-                CREATE POLICY tenant_isolation_policy ON %I
-                USING (
-                    tenant_id = current_setting(''app.current_tenant_id'')::uuid
-                    OR current_setting(''app.current_tenant_id'', TRUE) IS NULL
-                )', 
-                table_name
-            );
-            
-            RAISE NOTICE 'Automatically applied RLS to new table %', table_name;
-        END IF;
-    END LOOP;
-END;
-$$ LANGUAGE plpgsql;
-                """)
-                
-                # Create the event trigger
-                cursor.execute("""
-DROP EVENT TRIGGER IF EXISTS table_creation_trigger;
-CREATE EVENT TRIGGER table_creation_trigger ON ddl_command_end
-WHEN TAG IN ('CREATE TABLE')
-EXECUTE PROCEDURE apply_rls_to_new_tables();
-                """)
-                
-            self.stdout.write(self.style.SUCCESS("✓ Successfully created RLS event trigger"))
-            return True
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f"✗ Failed to create RLS event trigger: {str(e)}"))
-            return False
 
     def handle(self, *args, **options):
         force = options.get('force', False)
+        specific_table = options.get('table')
+        specific_app = options.get('app')
         dry_run = options.get('dry_run', False)
-        create_trigger = options.get('create_trigger', False)
         
-        if dry_run:
-            self.stdout.write(self.style.WARNING("Running in dry-run mode. No changes will be made."))
+        # Set up database first
+        self.stdout.write("Setting up RLS in database...")
         
-        # 1. First, create the database custom settings
-        self.stdout.write("Setting up database tenant context settings...")
-        if not dry_run:
-            success = setup_tenant_context_in_db()
-            if not success:
-                self.stdout.write(self.style.ERROR("Failed to set up database tenant context settings"))
-                return
+        # Create app.current_tenant_id parameter if it doesn't exist
+        with connection.cursor() as cursor:
+            if dry_run:
+                self.stdout.write(self.style.SQL_KEYWORD(
+                    "-- SQL to create app.current_tenant_id parameter (would be executed if not dry run)"
+                ))
+                self.stdout.write('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
+                self.stdout.write('ALTER DATABASE current_database() SET "app.current_tenant_id" = \'unset\';')
             else:
-                self.stdout.write(self.style.SUCCESS("Successfully set up database tenant context settings"))
+                # Create UUID extension if it doesn't exist
+                cursor.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
+                
+                # Set up database parameter for tenant context
+                cursor.execute('ALTER DATABASE current_database() SET "app.current_tenant_id" = \'unset\';')
+                
+                self.stdout.write(self.style.SUCCESS("✓ Database parameters configured"))
         
-        # 2. Create event trigger for future tables if requested
-        if create_trigger:
-            self.setup_rls_trigger(dry_run)
+        # Get all tenant-aware models
+        tenant_aware_models = self.get_tenant_aware_models(specific_app)
         
-        # 3. Find all tenant-aware models
-        tenant_aware_models = []
-        for app_config in apps.get_app_configs():
-            for model in app_config.get_models():
-                if issubclass(model, TenantAwareModel) and model != TenantAwareModel:
-                    tenant_aware_models.append(model)
-                    self.stdout.write(f"  • Found tenant-aware model: {model._meta.app_label}.{model.__name__}")
+        # If a specific table was requested, filter to just that one
+        if specific_table:
+            tenant_aware_models = [m for m in tenant_aware_models 
+                if m._meta.db_table.lower() == specific_table.lower()]
+            
+            if not tenant_aware_models:
+                self.stdout.write(self.style.ERROR(f"Table {specific_table} not found or is not tenant-aware"))
+                return
+        
+        # Apply RLS policies to all tenant-aware tables
+        policies_created = 0
+        failed_policies = 0
         
         self.stdout.write(f"Found {len(tenant_aware_models)} tenant-aware models")
         
-        # 4. Check if tables already have RLS policies
-        tables_with_rls = []
-        tables_without_rls = []
-        
-        if not dry_run:
-            with connection.cursor() as cursor:
-                cursor.execute("""
-                    SELECT tablename 
-                    FROM pg_tables 
-                    WHERE schemaname = 'public' 
-                """)
-                
-                existing_tables = [row[0] for row in cursor.fetchall()]
-                self.stdout.write(f"Found {len(existing_tables)} existing tables in the database")
-                
-                for model in tenant_aware_models:
-                    table_name = model._meta.db_table
-                    
-                    # Skip tables that don't exist yet
-                    if table_name not in existing_tables:
-                        self.stdout.write(self.style.WARNING(f"Table {table_name} does not exist yet"))
-                        continue
-                    
-                    # Check if table has RLS enabled
-                    cursor.execute("""
-                        SELECT relrowsecurity 
-                        FROM pg_class 
-                        WHERE relname = %s AND relkind = 'r'
-                    """, [table_name])
-                    
-                    result = cursor.fetchone()
-                    if result and result[0]:
-                        tables_with_rls.append(table_name)
-                        self.stdout.write(f"  • Table {table_name} already has RLS enabled")
-                    else:
-                        tables_without_rls.append(table_name)
-                        self.stdout.write(f"  • Table {table_name} needs RLS")
-        else:
-            # In dry-run mode, assume all tables need RLS
-            tables_without_rls = [model._meta.db_table for model in tenant_aware_models]
-        
-        # 5. Apply RLS policies to tables that need them
-        if force:
-            tables_to_update = [model._meta.db_table for model in tenant_aware_models 
-                                if model._meta.db_table in existing_tables]
-            self.stdout.write(self.style.WARNING(f"Force flag enabled. Updating RLS for existing tenant-aware tables."))
-        else:
-            tables_to_update = tables_without_rls
-            if tables_with_rls:
-                self.stdout.write(self.style.SUCCESS(f"Skipping {len(tables_with_rls)} tables that already have RLS."))
-        
-        # 6. Apply RLS policies
-        updated_tables = []
-        if tables_to_update:
-            self.stdout.write(f"Setting up RLS policies for {len(tables_to_update)} tables...")
+        for model in tenant_aware_models:
+            table_name = model._meta.db_table
+            self.stdout.write(f"Applying RLS to {table_name}...")
             
-            for table_name in tables_to_update:
-                self.stdout.write(f"  • Adding RLS policy to {table_name}")
+            # Check if tenant_id field exists
+            has_tenant_id = any(f.name == 'tenant_id' for f in model._meta.fields)
+            if not has_tenant_id:
+                self.stdout.write(self.style.WARNING(
+                    f"  Model {model.__name__} is marked as tenant-aware but has no tenant_id field, skipping"
+                ))
+                continue
                 
-                if not dry_run:
-                    success = create_rls_policy_for_table(table_name)
-                    if not success:
-                        self.stdout.write(self.style.ERROR(f"    ✗ Failed to create RLS policy for {table_name}"))
-                    else:
-                        updated_tables.append(table_name)
-                        self.stdout.write(self.style.SUCCESS(f"    ✓ Successfully created RLS policy for {table_name}"))
-        else:
-            if existing_tables:
-                self.stdout.write(self.style.SUCCESS("All existing tenant-aware tables already have RLS policies"))
-            else:
-                self.stdout.write(self.style.WARNING("No tenant-aware tables exist in the database yet"))
-        
-        # 7. Update tenant records to reflect RLS setup
-        if not dry_run and (updated_tables or force):
             try:
-                from django.apps import apps
-                Tenant = apps.get_model('custom_auth', 'Tenant')
-                
-                # Get all active tenants
-                tenants = Tenant.objects.filter(is_active=True)
-                self.stdout.write(f"Updating {tenants.count()} tenant records with RLS information...")
-                
-                # Get current time for RLS setup date
-                from django.utils import timezone
-                now = timezone.now()
-                
-                # Update all tenants
-                update_count = 0
-                for tenant in tenants:
-                    should_update = False
-                    if not tenant.rls_enabled:
-                        tenant.rls_enabled = True
-                        should_update = True
-                    
-                    if not tenant.rls_setup_date and updated_tables:
-                        tenant.rls_setup_date = now
-                        should_update = True
-                    
-                    if tenant.setup_status not in ('active', 'complete'):
-                        tenant.setup_status = 'active'
-                        should_update = True
-                    
-                    if should_update:
-                        tenant.save(update_fields=['rls_enabled', 'rls_setup_date', 'setup_status'])
-                        update_count += 1
-                
-                self.stdout.write(self.style.SUCCESS(f"Updated {update_count} tenant records"))
+                if self.setup_rls_for_table(table_name, force=force, dry_run=dry_run):
+                    policies_created += 1
+                    self.stdout.write(self.style.SUCCESS(f"  ✓ RLS policy set up for {table_name}"))
+                else:
+                    self.stdout.write(f"  - RLS policy already exists for {table_name} (use --force to recreate)")
             except Exception as e:
-                self.stdout.write(self.style.ERROR(f"Failed to update tenant records: {str(e)}"))
+                failed_policies += 1
+                self.stdout.write(self.style.ERROR(f"  ✗ Failed to set up RLS for {table_name}: {str(e)}"))
+                
+        # Summary
+        if dry_run:
+            self.stdout.write(self.style.SUCCESS("\nDry run completed. No changes were made."))
+        else:
+            self.stdout.write(self.style.SUCCESS(
+                f"\nRLS setup complete: {policies_created} policies created, {failed_policies} failures"
+            ))
+            
+    def get_tenant_aware_models(self, specific_app=None):
+        """Get all tenant-aware models from installed apps."""
+        tenant_aware_models = []
         
-        # Summary of what happened
-        tables_protected = len(tables_with_rls) + len(updated_tables)
-        self.stdout.write(self.style.SUCCESS(f"RLS setup complete! {tables_protected} tables are now protected by Row Level Security"))
+        # Filter to specific app if requested
+        app_configs = [apps.get_app_config(specific_app)] if specific_app else apps.get_app_configs()
         
-        if updated_tables:
-            self.stdout.write(self.style.SUCCESS(f"Newly protected tables: {', '.join(updated_tables)}")) 
+        # Check for tenant-aware models in all apps
+        for app_config in app_configs:
+            for model in app_config.get_models():
+                # Check if model has tenant_id field
+                has_tenant_id = any(f.name == 'tenant_id' for f in model._meta.fields)
+                
+                # Or if it inherits from TenantAwareModel
+                is_tenant_aware = False
+                for base in model.__mro__:
+                    if base.__name__ == 'TenantAwareModel':
+                        is_tenant_aware = True
+                        break
+                        
+                if has_tenant_id or is_tenant_aware:
+                    tenant_aware_models.append(model)
+                    
+        return tenant_aware_models
+        
+    def setup_rls_for_table(self, table_name, schema='public', force=False, dry_run=False):
+        """Set up RLS for a specific table."""
+        with connection.cursor() as cursor:
+            # Check if table exists
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables 
+                    WHERE table_schema = %s AND table_name = %s
+                )
+            """, [schema, table_name])
+            
+            if not cursor.fetchone()[0]:
+                self.stdout.write(self.style.WARNING(f"Table {schema}.{table_name} does not exist"))
+                return False
+                
+            # Check if tenant_id column exists
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = %s AND table_name = %s AND column_name = 'tenant_id'
+                )
+            """, [schema, table_name])
+            
+            if not cursor.fetchone()[0]:
+                self.stdout.write(self.style.WARNING(
+                    f"Table {schema}.{table_name} does not have a tenant_id column"
+                ))
+                return False
+                
+            # Check if policy already exists and force is not enabled
+            if not force:
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT 1 FROM pg_policies
+                        WHERE schemaname = %s AND tablename = %s AND policyname = 'tenant_isolation_policy'
+                    )
+                """, [schema, table_name])
+                
+                if cursor.fetchone()[0]:
+                    return False
+            
+            # Create policy SQL
+            sql_commands = [
+                f"ALTER TABLE {schema}.{table_name} ENABLE ROW LEVEL SECURITY;",
+                f"DROP POLICY IF EXISTS tenant_isolation_policy ON {schema}.{table_name};",
+                f"""
+                CREATE POLICY tenant_isolation_policy ON {schema}.{table_name}
+                AS RESTRICTIVE
+                USING (
+                    (tenant_id::TEXT = NULLIF(current_setting('app.current_tenant_id', TRUE), 'unset'))
+                    OR current_setting('app.current_tenant_id', TRUE) = 'unset'
+                );
+                """
+            ]
+            
+            if dry_run:
+                for sql in sql_commands:
+                    self.stdout.write(self.style.SQL_KEYWORD(sql))
+                return True
+            else:
+                for sql in sql_commands:
+                    cursor.execute(sql)
+                return True 

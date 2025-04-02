@@ -1,19 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Grid,
-  Paper,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
-  CircularProgress,
-  Snackbar,
-} from '@mui/material';
-import Alert from '@mui/material/Alert';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { useToast } from '@/components/Toast/ToastProvider';
 
@@ -214,144 +199,227 @@ const SalesOrderForm = ({ onSave, initialData }) => {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, my: 2 }}>
-      <Typography variant="h4" gutterBottom>
+    <div className="bg-white rounded-lg shadow-md p-6 my-4">
+      <h4 className="text-2xl font-semibold mb-4">
         Create New Sales Order
-      </Typography>
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6}>
-          <FormControl fullWidth>
-            <InputLabel id="customer-select-label">Customer</InputLabel>
-            <Select
-              labelId="customer-select-label"
+      </h4>
+      <div className="grid grid-cols-1 sm:grid-cols-6 gap-6">
+        <div className="col-span-1 sm:col-span-3">
+          <div className="w-full">
+            <label htmlFor="customer-select" className="block text-sm font-medium text-gray-700 mb-1">
+              Customer
+            </label>
+            <select
               id="customer-select"
               value={salesOrder.customerId}
               onChange={handleCustomerChange}
-              label="Customer"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <MenuItem value="">
-                <em>Select a customer</em>
-              </MenuItem>
+              <option value="">Select a customer</option>
               {customers.map((customer) => (
-                <MenuItem key={customer.id} value={customer.id}>
+                <option key={customer.id} value={customer.id}>
                   {customer.customerName || `${customer.first_name} ${customer.last_name}`}
-                </MenuItem>
+                </option>
               ))}
-            </Select>
-          </FormControl>
+            </select>
+          </div>
           {customersError && (
-            <Typography color="error" variant="caption">
+            <p className="text-red-600 text-sm mt-1">
               {customersError}
-            </Typography>
+            </p>
           )}
-        </Grid>
-        <Grid item xs={12}>
-          <Typography variant="h6" gutterBottom>
+        </div>
+        
+        <div className="col-span-1 sm:col-span-6">
+          <h6 className="text-lg font-medium mb-2">
             Items
-          </Typography>
+          </h6>
           {salesOrder.items.map((item, index) => (
-            <Box key={index} sx={{ display: 'flex', mb: 2 }}>
-              <FormControl sx={{ mr: 2, flexGrow: 1 }}>
-                <InputLabel>Product</InputLabel>
-                <Select
+            <div key={index} className="flex flex-col md:flex-row gap-4 items-start md:items-end mb-4">
+              <div className="flex-grow">
+                <label htmlFor={`product-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                  Product
+                </label>
+                <select
+                  id={`product-${index}`}
                   value={item.product}
                   onChange={(e) => handleItemChange(index, 'product', e.target.value)}
-                  label="Product"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <MenuItem value="">Select a product</MenuItem>
+                  <option value="">Select a product</option>
                   {products.map((product) => (
-                    <MenuItem key={product.id} value={product.id}>
+                    <option key={product.id} value={product.id}>
                       {product.name}
-                    </MenuItem>
+                    </option>
                   ))}
-                </Select>
-              </FormControl>
-              <TextField
-                sx={{ mr: 2, width: '100px' }}
-                type="number"
-                label="Quantity"
-                value={item.quantity}
-                onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-              />
-              <TextField
-                sx={{ mr: 2, width: '150px' }}
-                type="number"
-                label="Unit Price"
-                value={item.unitPrice}
-                onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-              />
-              <TextField
-                sx={{ flexGrow: 1 }}
-                label="Description"
-                value={item.description || ''}
-                onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-              />
-              <Button variant="contained" color="secondary" onClick={() => handleItemRemove(index)}>
+                </select>
+              </div>
+              
+              <div className="w-full md:w-24">
+                <label htmlFor={`quantity-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                  Quantity
+                </label>
+                <input
+                  id={`quantity-${index}`}
+                  type="number"
+                  value={item.quantity}
+                  onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div className="w-full md:w-36">
+                <label htmlFor={`price-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                  Unit Price
+                </label>
+                <input
+                  id={`price-${index}`}
+                  type="number"
+                  value={item.unitPrice}
+                  onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div className="flex-grow">
+                <label htmlFor={`desc-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <input
+                  id={`desc-${index}`}
+                  type="text"
+                  value={item.description || ''}
+                  onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <button 
+                type="button"
+                onClick={() => handleItemRemove(index)}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
                 Remove
-              </Button>
-            </Box>
+              </button>
+            </div>
           ))}
-          <Button variant="outlined" onClick={handleItemAdd}>
+          <button 
+            type="button"
+            onClick={handleItemAdd}
+            className="px-4 py-2 border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
             Add Item
-          </Button>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <TextField
-            fullWidth
+          </button>
+        </div>
+        
+        <div className="col-span-1 sm:col-span-2">
+          <label htmlFor="discount" className="block text-sm font-medium text-gray-700 mb-1">
+            Discount
+          </label>
+          <input
+            id="discount"
             type="number"
-            label="Discount"
             name="discount"
             value={salesOrder.discount}
             onChange={handleDiscountChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <TextField
-            fullWidth
+        </div>
+        
+        <div className="col-span-1 sm:col-span-2">
+          <label htmlFor="total" className="block text-sm font-medium text-gray-700 mb-1">
+            Total Amount
+          </label>
+          <input
+            id="total"
             type="number"
-            label="Total Amount"
             value={salesOrder.totalAmount.toFixed(2)}
-            InputProps={{
-              readOnly: true,
-            }}
+            readOnly
+            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
           />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <FormControl fullWidth>
-            <InputLabel>Currency</InputLabel>
-            <Select
-              name="currency"
-              value={salesOrder.currency}
-              onChange={handleInputChange}
-              label="Currency"
+        </div>
+        
+        <div className="col-span-1 sm:col-span-2">
+          <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">
+            Currency
+          </label>
+          <select
+            id="currency"
+            name="currency"
+            value={salesOrder.currency}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+          </select>
+        </div>
+        
+        <div className="col-span-1 sm:col-span-6">
+          <button 
+            type="button"
+            onClick={handleSave}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <div className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </div>
+            ) : 'Create Sales Order'}
+          </button>
+        </div>
+      </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+          <div className="flex">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-red-800 whitespace-pre-line">{error}</p>
+            </div>
+            <button 
+              onClick={() => setError('')}
+              className="ml-auto text-red-500"
             >
-              <MenuItem value="USD">USD</MenuItem>
-              <MenuItem value="EUR">EUR</MenuItem>
-              <MenuItem value="GBP">GBP</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12}>
-          <Button variant="contained" onClick={handleSave} disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : 'Create Sales Order'}
-          </Button>
-        </Grid>
-      </Grid>
-      <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError('')}>
-        <Alert onClose={() => setError('')} severity="error" sx={{ width: '100%' }}>
-          {error}
-        </Alert>
-      </Snackbar>
-      <Snackbar
-        open={!!successMessage}
-        autoHideDuration={6000}
-        onClose={() => setSuccessMessage('')}
-      >
-        <Alert onClose={() => setSuccessMessage('')} severity="success" sx={{ width: '100%' }}>
-          {successMessage}
-        </Alert>
-      </Snackbar>
-    </Paper>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Success Alert */}
+      {successMessage && (
+        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
+          <div className="flex">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-green-800">{successMessage}</p>
+            </div>
+            <button 
+              onClick={() => setSuccessMessage('')}
+              className="ml-auto text-green-500"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

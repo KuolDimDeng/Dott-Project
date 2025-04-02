@@ -6,13 +6,16 @@ from django.shortcuts import get_object_or_404
 from celery.result import AsyncResult
 from django.utils import timezone
 
-from .models import OnboardingProgress, UserProfile
-from .tasks import setup_tenant_schema_task
+from .models import OnboardingProgress
+from users.models import UserProfile
 from .utils import generate_unique_schema_name
 from .locks import get_setup_lock, LockAcquisitionError
 
 import logging
 logger = logging.getLogger('Pyfactor')
+
+# Import from a single celery tasks file
+from onboarding import celery_tasks
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -89,8 +92,14 @@ def start_setup(request):
                 'schema_name': profile.schema_name
             })
 
+        # Ensure task can be called
+        from celery.app.task import Task
+        if not isinstance(celery_tasks.setup_tenant_schema_task, Task):
+            logger.error("setup_tenant_schema_task is not a Celery task")
+            raise ValueError("Invalid task configuration")
+
         # Start setup task
-        task = setup_tenant_schema_task.delay(
+        task = celery_tasks.setup_tenant_schema_task.delay(
             user_id=str(user.id),
             business_id=str(profile.business_id)
         )

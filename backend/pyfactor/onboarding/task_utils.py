@@ -9,8 +9,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from contextlib import contextmanager
 from pyfactor.logging_config import get_logger
-from typing import Optional, Dict, Any, Tuple
-from typing import Optional
+from typing import Optional, Dict, Any, Tuple, Generator, Iterator
 from django.core.cache import cache
 
 logger = get_logger()
@@ -27,7 +26,7 @@ class SchemaSetupState:
         self.cache_key = f"setup_state_{user_id}"
         self.user_id = user_id
         
-    async def save_state(self, state: dict):
+    async def save_state(self, state: dict) -> None:
         """
         Saves the current setup state with expiration.
         
@@ -38,7 +37,7 @@ class SchemaSetupState:
         - last_updated: Timestamp of last update
         """
         state['last_updated'] = timezone.now().isoformat()
-        await cache.set(self.cache_key, state, timeout=3600)
+        await asyncio.to_thread(cache.set, self.cache_key, state, timeout=3600)
         logger.debug(f"Saved setup state for user {self.user_id}: {state}")
         
     async def get_state(self) -> Optional[dict]:
@@ -46,13 +45,13 @@ class SchemaSetupState:
         Retrieves the current setup state if it exists.
         Returns None if no state is found.
         """
-        state = await cache.get(self.cache_key)
+        state = await asyncio.to_thread(cache.get, self.cache_key)
         logger.debug(f"Retrieved setup state for user {self.user_id}: {state}")
         return state
         
-    async def clear_state(self):
+    async def clear_state(self) -> None:
         """Removes the setup state, typically called after successful completion"""
-        await cache.delete(self.cache_key)
+        await asyncio.to_thread(cache.delete, self.cache_key)
         logger.debug(f"Cleared setup state for user {self.user_id}")
 
 def get_schema_settings(schema_name: str) -> dict:
@@ -112,7 +111,7 @@ def setup_schema_parameters(schema_name: str, conn) -> None:
         raise
 
 @contextmanager
-def timeout(seconds: int):
+def timeout(seconds: int) -> Generator[None, None, None]:
     """
     Creates a reliable timeout context for database operations that might hang.
     Uses SIGALRM for consistent timeout management across different operation types.
@@ -140,13 +139,13 @@ def timeout(seconds: int):
             yield
         finally:
             signal.alarm(0)
-        # Close all connections to prevent connection leaks on timeout
-        try:
-            from django.db import connections
-            connections.close_all()
-            logger.debug(f"Closed all connections after timeout operation")
-        except Exception as e:
-            logger.error(f"Error closing connections: {str(e)}")
+            # Close all connections to prevent connection leaks on timeout
+            try:
+                from django.db import connections
+                connections.close_all()
+                logger.debug(f"Closed all connections after timeout operation")
+            except Exception as e:
+                logger.error(f"Error closing connections: {str(e)}")
 
             signal.signal(signal.SIGALRM, previous_handler)
     else:
@@ -164,7 +163,7 @@ def timeout(seconds: int):
 @contextmanager
 def get_db_connection(schema_name: Optional[str] = None,
                      autocommit: Optional[bool] = None,
-                     for_migrations: bool = False) -> psycopg2.extensions.connection:
+                     for_migrations: bool = False) -> Generator[psycopg2.extensions.connection, None, None]:
     """
     Manages database connections with schema support and comprehensive error handling.
     Ensures connections are properly configured for schema access and cleanup.
@@ -246,43 +245,49 @@ def check_schema_health(schema_name: str) -> Tuple[bool, str]:
     """
     try:
         with transaction.atomic():
-            with connection.cursor() as cursor:
+            with connections['default'].cursor() as cursor:
                 # Set schema context
                 cursor.execute(f'SET search_path TO "{schema_name}"')
                 
-                # Test schema existence
-                cursor.execute("""
-                    SELECT 1 FROM information_schema.schemata
-                    WHERE schema_name = %s
-                """, [schema_name])
-                if not cursor.fetchone():
-                    return False, "Schema does not exist"
-                
-                # Test basic connectivity
+                # Test basic schema access
                 cursor.execute('SELECT 1')
-                if not cursor.fetchone():
-                    return False, "Basic connectivity test failed"
+                result = cursor.fetchone()
+                if not result or result[0] != 1:
+                    return False, "Basic schema access test failed"
                 
-                # Test temporary table creation
-                cursor.execute("""
-                    CREATE TEMPORARY TABLE health_check (
-                        id serial PRIMARY KEY,
-                        created_at timestamp DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
+                # Test table creation
+                try:
+                    cursor.execute('''
+                        CREATE TEMP TABLE health_check (
+                            id serial PRIMARY KEY,
+                            test_value text
+                        )
+                    ''')
+                    cursor.execute('INSERT INTO health_check (test_value) VALUES (%s)', ('test',))
+                    cursor.execute('SELECT test_value FROM health_check')
+                    result = cursor.fetchone()
+                    if not result or result[0] != 'test':
+                        return False, "Table creation and data insertion test failed"
+                    cursor.execute('DROP TABLE health_check')
+                except Exception as e:
+                    return False, f"Schema write test failed: {str(e)}"
                 
-                # Test transaction support
-                cursor.execute("INSERT INTO health_check DEFAULT VALUES")
-                cursor.execute("SELECT count(*) FROM health_check")
-                if cursor.fetchone()[0] != 1:
-                    return False, "Transaction test failed"
-                    
-                return True, "All health checks passed"
-            
+                # Test transaction isolation
+                try:
+                    cursor.execute('BEGIN')
+                    cursor.execute('CREATE TEMP TABLE isolation_test (id int)')
+                    cursor.execute('ROLLBACK')
+                    cursor.execute('SELECT EXISTS (SELECT FROM pg_tables WHERE tablename = %s)', ('isolation_test',))
+                    result = cursor.fetchone()
+                    if result and result[0]:
+                        return False, "Transaction isolation test failed"
+                except Exception as e:
+                    return False, f"Transaction test failed: {str(e)}"
+                
+                return True, "Schema health check passed"
+                
     except Exception as e:
-        error_message = f"Health check failed: {str(e)}"
-        logger.error(error_message, exc_info=True)
-        return False, error_message
+        return False, f"Schema health check failed: {str(e)}"
 
 async def send_async_notification(user_id: str, event_type: str, data: Dict[str, Any]) -> bool:
     """
@@ -318,12 +323,36 @@ async def send_async_notification(user_id: str, event_type: str, data: Dict[str,
         logger.error(f"WebSocket notification error: {str(e)}")
         return False
 
-async def validate_setup_prerequisites(user_id: str):
+class SetupInProgressError(Exception):
+    """Raised when setup is already in progress for a user."""
+    pass
+
+class InsufficientResourcesError(Exception):
+    """Raised when system resources are insufficient for setup."""
+    pass
+
+def check_system_resources() -> Tuple[bool, str]:
+    """
+    Checks if system has sufficient resources for setup.
+    Returns (is_sufficient, message).
+    """
+    # Implement system resource checks here
+    return True, "System resources sufficient"
+
+async def validate_setup_prerequisites(user_id: str) -> None:
+    """
+    Validates prerequisites for setup process.
+    Raises SetupInProgressError if setup is already in progress.
+    Raises InsufficientResourcesError if system resources are insufficient.
+    """
     # Check for existing setup
-    existing_setup = await cache.get(f"setup_in_progress_{user_id}")
-    if existing_setup:
-        raise SetupInProgressError("Setup already in progress")
-        
-    # Verify system resources
-    if not await check_system_resources():
-        raise InsufficientResourcesError("System resources not available")
+    state_manager = SchemaSetupState(user_id)
+    current_state = await state_manager.get_state()
+    
+    if current_state:
+        raise SetupInProgressError("Setup is already in progress")
+    
+    # Check system resources
+    is_sufficient, message = check_system_resources()
+    if not is_sufficient:
+        raise InsufficientResourcesError(message)

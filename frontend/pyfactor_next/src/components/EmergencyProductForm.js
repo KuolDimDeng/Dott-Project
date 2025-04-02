@@ -1,22 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Button, 
-  Typography, 
-  Paper, 
-  TextField, 
-  FormControl, 
-  FormControlLabel,
-  Checkbox,
-  Grid,
-  Alert,
-  CircularProgress
-} from '@mui/material';
 
 /**
- * ProductForm - A clean MUI-based form using React's controlled components
+ * ProductForm - A clean Tailwind CSS-based form using React's controlled components
  * instead of direct DOM manipulation
  */
 export default function ProductForm({ onSubmit }) {
@@ -83,105 +70,120 @@ export default function ProductForm({ onSubmit }) {
   };
   
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" component="h1" gutterBottom>
+    <div className="p-6">
+      <h1 className="text-2xl font-semibold text-gray-800 mb-4">
         Create New Product
-      </Typography>
+      </h1>
       
-      <Paper elevation={3} sx={{ p: 3, mt: 2 }}>
+      <div className="bg-white shadow rounded-lg p-6 mt-4">
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
+          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+            <p>{error}</p>
+          </div>
         )}
         
         {successMessage && (
-          <Alert severity="success" sx={{ mb: 3 }}>
-            {successMessage}
-          </Alert>
+          <div className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+            <p>{successMessage}</p>
+          </div>
         )}
         
         <form onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                required
-                label="Product Name"
+          <div className="grid grid-cols-1 gap-6">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                Product Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="name"
                 name="name"
-                value={formState.name}
-                onChange={handleChange}
+                type="text"
+                required
                 placeholder="Enter product name"
                 disabled={isSubmitting}
-              />
-            </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                required
-                label="Price"
-                name="price"
-                type="number"
-                inputProps={{ step: "0.01", min: "0" }}
-                value={formState.price}
+                value={formState.name}
                 onChange={handleChange}
-                placeholder="0.00"
-                disabled={isSubmitting}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
-            </Grid>
+            </div>
             
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Stock Quantity"
-                name="stock_quantity"
-                type="number"
-                inputProps={{ step: "1", min: "0" }}
-                value={formState.stock_quantity}
-                onChange={handleChange}
-                placeholder="0"
-                disabled={isSubmitting}
-              />
-            </Grid>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                  Price <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="price"
+                  name="price"
+                  type="number"
+                  required
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  disabled={isSubmitting}
+                  value={formState.price}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="stock_quantity" className="block text-sm font-medium text-gray-700 mb-1">
+                  Stock Quantity
+                </label>
+                <input
+                  id="stock_quantity"
+                  name="stock_quantity"
+                  type="number"
+                  step="1"
+                  min="0"
+                  placeholder="0"
+                  disabled={isSubmitting}
+                  value={formState.stock_quantity}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+            </div>
             
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Description"
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                id="description"
                 name="description"
-                multiline
-                rows={4}
-                value={formState.description}
-                onChange={handleChange}
+                rows="4"
                 placeholder="Enter product description"
                 disabled={isSubmitting}
-              />
-            </Grid>
+                value={formState.description}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              ></textarea>
+            </div>
             
-            <Grid item xs={12}>
-              <Button
+            <div>
+              <button
                 type="submit"
-                variant="contained"
-                color="primary"
-                size="large"
                 disabled={isSubmitting}
-                fullWidth
-                sx={{ mt: 2 }}
+                className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 disabled:cursor-not-allowed mt-4"
               >
                 {isSubmitting ? (
                   <>
-                    <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                     Creating Product...
                   </>
                 ) : (
                   'Create Product'
                 )}
-              </Button>
-            </Grid>
-          </Grid>
+              </button>
+            </div>
+          </div>
         </form>
-      </Paper>
-    </Box>
+      </div>
+    </div>
   );
-} 
+}

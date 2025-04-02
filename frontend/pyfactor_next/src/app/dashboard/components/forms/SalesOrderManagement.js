@@ -1,39 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  useTheme,
-  Typography,
-  Tabs,
-  Tab,
-  Button,
-  TextField,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Menu,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  IconButton,
-  Grid,
-  FormHelperText,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import { format } from 'date-fns';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useToast } from '@/components/Toast/ToastProvider';
@@ -54,11 +20,10 @@ const SalesOrderManagement = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedSalesOrder, setEditedSalesOrder] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [exportAnchorEl, setExportAnchorEl] = useState(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
-  const theme = useTheme();
 
   useEffect(() => {
     fetchSalesOrders();
@@ -107,7 +72,7 @@ const SalesOrderManagement = () => {
     }
   };
 
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (newValue) => {
     setActiveTab(newValue);
   };
 
@@ -282,12 +247,12 @@ const SalesOrderManagement = () => {
     }
   };
 
-  const handleExportClick = (event) => {
-    setExportAnchorEl(event.currentTarget);
+  const handleExportClick = () => {
+    setExportMenuOpen(!exportMenuOpen);
   };
 
   const handleExportClose = () => {
-    setExportAnchorEl(null);
+    setExportMenuOpen(false);
   };
 
   const handleExport = (format) => {
@@ -297,280 +262,520 @@ const SalesOrderManagement = () => {
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-        <Typography variant="h4" gutterBottom>
-          Sales Order Management
-        </Typography>
-        <Tabs value={activeTab} onChange={handleTabChange}>
-          <Tab label="Create" />
-          <Tab label="Details" />
-          <Tab label="List" />
-        </Tabs>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h1 className="text-2xl font-bold text-gray-800 mb-4">
+        Sales Order Management
+      </h1>
+      
+      {/* Tabs */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="flex -mb-px">
+          <button
+            className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
+              activeTab === 0
+                ? 'text-blue-600 border-blue-600 bg-blue-50'
+                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleTabChange(0)}
+          >
+            Create
+          </button>
+          <button
+            className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
+              activeTab === 1
+                ? 'text-blue-600 border-blue-600 bg-blue-50'
+                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleTabChange(1)}
+          >
+            Details
+          </button>
+          <button
+            className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
+              activeTab === 2
+                ? 'text-blue-600 border-blue-600 bg-blue-50'
+                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleTabChange(2)}
+          >
+            List
+          </button>
+        </nav>
+      </div>
 
-        {activeTab === 0 && (
-          <Box mt={3}>
-            <Typography variant="h6" gutterBottom>
-              Create Sales Order
-            </Typography>
-            <form onSubmit={handleCreateSalesOrder}>
-              <FormControl fullWidth margin="normal" required>
-                <InputLabel>Customer</InputLabel>
-                <Select
-                  name="customer"
-                  value={newSalesOrder.customer}
-                  onChange={handleInputChange}
-                  error={!newSalesOrder.customer}
-                >
-                  {customers.map((customer) => (
-                    <MenuItem key={customer.id} value={customer.id}>
-                      {customer.customerName}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {!newSalesOrder.customer && (
-                  <FormHelperText error>Please select a customer</FormHelperText>
-                )}
-              </FormControl>
+      {/* Create Tab */}
+      {activeTab === 0 && (
+        <div className="mt-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">
+            Create Sales Order
+          </h2>
+          <form onSubmit={handleCreateSalesOrder} className="space-y-4">
+            <div>
+              <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-1">
+                Customer <span className="text-red-600">*</span>
+              </label>
+              <select
+                id="customer"
+                name="customer"
+                value={newSalesOrder.customer}
+                onChange={handleInputChange}
+                className={`block w-full px-3 py-2 border ${
+                  !newSalesOrder.customer ? 'border-red-300' : 'border-gray-300'
+                } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+              >
+                <option value="">Select a customer</option>
+                {customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.customerName}
+                  </option>
+                ))}
+              </select>
+              {!newSalesOrder.customer && (
+                <p className="mt-1 text-sm text-red-600">Please select a customer</p>
+              )}
+            </div>
 
-              <DatePicker
-                label="Date"
-                value={newSalesOrder.date}
-                onChange={handleDateChange}
-                renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+            <div>
+              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+                Date
+              </label>
+              <input
+                type="date"
+                id="date"
+                name="date"
+                value={newSalesOrder.date instanceof Date ? newSalesOrder.date.toISOString().split('T')[0] : ''}
+                onChange={(e) => handleDateChange(new Date(e.target.value))}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
+            </div>
 
-              <Typography variant="h6" gutterBottom>
-                Items
-              </Typography>
+            <div className="mt-6">
+              <h3 className="text-md font-medium text-gray-800 mb-3">Items</h3>
+              
               {newSalesOrder.items.map((item, index) => (
-                <Box key={index} sx={{ display: 'flex', mb: 2 }}>
-                  <FormControl sx={{ mr: 2, flexGrow: 1 }}>
-                    <InputLabel>Product/Service</InputLabel>
-                    <Select
+                <div key={index} className="flex flex-col sm:flex-row gap-4 mb-4">
+                  <div className="flex-grow">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Product/Service
+                    </label>
+                    <select
                       value={item.product}
                       onChange={(e) => handleItemChange(index, 'product', e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     >
-                      {products.map((product) => (
-                        <MenuItem key={product.id} value={product.id}>
-                          {product.name}
-                        </MenuItem>
-                      ))}
-                      {services.map((service) => (
-                        <MenuItem key={service.id} value={service.id}>
-                          {service.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <TextField
-                    sx={{ mr: 2, width: '100px' }}
-                    type="number"
-                    label="Quantity"
-                    value={item.quantity}
-                    onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                  />
-                  <TextField
-                    sx={{ mr: 2, width: '150px' }}
-                    type="number"
-                    label="Unit Price"
-                    value={item.unitPrice}
-                    onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                  />
-                  <IconButton onClick={() => handleItemRemove(index)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Box>
+                      <option value="">Select a product/service</option>
+                      <optgroup label="Products">
+                        {products.map((product) => (
+                          <option key={product.id} value={product.id}>
+                            {product.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Services">
+                        {services.map((service) => (
+                          <option key={service.id} value={service.id}>
+                            {service.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
+                  </div>
+                  
+                  <div className="w-full sm:w-32">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Quantity
+                    </label>
+                    <input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  
+                  <div className="w-full sm:w-48">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Unit Price
+                    </label>
+                    <input
+                      type="number"
+                      value={item.unitPrice}
+                      onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  
+                  <div className="flex items-end pb-2">
+                    <button 
+                      type="button"
+                      onClick={() => handleItemRemove(index)}
+                      className="p-2 text-red-600 hover:text-red-900 rounded-full hover:bg-red-50"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               ))}
-              <Button startIcon={<AddIcon />} onClick={handleItemAdd}>
+              
+              <button
+                type="button"
+                onClick={handleItemAdd}
+                className="mt-2 flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
                 Add Item
-              </Button>
+              </button>
+            </div>
 
-              <TextField
-                label="Discount"
+            <div className="mt-4">
+              <label htmlFor="discount" className="block text-sm font-medium text-gray-700 mb-1">
+                Discount
+              </label>
+              <input
+                id="discount"
                 name="discount"
                 type="number"
                 value={newSalesOrder.discount}
                 onChange={handleDiscountChange}
-                fullWidth
-                margin="normal"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
+            </div>
 
-              <TextField
-                label="Total Amount"
+            <div>
+              <label htmlFor="totalAmount" className="block text-sm font-medium text-gray-700 mb-1">
+                Total Amount
+              </label>
+              <input
+                id="totalAmount"
+                type="text"
                 value={newSalesOrder.totalAmount.toFixed(2)}
-                fullWidth
-                margin="normal"
                 disabled
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 sm:text-sm"
               />
+            </div>
 
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Currency</InputLabel>
-                <Select name="currency" value={newSalesOrder.currency} onChange={handleInputChange}>
-                  <MenuItem value="USD">USD</MenuItem>
-                  <MenuItem value="EUR">EUR</MenuItem>
-                  <MenuItem value="GBP">GBP</MenuItem>
-                </Select>
-              </FormControl>
+            <div>
+              <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">
+                Currency
+              </label>
+              <select
+                id="currency"
+                name="currency"
+                value={newSalesOrder.currency}
+                onChange={handleInputChange}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              >
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+              </select>
+            </div>
 
-              <Button type="submit" variant="contained" color="primary">
+            <div className="pt-4">
+              <button
+                type="submit"
+                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
                 Create Sales Order
-              </Button>
-            </form>
-          </Box>
-        )}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
-        {activeTab === 1 && (
-          <Box mt={3}>
-            <Typography variant="h6" gutterBottom>
-              Sales Order Details
-            </Typography>
-            {selectedSalesOrder ? (
-              <Box>
-                <TextField
-                  label="Order Number"
+      {/* Details Tab */}
+      {activeTab === 1 && (
+        <div className="mt-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">
+            Sales Order Details
+          </h2>
+          {selectedSalesOrder ? (
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="order_number" className="block text-sm font-medium text-gray-700 mb-1">
+                  Order Number
+                </label>
+                <input
+                  id="order_number"
+                  type="text"
                   value={selectedSalesOrder.order_number}
-                  fullWidth
-                  margin="normal"
                   disabled
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 sm:text-sm"
                 />
-                <TextField
-                  label="Customer"
+              </div>
+              
+              <div>
+                <label htmlFor="customer_detail" className="block text-sm font-medium text-gray-700 mb-1">
+                  Customer
+                </label>
+                <input
+                  id="customer_detail"
+                  type="text"
                   value={selectedSalesOrder.customer}
-                  fullWidth
-                  margin="normal"
                   disabled={!isEditing}
+                  className={`block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                    !isEditing ? 'bg-gray-50 text-gray-500' : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                  } sm:text-sm`}
                 />
-                <TextField
-                  label="Date"
+              </div>
+              
+              <div>
+                <label htmlFor="date_detail" className="block text-sm font-medium text-gray-700 mb-1">
+                  Date
+                </label>
+                <input
+                  id="date_detail"
                   type="date"
                   value={selectedSalesOrder.date}
-                  fullWidth
-                  margin="normal"
                   disabled={!isEditing}
-                  InputLabelProps={{ shrink: true }}
+                  className={`block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                    !isEditing ? 'bg-gray-50 text-gray-500' : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                  } sm:text-sm`}
                 />
-                <TextField
-                  label="Total Amount"
+              </div>
+              
+              <div>
+                <label htmlFor="total_amount_detail" className="block text-sm font-medium text-gray-700 mb-1">
+                  Total Amount
+                </label>
+                <input
+                  id="total_amount_detail"
+                  type="text"
                   value={selectedSalesOrder.totalAmount}
-                  fullWidth
-                  margin="normal"
                   disabled
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 sm:text-sm"
                 />
-                <TextField
-                  label="Discount"
+              </div>
+              
+              <div>
+                <label htmlFor="discount_detail" className="block text-sm font-medium text-gray-700 mb-1">
+                  Discount
+                </label>
+                <input
+                  id="discount_detail"
+                  type="text"
                   value={selectedSalesOrder.discount}
-                  fullWidth
-                  margin="normal"
                   disabled={!isEditing}
+                  className={`block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                    !isEditing ? 'bg-gray-50 text-gray-500' : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                  } sm:text-sm`}
                 />
-                <TextField
-                  label="Currency"
+              </div>
+              
+              <div>
+                <label htmlFor="currency_detail" className="block text-sm font-medium text-gray-700 mb-1">
+                  Currency
+                </label>
+                <input
+                  id="currency_detail"
+                  type="text"
                   value={selectedSalesOrder.currency}
-                  fullWidth
-                  margin="normal"
                   disabled={!isEditing}
+                  className={`block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                    !isEditing ? 'bg-gray-50 text-gray-500' : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                  } sm:text-sm`}
                 />
+              </div>
+              
+              <div className="pt-4">
                 {isEditing ? (
-                  <Box mt={2}>
-                    <Button variant="contained" color="primary" onClick={handleSaveEdit}>
+                  <div className="flex space-x-4">
+                    <button
+                      type="button"
+                      onClick={handleSaveEdit}
+                      className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
                       Save
-                    </Button>
-                    <Button variant="contained" color="secondary" onClick={handleCancelEdit}>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                    >
                       Cancel
-                    </Button>
-                  </Box>
+                    </button>
+                  </div>
                 ) : (
-                  <Box mt={2}>
-                    <Button variant="contained" color="primary" onClick={handleEdit}>
+                  <div className="flex space-x-4">
+                    <button
+                      type="button"
+                      onClick={handleEdit}
+                      className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
                       Edit
-                    </Button>
-                    <Button variant="contained" color="secondary" onClick={handleDelete}>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
                       Delete
-                    </Button>
-                  </Box>
+                    </button>
+                  </div>
                 )}
-              </Box>
-            ) : (
-              <Typography>Select a sales order from the list to view details</Typography>
-            )}
-          </Box>
-        )}
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-500 italic">Select a sales order from the list to view details</p>
+          )}
+        </div>
+      )}
 
-        {activeTab === 2 && (
-          <Box mt={3}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6">Sales Order List</Typography>
-              <Button
-                variant="outlined"
+      {/* List Tab */}
+      {activeTab === 2 && (
+        <div className="mt-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium text-gray-900">
+              Sales Order List
+            </h2>
+            
+            <div className="relative">
+              <button
+                type="button"
                 onClick={handleExportClick}
-                endIcon={<ArrowDropDownIcon />}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Export
-              </Button>
-              <Menu
-                anchorEl={exportAnchorEl}
-                open={Boolean(exportAnchorEl)}
-                onClose={handleExportClose}
-              >
-                <MenuItem onClick={() => handleExport('PDF')}>PDF</MenuItem>
-                <MenuItem onClick={() => handleExport('CSV')}>CSV</MenuItem>
-                <MenuItem onClick={() => handleExport('Excel')}>Excel</MenuItem>
-              </Menu>
-            </Box>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Order Number</TableCell>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Total Amount</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {salesOrders.map((salesOrder) => (
-                    <TableRow
-                      key={salesOrder.id}
-                      onClick={() => handleSalesOrderSelect(salesOrder)}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+              
+              {exportMenuOpen && (
+                <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+                  <div className="py-1" role="menu" aria-orientation="vertical">
+                    <button
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      onClick={() => handleExport('PDF')}
                     >
-                      <TableCell>{salesOrder.order_number}</TableCell>
-                      <TableCell>{salesOrder.customer}</TableCell>
-                      <TableCell>{new Date(salesOrder.date).toLocaleDateString()}</TableCell>
-                      <TableCell>
+                      PDF
+                    </button>
+                    <button
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      onClick={() => handleExport('CSV')}
+                    >
+                      CSV
+                    </button>
+                    <button
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      onClick={() => handleExport('Excel')}
+                    >
+                      Excel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Order Number
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Customer
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Amount
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {salesOrders.length > 0 ? (
+                  salesOrders.map((salesOrder) => (
+                    <tr 
+                      key={salesOrder.id} 
+                      onClick={() => handleSalesOrderSelect(salesOrder)}
+                      className="hover:bg-gray-50 cursor-pointer"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {salesOrder.order_number}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {salesOrder.customer}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(salesOrder.date).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {salesOrder.totalAmount} {salesOrder.currency}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
-        )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-4 text-sm text-gray-500 text-center">
+                      No sales orders found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={() => setDeleteDialogOpen(false)}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-          <DialogTitle id="alert-dialog-title">{'Confirm Delete'}</DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              Are you sure you want to delete this sales order?
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmDelete} color="secondary" autoFocus>
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
-    </LocalizationProvider>
+      {/* Delete Confirmation Dialog */}
+      {deleteDialogOpen && (
+        <div className="fixed z-10 inset-0 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={() => setDeleteDialogOpen(false)}></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg className="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                      Confirm Delete
+                    </h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Are you sure you want to delete this sales order? This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button 
+                  type="button" 
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={handleConfirmDelete}
+                >
+                  Delete
+                </button>
+                <button 
+                  type="button" 
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => setDeleteDialogOpen(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

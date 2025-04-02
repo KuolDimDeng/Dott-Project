@@ -1,35 +1,20 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
-  FormLabel,
-  Grid,
-  Paper,
-  Tooltip,
-  IconButton,
-  useTheme,
-  useMediaQuery,
-  Link,
-  Snackbar,
-  Alert,
-} from '@mui/material';
+import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
 const ServiceForm = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
   const [service, setService] = useState({
     name: '',
     description: '',
@@ -105,159 +90,205 @@ const ServiceForm = () => {
   };
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Box display="flex" alignItems="center" mb={2}>
-        <MiscellaneousServicesIcon
-          sx={{ fontSize: 40, color: theme.palette.primary.main, mr: 2 }}
-        />
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
+    <div className="bg-white p-3 rounded-lg">
+      <div className="flex items-center mb-2">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+        </svg>
+        <div>
+          <h1 className="text-2xl font-bold mb-1">
             Add a Service
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
+          </h1>
+          <p className="text-gray-500">
             Create and manage your service offerings
-          </Typography>
-        </Box>
-      </Box>
+          </p>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Name"
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
               name="name"
               value={service.name}
               onChange={handleChange}
-              fullWidth
-              error={!!errors.name}
-              helperText={errors.name}
+              className={`w-full p-2 border rounded-md ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
               required
             />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControl component="fieldset">
-              <FormLabel component="legend">Service Type</FormLabel>
-              <RadioGroup
-                row
-                aria-label="saleType"
-                name="saleType"
-                value={service.saleType}
-                onChange={handleChange}
-              >
-                <FormControlLabel value="sale" control={<Radio />} label="For Sale" />
-                <FormControlLabel value="rent" control={<Radio />} label="For Rent" />
-              </RadioGroup>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              label="Description"
+            {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
+          </div>
+          <div className="col-span-1">
+            <fieldset>
+              <legend className="block text-sm font-medium text-gray-700 mb-1">Service Type</legend>
+              <div className="flex space-x-4">
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="saleType"
+                    value="sale"
+                    checked={service.saleType === 'sale'}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2">For Sale</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    name="saleType"
+                    value="rent"
+                    checked={service.saleType === 'rent'}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2">For Rent</span>
+                </label>
+              </div>
+            </fieldset>
+          </div>
+          <div className="col-span-1 sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
               name="description"
               value={service.description}
               onChange={handleChange}
-              fullWidth
-              multiline
               rows={3}
-            />
-          </Grid>
+              className="w-full p-2 border border-gray-300 rounded-md"
+            ></textarea>
+          </div>
           {service.saleType === 'sale' && (
             <>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Price"
-                  name="price"
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Price <span className="text-red-500">*</span>
+                </label>
+                <input
                   type="number"
+                  name="price"
                   value={service.price}
                   onChange={handleChange}
-                  fullWidth
-                  error={!!errors.price}
-                  helperText={errors.price}
+                  className={`w-full p-2 border rounded-md ${errors.price ? 'border-red-500' : 'border-gray-300'}`}
                   required
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Sales Tax (%)"
-                  name="salesTax"
+                {errors.price && <p className="mt-1 text-sm text-red-500">{errors.price}</p>}
+              </div>
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sales Tax (%)
+                </label>
+                <input
                   type="number"
+                  name="salesTax"
                   value={service.salesTax}
                   onChange={handleChange}
-                  fullWidth
+                  className="w-full p-2 border border-gray-300 rounded-md"
                 />
-              </Grid>
+              </div>
             </>
           )}
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Duration (in minutes)"
-              name="duration"
+          <div className="col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Duration (in minutes)
+            </label>
+            <input
               type="number"
+              name="duration"
               value={service.duration}
               onChange={handleChange}
-              fullWidth
+              className="w-full p-2 border border-gray-300 rounded-md"
             />
-          </Grid>
+          </div>
           {service.saleType === 'rent' && (
             <>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Charge Period</InputLabel>
-                  <Select
-                    name="charge_period"
-                    value={service.charge_period}
-                    onChange={handleChange}
-                  >
-                    <MenuItem value="hour">Hour</MenuItem>
-                    <MenuItem value="day">Day</MenuItem>
-                    <MenuItem value="week">Week</MenuItem>
-                    <MenuItem value="month">Month</MenuItem>
-                    <MenuItem value="year">Year</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Charge Amount"
-                  name="charge_amount"
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Charge Period
+                </label>
+                <select
+                  name="charge_period"
+                  value={service.charge_period}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                >
+                  <option value="hour">Hour</option>
+                  <option value="day">Day</option>
+                  <option value="week">Week</option>
+                  <option value="month">Month</option>
+                  <option value="year">Year</option>
+                </select>
+              </div>
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Charge Amount
+                </label>
+                <input
                   type="number"
+                  name="charge_amount"
                   value={service.charge_amount}
                   onChange={handleChange}
-                  fullWidth
+                  className="w-full p-2 border border-gray-300 rounded-md"
                 />
-              </Grid>
+              </div>
             </>
           )}
-          <Grid item xs={12}>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Button type="submit" variant="contained" color="primary" size="large">
+          <div className="col-span-1 sm:col-span-2">
+            <div className="flex justify-between items-center">
+              <button 
+                type="submit" 
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
                 Create Service
-              </Button>
-              <Tooltip title="Learn more about service creation">
-                <IconButton color="primary">
-                  <HelpOutlineIcon />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          </Grid>
-        </Grid>
+              </button>
+              <button 
+                type="button"
+                className="text-blue-600 hover:text-blue-800"
+                title="Learn more about service creation"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
       </form>
 
       {service.saleType === 'rent' && (
-        <Box mt={2}>
-          <Typography variant="body2" color="text.secondary">
+        <div className="mt-2">
+          <p className="text-sm text-gray-500">
             Create a custom rental plan{' '}
-            <Link href="/settings/business-settings/custom-charge-settings">here</Link> and use when
-            making a sales transaction.
-          </Typography>
-        </Box>
+            <a href="/settings/business-settings/custom-charge-settings" className="text-blue-600 hover:underline">
+              here
+            </a>{' '}
+            and use when making a sales transaction.
+          </p>
+        </div>
       )}
 
-      <Snackbar open={openSnackbar} autoHideDuration={3000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
-    </Box>
+      {openSnackbar && (
+        <div className={`fixed inset-x-0 bottom-0 p-4 flex items-center justify-center z-50 ${
+          snackbarSeverity === 'success' ? 'bg-green-100 border-green-400' : 'bg-red-100 border-red-400'
+        }`}>
+          <div className={`p-2 rounded-md ${
+            snackbarSeverity === 'success' ? 'text-green-700' : 'text-red-700'
+          }`}>
+            {snackbarMessage}
+            <button 
+              onClick={handleCloseSnackbar}
+              className="ml-4 font-bold"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

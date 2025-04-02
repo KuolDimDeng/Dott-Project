@@ -1,24 +1,6 @@
+'use client';
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Button,
-  MenuItem,
-  Grid,
-  useTheme,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { axiosInstance } from '@/lib/axiosConfig';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useToast } from '@/components/Toast/ToastProvider';
 
 const GeneralLedgerManagement = () => {
@@ -31,12 +13,11 @@ const GeneralLedgerManagement = () => {
   const toast = useToast();
   const [generalLedgerEntries, setGeneralLedgerEntries] = useState([]);
   const [generalLedgerSummary, setGeneralLedgerSummary] = useState([]);
-  const theme = useTheme();
 
   useEffect(() => {
     fetchAccounts();
     fetchGeneralLedgerSummary();
-    fetchGeneralLedger(); // Add this line
+    fetchGeneralLedger();
   }, []);
 
   useEffect(() => {
@@ -58,12 +39,12 @@ const GeneralLedgerManagement = () => {
       const response = await axiosInstance.get('/api/finance/general-ledger/', {
         params: {
           account_id: selectedAccount,
-          start_date: startDate,
-          end_date: endDate,
+          start_date: startDate ? formatDate(startDate) : null,
+          end_date: endDate ? formatDate(endDate) : null,
         },
       });
       setGeneralLedgerEntries(response.data);
-      setLedgerEntries(response.data); // Add this line
+      setLedgerEntries(response.data);
     } catch (error) {
       console.error('Error fetching general ledger:', error);
     }
@@ -73,98 +54,165 @@ const GeneralLedgerManagement = () => {
     try {
       const response = await axiosInstance.get('/api/finance/general-ledger-summary/');
       setGeneralLedgerSummary(response.data);
-      setSummary(response.data); // Add this line
+      setSummary(response.data);
     } catch (error) {
       console.error('Error fetching general ledger summary:', error);
     }
   };
 
+  const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  };
+
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-        <Typography variant="h4" gutterBottom>
-          General Ledger
-        </Typography>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h2 className="text-2xl font-semibold mb-4">General Ledger</h2>
 
-        <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid item xs={12} sm={4}>
-            <TextField
-              select
-              fullWidth
-              label="Account"
-              value={selectedAccount}
-              onChange={(e) => setSelectedAccount(e.target.value)}
-            >
-              <MenuItem value="">All Accounts</MenuItem>
-              {accounts.map((account) => (
-                <MenuItem key={account.id} value={account.id}>
-                  {account.name}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <DatePicker label="Start Date" value={startDate} onChange={setStartDate} />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <DatePicker label="End Date" value={endDate} onChange={setEndDate} />
-          </Grid>
-        </Grid>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Account</label>
+          <select
+            className="w-full p-2 border border-gray-300 rounded-md bg-white"
+            value={selectedAccount}
+            onChange={(e) => setSelectedAccount(e.target.value)}
+          >
+            <option value="">All Accounts</option>
+            {accounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+          <input
+            type="date"
+            className="w-full p-2 border border-gray-300 rounded-md"
+            value={formatDate(startDate)}
+            onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : null)}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+          <input
+            type="date"
+            className="w-full p-2 border border-gray-300 rounded-md"
+            value={formatDate(endDate)}
+            onChange={(e) => setEndDate(e.target.value ? new Date(e.target.value) : null)}
+          />
+        </div>
+      </div>
 
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Account</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell>Reference</TableCell>
-                <TableCell align="right">Debit</TableCell>
-                <TableCell align="right">Credit</TableCell>
-                <TableCell align="right">Balance</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {generalLedgerEntries.map((entry) => (
-                <TableRow key={entry.id}>
-                  <TableCell>{entry.date}</TableCell>
-                  <TableCell>{entry.account_name}</TableCell>
-                  <TableCell>{entry.description}</TableCell>
-                  <TableCell>{entry.reference}</TableCell>
-                  <TableCell align="right">{entry.debit_amount}</TableCell>
-                  <TableCell align="right">{entry.credit_amount}</TableCell>
-                  <TableCell align="right">{entry.balance}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+      <div className="overflow-x-auto rounded-lg border border-gray-200 mb-8">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Date
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Account
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Description
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Reference
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Debit
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Credit
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Balance
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {generalLedgerEntries.length > 0 ? (
+              generalLedgerEntries.map((entry) => (
+                <tr key={entry.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {entry.date}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {entry.account_name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {entry.description}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {entry.reference}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {entry.debit_amount}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {entry.credit_amount}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {entry.balance}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
+                  No ledger entries found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-        <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>
-          Account Balances Summary
-        </Typography>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Account Number</TableCell>
-                <TableCell>Account Name</TableCell>
-                <TableCell align="right">Balance</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {summary.map((item) => (
-                <TableRow key={item.account_id}>
-                  <TableCell>{item.account_number}</TableCell>
-                  <TableCell>{item.account_name}</TableCell>
-                  <TableCell align="right">{item.balance}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-    </LocalizationProvider>
+      <h3 className="text-xl font-semibold mb-4">Account Balances Summary</h3>
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Account Number
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Account Name
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Balance
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {summary.length > 0 ? (
+              summary.map((item) => (
+                <tr key={item.account_id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {item.account_number}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {item.account_name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {item.balance}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
+                  No account summary data found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 };
 

@@ -3,11 +3,14 @@
   "type": "module",
   "scripts": {
     "prepare": "husky",
-    "start": "pnpm node script.js"
+    "start": "pnpm node script.js",
+    "dev": "cd frontend/pyfactor_next && pnpm run dev",
+    "dev:frontend": "cd frontend/pyfactor_next && pnpm run dev"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.6.1",
     "@headlessui/react": "^2.2.0",
+    "@heroicons/react": "^2.2.0",
     "@mui/icons-material": "^6.4.7",
     "dotenv": "^16.3.1"
   },

@@ -1,13 +1,4 @@
-import React, { useState } from 'react';
-import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, Typography, Box, CircularProgress, Alert,
-  Radio, RadioGroup, FormControlLabel, FormControl,
-  FormLabel, Checkbox, FormGroup, useTheme, IconButton,
-  Divider
-} from '@mui/material';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import CloseIcon from '@mui/icons-material/Close';
+import React, { useState, Fragment } from 'react';
 import { unifiedInventoryService } from '@/services/unifiedInventoryService';
 import { logger } from '@/utils/logger';
 
@@ -16,8 +7,6 @@ import { logger } from '@/utils/logger';
  * Provides options for exporting products to different formats
  */
 const ProductExportDialog = ({ open, onClose, filters = {}, searchQuery = '' }) => {
-  const theme = useTheme();
-  
   // State
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -110,248 +99,289 @@ const ProductExportDialog = ({ open, onClose, filters = {}, searchQuery = '' }) 
   
   // Check if all fields are selected
   const allFieldsSelected = Object.values(exportFields).every(value => value);
+
+  if (!open) return null;
   
   return (
-    <Dialog
-      open={open}
-      onClose={!loading ? onClose : undefined}
-      fullWidth
-      maxWidth="sm"
-      disableEscapeKeyDown={loading}
-    >
-      <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">
-            Export Products
-          </Typography>
-          {!loading && (
-            <IconButton onClick={onClose} size="small">
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          )}
-        </Box>
-      </DialogTitle>
-      
-      <DialogContent dividers>
-        {/* Error message */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-        
-        <Typography variant="body2" paragraph>
-          Export your products data in different formats. You can customize what information to include.
-        </Typography>
-        
-        {/* Export Format */}
-        <Box sx={{ mb: 3 }}>
-          <FormControl component="fieldset">
-            <FormLabel component="legend">Export Format</FormLabel>
-            <RadioGroup
-              row
-              name="format"
-              value={format}
-              onChange={handleFormatChange}
-            >
-              <FormControlLabel value="csv" control={<Radio />} label="CSV" />
-              <FormControlLabel value="excel" control={<Radio />} label="Excel" />
-              <FormControlLabel value="json" control={<Radio />} label="JSON" />
-            </RadioGroup>
-          </FormControl>
-        </Box>
-        
-        {/* Export Fields */}
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <FormLabel component="legend">Fields to Export</FormLabel>
-            <Box>
-              <Button 
-                size="small" 
-                onClick={() => handleSelectAll(true)}
-                disabled={allFieldsSelected}
+    <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        {/* Overlay */}
+        <div 
+          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+          aria-hidden="true"
+          onClick={!loading ? onClose : undefined}
+        ></div>
+
+        {/* This element centers the modal contents */}
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        {/* Dialog */}
+        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          {/* Dialog header */}
+          <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">
+              Export Products
+            </h3>
+            {!loading && (
+              <button 
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-500 focus:outline-none"
               >
-                Select All
-              </Button>
-              <Button 
-                size="small" 
-                onClick={() => handleSelectAll(false)}
-                disabled={!hasSelectedFields}
-              >
-                Deselect All
-              </Button>
-            </Box>
-          </Box>
+                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+          </div>
           
-          <FormGroup>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
+          {/* Dialog content */}
+          <div className="px-6 py-4 bg-white">
+            {/* Error message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+                {error}
+              </div>
+            )}
+            
+            <p className="text-sm text-gray-600 mb-4">
+              Export your products data in different formats. You can customize what information to include.
+            </p>
+            
+            {/* Export Format */}
+            <div className="mb-6">
+              <fieldset>
+                <legend className="text-sm font-medium text-gray-700 mb-2">Export Format</legend>
+                <div className="flex space-x-4">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="format"
+                      value="csv"
+                      checked={format === 'csv'}
+                      onChange={handleFormatChange}
+                      className="h-4 w-4 text-primary-main border-gray-300 focus:ring-primary-light"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">CSV</span>
+                  </label>
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="format"
+                      value="excel"
+                      checked={format === 'excel'}
+                      onChange={handleFormatChange}
+                      className="h-4 w-4 text-primary-main border-gray-300 focus:ring-primary-light"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Excel</span>
+                  </label>
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="format"
+                      value="json"
+                      checked={format === 'json'}
+                      onChange={handleFormatChange}
+                      className="h-4 w-4 text-primary-main border-gray-300 focus:ring-primary-light"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">JSON</span>
+                  </label>
+                </div>
+              </fieldset>
+            </div>
+            
+            {/* Export Fields */}
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-2">
+                <legend className="text-sm font-medium text-gray-700">Fields to Export</legend>
+                <div className="space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAll(true)}
+                    disabled={allFieldsSelected}
+                    className={`text-xs px-2 py-1 rounded ${allFieldsSelected ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  >
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAll(false)}
+                    disabled={!hasSelectedFields}
+                    className={`text-xs px-2 py-1 rounded ${!hasSelectedFields ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  >
+                    Deselect All
+                  </button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    name="basic"
                     checked={exportFields.basic}
                     onChange={handleExportFieldChange}
-                    name="basic"
+                    className="h-4 w-4 rounded text-primary-main border-gray-300 focus:ring-primary-light"
                   />
-                }
-                label="Basic Info (Name, Code, Description)"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
+                  <span className="ml-2 text-sm text-gray-700">Basic Info (Name, Code, Description)</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    name="pricing"
                     checked={exportFields.pricing}
                     onChange={handleExportFieldChange}
-                    name="pricing"
+                    className="h-4 w-4 rounded text-primary-main border-gray-300 focus:ring-primary-light"
                   />
-                }
-                label="Pricing Info (Price, Cost, Tax)"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
+                  <span className="ml-2 text-sm text-gray-700">Pricing Info (Price, Cost, Tax)</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    name="inventory"
                     checked={exportFields.inventory}
                     onChange={handleExportFieldChange}
-                    name="inventory"
+                    className="h-4 w-4 rounded text-primary-main border-gray-300 focus:ring-primary-light"
                   />
-                }
-                label="Inventory Info (Stock, Reorder Level)"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
+                  <span className="ml-2 text-sm text-gray-700">Inventory Info (Stock, Reorder Level)</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    name="categories"
                     checked={exportFields.categories}
                     onChange={handleExportFieldChange}
-                    name="categories"
+                    className="h-4 w-4 rounded text-primary-main border-gray-300 focus:ring-primary-light"
                   />
-                }
-                label="Categories"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
+                  <span className="ml-2 text-sm text-gray-700">Categories</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    name="suppliers"
                     checked={exportFields.suppliers}
                     onChange={handleExportFieldChange}
-                    name="suppliers"
+                    className="h-4 w-4 rounded text-primary-main border-gray-300 focus:ring-primary-light"
                   />
-                }
-                label="Suppliers"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
+                  <span className="ml-2 text-sm text-gray-700">Suppliers</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    name="locations"
                     checked={exportFields.locations}
                     onChange={handleExportFieldChange}
-                    name="locations"
+                    className="h-4 w-4 rounded text-primary-main border-gray-300 focus:ring-primary-light"
                   />
-                }
-                label="Locations"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
+                  <span className="ml-2 text-sm text-gray-700">Locations</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    name="dimensions"
                     checked={exportFields.dimensions}
                     onChange={handleExportFieldChange}
-                    name="dimensions"
+                    className="h-4 w-4 rounded text-primary-main border-gray-300 focus:ring-primary-light"
                   />
-                }
-                label="Dimensions & Weight"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
+                  <span className="ml-2 text-sm text-gray-700">Dimensions & Weight</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    name="metadata"
                     checked={exportFields.metadata}
                     onChange={handleExportFieldChange}
-                    name="metadata"
+                    className="h-4 w-4 rounded text-primary-main border-gray-300 focus:ring-primary-light"
                   />
-                }
-                label="Metadata (Created/Updated Dates)"
-              />
-            </Box>
-          </FormGroup>
-        </Box>
-        
-        <Divider sx={{ my: 2 }} />
-        
-        {/* Current Filters */}
-        <Box>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={applyCurrentFilters}
-                onChange={handleApplyFiltersChange}
-                name="applyCurrentFilters"
-              />
-            }
-            label="Apply current search & filters"
-          />
-          
-          {applyCurrentFilters && (searchQuery || Object.values(filters).some(v => v)) && (
-            <Box sx={{ 
-              mt: 1, 
-              p: 1.5, 
-              backgroundColor: theme.palette.background.default,
-              borderRadius: 1,
-              border: '1px solid',
-              borderColor: theme.palette.divider
-            }}>
-              <Typography variant="caption" component="div" color="textSecondary">
-                Current filters that will be applied:
-              </Typography>
+                  <span className="ml-2 text-sm text-gray-700">Metadata (Created/Updated Dates)</span>
+                </label>
+              </div>
+            </div>
+            
+            <div className="border-t border-gray-200 my-4"></div>
+            
+            {/* Current Filters */}
+            <div>
+              <label className="inline-flex items-center">
+                <input
+                  type="checkbox"
+                  name="applyCurrentFilters"
+                  checked={applyCurrentFilters}
+                  onChange={handleApplyFiltersChange}
+                  className="h-4 w-4 rounded text-primary-main border-gray-300 focus:ring-primary-light"
+                />
+                <span className="ml-2 text-sm text-gray-700">Apply current search & filters</span>
+              </label>
               
-              <Box component="ul" sx={{ mt: 0.5, mb: 0, pl: 2 }}>
-                {searchQuery && (
-                  <Typography variant="caption" component="li">
-                    Search: "{searchQuery}"
-                  </Typography>
-                )}
-                
-                {filters.category_id && (
-                  <Typography variant="caption" component="li">
-                    Category filter
-                  </Typography>
-                )}
-                
-                {filters.supplier_id && (
-                  <Typography variant="caption" component="li">
-                    Supplier filter
-                  </Typography>
-                )}
-                
-                {filters.location_id && (
-                  <Typography variant="caption" component="li">
-                    Location filter
-                  </Typography>
-                )}
-                
-                {filters.include_inactive && (
-                  <Typography variant="caption" component="li">
-                    Including inactive products
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-          )}
-        </Box>
-      </DialogContent>
-      
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button
-          onClick={onClose}
-          disabled={loading}
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleExport}
-          disabled={loading || !hasSelectedFields}
-          startIcon={loading ? <CircularProgress size={20} /> : <FileDownloadIcon />}
-        >
-          {loading ? 'Exporting...' : 'Export'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+              {applyCurrentFilters && (searchQuery || Object.values(filters).some(v => v)) && (
+                <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                  <p className="text-xs text-gray-500">
+                    Current filters that will be applied:
+                  </p>
+                  
+                  <ul className="mt-1 pl-5 list-disc text-xs text-gray-500">
+                    {searchQuery && (
+                      <li>Search: "{searchQuery}"</li>
+                    )}
+                    
+                    {filters.category_id && (
+                      <li>Category filter</li>
+                    )}
+                    
+                    {filters.supplier_id && (
+                      <li>Supplier filter</li>
+                    )}
+                    
+                    {filters.location_id && (
+                      <li>Location filter</li>
+                    )}
+                    
+                    {filters.include_inactive && (
+                      <li>Including inactive products</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Dialog footer */}
+          <div className="px-6 py-4 bg-gray-50 flex justify-end space-x-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className={`px-4 py-2 text-sm font-medium rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light ${loading ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={loading || !hasSelectedFields}
+              className={`px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light inline-flex items-center ${loading || !hasSelectedFields ? 'bg-primary-light text-white cursor-not-allowed' : 'bg-primary-main text-white hover:bg-primary-dark'}`}
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                  Export
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
-export default ProductExportDialog; 
+export default ProductExportDialog;

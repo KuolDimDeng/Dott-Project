@@ -1,5 +1,6 @@
 from django.apps import AppConfig
 from django.db import connection, ProgrammingError
+from asgiref.sync import sync_to_async
 
 class FinanceConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
@@ -12,8 +13,16 @@ class FinanceConfig(AppConfig):
         except:
             pass
 
-        # Run any SQL fixers if needed - with extreme safety
-        self.run_sql_fix()
+        # Run any SQL fixers if needed
+        # Skip the SQL fix in async contexts to avoid the error
+        # This will run properly when Django starts in sync context
+        import asyncio
+        try:
+            if not asyncio.get_event_loop().is_running():
+                self.run_sql_fix()
+        except RuntimeError:
+            # We're in an async context, skip running the SQL fix
+            pass
 
     def run_sql_fix(self):
         try:

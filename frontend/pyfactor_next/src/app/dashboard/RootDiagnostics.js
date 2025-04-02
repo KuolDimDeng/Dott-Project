@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { findEventAbsorbers, createDirectTestInput, createClickDetector } from '@/utils/eventsDebugger';
 
 /**

@@ -1,0 +1,11 @@
+packages:
+  - '.'
+  - 'src/**'
+
+pnpm:
+  requiredVersion: 8.10.0
+  npmGlobs:
+    - '**/*.js'
+    - '**/*.jsx'
+    - '**/*.ts'
+    - '**/*.tsx' 

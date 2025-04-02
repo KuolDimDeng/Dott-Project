@@ -3,7 +3,7 @@ import AddIncomeForm from './AddIncomeForm';
 import AddExpenseForm from './AddExpenseForm';
 import SalesForm from './SalesForm';
 import RefundForm from './RefundForm';
-import { axiosInstance as useApi } from '@/lib/axiosConfig';
+import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useNotification } from '@/context/NotificationContext';
 import { format } from 'date-fns';
@@ -114,7 +114,7 @@ const TransactionForm = () => {
   const fetchUserProfile = async () => {
     try {
       logger.info('[TransactionForm] Fetching user profile');
-      const response = await useApi.get('/api/profile/');
+      const response = await axiosInstance.get('/api/profile/');
       setUserDatabase(response.data.database_name);
       logger.info('[TransactionForm] User profile fetched:', response.data);
     } catch (error) {
@@ -126,7 +126,7 @@ const TransactionForm = () => {
   const fetchAccounts = async (database_name) => {
     try {
       logger.info('[TransactionForm] Fetching accounts from database:', database_name);
-      const response = await useApi.get('/api/accounts/', {
+      const response = await axiosInstance.get('/api/accounts/', {
         params: { database: database_name },
       });
       logger.info('[TransactionForm] Accounts fetched successfully:', response.data.length);
@@ -141,7 +141,7 @@ const TransactionForm = () => {
     setLoading(true);
     try {
       logger.info('[TransactionForm] Fetching transactions from database:', database_name);
-      const response = await useApi.get('/api/transactions/', {
+      const response = await axiosInstance.get('/api/transactions/', {
         params: { database: database_name },
       });
       logger.info('[TransactionForm] Transactions fetched successfully:', response.data.length);
@@ -318,7 +318,164 @@ const TransactionForm = () => {
   const renderTransactionsTab = () => (
     <div>
       {/* Transactions Tab Content */}
-      {/* This would include filtering, searching, and table of transactions */}
+      <h2 className="text-lg font-medium mb-6">Recent Transactions</h2>
+      
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <SearchIcon />
+          </div>
+          <input
+            type="text"
+            placeholder="Search transactions..."
+            className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-96"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <FilterListIcon />
+            <span className="text-sm font-medium">Filter:</span>
+          </div>
+          <div className="inline-flex rounded-md shadow-sm">
+            <button
+              onClick={() => handleFilterChange('all')}
+              className={`px-3 py-2 text-sm font-medium rounded-l-md ${
+                filterType === 'all'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => handleFilterChange('income')}
+              className={`px-3 py-2 text-sm font-medium ${
+                filterType === 'income'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 border-t border-b border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Income
+            </button>
+            <button
+              onClick={() => handleFilterChange('expense')}
+              className={`px-3 py-2 text-sm font-medium ${
+                filterType === 'expense'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 border-t border-b border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Expenses
+            </button>
+            <button
+              onClick={() => handleFilterChange('sale')}
+              className={`px-3 py-2 text-sm font-medium ${
+                filterType === 'sale'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 border-t border-b border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Sales
+            </button>
+            <button
+              onClick={() => handleFilterChange('refund')}
+              className={`px-3 py-2 text-sm font-medium rounded-r-md ${
+                filterType === 'refund'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Refunds
+            </button>
+          </div>
+          
+          <button
+            onClick={handleRefresh}
+            className="ml-2 p-2 rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
+            title="Refresh transactions"
+          >
+            <RefreshIcon />
+          </button>
+        </div>
+      </div>
+      
+      {/* Transactions Table */}
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        </div>
+      ) : filteredTransactions.length === 0 ? (
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg p-10 text-center">
+          <p className="text-gray-500">No transactions found. Create your first transaction using the Quick Actions tab.</p>
+        </div>
+      ) : (
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Account
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredTransactions.map((transaction) => (
+                  <tr key={transaction.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {format(new Date(transaction.date), 'MMM dd, yyyy')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {transaction.description}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        transaction.type === 'income' 
+                          ? 'bg-green-100 text-green-800' 
+                          : transaction.type === 'expense' 
+                          ? 'bg-red-100 text-red-800' 
+                          : transaction.type === 'sale' 
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-orange-100 text-orange-800'
+                      }`}>
+                        {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {transaction.account_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
+                      <span className={`${
+                        transaction.type === 'income' || transaction.type === 'sale' 
+                          ? 'text-green-600' 
+                          : 'text-red-600'
+                      }`}>
+                        ${parseFloat(transaction.amount).toFixed(2)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -326,7 +483,44 @@ const TransactionForm = () => {
   const renderAccountSummaryTab = () => (
     <div>
       {/* Account Summary Tab Content */}
-      {/* This would include charts and account balances */}
+      <h2 className="text-lg font-medium mb-6">Account Summary</h2>
+      
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        </div>
+      ) : accounts.length === 0 ? (
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg p-10 text-center">
+          <p className="text-gray-500">No accounts found. Please create accounts in your settings.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {accounts.map((account) => (
+            <div key={account.id} className="bg-white shadow rounded-lg p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="bg-indigo-100 p-3 rounded-full">
+                  <AccountBalanceIcon />
+                </div>
+                <h3 className="text-lg font-medium">{account.name}</h3>
+              </div>
+              <div className="mb-4">
+                <span className="text-2xl font-bold">${parseFloat(account.balance || 0).toFixed(2)}</span>
+                <p className="text-gray-500 text-sm">Current Balance</p>
+              </div>
+              <div className="flex justify-between text-sm">
+                <div>
+                  <span className="text-green-600 font-medium">${parseFloat(account.total_income || 0).toFixed(2)}</span>
+                  <p className="text-gray-500">Income</p>
+                </div>
+                <div>
+                  <span className="text-red-600 font-medium">${parseFloat(account.total_expense || 0).toFixed(2)}</span>
+                  <p className="text-gray-500">Expenses</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 

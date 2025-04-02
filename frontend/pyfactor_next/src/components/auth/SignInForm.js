@@ -13,6 +13,7 @@ import {
   signOut,
   isAmplifyConfigured
 } from '@/config/amplifyUnified';
+import { reconfigureAmplify } from '@/config/amplifyConfig';
 import { getOnboardingStatus } from '@/utils/onboardingUtils';
 import { ONBOARDING_STATES } from '@/utils/userAttributes';
 import { appendLanguageParam, getLanguageQueryString } from '@/utils/languageUtils';
@@ -24,9 +25,17 @@ export default function SignInForm() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
   const [error, setError] = useState(null);
   const router = useRouter();
   const { login, initializeTenantId } = useTenantInitialization();
+
+  // Loading steps for better UX
+  const loadingSteps = [
+    "Authenticating...",
+    "Checking account status...",
+    "Preparing your workspace..."
+  ];
 
   // Setup login timeout
   useEffect(() => {
@@ -36,177 +45,176 @@ export default function SignInForm() {
         logger.error('[SignInForm] Sign in timed out after 45 seconds');
         setError('Sign in timed out. Please try again.');
         setIsLoading(false);
-      }, 45000); // 45 second timeout (increased from 15)
+      }, 45000); // 45 second timeout
     }
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [isLoading]);
 
-  const setCookiesViaAPI = async (tokens, onboardingStep, onboardedStatus, rememberMe) => {
-    logger.debug('[SignInForm] Setting cookies via API');
+  // Helper function to determine redirect path based on user attributes
+  const determineRedirectPath = (userAttributes) => {
+    // Check if we should return to a specific onboarding step
+    const returnToOnboarding = localStorage.getItem('returnToOnboarding') === 'true';
+    const returnStep = localStorage.getItem('onboardingStep');
+    
+    // Clear the return flags immediately to prevent future redirect loops
     try {
-      // Set cookies with a retry mechanism
-      const maxRetries = 3;
-      let retryCount = 0;
-      let success = false;
-      
-      while (!success && retryCount < maxRetries) {
-        try {
-          const response = await fetch('/api/auth/set-cookies', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              idToken: tokens?.idToken?.toString(),
-              accessToken: tokens?.accessToken?.toString(),
-              onboardingStep,
-              onboardedStatus,
-              rememberMe,
-            }),
-          });
-          
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `Failed to set cookies: ${response.status}`);
-          }
-          
-          success = true;
-          logger.debug('[SignInForm] Cookies set successfully via API');
-          return true;
-        } catch (error) {
-          retryCount++;
-          logger.warn(`[SignInForm] Failed to set cookies (attempt ${retryCount}/${maxRetries}):`, error);
-          
-          if (retryCount >= maxRetries) {
-            throw error;
-          }
-          
-          // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
-        }
-      }
-    } catch (error) {
-      logger.error('[SignInForm] Failed to set cookies via API:', error);
-      throw error;
+      localStorage.removeItem('returnToOnboarding');
+      // Don't remove onboardingStep as it might be needed for state
+    } catch (e) {
+      // Ignore localStorage errors
     }
+    
+    // If we have explicit return info, prioritize it
+    if (returnToOnboarding && returnStep) {
+      logger.debug(`[SignInForm] Returning user to onboarding step from localStorage: ${returnStep}`);
+      
+      // Set cookies for server-side state persistence
+      const expiresDate = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
+      document.cookie = `onboardingInProgress=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      document.cookie = `onboardingStep=${returnStep}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      
+      return `/onboarding/${returnStep}?from=signin&ts=${Date.now()}`;
+    }
+    
+    // Get all relevant status indicators
+    const onboardingStatus = userAttributes['custom:onboarding'];
+    const setupDone = userAttributes['custom:setupdone'] === 'TRUE';
+    
+    // Set all cookies in one place with consistent expiration
+    const expiresDate = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
+    document.cookie = `onboardedStatus=${onboardingStatus || 'NOT_STARTED'}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+    document.cookie = `setupCompleted=${(onboardingStatus === 'COMPLETE' || setupDone) ? 'true' : 'false'}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+    
+    // Simple decision tree for redirect
+    if (onboardingStatus === 'COMPLETE' || setupDone) {
+      document.cookie = `onboardingStep=complete; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      logger.debug('[SignInForm] User has completed onboarding, redirecting to dashboard');
+      return '/dashboard';
+    }
+    
+    // Map status to step and URL
+    const statusToStep = {
+      'NOT_STARTED': 'business-info',
+      'BUSINESS_INFO': 'subscription',
+      'SUBSCRIPTION': () => {
+        // Sub-decision for subscription based on plan
+        const plan = userAttributes['custom:subscription_plan'] || '';
+        const isPaidPlan = ['professional', 'enterprise'].includes(plan.toLowerCase());
+        return isPaidPlan ? 'payment' : 'setup';
+      },
+      'PAYMENT': 'setup'
+    };
+    
+    // Determine step
+    const step = typeof statusToStep[onboardingStatus || 'NOT_STARTED'] === 'function' 
+      ? statusToStep[onboardingStatus || 'NOT_STARTED']() 
+      : statusToStep[onboardingStatus || 'NOT_STARTED'];
+    
+    // Set the step cookie
+    document.cookie = `onboardingStep=${step}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+    document.cookie = `onboardingInProgress=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+    
+    logger.debug(`[SignInForm] Redirecting user to onboarding step: ${step}`);
+    
+    // Return full path with uniqueness parameter to prevent caching
+    return `/onboarding/${step}?from=signin&ts=${Date.now()}`;
   };
 
-  const handleRedirect = async () => {
-    try {
-      logger.debug('[SignInForm] Getting tokens for redirect');
+  // Helper function for standardized error handling
+  const handleAuthError = (error) => {
+    // Define all possible errors in one place
+    const errorMap = {
+      // Authentication errors
+      NotAuthorizedException: 'Your email or password is incorrect.',
+      UserNotFoundException: 'We couldn\'t find an account with this email address.',
+      UserNotConfirmedException: 'Please verify your email first.',
+      CodeMismatchException: 'Verification code is incorrect.',
+      ExpiredCodeException: 'Verification code has expired.',
       
-      // Get current tokens using the retry-enabled function
-      const { fetchAuthSessionWithRetry } = await import('@/config/amplifyUnified');
-      const { tokens } = await fetchAuthSessionWithRetry();
+      // Network errors
+      NetworkError: 'Connection issue detected.',
       
-      logger.debug('[SignInForm] Session tokens:', {
-        hasIdToken: !!tokens?.idToken,
-        hasAccessToken: !!tokens?.accessToken,
-        idTokenLength: tokens?.idToken?.toString()?.length,
-        accessTokenLength: tokens?.accessToken?.toString()?.length
-      });
+      // Tenant errors
+      TenantError: 'Account setup issue detected.',
       
-      // Get onboarding status
-      const status = await getOnboardingStatus();
-      logger.debug('[SignInForm] Full onboarding status:', status);
-      
-      try {
-        // Set cookies via API with retries
-        await setCookiesViaAPI(
-          tokens, 
-          status.currentStep || ONBOARDING_STATES.NOT_STARTED,
-          status.setupDone ? ONBOARDING_STATES.COMPLETE : ONBOARDING_STATES.NOT_STARTED,
-          rememberMe
-        );
-        
-        logger.debug('[SignInForm] Cookies set successfully via API');
-      } catch (cookieError) {
-        // Log but continue - we'll use client-side redirect with the tokens we have
-        logger.error('[SignInForm] Failed to set cookies via API:', cookieError);
-        
-        // Set cookies manually as a fallback
-        try {
-          // Set required cookies with client-side code
-          const expiration = new Date();
-          expiration.setDate(expiration.getDate() + 7); // 7 days
-          
-          // Set authToken cookie explicitly - crucial for middleware
-          document.cookie = `authToken=true; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-          document.cookie = `onboardedStatus=${status.currentStep || 'NOT_STARTED'}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-          document.cookie = `onboardingStep=business-info; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-          
-          logger.debug('[SignInForm] Set fallback cookies via client-side');
-        } catch (clientCookieError) {
-          logger.error('[SignInForm] Failed to set fallback cookies:', clientCookieError);
-        }
-      }
-      
-      // Determine where to redirect
-      let redirectPath = '/onboarding/business-info'; // Default for NOT_STARTED
-      
-      if (status.setupDone) {
-        redirectPath = '/dashboard';
-      }
-      
-      // Add query parameter to prevent middleware redirect loops
-      redirectPath += '?from=signin';
-      
-      // Add language parameter if needed
-      redirectPath = appendLanguageParam(redirectPath);
-      logger.debug('[SignInForm] Redirecting to:', redirectPath);
-      
-      // Use window.location for a full page reload to ensure middleware re-evaluation
-      window.location.href = redirectPath;
-    } catch (error) {
-      logger.error('[SignInForm] Failed to handle redirect:', error);
-      setError('An error occurred during sign in. Please try again.');
-      
-      // Try to clean up
-      try {
-        if (isAmplifyConfigured()) {
-          await signOut();
-        }
-      } catch (signOutError) {
-        logger.error('[SignInForm] Error during cleanup sign out:', signOutError);
-      }
+      // Generic fallback
+      default: 'Sign-in issue detected.'
+    };
+    
+    // Log with consistent format
+    logger.error('[SignInForm] Error during authentication flow:', {
+      name: error.name,
+      message: error.message,
+      code: error.code
+    });
+    
+    // Determine user-friendly message
+    let userMessage = errorMap[error.name] || errorMap.default;
+    
+    // Add recovery hint if possible
+    if (error.message && error.message.includes('network')) {
+      userMessage = errorMap.NetworkError + ' Please check your connection and try again.';
+    } else if (error.name === 'TenantError') {
+      userMessage += ' Please contact support for assistance.';
     }
+    
+    // Set error for display
+    setError(userMessage);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
+    setLoadingStep(0);
 
     try {
+      // Make sure Amplify is configured
+      reconfigureAmplify();
+      
       logger.debug('[SignInForm] Attempting sign in:', { email });
 
-      // Use the tenant-aware login function with rememberMe option
+      // Step 1: Authenticate
       const result = await login(email, password, rememberMe);
       
       if (!result.success) {
         throw new Error(result.error || 'Login failed');
       }
 
-      logger.debug('[SignInForm] Sign in successful with tenant initialization');
+      // Step 2: Get user status
+      setLoadingStep(1);
+      logger.debug('[SignInForm] Sign in successful, checking user attributes');
+      
+      try {
+        const userAttributes = await fetchUserAttributes();
+        logger.debug('[SignInForm] User attributes retrieved:', {
+          onboardingStatus: userAttributes['custom:onboarding'],
+          businessId: userAttributes['custom:businessid'],
+          setupDone: userAttributes['custom:setupdone']
+        });
 
-      // Wait a moment for the session to be established
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Handle redirect after successful sign in
-      await handleRedirect();
+        // Step 3: Prepare for redirect
+        setLoadingStep(2);
+        
+        // Determine where to redirect based on user status
+        const redirectUrl = determineRedirectPath(userAttributes);
+        logger.debug('[SignInForm] Final redirect URL:', redirectUrl);
+        
+        // Short delay for user experience
+        setTimeout(() => {
+          // Use window.location for a clean redirect with page reload
+          window.location.href = redirectUrl;
+        }, 500);
+      } catch (attributesError) {
+        logger.error('[SignInForm] Error fetching user attributes:', attributesError);
+        // Fall back to safe default if we can't determine status
+        window.location.href = '/onboarding/business-info?from=signin&error=attributes';
+      }
     } catch (error) {
       logger.error('[SignInForm] Sign in failed:', error);
-
-      const errorMessages = {
-        NotAuthorizedException: 'Incorrect email or password',
-        UserNotFoundException: 'No account found with this email',
-        InvalidParameterException: 'Please enter a valid email and password',
-        TooManyRequestsException: 'Too many attempts. Please try again later'
-      };
-
-      setError(errorMessages[error.name] || error.message || 'An unexpected error occurred');
+      handleAuthError(error);
       setIsLoading(false);
     }
   };
@@ -267,44 +275,13 @@ export default function SignInForm() {
 
       <div className="mt-8">
         <div className="space-y-6">
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed relative mb-3"
-          >
-            <div className="flex items-center justify-center gap-3">
-              <img src="/google.svg" alt="Google" className="w-5 h-5" />
-              <span>Continue with Google</span>
-            </div>
-          </button>
-          
-          <button
-            onClick={handleAppleSignIn}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed relative"
-          >
-            <div className="flex items-center justify-center gap-3">
-              <img src="/apple.svg" alt="Apple" className="w-5 h-5" />
-              <span>Continue with Apple</span>
-            </div>
-          </button>
-
-          <div className="relative mt-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">or</span>
-            </div>
-          </div>
-
           {error && (
-            <Alert severity="error">
+            <Alert severity="error" className="mb-4">
               {error}
             </Alert>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <TextField
               label="Email address"
               name="email"
@@ -315,6 +292,7 @@ export default function SignInForm() {
               autoComplete="email"
               autoFocus
               disabled={isLoading}
+              placeholder="your.email@example.com"
             />
 
             <TextField
@@ -339,7 +317,7 @@ export default function SignInForm() {
               <div className="text-sm">
                 <Link 
                   href="/auth/forgot-password" 
-                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                  className="font-medium text-blue-600 hover:text-blue-800"
                 >
                   Forgot password?
                 </Link>
@@ -350,7 +328,7 @@ export default function SignInForm() {
               type="submit"
               disabled={isLoading}
               fullWidth
-              className="flex justify-center h-10"
+              className="flex justify-center h-12 bg-blue-600 hover:bg-blue-700 text-white"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -358,12 +336,72 @@ export default function SignInForm() {
                   <span>Signing in...</span>
                 </div>
               ) : (
-                'Sign in'
+                'Sign in with Email'
               )}
             </Button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">or continue with</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+              className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <img src="/google.svg" alt="Google" className="w-5 h-5" />
+              <span>Google</span>
+            </button>
+            
+            <button
+              onClick={handleAppleSignIn}
+              disabled={isLoading}
+              className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <img src="/apple.svg" alt="Apple" className="w-5 h-5" />
+              <span>Apple</span>
+            </button>
+          </div>
+
+          <p className="mt-4 text-center text-sm text-gray-600">
+            By signing in, you agree to our{' '}
+            <Link href="/terms" className="font-medium text-blue-600 hover:text-blue-800">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className="font-medium text-blue-600 hover:text-blue-800">
+              Privacy Policy
+            </Link>
+          </p>
         </div>
       </div>
+
+      {/* Improved loading state */}
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-90 z-50">
+          <div className="text-center p-6 max-w-sm mx-auto">
+            <CircularProgress size="lg" className="text-blue-600 mb-4" />
+            <p className="text-gray-800 font-medium text-lg mb-2">
+              {loadingSteps[loadingStep]}
+            </p>
+            <div className="flex justify-center space-x-2 mt-3">
+              {loadingSteps.map((_, index) => (
+                <div 
+                  key={index}
+                  className={`h-2 w-2 rounded-full ${index <= loadingStep ? 'bg-blue-600' : 'bg-gray-300'}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -3,15 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  CircularProgress,
-  Alert,
-  Paper,
-} from '@mui/material';
 import { useAuth } from '@/hooks/auth';
 import { logger } from '@/utils/logger';
 
@@ -61,111 +52,111 @@ export default function ResetPassword() {
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        p: 3,
-      }}
-    >
-      <Paper
-        elevation={3}
-        sx={{
-          p: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          maxWidth: 400,
-          width: '100%',
-        }}
-      >
-        <Typography component="h1" variant="h5" gutterBottom>
+    <div className="flex flex-col items-center justify-center min-h-screen p-6">
+      <div className="bg-white shadow-md rounded-lg p-8 flex flex-col items-center max-w-md w-full">
+        <h1 className="text-xl font-semibold mb-2">
           Reset Password
-        </Typography>
+        </h1>
 
-        <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
+        <p className="text-sm text-gray-600 text-center mb-6">
           Enter the verification code sent to your email and your new password.
-        </Typography>
+        </p>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 2, width: '100%' }}>
+          <div className="bg-red-50 text-red-700 p-4 rounded-md mb-4 w-full border border-red-200">
             {error}
-          </Alert>
+          </div>
         )}
 
-        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="Email Address"
-            name="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={isLoading}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="code"
-            label="Verification Code"
-            id="code"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            disabled={isLoading}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="newPassword"
-            label="New Password"
-            type="password"
-            id="newPassword"
-            autoComplete="new-password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            disabled={isLoading}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="confirmPassword"
-            label="Confirm New Password"
-            type="password"
-            id="confirmPassword"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            disabled={isLoading}
-          />
+        <form onSubmit={handleSubmit} className="w-full">
+          <div className="mb-4">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email Address
+            </label>
+            <input
+              className={`w-full px-3 py-2 border ${isLoading ? 'bg-gray-100' : 'bg-white'} border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500`}
+              required
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          
+          <div className="mb-4">
+            <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-1">
+              Verification Code
+            </label>
+            <input
+              className={`w-full px-3 py-2 border ${isLoading ? 'bg-gray-100' : 'bg-white'} border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500`}
+              required
+              id="code"
+              name="code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          
+          <div className="mb-4">
+            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              New Password
+            </label>
+            <input
+              className={`w-full px-3 py-2 border ${isLoading ? 'bg-gray-100' : 'bg-white'} border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500`}
+              required
+              id="newPassword"
+              name="newPassword"
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          
+          <div className="mb-6">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              Confirm New Password
+            </label>
+            <input
+              className={`w-full px-3 py-2 border ${isLoading ? 'bg-gray-100' : 'bg-white'} border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500`}
+              required
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
 
-          <Button
+          <button
             type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
+            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 ${
+              isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+            }`}
             disabled={isLoading}
           >
-            {isLoading ? <CircularProgress size={24} /> : 'Reset Password'}
-          </Button>
+            {isLoading ? (
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : 'Reset Password'}
+          </button>
 
-          <Box sx={{ mt: 2 }}>
-            <Link href="/auth/signin" style={{ textDecoration: 'none' }}>
-              <Typography variant="body2" color="primary" align="center">
-                Back to Sign In
-              </Typography>
+          <div className="mt-4 text-center">
+            <Link href="/auth/signin" className="text-sm text-indigo-600 hover:text-indigo-500">
+              Back to Sign In
             </Link>
-          </Box>
-        </Box>
-      </Paper>
-    </Box>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

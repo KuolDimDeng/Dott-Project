@@ -93,4 +93,56 @@ The implementation includes:
 
 - Row-level tenancy relies on application-level filtering, so careful use of the ORM is essential
 - Always use the tenant-aware manager (`objects`) for queries instead of `all_objects` except in specific admin scenarios
-- Consider database-level security to complement application-level isolation 
+- Consider database-level security to complement application-level isolation
+
+# JWT Expiration Handling Improvements
+
+This update addresses the JWT token expiration issues that were causing users to be unexpectedly redirected during the onboarding process. The implementation focuses on gracefully handling token expiration, maintaining user state, and providing a seamless experience.
+
+## Key Improvements
+
+### 1. Backend JWT Expiration Handling
+- Enhanced the `InvalidToken` error in `jwt.py` to provide more specific information when tokens expire
+- Added detailed error response with clear action instructions for frontend handling
+
+### 2. Token Refresh Management
+- Created a centralized `authInterceptor.js` utility to automatically refresh tokens on expiration
+- Implemented intelligent request queueing to handle concurrent requests during token refresh
+- Added graceful fallback to sign-in when refresh is not possible
+
+### 3. Onboarding Cookie Management
+- Created a comprehensive `cookieManager.js` utility for consistent cookie handling
+- Added backup storage options (localStorage) for resilience against cookie issues
+- Implemented step tracking cookies for preserving onboarding progress
+
+### 4. Middleware Enhancements
+- Updated middleware to detect token expiration and redirect appropriately
+- Added helpers to determine the current onboarding step based on cookies
+- Improved onboarding path navigation to prevent loops and unnecessary redirects
+
+### 5. API Route Error Handling
+- Enhanced tenant API endpoints with better token expiration handling
+- Updated business-info API to gracefully handle expired tokens during submission
+- Improved error messaging and client-side feedback
+
+### 6. Onboarding Layout Improvements
+- Added proactive token refresh in the onboarding layout to prevent expiration
+- Implemented a clear session expired UI for better user experience
+- Added refresh indicators to show when token refresh is in progress
+
+## Usage
+
+The system now handles token expiration in these ways:
+
+1. **Proactive refresh**: Tokens are refreshed before they expire
+2. **Graceful handling**: If a token expires, the system attempts refresh automatically
+3. **State preservation**: Onboarding progress is preserved in cookies and localStorage
+4. **Clear feedback**: Users see clear messages when authentication issues occur
+
+## Testing
+
+When testing the onboarding flow, you should now see:
+- Fewer redirects to the sign-in page
+- Preserved form data between sessions
+- Clearer error messaging when authentication issues occur
+- More reliable progress through onboarding steps 

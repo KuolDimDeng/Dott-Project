@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { TextField, Button, Box, Typography } from '@mui/material';
 import { useParams } from 'react-router-dom';
 import { axiosInstance } from '@/lib/axiosConfig';
 
@@ -49,63 +48,95 @@ const NewHireForm = () => {
   };
 
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
+    <div className="w-full">
+      <h5 className="text-xl font-semibold mb-4">
         Complete Your Information
-      </Typography>
-      <form onSubmit={handleSubmit}>
-        <TextField
-          label="Email"
-          name="email"
-          value={formData.email}
-          onChange={handleInputChange}
-          fullWidth
-          margin="normal"
-          required
-          disabled
-        />
-        <TextField
-          label="First Name"
-          name="first_name"
-          value={formData.first_name}
-          onChange={handleInputChange}
-          fullWidth
-          margin="normal"
-          required
-        />
-        <TextField
-          label="Last Name"
-          name="last_name"
-          value={formData.last_name}
-          onChange={handleInputChange}
-          fullWidth
-          margin="normal"
-          required
-        />
-        <TextField
-          label="Social Security Number"
-          name="social_security_number"
-          value={formData.social_security_number}
-          onChange={handleInputChange}
-          fullWidth
-          margin="normal"
-          required
-        />
-        <TextField
-          label="Bank Account Number"
-          name="bank_account_number"
-          value={formData.bank_account_number}
-          onChange={handleInputChange}
-          fullWidth
-          margin="normal"
-          required
-        />
+      </h5>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            Email
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 cursor-not-allowed"
+            required
+            disabled
+          />
+        </div>
+        
+        <div>
+          <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+            First Name
+          </label>
+          <input
+            id="first_name"
+            name="first_name"
+            value={formData.first_name}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        
+        <div>
+          <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+            Last Name
+          </label>
+          <input
+            id="last_name"
+            name="last_name"
+            value={formData.last_name}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        
+        <div>
+          <label htmlFor="social_security_number" className="block text-sm font-medium text-gray-700 mb-1">
+            Social Security Number
+          </label>
+          <input
+            id="social_security_number"
+            name="social_security_number"
+            value={formData.social_security_number}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        
+        <div>
+          <label htmlFor="bank_account_number" className="block text-sm font-medium text-gray-700 mb-1">
+            Bank Account Number
+          </label>
+          <input
+            id="bank_account_number"
+            name="bank_account_number"
+            value={formData.bank_account_number}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        
         {/* Add other necessary fields */}
-        <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
-          Submit Information
-        </Button>
+        
+        <div className="pt-2">
+          <button 
+            type="submit" 
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Submit Information
+          </button>
+        </div>
       </form>
-    </Box>
+    </div>
   );
 };
 

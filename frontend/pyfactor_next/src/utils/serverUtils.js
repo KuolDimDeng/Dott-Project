@@ -42,11 +42,20 @@ export async function validateServerSession(providedTokens) {
       onboardedStatus = parsedCookies['onboardedStatus'];
       tenantId = parsedCookies['tenantId'];
       
-      logger.debug('[ServerUtils] Using tokens from cookies');
+      logger.debug('[ServerUtils] Using tokens from cookies', {
+        hasAccessToken: !!accessToken,
+        hasIdToken: !!idToken,
+        hasOnboardingStep: !!onboardingStep,
+        hasOnboardedStatus: !!onboardedStatus,
+        hasTenantId: !!tenantId,
+        cookieCount: Object.keys(parsedCookies).length,
+        cookieKeys: Object.keys(parsedCookies),
+      });
     }
 
     if (!accessToken || !idToken) {
-      throw new Error('No valid session tokens');
+      logger.warn('[ServerUtils] No valid session tokens found in cookies or parameters');
+      return { verified: false };
     }
 
     // Verify tokens
@@ -60,23 +69,67 @@ export async function validateServerSession(providedTokens) {
       const verifiedToken = await verifier.verify(accessToken);
       logger.debug('[ServerUtils] Token verified successfully');
       
+      // Extract user information from ID token
+      const idTokenDecoded = parseJwt(idToken);
+      const userId = idTokenDecoded?.sub;
+      const email = idTokenDecoded?.email;
+      const attributes = {};
+      
+      // Extract custom attributes
+      if (idTokenDecoded) {
+        Object.keys(idTokenDecoded).forEach(key => {
+          if (key.startsWith('custom:')) {
+            attributes[key] = idTokenDecoded[key];
+          }
+        });
+      }
+      
       return {
         verified: true,
         username: verifiedToken.username || verifiedToken.sub,
         sub: verifiedToken.sub,
-        accessToken,
-        idToken,
+        userId: userId,
+        email: email,
+        tokens: {
+          accessToken,
+          idToken
+        },
+        user: {
+          userId: userId,
+          email: email,
+          attributes: attributes || {}
+        },
         onboardingStep,
         onboardedStatus,
         tenantId
       };
     } catch (verifyError) {
       logger.error('[ServerUtils] Token verification failed:', verifyError);
-      throw new Error(`Token verification failed: ${verifyError.message}`);
+      return { 
+        verified: false, 
+        error: verifyError.message 
+      };
     }
   } catch (error) {
     logger.error('[ServerUtils] Session validation failed:', error);
-    throw error;
+    return { 
+      verified: false, 
+      error: error.message 
+    };
+  }
+}
+
+// Helper function to parse JWT token without validation
+function parseJwt(token) {
+  try {
+    if (!token) return null;
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = Buffer.from(base64, 'base64').toString('utf8');
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    logger.error('[ServerUtils] Failed to parse JWT token:', e);
+    return null;
   }
 }
 

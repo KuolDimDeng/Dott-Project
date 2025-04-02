@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchAuthSession, fetchUserAttributes } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 
@@ -34,18 +34,73 @@ export function useSession() {
   const [session, setSession] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const refreshInProgressRef = useRef(false);
   
   // Function to refresh the session
   const refreshSession = useCallback(async () => {
+    // Prevent duplicate refresh attempts - both local and global
+    if (refreshInProgressRef.current || (typeof window !== 'undefined' && window.__tokenRefreshInProgress)) {
+      logger.debug('[useSession] Refresh already in progress, skipping');
+      return session;
+    }
+    
+    // Check global cooldown
+    if (typeof window !== 'undefined' && window.__tokenRefreshCooldown) {
+      const now = Date.now();
+      if (now < window.__tokenRefreshCooldown) {
+        logger.warn('[useSession] In global cooldown period, skipping refresh');
+        return session;
+      }
+    }
+    
     try {
+      refreshInProgressRef.current = true;
+      // Set global lock
+      if (typeof window !== 'undefined') {
+        window.__tokenRefreshInProgress = true;
+      }
+      
       logger.debug('[useSession] Refreshing session');
       setIsLoading(true);
+      
+      // Check if we've exceeded max refresh attempts
+      const refreshCount = parseInt(sessionStorage.getItem('tokenRefreshCount') || '0', 10);
+      if (refreshCount >= 3) {
+        const lastRefreshTime = parseInt(sessionStorage.getItem('lastTokenRefreshTime') || '0', 10);
+        const now = Date.now();
+        if (now - lastRefreshTime < 30000) {
+          logger.error('[useSession] Too many refresh attempts, stopping refresh cycle');
+          setError(new Error('Too many refresh attempts'));
+          setIsLoading(false);
+          
+          // Set global cooldown
+          if (typeof window !== 'undefined') {
+            window.__tokenRefreshCooldown = now + 60000; // 1 minute cooldown
+          }
+          
+          return null;
+        }
+      }
       
       // Try to get the cached session first
       try {
         const sessionData = await fetchAuthSession();
         
         if (sessionData?.tokens?.idToken) {
+          // Verify token expiration
+          try {
+            const decodedToken = JSON.parse(atob(sessionData.tokens.idToken.toString().split('.')[1]));
+            const now = Math.floor(Date.now() / 1000);
+            
+            if (decodedToken.exp && decodedToken.exp < now) {
+              logger.debug('[useSession] Token expired, forcing refresh');
+              throw new Error('Token expired');
+            }
+          } catch (tokenError) {
+            logger.warn('[useSession] Token verification failed:', tokenError);
+            throw tokenError;
+          }
+          
           logger.debug('[useSession] Session fetched successfully');
           
           // Store token in cookies for better resilience
@@ -76,18 +131,7 @@ export function useSession() {
             });
           } catch (attributesError) {
             logger.warn('[useSession] Could not fetch user attributes during refresh:', attributesError);
-            
-            // Try to get attributes from cookies if available
-            const cookieAttributes = getUserAttributesFromCookies();
-            if (cookieAttributes) {
-              logger.debug('[useSession] Using attributes from cookies:', cookieAttributes);
-              setSession({
-                ...sessionData,
-                userAttributes: cookieAttributes
-              });
-            } else {
-              setSession(sessionData);
-            }
+            throw attributesError;
           }
           
           setError(null);
@@ -115,6 +159,20 @@ export function useSession() {
           const sessionData = await fetchAuthSession({ forceRefresh: true });
           
           if (sessionData?.tokens?.idToken) {
+            // Verify token expiration
+            try {
+              const decodedToken = JSON.parse(atob(sessionData.tokens.idToken.toString().split('.')[1]));
+              const now = Math.floor(Date.now() / 1000);
+              
+              if (decodedToken.exp && decodedToken.exp < now) {
+                logger.debug('[useSession] Token expired after force refresh, retrying');
+                throw new Error('Token expired');
+              }
+            } catch (tokenError) {
+              logger.warn('[useSession] Token verification failed after force refresh:', tokenError);
+              throw tokenError;
+            }
+            
             logger.debug(`[useSession] Forced refresh succeeded on attempt #${attempt + 1}`);
             
             // Store tokens in cookies
@@ -142,18 +200,7 @@ export function useSession() {
               logger.debug('[useSession] User attributes fetched after force refresh');
             } catch (attributesError) {
               logger.warn('[useSession] Could not fetch attributes after force refresh:', attributesError);
-              
-              // Fall back to cookies
-              const cookieAttributes = getUserAttributesFromCookies();
-              if (cookieAttributes) {
-                setSession({
-                  ...sessionData,
-                  userAttributes: cookieAttributes
-                });
-                logger.debug('[useSession] Using cookie attributes after force refresh');
-              } else {
-                setSession(sessionData);
-              }
+              throw attributesError;
             }
             
             setError(null);
@@ -166,22 +213,10 @@ export function useSession() {
         }
       }
       
-      // If we get here, all attempts failed - check if we have any cookies to use
-      logger.warn('[useSession] All session refresh attempts failed, checking fallback methods');
+      // If we get here, all attempts failed
+      logger.warn('[useSession] All session refresh attempts failed');
       
-      const cookieAttributes = getUserAttributesFromCookies();
-      if (cookieAttributes) {
-        logger.debug('[useSession] Using cookie attributes as last resort:', cookieAttributes);
-        setSession({
-          tokens: null,
-          userAttributes: cookieAttributes
-        });
-        setIsLoading(false);
-        setError(new Error('Using cached session data - limited functionality available'));
-        return { userAttributes: cookieAttributes };
-      }
-      
-      // Complete failure
+      // Clear invalid session data
       setSession(null);
       setError(new Error('Failed to refresh session after multiple attempts'));
       setIsLoading(false);
@@ -190,43 +225,51 @@ export function useSession() {
       logger.error('[useSession] Unhandled error in refreshSession:', err);
       setError(err);
       setIsLoading(false);
-      
-      // Try to get attributes from cookies if available as absolute last resort
-      const cookieAttributes = getUserAttributesFromCookies();
-      if (cookieAttributes) {
-        logger.debug('[useSession] Using cookie attributes after error:', cookieAttributes);
-        setSession({
-          tokens: null,
-          userAttributes: cookieAttributes
-        });
-        return { userAttributes: cookieAttributes };
-      } else {
-        setSession(null);
-        return false;
+      setSession(null);
+      return false;
+    } finally {
+      // Always release locks
+      refreshInProgressRef.current = false;
+      if (typeof window !== 'undefined') {
+        // Short delay to prevent immediate retries
+        setTimeout(() => {
+          window.__tokenRefreshInProgress = false;
+        }, 1000);
       }
     }
-  }, []);
+  }, [session]);
   
   // Set up session refresh interval
   useEffect(() => {
+    let mounted = true;
+    
     const initialCheck = async () => {
-      await refreshSession();
+      if (mounted) {
+        await refreshSession();
+      }
     };
     
     initialCheck();
     
     // Set up a timer to periodically refresh the session
-    const intervalId = setInterval(refreshSession, TOKEN_REFRESH_INTERVAL);
+    const intervalId = setInterval(() => {
+      if (mounted) {
+        refreshSession();
+      }
+    }, TOKEN_REFRESH_INTERVAL);
     
     // Also refresh on window focus
     const handleFocus = () => {
-      logger.debug('[useSession] Window focused, checking session');
-      refreshSession();
+      if (mounted) {
+        logger.debug('[useSession] Window focused, checking session');
+        refreshSession();
+      }
     };
     
     window.addEventListener('focus', handleFocus);
     
     return () => {
+      mounted = false;
       clearInterval(intervalId);
       window.removeEventListener('focus', handleFocus);
     };

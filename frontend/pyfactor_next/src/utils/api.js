@@ -1,5 +1,6 @@
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
+import tokenRefreshService from '@/utils/tokenRefresh';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -24,7 +25,8 @@ export async function apiRequest(endpoint, options = {}) {
   try {
     const headers = await getAuthHeaders();
     
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    // Use fetchWithTokenRefresh to handle token refreshing
+    const response = await tokenRefreshService.fetchWithTokenRefresh(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers: {
         ...headers,

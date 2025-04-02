@@ -1,12 +1,24 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/error.js
 'use client';
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { logger } from '@/utils/logger';
 
 export default function Error({ error, reset }) {
   useEffect(() => {
-    logger.error('Application error:', error);
+    // Safely log the error information
+    try {
+      logger.error('Application error:', error?.message || 'Unknown error');
+      
+      // Don't log the full error object as it might contain circular references
+      if (error?.stack) {
+        logger.error('Error stack:', error.stack);
+      }
+    } catch (loggingError) {
+      // Fallback if logger has issues
+      console.error('[Error boundary] Failed to log error:', loggingError);
+      console.error('[Original error]:', error);
+    }
   }, [error]);
 
   return (

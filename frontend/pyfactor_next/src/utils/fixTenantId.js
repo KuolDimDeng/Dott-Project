@@ -4,7 +4,7 @@
  */
 
 import { logger } from './logger';
-import { apiService } from '@/services/apiService';
+import apiService from '@/services/apiService';
 
 /**
  * Fix the tenant ID issue by ensuring the tenant ID is set in all storage locations

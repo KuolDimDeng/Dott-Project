@@ -1,14 +1,14 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/layout.js
 import { Inter } from 'next/font/google';
-import ClientLayout from './ClientLayout';
-import ThemeRegistry from '@/components/ThemeRegistry/ThemeRegistry';
-import Providers from '@/providers';
-import LanguageProvider from '@/components/LanguageProvider/LanguageProvider.js';
-import { UserProvider } from '@/contexts/UserContext';
 import './globals.css';
-import DashboardApp from './DashboardApp';
+import CircuitBreakerWrapper from './CircuitBreakerWrapper';
+import ClientProviders from './ClientProviders';
+import { Providers } from "./providers";
+import ConfigureAmplify from "@/components/ConfigureAmplify";
+import '@/config/amplifyConfig';
+import '@/utils/mockApiHandler';
 
-// Dynamic components will be loaded client-side by ClientLayout
+// Font configuration
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
@@ -24,23 +24,19 @@ export const metadata = {
   },
 };
 
-// Create a client-only wrapper for DynamicComponents
+// Root layout component
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        <UserProvider>
-          <ThemeRegistry>
-            <Providers>
-              <LanguageProvider>
-                <DashboardApp>
-                  <ClientLayout>{children}</ClientLayout>
-                  {/* DynamicComponents moved to ClientLayout for proper client-side rendering */}
-                </DashboardApp>
-              </LanguageProvider>
-            </Providers>
-          </ThemeRegistry>
-        </UserProvider>
+        <ConfigureAmplify />
+        <Providers>
+          <CircuitBreakerWrapper>
+            <ClientProviders>
+              {children}
+            </ClientProviders>
+          </CircuitBreakerWrapper>
+        </Providers>
       </body>
     </html>
   );

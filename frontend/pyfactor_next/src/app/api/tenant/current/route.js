@@ -1,61 +1,127 @@
 import { NextResponse } from 'next/server';
-import axios from 'axios';
-import { getLogger } from '@/utils/logger';
+import { logger } from '@/utils/logger';
 import { cookies } from 'next/headers';
-
-const logger = getLogger('tenant-current-api');
+import { getServerUser } from '@/utils/getServerUser';
 
 /**
- * API route to get the current tenant for the authenticated user
- * This acts as a proxy to the backend API
+ * GET endpoint to retrieve current tenant information
+ * Handles token expiration gracefully with clear error responses
  */
 export async function GET(request) {
   try {
-    // Get auth credentials from cookies
+    // First check cookies for tenant ID
     const cookieStore = cookies();
-    const idToken = cookieStore.get('idToken')?.value;
-    const sessionCookie = cookieStore.get('pyfactor_session')?.value;
+    const tenantIdFromCookie = cookieStore.get('tenantId')?.value;
     
-    if (!idToken && !sessionCookie) {
-      logger.error('No authentication token found');
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-    
-    // Get backend URL from environment variable
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || '';
-    const apiUrl = `${backendUrl}/api/tenant/current/`;
-    
-    // Extract headers from original request
-    const headers = {
-      'Content-Type': 'application/json',
-    };
-    
-    // Add authorization headers
-    if (idToken) {
-      headers['Authorization'] = `Bearer ${idToken}`;
-    }
-    
-    // Make request to backend
-    const response = await axios.get(apiUrl, { headers });
-    
-    // Return the response data
-    return NextResponse.json(response.data);
-  } catch (error) {
-    // Check if error is an Axios error
-    if (error.response) {
-      // Forward the status code and error message from the backend
-      const statusCode = error.response.status;
-      const errorData = error.response.data;
+    if (tenantIdFromCookie) {
+      logger.debug('[/api/tenant/current] Found tenant ID in cookies', { 
+        tenantId: tenantIdFromCookie?.slice(0, 8) + '...' 
+      });
       
-      logger.error(`Backend returned error ${statusCode}:`, errorData);
-      return NextResponse.json(errorData, { status: statusCode });
+      return NextResponse.json({ 
+        tenantId: tenantIdFromCookie,
+        source: 'cookie' 
+      });
     }
     
-    // Handle other errors
-    logger.error('Error fetching current tenant:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch current tenant', detail: error.message },
-      { status: 500 }
-    );
+    // If no cookie, try to get from user session
+    try {
+      const user = await getServerUser();
+      
+      if (!user) {
+        logger.warn('[/api/tenant/current] No user found in session');
+        return NextResponse.json({ 
+          message: 'No tenant ID found - user not authenticated',
+          authenticated: false 
+        }, { status: 401 });
+      }
+      
+      // Extract tenant ID from user attributes
+      const tenantId = user.attributes?.['custom:tenant_id'] || 
+                        user.attributes?.['custom:tenantId'] || 
+                        user.attributes?.['tenant_id'];
+      
+      if (tenantId) {
+        logger.debug('[/api/tenant/current] Found tenant ID in user attributes', { 
+          tenantId: tenantId?.slice(0, 8) + '...'
+        });
+        
+        // Set it in cookie for future use
+        cookieStore.set('tenantId', tenantId, {
+          maxAge: 60 * 60 * 24 * 7, // 1 week
+          path: '/',
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+        });
+        
+        return NextResponse.json({ 
+          tenantId,
+          source: 'user_attributes' 
+        });
+      } else {
+        logger.warn('[/api/tenant/current] No tenant ID found in user attributes');
+        return NextResponse.json({ 
+          message: 'No tenant ID found for user',
+          authenticated: true,
+          hasTenant: false
+        }, { status: 404 });
+      }
+    } catch (userError) {
+      // Special handling for token expiration
+      if (userError.name === 'TokenExpiredError' || 
+          userError.message?.includes('expire') || 
+          userError.code === 'ERR_JWT_EXPIRED') {
+        
+        logger.warn('[/api/tenant/current] JWT token expired:', { 
+          error: userError.message 
+        });
+        
+        return NextResponse.json({ 
+          message: 'Authentication token expired',
+          tokenExpired: true,
+          redirectTo: '/auth/signin?session_expired=true'
+        }, { status: 401 });
+      }
+      
+      // Log but continue - we might still have the cookie
+      logger.error('[/api/tenant/current] Error getting user:', { 
+        error: userError.message,
+        stack: process.env.NODE_ENV === 'development' ? userError.stack : undefined
+      });
+      
+      // If we have no user and no cookie, we're out of options
+      return NextResponse.json({ 
+        message: 'Error retrieving tenant information',
+        authenticated: false,
+        error: userError.message
+      }, { status: 500 });
+    }
+  } catch (error) {
+    // Enhanced error logging
+    logger.error('[/api/tenant/current] Error processing request:', {
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      name: error.name
+    });
+    
+    // Handle token expiration
+    if (error.name === 'TokenExpiredError' || 
+        error.message?.includes('expire') || 
+        error.code === 'ERR_JWT_EXPIRED') {
+      
+      logger.warn('[/api/tenant/current] JWT token expired');
+      
+      return NextResponse.json({ 
+        message: 'Authentication token expired',
+        tokenExpired: true,
+        redirectTo: '/auth/signin?session_expired=true'
+      }, { status: 401 });
+    }
+    
+    return NextResponse.json({ 
+      message: 'Error retrieving tenant information', 
+      error: error.message 
+    }, { status: 500 });
   }
 } 

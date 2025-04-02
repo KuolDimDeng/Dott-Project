@@ -4,12 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import { CircularProgress } from '@mui/material';
-
-export const metadata = {
-  title: 'Setup Complete - Onboarding',
-  description: 'Your account has been successfully set up',
-};
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function SuccessPage() {
   const router = useRouter();
@@ -78,31 +73,33 @@ export default function SuccessPage() {
       <div className="text-center">
         <div className="mb-6">
           {setupStatus === 'initializing' ? (
-            <CircularProgress size={64} className="text-blue-500" />
+            <LoadingSpinner size="large" text="Setting up..." />
           ) : (
-            <svg
-              className="mx-auto h-16 w-16 text-green-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 48 48"
-              aria-hidden="true"
-            >
-              <circle
-                className="opacity-25"
-                cx="24"
-                cy="24"
-                r="20"
+            <div className="mx-auto flex justify-center">
+              <svg
+                className="h-16 w-16 text-green-500"
+                fill="none"
                 stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="4"
-                d="M14 24l8 8 16-16"
-              />
-            </svg>
+                viewBox="0 0 48 48"
+                aria-hidden="true"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="24"
+                  cy="24"
+                  r="20"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="4"
+                  d="M14 24l8 8 16-16"
+                />
+              </svg>
+            </div>
           )}
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-4">

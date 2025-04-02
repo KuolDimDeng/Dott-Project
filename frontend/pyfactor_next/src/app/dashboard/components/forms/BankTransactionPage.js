@@ -1,32 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  CircularProgress,
-  useTheme,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import SearchIcon from '@mui/icons-material/Search';
 import { axiosInstance } from '@/lib/axiosConfig';
-
-const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
-  maxHeight: 440,
-  marginTop: theme.spacing(3),
-}));
 
 const BankTransactionPage = () => {
   const [accounts, setAccounts] = useState([]);
@@ -36,7 +9,6 @@ const BankTransactionPage = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const theme = useTheme();
 
   const fetchBankAccounts = useCallback(async () => {
     try {
@@ -101,102 +73,141 @@ const BankTransactionPage = () => {
   };
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-        <AccountBalanceIcon sx={{ mr: 2, fontSize: 40 }} />
+    <div className="bg-gray-50 p-6 rounded-lg">
+      <h4 className="text-2xl font-semibold mb-4 flex items-center">
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          className="h-8 w-8 mr-3" 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor"
+        >
+          <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth={2} 
+            d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" 
+          />
+        </svg>
         Bank Transactions
-      </Typography>
+      </h4>
 
-      <FormControl fullWidth sx={{ mt: 3 }}>
-        <InputLabel id="bank-account-select-label">Bank Account</InputLabel>
-        <Select
-          labelId="bank-account-select-label"
+      <div className="w-full mt-6">
+        <label htmlFor="bank-account-select" className="block text-sm font-medium text-gray-700 mb-1">
+          Bank Account
+        </label>
+        <select
           id="bank-account-select"
           value={selectedAccount}
-          label="Bank Account"
           onChange={handleAccountChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
+          <option value="">Select a bank account</option>
           {accounts.map((account) => (
-            <MenuItem key={account.account_id} value={account.account_id}>
+            <option key={account.account_id} value={account.account_id}>
               {account.name}
-            </MenuItem>
+            </option>
           ))}
-        </Select>
-      </FormControl>
+        </select>
+      </div>
 
-      <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
-        <TextField
-          label="Start Date"
-          type="date"
-          value={startDate}
-          onChange={handleStartDateChange}
-          InputLabelProps={{ shrink: true }}
-        />
-        <TextField
-          label="End Date"
-          type="date"
-          value={endDate}
-          onChange={handleEndDateChange}
-          InputLabelProps={{ shrink: true }}
-        />
-        <Button
-          variant="contained"
-          onClick={fetchTransactions}
-          startIcon={<SearchIcon />}
-          disabled={loading}
-        >
-          Fetch Transactions
-        </Button>
-      </Box>
+      <div className="mt-6 flex flex-col sm:flex-row gap-4">
+        <div className="w-full sm:w-auto">
+          <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">
+            Start Date
+          </label>
+          <input
+            id="start-date"
+            type="date"
+            value={startDate}
+            onChange={handleStartDateChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="w-full sm:w-auto">
+          <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-1">
+            End Date
+          </label>
+          <input
+            id="end-date"
+            type="date"
+            value={endDate}
+            onChange={handleEndDateChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex items-end">
+          <button
+            onClick={fetchTransactions}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            Fetch Transactions
+          </button>
+        </div>
+      </div>
 
       {error && (
-        <Typography color="error" sx={{ mt: 2 }}>
+        <div className="mt-4 text-red-600">
           {error}
-        </Typography>
+        </div>
       )}
 
       {loading ? (
-        <CircularProgress sx={{ mt: 3 }} />
+        <div className="flex justify-center my-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+        </div>
       ) : (
-        <StyledTableContainer component={Paper}>
-          <Table stickyHeader aria-label="transactions table">
-            <TableHead>
-              <TableRow>
-                <TableCell>
-                  <strong>Date</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Description</strong>
-                </TableCell>
-                <TableCell align="right">
-                  <strong>Amount</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Category</strong>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+        <div className="mt-6 overflow-x-auto shadow-md rounded-lg max-h-[440px]">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50 sticky top-0">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Description
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Category
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
               {transactions.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                  <TableCell>{transaction.description}</TableCell>
-                  <TableCell align="right">${transaction.amount.toFixed(2)}</TableCell>
-                  <TableCell>{transaction.category}</TableCell>
-                </TableRow>
+                <tr key={transaction.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {new Date(transaction.date).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {transaction.description}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    ${transaction.amount.toFixed(2)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {transaction.category}
+                  </td>
+                </tr>
               ))}
               {transactions.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} align="center">
+                <tr>
+                  <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
                     No transactions found.
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               )}
-            </TableBody>
-          </Table>
-        </StyledTableContainer>
+            </tbody>
+          </table>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 

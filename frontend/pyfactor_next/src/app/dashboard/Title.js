@@ -1,12 +1,11 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
-import Typography from '@mui/material/Typography';
 
 function Title(props) {
   return (
-    <Typography component="h2" variant="h6" color="primary" gutterBottom>
+    <h2 className="text-lg font-medium text-indigo-600 mb-2">
       {props.children}
-    </Typography>
+    </h2>
   );
 }
 

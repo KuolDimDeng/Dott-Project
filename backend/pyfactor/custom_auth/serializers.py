@@ -41,8 +41,10 @@ logger = get_logger()
 class CustomRegisterSerializer(RegisterSerializer):
     username = None  # Remove username if not used
     email = serializers.EmailField(required=True)
-    password1 = serializers.CharField(write_only=True, required=True)
-    password2 = serializers.CharField(write_only=True, required=True)
+    password1 = serializers.CharField(write_only=True, required=False)
+    password2 = serializers.CharField(write_only=True, required=False)
+    password = serializers.CharField(write_only=True, required=False)
+    confirm_password = serializers.CharField(write_only=True, required=False)
     first_name = serializers.CharField(required=False, allow_blank=True)
     last_name = serializers.CharField(required=False, allow_blank=True)
     business_name = serializers.CharField(required=False, allow_blank=True)
@@ -62,7 +64,7 @@ class CustomRegisterSerializer(RegisterSerializer):
     class Meta:
         model = User
         fields = (
-            'email', 'password1', 'password2', 'first_name', 'last_name', 
+            'email', 'password1', 'password2', 'password', 'confirm_password', 'first_name', 'last_name', 
             'business_name', 'business_type', 'occupation', 'street', 
             'city', 'state', 'postcode', 'country', 'subscription_type', 'phone_number'
         )
@@ -75,8 +77,26 @@ class CustomRegisterSerializer(RegisterSerializer):
         return email
 
     def validate(self, data):
-        if data.get("password1") != data.get("password2"):
+        # Handle both password1/password2 and password/confirm_password field combinations
+        password1 = data.get("password1") or data.get("password")
+        password2 = data.get("password2") or data.get("confirm_password")
+        
+        if not password1:
+            raise serializers.ValidationError("Password is required.")
+            
+        if not password2:
+            raise serializers.ValidationError("Password confirmation is required.")
+            
+        if password1 != password2:
             raise serializers.ValidationError("The two password fields didn't match.")
+            
+        # Normalize the data to use password1/password2 internally
+        if "password" in data:
+            data["password1"] = data.pop("password")
+            
+        if "confirm_password" in data:
+            data["password2"] = data.pop("confirm_password")
+            
         return data
 
     def get_cleaned_data(self):

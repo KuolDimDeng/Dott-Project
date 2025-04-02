@@ -1,38 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Fragment } from 'react';
 import PropTypes from 'prop-types';
-import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  Tabs,
-  Tab,
-  Button,
-  TextField,
-  Table,
-  TableBody,
-  TableCell,
-  Link,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Avatar,
-  IconButton,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-} from '@mui/material';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import PersonIcon from '@mui/icons-material/Person';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import SaveIcon from '@mui/icons-material/Save';
-import CancelIcon from '@mui/icons-material/Cancel';
 import InvoiceDetails from './InvoiceDetails';
 import { ErrorBoundary } from 'next/dist/client/components/error-boundary';
 
@@ -591,97 +560,155 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
   };
 
   const renderInvoicesTab = () => (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Invoice Number</TableCell>
-            <TableCell>Date</TableCell>
-            <TableCell>Amount</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Due Date</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {invoices.map((invoice) => (
-            <TableRow
-              key={invoice.id}
-              onClick={() => handleInvoiceSelect(invoice.id)}
-              sx={{
-                cursor: 'pointer',
-                '&:hover': {
-                  backgroundColor: 'rgba(0, 0, 128, 0.04)',
-                },
-                '&:hover .MuiTableCell-root': {
-                  color: 'primary.main',
-                },
-              }}
-            >
-              {console.log('Invoice ID:', invoice.id)}
-              <TableCell>{invoice.invoice_num}</TableCell>
-              <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
-              <TableCell>${invoice.amount}</TableCell>
-              <TableCell>{invoice.status}</TableCell>
-              <TableCell>{new Date(invoice.due_date).toLocaleDateString()}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Invoice Number
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Date
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Amount
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Due Date
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {invoices.map((invoice) => (
+              <tr 
+                key={invoice.id} 
+                onClick={() => handleInvoiceSelect(invoice.id)}
+                className="hover:bg-blue-50 cursor-pointer transition-colors"
+              >
+                {console.log('Invoice ID:', invoice.id)}
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {invoice.invoice_num}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(invoice.date).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  ${invoice.amount}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    invoice.status === 'Paid' 
+                      ? 'bg-green-100 text-green-800' 
+                      : invoice.status === 'Overdue' 
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {invoice.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(invoice.due_date).toLocaleDateString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 
   const renderTransactionsTab = () => (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Date</TableCell>
-            <TableCell>Description</TableCell>
-            <TableCell>Amount</TableCell>
-            <TableCell>Type</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {transactions.map((transaction) => (
-            <TableRow key={transaction.id}>
-              <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
-              <TableCell>{transaction.description}</TableCell>
-              <TableCell>${transaction.amount}</TableCell>
-              <TableCell>{transaction.type}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Date
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Description
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Amount
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Type
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {transactions.map((transaction) => (
+              <tr key={transaction.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(transaction.date).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {transaction.description}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <span className={transaction.type === 'Credit' ? 'text-green-600' : 'text-red-600'}>
+                    ${transaction.amount}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    transaction.type === 'Credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {transaction.type}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 
   if (isLoading && !newCustomer) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="400px">
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center items-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
     );
   }
 
   if (error && !newCustomer) {
     return (
-      <Box p={3}>
-        <Typography color="error">{error}</Typography>
-        <Button startIcon={<ArrowBackIcon />} onClick={onBackToList} sx={{ mt: 2 }}>
+      <div className="p-6">
+        <p className="text-red-600 mb-4">{error}</p>
+        <button 
+          onClick={onBackToList} 
+          className="flex items-center text-blue-600 hover:text-blue-800 focus:outline-none"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
           Back to List
-        </Button>
-      </Box>
+        </button>
+      </div>
     );
   }
 
   if (!customer && !newCustomer) {
     return (
-      <Box p={3}>
-        <Typography>No customer data found</Typography>
-        <Button startIcon={<ArrowBackIcon />} onClick={onBackToList} sx={{ mt: 2 }}>
+      <div className="p-6">
+        <p className="text-gray-600 mb-4">No customer data found</p>
+        <button 
+          onClick={onBackToList} 
+          className="flex items-center text-blue-600 hover:text-blue-800 focus:outline-none"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
           Back to List
-        </Button>
-      </Box>
+        </button>
+      </div>
     );
   }
 
@@ -690,7 +717,7 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
       <ErrorBoundary FallbackComponent={() => <div>Error loading invoice details</div>}>
         <InvoiceDetails
           invoiceId={selectedInvoice}
-          onBack={handleBackToCustomerDetails}
+          onBackToCustomerDetails={handleBackToCustomerDetails}
         />
       </ErrorBoundary>
     );
@@ -698,135 +725,147 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
 
   return (
     <ErrorBoundary>
-      <Box sx={{ p: 3 }}>
-        <Button
+      <div className="p-6">
+        <button
           onClick={onBackToList}
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
-          sx={{
-            mr: 1,
-            mb: 2,
-            '&:hover': {
-              backgroundColor: 'primary.main',
-              color: 'white',
-            },
-          }}
+          className="flex items-center mb-4 mr-4 border border-gray-300 text-gray-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
           Back to Customer List
-        </Button>
-        <Typography variant="h4" gutterBottom>
+        </button>
+        <h1 className="text-2xl font-bold mb-4">
           Customer Details
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2 }}>
-              <Box display="flex" alignItems="center" mb={2}>
-                <Avatar sx={{ width: 60, height: 60, mr: 2 }}>
-                  <PersonIcon fontSize="large" />
-                </Avatar>
-                <Typography variant="h6" gutterBottom>
-                  Basic Information
-                </Typography>
-                {!isEditing && (
-                  <IconButton sx={{ ml: 'auto' }} onClick={handleEdit}>
-                    <EditIcon />
-                  </IconButton>
-                )}
-              </Box>
-              <Typography>
-                Name: {customer.customerName || `${customer.first_name} ${customer.last_name}`}
-              </Typography>
-              <Typography>Email: {customer.email}</Typography>
-              <Typography>Phone: {customer.phone}</Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6">Actions</Typography>
+        </h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <div className="flex items-center mb-4">
+              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-medium text-gray-800">
+                Basic Information
+              </h2>
+              {!isEditing && (
+                <button 
+                  onClick={handleEdit}
+                  className="ml-auto text-blue-600 hover:text-blue-800 focus:outline-none"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <div className="space-y-2">
+              <p className="text-gray-700">
+                <span className="font-medium">Name:</span> {customer.customerName || `${customer.first_name} ${customer.last_name}`}
+              </p>
+              <p className="text-gray-700">
+                <span className="font-medium">Email:</span> {customer.email}
+              </p>
+              <p className="text-gray-700">
+                <span className="font-medium">Phone:</span> {customer.phone}
+              </p>
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-lg font-medium text-gray-800 mb-4">Actions</h2>
+            <div className="flex space-x-3">
               {isEditing ? (
                 <>
-                  <Button
-                    variant="outlined"
-                    color="primary"
+                  <button
                     onClick={handleSaveEdit}
-                    startIcon={<SaveIcon />}
-                    sx={{
-                      mr: 1,
-                      '&:hover': {
-                        backgroundColor: 'primary.main',
-                        color: 'white',
-                      },
-                    }}
+                    className="flex items-center px-4 py-2 border border-blue-500 text-blue-500 rounded hover:bg-blue-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                   >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
                     Save
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="secondary"
+                  </button>
+                  <button
                     onClick={handleCancelEdit}
-                    startIcon={<CancelIcon />}
-                    sx={{
-                      mr: 1,
-                      '&:hover': {
-                        backgroundColor: 'secondary.main',
-                        color: 'white',
-                      },
-                    }}
+                    className="flex items-center px-4 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
                   >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                     Cancel
-                  </Button>
+                  </button>
                 </>
               ) : (
                 <>
-                  <Button
-                    variant="outlined"
-                    color="primary"
+                  <button
                     onClick={handleEdit}
-                    startIcon={<EditIcon />}
-                    sx={{
-                      mr: 1,
-                      '&:hover': {
-                        backgroundColor: 'primary.main',
-                        color: 'white',
-                      },
-                    }}
+                    className="flex items-center px-4 py-2 border border-blue-500 text-blue-500 rounded hover:bg-blue-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                   >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
                     Edit
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
+                  </button>
+                  <button
                     onClick={handleDelete}
-                    startIcon={<DeleteIcon />}
-                    sx={{
-                      mr: 1,
-                      '&:hover': {
-                        backgroundColor: 'error.main',
-                        color: 'white',
-                      },
-                    }}
+                    className="flex items-center px-4 py-2 border border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
                   >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
                     Delete
-                  </Button>
+                  </button>
                 </>
               )}
-            </Paper>
-          </Grid>
-        </Grid>
-        <Box sx={{ mt: 2 }}>
-          <Tabs value={tabValue} onChange={handleTabChange}>
-            <Tab label="Details" />
-            <Tab label="Invoices" />
-            <Tab label="Transactions" />
-          </Tabs>
-        </Box>
-        <Box sx={{ mt: 2 }}>
+            </div>
+          </div>
+        </div>
+        <div className="mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="flex -mb-px">
+              <button 
+                onClick={(e) => handleTabChange(e, 0)} 
+                className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
+                  tabValue === 0 
+                    ? 'text-blue-600 border-blue-600 bg-blue-50' 
+                    : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Details
+              </button>
+              <button 
+                onClick={(e) => handleTabChange(e, 1)} 
+                className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
+                  tabValue === 1 
+                    ? 'text-blue-600 border-blue-600 bg-blue-50' 
+                    : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Invoices
+              </button>
+              <button 
+                onClick={(e) => handleTabChange(e, 2)} 
+                className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
+                  tabValue === 2 
+                    ? 'text-blue-600 border-blue-600 bg-blue-50' 
+                    : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Transactions
+              </button>
+            </nav>
+          </div>
+        </div>
+        
+        <div className="mt-4">
           {isLoading ? (
-            <Box display="flex" justifyContent="center">
-              <CircularProgress />
-            </Box>
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+            </div>
           ) : error ? (
-            <Typography color="error">{error}</Typography>
+            <p className="text-red-600 p-4">{error}</p>
           ) : (
             <>
               {tabValue === 0 && renderDetailsTab()}
@@ -834,73 +873,105 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
               {tabValue === 2 && renderTransactionsTab()}
             </>
           )}
-        </Box>
+        </div>
         {isEditing ? (
-          <Grid item xs={12}>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<SaveIcon />}
+          <div className="mt-8 flex space-x-3">
+            <button
               onClick={newCustomer ? handleCreateCustomer : handleSaveEdit}
-              style={{ marginRight: 8 }}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
               {newCustomer ? 'Create Customer' : 'Save Changes'}
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<CancelIcon />}
+            </button>
+            <button
               onClick={handleCancelEdit}
+              className="flex items-center px-4 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
               Cancel
-            </Button>
-          </Grid>
+            </button>
+          </div>
         ) : (
-          <Grid item xs={12}>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<EditIcon />}
+          <div className="mt-8 flex space-x-3">
+            <button
               onClick={handleEdit}
-              style={{ marginRight: 8 }}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
               Edit
-            </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<DeleteIcon />}
+            </button>
+            <button
               onClick={handleDelete}
+              className="flex items-center px-4 py-2 border border-red-500 text-red-600 rounded hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
               Delete
-            </Button>
-          </Grid>
+            </button>
+          </div>
         )}
-      </Box>
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">{'Confirm Delete'}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Are you sure you want to delete this customer?
-            <br />
-            Name: {customer?.customerName || `${customer?.first_name} ${customer?.last_name}`}
-            <br />
-            Email: {customer?.email}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleConfirmDelete} color="error" autoFocus>
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      </div>
+      
+      {/* Delete Confirmation Dialog */}
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 overflow-y-auto z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            
+            {/* This element is to trick the browser into centering the modal contents. */}
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg className="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                      Confirm Delete
+                    </h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Are you sure you want to delete this customer?
+                        <br />
+                        Name: {customer?.customerName || `${customer?.first_name} ${customer?.last_name}`}
+                        <br />
+                        Email: {customer?.email}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button 
+                  type="button" 
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={handleConfirmDelete}
+                >
+                  Delete
+                </button>
+                <button 
+                  type="button" 
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => setDeleteDialogOpen(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </ErrorBoundary>
   );
 };

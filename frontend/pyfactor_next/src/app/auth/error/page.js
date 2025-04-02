@@ -5,7 +5,6 @@ import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Box, Typography, Button, Alert } from '@mui/material';
 import { logger } from '@/utils/logger';
 import { toast } from 'react-toastify';
 
@@ -60,18 +59,7 @@ export default function AuthErrorPage() {
   const errorDetails = getErrorDetails();
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        padding: 3,
-        textAlign: 'center',
-        gap: 3,
-      }}
-    >
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center space-y-8">
       <Image
         src="/static/images/Page-Not-Found-3--Streamline-Brooklyn.png"
         alt="Error Illustration"
@@ -84,67 +72,65 @@ export default function AuthErrorPage() {
         }}
       />
 
-      <Box sx={{ maxWidth: 500, width: '100%' }}>
-        <Typography variant="h4" gutterBottom color="error">
+      <div className="max-w-lg w-full">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">
           {errorDetails.title}
-        </Typography>
+        </h1>
 
-        <Alert severity={errorDetails.severity} sx={{ mb: 3 }} variant="outlined">
-          <Typography variant="body1" paragraph>
+        <div className={`border rounded-md p-4 mb-6 ${
+          errorDetails.severity === 'info' 
+            ? 'bg-blue-50 border-blue-200 text-blue-800' 
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          <p className="mb-2">
             {errorDetails.message}
-          </Typography>
+          </p>
           {errorDescription && (
-            <Typography variant="body2" color="textSecondary">
+            <p className="text-sm text-gray-600">
               {errorDetails.description}
-            </Typography>
+            </p>
           )}
-        </Alert>
+        </div>
 
-        <Typography variant="body2" color="textSecondary" paragraph>
+        <p className="text-sm text-gray-600 mb-4">
           You will be redirected to the sign-in page in 5 seconds.
-        </Typography>
+        </p>
 
-        <Box sx={{ mt: 2, display: 'flex', gap: 2, justifyContent: 'center' }}>
-          <Button
-            variant="contained"
-            color="primary"
-            component={Link}
+        <div className="flex gap-4 justify-center mt-4">
+          <Link
             href="/auth/signin"
-            size="large"
+            className="px-6 py-2 bg-indigo-600 text-white rounded-md shadow-sm hover:bg-indigo-700 transition-colors font-medium"
           >
             Return to Sign In
-          </Button>
-          <Button variant="outlined" color="primary" component={Link} href="/" size="large">
+          </Link>
+          <Link
+            href="/"
+            className="px-6 py-2 border border-indigo-600 text-indigo-600 rounded-md hover:bg-indigo-50 transition-colors font-medium"
+          >
             Go to Homepage
-          </Button>
-        </Box>
-      </Box>
-    </Box>
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }
 
 // Error boundary component
 export function ErrorBoundary({ error }) {
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        padding: 3,
-      }}
-    >
-      <Alert severity="error" sx={{ maxWidth: 500, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
+    <div className="flex flex-col items-center justify-center min-h-screen p-6">
+      <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4 mb-6 max-w-lg">
+        <h2 className="text-lg font-semibold mb-2">
           Something went wrong
-        </Typography>
-        <Typography variant="body2">{error.message}</Typography>
-      </Alert>
-      <Button variant="contained" color="primary" onClick={() => window.location.reload()}>
+        </h2>
+        <p className="text-sm">{error.message}</p>
+      </div>
+      <button 
+        className="px-6 py-2 bg-indigo-600 text-white rounded-md shadow-sm hover:bg-indigo-700 transition-colors"
+        onClick={() => window.location.reload()}
+      >
         Try Again
-      </Button>
-    </Box>
+      </button>
+    </div>
   );
 }

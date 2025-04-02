@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 
 /**
  * Optimized KeyboardEventFixer that reduces browser performance impact

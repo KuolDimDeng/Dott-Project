@@ -1,10 +1,14 @@
+'use client';
+
 import { logger } from '@/utils/logger';
-import { apiService, fetchData } from './apiService';
+import { fetchData } from './apiService';
 import { inventoryCache } from '@/utils/enhancedCache';
 import { checkAndFixTenantId } from '@/utils/fixTenantId';
 import { axiosInstance } from '@/lib/axiosConfig';
-import { userService } from './userService';
+import userService from './userService';
 import { getInventoryHeaders } from '@/utils/tenantUtils';
+import { fetchAuthSession } from 'aws-amplify/auth';
+import { setTokens, forceValidateTenantId, getTenantId, getSchemaName } from '@/utils/tenantUtils';
 
 /**
  * Generates a product code based on product name
@@ -389,7 +393,7 @@ export const getProductStats = async (options = {}) => {
       }
     };
     
-    const response = await apiService.fetch('/api/inventory/ultra/products/stats/', optionsWithHeaders);
+    const response = await fetchData('/api/inventory/ultra/products/stats/', optionsWithHeaders);
     
     if (response && typeof response === 'object') {
       logger.info('Successfully retrieved product stats');
@@ -447,7 +451,7 @@ export const getProductById = async (id, options = {}) => {
       }
     };
     
-    const response = await apiService.fetch(`/api/inventory/products/${id}/`, optionsWithHeaders);
+    const response = await fetchData(`/api/inventory/products/${id}/`, optionsWithHeaders);
     
     if (response && typeof response === 'object') {
       logger.info(`Successfully retrieved product ${id}`);
@@ -500,7 +504,7 @@ export const getProductByCode = async (code, options = {}) => {
   };
   
   try {
-    return await apiService.fetch(`/api/inventory/ultra/products/code/${code}/`, defaultOptions);
+    return await fetchData(`/api/inventory/ultra/products/code/${code}/`, defaultOptions);
   } catch (error) {
     logger.error(`Error fetching product by code ${code}:`, error);
     
@@ -535,7 +539,6 @@ export const createProduct = async (productData) => {
     
     // Force a session refresh before proceeding
     try {
-      const { fetchAuthSession } = await import('aws-amplify/auth');
       const sessionResult = await fetchAuthSession({ forceRefresh: true });
       
       if (!sessionResult.tokens?.idToken || !sessionResult.tokens?.accessToken) {
@@ -548,7 +551,6 @@ export const createProduct = async (productData) => {
       } else {
         logger.info('Session refreshed successfully before product creation');
         // Update tokens in tenant utils
-        const { setTokens } = await import('@/utils/tenantUtils');
         setTokens({
           accessToken: sessionResult.tokens.accessToken.toString(),
           idToken: sessionResult.tokens.idToken.toString()
@@ -678,12 +680,10 @@ export const createProduct = async (productData) => {
       
       // Attempt to refresh the session
       try {
-        const { fetchAuthSession } = await import('aws-amplify/auth');
         const sessionResult = await fetchAuthSession({ forceRefresh: true });
         
         if (sessionResult.tokens?.idToken && sessionResult.tokens?.accessToken) {
           // Update tokens in tenant utils
-          const { setTokens } = await import('@/utils/tenantUtils');
           setTokens({
             accessToken: sessionResult.tokens.accessToken.toString(),
             idToken: sessionResult.tokens.idToken.toString()
@@ -771,13 +771,13 @@ export const updateProduct = async (id, productData) => {
   try {
     logger.info(`Updating product ${id}:`, productData);
     
-    const response = await apiService.put(`/api/inventory/products/${id}/`, productData, {
+    const response = await fetchData(`/api/inventory/products/${id}/`, {
       invalidateCache: [
         '/api/inventory/products/',
         '/api/inventory/ultra/products/',
         `/api/inventory/products/${id}/`
       ]
-    });
+    }, productData);
     
     return response;
   } catch (error) {
@@ -800,7 +800,7 @@ export const deleteProduct = async (id) => {
   try {
     logger.info(`Deleting product ${id}`);
     
-    await apiService.delete(`/api/inventory/products/${id}/`, {
+    await fetchData(`/api/inventory/products/${id}/`, {
       invalidateCache: [
         '/api/inventory/products/',
         '/api/inventory/ultra/products/',
@@ -867,8 +867,6 @@ export const ensureTenantId = async (options = {}) => {
       validateSchema = true, 
       diagnoseTables = true 
     } = options;
-    
-    const { forceValidateTenantId, getTenantId } = await import('@/utils/tenantUtils');
     
     // First check if we already have a tenant ID
     const currentTenantId = getTenantId();
@@ -949,7 +947,6 @@ export const validateTenantSchema = async (tenantId, options = {}) => {
       logger.warn(`Tenant ${tenantId} is not valid, using corrected tenant ${validateData.correctTenantId}`);
       
       // Update tenant ID in storage
-      const { setTenantId } = await import('@/utils/tenantUtils');
       await setTenantId(validateData.correctTenantId);
       
       // Use the corrected tenant ID from now on
@@ -1158,7 +1155,12 @@ export const printProductBarcode = async (productId) => {
       logger.debug(`[InventoryService] Using tenant ID from user data for barcode: ${correctTenantId}`);
     } else {
       // Fall back to previous tenant detection methods
-      const beforeContext = await apiService.verifyTenantContext();
+      const beforeContext = await fetchData('/api/tenant/context', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${user?.tokens?.accessToken}`
+        }
+      });
       logger.info('[InventoryService] Fallback tenant context for barcode:', beforeContext);
       
       correctTenantId = beforeContext?.fromContext?.tenantId || 
@@ -1168,7 +1170,12 @@ export const printProductBarcode = async (productId) => {
       if (!correctTenantId) {
         // Try to get tenant from API
         try {
-          const tenantResponse = await apiService.getCurrentTenant();
+          const tenantResponse = await fetchData('/api/tenant/current', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${user?.tokens?.accessToken}`
+            }
+          });
           
           if (tenantResponse && tenantResponse.id) {
             correctTenantId = tenantResponse.id;
@@ -1183,7 +1190,14 @@ export const printProductBarcode = async (productId) => {
     // Set the tenant ID in all storage mechanisms to ensure consistency
     if (correctTenantId) {
       try {
-        await apiService.setTenantId(correctTenantId);
+        await fetchData('/api/tenant/set', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${user?.tokens?.accessToken}`,
+            'X-Tenant-ID': correctTenantId
+          },
+          body: JSON.stringify({ tenantId: correctTenantId })
+        });
         logger.info(`[InventoryService] Set tenant ID to ${correctTenantId} for barcode printing`);
       } catch (error) {
         logger.error('[InventoryService] Error setting tenant ID for barcode:', error);
@@ -1198,7 +1212,12 @@ export const printProductBarcode = async (productId) => {
       null;
     
     // Get auth tokens
-    const tokens = await apiService.getAuthTokens();
+    const tokens = await fetchData('/api/auth/tokens', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${user?.tokens?.accessToken}`
+      }
+    });
     if (!tokens || !tokens.accessToken) {
       throw new Error('Authentication required to print barcode');
     }
@@ -1218,7 +1237,7 @@ export const printProductBarcode = async (productId) => {
       headers['X-Business-ID'] = correctTenantId;
     }
     
-    const response = await axiosInstance.get(`/api/inventory/products/${productId}/print-barcode/`, {
+    const response = await fetchData(`/api/inventory/products/${productId}/print-barcode/`, {
       responseType: 'blob',
       headers: headers
     });

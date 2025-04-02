@@ -2,8 +2,6 @@
 
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Container, Typography, Box, Button } from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { logger } from '@/utils/logger';
 import { useSession } from '@/hooks/useSession';
 
@@ -23,58 +21,50 @@ export function Complete() {
   }, [router]);
 
   return (
-    <Container maxWidth="md">
-      <Box
-        sx={{
-          mt: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          gap: 3,
-        }}
-      >
-        <CheckCircleIcon
-          sx={{
-            fontSize: 80,
-            color: 'success.main',
-            mb: 2,
-          }}
-        />
+    <div className="max-w-md mx-auto px-4">
+      <div className="mt-16 flex flex-col items-center text-center space-y-6">
+        {/* Success Icon */}
+        <div className="text-green-500 mb-4">
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className="h-20 w-20" 
+            viewBox="0 0 20 20" 
+            fill="currentColor"
+          >
+            <path 
+              fillRule="evenodd" 
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" 
+              clipRule="evenodd" 
+            />
+          </svg>
+        </div>
 
-        <Typography variant="h4" component="h1" gutterBottom>
+        <h1 className="text-2xl font-bold">
           Setup Complete
-        </Typography>
+        </h1>
 
-        <Typography variant="h6" color="text.secondary" gutterBottom>
+        <h2 className="text-xl text-gray-600">
           Your workspace is ready
-        </Typography>
+        </h2>
 
-        <Typography variant="body1" color="text.secondary" paragraph>
+        <p className="text-gray-600">
           Welcome, {session?.user?.attributes?.['custom:firstname'] || 'User'}!
           Your account has been fully configured and you can now access all
           features.
-        </Typography>
+        </p>
 
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ fontStyle: 'italic' }}
-        >
+        <p className="text-sm text-gray-500 italic">
           Redirecting to dashboard...
-        </Typography>
+        </p>
 
-        <Button
-          variant="contained"
-          color="primary"
-          size="large"
+        <button
           onClick={() => router.replace('/dashboard')}
-          sx={{ mt: 2 }}
+          className="mt-4 px-6 py-2 bg-primary-main hover:bg-primary-dark text-white rounded shadow-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-50"
         >
           Go to Dashboard
-        </Button>
-      </Box>
-    </Container>
+        </button>
+      </div>
+    </div>
   );
 }
 

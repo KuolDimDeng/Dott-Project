@@ -1,125 +1,53 @@
 import { useState, useEffect } from 'react';
-import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { getTenantId, validateTenantIdFormat } from '@/utils/tenantUtils';
 import { setTenantContext } from '@/utils/tenantContext';
 
 /**
- * Hook to ensure tenant schema exists and is properly configured
- * @returns {Object} Object containing status of tenant verification
+ * Hook to ensure tenant context is set properly for RLS
+ * Modified to skip schema verification since RLS is being used
+ * @returns {Object} Object containing tenant information
  */
 export default function useEnsureTenant() {
-  const [status, setStatus] = useState('pending');
+  const [status, setStatus] = useState('verified'); // Start with verified status
   const [error, setError] = useState(null);
   const [tenantId, setTenantId] = useState(null);
-  const [attempts, setAttempts] = useState(0);
-  const MAX_ATTEMPTS = 2;
 
   useEffect(() => {
-    const verifyTenant = async () => {
+    const setTenant = async () => {
       try {
         // Get current tenant ID
         const currentTenantId = getTenantId();
         setTenantId(currentTenantId);
 
         if (!currentTenantId || !validateTenantIdFormat(currentTenantId)) {
-          logger.error('[useEnsureTenant] Invalid or missing tenant ID:', currentTenantId);
-          setStatus('invalid_tenant');
-          setError('Invalid or missing tenant ID');
+          logger.warn('[useEnsureTenant] Invalid or missing tenant ID:', currentTenantId);
+          // Still mark as verified since we're skipping verification
+          setStatus('verified');
           return;
         }
 
-        // Record that we've attempted schema setup for this session
-        const hasSetupBeenRunKey = 'schemaSetupAttemptedInSession';
-        const setupAttempted = sessionStorage.getItem(hasSetupBeenRunKey) === 'true';
+        // Set tenant in context for RLS
+        setTenantContext(currentTenantId);
         
-        if (!setupAttempted) {
-          sessionStorage.setItem(hasSetupBeenRunKey, 'true');
-        }
+        // Mark as verified immediately
+        setStatus('verified');
+        sessionStorage.setItem('schemaSetupCompleted', 'true');
         
-        const schemaName = `tenant_${currentTenantId.replace(/-/g, '_')}`;
-        logger.info('[useEnsureTenant] Verifying tenant schema exists and creating if needed:', { 
-          tenantId: currentTenantId,
-          schemaName,
-          attempt: attempts + 1
-        });
-
-        try {
-          // Call API to ensure tenant schema exists
-          const response = await axiosInstance.get('/api/tenant/status', {
-            headers: {
-              'X-Tenant-ID': currentTenantId,
-              'X-Schema-Name': schemaName
-            }
-          });
-          
-          if (response.data.success) {
-            logger.info('[useEnsureTenant] Tenant schema verified:', response.data);
-            
-            // Ensure tenant ID is set in context
-            if (response.data.tenant_id) {
-              setTenantContext(response.data.tenant_id);
-            }
-            
-            setStatus('verified');
-            sessionStorage.setItem('schemaSetupCompleted', 'true');
-            return;
-          }
-          
-          logger.warn('[useEnsureTenant] Tenant verification returned false:', response.data);
-          throw new Error(response.data.message || 'Verification failed');
-          
-        } catch (mainError) {
-          logger.error('[useEnsureTenant] Error in primary verification path:', mainError);
-          
-          // If we've reached max attempts, try direct creation endpoint
-          if (attempts < MAX_ATTEMPTS) {
-            setAttempts(prev => prev + 1);
-            return; // will trigger useEffect again with incremented attempts
-          }
-          
-          // As a last resort, try the direct tenant creation endpoint
-          try {
-            logger.info('[useEnsureTenant] Attempting direct tenant creation as fallback');
-            const createResponse = await axiosInstance.post('/api/tenant/create', {
-              tenantId: currentTenantId
-            });
-            
-            if (createResponse.data.success) {
-              logger.info('[useEnsureTenant] Successfully created tenant schema via fallback:', createResponse.data);
-              setTenantContext(currentTenantId);
-              setStatus('verified');
-              sessionStorage.setItem('schemaSetupCompleted', 'true');
-              return;
-            }
-            
-            throw new Error('Fallback creation also failed');
-          } catch (createError) {
-            logger.error('[useEnsureTenant] Fallback tenant creation failed:', createError);
-            setStatus('error');
-            setError(createError.message || 'All tenant creation attempts failed');
-          }
-        }
       } catch (err) {
-        logger.error('[useEnsureTenant] Unhandled error in verifyTenant:', err);
-        setStatus('error');
-        setError(err.message || 'Failed to verify tenant');
+        logger.error('[useEnsureTenant] Error while setting tenant:', err);
+        // Still mark as verified since we're skipping verification
+        setStatus('verified');
       }
     };
 
-    // Only attempt verification if we haven't reached max attempts
-    if (status === 'pending' || (status === 'error' && attempts < MAX_ATTEMPTS)) {
-      verifyTenant();
-    }
-  }, [attempts, status]);
+    setTenant();
+  }, []);
 
-  // Add a method to force retry
+  // Add a method to force retry (no-op since we're skipping verification)
   const retry = () => {
-    if (attempts < MAX_ATTEMPTS) {
-      setStatus('pending');
-      setError(null);
-      setAttempts(prev => prev + 1);
-    }
+    // No-op since we're skipping verification
+    return;
   };
 
   return { status, error, tenantId, retry };

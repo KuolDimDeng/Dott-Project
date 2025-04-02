@@ -1,6 +1,4 @@
 import * as React from 'react';
-import Link from '@mui/material/Link';
-import Typography from '@mui/material/Typography';
 import Title from './Title';
 
 function preventDefault(event) {
@@ -9,19 +7,23 @@ function preventDefault(event) {
 
 export default function Deposits() {
   return (
-    <React.Fragment>
+    <div>
       <Title>Recent Deposits</Title>
-      <Typography component="p" variant="h4">
+      <p className="text-3xl font-bold">
         $3,024.00
-      </Typography>
-      <Typography color="text.secondary" sx={{ flex: 1 }}>
+      </p>
+      <p className="text-gray-500 flex-1">
         on 15 March, 2019
-      </Typography>
-      <div>
-        <Link color="primary" href="#" onClick={preventDefault}>
+      </p>
+      <div className="mt-4">
+        <a 
+          href="#" 
+          onClick={preventDefault}
+          className="text-indigo-600 hover:text-indigo-900"
+        >
           View balance
-        </Link>
+        </a>
       </div>
-    </React.Fragment>
+    </div>
   );
 }

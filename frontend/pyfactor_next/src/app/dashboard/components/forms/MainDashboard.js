@@ -1,49 +1,33 @@
 import React from 'react';
-import { Box, Typography, Grid, Paper, Button, useTheme, useMediaQuery } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import DescriptionIcon from '@mui/icons-material/Description';
-import PeopleIcon from '@mui/icons-material/People';
-import InventoryIcon from '@mui/icons-material/Inventory';
-
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'space-between',
-  transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
-  '&:hover': {
-    transform: 'translateY(-5px)',
-    boxShadow: theme.shadows[4],
-  },
-}));
+import { ArrowTrendingUpIcon, DocumentTextIcon, UsersIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
 
 const DashboardPage = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = typeof window !== 'undefined' ? window.innerWidth < 640 : false;
 
   const quickStartGuides = [
     {
       title: 'Create an Invoice',
-      icon: <DescriptionIcon fontSize="large" color="primary" />,
+      icon: <DocumentTextIcon className="w-8 h-8 text-indigo-600" />,
       description: 'Learn how to create and manage invoices for your clients.',
+      color: 'indigo',
       action: () => {
         /* Navigate to invoice creation page */
       },
     },
     {
       title: 'Manage Customers',
-      icon: <PeopleIcon fontSize="large" color="secondary" />,
+      icon: <UsersIcon className="w-8 h-8 text-purple-600" />,
       description: 'Add and manage your customer information efficiently.',
+      color: 'purple',
       action: () => {
         /* Navigate to customer management page */
       },
     },
     {
       title: 'Track Inventory',
-      icon: <InventoryIcon fontSize="large" color="error" />,
+      icon: <ArchiveBoxIcon className="w-8 h-8 text-red-600" />,
       description: 'Keep track of your product inventory and stock levels.',
+      color: 'red',
       action: () => {
         /* Navigate to inventory management page */
       },
@@ -51,78 +35,77 @@ const DashboardPage = () => {
   ];
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography
-        variant="h4"
-        gutterBottom
-        sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}
-      >
+    <div className="bg-white p-6 rounded-lg">
+      <h1 className="text-2xl font-bold text-gray-900 mb-4">
         Welcome to Your Dashboard
-      </Typography>
+      </h1>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {quickStartGuides.map((guide, index) => (
-          <Grid item xs={12} md={4} key={index}>
-            <StyledPaper elevation={3}>
-              <Box>
-                {guide.icon}
-                <Typography variant="h6" sx={{ fontWeight: 'bold', my: 2 }}>
-                  {guide.title}
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  {guide.description}
-                </Typography>
-              </Box>
-              <Button variant="contained" color="primary" onClick={guide.action} sx={{ mt: 2 }}>
-                Get Started
-              </Button>
-            </StyledPaper>
-          </Grid>
+          <div 
+            key={index}
+            className="bg-white shadow-md rounded-lg p-6 h-full flex flex-col justify-between transform transition-all duration-300 hover:-translate-y-2 hover:shadow-lg"
+          >
+            <div>
+              {guide.icon}
+              <h2 className="text-lg font-semibold my-3">
+                {guide.title}
+              </h2>
+              <p className="text-gray-600 text-sm">
+                {guide.description}
+              </p>
+            </div>
+            <button 
+              onClick={guide.action}
+              className={`mt-4 px-4 py-2 rounded-md text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                guide.color === 'indigo' 
+                  ? 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500' 
+                  : guide.color === 'purple'
+                  ? 'bg-purple-600 hover:bg-purple-700 focus:ring-purple-500'
+                  : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+              }`}
+            >
+              Get Started
+            </button>
+          </div>
         ))}
-      </Grid>
+      </div>
 
-      <Typography
-        variant="h5"
-        gutterBottom
-        sx={{ fontWeight: 'bold', color: theme.palette.text.primary, mt: 4 }}
-      >
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-4">
         Key Performance Indicators
-      </Typography>
+      </h2>
 
-      <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Box display="flex" alignItems="center" mb={2}>
-              <TrendingUpIcon sx={{ color: theme.palette.success.main, mr: 1, fontSize: 40 }} />
-              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+      <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div className="flex items-center mb-3">
+              <ArrowTrendingUpIcon className="w-8 h-8 text-green-600 mr-2" />
+              <h3 className="text-lg font-semibold">
                 Revenue Growth Rate
-              </Typography>
-            </Box>
-            <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 2 }}>
+              </h3>
+            </div>
+            <p className="text-3xl font-bold mb-3">
               8.5%
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
+            </p>
+            <p className="text-gray-600 text-sm">
               Your revenue is growing steadily. Keep up the good work!
-            </Typography>
-          </Grid>
-          <Grid item xs={12} md={6}>
+            </p>
+          </div>
+          <div>
             {/* You can add another KPI here or a mini chart */}
-          </Grid>
-        </Grid>
-      </Paper>
+          </div>
+        </div>
+      </div>
 
-      <Button
-        variant="contained"
-        color="secondary"
-        size="large"
+      <button
         onClick={() => {
           /* Navigate to full KPI dashboard */
         }}
-        sx={{ mt: 2 }}
+        className="px-6 py-2.5 rounded-md text-white bg-purple-600 hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 font-medium"
       >
         View Full KPI Dashboard
-      </Button>
-    </Box>
+      </button>
+    </div>
   );
 };
 

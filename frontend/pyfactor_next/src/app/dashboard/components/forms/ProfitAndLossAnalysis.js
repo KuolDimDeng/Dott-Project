@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { Pie, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -60,7 +59,11 @@ export default function ProfitAndLossAnalysis() {
     setTimeRange(event.target.value);
   };
 
-  if (!data) return <Typography>Loading...</Typography>;
+  if (!data) return (
+    <div className="flex justify-center items-center h-40">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+    </div>
+  );
 
   // Calculate totals
   const totalRevenue = data.reduce((sum, item) => sum + item.sales, 0);
@@ -107,44 +110,80 @@ export default function ProfitAndLossAnalysis() {
   };
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h1 className="text-2xl font-bold text-gray-800 mb-4">
         Profit & Loss Analysis
-      </Typography>
+      </h1>
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Time Range</InputLabel>
-        <Select value={timeRange} onChange={handleTimeRangeChange}>
-          {timeRanges.map((range) => (
-            <MenuItem key={range.value} value={range.value}>
-              {range.label}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <div className="mb-6">
+        <label htmlFor="timeRange" className="block text-sm font-medium text-gray-700 mb-1">
+          Time Range
+        </label>
+        <div className="relative">
+          <select
+            id="timeRange"
+            value={timeRange}
+            onChange={handleTimeRangeChange}
+            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+          >
+            {timeRanges.map((range) => (
+              <option key={range.value} value={range.value}>
+                {range.label}
+              </option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+            <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+            </svg>
+          </div>
+        </div>
+      </div>
 
-      <Box display="flex" justifyContent="space-between" mt={4}>
-        <Box width="45%">
-          <Typography variant="h6" gutterBottom>
+      <div className="flex flex-col md:flex-row justify-between gap-6 mt-6">
+        <div className="w-full md:w-1/2">
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">
             Profit & Loss Breakdown
-          </Typography>
-          <Pie data={pieChartData} />
-        </Box>
-        <Box width="45%">
-          <Typography variant="h6" gutterBottom>
+          </h2>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <Pie data={pieChartData} />
+          </div>
+        </div>
+        <div className="w-full md:w-1/2">
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">
             Financial Trends Over Time
-          </Typography>
-          <Line data={lineChartData} />
-        </Box>
-      </Box>
+          </h2>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <Line data={lineChartData} />
+          </div>
+        </div>
+      </div>
 
-      <Typography variant="h6" mt={4}>
-        Summary
-      </Typography>
-      <Typography>Total Revenue: ${totalRevenue.toFixed(2)}</Typography>
-      <Typography>Total Cost of Goods Sold: ${totalCOGS.toFixed(2)}</Typography>
-      <Typography>Total Operating Expenses: ${totalOperatingExpenses.toFixed(2)}</Typography>
-      <Typography>Net Income: ${netIncome.toFixed(2)}</Typography>
-    </Box>
+      <div className="mt-8 bg-gray-50 p-5 rounded-lg">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">
+          Summary
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 bg-white rounded-lg shadow-sm">
+            <span className="text-sm text-gray-500">Total Revenue</span>
+            <p className="text-xl font-bold text-blue-600">${totalRevenue.toFixed(2)}</p>
+          </div>
+          <div className="p-4 bg-white rounded-lg shadow-sm">
+            <span className="text-sm text-gray-500">Total Cost of Goods Sold</span>
+            <p className="text-xl font-bold text-yellow-500">${totalCOGS.toFixed(2)}</p>
+          </div>
+          <div className="p-4 bg-white rounded-lg shadow-sm">
+            <span className="text-sm text-gray-500">Total Operating Expenses</span>
+            <p className="text-xl font-bold text-red-500">${totalOperatingExpenses.toFixed(2)}</p>
+          </div>
+          <div className="p-4 bg-white rounded-lg shadow-sm">
+            <span className="text-sm text-gray-500">Net Income</span>
+            <p className={`text-xl font-bold ${netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              ${netIncome.toFixed(2)}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

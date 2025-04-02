@@ -1,30 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Paper, 
-  Grid, 
-  Card, 
-  CardContent, 
-  CardHeader,
-  Divider,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  ButtonGroup,
-  Tabs,
-  Tab,
-  useTheme
-} from '@mui/material';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import ShowChartIcon from '@mui/icons-material/ShowChart';
-import ReceiptIcon from '@mui/icons-material/Receipt';
 
 // Mock data for charts
 const generateMockData = (months = 12, min = 5000, max = 50000, trend = 'up') => {
@@ -75,46 +51,49 @@ const financialData = {
 };
 
 // Simple Bar Chart component
-const BarChart = ({ data, xKey, yKey, height = 200, color = '#2196f3' }) => {
+const BarChart = ({ data, xKey, yKey, height = 200, color = '#3b82f6' }) => {
   if (!data || !data.length) return null;
   
   const maxValue = Math.max(...data.map(item => item[yKey]));
   const chartWidth = 100 / data.length;
   
   return (
-    <Box sx={{ height: height, position: 'relative', mt: 4 }}>
+    <div className="relative mt-4" style={{ height: height }}>
       {/* Y-axis labels */}
-      <Box sx={{ position: 'absolute', left: 0, top: 0, bottom: 20, width: 40, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        <Typography variant="caption" sx={{ transform: 'translateY(-50%)' }}>
+      <div className="absolute left-0 top-0 bottom-5 w-10 flex flex-col justify-between">
+        <span className="text-xs transform -translate-y-1/2">
           ${maxValue.toLocaleString()}
-        </Typography>
-        <Typography variant="caption" sx={{ transform: 'translateY(50%)' }}>
+        </span>
+        <span className="text-xs transform translate-y-1/2">
           $0
-        </Typography>
-      </Box>
+        </span>
+      </div>
       
       {/* Chart area */}
-      <Box sx={{ height: '100%', ml: 5, display: 'flex', alignItems: 'flex-end' }}>
+      <div className="h-full ml-5 flex items-end">
         {data.map((item, index) => (
-          <Box key={index} sx={{ width: `${chartWidth}%`, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Box 
-              sx={{ 
+          <div 
+            key={index} 
+            className="flex flex-col items-center" 
+            style={{ width: `${chartWidth}%` }}
+          >
+            <div 
+              style={{ 
                 width: '60%', 
                 height: `${(item[yKey] / maxValue) * 100}%`, 
                 backgroundColor: color,
-                borderTopLeftRadius: 4,
-                borderTopRightRadius: 4,
                 minHeight: 1,
                 transition: 'height 0.3s ease',
-              }} 
+              }}
+              className="rounded-t-md" 
             />
-            <Typography variant="caption" sx={{ mt: 1 }}>
+            <span className="text-xs mt-1">
               {item[xKey]}
-            </Typography>
-          </Box>
+            </span>
+          </div>
         ))}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
 
@@ -140,40 +119,34 @@ const LineChart = ({ datasets, height = 200 }) => {
   };
   
   return (
-    <Box sx={{ height: height, position: 'relative', mt: 4 }}>
+    <div className="relative mt-4" style={{ height: height }}>
       {/* Y-axis labels */}
-      <Box sx={{ position: 'absolute', left: 0, top: 0, bottom: 20, width: 40, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        <Typography variant="caption" sx={{ transform: 'translateY(-50%)' }}>
+      <div className="absolute left-0 top-0 bottom-5 w-10 flex flex-col justify-between">
+        <span className="text-xs transform -translate-y-1/2">
           ${normalizedMax.toLocaleString()}
-        </Typography>
-        <Typography variant="caption" sx={{ transform: 'translateY(50%)' }}>
+        </span>
+        <span className="text-xs transform translate-y-1/2">
           ${normalizedMin.toLocaleString()}
-        </Typography>
-      </Box>
+        </span>
+      </div>
       
       {/* Chart area */}
-      <Box sx={{ height: '100%', ml: 5, mr: 2, position: 'relative' }}>
+      <div className="h-full ml-5 mr-2 relative">
         {/* X-axis labels */}
-        <Box sx={{ position: 'absolute', bottom: -20, left: 0, right: 0, display: 'flex', justifyContent: 'space-between' }}>
+        <div className="absolute -bottom-5 left-0 right-0 flex justify-between">
           {xLabels.map((label, i) => (
-            <Typography key={i} variant="caption">
+            <span key={i} className="text-xs">
               {i % 2 === 0 ? label : ''}
-            </Typography>
+            </span>
           ))}
-        </Box>
+        </div>
         
         {/* Grid lines */}
         {[0, 25, 50, 75, 100].map(y => (
-          <Box 
+          <div 
             key={y} 
-            sx={{ 
-              position: 'absolute', 
-              left: 0, 
-              right: 0, 
-              top: `${y}%`, 
-              borderBottom: '1px dashed rgba(0,0,0,0.1)',
-              zIndex: 1
-            }} 
+            className="absolute left-0 right-0 border-b border-dashed border-gray-200 z-10"
+            style={{ top: `${y}%` }}
           />
         ))}
         
@@ -183,15 +156,7 @@ const LineChart = ({ datasets, height = 200 }) => {
             key={datasetIndex} 
             viewBox="0 0 100 100" 
             preserveAspectRatio="none" 
-            style={{ 
-              position: 'absolute', 
-              top: 0, 
-              left: 0, 
-              width: '100%', 
-              height: '100%',
-              overflow: 'visible',
-              zIndex: 2
-            }}
+            className="absolute top-0 left-0 w-full h-full overflow-visible z-20"
           >
             {/* Line */}
             <polyline
@@ -215,18 +180,21 @@ const LineChart = ({ datasets, height = 200 }) => {
             ))}
           </svg>
         ))}
-      </Box>
+      </div>
       
       {/* Legend */}
-      <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 3 }}>
+      <div className="mt-3 flex justify-center space-x-3">
         {datasets.map((dataset, i) => (
-          <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: dataset.color }} />
-            <Typography variant="caption">{dataset.label}</Typography>
-          </Box>
+          <div key={i} className="flex items-center space-x-1">
+            <div 
+              className="w-3 h-3 rounded-full" 
+              style={{ backgroundColor: dataset.color }}
+            />
+            <span className="text-xs">{dataset.label}</span>
+          </div>
         ))}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
 
@@ -235,7 +203,29 @@ const LineChart = ({ datasets, height = 200 }) => {
  * A comprehensive dashboard with financial metrics and visualizations
  */
 function KPIDashboard({ userData }) {
-  const theme = useTheme();
+  // Define theme colors
+  const theme = {
+    colors: {
+      primary: {
+        main: '#3b82f6', // blue-500
+        light: '#93c5fd', // blue-300
+        dark: '#1d4ed8', // blue-700
+      },
+      success: {
+        main: '#22c55e', // green-500
+      },
+      error: {
+        main: '#ef4444', // red-500
+      },
+      warning: {
+        main: '#f59e0b', // amber-500
+      },
+      info: {
+        main: '#06b6d4', // cyan-500
+      }
+    }
+  };
+  
   const [timeframe, setTimeframe] = useState('12m');
   const [activeDashboard, setActiveDashboard] = useState(0);
   
@@ -243,8 +233,8 @@ function KPIDashboard({ userData }) {
     setTimeframe(event.target.value);
   };
   
-  const handleDashboardChange = (event, newValue) => {
-    setActiveDashboard(newValue);
+  const handleDashboardChange = (index) => {
+    setActiveDashboard(index);
   };
   
   // Current period metrics
@@ -271,323 +261,432 @@ function KPIDashboard({ userData }) {
   };
   
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ color: theme.palette.primary.main }}>
+    <div className="p-3">
+      <div className="flex justify-between items-center mb-3">
+        <h1 className="text-2xl font-bold text-blue-500">
           Financial Analytics Dashboard
-        </Typography>
+        </h1>
         
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Time Period</InputLabel>
-          <Select
+        <div className="relative">
+          <select
+            className="w-40 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={timeframe}
-            label="Time Period"
             onChange={handleTimeframeChange}
           >
-            <MenuItem value="3m">Last 3 Months</MenuItem>
-            <MenuItem value="6m">Last 6 Months</MenuItem>
-            <MenuItem value="12m">Last 12 Months</MenuItem>
-            <MenuItem value="ytd">Year to Date</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
+            <option value="3m">Last 3 Months</option>
+            <option value="6m">Last 6 Months</option>
+            <option value="12m">Last 12 Months</option>
+            <option value="ytd">Year to Date</option>
+          </select>
+        </div>
+      </div>
       
       {/* KPI Cards */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
-          <Paper
-            elevation={3}
-            sx={{
-              p: 2,
-              borderRadius: 2,
-              bgcolor: 'white',
-              borderLeft: `4px solid ${theme.palette.primary.main}`,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <ShowChartIcon sx={{ color: theme.palette.primary.main, mr: 1 }} />
-              <Typography variant="h6" color="text.secondary">Cash Flow</Typography>
-            </Box>
-            <Typography variant="h4">${metrics.cashFlow.current.toLocaleString()}</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-              {metrics.cashFlow.percentChange >= 0 ? (
-                <TrendingUpIcon sx={{ color: 'success.main', mr: 0.5 }} />
-              ) : (
-                <TrendingDownIcon sx={{ color: 'error.main', mr: 0.5 }} />
-              )}
-              <Typography 
-                variant="body2" 
-                sx={{ color: metrics.cashFlow.percentChange >= 0 ? 'success.main' : 'error.main' }}
-              >
-                {Math.abs(metrics.cashFlow.percentChange).toFixed(1)}% from last month
-              </Typography>
-            </Box>
-          </Paper>
-        </Grid>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="bg-white p-2 rounded-lg shadow border-l-4 border-blue-500">
+          <div className="flex items-center mb-1">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+            </svg>
+            <h2 className="text-lg font-medium text-gray-600">Cash Flow</h2>
+          </div>
+          <p className="text-2xl font-bold">${metrics.cashFlow.current.toLocaleString()}</p>
+          <div className="flex items-center mt-1">
+            {metrics.cashFlow.percentChange >= 0 ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500 mr-0.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500 mr-0.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12 13a1 1 0 100 2h5a1 1 0 001-1V9a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586 3.707 5.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z" clipRule="evenodd" />
+              </svg>
+            )}
+            <span 
+              className={metrics.cashFlow.percentChange >= 0 ? 'text-sm text-green-500' : 'text-sm text-red-500'}
+            >
+              {Math.abs(metrics.cashFlow.percentChange).toFixed(1)}% from last month
+            </span>
+          </div>
+        </div>
         
-        <Grid item xs={12} md={4}>
-          <Paper
-            elevation={3}
-            sx={{
-              p: 2,
-              borderRadius: 2,
-              bgcolor: 'white',
-              borderLeft: `4px solid ${theme.palette.success.main}`,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <ReceiptIcon sx={{ color: theme.palette.success.main, mr: 1 }} />
-              <Typography variant="h6" color="text.secondary">Profit/Loss</Typography>
-            </Box>
-            <Typography variant="h4">${metrics.profitLoss.current.toLocaleString()}</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-              {metrics.profitLoss.percentChange >= 0 ? (
-                <TrendingUpIcon sx={{ color: 'success.main', mr: 0.5 }} />
-              ) : (
-                <TrendingDownIcon sx={{ color: 'error.main', mr: 0.5 }} />
-              )}
-              <Typography 
-                variant="body2" 
-                sx={{ color: metrics.profitLoss.percentChange >= 0 ? 'success.main' : 'error.main' }}
-              >
-                {Math.abs(metrics.profitLoss.percentChange).toFixed(1)}% from last month
-              </Typography>
-            </Box>
-          </Paper>
-        </Grid>
+        <div className="bg-white p-2 rounded-lg shadow border-l-4 border-green-500">
+          <div className="flex items-center mb-1">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+            </svg>
+            <h2 className="text-lg font-medium text-gray-600">Profit/Loss</h2>
+          </div>
+          <p className="text-2xl font-bold">${metrics.profitLoss.current.toLocaleString()}</p>
+          <div className="flex items-center mt-1">
+            {metrics.profitLoss.percentChange >= 0 ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500 mr-0.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500 mr-0.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12 13a1 1 0 100 2h5a1 1 0 001-1V9a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586 3.707 5.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z" clipRule="evenodd" />
+              </svg>
+            )}
+            <span 
+              className={metrics.profitLoss.percentChange >= 0 ? 'text-sm text-green-500' : 'text-sm text-red-500'}
+            >
+              {Math.abs(metrics.profitLoss.percentChange).toFixed(1)}% from last month
+            </span>
+          </div>
+        </div>
         
-        <Grid item xs={12} md={4}>
-          <Paper
-            elevation={3}
-            sx={{
-              p: 2,
-              borderRadius: 2,
-              bgcolor: 'white',
-              borderLeft: `4px solid ${theme.palette.info.main}`,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <AccountBalanceIcon sx={{ color: theme.palette.info.main, mr: 1 }} />
-              <Typography variant="h6" color="text.secondary">Equity</Typography>
-            </Box>
-            <Typography variant="h4">${metrics.balanceSheet.equity.toLocaleString()}</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-              {metrics.balanceSheet.equityChange >= 0 ? (
-                <TrendingUpIcon sx={{ color: 'success.main', mr: 0.5 }} />
-              ) : (
-                <TrendingDownIcon sx={{ color: 'error.main', mr: 0.5 }} />
-              )}
-              <Typography 
-                variant="body2" 
-                sx={{ color: metrics.balanceSheet.equityChange >= 0 ? 'success.main' : 'error.main' }}
-              >
-                {Math.abs(metrics.balanceSheet.equityChange).toFixed(1)}% from last month
-              </Typography>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
+        <div className="bg-white p-2 rounded-lg shadow border-l-4 border-cyan-500">
+          <div className="flex items-center mb-1">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-cyan-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+              <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+            </svg>
+            <h2 className="text-lg font-medium text-gray-600">Equity</h2>
+          </div>
+          <p className="text-2xl font-bold">${metrics.balanceSheet.equity.toLocaleString()}</p>
+          <div className="flex items-center mt-1">
+            {metrics.balanceSheet.equityChange >= 0 ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500 mr-0.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500 mr-0.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12 13a1 1 0 100 2h5a1 1 0 001-1V9a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586 3.707 5.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z" clipRule="evenodd" />
+              </svg>
+            )}
+            <span 
+              className={metrics.balanceSheet.equityChange >= 0 ? 'text-sm text-green-500' : 'text-sm text-red-500'}
+            >
+              {Math.abs(metrics.balanceSheet.equityChange).toFixed(1)}% from last month
+            </span>
+          </div>
+        </div>
+      </div>
       
       {/* Chart Tabs */}
-      <Paper elevation={0} sx={{ mt: 4, p: 2 }}>
-        <Tabs 
-          value={activeDashboard} 
-          onChange={handleDashboardChange}
-          sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
-        >
-          <Tab label="Cash Flow" />
-          <Tab label="Profit & Loss" />
-          <Tab label="Balance Sheet" />
-        </Tabs>
+      <div className="mt-4 p-2 bg-white rounded-lg shadow-sm">
+        <div className="border-b border-gray-200 mb-2">
+          <div className="flex space-x-4">
+            <button
+              className={`py-2 px-4 font-medium ${
+                activeDashboard === 0
+                  ? 'text-blue-600 border-b-2 border-blue-500'
+                  : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={() => handleDashboardChange(0)}
+            >
+              Cash Flow
+            </button>
+            <button
+              className={`py-2 px-4 font-medium ${
+                activeDashboard === 1
+                  ? 'text-blue-600 border-b-2 border-blue-500'
+                  : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={() => handleDashboardChange(1)}
+            >
+              Profit & Loss
+            </button>
+            <button
+              className={`py-2 px-4 font-medium ${
+                activeDashboard === 2
+                  ? 'text-blue-600 border-b-2 border-blue-500'
+                  : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={() => handleDashboardChange(2)}
+            >
+              Balance Sheet
+            </button>
+          </div>
+        </div>
         
         {/* Cash Flow Dashboard */}
         {activeDashboard === 0 && (
-          <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Cash Flow Analysis</Typography>
-              <ButtonGroup size="small">
-                <Button variant={timeframe === '3m' ? 'contained' : 'outlined'} onClick={() => setTimeframe('3m')}>3M</Button>
-                <Button variant={timeframe === '6m' ? 'contained' : 'outlined'} onClick={() => setTimeframe('6m')}>6M</Button>
-                <Button variant={timeframe === '12m' ? 'contained' : 'outlined'} onClick={() => setTimeframe('12m')}>12M</Button>
-              </ButtonGroup>
-            </Box>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg font-medium">Cash Flow Analysis</h2>
+              <div className="inline-flex rounded-md shadow-sm">
+                <button
+                  className={`px-3 py-1 text-sm font-medium ${
+                    timeframe === '3m'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  } rounded-l-md`}
+                  onClick={() => setTimeframe('3m')}
+                >
+                  3M
+                </button>
+                <button
+                  className={`px-3 py-1 text-sm font-medium ${
+                    timeframe === '6m'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 border-t border-b border-gray-300 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setTimeframe('6m')}
+                >
+                  6M
+                </button>
+                <button
+                  className={`px-3 py-1 text-sm font-medium ${
+                    timeframe === '12m'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  } rounded-r-md`}
+                  onClick={() => setTimeframe('12m')}
+                >
+                  12M
+                </button>
+              </div>
+            </div>
             
             <LineChart 
               datasets={[
                 { 
                   label: 'Inflows', 
                   data: financialData.cashFlow.inflows.slice(-parseInt(timeframe) || -12), 
-                  color: theme.palette.success.main 
+                  color: theme.colors.success.main 
                 },
                 { 
                   label: 'Outflows', 
                   data: financialData.cashFlow.outflows.slice(-parseInt(timeframe) || -12), 
-                  color: theme.palette.error.main 
+                  color: theme.colors.error.main 
                 },
                 { 
                   label: 'Net Cash Flow', 
                   data: financialData.cashFlow.net.slice(-parseInt(timeframe) || -12), 
-                  color: theme.palette.primary.main 
+                  color: theme.colors.primary.main 
                 }
               ]}
               height={300}
             />
             
-            <Grid container spacing={3} sx={{ mt: 3 }}>
-              <Grid item xs={12} md={4}>
-                <Card>
-                  <CardHeader title="Total Inflows" titleTypographyProps={{ variant: 'subtitle1' }} />
-                  <CardContent>
-                    <Typography variant="h5">${financialData.cashFlow.inflows.slice(-parseInt(timeframe) || -12).reduce((sum, item) => sum + item.value, 0).toLocaleString()}</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Card>
-                  <CardHeader title="Total Outflows" titleTypographyProps={{ variant: 'subtitle1' }} />
-                  <CardContent>
-                    <Typography variant="h5">${financialData.cashFlow.outflows.slice(-parseInt(timeframe) || -12).reduce((sum, item) => sum + item.value, 0).toLocaleString()}</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Card>
-                  <CardHeader title="Net Cash Flow" titleTypographyProps={{ variant: 'subtitle1' }} />
-                  <CardContent>
-                    <Typography variant="h5">${financialData.cashFlow.net.slice(-parseInt(timeframe) || -12).reduce((sum, item) => sum + item.value, 0).toLocaleString()}</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          </Box>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border-b border-gray-200 px-4 py-3">
+                  <h3 className="text-sm font-medium">Total Inflows</h3>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="text-xl font-semibold">
+                    ${financialData.cashFlow.inflows.slice(-parseInt(timeframe) || -12).reduce((sum, item) => sum + item.value, 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border-b border-gray-200 px-4 py-3">
+                  <h3 className="text-sm font-medium">Total Outflows</h3>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="text-xl font-semibold">
+                    ${financialData.cashFlow.outflows.slice(-parseInt(timeframe) || -12).reduce((sum, item) => sum + item.value, 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border-b border-gray-200 px-4 py-3">
+                  <h3 className="text-sm font-medium">Net Cash Flow</h3>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="text-xl font-semibold">
+                    ${financialData.cashFlow.net.slice(-parseInt(timeframe) || -12).reduce((sum, item) => sum + item.value, 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
         
         {/* Profit & Loss Dashboard */}
         {activeDashboard === 1 && (
-          <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Profit & Loss</Typography>
-              <ButtonGroup size="small">
-                <Button variant={timeframe === '3m' ? 'contained' : 'outlined'} onClick={() => setTimeframe('3m')}>3M</Button>
-                <Button variant={timeframe === '6m' ? 'contained' : 'outlined'} onClick={() => setTimeframe('6m')}>6M</Button>
-                <Button variant={timeframe === '12m' ? 'contained' : 'outlined'} onClick={() => setTimeframe('12m')}>12M</Button>
-              </ButtonGroup>
-            </Box>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg font-medium">Profit & Loss</h2>
+              <div className="inline-flex rounded-md shadow-sm">
+                <button
+                  className={`px-3 py-1 text-sm font-medium ${
+                    timeframe === '3m'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  } rounded-l-md`}
+                  onClick={() => setTimeframe('3m')}
+                >
+                  3M
+                </button>
+                <button
+                  className={`px-3 py-1 text-sm font-medium ${
+                    timeframe === '6m'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 border-t border-b border-gray-300 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setTimeframe('6m')}
+                >
+                  6M
+                </button>
+                <button
+                  className={`px-3 py-1 text-sm font-medium ${
+                    timeframe === '12m'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  } rounded-r-md`}
+                  onClick={() => setTimeframe('12m')}
+                >
+                  12M
+                </button>
+              </div>
+            </div>
             
             <LineChart 
               datasets={[
                 { 
                   label: 'Revenue', 
                   data: financialData.profitLoss.revenue.slice(-parseInt(timeframe) || -12), 
-                  color: theme.palette.success.main 
+                  color: theme.colors.success.main 
                 },
                 { 
                   label: 'Expenses', 
                   data: financialData.profitLoss.expenses.slice(-parseInt(timeframe) || -12), 
-                  color: theme.palette.error.main 
+                  color: theme.colors.error.main 
                 },
                 { 
                   label: 'Profit', 
                   data: financialData.profitLoss.profit.slice(-parseInt(timeframe) || -12), 
-                  color: theme.palette.warning.main 
+                  color: theme.colors.warning.main 
                 }
               ]}
               height={300}
             />
             
-            <Grid container spacing={3} sx={{ mt: 3 }}>
-              <Grid item xs={12} md={4}>
-                <Card>
-                  <CardHeader title="Total Revenue" titleTypographyProps={{ variant: 'subtitle1' }} />
-                  <CardContent>
-                    <Typography variant="h5">${financialData.profitLoss.revenue.slice(-parseInt(timeframe) || -12).reduce((sum, item) => sum + item.value, 0).toLocaleString()}</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Card>
-                  <CardHeader title="Total Expenses" titleTypographyProps={{ variant: 'subtitle1' }} />
-                  <CardContent>
-                    <Typography variant="h5">${financialData.profitLoss.expenses.slice(-parseInt(timeframe) || -12).reduce((sum, item) => sum + item.value, 0).toLocaleString()}</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Card>
-                  <CardHeader title="Net Profit" titleTypographyProps={{ variant: 'subtitle1' }} />
-                  <CardContent>
-                    <Typography variant="h5">${financialData.profitLoss.profit.slice(-parseInt(timeframe) || -12).reduce((sum, item) => sum + item.value, 0).toLocaleString()}</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          </Box>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border-b border-gray-200 px-4 py-3">
+                  <h3 className="text-sm font-medium">Total Revenue</h3>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="text-xl font-semibold">
+                    ${financialData.profitLoss.revenue.slice(-parseInt(timeframe) || -12).reduce((sum, item) => sum + item.value, 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border-b border-gray-200 px-4 py-3">
+                  <h3 className="text-sm font-medium">Total Expenses</h3>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="text-xl font-semibold">
+                    ${financialData.profitLoss.expenses.slice(-parseInt(timeframe) || -12).reduce((sum, item) => sum + item.value, 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border-b border-gray-200 px-4 py-3">
+                  <h3 className="text-sm font-medium">Net Profit</h3>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="text-xl font-semibold">
+                    ${financialData.profitLoss.profit.slice(-parseInt(timeframe) || -12).reduce((sum, item) => sum + item.value, 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
         
         {/* Balance Sheet Dashboard */}
         {activeDashboard === 2 && (
-          <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Balance Sheet</Typography>
-              <ButtonGroup size="small">
-                <Button variant={timeframe === '3m' ? 'contained' : 'outlined'} onClick={() => setTimeframe('3m')}>3M</Button>
-                <Button variant={timeframe === '6m' ? 'contained' : 'outlined'} onClick={() => setTimeframe('6m')}>6M</Button>
-                <Button variant={timeframe === '12m' ? 'contained' : 'outlined'} onClick={() => setTimeframe('12m')}>12M</Button>
-              </ButtonGroup>
-            </Box>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg font-medium">Balance Sheet</h2>
+              <div className="inline-flex rounded-md shadow-sm">
+                <button
+                  className={`px-3 py-1 text-sm font-medium ${
+                    timeframe === '3m'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  } rounded-l-md`}
+                  onClick={() => setTimeframe('3m')}
+                >
+                  3M
+                </button>
+                <button
+                  className={`px-3 py-1 text-sm font-medium ${
+                    timeframe === '6m'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 border-t border-b border-gray-300 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setTimeframe('6m')}
+                >
+                  6M
+                </button>
+                <button
+                  className={`px-3 py-1 text-sm font-medium ${
+                    timeframe === '12m'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  } rounded-r-md`}
+                  onClick={() => setTimeframe('12m')}
+                >
+                  12M
+                </button>
+              </div>
+            </div>
             
             <BarChart 
               data={financialData.balanceSheet.assets.slice(-parseInt(timeframe) || -12)}
               xKey="month"
               yKey="value"
               height={300}
-              color={theme.palette.primary.main}
+              color={theme.colors.primary.main}
             />
             
-            <Grid container spacing={3} sx={{ mt: 3 }}>
-              <Grid item xs={12} md={4}>
-                <Card>
-                  <CardHeader title="Total Assets" titleTypographyProps={{ variant: 'subtitle1' }} />
-                  <CardContent>
-                    <Typography variant="h5">${metrics.balanceSheet.assets.toLocaleString()}</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Card>
-                  <CardHeader title="Total Liabilities" titleTypographyProps={{ variant: 'subtitle1' }} />
-                  <CardContent>
-                    <Typography variant="h5">${metrics.balanceSheet.liabilities.toLocaleString()}</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Card>
-                  <CardHeader title="Total Equity" titleTypographyProps={{ variant: 'subtitle1' }} />
-                  <CardContent>
-                    <Typography variant="h5">${metrics.balanceSheet.equity.toLocaleString()}</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border-b border-gray-200 px-4 py-3">
+                  <h3 className="text-sm font-medium">Total Assets</h3>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="text-xl font-semibold">
+                    ${metrics.balanceSheet.assets.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border-b border-gray-200 px-4 py-3">
+                  <h3 className="text-sm font-medium">Total Liabilities</h3>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="text-xl font-semibold">
+                    ${metrics.balanceSheet.liabilities.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border-b border-gray-200 px-4 py-3">
+                  <h3 className="text-sm font-medium">Total Equity</h3>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="text-xl font-semibold">
+                    ${metrics.balanceSheet.equity.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
             
-            <Box sx={{ mt: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>Asset Composition</Typography>
-              <Box sx={{ display: 'flex', height: 20, mb: 1 }}>
-                <Box sx={{ width: '40%', bgcolor: theme.palette.primary.main }} />
-                <Box sx={{ width: '30%', bgcolor: theme.palette.primary.light }} />
-                <Box sx={{ width: '30%', bgcolor: theme.palette.primary.dark }} />
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="caption">Current Assets (40%)</Typography>
-                <Typography variant="caption">Fixed Assets (30%)</Typography>
-                <Typography variant="caption">Other Assets (30%)</Typography>
-              </Box>
-            </Box>
-          </Box>
+            <div className="mt-3">
+              <h3 className="text-sm font-medium mb-2">Asset Composition</h3>
+              <div className="flex h-5 mb-1">
+                <div className="w-2/5 bg-blue-500" />
+                <div className="w-3/10 bg-blue-300" />
+                <div className="w-3/10 bg-blue-700" />
+              </div>
+              <div className="flex justify-between">
+                <span className="text-xs">Current Assets (40%)</span>
+                <span className="text-xs">Fixed Assets (30%)</span>
+                <span className="text-xs">Other Assets (30%)</span>
+              </div>
+            </div>
+          </div>
         )}
-      </Paper>
-    </Box>
+      </div>
+    </div>
   );
 }
 

@@ -13,7 +13,6 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-
 import { axiosInstance } from '@/lib/axiosConfig';
 
 ChartJS.register(
@@ -42,7 +41,7 @@ const ChartComponent = ({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await useApi.get('/api/chart/transaction-data/', {
+        const response = await axiosInstance.get('/api/chart/transaction-data/', {
           params: { account, date_range: dateRange, start_date: startDate, end_date: endDate },
         });
         setChartData(response.data);

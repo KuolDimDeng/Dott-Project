@@ -1,32 +1,31 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/components/shared/StepHeader/StepHeader.js
+'use client';
+
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Typography } from '@mui/material';
-import { HeaderContainer, StepIndicator } from './StepHeader.styles';
 
 const StepHeader = ({ title, description, current_step, totalSteps, stepName }) => (
-    <HeaderContainer>
-        <StepIndicator>
-            Step {current_step} of {totalSteps} - {stepName}
-        </StepIndicator>
-        <Typography variant="h4" component="h1" gutterBottom>
-            {title}
-        </Typography>
-        {description && (
-            <Typography variant="body1" color="text.secondary">
-                {description}
-            </Typography>
-        )}
-    </HeaderContainer>
+  <div className="text-center mb-6 w-full">
+    <div className="text-gray-500 text-sm mb-2">
+      Step {current_step} of {totalSteps} - {stepName}
+    </div>
+    <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
+      {title}
+    </h1>
+    {description && (
+      <p className="text-gray-600 dark:text-gray-300">
+        {description}
+      </p>
+    )}
+  </div>
 );
 
 // Add PropTypes for type checking
 StepHeader.propTypes = {
-    title: PropTypes.string.isRequired,
-    description: PropTypes.string,
-    current_step: PropTypes.number.isRequired,
-    totalSteps: PropTypes.number.isRequired,
-    stepName: PropTypes.string.isRequired
+  title: PropTypes.string.isRequired,
+  description: PropTypes.string,
+  current_step: PropTypes.number.isRequired,
+  totalSteps: PropTypes.number.isRequired,
+  stepName: PropTypes.string.isRequired
 };
 
 export default StepHeader;

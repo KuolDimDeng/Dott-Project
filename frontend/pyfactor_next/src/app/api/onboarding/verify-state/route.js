@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
-import { getServerUser } from '@/utils/serverAuth';
+import { getServerUser } from '@/utils/getServerUser';
 
 /**
  * Get user from various token sources with fallbacks using server-side auth

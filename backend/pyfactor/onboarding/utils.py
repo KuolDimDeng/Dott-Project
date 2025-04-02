@@ -1102,3 +1102,56 @@ def create_table_from_model(cursor, schema_name, model_class):
     except Exception as e:
         logger.error(f"[DYNAMIC-CREATE-{request_id}] Error creating table {table_name} in schema {schema_name}: {str(e)}")
         raise
+
+def get_schema_name_from_tenant_id(tenant_id):
+    """
+    Generate a schema name from a tenant ID consistently.
+    This replaces the schema_name field that was removed from the Tenant model.
+    
+    Args:
+        tenant_id (str or UUID): The tenant ID
+        
+    Returns:
+        str: The schema name in the format 'tenant_XYZ' with dashes replaced by underscores
+    """
+    if not tenant_id:
+        return None
+        
+    # Convert UUID to string if needed and replace dashes with underscores
+    return f"tenant_{str(tenant_id).replace('-', '_')}"
+
+def process_tenant_subscription_plan(tenant, plan_name=None, billing_cycle=None):
+    """
+    Process a tenant's subscription plan.
+    
+    Args:
+        tenant: The tenant object
+        plan_name: Optional plan name (free, professional, enterprise)
+        billing_cycle: Optional billing cycle (monthly, annual)
+        
+    Returns:
+        dict: Information about the processed subscription
+    """
+    if not tenant:
+        return {
+            'success': False,
+            'message': 'Tenant not found'
+        }
+        
+    # Default to free plan if not specified
+    plan = plan_name or 'free'
+    cycle = billing_cycle or 'monthly'
+    
+    # Log information about the plan
+    from pyfactor.logging_config import get_logger
+    logger = get_logger()
+    logger.info(f"Processing subscription plan for tenant {tenant.id}: {plan}/{cycle}")
+    
+    # Return subscription information
+    return {
+        'success': True,
+        'plan': plan,
+        'billing_cycle': cycle,
+        'tenant_id': str(tenant.id),
+        'schema_name': get_schema_name_from_tenant_id(tenant.id)
+    }

@@ -1,44 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  Grid,
-  TextField,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  Paper,
-  Tabs,
-  Tab,
-  IconButton,
-  Divider,
-  CircularProgress,
-  Card,
-  CardContent,
-  Alert,
-  InputAdornment,
-  Tooltip,
-  Chip
-} from '@mui/material';
 import { useToast } from '@/components/Toast/ToastProvider';
 import InvoicePreview from './InvoicePreview';
 import InvoiceTemplateBuilder from './InvoiceTemplateBuilder';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import SaveIcon from '@mui/icons-material/Save';
-import CancelIcon from '@mui/icons-material/Cancel';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import CategoryIcon from '@mui/icons-material/Category';
-import DesignServicesIcon from '@mui/icons-material/DesignServices';
-import DescriptionIcon from '@mui/icons-material/Description';
-import NumbersIcon from '@mui/icons-material/Numbers';
-import PaidIcon from '@mui/icons-material/Paid';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ModernFormLayout from '@/app/components/ModernFormLayout';
 
 const InvoiceForm = ({ mode = 'create' }) => {
@@ -382,113 +347,114 @@ const InvoiceForm = ({ mode = 'create' }) => {
   // Render Customer Selection Tab
   const renderCustomerTab = () => (
     <>
-      <Grid item xs={12} md={8}>
-        <FormControl fullWidth variant="outlined">
-          <InputLabel id="customer-select-label">Select Customer</InputLabel>
-          <Select
-            labelId="customer-select-label"
-            id="customer-select"
-            value={selectedCustomer}
-            onChange={handleCustomerChange}
-            label="Select Customer"
-            error={!!customersError}
-            disabled={customersLoading}
-            startAdornment={
-              selectedCustomer && (
-                <InputAdornment position="start">
-                  <PersonAddIcon color="primary" />
-                </InputAdornment>
-              )
-            }
-          >
-            <MenuItem value="">
-              <em>Select a customer</em>
-            </MenuItem>
-            {customers.map((customer) => (
-              <MenuItem key={customer.id} value={String(customer.id)}>
-                {customer.customerName || `${customer.first_name} ${customer.last_name}`}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        {customersError && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {customersError}
-          </Alert>
-        )}
-        {customersLoading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-            <CircularProgress size={24} />
-          </Box>
-        )}
-      </Grid>
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <div className="md:col-span-8">
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-1" id="customer-select-label">
+              Select Customer
+            </label>
+            <div className="relative">
+              {selectedCustomer && (
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+                  </svg>
+                </span>
+              )}
+              <select
+                id="customer-select"
+                value={selectedCustomer}
+                onChange={handleCustomerChange}
+                className={`w-full p-2 ${selectedCustomer ? 'pl-10' : 'pl-3'} pr-10 border ${customersError ? 'border-red-500' : 'border-gray-300'} rounded-md bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${customersLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={customersLoading}
+              >
+                <option value="">Select a customer</option>
+                {customers.map((customer) => (
+                  <option key={customer.id} value={String(customer.id)}>
+                    {customer.customerName || `${customer.first_name} ${customer.last_name}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {customersError && (
+              <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded-md">
+                {customersError}
+              </div>
+            )}
+            {customersLoading && (
+              <div className="flex justify-center mt-2">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              </div>
+            )}
+          </div>
+        </div>
 
-      <Grid item xs={12} md={4}>
-        <Button
-          variant="outlined"
-          startIcon={<PersonAddIcon />}
-          fullWidth
-          sx={{ height: '56px' }}
-          onClick={() => {
-            // Navigate to create customer page or open modal
-          }}
-        >
-          New Customer
-        </Button>
-      </Grid>
+        <div className="md:col-span-4">
+          <button
+            type="button"
+            className="w-full h-[56px] border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 flex items-center justify-center"
+            onClick={() => {
+              // Navigate to create customer page or open modal
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+            </svg>
+            New Customer
+          </button>
+        </div>
+      </div>
 
       {selectedCustomer && (
-        <Grid item xs={12}>
-          <Card variant="outlined" sx={{ mt: 3, borderRadius: '12px' }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Customer Information
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Business Name
-                  </Typography>
-                  <Typography variant="body1">
-                    {userData.business_name || 'Not provided'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Contact Name
-                  </Typography>
-                  <Typography variant="body1">
-                    {userData.first_name && userData.last_name
-                      ? `${userData.first_name} ${userData.last_name}`
-                      : 'Not provided'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Email
-                  </Typography>
-                  <Typography variant="body1">{userData.email || 'Not provided'}</Typography>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Phone
-                  </Typography>
-                  <Typography variant="body1">{userData.phone || 'Not provided'}</Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Billing Address
-                  </Typography>
-                  <Typography variant="body1">
-                    {userData.address
-                      ? `${userData.address}, ${userData.city}, ${userData.state} ${userData.zip_code}`
-                      : 'Not provided'}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
+        <div className="mt-6 w-full">
+          <div className="border border-gray-200 rounded-xl p-4">
+            <h3 className="text-lg font-medium mb-4">
+              Customer Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">
+                  Business Name
+                </p>
+                <p className="font-medium">
+                  {userData.business_name || 'Not provided'}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">
+                  Contact Name
+                </p>
+                <p className="font-medium">
+                  {userData.first_name && userData.last_name
+                    ? `${userData.first_name} ${userData.last_name}`
+                    : 'Not provided'}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">
+                  Email
+                </p>
+                <p className="font-medium">{userData.email || 'Not provided'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">
+                  Phone
+                </p>
+                <p className="font-medium">{userData.phone || 'Not provided'}</p>
+              </div>
+              <div className="md:col-span-2">
+                <p className="text-sm text-gray-600">
+                  Billing Address
+                </p>
+                <p className="font-medium">
+                  {userData.address
+                    ? `${userData.address}, ${userData.city}, ${userData.state} ${userData.zip_code}`
+                    : 'Not provided'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
@@ -496,364 +462,350 @@ const InvoiceForm = ({ mode = 'create' }) => {
   // Render Invoice Items Tab
   const renderInvoiceItemsTab = () => (
     <>
-      <Grid item xs={12}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h6">Invoice Items</Typography>
-          <Button 
-            variant="contained" 
-            color="primary" 
+      <div className="w-full">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-medium">Invoice Items</h3>
+          <button 
+            type="button"
             onClick={handleAddInvoiceItem}
-            startIcon={<AddIcon />}
-            sx={{ borderRadius: '8px' }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
           >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
             Add Item
-          </Button>
-        </Box>
+          </button>
+        </div>
 
         {invoiceItems.length === 0 ? (
-          <Alert severity="info" sx={{ mb: 2 }}>
+          <div className="bg-blue-50 text-blue-800 p-4 rounded-md mb-4">
             No items added yet. Use the 'Add Item' button to add products or services to this invoice.
-          </Alert>
+          </div>
         ) : (
           <>
             {invoiceItems.map((item, index) => (
-              <Card 
+              <div 
                 key={index} 
-                variant="outlined" 
-                sx={{ 
-                  mb: 3, 
-                  borderRadius: '12px',
-                  position: 'relative',
-                  '&:hover': { borderColor: 'primary.main' } 
-                }}
+                className="mb-6 border border-gray-200 hover:border-blue-500 rounded-xl p-4 relative"
               >
-                <CardContent>
-                  <IconButton 
-                    size="small" 
-                    color="error" 
-                    sx={{ position: 'absolute', top: 8, right: 8 }}
-                    onClick={() => handleRemoveInvoiceItem(index)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                <button 
+                  type="button"
+                  className="absolute top-2 right-2 text-red-600 hover:bg-red-50 p-1 rounded-full"
+                  onClick={() => handleRemoveInvoiceItem(index)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </button>
                   
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} md={4}>
-                      <FormControl fullWidth variant="outlined">
-                        <InputLabel>Item Type</InputLabel>
-                        <Select
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div className="md:col-span-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Item Type
+                      </label>
+                      <div className="relative">
+                        {item.type && (
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                            {item.type === 'product' ? (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd" />
+                              </svg>
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M9.504 1.132a1 1 0 01.992 0l1.75 1a1 1 0 11-.992 1.736L10 3.152l-1.254.716a1 1 0 11-.992-1.736l1.75-1zM5.618 4.504a1 1 0 01-.372 1.364L5.016 6l.23.132a1 1 0 11-.992 1.736L3.004 7l-.23-.132a1 1 0 01.372-1.364l1.75-1a1 1 0 011.364.372zm8.764 0a1 1 0 011.364-.372l1.75 1a1 1 0 01-.372 1.364L16.996 7l-.23.132a1 1 0 11-.992-1.736L16.004 6l-.23-.132a1 1 0 01-.372-1.364zm-7.746 4.754a1 1 0 01.242 1.394l-1 1.5a1 1 0 01-1.636-1.147l.67-1.008-.669-1.01a1 1 0 111.639-1.145l1 1.5a1 1 0 01.09.316zm7.456.21a1 1 0 01.905.13l1.5 1a1 1 0 01-1.11 1.664l-1.5-1a1 1 0 01-.084-1.564l.185-.13a1 1 0 01.104-.034zm-3.06-.617a1 1 0 01.788.375l1 1.25a1 1 0 01-.757 1.614h-2.5a1 1 0 01-.78-1.625l1-1.25a1 1 0 01.792-.375zm-.788 3.75a1 1 0 011.557-.833l1.5 1a1 1 0
+                                .01-1.103 1.666l-1.5-1a1 1 0 01-.454-.833z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </span>
+                        )}
+                        <select
                           value={item.type}
                           onChange={(e) => handleInvoiceItemChange(index, 'type', e.target.value)}
-                          label="Item Type"
-                          startAdornment={
-                            item.type && (
-                              <InputAdornment position="start">
-                                {item.type === 'product' ? <CategoryIcon /> : <DesignServicesIcon />}
-                              </InputAdornment>
-                            )
-                          }
+                          className={`w-full p-2 ${item.type ? 'pl-10' : 'pl-3'} pr-10 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
                         >
-                          <MenuItem value="">Select Item Type</MenuItem>
-                          <MenuItem value="product">Product</MenuItem>
-                          <MenuItem value="service">Service</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Grid>
+                          <option value="">Select Item Type</option>
+                          <option value="product">Product</option>
+                          <option value="service">Service</option>
+                        </select>
+                      </div>
+                    </div>
 
                     {item.type === 'product' && (
-                      <Grid item xs={12} md={8}>
-                        <FormControl fullWidth variant="outlined">
-                          <InputLabel>Product</InputLabel>
-                          <Select
-                            value={item.productId || ''}
-                            onChange={(e) => handleInvoiceItemChange(index, 'productId', e.target.value)}
-                            label="Product"
-                          >
-                            <MenuItem value="">Select a product</MenuItem>
-                            {products.map((product) => (
-                              <MenuItem key={product.id} value={product.id}>
-                                {product.name} - ${parseFloat(product.price).toFixed(2)}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Grid>
+                      <div className="md:col-span-8">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Product
+                        </label>
+                        <select
+                          value={item.productId || ''}
+                          onChange={(e) => handleInvoiceItemChange(index, 'productId', e.target.value)}
+                          className="w-full p-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Select a product</option>
+                          {products.map((product) => (
+                            <option key={product.id} value={product.id}>
+                              {product.name} - ${parseFloat(product.price).toFixed(2)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     )}
 
                     {item.type === 'service' && (
-                      <Grid item xs={12} md={8}>
-                        <FormControl fullWidth variant="outlined">
-                          <InputLabel>Service</InputLabel>
-                          <Select
-                            value={item.serviceId || ''}
-                            onChange={(e) => handleInvoiceItemChange(index, 'serviceId', e.target.value)}
-                            label="Service"
-                          >
-                            <MenuItem value="">Select a service</MenuItem>
-                            {services.map((service) => (
-                              <MenuItem key={service.id} value={service.id}>
-                                {service.name} - ${parseFloat(service.price).toFixed(2)}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Grid>
+                      <div className="md:col-span-8">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Service
+                        </label>
+                        <select
+                          value={item.serviceId || ''}
+                          onChange={(e) => handleInvoiceItemChange(index, 'serviceId', e.target.value)}
+                          className="w-full p-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Select a service</option>
+                          {services.map((service) => (
+                            <option key={service.id} value={service.id}>
+                              {service.name} - ${parseFloat(service.price).toFixed(2)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     )}
 
-                    <Grid item xs={12}>
-                      <TextField
-                        label="Description"
-                        value={item.description}
-                        onChange={(e) => handleInvoiceItemChange(index, 'description', e.target.value)}
-                        fullWidth
-                        variant="outlined"
-                        placeholder="Item description"
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <DescriptionIcon color="action" />
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
-                    </Grid>
+                    <div className="md:col-span-12">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                          </svg>
+                        </span>
+                        <input
+                          type="text"
+                          value={item.description}
+                          onChange={(e) => handleInvoiceItemChange(index, 'description', e.target.value)}
+                          placeholder="Item description"
+                          className="w-full p-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
                     
-                    <Grid item xs={12} md={4}>
-                      <TextField
-                        label="Quantity"
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          handleInvoiceItemChange(index, 'quantity', Math.max(1, parseFloat(e.target.value) || 0))
-                        }
-                        fullWidth
-                        variant="outlined"
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <NumbersIcon color="action" />
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
-                    </Grid>
+                    <div className="md:col-span-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Quantity
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
+                          </svg>
+                        </span>
+                        <input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) =>
+                            handleInvoiceItemChange(index, 'quantity', Math.max(1, parseFloat(e.target.value) || 0))
+                          }
+                          className="w-full p-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
                     
-                    <Grid item xs={12} md={4}>
-                      <TextField
-                        label="Unit Price"
-                        type="number"
-                        value={item.unitPrice}
-                        onChange={(e) =>
-                          handleInvoiceItemChange(index, 'unitPrice', Math.max(0, parseFloat(e.target.value) || 0))
-                        }
-                        fullWidth
-                        variant="outlined"
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">$</InputAdornment>
-                          ),
-                        }}
-                      />
-                    </Grid>
+                    <div className="md:col-span-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Unit Price
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                          $
+                        </span>
+                        <input
+                          type="number"
+                          value={item.unitPrice}
+                          onChange={(e) =>
+                            handleInvoiceItemChange(index, 'unitPrice', Math.max(0, parseFloat(e.target.value) || 0))
+                          }
+                          className="w-full p-2 pl-8 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
                     
-                    <Grid item xs={12} md={4}>
-                      <TextField
-                        label="Line Total"
-                        value={item.amount ? `$${item.amount.toFixed(2)}` : '$0.00'}
-                        InputProps={{ 
-                          readOnly: true,
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <PaidIcon color="action" />
-                            </InputAdornment>
-                          )
-                        }}
-                        fullWidth
-                        variant="outlined"
-                      />
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
+                    <div className="md:col-span-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Line Total
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                          </svg>
+                        </span>
+                        <input
+                          type="text"
+                          value={item.amount ? `$${item.amount.toFixed(2)}` : '$0.00'}
+                          readOnly
+                          className="w-full p-2 pl-10 bg-gray-50 border border-gray-300 rounded-md focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+              </div>
             ))}
 
-            <Card 
-              variant="outlined" 
-              sx={{ 
-                mt: 4, 
-                borderRadius: '12px',
-                backgroundColor: 'background.paper'
-              }}
-            >
-              <CardContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={8}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Subtotal</Typography>
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Typography variant="subtitle1" align="right">${calculateSubTotal().toFixed(2)}</Typography>
-                  </Grid>
-                  
-                  <Grid item xs={12} md={8}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Tax (10%)</Typography>
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Typography variant="subtitle1" align="right">${calculateTax().toFixed(2)}</Typography>
-                  </Grid>
-                  
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 1 }} />
-                  </Grid>
-                  
-                  <Grid item xs={12} md={8}>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>Total</Typography>
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Typography variant="h6" align="right" color="primary.main">
-                      ${calculateTotal().toFixed(2)}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
+            <div className="mt-8 border border-gray-200 rounded-xl p-4 bg-white"> 
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+                <div className="md:col-span-8">
+                  <p className="font-semibold">Subtotal</p>
+                </div>
+                <div className="md:col-span-4 text-right">
+                  <p>${calculateSubTotal().toFixed(2)}</p>
+                </div>
+                
+                <div className="md:col-span-8">
+                  <p className="font-semibold">Tax (10%)</p>
+                </div>
+                <div className="md:col-span-4 text-right">
+                  <p>${calculateTax().toFixed(2)}</p>
+                </div>
+                
+                <div className="md:col-span-12">
+                  <div className="border-t border-gray-200 my-2"></div>
+                </div>
+                
+                <div className="md:col-span-8">
+                  <p className="text-lg font-bold">Total</p>
+                </div>
+                <div className="md:col-span-4 text-right">
+                  <p className="text-lg font-bold text-blue-600">
+                    ${calculateTotal().toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
           </>
         )}
-      </Grid>
+      </div>
     </>
   );
 
   // Render Template Tab
   const renderTemplateTab = () => (
     <>
-      <Grid item xs={12}>
-        <Typography variant="h6" gutterBottom>
+      <div className="w-full">
+        <h3 className="text-lg font-medium mb-4">
           Invoice Template
-        </Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
+        </h3>
+        <button 
+          type="button"
           onClick={handleOpenTemplateBuilder}
-          startIcon={<ReceiptIcon />}
-          sx={{ mb: 3, borderRadius: '8px' }}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center mb-6"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+          </svg>
           Open Template Builder
-        </Button>
+        </button>
         
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <InputLabel>Template Style</InputLabel>
-              <Select
-                value={template}
-                onChange={handleTemplateChange}
-                label="Template Style"
-              >
-                <MenuItem value="Contemporary">Contemporary</MenuItem>
-                <MenuItem value="Professional">Professional</MenuItem>
-                <MenuItem value="Classic">Classic</MenuItem>
-                <MenuItem value="Modern">Modern</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              label="Accent Color"
-              type="color"
-              value={accentColor}
-              onChange={handleAccentColorChange}
-              fullWidth
-              InputProps={{
-                startAdornment: (
-                  <Box 
-                    sx={{ 
-                      width: 24, 
-                      height: 24, 
-                      borderRadius: '50%', 
-                      backgroundColor: accentColor,
-                      mr: 1
-                    }} 
-                  />
-                ),
-              }}
-            />
-          </Grid>
-          
-          <Grid item xs={12}>
-            <Button 
-              variant="outlined" 
-              component="label"
-              sx={{ mt: 2, borderRadius: '8px' }}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Template Style
+            </label>
+            <select
+              value={template}
+              onChange={handleTemplateChange}
+              className="w-full p-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
+              <option value="Contemporary">Contemporary</option>
+              <option value="Professional">Professional</option>
+              <option value="Classic">Classic</option>
+              <option value="Modern">Modern</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Accent Color
+            </label>
+            <div className="flex items-center">
+              <div 
+                className="w-6 h-6 rounded-full mr-2" 
+                style={{ backgroundColor: accentColor }}
+              ></div>
+              <input
+                type="color"
+                value={accentColor}
+                onChange={handleAccentColorChange}
+                className="w-full p-1 border border-gray-300 rounded-md h-10"
+              />
+            </div>
+          </div>
+          
+          <div className="col-span-2 mt-4">
+            <label className="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
               Upload Logo
               <input
                 type="file"
-                hidden
+                className="hidden"
                 accept="image/*"
                 onChange={handleLogoUpload}
               />
-            </Button>
+            </label>
+            
             {logo && (
-              <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
-                <Typography variant="body2" sx={{ mr: 2 }}>
+              <div className="mt-4 flex items-center">
+                <span className="text-sm text-gray-600 mr-2">
                   Logo Preview:
-                </Typography>
-                <img src={logo} alt="Logo Preview" style={{ maxHeight: '50px' }} />
-              </Box>
+                </span>
+                <img src={logo} alt="Logo Preview" className="max-h-12" />
+              </div>
             )}
-          </Grid>
-        </Grid>
-      </Grid>
+          </div>
+        </div>
       
-      <Grid item xs={12}>
-        <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
-          Preview
-        </Typography>
-        <Paper elevation={0} variant="outlined" sx={{ p: 2, borderRadius: '12px' }}>
-          <InvoicePreview
-            logo={logo}
-            accentColor={accentColor}
-            template={template}
-            userData={userData}
-            invoiceItems={invoiceItems}
-            products={products}
-            services={services}
-          />
-        </Paper>
-      </Grid>
+        <div className="mt-8">
+          <h3 className="text-lg font-medium mb-4">
+            Preview
+          </h3>
+          <div className="border border-gray-200 rounded-xl p-4">
+            <InvoicePreview
+              logo={logo}
+              accentColor={accentColor}
+              template={template}
+              userData={userData}
+              invoiceItems={invoiceItems}
+              products={products}
+              services={services}
+            />
+          </div>
+        </div>
+      </div>
     </>
   );
 
   return (
-    <Box sx={{ width: '100%', maxWidth: '1200px', mx: 'auto' }}>
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          mb: 3, 
-          borderRadius: '12px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-          overflow: 'hidden',
-        }}
-      >
-        <Tabs 
-          value={activeTab} 
-          onChange={handleTabChange}
-          variant="fullWidth"
-          sx={{
-            minHeight: '60px',
-            '& .MuiTab-root': {
-              fontWeight: 600,
-              fontSize: '0.95rem',
-              textTransform: 'none',
-              minHeight: '60px',
-            }
-          }}
-        >
-          <Tab label="Customer" />
-          <Tab label="Invoice Items" />
-          <Tab label="Template" />
-        </Tabs>
-      </Paper>
+    <div className="w-full max-w-[1200px] mx-auto">
+      <div className="mb-6 bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="flex w-full">
+          {["Customer", "Invoice Items", "Template"].map((label, index) => (
+            <button
+              key={index}
+              onClick={(e) => handleTabChange(e, index)}
+              className={`flex-1 py-4 px-4 text-center font-semibold text-base ${
+                activeTab === index
+                  ? "border-b-2 border-blue-600 text-blue-600"
+                  : "border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <ModernFormLayout
         title="Create New Invoice"
@@ -864,17 +816,18 @@ const InvoiceForm = ({ mode = 'create' }) => {
         }}
         isLoading={isSubmitting}
         submitLabel="Save Invoice"
-        startIcon={<SaveIcon />}
         submitDisabled={invoiceItems.length === 0 || !selectedCustomer}
         footer={
-          <Button
-            variant="outlined"
+          <button
+            type="button"
             onClick={handleCancel}
-            startIcon={<CancelIcon />}
-            sx={{ mr: 2, borderRadius: '8px', textTransform: 'none' }}
+            className="mr-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center"
           >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
             Cancel
-          </Button>
+          </button>
         }
       >
         {activeTab === 0 && renderCustomerTab()}
@@ -882,19 +835,21 @@ const InvoiceForm = ({ mode = 'create' }) => {
         {activeTab === 2 && renderTemplateTab()}
 
         {activeTab < 2 && (
-          <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-            <Button
-              variant="outlined"
-              endIcon={<ArrowForwardIcon />}
+          <div className="w-full flex justify-end mt-6">
+            <button
+              type="button"
               onClick={() => setActiveTab(activeTab + 1)}
-              sx={{ borderRadius: '8px', textTransform: 'none' }}
+              className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 flex items-center"
             >
               Next: {activeTab === 0 ? 'Invoice Items' : 'Template'}
-            </Button>
-          </Grid>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
         )}
       </ModernFormLayout>
-    </Box>
+    </div>
   );
 };
 

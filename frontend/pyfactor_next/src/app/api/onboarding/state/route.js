@@ -1,12 +1,29 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
-import { getServerUser } from '@/utils/serverAuth';
+import { getServerUser } from '@/utils/getServerUser';
 
 /**
  * Get user from various token sources with fallbacks using server-side auth
  */
 async function getAuthenticatedUser(request) {
   try {
+    // Check if this is for the business-info step specifically
+    const { searchParams } = new URL(request.url);
+    const step = searchParams.get('step');
+    const isBusinessInfoStep = step === 'business-info';
+    const allowPartial = searchParams.get('allowPartial') === 'true';
+    
+    // Always provide minimum data for business-info step
+    if (isBusinessInfoStep) {
+      logger.debug('[API] Business-info step detected, providing minimal data');
+      return {
+        email: '',
+        'custom:onboarding': 'NOT_STARTED',
+        partial: true,
+        businessInfo: false
+      };
+    }
+    
     // Use our server-side authentication utility
     const user = await getServerUser(request);
     
@@ -18,19 +35,17 @@ async function getAuthenticatedUser(request) {
     // Check if this is coming from our enhanced middleware
     const isOnboardingRoute = request.headers.get('X-Onboarding-Route') === 'true';
     
-    if (isOnboardingRoute) {
+    if (isOnboardingRoute || allowPartial) {
       logger.debug('[API] Onboarding route detected, trying alternative auth methods');
       
       // For business-info, we'll still return some minimal data
-      const { searchParams } = new URL(request.url);
-      if (searchParams.get('allowPartial') === 'true' || searchParams.get('step') === 'business-info') {
-        logger.debug('[API] Returning partial data for business-info page');
-        return {
-          email: '',
-          'custom:onboarding': 'NOT_STARTED',
-          partial: true
-        };
-      }
+      logger.debug('[API] Returning partial data for onboarding page');
+      return {
+        email: '',
+        'custom:onboarding': 'NOT_STARTED',
+        partial: true,
+        businessInfo: false
+      };
     }
     
     return null;

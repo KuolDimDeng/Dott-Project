@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyFactor Application Reset</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #d32f2f;
+            border-bottom: 2px solid #d32f2f;
+            padding-bottom: 10px;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .warning {
+            background-color: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #b71c1c;
+        }
+        .success {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 10px 15px;
+            margin-top: 20px;
+            display: none;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .secondary {
+            background-color: #757575;
+        }
+        .secondary:hover {
+            background-color: #616161;
+        }
+    </style>
+</head>
+<body>
+    <h1>PyFactor Emergency Reset Tool</h1>
+    
+    <div class="card">
+        <h2>Redirect Loop Circuit Breaker</h2>
+        <p>This tool will help you recover from redirect loops by clearing all application state, including:</p>
+        <ul>
+            <li>All localStorage items</li>
+            <li>All sessionStorage items</li>
+            <li>All cookies (authentication, session state, etc.)</li>
+        </ul>
+        
+        <div class="warning">
+            <strong>Warning:</strong> This will completely sign you out and reset all application state to default values. You will need to sign in again after using this tool.
+        </div>
+        
+        <div class="actions">
+            <button id="resetButton">Reset Application State</button>
+            <button class="secondary" id="diagnoseButton">Diagnose Current State</button>
+        </div>
+        
+        <div id="successMessage" class="success">
+            <strong>Success!</strong> The application state has been reset. You can now <a href="/auth/signin">sign in</a> again.
+        </div>
+        
+        <div id="diagnosisResult" style="display: none; margin-top: 20px;">
+            <h3>Current Application State:</h3>
+            <pre id="diagnosisText"></pre>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>Next Steps After Reset</h3>
+        <ol>
+            <li>Close all application browser tabs</li>
+            <li>Open the application again at the root URL</li>
+            <li>If you still experience issues, try clearing your browser cache or using incognito/private mode</li>
+        </ol>
+    </div>
+    
+    <script>
+        document.getElementById('resetButton').addEventListener('click', function() {
+            try {
+                // Clear localStorage
+                const localStorageItems = Object.keys(localStorage);
+                console.log(`Clearing ${localStorageItems.length} localStorage items...`);
+                localStorage.clear();
+                
+                // Clear sessionStorage
+                const sessionStorageItems = Object.keys(sessionStorage);
+                console.log(`Clearing ${sessionStorageItems.length} sessionStorage items...`);
+                sessionStorage.clear();
+                
+                // Clear cookies
+                const cookies = document.cookie.split(";");
+                console.log(`Clearing ${cookies.length} cookies...`);
+                cookies.forEach(cookie => {
+                    const name = cookie.split("=")[0].trim();
+                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+                });
+                
+                // Show success message
+                document.getElementById('successMessage').style.display = 'block';
+                
+                // Set a flag to indicate we've reset (this will be cleared on refresh)
+                sessionStorage.setItem('resetPerformed', 'true');
+                
+                // Add redirect option
+                setTimeout(() => {
+                    if (confirm('Application state has been reset. Would you like to redirect to the sign-in page?')) {
+                        window.location.href = '/auth/signin';
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                alert(`Error resetting application state: ${error.message}`);
+                console.error('Reset error:', error);
+            }
+        });
+        
+        document.getElementById('diagnoseButton').addEventListener('click', function() {
+            const diagnosisDiv = document.getElementById('diagnosisResult');
+            const diagnosisText = document.getElementById('diagnosisText');
+            
+            try {
+                const diagnosis = {
+                    localStorage: {},
+                    sessionStorage: {},
+                    cookies: document.cookie.split(';').map(c => c.trim()),
+                    url: window.location.href,
+                    userAgent: navigator.userAgent
+                };
+                
+                // Get localStorage items safely
+                Object.keys(localStorage).forEach(key => {
+                    try {
+                        diagnosis.localStorage[key] = localStorage.getItem(key);
+                    } catch (e) {
+                        diagnosis.localStorage[key] = `[Error reading: ${e.message}]`;
+                    }
+                });
+                
+                // Get sessionStorage items safely
+                Object.keys(sessionStorage).forEach(key => {
+                    try {
+                        diagnosis.sessionStorage[key] = sessionStorage.getItem(key);
+                    } catch (e) {
+                        diagnosis.sessionStorage[key] = `[Error reading: ${e.message}]`;
+                    }
+                });
+                
+                diagnosisText.textContent = JSON.stringify(diagnosis, null, 2);
+                diagnosisDiv.style.display = 'block';
+                
+            } catch (error) {
+                alert(`Error diagnosing state: ${error.message}`);
+                console.error('Diagnosis error:', error);
+            }
+        });
+    </script>
+</body>
+</html> 

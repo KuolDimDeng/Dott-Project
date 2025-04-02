@@ -1,7 +1,6 @@
 'use client';
 
 import React, { Suspense, lazy } from 'react';
-import { Box, Button, CircularProgress, Typography, Tabs, Tab } from '@mui/material';
 import { TransportDashboard, VehicleManagement } from './transport';
 
 // Empty loading component (removed spinner)
@@ -9,38 +8,9 @@ const LoadingComponent = () => null;
 
 // Content Wrapper component
 const ContentWrapper = ({ children }) => (
-  <Box
-    sx={{
-      flexGrow: 1,
-      width: '100%',
-      maxWidth: '100%',
-      height: '100%',
-      margin: '0',
-      padding: { xs: '0.5rem', sm: '0.75rem', md: '1rem' },
-      display: 'flex',
-      flexDirection: 'column',
-      boxSizing: 'border-box',
-      overflowX: 'hidden',
-      '& .MuiContainer-root': {
-        paddingLeft: { xs: '0.5rem', sm: '1rem' },
-        paddingRight: { xs: '0.5rem', sm: '1rem' },
-      },
-      '& .MuiTable-root': {
-        minWidth: { xs: '100%', sm: '650px' },
-      },
-      '& .MuiTableCell-root': {
-        padding: { xs: '0.5rem', sm: '1rem' },
-      },
-      '& .MuiCardContent-root': {
-        padding: { xs: '0.75rem', sm: '1rem', md: '1.25rem' },
-      },
-      '& .MuiInputBase-root': {
-        width: '100%',
-      },
-    }}
-  >
+  <div className="flex-grow w-full h-full m-0 p-2 sm:p-3 md:p-4 flex flex-col box-border overflow-x-hidden">
     {children}
-  </Box>
+  </div>
 );
 
 // Lazy load all components
@@ -122,11 +92,11 @@ const HRDashboard = lazy(() => import('./forms/HRDashboard.js'));
 const CRMDashboard = lazy(() => import('./crm/CRMDashboard'));
 const ContactsManagement = lazy(() => import('./crm/ContactsManagement'));
 const LeadsManagement = lazy(() => import('./crm/LeadsManagement'));
-const OpportunitiesManagement = lazy(() => import('./crm').then(m => ({ default: m.OpportunitiesManagement })));
-const DealsManagement = lazy(() => import('./crm').then(m => ({ default: m.DealsManagement })));
-const ActivitiesManagement = lazy(() => import('./crm').then(m => ({ default: m.ActivitiesManagement })));
-const CampaignsManagement = lazy(() => import('./crm').then(m => ({ default: m.CampaignsManagement })));
-const ReportsManagement = lazy(() => import('./crm').then(m => ({ default: m.ReportsManagement })));
+const OpportunitiesManagement = lazy(() => import('./crm/OpportunitiesManagement'));
+const DealsManagement = lazy(() => import('./crm/DealsManagement'));
+const ActivitiesManagement = lazy(() => import('./crm/ActivitiesManagement'));
+const CampaignsManagement = lazy(() => import('./crm/CampaignsManagement'));
+const ReportsManagement = lazy(() => import('./crm/ReportsManagement'));
 
 // Analytics Components
 const AIQueryPage = lazy(() => import('./forms/AIQueryPage.js'));
@@ -268,18 +238,30 @@ function RenderMainContent({
           }
 
           return (
-            <Box sx={{ width: '100%' }}>
+            <div className="w-full">
               {tabs.length > 0 && (
-                <Tabs value={selectedTab} onChange={handleTabChange}>
-                  {tabs.map((tab, index) => (
-                    <Tab key={index} label={tab} />
-                  ))}
-                </Tabs>
+                <div className="border-b border-gray-200">
+                  <div className="flex space-x-4">
+                    {tabs.map((tab, index) => (
+                      <button
+                        key={index}
+                        className={`py-2 px-4 font-medium ${
+                          selectedTab === index
+                            ? 'text-blue-600 border-b-2 border-blue-500'
+                            : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                        onClick={(e) => handleTabChange(e, index)}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
-              <Box sx={{ p: 1 }}>
+              <div className="p-1">
                 {content}
-              </Box>
-            </Box>
+              </div>
+            </div>
           );
         })()}
       </Suspense>
@@ -316,23 +298,15 @@ function RenderMainContent({
     if (tenantStatus === 'pending') {
       return (
         <ContentWrapper>
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              height: '70vh' 
-            }}
-          >
-            <CircularProgress size={40} />
-            <Typography variant="h6" sx={{ mt: 2 }}>
+          <div className="flex flex-col items-center justify-center h-[70vh]">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+            <h6 className="text-lg font-medium mt-2">
               Setting up your account data...
-            </Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+            </h6>
+            <p className="text-sm text-gray-500 mt-1">
               This may take a few moments.
-            </Typography>
-          </Box>
+            </p>
+          </div>
         </ContentWrapper>
       );
     }
@@ -340,38 +314,26 @@ function RenderMainContent({
     if (tenantStatus === 'error' || tenantStatus === 'invalid_tenant') {
       return (
         <ContentWrapper>
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              height: '70vh',
-              textAlign: 'center',
-              maxWidth: '600px',
-              mx: 'auto'
-            }}
-          >
+          <div className="flex flex-col items-center justify-center h-[70vh] text-center max-w-[600px] mx-auto">
             <svg className="w-16 h-16 text-yellow-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
             </svg>
-            <Typography variant="h5" sx={{ mb: 2 }}>
+            <h5 className="text-xl font-medium mb-2">
               Account Setup Issue
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 3 }}>
+            </h5>
+            <p className="mb-3">
               We're having trouble setting up your account data. Some features may be unavailable at this time.
-            </Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 4 }}>
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
               {tenantError || "Please try refreshing the page or contact support if this issue persists."}
-            </Typography>
-            <Button 
-              variant="contained" 
-              color="primary" 
+            </p>
+            <button 
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               onClick={() => window.location.reload()}
             >
               Refresh Page
-            </Button>
-          </Box>
+            </button>
+          </div>
         </ContentWrapper>
       );
     }

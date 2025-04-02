@@ -1,13 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Typography,
-  Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  useTheme,
-} from '@mui/material';
 import { Pie, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -48,7 +39,6 @@ const formatAmount = (amount) => {
 export default function BalanceSheetAnalysis() {
   const [timeRange, setTimeRange] = useState('12');
   const [data, setData] = useState(null);
-  const theme = useTheme();
 
   useEffect(() => {
     fetchData();
@@ -69,7 +59,7 @@ export default function BalanceSheetAnalysis() {
     setTimeRange(event.target.value);
   };
 
-  if (!data) return <Typography>Loading...</Typography>;
+  if (!data) return <p className="text-gray-600 text-lg">Loading...</p>;
 
   const latestData = data[data.length - 1];
   const totalAssets = latestData.assets.total;
@@ -115,44 +105,71 @@ export default function BalanceSheetAnalysis() {
   };
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h1 className="text-2xl font-bold text-gray-800 mb-4">
         Balance Sheet Analysis
-      </Typography>
+      </h1>
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Time Range</InputLabel>
-        <Select value={timeRange} onChange={handleTimeRangeChange}>
+      <div className="mt-4">
+        <label htmlFor="timeRange" className="block text-sm font-medium text-gray-700 mb-1">
+          Time Range
+        </label>
+        <select
+          id="timeRange"
+          value={timeRange}
+          onChange={handleTimeRangeChange}
+          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        >
           {timeRanges.map((range) => (
-            <MenuItem key={range.value} value={range.value}>
+            <option key={range.value} value={range.value}>
               {range.label}
-            </MenuItem>
+            </option>
           ))}
-        </Select>
-      </FormControl>
+        </select>
+      </div>
 
-      <Box display="flex" justifyContent="space-between" mt={4}>
-        <Box width="45%">
-          <Typography variant="h6" gutterBottom>
+      <div className="flex flex-col md:flex-row justify-between mt-8 gap-6">
+        <div className="w-full md:w-1/2">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">
             Balance Sheet Breakdown
-          </Typography>
-          <Pie data={pieChartData} />
-        </Box>
-        <Box width="45%">
-          <Typography variant="h6" gutterBottom>
+          </h2>
+          <div className="relative h-80">
+            <Pie data={pieChartData} />
+          </div>
+        </div>
+        <div className="w-full md:w-1/2">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">
             Balance Sheet Trends Over Time
-          </Typography>
-          <Line data={lineChartData} />
-        </Box>
-      </Box>
+          </h2>
+          <div className="relative h-80">
+            <Line data={lineChartData} />
+          </div>
+        </div>
+      </div>
 
-      <Typography variant="h6" mt={4}>
-        Summary
-      </Typography>
-      <Typography>Total Assets: ${formatAmount(totalAssets)}</Typography>
-      <Typography>Total Liabilities: ${formatAmount(totalLiabilities)}</Typography>
-      <Typography>Total Equity: ${formatAmount(totalEquity)}</Typography>
-      <Typography>Debt to Equity Ratio: {formatAmount(totalLiabilities / totalEquity)}</Typography>
-    </Box>
+      <div className="mt-8 bg-gray-50 p-4 rounded-lg">
+        <h2 className="text-lg font-medium text-gray-900 mb-3">
+          Summary
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+            <p className="text-sm text-gray-500">Total Assets</p>
+            <p className="text-xl font-semibold text-blue-600">${formatAmount(totalAssets)}</p>
+          </div>
+          <div className="p-3 bg-red-50 rounded-lg border border-red-100">
+            <p className="text-sm text-gray-500">Total Liabilities</p>
+            <p className="text-xl font-semibold text-red-600">${formatAmount(totalLiabilities)}</p>
+          </div>
+          <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+            <p className="text-sm text-gray-500">Total Equity</p>
+            <p className="text-xl font-semibold text-yellow-600">${formatAmount(totalEquity)}</p>
+          </div>
+          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-sm text-gray-500">Debt to Equity Ratio</p>
+            <p className="text-xl font-semibold text-gray-700">{formatAmount(totalLiabilities / totalEquity)}</p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

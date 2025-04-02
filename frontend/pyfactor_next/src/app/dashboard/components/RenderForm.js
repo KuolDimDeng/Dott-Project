@@ -1,8 +1,9 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/RenderForm.js
+'use client';
+
 import React from 'react';
 import ProductManagement from './forms/ProductManagement';
 import ServiceForm from './forms/ServiceForm';
-import logger from '@/utils/logger';
+import { logger } from '@/utils/logger';
 import CustomerForm from './forms/CustomerForm';
 import BillForm from './forms/BillForm';
 import InvoiceForm from './forms/InvoiceForm';

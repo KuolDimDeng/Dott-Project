@@ -128,12 +128,35 @@ body {
   to { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes fadeTransition {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 .fade-in {
   animation: fadeIn 0.3s ease-in;
 }
 
 .slide-in {
   animation: slideIn 0.3s ease-out;
+}
+
+.page-transition {
+  animation: fadeTransition 0.4s ease-out;
+}
+
+.progress-bar-transition {
+  transition: width 0.5s ease-in-out;
+}
+
+/* Form transition effects */
+.form-control-transition {
+  transition: all 0.3s ease;
+}
+
+.form-control-transition:focus-within {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 /* Loading animations */
@@ -359,3 +382,30 @@ form select,
 }
 
 /* === END OF MUI INPUT FIX === */
+
+/* === TAILWIND TOGGLE SWITCH === */
+/* Custom styles for toggle switches created with Tailwind */
+
+.form-switch-checkbox:checked + .form-switch-label .form-switch-inner {
+  background-color: #3b82f6;
+}
+
+.form-switch-checkbox:checked + .form-switch-label .form-switch-switch {
+  transform: translateX(1.5rem);
+  background-color: white;
+}
+
+.form-switch-label:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.form-switch-checkbox:focus + .form-switch-label {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}
+
+.form-switch-checkbox:checked:focus + .form-switch-label {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+}
+
+/* === END OF TAILWIND TOGGLE SWITCH === */

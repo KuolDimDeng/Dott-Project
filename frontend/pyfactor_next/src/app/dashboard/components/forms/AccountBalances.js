@@ -1,17 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  CircularProgress,
-  useTheme,
-} from '@mui/material';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { useToast } from '@/components/Toast/ToastProvider';
 
@@ -19,7 +6,6 @@ const AccountBalances = () => {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
-  const theme = useTheme();
 
   useEffect(() => {
     fetchAccountBalances();
@@ -42,39 +28,61 @@ const AccountBalances = () => {
   };
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom>
+    <div className="bg-white p-6 rounded-lg shadow-sm">
+      <h1 className="text-2xl font-semibold text-gray-800 mb-6">
         Account Balances
-      </Typography>
+      </h1>
       {loading ? (
-        <CircularProgress />
+        <div className="flex justify-center p-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
       ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Account Number</TableCell>
-                <TableCell>Account Name</TableCell>
-                <TableCell>Account Type</TableCell>
-                <TableCell align="right">Balance</TableCell>
-                <TableCell>Description</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Account Number
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Account Name
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Account Type
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Balance
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Description
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
               {accounts.map((account) => (
-                <TableRow key={account.account_number}>
-                  <TableCell>{account.account_number}</TableCell>
-                  <TableCell>{account.name}</TableCell>
-                  <TableCell>{account.account_type}</TableCell>
-                  <TableCell align="right">{formatCurrency(account.balance)}</TableCell>
-                  <TableCell>{account.description}</TableCell>
-                </TableRow>
+                <tr key={account.account_number} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {account.account_number}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {account.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {account.account_type}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {formatCurrency(account.balance)}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {account.description}
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            </tbody>
+          </table>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 

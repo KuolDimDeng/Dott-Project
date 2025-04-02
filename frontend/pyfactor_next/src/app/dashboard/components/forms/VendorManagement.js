@@ -1,28 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Tabs,
-  Tab,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
-  TextField,
-  Grid,
-  useTheme,
-} from '@mui/material';
 import { axiosInstance } from '@/lib/axiosConfig';
 
 const VendorManagement = ({ newVendor: isNewVendor = false }) => {
   const [tabValue, setTabValue] = useState(isNewVendor ? 0 : 2);
   const [vendors, setVendors] = useState([]);
   const [selectedVendor, setSelectedVendor] = useState(null);
-  const theme = useTheme();
 
   const [formData, setFormData] = useState({
     vendor_name: '',
@@ -46,7 +28,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
     }
   };
 
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (newValue) => {
     setTabValue(newValue);
     setSelectedVendor(null);
   };
@@ -84,132 +66,217 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
   };
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h5" gutterBottom>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h1 className="text-2xl font-semibold text-gray-800 mb-4">
         Vendor Management
-      </Typography>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={tabValue} onChange={handleTabChange}>
-          <Tab label="Create Vendor" />
-          <Tab label="Vendor Detail" />
-          <Tab label="Vendor List" />
-        </Tabs>
-      </Box>
+      </h1>
+      
+      <div className="border-b border-gray-200 mb-4">
+        <nav className="flex -mb-px">
+          <button
+            className={`py-2 px-4 border-b-2 font-medium text-sm ${
+              tabValue === 0
+                ? 'border-primary-main text-primary-main'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleTabChange(0)}
+          >
+            Create Vendor
+          </button>
+          <button
+            className={`py-2 px-4 border-b-2 font-medium text-sm ${
+              tabValue === 1
+                ? 'border-primary-main text-primary-main'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleTabChange(1)}
+            disabled={!selectedVendor && tabValue !== 1}
+          >
+            Vendor Detail
+          </button>
+          <button
+            className={`py-2 px-4 border-b-2 font-medium text-sm ${
+              tabValue === 2
+                ? 'border-primary-main text-primary-main'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleTabChange(2)}
+          >
+            Vendor List
+          </button>
+        </nav>
+      </div>
 
       {tabValue === 0 && (
-        <Box component="form" onSubmit={handleSubmit}>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Vendor Name"
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label htmlFor="vendor_name" className="block text-sm font-medium text-gray-700 mb-1">
+                Vendor Name
+              </label>
+              <input
+                id="vendor_name"
+                type="text"
                 name="vendor_name"
                 value={formData.vendor_name}
                 onChange={handleInputChange}
                 required
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-main focus:ring focus:ring-primary-light focus:ring-opacity-50"
               />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Street"
+            </div>
+            
+            <div className="md:col-span-2">
+              <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-1">
+                Street
+              </label>
+              <input
+                id="street"
+                type="text"
                 name="street"
                 value={formData.street}
                 onChange={handleInputChange}
                 required
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-main focus:ring focus:ring-primary-light focus:ring-opacity-50"
               />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                label="Postcode"
+            </div>
+            
+            <div>
+              <label htmlFor="postcode" className="block text-sm font-medium text-gray-700 mb-1">
+                Postcode
+              </label>
+              <input
+                id="postcode"
+                type="text"
                 name="postcode"
                 value={formData.postcode}
                 onChange={handleInputChange}
                 required
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-main focus:ring focus:ring-primary-light focus:ring-opacity-50"
               />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                label="City"
+            </div>
+            
+            <div>
+              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                City
+              </label>
+              <input
+                id="city"
+                type="text"
                 name="city"
                 value={formData.city}
                 onChange={handleInputChange}
                 required
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-main focus:ring focus:ring-primary-light focus:ring-opacity-50"
               />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                label="State"
+            </div>
+            
+            <div>
+              <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                State
+              </label>
+              <input
+                id="state"
+                type="text"
                 name="state"
                 value={formData.state}
                 onChange={handleInputChange}
                 required
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-main focus:ring focus:ring-primary-light focus:ring-opacity-50"
               />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                label="Phone"
+            </div>
+            
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                Phone
+              </label>
+              <input
+                id="phone"
+                type="text"
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
                 required
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-main focus:ring focus:ring-primary-light focus:ring-opacity-50"
               />
-            </Grid>
-            <Grid item xs={12}>
-              <Button type="submit" variant="contained" color="primary">
+            </div>
+            
+            <div className="md:col-span-2 mt-4">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary-main text-white rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-50"
+              >
                 Create Vendor
-              </Button>
-            </Grid>
-          </Grid>
-        </Box>
+              </button>
+            </div>
+          </div>
+        </form>
       )}
 
       {tabValue === 1 && selectedVendor && (
-        <Box>
-          <Typography variant="h6">Vendor Details</Typography>
-          <Typography>Vendor Number: {selectedVendor.vendor_number}</Typography>
-          <Typography>Vendor Name: {selectedVendor.vendor_name}</Typography>
-          <Typography>Street: {selectedVendor.street}</Typography>
-          <Typography>Postcode: {selectedVendor.postcode}</Typography>
-          <Typography>City: {selectedVendor.city}</Typography>
-          <Typography>State: {selectedVendor.state}</Typography>
-          <Typography>Phone: {selectedVendor.phone}</Typography>
-        </Box>
+        <div className="space-y-3">
+          <h2 className="text-xl font-semibold text-gray-800">Vendor Details</h2>
+          <p className="text-gray-700"><span className="font-medium">Vendor Number:</span> {selectedVendor.vendor_number}</p>
+          <p className="text-gray-700"><span className="font-medium">Vendor Name:</span> {selectedVendor.vendor_name}</p>
+          <p className="text-gray-700"><span className="font-medium">Street:</span> {selectedVendor.street}</p>
+          <p className="text-gray-700"><span className="font-medium">Postcode:</span> {selectedVendor.postcode}</p>
+          <p className="text-gray-700"><span className="font-medium">City:</span> {selectedVendor.city}</p>
+          <p className="text-gray-700"><span className="font-medium">State:</span> {selectedVendor.state}</p>
+          <p className="text-gray-700"><span className="font-medium">Phone:</span> {selectedVendor.phone}</p>
+        </div>
       )}
 
       {tabValue === 2 && (
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Vendor Number</TableCell>
-                <TableCell>Vendor Name</TableCell>
-                <TableCell>City</TableCell>
-                <TableCell>Phone</TableCell>
-                <TableCell>Action</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Vendor Number
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Vendor Name
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  City
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Phone
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
               {vendors.map((vendor) => (
-                <TableRow key={vendor.id}>
-                  <TableCell>{vendor.vendor_number}</TableCell>
-                  <TableCell>{vendor.vendor_name}</TableCell>
-                  <TableCell>{vendor.city}</TableCell>
-                  <TableCell>{vendor.phone}</TableCell>
-                  <TableCell>
-                    <Button onClick={() => handleVendorSelect(vendor)}>View Details</Button>
-                  </TableCell>
-                </TableRow>
+                <tr key={vendor.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {vendor.vendor_number}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {vendor.vendor_name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {vendor.city}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {vendor.phone}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => handleVendorSelect(vendor)}
+                      className="text-primary-main hover:text-primary-dark"
+                    >
+                      View Details
+                    </button>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            </tbody>
+          </table>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 

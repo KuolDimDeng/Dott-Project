@@ -111,6 +111,29 @@ export default function LandingButton() {
         throw new Error('Invalid button configuration');
       }
 
+      // If user is not authenticated, redirect to sign in
+      if (!isAuthenticated) {
+        logger.debug('[LandingButton] User not authenticated, redirecting to sign in');
+        router.push('/auth/signin');
+        return;
+      }
+
+      // Verify authentication again before proceeding
+      const { tokens } = await fetchAuthSession();
+      if (!tokens?.idToken) {
+        logger.debug('[LandingButton] No valid tokens found during navigation, redirecting to sign in');
+        router.push('/auth/signin');
+        return;
+      }
+
+      // Verify token is not expired
+      const tokenPayload = JSON.parse(atob(tokens.idToken.split('.')[1]));
+      if (tokenPayload.exp * 1000 < Date.now()) {
+        logger.debug('[LandingButton] Token is expired, redirecting to sign in');
+        router.push('/auth/signin');
+        return;
+      }
+
       // If going to dashboard and onboarding is complete, update cookies first
       if (config.route === '/dashboard' && onboardingStatus === 'COMPLETE') {
         logger.debug('[LandingButton] Going to dashboard with COMPLETE status, updating cookies');

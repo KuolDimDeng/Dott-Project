@@ -1,21 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Typography,
-  Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Grid,
-  Paper,
-  Tabs,
-  Tab,
-  Card,
-  CardContent,
-  CardHeader,
-  Divider,
-  useTheme,
-} from '@mui/material';
 import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -31,12 +14,6 @@ import {
   RadialLinearScale,
 } from 'chart.js';
 import { axiosInstance } from '@/lib/axiosConfig';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import PeopleIcon from '@mui/icons-material/People';
 
 ChartJS.register(
   ArcElement,
@@ -62,35 +39,75 @@ const formatAmount = (amount) => {
   return typeof amount === 'number' ? amount.toFixed(2) : 'N/A';
 };
 
-const MetricCard = ({ title, value, icon, trend, trendValue, color }) => {
-  const theme = useTheme();
-  const TrendIcon = trend === 'up' ? TrendingUpIcon : TrendingDownIcon;
-  const trendColor = trend === 'up' ? theme.palette.success.main : theme.palette.error.main;
+const MetricCard = ({ title, value, iconType, trend, trendValue, colorClass }) => {
+  const trendColorClass = trend === 'up' ? 'text-green-600' : 'text-red-600';
+  
+  // Helper function to render the correct icon based on iconType
+  const renderIcon = (type) => {
+    switch(type) {
+      case 'money':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
+      case 'cart':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        );
+      case 'inventory':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        );
+      case 'people':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        );
+      default:
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        );
+    }
+  };
 
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-          <Typography variant="h6" color="text.secondary">
-            {title}
-          </Typography>
-          <Box sx={{ color: color || 'primary.main', backgroundColor: `${color || 'primary.main'}20`, p: 1, borderRadius: '50%' }}>
-            {icon}
-          </Box>
-        </Box>
-        <Typography variant="h4" component="div" fontWeight="bold">
-          {value}
-        </Typography>
-        {trend && (
-          <Box display="flex" alignItems="center" mt={1}>
-            <TrendIcon sx={{ color: trendColor, fontSize: 18, mr: 0.5 }} />
-            <Typography variant="body2" sx={{ color: trendColor }}>
-              {trendValue}
-            </Typography>
-          </Box>
-        )}
-      </CardContent>
-    </Card>
+    <div className="bg-white p-4 rounded-lg shadow h-full">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-lg font-medium text-gray-600">
+          {title}
+        </h3>
+        <div className={`${colorClass} bg-opacity-20 p-2 rounded-full`}>
+          {renderIcon(iconType)}
+        </div>
+      </div>
+      <p className="text-2xl font-bold">
+        {value}
+      </p>
+      {trend && (
+        <div className={`flex items-center mt-2 ${trendColorClass}`}>
+          {trend === 'up' ? (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+            </svg>
+          )}
+          <span className="text-sm">
+            {trendValue}
+          </span>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -99,7 +116,6 @@ export default function SalesAnalysis() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
-  const theme = useTheme();
 
   useEffect(() => {
     fetchData();
@@ -124,8 +140,8 @@ export default function SalesAnalysis() {
     setTimeRange(event.target.value);
   };
 
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
+  const handleTabChange = (index) => {
+    setActiveTab(index);
   };
 
   if (!data) {
@@ -170,7 +186,7 @@ export default function SalesAnalysis() {
       ],
     });
     
-    return <Typography>Loading...</Typography>;
+    return <p className="text-xl">Loading...</p>;
   }
 
   const salesOverTimeData = {
@@ -242,81 +258,93 @@ export default function SalesAnalysis() {
   };
 
   return (
-    <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Sales Dashboard</Typography>
-        <FormControl sx={{ width: 200 }}>
-          <InputLabel>Time Range</InputLabel>
-          <Select value={timeRange} onChange={handleTimeRangeChange}>
+    <div className="w-full">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Sales Dashboard</h1>
+        <div className="relative w-48">
+          <select 
+            value={timeRange} 
+            onChange={handleTimeRangeChange}
+            className="w-full bg-white border border-gray-300 rounded-md py-2 pl-3 pr-10 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          >
             {timeRanges.map((range) => (
-              <MenuItem key={range.value} value={range.value}>
+              <option key={range.value} value={range.value}>
                 {range.label}
-              </MenuItem>
+              </option>
             ))}
-          </Select>
-        </FormControl>
-      </Box>
+          </select>
+        </div>
+      </div>
 
       {/* Key Metrics */}
-      <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} sm={6} md={3}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div>
           <MetricCard
             title="Total Sales"
             value={`$${formatAmount(data.totalSales)}`}
-            icon={<AttachMoneyIcon />}
+            iconType="money"
             trend={data.salesGrowth >= 0 ? 'up' : 'down'}
             trendValue={`${Math.abs(data.salesGrowth).toFixed(1)}% from last period`}
-            color={theme.palette.primary.main}
+            colorClass="text-blue-600"
           />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div>
           <MetricCard
             title="Average Order Value"
             value={`$${formatAmount(data.averageOrderValue)}`}
-            icon={<ShoppingCartIcon />}
+            iconType="cart"
             trend={data.aovGrowth >= 0 ? 'up' : 'down'}
             trendValue={`${Math.abs(data.aovGrowth).toFixed(1)}% from last period`}
-            color={theme.palette.success.main}
+            colorClass="text-green-600"
           />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div>
           <MetricCard
             title="Number of Orders"
             value={data.numberOfOrders}
-            icon={<InventoryIcon />}
+            iconType="inventory"
             trend={data.ordersGrowth >= 0 ? 'up' : 'down'}
             trendValue={`${Math.abs(data.ordersGrowth).toFixed(1)}% from last period`}
-            color={theme.palette.warning.main}
+            colorClass="text-yellow-600"
           />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        </div>
+        <div>
           <MetricCard
             title="Active Customers"
             value={data.activeCustomers}
-            icon={<PeopleIcon />}
+            iconType="people"
             trend={data.customersGrowth >= 0 ? 'up' : 'down'}
             trendValue={`${Math.abs(data.customersGrowth).toFixed(1)}% from last period`}
-            color={theme.palette.info.main}
+            colorClass="text-purple-600"
           />
-        </Grid>
-      </Grid>
+        </div>
+      </div>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} aria-label="sales analysis tabs">
-          <Tab label="Overview" />
-          <Tab label="Products" />
-          <Tab label="Customers" />
-          <Tab label="Categories" />
-        </Tabs>
-      </Box>
+      <div className="border-b border-gray-200 mb-4">
+        <div className="flex">
+          {["Overview", "Products", "Customers", "Categories"].map((tab, index) => (
+            <button
+              key={index}
+              className={`py-2 px-4 font-medium border-b-2 mr-2 ${
+                activeTab === index
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+              onClick={() => handleTabChange(index)}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {activeTab === 0 && (
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Paper elevation={3} sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="md:col-span-2">
+            <div className="bg-white p-4 rounded-lg shadow-md">
+              <h2 className="text-lg font-medium text-gray-700 mb-3">
                 Sales Trend
-              </Typography>
+              </h2>
               <Line 
                 data={salesOverTimeData} 
                 options={{
@@ -331,85 +359,108 @@ export default function SalesAnalysis() {
                   },
                 }}
               />
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 2, height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
+            </div>
+          </div>
+          <div>
+            <div className="bg-white p-4 rounded-lg shadow-md h-full">
+              <h2 className="text-lg font-medium text-gray-700 mb-3">
                 Top Products
-              </Typography>
-              <Doughnut 
-                data={topProductsData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: {
-                      position: 'right',
+              </h2>
+              <div className="h-64">
+                <Doughnut 
+                  data={topProductsData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        position: 'right',
+                      },
                     },
-                  },
-                }}
-              />
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 2, height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="bg-white p-4 rounded-lg shadow-md h-full">
+              <h2 className="text-lg font-medium text-gray-700 mb-3">
                 Sales by Category
-              </Typography>
-              <Pie 
-                data={salesByCategoryData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: {
-                      position: 'right',
+              </h2>
+              <div className="h-64">
+                <Pie 
+                  data={salesByCategoryData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        position: 'right',
+                      },
                     },
-                  },
-                }}
-              />
-            </Paper>
-          </Grid>
-        </Grid>
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {activeTab === 1 && (
-        <Paper elevation={3} sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <h2 className="text-lg font-medium text-gray-700 mb-3">
             Top Products
-          </Typography>
-          <Doughnut data={topProductsData} />
-        </Paper>
+          </h2>
+          <div className="h-80">
+            <Doughnut 
+              data={topProductsData} 
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+              }}
+            />
+          </div>
+        </div>
       )}
 
       {activeTab === 2 && (
-        <Paper elevation={3} sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <h2 className="text-lg font-medium text-gray-700 mb-3">
             Sales by Customer
-          </Typography>
-          <Bar 
-            data={salesByCustomerData} 
-            options={{
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: 'top',
+          </h2>
+          <div className="h-80">
+            <Bar 
+              data={salesByCustomerData} 
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'top',
+                  },
                 },
-              },
-            }}
-          />
-        </Paper>
+              }}
+            />
+          </div>
+        </div>
       )}
 
       {activeTab === 3 && (
-        <Paper elevation={3} sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <h2 className="text-lg font-medium text-gray-700 mb-3">
             Sales by Category
-          </Typography>
-          <Pie data={salesByCategoryData} />
-        </Paper>
+          </h2>
+          <div className="h-80">
+            <Pie 
+              data={salesByCategoryData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+              }}
+            />
+          </div>
+        </div>
       )}
-    </Box>
+    </div>
   );
 }

@@ -1,15 +1,25 @@
 'use client';
 
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { v4 as uuidv4, v5 } from 'uuid';
+import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
 import { logger } from '@/utils/logger';
 import { getTenantId, storeTenantInfo } from '@/utils/tenantUtils';
 import { useAuth } from './auth';
-import { signIn as amplifySignIn, fetchUserAttributes, fetchAuthSession, updateUserAttributes } from '@/config/amplifyUnified';
+import { signIn, fetchUserAttributes, fetchAuthSession, updateUserAttributes } from '@/config/amplifyUnified';
+import { reconfigureAmplify } from '@/config/amplifyConfig';
+// Import standardized constants
+import { 
+  COGNITO_ATTRIBUTES,
+  COOKIE_NAMES, 
+  STORAGE_KEYS,
+  ONBOARDING_STATUS,
+  ONBOARDING_STEPS
+} from '@/constants/onboarding';
 
 // Lock keys
 const TENANT_LOCK_KEY = 'tenant_initialization_lock';
 const LOCK_TIMEOUT = 30000; // 30 seconds timeout
+const TENANT_NAMESPACE = '1b671a64-40d5-491e-99b0-da01ff1f3341'; // Namespace for generating deterministic tenant IDs
 
 /**
  * Try to acquire the tenant initialization lock
@@ -165,7 +175,15 @@ export function useTenantInitialization() {
           try {
             // Get tokens for request
             const { fetchAuthSession } = await import('aws-amplify/auth');
-            const sessionResult = await fetchAuthSession();
+            let sessionResult;
+            
+            try {
+              sessionResult = await fetchAuthSession();
+            } catch (sessionError) {
+              logger.error('[TenantInit] Failed to fetch auth session:', sessionError);
+              throw new Error('Unable to fetch authentication session');
+            }
+            
             const tokens = sessionResult?.tokens;
             
             if (!tokens?.accessToken || !tokens?.idToken) {
@@ -181,102 +199,114 @@ export function useTenantInitialization() {
               userEmail
             });
 
-            const response = await fetch('/api/auth/verify-tenant', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${tokens.accessToken}`,
-                'X-Id-Token': tokens.idToken.toString(),
-                'X-Request-ID': requestId,
-                'X-User-ID': user.userId
-              },
-              body: JSON.stringify({ 
-                tenantId,
-                userId: user.userId,
-                email: userEmail,
-                username: user.username
-              })
-            });
+            try {
+              const response = await fetch('/api/auth/verify-tenant', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${tokens.accessToken}`,
+                  'X-Id-Token': tokens.idToken.toString(),
+                  'X-Request-ID': requestId,
+                  'X-User-ID': user.userId
+                },
+                body: JSON.stringify({ 
+                  tenantId,
+                  userId: user.userId,
+                  email: userEmail,
+                  username: user.username
+                })
+              });
 
-            // Log the full response for debugging
-            logger.debug('[TenantInit] Tenant verification response status:', {
-              status: response.status, 
-              statusText: response.statusText,
-              ok: response.ok
-            });
-
-            if (!response.ok) {
-              let errorData = {};
-              try {
-                errorData = await response.json();
-              } catch (jsonError) {
-                logger.warn('[TenantInit] Could not parse error response JSON:', jsonError.message);
+              // Handle failed responses 
+              if (!response.ok) {
+                const errorText = await response.text().catch(() => 'Unknown error');
+                logger.error('[TenantInit] Tenant verification failed:', { 
+                  status: response.status, 
+                  error: errorText 
+                });
+                throw new Error(`Tenant verification failed with status ${response.status}`);
               }
+
+              // Handle successful responses
+              const responseData = await response.json();
               
-              logger.error('[TenantInit] Tenant verification failed:', errorData);
+              if (responseData.success) {
+                const verifiedTenantId = responseData.tenantId || responseData.correctTenantId;
+                
+                if (!verifiedTenantId) {
+                  logger.error('[TenantInit] Missing tenant ID in successful response:', responseData);
+                  throw new Error('Missing tenant ID in response');
+                }
+                
+                logger.debug('[TenantInit] Tenant verification successful:', { 
+                  tenantId: verifiedTenantId,
+                  source: responseData.source || 'api' 
+                });
+                
+                // Store the verified ID in session storage
+                sessionStorage.setItem('verified_tenant_id', verifiedTenantId);
+                sessionStorage.removeItem(pendingKey);
+                
+                // Store in cookies and local storage
+                storeTenantInfo(verifiedTenantId);
+                
+                // Update state
+                setTenantId(verifiedTenantId);
+                setInitialized(true);
+                return verifiedTenantId;
+              } else {
+                logger.error('[TenantInit] Tenant verification returned error:', responseData);
+                throw new Error(responseData.message || 'Tenant verification failed');
+              }
+            } catch (fetchError) {
+              logger.error('[TenantInit] Fetch error during tenant verification:', { 
+                message: fetchError.message,
+                stack: fetchError.stack,
+                error: fetchError,
+                tenantId
+              });
               
-              // FALLBACK: If verification fails, use our hardcoded tenant ID
-              logger.debug('[TenantInit] Verification failed, using fallback tenant ID');
+              // Fall back to the tenantId we already have
+              logger.debug('[TenantInit] API error, using hardcoded tenant ID');
               storeTenantInfo(tenantId);
               setTenantId(tenantId);
               setInitialized(true);
               return tenantId;
             }
-
-            const data = await response.json();
-            logger.debug('[TenantInit] Tenant verification response:', data);
-
-            // Handle corrected tenant ID
-            const verifiedTenantId = data.correctTenantId || tenantId;
-            if (verifiedTenantId) {
-              // Store the verified tenant ID
-              sessionStorage.setItem('verified_tenant_id', verifiedTenantId);
-              storeTenantInfo(verifiedTenantId);
-              setTenantId(verifiedTenantId);
-              setInitialized(true);
-              return verifiedTenantId;
-            }
-          } catch (fetchError) {
-            logger.error('[TenantInit] Fetch error during tenant verification:', {
-              message: fetchError.message,
-              stack: fetchError.stack,
-              error: fetchError.toString(),
-              tenantId
-            });
-            
-            // FALLBACK: If API call fails, still use our hardcoded tenant ID
-            logger.debug('[TenantInit] API error, using hardcoded tenant ID');
-            storeTenantInfo(tenantId);
-            setTenantId(tenantId);
-            setInitialized(true);
-            return tenantId;
+          } catch (tokenError) {
+            logger.error('[TenantInit] Error getting tokens for tenant verification:', tokenError);
+            throw tokenError;
           }
-
-          // If we reach here without a verified ID, use the fallback
-          logger.debug('[TenantInit] No verified tenant ID received, using fallback');
-          storeTenantInfo(tenantId);
-          setTenantId(tenantId);
-          setInitialized(true);
-          return tenantId;
         } catch (error) {
-          logger.error('[TenantInit] Error during tenant verification:', error);
-          // Even in case of error, use the fallback tenant ID
-          const fallbackId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
+          logger.error('[TenantInit] Error during tenant initialization:', error);
+          
+          // Use fallback ID as last resort
+          const fallbackId = tenantId || '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
           logger.debug('[TenantInit] Using fallback tenant ID after error:', fallbackId);
           storeTenantInfo(fallbackId);
           setTenantId(fallbackId);
           setInitialized(true);
-          setError(error);
           return fallbackId;
-        } finally {
-          // Clean up pending request marker
-          const pendingKey = `pending_tenant_req:${tenantId || 'new'}`;
-          sessionStorage.removeItem(pendingKey);
         }
+      } else {
+        // No authenticated user - use hardcoded tenant ID
+        const defaultTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
+        logger.debug('[TenantInit] No authenticated user, using default tenant ID');
+        storeTenantInfo(defaultTenantId);
+        setTenantId(defaultTenantId);
+        setInitialized(true);
+        return defaultTenantId;
       }
-
-      logger.warn('[TenantInit] No authenticated user available');
-      return null;
+    } catch (initError) {
+      const defaultTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
+      logger.error('[TenantInit] Unhandled error in tenant initialization:', initError);
+      setError(initError);
+      
+      // Always ensure a tenant ID is set even if there was an error
+      storeTenantInfo(defaultTenantId);
+      setTenantId(defaultTenantId);
+      setInitialized(true);
+      return defaultTenantId;
     } finally {
       setIsInitializing(false);
       if (lockResolve) {
@@ -284,7 +314,7 @@ export function useTenantInitialization() {
       }
       initLock.current = null;
     }
-  }, [auth]);
+  }, []);
 
   /**
    * Login with tenant ID synchronization
@@ -297,70 +327,117 @@ export function useTenantInitialization() {
     try {
       logger.info('[TenantInit] Login with tenant verification', { email });
       
-      // Perform the login via Amplify
-      const signInResult = await amplifySignIn({ username: email, password });
+      // Ensure Amplify is configured before attempting login
+      reconfigureAmplify();
       
-      if (!signInResult?.isSignedIn) {
-        throw new Error('Login failed');
+      // Perform the login via Amplify
+      let signInResult;
+      try {
+        signInResult = await signIn({ username: email, password });
+        
+        if (!signInResult?.isSignedIn) {
+          throw new Error('Login attempt rejected by authentication service');
+        }
+      } catch (signInError) {
+        logger.error('[TenantInit] amplifySignIn failed:', signInError);
+        throw signInError;
       }
       
-      // Get user attributes to extract business ID
-      const userAttributes = await fetchUserAttributes();
-      logger.debug('[TenantInit] User attributes:', {
+      // Get user attributes to extract business ID and onboarding status
+      let userAttributes;
+      try {
+        userAttributes = await fetchUserAttributes();
+      } catch (attributesError) {
+        logger.error('[TenantInit] Failed to fetch user attributes after login:', attributesError);
+        throw new Error('Authentication succeeded but user data could not be retrieved');
+      }
+      
+      logger.debug('[TenantInit] User attributes after sign-in:', {
         hasBusinessId: !!userAttributes['custom:businessid'],
-        businessId: userAttributes['custom:businessid']
+        businessId: userAttributes['custom:businessid'],
+        onboardingStatus: userAttributes['custom:onboarding'] || 'NOT_STARTED',
+        hasComplete: userAttributes['custom:onboarding'] === 'COMPLETE',
+        setupDone: userAttributes['custom:setupdone'] === 'TRUE'
       });
       
-      // Extract tenant ID from user attributes
-      const cognitoTenantId = userAttributes['custom:businessid'];
+      // Extract tenant ID and onboarding status from user attributes
+      const cognitoTenantId = userAttributes['custom:businessid'] || '18609ed2-1a46-4d50-bc4e-483d6e3405ff'; // Use fallback if not set
+      const onboardingStatus = userAttributes['custom:onboarding'] || 'NOT_STARTED';
       
       // Get tokens from session
-      const { tokens } = await fetchAuthSession();
+      let authSession;
+      try {
+        authSession = await fetchAuthSession();
+      } catch (sessionError) {
+        logger.error('[TenantInit] Failed to fetch auth session after login:', sessionError);
+        throw new Error('Authentication succeeded but session could not be established');
+      }
+      
+      const { tokens } = authSession;
       
       if (!tokens?.idToken || !tokens?.accessToken) {
-        throw new Error('Failed to get authentication tokens');
+        throw new Error('Authentication succeeded but tokens are missing');
       }
       
       // Store tenant ID in cookies and localStorage for consistency
-      if (cognitoTenantId) {
-        try {
-          // Set in localStorage
-          localStorage.setItem('tenantId', cognitoTenantId);
-          logger.debug('[TenantInit] Stored tenant ID in localStorage:', cognitoTenantId);
-          
-          // Set in cookie with the appropriate expiration
-          const expiration = new Date();
-          if (rememberMe) {
-            expiration.setDate(expiration.getDate() + 30); // 30 days
-          } else {
-            expiration.setDate(expiration.getDate() + 1); // 1 day
-          }
-          
-          document.cookie = `tenantId=${cognitoTenantId}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-          logger.debug('[TenantInit] Stored tenant ID in cookie:', cognitoTenantId);
-          
-          // Also store the tokens for session management
-          localStorage.setItem('tokens', JSON.stringify({
-            accessToken: tokens.accessToken.toString(),
-            idToken: tokens.idToken.toString()
-          }));
-        } catch (storageError) {
-          logger.warn('[TenantInit] Failed to store tenant ID:', storageError);
-          // Non-fatal error, continue with login
+      try {
+        // Set in localStorage
+        localStorage.setItem('tenantId', cognitoTenantId);
+        
+        // Set in cookie with the appropriate expiration
+        const expiration = new Date();
+        if (rememberMe) {
+          expiration.setDate(expiration.getDate() + 30); // 30 days
+        } else {
+          expiration.setDate(expiration.getDate() + 1); // 1 day
         }
-      } else {
-        logger.warn('[TenantInit] No tenant ID found in user attributes');
+        
+        document.cookie = `tenantId=${cognitoTenantId}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+        document.cookie = `authToken=true; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+        
+        // Set onboarding status cookies for middleware
+        document.cookie = `onboardedStatus=${onboardingStatus}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+        
+        // Also set setupCompleted for middleware
+        const setupCompleted = userAttributes['custom:setupdone'] === 'TRUE' || userAttributes['custom:onboarding'] === 'COMPLETE' ? 'true' : 'false';
+        document.cookie = `setupCompleted=${setupCompleted}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+        
+        // Set onboarding step cookie based on status
+        let onboardingStep = 'business-info'; // Default
+        if (onboardingStatus === 'BUSINESS_INFO') {
+          onboardingStep = 'subscription';
+        } else if (onboardingStatus === 'SUBSCRIPTION') {
+          const plan = userAttributes['custom:subscription_plan'] || '';
+          onboardingStep = ['professional', 'enterprise'].includes(plan.toLowerCase()) ? 'payment' : 'setup';
+        } else if (onboardingStatus === 'PAYMENT') {
+          onboardingStep = 'setup';
+        }
+        document.cookie = `onboardingStep=${onboardingStep}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+        
+        logger.debug('[TenantInit] Stored tenant ID and auth cookies:', {
+          tenantId: cognitoTenantId,
+          onboardingStatus,
+          setupCompleted,
+          onboardingStep
+        });
+      } catch (storageError) {
+        logger.warn('[TenantInit] Failed to store tenant ID:', storageError);
+        // Non-fatal error, continue with login
       }
       
       return { 
         success: true, 
-        tenantId: cognitoTenantId
+        tenantId: cognitoTenantId,
+        onboardingStatus: onboardingStatus
       };
     } catch (error) {
-      logger.error('[TenantInit] Login failed:', error);
+      logger.error('[TenantInit] Login failed:', error instanceof Error ? 
+        { message: error.message, stack: error.stack, name: error.name } : 
+        String(error));
+      
       return { 
         success: false, 
-        error: error.message || 'Login failed'
+        error: error instanceof Error ? error.message : String(error) || 'Login failed'
       };
     }
   }, []);
@@ -446,22 +523,156 @@ export function useTenantInitialization() {
   // Enhanced function to check if we need to redirect to onboarding
   const checkOnboardingStatus = useCallback(async (user) => {
     try {
+      // Get current pathname
+      const pathname = window.location.pathname;
+      
+      // Skip check if we're on auth pages or in the onboarding flow already
+      if (pathname.startsWith('/auth/') || pathname.startsWith('/onboarding/') || pathname === '/') {
+        logger.debug('[TenantInit] On auth/onboarding page, skipping onboarding status check:', pathname);
+        return true;
+      }
+      
       // Get user attributes
       const userAttributes = await fetchUserAttributes();
       
+      // Check cookies for onboarding status (useful for mock or local development)
+      const getCookie = (name) => {
+        if (typeof document === 'undefined') return null;
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+      };
+      
+      // Check localStorage for onboarding status
+      const getLocalStorage = (key) => {
+        try {
+          return localStorage.getItem(key);
+        } catch (e) {
+          return null;
+        }
+      };
+      
+      // Combine all sources of onboarding status
+      const cookieOnboardingStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS);
+      const cookieSetupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED);
+      const localStorageOnboardingStatus = getLocalStorage(STORAGE_KEYS.ONBOARDING_STATUS);
+      const localStorageSetupCompleted = getLocalStorage(STORAGE_KEYS.SETUP_COMPLETED);
+      
+      logger.debug('[TenantInit] Checking onboarding status with attributes:', {
+        customOnboarding: userAttributes[COGNITO_ATTRIBUTES.ONBOARDING_STATUS],
+        customSetupDone: userAttributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED],
+        customBusinessId: userAttributes[COGNITO_ATTRIBUTES.BUSINESS_ID],
+        cookieOnboardingStatus,
+        cookieSetupCompleted,
+        localStorageOnboardingStatus,
+        localStorageSetupCompleted,
+        path: pathname
+      });
+      
       // For new users, the onboarding attribute might not exist yet
       // Consider them not onboarded if attribute is missing or not "COMPLETE"
-      const onboardingAttribute = userAttributes['custom:onboarding'];
-      const isOnboarded = onboardingAttribute === 'COMPLETE';
+      const onboardingAttribute = userAttributes[COGNITO_ATTRIBUTES.ONBOARDING_STATUS];
+      const setupDoneAttribute = userAttributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED];
       
-      const pathname = window.location.pathname;
+      // Check all sources for onboarding status - ANY source can mark as onboarded
+      const isOnboardedCognito = onboardingAttribute === ONBOARDING_STATUS.COMPLETE || setupDoneAttribute === 'TRUE';
+      const isOnboardedCookie = cookieOnboardingStatus === ONBOARDING_STATUS.COMPLETE || cookieSetupCompleted === 'true';
+      const isOnboardedLocalStorage = localStorageOnboardingStatus === ONBOARDING_STATUS.COMPLETE || localStorageSetupCompleted === 'true';
       
-      // If not on an onboarding page and not onboarded, redirect to business info
-      if (pathname && !pathname.startsWith('/onboarding') && 
-          !pathname.includes('/auth/') && !pathname === '/' && 
-          !isOnboarded) {
-        logger.info('[TenantInit] User not onboarded, redirecting to business info');
-        window.location.href = '/onboarding/business-info';
+      // Combined onboarding status - if ANY source says onboarded, consider onboarded
+      const isOnboarded = isOnboardedCognito || isOnboardedCookie || isOnboardedLocalStorage;
+      
+      // CRITICAL FIX: If we're on dashboard and cookies indicate onboarding is complete, 
+      // never redirect regardless of Cognito attributes
+      if (pathname.startsWith('/dashboard') && (isOnboardedCookie || isOnboardedLocalStorage)) {
+        logger.info('[TenantInit] Dashboard access allowed by cookie/localStorage onboarding status');
+        
+        // Update Cognito in background to match cookies if needed
+        if (!isOnboardedCognito) {
+          logger.info('[TenantInit] Directly updating Cognito onboarding attributes');
+          try {
+            // Try to update attributes in background (don't await)
+            updateUserAttributes({
+              userAttributes: {
+                [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.COMPLETE,
+                [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'TRUE'
+              }
+            }).catch(e => 
+              logger.warn('[TenantInit] Background attribute update error:', e)
+            );
+          } catch (e) {
+            logger.warn('[TenantInit] Error preparing background Cognito update:', e);
+          }
+        }
+        
+        return true; // Allow dashboard access
+      }
+      
+      // Check for URL parameters that might prevent redirect
+      const urlParams = new URLSearchParams(window.location.search);
+      const fromSignin = urlParams.get('from') === 'signin';
+      const noRedirect = urlParams.get('noredirect') === 'true';
+      const newAccount = urlParams.get('newAccount') === 'true';
+      const planSelected = urlParams.get('plan') !== null;
+      
+      // CRITICAL FIX: If coming from subscription with a plan selection,
+      // mark as onboarded in cookies and never redirect
+      if (pathname.startsWith('/dashboard') && (newAccount && planSelected)) {
+        logger.info('[TenantInit] New account with plan detected, marking as onboarded');
+        
+        // Set up all the necessary cookies and storage
+        document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/`;
+        document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/`;
+        document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.COMPLETE}; path=/`;
+        
+        try {
+          localStorage.setItem(STORAGE_KEYS.ONBOARDING_STATUS, ONBOARDING_STATUS.COMPLETE);
+          localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETED, 'true');
+        } catch (e) {
+          // Ignore storage errors
+        }
+        
+        // Also update Cognito if possible
+        try {
+          updateUserAttributes({
+            userAttributes: {
+              [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.COMPLETE,
+              [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'TRUE'
+            }
+          }).catch(e => logger.warn('[TenantInit] Cognito update error:', e));
+        } catch (e) {
+          logger.warn('[TenantInit] Error in Cognito update setup:', e);
+        }
+        
+        return true; // Allow dashboard access
+      }
+      
+      if (noRedirect) {
+        logger.debug('[TenantInit] Redirect suppressed by noredirect parameter');
+        return true;
+      }
+      
+      // Only redirect if not onboarded and not coming from signin flow
+      if (!isOnboarded && !fromSignin) {
+        // Determine which onboarding step to redirect to
+        let redirectStep = ONBOARDING_STEPS.BUSINESS_INFO; // Default first step
+        
+        if (onboardingAttribute === ONBOARDING_STATUS.BUSINESS_INFO || cookieOnboardingStatus === ONBOARDING_STATUS.BUSINESS_INFO_COMPLETED) {
+          redirectStep = ONBOARDING_STEPS.SUBSCRIPTION;
+        } else if (onboardingAttribute === ONBOARDING_STATUS.SUBSCRIPTION || cookieOnboardingStatus === ONBOARDING_STATUS.SUBSCRIPTION_COMPLETED) {
+          // Check if paid plan - redirect to payment if so
+          const plan = userAttributes[COGNITO_ATTRIBUTES.SUBSCRIPTION_PLAN] || getCookie('selectedPlan') || '';
+          redirectStep = ['professional', 'enterprise'].includes(plan.toLowerCase()) ? ONBOARDING_STEPS.PAYMENT : ONBOARDING_STEPS.SETUP;
+        } else if (onboardingAttribute === ONBOARDING_STATUS.PAYMENT || cookieOnboardingStatus === ONBOARDING_STATUS.PAYMENT_COMPLETED) {
+          redirectStep = ONBOARDING_STEPS.SETUP;
+        }
+        
+        logger.info('[TenantInit] User not onboarded, redirecting to:', `/onboarding/${redirectStep}`);
+        
+        // Add parameters to prevent redirect loops
+        const redirectUrl = `/onboarding/${redirectStep}?from=tenant_check&ts=${Date.now()}`;
+        window.location.href = redirectUrl;
         return false;
       }
       
@@ -733,103 +944,26 @@ export function useTenantInitialization() {
         return {};
       });
       
-      const currentOnboarding = currentAttributes['custom:onboarding'];
-      const currentSetupDone = currentAttributes['custom:setupdone'];
+      const currentOnboarding = currentAttributes[COGNITO_ATTRIBUTES.ONBOARDING_STATUS];
+      const currentSetupDone = currentAttributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED];
       
       logger.debug('[TenantInit] Current Cognito attributes:', {
         onboarding: currentOnboarding || 'not set',
         setupDone: currentSetupDone || 'not set'
       });
       
-      if (currentOnboarding === 'COMPLETE' && currentSetupDone === 'TRUE') {
+      if (currentOnboarding === ONBOARDING_STATUS.COMPLETE && currentSetupDone === 'TRUE') {
         logger.info('[TenantInit] Onboarding attributes already set to COMPLETE, no update needed');
         return true;
       }
       
-      // Create retry wrapper for attribute update
-      const updateWithRetry = async (maxRetries = 3) => {
-        let lastError = null;
-        
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          try {
-            logger.info(`[TenantInit] Updating Cognito attributes (attempt ${attempt}/${maxRetries})`);
-            
-            // Update attributes using Amplify v6 format
-            // Format is: updateUserAttributes({ userAttributes: { 'custom:attr': 'value' } })
-            const result = await updateUserAttributes({
-              userAttributes: {
-                'custom:onboarding': 'COMPLETE', 
-                'custom:setupdone': 'TRUE'
-              }
-            });
-            
-            logger.info('[TenantInit] Successfully updated Cognito attributes directly:', result);
-            return true;
-          } catch (error) {
-            lastError = error;
-            logger.warn(`[TenantInit] Attempt ${attempt} failed:`, {
-              message: error.message,
-              name: error.name,
-              code: error.code || 'UNKNOWN'
-            });
-            
-            // On first attempt failure, try older parameter format as fallback
-            if (attempt === 1) {
-              try {
-                logger.info('[TenantInit] Trying alternative parameter format for backward compatibility');
-                await updateUserAttributes({
-                  'custom:onboarding': 'COMPLETE',
-                  'custom:setupdone': 'TRUE'
-                });
-                logger.info('[TenantInit] Alternative format succeeded');
-                return true;
-              } catch (backwardCompatError) {
-                logger.warn('[TenantInit] Alternative format also failed:', {
-                  message: backwardCompatError.message,
-                  name: backwardCompatError.name
-                });
-              }
-            }
-            
-            if (attempt < maxRetries) {
-              // Wait before retrying with exponential backoff
-              const delay = 1000 * Math.pow(2, attempt - 1);
-              logger.info(`[TenantInit] Retrying in ${delay}ms...`);
-              await new Promise(resolve => setTimeout(resolve, delay));
-            }
-          }
+      // Update attributes using Amplify v6 format
+      const result = await updateUserAttributes({
+        userAttributes: {
+          [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.COMPLETE, 
+          [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'TRUE'
         }
-        
-        // If all regular attempts fail, try one more approach - use the admin API endpoint
-        try {
-          logger.info('[TenantInit] All direct attempts failed, trying admin API endpoint');
-          const response = await fetch('/api/onboarding/fix-attributes', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (response.ok) {
-            const result = await response.json();
-            logger.info('[TenantInit] Admin API update successful:', result);
-            return true;
-          } else {
-            logger.error('[TenantInit] Admin API update failed:', {
-              status: response.status,
-              data: await response.json().catch(() => ({}))
-            });
-          }
-        } catch (adminError) {
-          logger.error('[TenantInit] Error calling admin API endpoint:', adminError);
-        }
-        
-        // If we get here, all retries and fallbacks failed
-        throw lastError;
-      };
-      
-      // Execute the update with retries
-      await updateWithRetry();
+      });
       
       // Verify the update worked with retries
       const verifyWithRetry = async (maxRetries = 5) => {
@@ -840,15 +974,15 @@ export function useTenantInitialization() {
             
             logger.info(`[TenantInit] Verifying attribute update (attempt ${attempt}/${maxRetries})`);
             const updatedAttributes = await fetchUserAttributes();
-            const newOnboarding = updatedAttributes['custom:onboarding'];
-            const newSetupDone = updatedAttributes['custom:setupdone'];
+            const newOnboarding = updatedAttributes[COGNITO_ATTRIBUTES.ONBOARDING_STATUS];
+            const newSetupDone = updatedAttributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED];
             
             logger.debug('[TenantInit] Updated attributes check:', {
               onboarding: newOnboarding || 'not set',
               setupDone: newSetupDone || 'not set'
             });
             
-            if (newOnboarding === 'COMPLETE' && newSetupDone === 'TRUE') {
+            if (newOnboarding === ONBOARDING_STATUS.COMPLETE && newSetupDone === 'TRUE') {
               logger.info('[TenantInit] Verified onboarding attributes were updated correctly');
               return true;
             }

@@ -1,29 +1,54 @@
 """
-Tenant context utilities for row-level multi-tenancy.
-This module provides functions to manage the current tenant in thread-local storage.
+Tenant context utilities.
+This module provides functions to manage tenant context in a thread-local way.
 """
 
+import logging
+import uuid
 import threading
+from typing import Optional, Union
 
 # Thread-local storage for tenant context
 _thread_local = threading.local()
 
-def get_current_tenant():
-    """
-    Get the current tenant ID from thread-local storage.
-    Returns None if no tenant is set.
-    """
-    return getattr(_thread_local, 'tenant_id', None)
+logger = logging.getLogger(__name__)
 
-def set_current_tenant(tenant_id):
+def set_current_tenant(tenant_id: Optional[Union[uuid.UUID, str]]) -> None:
     """
     Set the current tenant ID in thread-local storage.
+    
+    Args:
+        tenant_id: The tenant ID to set, or None to unset
     """
+    if tenant_id is None:
+        if hasattr(_thread_local, 'tenant_id'):
+            delattr(_thread_local, 'tenant_id')
+        logger.debug("Cleared tenant context in thread-local storage")
+        return
+        
+    if isinstance(tenant_id, str):
+        try:
+            tenant_id = uuid.UUID(tenant_id)
+        except ValueError:
+            logger.error(f"Invalid tenant ID format: {tenant_id}")
+            return
+            
     _thread_local.tenant_id = tenant_id
-
-def clear_current_tenant():
+    logger.debug(f"Set tenant context to {tenant_id} in thread-local storage")
+    
+def get_current_tenant() -> Optional[uuid.UUID]:
     """
-    Remove the tenant ID from thread-local storage.
+    Get the current tenant ID from thread-local storage.
+    
+    Returns:
+        The current tenant ID or None if not set
+    """
+    return getattr(_thread_local, 'tenant_id', None)
+    
+def clear_current_tenant() -> None:
+    """
+    Clear the current tenant ID from thread-local storage.
     """
     if hasattr(_thread_local, 'tenant_id'):
-        delattr(_thread_local, 'tenant_id') 
+        delattr(_thread_local, 'tenant_id')
+    logger.debug("Cleared tenant context in thread-local storage") 

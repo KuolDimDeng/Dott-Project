@@ -1,16 +1,5 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/chart/ChartContainer.js
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Button,
-  CircularProgress,
-  Typography,
-} from '@mui/material';
 import { ChromePicker } from 'react-color';
 import ChartComponent from './ChartComponents';
 
@@ -58,77 +47,116 @@ const ChartContainer = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
-      <Typography variant="h4" component="h2" gutterBottom>
+    <div className="flex flex-col space-y-4 p-4">
+      <h2 className="text-2xl font-semibold mb-2">
         Sales Analysis
-      </Typography>
+      </h2>
 
-      <FormControl fullWidth>
-        <InputLabel>Account</InputLabel>
-        <Select value={account} onChange={(e) => setAccount(e.target.value)}>
-          <MenuItem value="">All Accounts</MenuItem>
-          <MenuItem value="Sales">Sales</MenuItem>
-          <MenuItem value="Expenses">Expenses</MenuItem>
-        </Select>
-      </FormControl>
+      <div className="w-full">
+        <label htmlFor="account" className="block text-sm font-medium text-gray-700 mb-1">
+          Account
+        </label>
+        <select
+          id="account"
+          value={account}
+          onChange={(e) => setAccount(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">All Accounts</option>
+          <option value="Sales">Sales</option>
+          <option value="Expenses">Expenses</option>
+        </select>
+      </div>
 
-      <FormControl fullWidth>
-        <InputLabel>Date Range</InputLabel>
-        <Select value={dateRange} onChange={(e) => setDateRange(e.target.value)}>
-          <MenuItem value="day">Daily</MenuItem>
-          <MenuItem value="month">Monthly</MenuItem>
-          <MenuItem value="year">Yearly</MenuItem>
-        </Select>
-      </FormControl>
+      <div className="w-full">
+        <label htmlFor="dateRange" className="block text-sm font-medium text-gray-700 mb-1">
+          Date Range
+        </label>
+        <select
+          id="dateRange"
+          value={dateRange}
+          onChange={(e) => setDateRange(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="day">Daily</option>
+          <option value="month">Monthly</option>
+          <option value="year">Yearly</option>
+        </select>
+      </div>
 
-      <TextField
-        label="Start Date"
-        type="date"
-        value={startDate}
-        onChange={(e) => setStartDate(e.target.value)}
-        InputLabelProps={{ shrink: true }}
-      />
+      <div className="w-full">
+        <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
+          Start Date
+        </label>
+        <input
+          id="startDate"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
 
-      <TextField
-        label="End Date"
-        type="date"
-        value={endDate}
-        onChange={(e) => setEndDate(e.target.value)}
-        InputLabelProps={{ shrink: true }}
-      />
+      <div className="w-full">
+        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
+          End Date
+        </label>
+        <input
+          id="endDate"
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
 
-      <FormControl fullWidth>
-        <InputLabel>Chart Type</InputLabel>
-        <Select value={chartType} onChange={(e) => setChartType(e.target.value)}>
-          <MenuItem value="line">Line Chart</MenuItem>
-          <MenuItem value="bar">Bar Chart</MenuItem>
-          <MenuItem value="pie">Pie Chart</MenuItem>
-        </Select>
-      </FormControl>
+      <div className="w-full">
+        <label htmlFor="chartType" className="block text-sm font-medium text-gray-700 mb-1">
+          Chart Type
+        </label>
+        <select
+          id="chartType"
+          value={chartType}
+          onChange={(e) => setChartType(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="line">Line Chart</option>
+          <option value="bar">Bar Chart</option>
+          <option value="pie">Pie Chart</option>
+        </select>
+      </div>
 
-      <Button onClick={() => setShowColorPicker(!showColorPicker)}>
+      <button 
+        onClick={() => setShowColorPicker(!showColorPicker)}
+        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
         {showColorPicker ? 'Hide' : 'Show'} Color Picker
-      </Button>
+      </button>
 
       {showColorPicker && (
-        <ChromePicker
-          color={chartType === 'line' ? lineColor : barColor}
-          onChange={handleColorChange}
-        />
+        <div className="my-2">
+          <ChromePicker
+            color={chartType === 'line' ? lineColor : barColor}
+            onChange={handleColorChange}
+          />
+        </div>
       )}
 
-      <Button onClick={handleSubmit} variant="contained" color="primary">
+      <button 
+        onClick={handleSubmit} 
+        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
         Apply Changes
-      </Button>
+      </button>
 
       {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-          <CircularProgress />
-        </Box>
+        <div className="flex justify-center my-4">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+        </div>
       ) : error ? (
-        <Box sx={{ color: 'error.main', my: 2 }}>{error}</Box>
+        <div className="text-red-600 my-4">{error}</div>
       ) : (
-        <Box sx={{ height: 400, my: 2 }}>
+        <div className="h-96 my-4">
           <ChartComponent
             account={account}
             dateRange={dateRange}
@@ -138,9 +166,9 @@ const ChartContainer = () => {
             lineColor={lineColor}
             barColor={barColor}
           />
-        </Box>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 

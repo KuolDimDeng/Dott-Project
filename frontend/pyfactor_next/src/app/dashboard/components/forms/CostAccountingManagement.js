@@ -1,27 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Tabs,
-  Tab,
-  Box,
-  Typography,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-} from '@mui/material';
 import { Pie, Bar } from 'react-chartjs-2';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { useToast } from '@/components/Toast/ToastProvider';
 
@@ -37,9 +15,9 @@ function TabPanel(props) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: 3 }}>
-          <Typography>{children}</Typography>
-        </Box>
+        <div className="p-6">
+          {children}
+        </div>
       )}
     </div>
   );
@@ -89,7 +67,7 @@ const CostAccountingManagement = () => {
     }
   };
 
-  const handleChange = (event, newValue) => {
+  const handleChange = (newValue) => {
     setValue(newValue);
   };
 
@@ -212,199 +190,386 @@ const CostAccountingManagement = () => {
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={value} onChange={handleChange} aria-label="cost accounting management tabs">
-          <Tab label="Create/Edit Cost Entry" />
-          <Tab label="Cost Entry List" />
-          <Tab label="Cost Analysis" />
-          <Tab label="Cost Allocation" />
-        </Tabs>
-      </Box>
+    <div className="w-full">
+      <div className="border-b border-gray-200">
+        <nav className="flex -mb-px">
+          <button
+            className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
+              value === 0
+                ? 'text-blue-600 border-blue-600 bg-blue-50'
+                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleChange(0)}
+          >
+            Create/Edit Cost Entry
+          </button>
+          <button
+            className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
+              value === 1
+                ? 'text-blue-600 border-blue-600 bg-blue-50'
+                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleChange(1)}
+          >
+            Cost Entry List
+          </button>
+          <button
+            className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
+              value === 2
+                ? 'text-blue-600 border-blue-600 bg-blue-50'
+                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleChange(2)}
+          >
+            Cost Analysis
+          </button>
+          <button
+            className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
+              value === 3
+                ? 'text-blue-600 border-blue-600 bg-blue-50'
+                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleChange(3)}
+          >
+            Cost Allocation
+          </button>
+        </nav>
+      </div>
       <TabPanel value={value} index={0}>
-        <form onSubmit={handleSubmit}>
-          <TextField
-            name="description"
-            label="Description"
-            value={formData.description}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-          />
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Category</InputLabel>
-            <Select name="category" value={formData.category} onChange={handleInputChange}>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <input
+              id="description"
+              name="description"
+              type="text"
+              value={formData.description}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
+            <select
+              id="category"
+              name="category"
+              value={formData.category}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            >
+              <option value="">Select a category</option>
               {costCategories.map((category) => (
-                <MenuItem key={category.id} value={category.id}>
+                <option key={category.id} value={category.id}>
                   {category.name}
-                </MenuItem>
+                </option>
               ))}
-            </Select>
-          </FormControl>
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Cost Type</InputLabel>
-            <Select name="cost_type" value={formData.cost_type} onChange={handleInputChange}>
-              <MenuItem value="direct">Direct</MenuItem>
-              <MenuItem value="indirect">Indirect</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Cost Nature</InputLabel>
-            <Select name="cost_nature" value={formData.cost_nature} onChange={handleInputChange}>
-              <MenuItem value="fixed">Fixed</MenuItem>
-              <MenuItem value="variable">Variable</MenuItem>
-            </Select>
-          </FormControl>
-          <TextField
-            name="amount"
-            label="Amount"
-            type="number"
-            value={formData.amount}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            name="date"
-            label="Date"
-            type="date"
-            value={formData.date}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            name="department"
-            label="Department"
-            value={formData.department}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            name="project"
-            label="Project"
-            value={formData.project}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            name="cost_driver"
-            label="Cost Driver"
-            value={formData.cost_driver}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            name="job_process_id"
-            label="Job/Process ID"
-            value={formData.job_process_id}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            name="budgeted_amount"
-            label="Budgeted Amount"
-            type="number"
-            value={formData.budgeted_amount}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            name="notes"
-            label="Notes"
-            value={formData.notes}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-            multiline
-            rows={4}
-          />
-          <Button type="submit" variant="contained" color="primary">
-            {selectedEntry ? 'Update Cost Entry' : 'Create Cost Entry'}
-          </Button>
+            </select>
+          </div>
+          
+          <div>
+            <label htmlFor="cost_type" className="block text-sm font-medium text-gray-700 mb-1">
+              Cost Type
+            </label>
+            <select
+              id="cost_type"
+              name="cost_type"
+              value={formData.cost_type}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            >
+              <option value="">Select cost type</option>
+              <option value="direct">Direct</option>
+              <option value="indirect">Indirect</option>
+            </select>
+          </div>
+          
+          <div>
+            <label htmlFor="cost_nature" className="block text-sm font-medium text-gray-700 mb-1">
+              Cost Nature
+            </label>
+            <select
+              id="cost_nature"
+              name="cost_nature"
+              value={formData.cost_nature}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            >
+              <option value="">Select cost nature</option>
+              <option value="fixed">Fixed</option>
+              <option value="variable">Variable</option>
+            </select>
+          </div>
+          
+          <div>
+            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+              Amount
+            </label>
+            <input
+              id="amount"
+              name="amount"
+              type="number"
+              value={formData.amount}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+              Date
+            </label>
+            <input
+              id="date"
+              name="date"
+              type="date"
+              value={formData.date}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">
+              Department
+            </label>
+            <input
+              id="department"
+              name="department"
+              type="text"
+              value={formData.department}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="project" className="block text-sm font-medium text-gray-700 mb-1">
+              Project
+            </label>
+            <input
+              id="project"
+              name="project"
+              type="text"
+              value={formData.project}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="cost_driver" className="block text-sm font-medium text-gray-700 mb-1">
+              Cost Driver
+            </label>
+            <input
+              id="cost_driver"
+              name="cost_driver"
+              type="text"
+              value={formData.cost_driver}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="job_process_id" className="block text-sm font-medium text-gray-700 mb-1">
+              Job/Process ID
+            </label>
+            <input
+              id="job_process_id"
+              name="job_process_id"
+              type="text"
+              value={formData.job_process_id}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="budgeted_amount" className="block text-sm font-medium text-gray-700 mb-1">
+              Budgeted Amount
+            </label>
+            <input
+              id="budgeted_amount"
+              name="budgeted_amount"
+              type="number"
+              value={formData.budgeted_amount}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+              Notes
+            </label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows="4"
+              value={formData.notes}
+              onChange={handleInputChange}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            ></textarea>
+          </div>
+          
+          <div>
+            <button
+              type="submit"
+              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              {selectedEntry ? 'Update Cost Entry' : 'Create Cost Entry'}
+            </button>
+          </div>
         </form>
       </TabPanel>
       <TabPanel value={value} index={1}>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Description</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Cost Type</TableCell>
-                <TableCell>Amount</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {costEntries.map((entry) => (
-                <TableRow key={entry.cost_id}>
-                  <TableCell>{entry.description}</TableCell>
-                  <TableCell>
-                    {costCategories.find((cat) => cat.id === entry.category)?.name}
-                  </TableCell>
-                  <TableCell>{entry.cost_type}</TableCell>
-                  <TableCell>${entry.amount}</TableCell>
-                  <TableCell>{entry.date}</TableCell>
-                  <TableCell>
-                    <Button onClick={() => handleEdit(entry)}>Edit</Button>
-                    <Button onClick={() => handleDelete(entry.cost_id)}>Delete</Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Description
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Category
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Cost Type
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {costEntries.length > 0 ? (
+                costEntries.map((entry) => (
+                  <tr key={entry.cost_id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {entry.description}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {costCategories.find((cat) => cat.id === entry.category)?.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span className={`capitalize ${entry.cost_type === 'direct' ? 'text-green-600' : 'text-blue-600'}`}>
+                        {entry.cost_type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      ${entry.amount}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {entry.date}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => handleEdit(entry)}
+                          className="text-indigo-600 hover:text-indigo-900 font-medium"
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(entry.cost_id)}
+                          className="text-red-600 hover:text-red-900 font-medium"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-sm text-gray-500 text-center">
+                    No cost entries found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </TabPanel>
       <TabPanel value={value} index={2}>
-        <Typography variant="h6" gutterBottom>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">
           Cost Breakdown
-        </Typography>
-        {renderCostBreakdownChart()}
-        <Typography variant="h6" gutterBottom>
+        </h2>
+        <div className="mb-8 max-w-lg mx-auto">
+          {renderCostBreakdownChart()}
+        </div>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">
           Cost Variance Analysis
-        </Typography>
-        {renderCostVarianceChart()}
+        </h2>
+        <div className="max-w-4xl mx-auto">
+          {renderCostVarianceChart()}
+        </div>
       </TabPanel>
       <TabPanel value={value} index={3}>
-        <Typography variant="h6" gutterBottom>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">
           Cost Allocation
-        </Typography>
-        {formData.allocations.map((allocation, index) => (
-          <Box key={index} sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <TextField
-              label="Allocation Base"
-              value={allocation.allocation_base}
-              onChange={(e) => handleAllocationChange(index, 'allocation_base', e.target.value)}
-            />
-            <TextField
-              label="Allocation Percentage"
-              type="number"
-              value={allocation.allocation_percentage}
-              onChange={(e) =>
-                handleAllocationChange(index, 'allocation_percentage', e.target.value)
-              }
-            />
-            <TextField
-              label="Allocated Amount"
-              type="number"
-              value={allocation.allocated_amount}
-              onChange={(e) => handleAllocationChange(index, 'allocated_amount', e.target.value)}
-            />
-          </Box>
-        ))}
-        <Button onClick={handleAddAllocation} variant="outlined">
+        </h2>
+        <div className="space-y-4">
+          {formData.allocations.map((allocation, index) => (
+            <div key={index} className="flex flex-col sm:flex-row gap-4 mb-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Allocation Base
+                </label>
+                <input
+                  type="text"
+                  value={allocation.allocation_base}
+                  onChange={(e) => handleAllocationChange(index, 'allocation_base', e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Allocation Percentage
+                </label>
+                <input
+                  type="number"
+                  value={allocation.allocation_percentage}
+                  onChange={(e) => handleAllocationChange(index, 'allocation_percentage', e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Allocated Amount
+                </label>
+                <input
+                  type="number"
+                  value={allocation.allocated_amount}
+                  onChange={(e) => handleAllocationChange(index, 'allocated_amount', e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={handleAddAllocation}
+          className="mt-4 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+          </svg>
           Add Allocation
-        </Button>
+        </button>
       </TabPanel>
-    </Box>
+    </div>
   );
 };
 

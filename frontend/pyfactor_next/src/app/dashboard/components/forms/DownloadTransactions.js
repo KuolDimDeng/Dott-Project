@@ -1,7 +1,4 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/DownloadTransactions.js
-
 import React, { useState } from 'react';
-import { Box, TextField, Button, Typography } from '@mui/material';
 import { axiosInstance } from '@/lib/axiosConfig';
 
 const DownloadTransactions = () => {
@@ -27,32 +24,44 @@ const DownloadTransactions = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: 400, mx: 'auto', mt: 4 }}>
-      <Typography variant="h5" gutterBottom>
+    <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-xl font-semibold mb-4 text-gray-800">
         Download Transactions
-      </Typography>
-      <TextField
-        label="Start Date"
-        type="date"
-        value={startDate}
-        onChange={(e) => setStartDate(e.target.value)}
-        fullWidth
-        margin="normal"
-        InputLabelProps={{ shrink: true }}
-      />
-      <TextField
-        label="End Date"
-        type="date"
-        value={endDate}
-        onChange={(e) => setEndDate(e.target.value)}
-        fullWidth
-        margin="normal"
-        InputLabelProps={{ shrink: true }}
-      />
-      <Button variant="contained" color="primary" onClick={handleDownload} fullWidth sx={{ mt: 2 }}>
+      </h2>
+      
+      <div className="mb-4">
+        <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">
+          Start Date
+        </label>
+        <input
+          id="start-date"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border"
+        />
+      </div>
+      
+      <div className="mb-6">
+        <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-1">
+          End Date
+        </label>
+        <input
+          id="end-date"
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border"
+        />
+      </div>
+      
+      <button 
+        onClick={handleDownload} 
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      >
         Download Transactions
-      </Button>
-    </Box>
+      </button>
+    </div>
   );
 };
 

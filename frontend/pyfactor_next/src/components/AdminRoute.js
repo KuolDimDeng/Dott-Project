@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { CircularProgress, Box } from '@mui/material';
 import { useSession } from '@/hooks/useSession';
 import { logger } from '@/utils/logger';
 
@@ -47,16 +46,9 @@ export default function AdminRoute({ children }) {
   // Show loading state while checking auth
   if (status === 'loading') {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-        }}
-      >
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
     );
   }
 

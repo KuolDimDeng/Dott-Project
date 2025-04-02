@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
-import { getServerUser } from '@/utils/serverAuth';
+import { getServerUser } from '@/utils/getServerUser';
 
 /**
  * Onboarding Navigation API

@@ -84,6 +84,8 @@ from ..utils import (
     generate_unique_schema_name,
     validate_schema_creation,
     tenant_schema_context,
+    process_tenant_subscription_plan,
+    get_schema_name_from_tenant_id,
 )
 
 from ..serializers import BusinessInfoSerializer
@@ -373,15 +375,18 @@ class BaseOnboardingView(APIView):
                         'reason': 'new_user'
                     }
                 
-                if not user.tenant.schema_name or not user.tenant.is_active:
-                    return {
-                        'isValid': False,
-                        'redirectTo': '/onboarding/step1',
-                        'reason': 'no_schema'
-                    }
-                    
-                # Check health synchronously
-                is_healthy, health_details = check_schema_health(user.tenant.schema_name)
+                if not user.tenant.is_active:
+                    logger.error(f"Tenant {user.tenant.id} is not active for user {user.id}")
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Tenant not active',
+                        'requires_onboarding': True,
+                    })
+
+                # Get schema name from function instead of database field
+                schema_name = get_schema_name_from_tenant_id(user.tenant.id)
+                is_healthy, health_details = check_schema_health(schema_name)
+
                 if not is_healthy:
                     return {
                         'isValid': False,
@@ -402,7 +407,7 @@ class BaseOnboardingView(APIView):
                     'redirectTo': '/dashboard',
                     'reason': 'all_valid',
                     'tenant': {
-                        'schema_name': user.tenant.schema_name,
+                        'schema_name': schema_name,
                         'status': 'active' if user.tenant.is_active else 'inactive',
                         'health': health_details
                     }

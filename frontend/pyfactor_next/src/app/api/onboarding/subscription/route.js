@@ -24,8 +24,20 @@ export async function POST(request) {
   try {
     // Validate session using server utils
     const sessionData = await validateServerSession();
-    const { tokens, user } = sessionData || {};
-
+    
+    // Check if validation was successful
+    if (!sessionData.verified) {
+      logger.error('[Subscription] Session validation failed:', {
+        error: sessionData.error || 'Unknown error',
+      });
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    const { tokens, user } = sessionData;
+    
     if (!tokens || !user) {
       logger.error('[Subscription] Invalid session data:', {
         hasTokens: !!tokens,
@@ -37,8 +49,8 @@ export async function POST(request) {
       );
     }
 
-    const accessToken = tokens.accessToken?.toString();
-    const idToken = tokens.idToken?.toString();
+    const accessToken = tokens.accessToken;
+    const idToken = tokens.idToken;
     const userId = user.userId;
     
     if (!accessToken || !idToken) {

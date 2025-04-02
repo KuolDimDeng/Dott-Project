@@ -1,26 +1,6 @@
+'use client';
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Button,
-  Grid,
-} from '@mui/material';
 import { Bar } from 'react-chartjs-2';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { useToast } from '@/components/Toast/ToastProvider';
 
@@ -85,6 +65,12 @@ const AuditTrailManagement = () => {
     setSelectedAuditTrail(trail);
   };
 
+  const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  };
+
   const renderActivityChart = () => {
     const data = {
       labels: ['Create', 'Modify', 'Delete', 'Approve'],
@@ -118,164 +104,199 @@ const AuditTrailManagement = () => {
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Paper elevation={3} sx={{ p: 3 }}>
-        <Box sx={{ width: '100%' }}>
-          <Typography variant="h4" gutterBottom>
-            Audit Trail Management
-          </Typography>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <div className="w-full">
+        <h2 className="text-2xl font-semibold mb-4">Audit Trail Management</h2>
 
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <DatePicker
-                label="Start Date"
-                value={filters.startDate}
-                onChange={(date) => handleFilterChange('startDate', date)}
-                renderInput={(params) => <TextField {...params} fullWidth />}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <DatePicker
-                label="End Date"
-                value={filters.endDate}
-                onChange={(date) => handleFilterChange('endDate', date)}
-                renderInput={(params) => <TextField {...params} fullWidth />}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={2}>
-              <TextField
-                label="User"
-                value={filters.user}
-                onChange={(e) => handleFilterChange('user', e.target.value)}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={2}>
-              <FormControl fullWidth>
-                <InputLabel>Action Type</InputLabel>
-                <Select
-                  value={filters.actionType}
-                  onChange={(e) => handleFilterChange('actionType', e.target.value)}
-                >
-                  <MenuItem value="">All</MenuItem>
-                  <MenuItem value="create">Create</MenuItem>
-                  <MenuItem value="modify">Modify</MenuItem>
-                  <MenuItem value="delete">Delete</MenuItem>
-                  <MenuItem value="approve">Approve</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={2}>
-              <TextField
-                label="Transaction Type"
-                value={filters.transactionType}
-                onChange={(e) => handleFilterChange('transactionType', e.target.value)}
-                fullWidth
-              />
-            </Grid>
-          </Grid>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <input
+              type="date"
+              className="w-full p-2 border border-gray-300 rounded-md"
+              value={formatDate(filters.startDate)}
+              onChange={(e) => handleFilterChange('startDate', e.target.value ? new Date(e.target.value) : null)}
+            />
+          </div>
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <input
+              type="date"
+              className="w-full p-2 border border-gray-300 rounded-md"
+              value={formatDate(filters.endDate)}
+              onChange={(e) => handleFilterChange('endDate', e.target.value ? new Date(e.target.value) : null)}
+            />
+          </div>
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
+            <input
+              type="text"
+              className="w-full p-2 border border-gray-300 rounded-md"
+              value={filters.user}
+              onChange={(e) => handleFilterChange('user', e.target.value)}
+              placeholder="Filter by user"
+            />
+          </div>
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Action Type</label>
+            <select
+              className="w-full p-2 border border-gray-300 rounded-md bg-white"
+              value={filters.actionType}
+              onChange={(e) => handleFilterChange('actionType', e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="create">Create</option>
+              <option value="modify">Modify</option>
+              <option value="delete">Delete</option>
+              <option value="approve">Approve</option>
+            </select>
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Type</label>
+            <input
+              type="text"
+              className="w-full p-2 border border-gray-300 rounded-md"
+              value={filters.transactionType}
+              onChange={(e) => handleFilterChange('transactionType', e.target.value)}
+              placeholder="Filter by transaction type"
+            />
+          </div>
+        </div>
 
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Date & Time</TableCell>
-                      <TableCell>User</TableCell>
-                      <TableCell>Action</TableCell>
-                      <TableCell>Transaction ID</TableCell>
-                      <TableCell>Transaction Type</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredAuditTrails.map((trail) => (
-                      <TableRow
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date & Time
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Action
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Transaction ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Transaction Type
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredAuditTrails.length > 0 ? (
+                    filteredAuditTrails.map((trail) => (
+                      <tr
                         key={trail.id}
                         onClick={() => handleRowClick(trail)}
-                        hover
-                        style={{ cursor: 'pointer' }}
+                        className="hover:bg-gray-50 cursor-pointer"
                       >
-                        <TableCell>{new Date(trail.date_time).toLocaleString()}</TableCell>
-                        <TableCell>{trail.user_name}</TableCell>
-                        <TableCell>{trail.action_type}</TableCell>
-                        <TableCell>{trail.transaction_id}</TableCell>
-                        <TableCell>{trail.transaction_type}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              {selectedAuditTrail ? (
-                <Paper sx={{ p: 2 }}>
-                  <Typography variant="h6" gutterBottom>
-                    Audit Trail Details
-                  </Typography>
-                  <Typography>
-                    <strong>Date & Time:</strong>{' '}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(trail.date_time).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {trail.user_name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {trail.action_type}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {trail.transaction_id}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {trail.transaction_type}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                        No audit trail records found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="md:col-span-1">
+            {selectedAuditTrail ? (
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <h3 className="text-lg font-medium mb-3">Audit Trail Details</h3>
+                <div className="space-y-2">
+                  <p className="text-sm">
+                    <span className="font-semibold">Date & Time:</span>{' '}
                     {new Date(selectedAuditTrail.date_time).toLocaleString()}
-                  </Typography>
-                  <Typography>
-                    <strong>User:</strong> {selectedAuditTrail.user_name}
-                  </Typography>
-                  <Typography>
-                    <strong>Action:</strong> {selectedAuditTrail.action_type}
-                  </Typography>
-                  <Typography>
-                    <strong>Transaction ID:</strong> {selectedAuditTrail.transaction_id}
-                  </Typography>
-                  <Typography>
-                    <strong>Transaction Type:</strong> {selectedAuditTrail.transaction_type}
-                  </Typography>
-                  <Typography>
-                    <strong>Affected Accounts:</strong> {selectedAuditTrail.affected_accounts}
-                  </Typography>
-                  <Typography>
-                    <strong>Old Value:</strong> {selectedAuditTrail.old_value}
-                  </Typography>
-                  <Typography>
-                    <strong>New Value:</strong> {selectedAuditTrail.new_value}
-                  </Typography>
-                  <Typography>
-                    <strong>Approval Status:</strong> {selectedAuditTrail.approval_status}
-                  </Typography>
-                  <Typography>
-                    <strong>Notes:</strong> {selectedAuditTrail.notes}
-                  </Typography>
-                  <Typography>
-                    <strong>IP Address:</strong> {selectedAuditTrail.ip_address}
-                  </Typography>
-                  <Typography>
-                    <strong>Module:</strong> {selectedAuditTrail.module}
-                  </Typography>
-                </Paper>
-              ) : (
-                <Typography>Select an audit trail entry to view details</Typography>
-              )}
-            </Grid>
-          </Grid>
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold">User:</span> {selectedAuditTrail.user_name}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold">Action:</span> {selectedAuditTrail.action_type}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold">Transaction ID:</span>{' '}
+                    {selectedAuditTrail.transaction_id}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold">Transaction Type:</span>{' '}
+                    {selectedAuditTrail.transaction_type}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold">Affected Accounts:</span>{' '}
+                    {selectedAuditTrail.affected_accounts}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold">Old Value:</span> {selectedAuditTrail.old_value}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold">New Value:</span> {selectedAuditTrail.new_value}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold">Approval Status:</span>{' '}
+                    {selectedAuditTrail.approval_status}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold">Notes:</span> {selectedAuditTrail.notes}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold">IP Address:</span>{' '}
+                    {selectedAuditTrail.ip_address}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold">Module:</span> {selectedAuditTrail.module}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-full items-center justify-center p-6 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-gray-500">Select an audit trail entry to view details</p>
+              </div>
+            )}
+          </div>
+        </div>
 
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h5" gutterBottom>
-              Activity Summary
-            </Typography>
+        <div className="mt-8">
+          <h3 className="text-xl font-medium mb-4">Activity Summary</h3>
+          <div className="bg-white p-4 rounded-lg border border-gray-200">
             {renderActivityChart()}
-          </Box>
+          </div>
+        </div>
 
-          <Box sx={{ mt: 4 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => console.log('Export functionality to be implemented')}
-            >
-              Export Audit Trail
-            </Button>
-          </Box>
-        </Box>
-      </Paper>
-    </LocalizationProvider>
+        <div className="mt-8">
+          <button
+            type="button"
+            onClick={() => console.log('Export functionality to be implemented')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Export Audit Trail
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 

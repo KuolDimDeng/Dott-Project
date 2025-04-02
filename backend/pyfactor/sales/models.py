@@ -57,13 +57,13 @@ class Invoice(TenantAwareModel):
     
     class Meta:
         indexes = [
-            models.Index(fields=['tenant', 'invoice_num']),
-            models.Index(fields=['tenant', 'customer']),
-            models.Index(fields=['tenant', 'status']),
-            models.Index(fields=['tenant', 'is_paid', 'due_date']),
+            models.Index(fields=['tenant_id', 'invoice_num']),
+            models.Index(fields=['tenant_id', 'customer']),
+            models.Index(fields=['tenant_id', 'status']),
+            models.Index(fields=['tenant_id', 'is_paid', 'due_date']),
         ]
         constraints = [
-            models.UniqueConstraint(fields=['tenant', 'invoice_num'], name='unique_invoice_num_per_tenant'),
+            models.UniqueConstraint(fields=['tenant_id', 'invoice_num'], name='unique_invoice_num_per_tenant'),
         ]
 
     def __str__(self):
@@ -77,7 +77,7 @@ class Invoice(TenantAwareModel):
             self.invoice_num = f"{prefix}{random_suffix}"
             
             # Ensure uniqueness within tenant
-            while Invoice.objects.filter(tenant=self.tenant, invoice_num=self.invoice_num).exists():
+            while Invoice.objects.filter(tenant_id=self.tenant_id, invoice_num=self.invoice_num).exists():
                 random_suffix = ''.join(random.choices('0123456789', k=6))
                 self.invoice_num = f"{prefix}{random_suffix}"
                 
@@ -225,12 +225,12 @@ class SalesOrder(TenantAwareModel):
     class Meta:
         ordering = ['-date']
         indexes = [
-            models.Index(fields=['tenant', 'order_number']),
-            models.Index(fields=['tenant', 'customer']),
-            models.Index(fields=['tenant', 'date']),
+            models.Index(fields=['tenant_id', 'order_number']),
+            models.Index(fields=['tenant_id', 'customer']),
+            models.Index(fields=['tenant_id', 'date']),
         ]
         constraints = [
-            models.UniqueConstraint(fields=['tenant', 'order_number'], name='unique_order_number_per_tenant'),
+            models.UniqueConstraint(fields=['tenant_id', 'order_number'], name='unique_order_number_per_tenant'),
         ]
 
     def save(self, *args, **kwargs):
@@ -241,7 +241,7 @@ class SalesOrder(TenantAwareModel):
             self.order_number = f"{prefix}{random_suffix}"
             
             # Ensure uniqueness within tenant
-            while SalesOrder.objects.filter(tenant=self.tenant, order_number=self.order_number).exists():
+            while SalesOrder.objects.filter(tenant_id=self.tenant_id, order_number=self.order_number).exists():
                 random_suffix = ''.join(random.choices('0123456789ABCDEF', k=8))
                 self.order_number = f"{prefix}{random_suffix}"
                 
@@ -274,7 +274,7 @@ class SalesOrderItem(TenantAwareModel):
     class Meta:
         ordering = ['id']
         indexes = [
-            models.Index(fields=['tenant', 'sales_order']),
+            models.Index(fields=['tenant_id', 'sales_order']),
         ]
     
     def __str__(self):
@@ -303,9 +303,9 @@ class Sale(TenantAwareModel):
     
     class Meta:
         indexes = [
-            models.Index(fields=['tenant', 'customer']),
-            models.Index(fields=['tenant', 'payment_method']),
-            models.Index(fields=['tenant', 'created_at']),
+            models.Index(fields=['tenant_id', 'customer']),
+            models.Index(fields=['tenant_id', 'payment_method']),
+            models.Index(fields=['tenant_id', 'created_at']),
         ]
 
 class SaleItem(TenantAwareModel):
@@ -320,7 +320,7 @@ class SaleItem(TenantAwareModel):
     
     class Meta:
         indexes = [
-            models.Index(fields=['tenant', 'sale']),
+            models.Index(fields=['tenant_id', 'sale']),
         ]
 
     def save(self, *args, **kwargs):

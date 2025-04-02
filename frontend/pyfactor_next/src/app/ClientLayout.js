@@ -8,6 +8,7 @@ import { fetchAuthSession } from 'aws-amplify/auth';
 import { refreshUserSession } from '@/utils/refreshUserSession';
 import { initializeTenant } from '@/utils/tenantUtils';
 import { initializeTenantContext } from '@/utils/tenantContext';
+import { setupHubDeduplication } from '@/utils/refreshUserSession';
 // These providers are now handled in providers.js
 import AuthErrorBoundary from '@/components/ErrorBoundary';
 import LoadingFallback from '@/components/ClientOnly/LoadingFallback';
@@ -15,6 +16,7 @@ import { setupRenderDebugging } from '@/utils/debugReactRendering';
 import dynamic from 'next/dynamic';
 import ConfigureAmplify from '@/components/ConfigureAmplify';
 import DynamicComponents from '@/components/DynamicComponents';
+import tokenRefreshService from '@/utils/tokenRefresh';
 // Removed GlobalEventDebugger - was causing input field issues
 
 // Dynamically import the ReactErrorDebugger to avoid SSR issues
@@ -28,51 +30,53 @@ const ReactErrorDebugger = dynamic(
 
 // Helper function to check cookie-based access for onboarding pages
 const checkCookieBasedAccess = (pathname) => {
-  if (typeof document === 'undefined') return false;
-  
-  // Parse all cookies
-  const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-    const parts = cookie.trim().split('=');
-    if (parts.length > 1) {
-      try {
-        acc[parts[0].trim()] = decodeURIComponent(parts[1]);
-      } catch (e) {
-        acc[parts[0].trim()] = parts[1];
+  try {
+    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+      const parts = cookie.trim().split('=');
+      if (parts.length > 1) {
+        try {
+          acc[parts[0].trim()] = decodeURIComponent(parts[1]);
+        } catch (e) {
+          acc[parts[0].trim()] = parts[1];
+        }
       }
+      return acc;
+    }, {});
+    
+    // Special case for free plan - direct them to setup after subscription
+    if (pathname.includes('/onboarding/setup') && 
+        cookies.selectedPlan === 'free' && 
+        cookies.onboardedStatus === 'SUBSCRIPTION') {
+      logger.debug('[ClientLayout] Free plan detected in cookie check, allowing setup access');
+      return true;
     }
-    return acc;
-  }, {});
-  
-  // Get onboarding status from cookies
-  const onboardingStep = cookies.onboardingStep;
-  const onboardedStatus = cookies.onboardedStatus;
-  const selectedPlan = cookies.selectedPlan;
-  const postSubscriptionAccess = cookies.postSubscriptionAccess;
-  
-  // Special case for dashboard after subscription
-  if (pathname === '/dashboard' && 
-      ((selectedPlan === 'free' && onboardedStatus === 'SUBSCRIPTION') || 
-       postSubscriptionAccess === 'true')) {
-    logger.info('[ClientLayout] Allowing dashboard access after free plan subscription');
-    return true;
+    
+    // Special case for dashboard access after free plan
+    if (pathname === '/dashboard' && 
+        cookies.selectedPlan === 'free' && 
+        (cookies.onboardedStatus === 'SUBSCRIPTION' || cookies.onboardedStatus === 'SETUP')) {
+      logger.debug('[ClientLayout] Free plan detected for dashboard, allowing access');
+      return true;
+    }
+    
+    // Check for valid business info when going to subscription page
+    if (pathname.includes('/onboarding/subscription') && cookies.businessName) {
+      logger.debug('[ClientLayout] Business info found in cookies, allowing subscription access');
+      return true;
+    }
+    
+    // Check for verified email access
+    if (pathname.includes('/auth/verify') && 
+        (cookies.pendingVerification === 'true' || cookies.verificationFlow === 'true')) {
+      logger.debug('[ClientLayout] Verification flow detected in cookies, allowing access');
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    logger.warn('[ClientLayout] Error in cookie check:', error.message);
+    return false;
   }
-  
-  // Grant access based on cookies and pathname
-  if (pathname.includes('business-info')) {
-    // Always allow access to business-info
-    return true;
-  } else if (pathname.includes('subscription')) {
-    // Allow access to subscription if business-info is completed
-    return onboardingStep === 'subscription' || onboardedStatus === 'BUSINESS_INFO';
-  } else if (pathname.includes('payment')) {
-    // Allow access to payment if subscription is completed
-    return onboardingStep === 'payment' || onboardedStatus === 'SUBSCRIPTION';
-  } else if (pathname.includes('setup')) {
-    // Allow access to setup if payment is completed
-    return onboardingStep === 'setup' || onboardedStatus === 'PAYMENT';
-  }
-  
-  return false;
 };
 
 export default function ClientLayout({ children }) {
@@ -83,6 +87,8 @@ export default function ClientLayout({ children }) {
   const [isVerifying, setIsVerifying] = useState(true);
   const [tenantInitialized, setTenantInitialized] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const refreshLockRef = useRef(false);
+  const lastRefreshTimeRef = useRef(0);
 
   // Initialize debugging tools
   useEffect(() => {
@@ -93,10 +99,55 @@ export default function ClientLayout({ children }) {
         // Setup render debugging
         setupRenderDebugging();
         
+        // Initialize Hub protection
+        setupHubDeduplication();
+        
         // Add global error handler for "render is not a function" errors
         // but prevent infinite loops by not calling the original handler for certain errors
         const originalError = console.error;
         console.error = (...args) => {
+          // Check for recursive errors immediately
+          const stackDepth = new Error().stack.split('\n').filter(line => 
+            line.includes('ClientLayout.js') && line.includes('console.error')
+          ).length;
+          
+          // Hard circuit breaker for deeply nested errors
+          if (stackDepth > 2) {
+            // Complete circuit break - log once and return
+            try {
+              logger.error('[ClientLayout] Deep recursion detected in error handler, breaking loop');
+              // Force add noredirect to URL and return
+              if (typeof window !== 'undefined') {
+                const url = new URL(window.location.href);
+                url.searchParams.set('noredirect', 'true');
+                window.history.replaceState({}, '', url.toString());
+
+                // Set global flag to completely disable all redirects
+                window.__HARD_CIRCUIT_BREAKER = true;
+                
+                // Clear all relevant storage
+                try {
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  document.cookie.split(";").forEach(cookie => {
+                    const name = cookie.split("=")[0].trim();
+                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+                  });
+                } catch (e) {
+                  // Silent fail
+                }
+                
+                // Force reload the page with the noredirect parameter
+                setTimeout(() => {
+                  window.location.href = '/auth/signin?noredirect=true';
+                }, 1000);
+              }
+            } catch (e) {
+              // Last resort - just return to break the loop
+            }
+            return;
+          }
+          
           try {
             // Safely convert args to string for pattern matching
             let errorString = '';
@@ -116,6 +167,56 @@ export default function ClientLayout({ children }) {
             const isMaxUpdateDepthError = errorString.includes('Maximum update depth exceeded');
             const isRenderNotFunctionError = errorString.includes('render is not a function');
             const isReactAxiosNetworkError = errorString.includes('AxiosConfig') && errorString.includes('Response error');
+            const isRedirectLoopError = errorString.includes('Detected redirect loop') || 
+                                       errorString.includes('Too many redirects') ||
+                                       errorString.includes('Maximum call stack size exceeded');
+            
+            // CIRCUIT BREAKER: Detect and prevent redirect loops
+            if (isRedirectLoopError) {
+              logger.error('[ClientLayout] Detected redirect loop, forcing stop', {
+                errorString,
+                pathname
+              });
+              
+              // Store the error information
+              if (typeof window !== 'undefined') {
+                window.__REDIRECT_LOOP_DETECTED = true;
+                window.__LAST_REDIRECT_ERROR = {
+                  message: errorString,
+                  pathname,
+                  timestamp: new Date().toISOString()
+                };
+                
+                // Force add noredirect parameter to current URL to break loops
+                try {
+                  const url = new URL(window.location.href);
+                  if (!url.searchParams.has('noredirect')) {
+                    url.searchParams.set('noredirect', 'true');
+                    window.history.replaceState({}, '', url.toString());
+                    logger.info('[ClientLayout] Added noredirect parameter to URL to break loop');
+                  }
+                } catch (urlError) {
+                  logger.error('[ClientLayout] Failed to modify URL:', urlError);
+                }
+                
+                // Clear redirect-related data in storage
+                try {
+                  localStorage.removeItem('signin_attempts');
+                  localStorage.removeItem('business_auth_errors');
+                  localStorage.removeItem('business_info_auth_errors');
+                  localStorage.removeItem('redirect_loop_count');
+                  sessionStorage.removeItem('signinRedirectTime');
+                  sessionStorage.removeItem('lastRedirectPath');
+                  sessionStorage.removeItem('loopDetected');
+                  logger.info('[ClientLayout] Cleared redirect-related storage items');
+                } catch (storageError) {
+                  logger.error('[ClientLayout] Failed to clear storage:', storageError);
+                }
+              }
+              
+              // Log the error but don't propagate to avoid loops
+              return;
+            }
             
             // Create safer args for logging
             const safeArgs = args.map(arg => {
@@ -261,7 +362,7 @@ export default function ClientLayout({ children }) {
       const maxAttempts = 3;
       
       try {
-        // Check cache first
+        // Check cache first with longer duration
         const cacheKey = `${pathname}-${attempt}`;
         if (sessionCheckCache.current.has(cacheKey)) {
           const cachedResult = sessionCheckCache.current.get(cacheKey);
@@ -275,109 +376,50 @@ export default function ClientLayout({ children }) {
           pathname
         });
 
+        // If hard circuit breaker is active, immediately skip all checks
+        if (typeof window !== 'undefined' && window.__HARD_CIRCUIT_BREAKER) {
+          logger.warn('[ClientLayout] Hard circuit breaker active, skipping all authentication checks');
+          setIsVerifying(false);
+          return true;
+        }
+
         // If it's a public route, no need to verify
         if (isPublicRoute(pathname)) {
+          logger.debug('[ClientLayout] Public route detected, skipping verification');
+          setIsVerifying(false);
+          setIsAuthenticated(false);
+          return true;
+        }
+        
+        // CIRCUIT BREAKER: Check for redirect loop detection
+        if (typeof window !== 'undefined' && window.__REDIRECT_LOOP_DETECTED) {
+          logger.warn('[ClientLayout] Redirect loop detected previously, skipping verification');
           setIsVerifying(false);
           return true;
         }
         
-        // Special case for dashboard after free plan subscription
-        if (pathname === '/dashboard') {
-          // Check cookies to see if this is a post-subscription dashboard access
-          if (typeof window !== 'undefined') {
-            const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-              const parts = cookie.trim().split('=');
-              if (parts.length > 1) {
-                try {
-                  acc[parts[0].trim()] = decodeURIComponent(parts[1]);
-                } catch (e) {
-                  acc[parts[0].trim()] = parts[1];
-                }
-              }
-              return acc;
-            }, {});
-            
-            // Check for free plan subscription flow
-            if (cookies.selectedPlan === 'free' && 
-                (cookies.onboardedStatus === 'SUBSCRIPTION' || cookies.onboardedStatus === 'SETUP') && 
-                (cookies.onboardingStep === 'SETUP' || cookies.postSubscriptionAccess === 'true')) {
-              logger.info('[ClientLayout] Dashboard access from free plan subscription flow, allowing access');
-              sessionCheckCache.current.set(cacheKey, true);
-              setIsVerifying(false);
-              setIsAuthenticated(true);
-              return true;
-            }
-          }
-        }
-        
-        // Special handling for onboarding routes - allow access if in onboarding flow
-        if (pathname.startsWith('/onboarding/') || pathname === '/auth/verify-email' || pathname.startsWith('/auth/verify-email')) {
-          logger.debug('[ClientLayout] Onboarding or verification route detected, using lenient session check');
-          
-          // Check for cookie-based access first
-          if (typeof window !== 'undefined') {
-            const hasCookieAccess = checkCookieBasedAccess(pathname);
-            if (hasCookieAccess) {
-              logger.debug('[ClientLayout] Cookie-based access granted for:', pathname);
-              sessionCheckCache.current.set(cacheKey, true);
-              setIsVerifying(false);
-              return true;
-            }
-          }
-          
-          // Always let subscription page through
-          if (pathname.includes('subscription')) {
-            logger.debug('[ClientLayout] Allowing access to subscription page');
-            sessionCheckCache.current.set(cacheKey, true);
+        // Check URL for noredirect parameter
+        if (typeof window !== 'undefined') {
+          const url = new URL(window.location.href);
+          if (url.searchParams.get('noredirect') === 'true') {
+            logger.debug('[ClientLayout] noredirect parameter detected, skipping verification');
             setIsVerifying(false);
             return true;
           }
-          
-          try {
-            // Try to get session but don't redirect if it fails
-            const { tokens } = await fetchAuthSession();
-            const isValid = !!tokens?.idToken;
-            
-            if (isValid) {
-              // Initialize tenant if needed but don't fail if it doesn't work
-              if (!tenantInitialized) {
-                try {
-                  await initializeTenantContext();
-                  setTenantInitialized(true);
-                } catch (e) {
-                  logger.warn('[ClientLayout] Tenant init failed for onboarding route, but continuing:', e.message);
-                }
-              }
-              
-              // Cache the successful result
-              sessionCheckCache.current.set(cacheKey, true);
-              setIsVerifying(false);
-              return true;
-            } else {
-              // If pathname is business-info or subscription, allow to proceed anyway
-              if (pathname.includes('business-info') || pathname.includes('subscription')) {
-                logger.debug(`[ClientLayout] Allowing access to ${pathname} despite session issues`);
-                sessionCheckCache.current.set(cacheKey, true);
-                setIsVerifying(false);
-                return true;
-              }
-            }
-          } catch (e) {
-            logger.warn('[ClientLayout] Session check error in onboarding route:', e.message);
-            
-            // For business-info or subscription page, don't redirect to sign-in
-            if (pathname.includes('business-info') || pathname.includes('subscription')) {
-              logger.debug(`[ClientLayout] Allowing access to ${pathname} despite session error`);
-              sessionCheckCache.current.set(cacheKey, true);
-              setIsVerifying(false);
-              return true;
-            }
-          }
+        }
+
+        // Check for token refresh rate limiting
+        const now = Date.now();
+        const timeSinceLastRefresh = now - lastRefreshTimeRef.current;
+        if (timeSinceLastRefresh < 60000) { // 1 minute cooldown
+          logger.warn('[ClientLayout] Token refresh rate limit hit, waiting');
+          setIsVerifying(false);
+          return false;
         }
 
         // Standard session check for other routes
         const { tokens } = await fetchAuthSession();
-        let isValid = !!tokens?.idToken; // Use let instead of const so we can update it
+        let isValid = !!tokens?.idToken;
 
         if (isValid && !tenantInitialized) {
           try {
@@ -399,31 +441,71 @@ export default function ClientLayout({ children }) {
           }
         }
 
-        // Cache the result
+        // Cache the result with longer duration
         sessionCheckCache.current.set(cacheKey, isValid);
 
-        // Clear cache after 5 minutes
+        // Clear cache after 15 minutes instead of 5
         setTimeout(() => {
           sessionCheckCache.current.delete(cacheKey);
-        }, 5 * 60 * 1000);
+        }, 15 * 60 * 1000);
 
-        if (!isValid && attempt < maxAttempts) {
+        if (!isValid && attempt < maxAttempts && !refreshLockRef.current) {
           // Try to refresh session
           try {
+            refreshLockRef.current = true;
             const refreshed = await refreshUserSession();
             if (refreshed) {
+              // Update last refresh time
+              lastRefreshTimeRef.current = Date.now();
               // We'll just set isValid to true and continue without recursion
               logger.debug('[ClientLayout] Session refreshed, continuing with validation');
               isValid = true;
             }
           } catch (refreshError) {
-            logger.warn('[ClientLayout] Error refreshing session:', refreshError.message);
+            logger.error('[ClientLayout] Session refresh failed:', refreshError);
+          } finally {
+            refreshLockRef.current = false;
           }
         }
 
         if (!isValid) {
           logger.warn('[ClientLayout] Invalid session, redirecting to signin');
-          router.replace('/auth/signin');
+          
+          // CIRCUIT BREAKER: Check for noredirect parameter before redirecting
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            if (url.searchParams.get('noredirect') === 'true') {
+              logger.warn('[ClientLayout] Redirect prevented by noredirect parameter');
+              setIsVerifying(false);
+              return false;
+            }
+            
+            // Check if we've redirected too many times
+            const redirectCount = parseInt(localStorage.getItem('client_redirect_count') || '0', 10);
+            if (redirectCount >= 3) {
+              logger.error('[ClientLayout] Too many redirects detected, circuit breaker activated');
+              // Force add noredirect parameter to prevent future redirects
+              const currentUrl = new URL(window.location.href);
+              currentUrl.searchParams.set('noredirect', 'true');
+              window.history.replaceState({}, '', currentUrl.toString());
+              // Reset counter
+              localStorage.setItem('client_redirect_count', '0');
+              setIsVerifying(false);
+              return false;
+            }
+            
+            // Increment redirect counter
+            localStorage.setItem('client_redirect_count', (redirectCount + 1).toString());
+            
+            // Add from and noredirect parameters to signin URL
+            const signInUrl = new URL('/auth/signin', window.location.origin);
+            signInUrl.searchParams.set('from', 'client_layout');
+            signInUrl.searchParams.set('noredirect', 'true');
+            router.replace(signInUrl.toString());
+          } else {
+            router.replace('/auth/signin');
+          }
+          
           setIsVerifying(false);
           return false;
         }
@@ -460,25 +542,42 @@ export default function ClientLayout({ children }) {
     }
   }, [pathname]);
 
-  // Initialize verifySession on mount
+  // Initialize verifySession on mount and reset redirect counter on successful auth
   useEffect(() => {
+    let mounted = true;
+    
     const verify = async () => {
-      if (pathname && verifySession.current) {
+      if (pathname && verifySession.current && mounted) {
         try {
+          // Reset redirect counter if on signin page
+          if (pathname.includes('signin') && typeof window !== 'undefined') {
+            localStorage.setItem('client_redirect_count', '0');
+          }
+          
           const sessionValid = await verifySession.current(pathname);
-          setIsAuthenticated(sessionValid);
+          if (mounted) {
+            setIsAuthenticated(sessionValid);
+            
+            // If validation successful, reset redirect counter
+            if (sessionValid && typeof window !== 'undefined') {
+              localStorage.setItem('client_redirect_count', '0');
+            }
+          }
         } catch (error) {
           logger.error('[ClientLayout] Error in session verification:', error);
-          setIsVerifying(false);
-          setIsAuthenticated(false);
+          if (mounted) {
+            setIsVerifying(false);
+            setIsAuthenticated(false);
+          }
         }
       }
     };
 
     verify();
 
-    // No need to cancel since we're not using debounce anymore
-    return () => {};
+    return () => {
+      mounted = false;
+    };
   }, [pathname]);
 
   // Initialize debug tools in development mode
@@ -490,6 +589,17 @@ export default function ClientLayout({ children }) {
         logger.error('[ClientLayout] Error initializing debug tools:', error);
       }
     }
+  }, []);
+
+  // Initialize token refresh service
+  useEffect(() => {
+    // Start automatic token refresh
+    tokenRefreshService.startAutoRefresh();
+
+    // Clean up on unmount
+    return () => {
+      tokenRefreshService.stopAutoRefresh();
+    };
   }, []);
 
   // Show loading state while verifying

@@ -1,41 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
-  FormLabel,
-  Grid,
-  Paper,
-  Tooltip,
-  IconButton,
-  useTheme,
-  useMediaQuery,
-  Link,
-  Snackbar,
-  Alert,
-  Container,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import PrintIcon from '@mui/icons-material/Print';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { inventoryService } from '@/services/inventoryService';
 import { userService } from '@/services/userService';
 import { useUser } from '@/contexts/UserContext';
@@ -48,9 +13,19 @@ import { setTokens } from '@/utils/tenantUtils';
 console.warn('ProductForm.js is loaded but should not be used - use ProductManagement.js instead');
 
 const ProductForm = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [isMobile, setIsMobile] = useState(false);
   const { user, loading: userLoading } = useUser();
+  
+  // Handle responsive layout
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   const [product, setProduct] = useState({
     name: '',
     description: '',
@@ -522,258 +497,375 @@ const ProductForm = () => {
   };
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 2, borderRadius: 2 }}>
-      <Box display="flex" alignItems="center" mb={3}>
-        <InventoryIcon sx={{ fontSize: 40, color: theme.palette.primary.main, mr: 2 }} />
-        <Box>
-          <Typography variant={isMobile ? 'h5' : 'h4'} component="h1" gutterBottom>
+    <div className="bg-white p-4 rounded-lg shadow">
+      <div className="flex items-center mb-6">
+        <div className="text-blue-600 mr-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        </div>
+        <div>
+          <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-800 mb-1`}>
             Add a Product
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
+          </h1>
+          <p className="text-gray-600">
             Create and manage your product inventory
-          </Typography>
-        </Box>
-      </Box>
+          </p>
+        </div>
+      </div>
 
       {error && (
-        <Typography color="error" mb={2}>
+        <p className="text-red-600 mb-4">
           {error}
-        </Typography>
+        </p>
       )}
 
-      <Box component="form" onSubmit={handleSubmit} sx={{ p: 2 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h5" gutterBottom>
+      <form onSubmit={handleSubmit} className="p-4">
+        <div className="grid grid-cols-1 gap-6">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-800 mb-2 md:mb-0">
               Create New Product
-            </Typography>
-            <Button 
-              variant="outlined" 
-              color="primary" 
+            </h2>
+            <button 
+              type="button"
               onClick={runDiagnostics}
-              sx={{ ml: 2 }}
+              className="px-4 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50"
             >
               Check Authentication
-            </Button>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Name"
-              name="name"
-              value={product.name}
-              onChange={handleChange}
-              fullWidth
-              required
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <FormControl component="fieldset" fullWidth>
-              <FormLabel component="legend">Product Type</FormLabel>
-              <RadioGroup
-                row
-                aria-label="saleType"
-                name="saleType"
-                value={product.saleType}
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                value={product.name}
                 onChange={handleChange}
-              >
-                <FormControlLabel value="sale" control={<Radio />} label="For Sale" />
-                <FormControlLabel value="rent" control={<Radio />} label="For Rent" />
-              </RadioGroup>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              label="Description"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <fieldset>
+                <legend className="block text-sm font-medium text-gray-700 mb-1">Product Type</legend>
+                <div className="flex space-x-4">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="saleType"
+                      value="sale"
+                      checked={product.saleType === 'sale'}
+                      onChange={handleChange}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="ml-2">For Sale</span>
+                  </label>
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="saleType"
+                      value="rent"
+                      checked={product.saleType === 'rent'}
+                      onChange={handleChange}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="ml-2">For Rent</span>
+                  </label>
+                </div>
+              </fieldset>
+            </div>
+          </div>
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              id="description"
               name="description"
               value={product.description}
               onChange={handleChange}
-              fullWidth
-              multiline
-              rows={3}
-            />
-          </Grid>
+              rows="3"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            ></textarea>
+          </div>
           {product.saleType === 'sale' && (
-            <>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Price"
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                  Price
+                </label>
+                <input
+                  id="price"
                   name="price"
                   type="number"
                   value={product.price}
                   onChange={handleChange}
-                  fullWidth
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Sales Tax (%)"
+              </div>
+              <div>
+                <label htmlFor="salesTax" className="block text-sm font-medium text-gray-700 mb-1">
+                  Sales Tax (%)
+                </label>
+                <input
+                  id="salesTax"
                   name="salesTax"
                   type="number"
                   value={product.salesTax}
                   onChange={handleChange}
-                  fullWidth
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 />
-              </Grid>
-            </>
+              </div>
+            </div>
           )}
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Stock Quantity"
-              name="stock_quantity"
-              type="number"
-              value={product.stock_quantity}
-              onChange={handleChange}
-              fullWidth
-            />
-          </Grid>
-          {product.saleType === 'sale' && (
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Reorder Level"
-                name="reorder_level"
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="stock_quantity" className="block text-sm font-medium text-gray-700 mb-1">
+                Stock Quantity
+              </label>
+              <input
+                id="stock_quantity"
+                name="stock_quantity"
                 type="number"
-                value={product.reorder_level}
+                value={product.stock_quantity}
                 onChange={handleChange}
-                fullWidth
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               />
-            </Grid>
-          )}
-          <Grid item xs={12}>
-            <Accordion>
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                aria-controls="additional-info-content"
-                id="additional-info-header"
-              >
-                <Typography>Additional Information (Height, Width, Weight)</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="Height"
-                      name="height"
-                      type="number"
-                      value={product.height}
-                      onChange={handleChange}
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth>
-                      <InputLabel>Height Unit</InputLabel>
-                      <Select name="height_unit" value={product.height_unit} onChange={handleChange}>
-                        <MenuItem value="cm">Centimeter</MenuItem>
-                        <MenuItem value="m">Meter</MenuItem>
-                        <MenuItem value="in">Inch</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="Width"
-                      name="width"
-                      type="number"
-                      value={product.width}
-                      onChange={handleChange}
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth>
-                      <InputLabel>Width Unit</InputLabel>
-                      <Select name="width_unit" value={product.width_unit} onChange={handleChange}>
-                        <MenuItem value="cm">Centimeter</MenuItem>
-                        <MenuItem value="m">Meter</MenuItem>
-                        <MenuItem value="in">Inch</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="Weight"
-                      name="weight"
-                      type="number"
-                      value={product.weight}
-                      onChange={handleChange}
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth>
-                      <InputLabel>Weight Unit</InputLabel>
-                      <Select name="weight_unit" value={product.weight_unit} onChange={handleChange}>
-                        <MenuItem value="kg">Kilogram</MenuItem>
-                        <MenuItem value="lb">Pound</MenuItem>
-                        <MenuItem value="g">Gram</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </Grid>
-              </AccordionDetails>
-            </Accordion>
-          </Grid>
-          <Grid item xs={12}>
-            <Box
-              display="flex"
-              flexDirection={isMobile ? 'column' : 'row'}
-              justifyContent="space-between"
-              alignItems={isMobile ? 'stretch' : 'center'}
-            >
-              <Button
+            </div>
+            {product.saleType === 'sale' && (
+              <div>
+                <label htmlFor="reorder_level" className="block text-sm font-medium text-gray-700 mb-1">
+                  Reorder Level
+                </label>
+                <input
+                  id="reorder_level"
+                  name="reorder_level"
+                  type="number"
+                  value={product.reorder_level}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            )}
+          </div>
+          <div className="border border-gray-200 rounded-md">
+            <div className="border-b border-gray-200 p-4 cursor-pointer" 
+                 onClick={() => {
+                   const el = document.getElementById('additional-info-content');
+                   if (el) el.classList.toggle('hidden');
+                 }}>
+              <div className="flex justify-between items-center">
+                <h3 className="text-base font-medium text-gray-700">Additional Information (Height, Width, Weight)</h3>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+            <div id="additional-info-content" className="p-4 hidden">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="height" className="block text-sm font-medium text-gray-700 mb-1">
+                    Height
+                  </label>
+                  <input
+                    id="height"
+                    name="height"
+                    type="number"
+                    value={product.height}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="height_unit" className="block text-sm font-medium text-gray-700 mb-1">
+                    Height Unit
+                  </label>
+                  <select
+                    id="height_unit"
+                    name="height_unit"
+                    value={product.height_unit}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="cm">Centimeter</option>
+                    <option value="m">Meter</option>
+                    <option value="in">Inch</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label htmlFor="width" className="block text-sm font-medium text-gray-700 mb-1">
+                    Width
+                  </label>
+                  <input
+                    id="width"
+                    name="width"
+                    type="number"
+                    value={product.width}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="width_unit" className="block text-sm font-medium text-gray-700 mb-1">
+                    Width Unit
+                  </label>
+                  <select
+                    id="width_unit"
+                    name="width_unit"
+                    value={product.width_unit}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="cm">Centimeter</option>
+                    <option value="m">Meter</option>
+                    <option value="in">Inch</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-1">
+                    Weight
+                  </label>
+                  <input
+                    id="weight"
+                    name="weight"
+                    type="number"
+                    value={product.weight}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="weight_unit" className="block text-sm font-medium text-gray-700 mb-1">
+                    Weight Unit
+                  </label>
+                  <select
+                    id="weight_unit"
+                    name="weight_unit"
+                    value={product.weight_unit}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="kg">Kilogram</option>
+                    <option value="lb">Pound</option>
+                    <option value="g">Gram</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="mt-6">
+            <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} justify-between items-center`}>
+              <button
                 type="submit"
-                variant="contained"
-                color="primary"
-                size="large"
-                fullWidth={isMobile}
-                sx={{ mb: isMobile ? 2 : 0 }}
+                className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ${isMobile ? 'w-full mb-4' : ''} disabled:bg-blue-300`}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Creating...' : 'Create Product'}
-              </Button>
-              <Tooltip title="Learn more about product creation">
-                <IconButton color="primary">
-                  <HelpOutlineIcon />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          </Grid>
-        </Grid>
-      </Box>
+              </button>
+              
+              <button
+                type="button"
+                title="Learn more about product creation"
+                className="w-8 h-8 text-blue-600 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-200"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
 
       {product.saleType === 'rent' && (
-        <Typography variant="body2" color="text.secondary" mt={2}>
+        <p className="text-sm text-gray-600 mt-4 px-4">
           Create a custom rental plan{' '}
-          <Link href="/settings/business-settings/custom-charge-settings">here</Link> and use when
-          making a sales transaction.
-        </Typography>
+          <a href="/settings/business-settings/custom-charge-settings" className="text-blue-600 hover:underline">
+            here
+          </a>{' '}
+          and use when making a sales transaction.
+        </p>
       )}
 
-      <Dialog open={openPrintDialog} onClose={() => setOpenPrintDialog(false)}>
-        <DialogTitle>Print Barcode</DialogTitle>
-        <DialogContent>
-          <Typography>Do you want to generate a barcode for this product?</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenPrintDialog(false)}>Cancel</Button>
-          <Button
-            onClick={handlePrintBarcode}
-            startIcon={<PrintIcon />}
-            variant="contained"
-            color="secondary"
-            disabled={!product.id}
-          >
-            Generate Barcode
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Print Barcode Dialog */}
+      {openPrintDialog && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Print Barcode</h2>
+            <p className="mb-6">Do you want to generate a barcode for this product?</p>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setOpenPrintDialog(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePrintBarcode}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center"
+                disabled={!product.id}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Generate Barcode
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <Snackbar open={openSnackbar} autoHideDuration={3000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
-    </Box>
+      {/* Toast/Notification */}
+      {openSnackbar && (
+        <div className={`fixed bottom-4 right-4 p-4 rounded-md shadow-lg z-50 ${
+          snackbarSeverity === 'success' ? 'bg-green-500' : 
+          snackbarSeverity === 'error' ? 'bg-red-500' : 
+          snackbarSeverity === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+        } text-white`}>
+          <div className="flex items-center">
+            {snackbarSeverity === 'success' && (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            )}
+            {snackbarSeverity === 'error' && (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            )}
+            {snackbarSeverity === 'warning' && (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            )}
+            {snackbarSeverity === 'info' && (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            )}
+            <span>{snackbarMessage}</span>
+            <button 
+              onClick={handleCloseSnackbar} 
+              className="ml-4 text-white opacity-70 hover:opacity-100"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

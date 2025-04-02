@@ -4,48 +4,82 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';
-import { Box, Container, Typography, Button, Alert, CircularProgress } from '@/components/ui/TailwindComponents';
+import { CircularProgress } from '@/components/ui/TailwindComponents';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { fetchAuthSession } from 'aws-amplify/auth';
+import { CheckIcon } from '@heroicons/react/24/solid';
+// Import standardized constants
+import { 
+  COGNITO_ATTRIBUTES,
+  COOKIE_NAMES, 
+  STORAGE_KEYS,
+  ONBOARDING_STATUS,
+  ONBOARDING_STEPS
+} from '@/constants/onboarding';
 
-// Define subscription plans
+// Define subscription plans with enhanced features
 const PLANS = [
   {
     id: 'free',
     name: 'Basic',
+    description: 'Perfect for freelancers and solo entrepreneurs',
     price: {
       monthly: '0',
       annual: '0',
     },
     features: [
       'Income and expense tracking',
-      'Invoice creation',
-      'Basic features'
+      'Invoice creation and management',
+      'Basic financial reports',
+      'Single user account',
+      'Email support'
     ],
+    popular: false,
+    color: 'blue',
+    buttonText: 'Get Started Free'
   },
   {
     id: 'professional',
     name: 'Professional',
+    description: 'Ideal for growing small businesses',
     price: {
       monthly: '15',
       annual: '150',
     },
     features: [
-      'Multiple users',
-      'Advanced reporting',
-      'Priority support'
+      'All Basic features',
+      'Multiple user accounts',
+      'Advanced financial reports',
+      'Client portal access',
+      'Custom invoice templates',
+      'Priority email support',
+      'Data export capabilities'
     ],
+    popular: true,
+    color: 'indigo',
+    buttonText: 'Choose Professional'
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
+    description: 'For established businesses with complex needs',
     price: {
       monthly: '45',
       annual: '450',
     },
     features: [
-      'Unlimited everything',
-      'Custom features',
-      'Dedicated support'
+      'All Professional features',
+      'Unlimited user accounts',
+      'Custom financial dashboards',
+      'Dedicated account manager',
+      'API integrations',
+      'Phone support',
+      'Automated workflows',
+      'Advanced security features'
     ],
+    popular: false,
+    color: 'purple',
+    buttonText: 'Choose Enterprise'
   },
 ];
 
@@ -66,6 +100,20 @@ const getCookies = () => {
   }, {});
 };
 
+// Helper function to generate a request ID
+const generateRequestId = () => {
+  try {
+    return crypto.randomUUID();
+  } catch (e) {
+    // Fallback for browsers without crypto.randomUUID
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+};
+
 export default function SubscriptionPage() {
   const router = useRouter();
   const [businessData, setBusinessData] = useState({
@@ -80,82 +128,120 @@ export default function SubscriptionPage() {
   
   // Initialize on page load
   useEffect(() => {
-    const initializeWithCookies = () => {
+    const initializeSubscription = async () => {
       try {
-        const cookies = getCookies();
+        // Debug cookie state
+        const cookieData = {
+          businessName: getCookies().businessName || '',
+          businessType: getCookies().businessType || '',
+          onboardingStep: getCookies().onboardingStep || '',
+          onboardedStatus: getCookies().onboardedStatus || '',
+          hasIdToken: !!localStorage.getItem('idToken'),
+          hasAccessToken: !!localStorage.getItem('accessToken')
+        };
         
-        // Get business data from cookies
-        const businessName = cookies.businessName || '';
-        const businessType = cookies.businessType || '';
+        logger.debug('[SubscriptionPage] Initializing with cookies:', cookieData);
         
-        // Log what we found for debugging
-        logger.debug('[SubscriptionPage] Initializing with cookies:', {
-          businessName,
-          businessType,
-          onboardingStep: cookies.onboardingStep || '',
-          onboardedStatus: cookies.onboardedStatus || '',
-          hasIdToken: !!cookies.idToken,
-          hasAccessToken: !!cookies.accessToken
-        });
-        
-        // Set business data state
-        setBusinessData({
-          businessName,
-          businessType
-        });
-        
-        // Only load the page if we have business info
-        if (businessName || businessType) {
-          setLoading(false);
-        } else {
-          // If no business info in cookies, check the API
-          checkBusinessInfoFromAPI();
+        // Verify we have business info either in cookies or state
+        if (!businessData.businessName && cookieData.businessName) {
+          setBusinessData(prev => ({
+            ...prev,
+            businessName: cookieData.businessName,
+            businessType: cookieData.businessType
+          }));
         }
+        
+        // Try to get authentication session
+        let session = null;
+        try {
+          session = await fetchAuthSession();
+          // If this succeeds, we have valid tokens
+        } catch (authError) {
+          logger.warn('[SubscriptionPage] Auth session error:', authError);
+          // Continue despite auth error - we'll use cookies
+        }
+        
+        // Check for free plan selection in URL
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('plan') === 'free') {
+          selectFreePlan();
+        }
+        
+        setLoading(false);
       } catch (error) {
-        logger.error('[SubscriptionPage] Error initializing from cookies:', error);
-        // Try the API as a fallback
-        checkBusinessInfoFromAPI();
-      }
-    };
-    
-    const checkBusinessInfoFromAPI = async () => {
-      try {
-        logger.debug('[SubscriptionPage] Checking business info from API');
-        const response = await fetch('/api/onboarding/business-info');
-        
-        if (response.ok) {
-          const data = await response.json();
-          
-          if (data.success && data.businessInfo) {
-            logger.debug('[SubscriptionPage] Got business info from API:', data);
-            
-            // Set business data state from API
-            setBusinessData({
-              businessName: data.businessInfo.businessName || '',
-              businessType: data.businessInfo.businessType || ''
-            });
-            
-            // If still no business info but we need to show the page
-            if (!data.businessInfo.businessName && !data.businessInfo.businessType) {
-              logger.warn('[SubscriptionPage] No business info from API either');
-              setMessage('Business information not found. You may need to return to the business info page.');
-            }
-          } else {
-            logger.warn('[SubscriptionPage] API check failed but continuing');
-          }
-        } else {
-          logger.warn('[SubscriptionPage] API check returned error status:', response.status);
-        }
-      } catch (apiError) {
-        logger.error('[SubscriptionPage] Error checking business info from API:', apiError);
-      } finally {
-        // Always finish loading even if API check failed
+        logger.error('[SubscriptionPage] Initialization error:', error);
+        setMessage('Failed to initialize subscription page. Please try again.');
         setLoading(false);
       }
     };
     
+    const selectFreePlan = () => {
+      // For RLS implementation, set all required flags/cookies for direct to dashboard
+      setSelectedPlan('free');
+      
+      // Set loading state while we prepare
+      setSubmitting(true);
+      
+      // Set cookies for RLS configuration - mark everything as complete
+      const expiresDate = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
+      document.cookie = `setupSkipDatabaseCreation=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      document.cookie = `setupUseRLS=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      document.cookie = `skipSchemaCreation=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      document.cookie = `${COOKIE_NAMES.FREE_PLAN_SELECTED}=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      
+      // Store in localStorage as well
+      try {
+        localStorage.setItem('setupSkipDatabaseCreation', 'true');
+        localStorage.setItem('setupUseRLS', 'true');
+        localStorage.setItem('skipSchemaCreation', 'true');
+        localStorage.setItem(STORAGE_KEYS.ONBOARDING_STATUS, ONBOARDING_STATUS.COMPLETE);
+        localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETED, 'true');
+        localStorage.setItem('setupTimestamp', Date.now().toString());
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+      
+      // Trigger background setup via a fire-and-forget API call
+      try {
+        // Generate a unique request ID
+        const requestId = generateRequestId();
+        
+        // Create URL with parameters for tracking
+        const url = `/api/onboarding/background-setup?plan=free&timestamp=${Date.now()}&requestId=${requestId}&background=true`;
+        
+        // Use fetch with no-cors to avoid waiting for response
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Background-Setup': 'true',
+            'X-Request-ID': requestId
+          },
+          // Don't wait for response with keepalive
+          keepalive: true,
+          // Add basic body data
+          body: JSON.stringify({
+            plan: 'free',
+            timestamp: Date.now(),
+            requestId
+          })
+        }).catch(() => {
+          // Ignore errors - this is background processing
+        });
+      } catch (error) {
+        // Ignore errors in background setup
+        console.log('Background setup triggered');
+      }
+      
+      // Go directly to dashboard immediately
+      window.location.href = '/dashboard?newAccount=true&setupBackground=true';
+    };
+
     // Start initialization
-    initializeWithCookies();
+    initializeSubscription();
   }, []);
   
   // Handle plan selection
@@ -171,6 +257,48 @@ export default function SubscriptionPage() {
     setMessage(`Processing ${plan.name} plan selection...`);
     
     try {
+      // For free plan, handle directly
+      if (plan.id === 'free') {
+        // Free plan doesn't need payment, go directly to dashboard
+        const expiresDate = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
+        
+        // Set cookies about plan selection
+        document.cookie = `selectedPlan=${plan.id}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+        document.cookie = `billingCycle=${billingCycle}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+        document.cookie = `${COOKIE_NAMES.FREE_PLAN_SELECTED}=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+        document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+        document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+        document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+        
+        // Update Cognito user attributes to mark onboarding as complete
+        try {
+          logger.info('[SubscriptionPage] Updating Cognito attributes for free plan');
+          const userAttributes = {
+            [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.COMPLETE,
+            [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'true',
+            [COGNITO_ATTRIBUTES.SUBSCRIPTION_PLAN]: 'free',
+            'custom:billingCycle': billingCycle,
+          };
+          
+          // Don't wait for the attribute update to complete
+          (async () => {
+            try {
+              const { updateUserAttributes } = await import('@/config/amplifyUnified');
+              await updateUserAttributes(userAttributes);
+              logger.info('[SubscriptionPage] Cognito attributes updated successfully');
+            } catch (updateError) {
+              logger.warn('[SubscriptionPage] Failed to update Cognito attributes:', updateError);
+            }
+          })();
+        } catch (attrError) {
+          logger.warn('[SubscriptionPage] Error preparing attribute update:', attrError);
+        }
+        
+        // Go directly to dashboard
+        window.location.href = '/dashboard?newAccount=true&plan=free';
+        return;
+      }
+      
       // Store selected plan in session storage
       if (typeof window !== 'undefined') {
         try {
@@ -193,251 +321,202 @@ export default function SubscriptionPage() {
             timestamp: new Date().toISOString()
           }));
           
-          // Verify the data was stored properly
-          const pendingData = sessionStorage.getItem('pendingSubscription');
-          logger.debug('[SubscriptionPage] Plan stored in sessionStorage:', {
-            selectedPlan: true,
-            pendingSubscription: !!pendingData,
-            pendingData: pendingData ? JSON.parse(pendingData) : null
-          });
-        } catch (storageError) {
-          logger.warn('[SubscriptionPage] Failed to store plan in session storage:', storageError);
-          // Continue anyway since we're using cookies as primary storage
+        } catch (e) {
+          // Allow error to proceed - cookies are more important
+          logger.warn('[SubscriptionPage] Error saving to sessionStorage:', e);
         }
       }
       
-      // Set cookies for onboarding flow
-      if (typeof document !== 'undefined') {
-        const expiration = new Date();
-        expiration.setDate(expiration.getDate() + 7); // 7 days
-        
-        // Set target based on plan
-        const targetStep = plan.id === 'free' ? 'dashboard' : 'payment';
-        
-        // Update cookies with selected plan info
-        document.cookie = `onboardingStep=${targetStep}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-        document.cookie = `onboardedStatus=SUBSCRIPTION; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-        document.cookie = `selectedPlan=${plan.id}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-        document.cookie = `billingCycle=${billingCycle}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-        
-        logger.debug('[SubscriptionPage] Cookies set for plan selection:', {
-          targetStep,
-          selectedPlan: plan.id,
-          billingCycle
-        });
-      }
+      // Set cookies about plan selection
+      const expiresDate = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
+      document.cookie = `selectedPlan=${plan.id}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      document.cookie = `billingCycle=${billingCycle}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.PAYMENT}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
       
-      // Update Cognito attributes through the API
-      // Important: This ensures Cognito attributes are updated even for free plan
-      try {
-        logger.debug('[SubscriptionPage] Updating Cognito attributes via API');
-        const response = await fetch('/api/onboarding/subscription', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            plan: plan.id,
-            interval: billingCycle,
-            timestamp: new Date().toISOString()
-          }),
-          credentials: 'include'
-        });
-        
-        const data = await response.json();
-        logger.debug('[SubscriptionPage] API response:', data);
-        
-        if (!response.ok) {
-          logger.warn('[SubscriptionPage] API returned error:', data);
-          // Continue with cookies as backup even if API failed
-        }
-      } catch (apiError) {
-        logger.error('[SubscriptionPage] Failed to update Cognito attributes:', apiError);
-        // Continue with cookies as backup even if API failed
-      }
-      
-      // Short timeout to ensure cookies are set before navigation
-      setTimeout(() => {
-        try {
-          // Determine target route based on plan
-          const targetRoute = plan.id === 'free' 
-            ? '/dashboard' // Free plan goes straight to dashboard
-            : '/onboarding/payment'; // Paid plans go to payment
-            
-          logger.debug('[SubscriptionPage] Navigating to:', targetRoute);
-          
-          // FIXED: First confirm pendingSubscription is set before navigation
-          if (plan.id !== 'free') {
-            const pendingData = sessionStorage.getItem('pendingSubscription');
-            if (!pendingData) {
-              logger.warn('[SubscriptionPage] pendingSubscription not found before navigation, setting it now');
-              // Final attempt to set the data
-              sessionStorage.setItem('pendingSubscription', JSON.stringify({
-                plan: plan.id,
-                billing_interval: billingCycle,
-                interval: billingCycle,
-                payment_method: 'credit_card',
-                timestamp: new Date().toISOString()
-              }));
-            }
-          }
-          
-          // Force the navigation using window.location.replace for the most reliable redirect
-          // This completely replaces the current page in history
-          if (typeof window !== 'undefined') {
-            // Add timestamp and force flag to prevent caching issues and middleware interference
-            const timestamp = Date.now();
-            window.location.replace(`${targetRoute}?t=${timestamp}&force=true`);
-            
-            // Add a fallback in case the replace didn't trigger
-            setTimeout(() => {
-              logger.debug('[SubscriptionPage] Fallback navigation using href');
-              window.location.href = `${targetRoute}?t=${timestamp}&force=true&fallback=true`;
-            }, 500);
-          } else {
-            // Fallback to router if window is not available
-            router.push(`${targetRoute}?t=${Date.now()}&force=true`);
-          }
-        } catch (error) {
-          logger.error('[SubscriptionPage] Navigation error:', error);
-          setMessage('Error during navigation. Please try again or reload the page.');
-          setSubmitting(false);
-        }
-      }, 1000);
+      // Redirect to payment page
+      window.location.href = '/onboarding/payment';
     } catch (error) {
-      logger.error('[SubscriptionPage] Error during plan selection:', error);
-      setMessage('Error processing your selection. Please try again.');
+      logger.error('[SubscriptionPage] Plan selection error:', error);
+      setMessage('An error occurred. Please try again.');
       setSubmitting(false);
     }
   };
   
-  // Loading state
+  // Determine pricing text based on billing cycle
+  const getPriceText = (plan) => {
+    const price = plan.price[billingCycle];
+    if (price === '0') {
+      return 'Free';
+    }
+    
+    const priceNum = parseInt(price, 10);
+    return billingCycle === 'monthly' 
+      ? `$${priceNum}/month`
+      : `$${priceNum}/year`;
+  };
+  
+  // Get savings percentage for annual billing
+  const getAnnualSavings = (plan) => {
+    const monthlyPrice = parseInt(plan.price.monthly, 10);
+    const annualPrice = parseInt(plan.price.annual, 10);
+    
+    if (monthlyPrice === 0 || annualPrice === 0) return 0;
+    
+    const monthlyCostForYear = monthlyPrice * 12;
+    const savings = monthlyCostForYear - annualPrice;
+    const percentage = Math.round((savings / monthlyCostForYear) * 100);
+    
+    return percentage;
+  };
+
   if (loading) {
     return (
-      <Container maxWidth="lg">
-        <Box className="min-h-screen flex flex-col items-center justify-center">
-          <CircularProgress />
-          <Typography className="mt-4">Loading subscription options...</Typography>
-        </Box>
-      </Container>
+      <div className="flex justify-center items-center py-16">
+        <LoadingSpinner size="large" />
+      </div>
     );
   }
-  
+
   return (
-    <Container maxWidth="lg">
-      <Box className="py-8">
-        <Typography variant="h4" component="h1" className="text-center mb-2">
-          Choose Your Subscription
-        </Typography>
-        <Typography variant="body1" className="text-center text-gray-600 mb-8">
-          Select the plan that works best for your business
-        </Typography>
-        
-        {/* Welcome message with business name */}
-        {businessData.businessName && (
-          <Alert severity="success" className="mb-8">
-            <Typography variant="subtitle1">
-              Welcome, <span className="font-medium">{businessData.businessName}</span>!
-              {businessData.businessType && (
-                <span className="ml-2 text-sm text-gray-600">
-                  Business Type: {businessData.businessType}
-                </span>
-              )}
-            </Typography>
-          </Alert>
-        )}
-        
-        {/* Status message */}
-        {message && (
-          <Alert 
-            severity={submitting ? "info" : "error"} 
-            className="mb-8"
-          >
-            <div className="flex items-center gap-2">
-              <Typography>{message}</Typography>
-              {submitting && <CircularProgress size="small" />}
+    <div className="pb-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 md:hidden">Choose your subscription plan</h1>
+        <p className="mt-2 text-gray-600 md:hidden">Select the plan that best fits your business needs</p>
+      </div>
+      
+      {/* Business info card */}
+      {businessData.businessName && (
+        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-8">
+          <div className="flex items-center">
+            <div className="rounded-full bg-blue-100 p-2 mr-3">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-blue-600">
+                <path d="M3.375 3C2.339 3 1.5 3.84 1.5 4.875v.75c0 1.036.84 1.875 1.875 1.875h17.25c1.035 0 1.875-.84 1.875-1.875v-.75C22.5 3.839 21.66 3 20.625 3H3.375z" />
+                <path fillRule="evenodd" d="M3.087 9l.54 9.176A3 3 0 0 0 6.62 21h10.757a3 3 0 0 0 2.995-2.824L20.913 9H3.087zM12 10.5a.75.75 0 0 1 .75.75v4.94l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 1 1 1.06-1.06l1.72 1.72v-4.94a.75.75 0 0 1 .75-.75z" clipRule="evenodd" />
+              </svg>
             </div>
-          </Alert>
-        )}
-        
-        {/* Billing cycle toggle */}
-        <Box className="flex justify-center mb-8">
-          <div className="inline-flex p-1 bg-gray-100 rounded-lg">
-            <button 
-              className={`px-4 py-2 rounded-md ${billingCycle === 'monthly' ? 'bg-white shadow-sm' : ''}`}
-              onClick={() => setBillingCycle('monthly')}
-            >
-              Monthly
-            </button>
-            <button 
-              className={`px-4 py-2 rounded-md ${billingCycle === 'annual' ? 'bg-white shadow-sm' : ''}`}
-              onClick={() => setBillingCycle('annual')}
-            >
-              Annual <span className="text-xs text-green-600 font-bold">Save 17%</span>
-            </button>
+            <div>
+              <h3 className="font-medium text-blue-800">Business Profile</h3>
+              <p className="text-sm text-blue-600">Setting up subscription for <span className="font-semibold">{businessData.businessName}</span></p>
+            </div>
           </div>
-        </Box>
-        
-        {/* Plan selection cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {PLANS.map((plan) => (
-            <div key={plan.id} 
-              className={`border rounded-lg p-6 transition-all ${
-                selectedPlan?.id === plan.id ? 'border-blue-500 shadow-md' : 'shadow-sm hover:shadow'
+        </div>
+      )}
+      
+      {/* Billing toggle */}
+      <div className="flex justify-center mb-10">
+        <div className="inline-flex items-center bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setBillingCycle('monthly')}
+            className={`px-4 py-2 text-sm font-medium rounded-md ${
+              billingCycle === 'monthly' 
+                ? 'bg-white text-gray-900 shadow-sm' 
+                : 'text-gray-700 hover:text-gray-900'
+            } transition-all duration-200`}
+          >
+            Monthly Billing
+          </button>
+          <button
+            onClick={() => setBillingCycle('annual')}
+            className={`px-4 py-2 text-sm font-medium rounded-md flex items-center ${
+              billingCycle === 'annual' 
+                ? 'bg-white text-gray-900 shadow-sm' 
+                : 'text-gray-700 hover:text-gray-900'
+            } transition-all duration-200`}
+          >
+            Annual Billing
+            <span className="ml-1.5 bg-green-100 text-green-800 text-xs px-1.5 py-0.5 rounded">Save 20%</span>
+          </button>
+        </div>
+      </div>
+      
+      {/* Plans cards grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {PLANS.map((plan) => {
+          const isSelected = selectedPlan === plan.id;
+          const priceText = getPriceText(plan);
+          const savings = billingCycle === 'annual' ? getAnnualSavings(plan) : 0;
+          
+          return (
+            <div 
+              key={plan.id}
+              className={`relative bg-white rounded-xl shadow-md overflow-hidden border-2 transition-all duration-300 ${
+                isSelected 
+                  ? `border-${plan.color}-500 ring-2 ring-${plan.color}-500 ring-opacity-50` 
+                  : plan.popular 
+                    ? `border-${plan.color}-200 hover:border-${plan.color}-400`
+                    : 'border-gray-200 hover:border-gray-400'
               }`}
             >
-              <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
-              <p className="text-2xl font-bold text-blue-600 mb-4">
-                ${plan.price[billingCycle]}
-                <span className="text-sm text-gray-500 font-normal ml-1">
-                  {billingCycle === 'monthly' ? '/month' : '/year'}
-                </span>
-              </p>
+              {/* Popular badge */}
+              {plan.popular && (
+                <div className={`absolute top-0 right-0 bg-${plan.color}-500 text-white text-xs font-semibold px-3 py-1 rounded-bl-lg`}>
+                  MOST POPULAR
+                </div>
+              )}
               
-              <hr className="my-4" />
-              
-              <ul className="space-y-2 mb-6">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start">
-                    <span className="text-green-500 mr-2">✓</span>
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              
-              <button
-                className={`w-full py-2 px-4 rounded-md ${
-                  submitting
-                    ? 'bg-gray-300 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
-                onClick={() => handleSelectPlan(plan)}
-                disabled={submitting}
-              >
-                {submitting && selectedPlan?.id === plan.id ? (
-                  <span className="flex items-center justify-center">
-                    <CircularProgress size="small" className="mr-2" />
-                    Processing...
-                  </span>
-                ) : (
-                  'Select Plan'
-                )}
-              </button>
+              <div className="p-6">
+                <h3 className={`text-lg font-semibold text-${plan.color}-700 mb-1`}>{plan.name}</h3>
+                <p className="text-sm text-gray-500 mb-4">{plan.description}</p>
+                
+                <div className="mt-4 mb-6">
+                  <div className="flex items-baseline">
+                    <span className="text-3xl font-bold text-gray-900">{priceText}</span>
+                    {plan.price[billingCycle] !== '0' && (
+                      <span className="ml-1 text-gray-500 text-sm">
+                        {billingCycle === 'monthly' ? 'per month' : 'per year'}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Show savings for annual billing */}
+                  {billingCycle === 'annual' && savings > 0 && (
+                    <p className="mt-2 text-sm text-green-600">
+                      Save {savings}% with annual billing
+                    </p>
+                  )}
+                </div>
+                
+                <div className="mt-6 mb-8">
+                  <h4 className="text-sm font-medium text-gray-800 mb-4">Includes:</h4>
+                  <ul className="space-y-3">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex">
+                        <CheckIcon className={`h-5 w-5 flex-shrink-0 text-${plan.color}-500`} aria-hidden="true" />
+                        <span className="ml-3 text-sm text-gray-600">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <button
+                  onClick={() => handleSelectPlan(plan)}
+                  disabled={submitting}
+                  className={`w-full py-3 px-4 text-center font-medium rounded-lg transition-colors duration-200 ${
+                    plan.popular
+                      ? `bg-${plan.color}-600 text-white hover:bg-${plan.color}-700`
+                      : `border border-${plan.color}-600 text-${plan.color}-700 hover:bg-${plan.color}-50`
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {submitting && selectedPlan === plan.id ? (
+                    <div className="flex items-center justify-center">
+                      <CircularProgress size="sm" color="inherit" className="mr-2" />
+                      <span>Processing...</span>
+                    </div>
+                  ) : (
+                    plan.buttonText
+                  )}
+                </button>
+              </div>
             </div>
-          ))}
-        </div>
-        
-        {/* Back button */}
-        <Box className="flex justify-between">
-          <Button
-            variant="outlined"
-            onClick={() => router.push('/onboarding/business-info')}
-            disabled={submitting}
-          >
-            Back to Business Info
-          </Button>
-        </Box>
-      </Box>
-    </Container>
+          );
+        })}
+      </div>
+      
+      {/* Guarantee text */}
+      <div className="text-center mt-10 text-sm text-gray-500">
+        <p>All plans include a 14-day free trial. No credit card required for Basic plan.</p>
+        <p className="mt-1">Need a custom solution? <a href="#" className="text-blue-600 hover:text-blue-800 font-medium">Contact sales</a></p>
+      </div>
+    </div>
   );
 }

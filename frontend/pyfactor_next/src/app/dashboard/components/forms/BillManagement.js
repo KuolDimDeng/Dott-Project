@@ -1,30 +1,5 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Tabs,
-  Tab,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
-  TextField,
-  Grid,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Autocomplete,
-  useTheme,
-} from '@mui/material';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { useToast } from '@/components/Toast/ToastProvider';
 
@@ -33,7 +8,8 @@ const BillManagement = ({ newBill: isNewBill = false }) => {
   const [bills, setBills] = useState([]);
   const [selectedBill, setSelectedBill] = useState(null);
   const [vendors, setVendors] = useState([]);
-  const theme = useTheme();
+  const [showVendorDropdown, setShowVendorDropdown] = useState(false);
+  const [vendorSearchText, setVendorSearchText] = useState('');
 
   const [formData, setFormData] = useState({
     vendor: null,
@@ -80,7 +56,7 @@ const BillManagement = ({ newBill: isNewBill = false }) => {
     return items.reduce((total, item) => total + item.quantity * item.price, 0);
   };
 
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (newValue) => {
     setTabValue(newValue);
     setSelectedBill(null);
   };
@@ -93,17 +69,20 @@ const BillManagement = ({ newBill: isNewBill = false }) => {
     }));
   };
 
-  const handleVendorChange = (event, newValue) => {
+  const handleVendorChange = (selectedVendor) => {
     setFormData((prevData) => ({
       ...prevData,
-      vendor: newValue,
+      vendor: selectedVendor,
     }));
+    setShowVendorDropdown(false);
+    setVendorSearchText(`${selectedVendor.vendor_name} (${selectedVendor.vendor_number})`);
   };
 
-  const handleDateChange = (name, value) => {
+  const handleDateChange = (e, name) => {
+    const date = e.target.value ? new Date(e.target.value) : null;
     setFormData((prevData) => ({
       ...prevData,
-      [name]: value,
+      [name]: date,
     }));
   };
 
@@ -118,6 +97,7 @@ const BillManagement = ({ newBill: isNewBill = false }) => {
       totalAmount: totalAmount,
     }));
   };
+
   const handleAddItem = () => {
     setFormData((prevData) => ({
       ...prevData,
@@ -157,223 +137,352 @@ const BillManagement = ({ newBill: isNewBill = false }) => {
     setTabValue(1); // Switch to detail tab
   };
 
-  return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h5" gutterBottom>
-        Bill Management
-      </Typography>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={tabValue} onChange={handleTabChange}>
-          <Tab label="Create Bill" />
-          <Tab label="Bill Detail" />
-          <Tab label="Bill List" />
-        </Tabs>
-      </Box>
+  const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  };
 
+  const filteredVendors = vendorSearchText
+    ? vendors.filter(v => 
+        `${v.vendor_name} ${v.vendor_number}`.toLowerCase().includes(vendorSearchText.toLowerCase())
+      )
+    : vendors;
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h2 className="text-xl font-semibold mb-4">Bill Management</h2>
+      
+      {/* Tabs */}
+      <div className="border-b border-gray-200 mb-6">
+        <div className="flex space-x-8">
+          <button
+            className={`py-2 px-1 border-b-2 ${
+              tabValue === 0
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleTabChange(0)}
+          >
+            Create Bill
+          </button>
+          <button
+            className={`py-2 px-1 border-b-2 ${
+              tabValue === 1
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleTabChange(1)}
+          >
+            Bill Detail
+          </button>
+          <button
+            className={`py-2 px-1 border-b-2 ${
+              tabValue === 2
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => handleTabChange(2)}
+          >
+            Bill List
+          </button>
+        </div>
+      </div>
+
+      {/* Create Bill Tab */}
       {tabValue === 0 && (
-        <Box component="form" onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <Autocomplete
-                options={vendors}
-                getOptionLabel={(option) => `${option.vendor_name} (${option.vendor_number})`}
-                value={formData.vendor}
-                onChange={handleVendorChange}
-                renderInput={(params) => <TextField {...params} label="Vendor" required />}
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Vendor Autocomplete */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Vendor <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  placeholder="Search vendors"
+                  value={vendorSearchText}
+                  onChange={(e) => {
+                    setVendorSearchText(e.target.value);
+                    setShowVendorDropdown(true);
+                  }}
+                  onFocus={() => setShowVendorDropdown(true)}
+                  required
+                />
+                {showVendorDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white shadow-lg rounded-md border border-gray-300 max-h-60 overflow-y-auto">
+                    {filteredVendors.length > 0 ? (
+                      filteredVendors.map((option) => (
+                        <div
+                          key={option.id}
+                          className="p-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => handleVendorChange(option)}
+                        >
+                          {option.vendor_name} ({option.vendor_number})
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-2 text-gray-500">No vendors found</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Currency Select */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+              <select
+                name="currency"
+                value={formData.currency}
+                onChange={handleInputChange}
+                className="w-full p-2 border border-gray-300 rounded-md bg-white"
+              >
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+              </select>
+            </div>
+            
+            {/* Bill Date */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Bill Date</label>
+              <input
+                type="date"
+                className="w-full p-2 border border-gray-300 rounded-md"
+                value={formatDate(formData.bill_date)}
+                onChange={(e) => handleDateChange(e, 'bill_date')}
               />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Currency</InputLabel>
-                <Select name="currency" value={formData.currency} onChange={handleInputChange}>
-                  <MenuItem value="USD">USD</MenuItem>
-                  <MenuItem value="EUR">EUR</MenuItem>
-                  <MenuItem value="GBP">GBP</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DatePicker
-                  label="Bill Date"
-                  value={formData.bill_date}
-                  onChange={(newValue) => handleDateChange('bill_date', newValue)}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
-                />
-              </LocalizationProvider>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DatePicker
-                  label="Due Date"
-                  value={formData.due_date}
-                  onChange={(newValue) => handleDateChange('due_date', newValue)}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
-                />
-              </LocalizationProvider>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="P.O./S.O."
+            </div>
+            
+            {/* Due Date */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+              <input
+                type="date"
+                className="w-full p-2 border border-gray-300 rounded-md"
+                value={formatDate(formData.due_date)}
+                onChange={(e) => handleDateChange(e, 'due_date')}
+              />
+            </div>
+            
+            {/* P.O./S.O. */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">P.O./S.O.</label>
+              <input
+                type="text"
                 name="poso_number"
                 value={formData.poso_number}
                 onChange={handleInputChange}
-                fullWidth
+                className="w-full p-2 border border-gray-300 rounded-md"
               />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                label="Notes"
+            </div>
+            
+            {/* Notes - Full width */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <textarea
                 name="notes"
-                multiline
-                rows={4}
+                rows="4"
                 value={formData.notes}
                 onChange={handleInputChange}
-                fullWidth
-              />
-            </Grid>
-          </Grid>
+                className="w-full p-2 border border-gray-300 rounded-md"
+              ></textarea>
+            </div>
+          </div>
 
-          {formData.items.map((item, index) => (
-            <Grid container spacing={2} key={index} sx={{ mt: 2 }}>
-              <Grid item xs={12} md={3}>
-                <TextField
-                  label="Category"
-                  value={item.category}
-                  onChange={(e) => handleItemChange(index, 'category', e.target.value)}
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField
-                  label="Description"
-                  value={item.description}
-                  onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <TextField
-                  label="Quantity"
-                  type="number"
-                  value={item.quantity}
-                  onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <TextField
-                  label="Price"
-                  type="number"
-                  value={item.price}
-                  onChange={(e) => handleItemChange(index, 'price', e.target.value)}
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <TextField
-                  label="Amount"
-                  type="number"
-                  value={item.amount}
-                  InputProps={{
-                    readOnly: true,
-                  }}
-                  fullWidth
-                />
-              </Grid>
-            </Grid>
-          ))}
+          {/* Items Section */}
+          <div className="mb-6">
+            <h3 className="text-lg font-medium mb-3">Bill Items</h3>
+            {formData.items.map((item, index) => (
+              <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 p-3 bg-gray-50 rounded-md">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <input
+                    type="text"
+                    value={item.category}
+                    onChange={(e) => handleItemChange(index, 'category', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                  <input
+                    type="number"
+                    value={item.quantity}
+                    onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                  <input
+                    type="number"
+                    value={item.price}
+                    onChange={(e) => handleItemChange(index, 'price', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                  <input
+                    type="number"
+                    value={item.amount}
+                    readOnly
+                    className="w-full p-2 border border-gray-300 rounded-md bg-gray-100"
+                  />
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={handleAddItem}
+              className="flex items-center text-blue-600 hover:text-blue-800"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Add Item
+            </button>
+          </div>
 
-          <Button onClick={handleAddItem} sx={{ mt: 2 }}>
-            Add Item
-          </Button>
-
-          <Box display="flex" justifyContent="flex-end" mt={3}>
-            <Button variant="contained" color="primary" type="submit">
+          <div className="flex justify-end mt-6">
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
               Create Bill
-            </Button>
-          </Box>
-        </Box>
+            </button>
+          </div>
+        </form>
       )}
 
+      {/* Bill Detail Tab */}
       {tabValue === 1 && selectedBill && (
-        <Box>
-          <Typography variant="h6">Bill Details</Typography>
-          <Typography>Bill Number: {selectedBill.bill_number}</Typography>
-          <Typography>Vendor: {selectedBill.vendor_name || 'N/A'}</Typography>
-          <Typography>
-            Total Amount: {selectedBill.totalAmount} {selectedBill.currency}
-          </Typography>
-          <Typography>
-            Bill Date: {new Date(selectedBill.bill_date).toLocaleDateString()}
-          </Typography>
-          <Typography>Due Date: {new Date(selectedBill.due_date).toLocaleDateString()}</Typography>
-          <Typography>P.O./S.O.: {selectedBill.poso_number}</Typography>
-          <Typography>Notes: {selectedBill.notes}</Typography>
-          <Typography variant="h6" sx={{ mt: 2 }}>
-            Items
-          </Typography>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Category</TableCell>
-                  <TableCell>Description</TableCell>
-                  <TableCell>Quantity</TableCell>
-                  <TableCell>Price</TableCell>
-                  <TableCell>Amount</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+        <div>
+          <h3 className="text-lg font-medium mb-4">Bill Details</h3>
+          <div className="bg-gray-50 p-4 rounded-md mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">Bill Number</p>
+                <p className="font-medium">{selectedBill.bill_number}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Vendor</p>
+                <p className="font-medium">{selectedBill.vendor_name || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Total Amount</p>
+                <p className="font-medium">{selectedBill.totalAmount} {selectedBill.currency}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Bill Date</p>
+                <p className="font-medium">{new Date(selectedBill.bill_date).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Due Date</p>
+                <p className="font-medium">{new Date(selectedBill.due_date).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">P.O./S.O.</p>
+                <p className="font-medium">{selectedBill.poso_number}</p>
+              </div>
+            </div>
+            {selectedBill.notes && (
+              <div className="mt-4">
+                <p className="text-sm text-gray-500">Notes</p>
+                <p className="mt-1">{selectedBill.notes}</p>
+              </div>
+            )}
+          </div>
+          
+          <h3 className="text-lg font-medium mb-4">Items</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
                 {selectedBill.items.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{item.category}</TableCell>
-                    <TableCell>{item.description}</TableCell>
-                    <TableCell>{item.quantity}</TableCell>
-                    <TableCell>{item.price}</TableCell>
-                    <TableCell>{item.amount}</TableCell>
-                  </TableRow>
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.category}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.description}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.quantity}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.price}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.amount}</td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
+                {selectedBill.items.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">No items in this bill</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
+      {/* Bill List Tab */}
       {tabValue === 2 && (
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Bill Number</TableCell>
-                <TableCell>Vendor</TableCell>
-                <TableCell>Total Amount</TableCell>
-                <TableCell>Bill Date</TableCell>
-                <TableCell>Due Date</TableCell>
-                <TableCell>Action</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {bills.map((bill) => (
-                <TableRow key={bill.id}>
-                  <TableCell>{bill.bill_number}</TableCell>
-                  <TableCell>{bill.vendor_name || 'N/A'}</TableCell>
-                  <TableCell>
-                    {bill.totalAmount} {bill.currency}
-                  </TableCell>
-                  <TableCell>{new Date(bill.bill_date).toLocaleDateString()}</TableCell>
-                  <TableCell>{new Date(bill.due_date).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Button onClick={() => handleBillSelect(bill)}>View Details</Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bill Number</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bill Date</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {bills.length > 0 ? (
+                bills.map((bill) => (
+                  <tr key={bill.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{bill.bill_number}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{bill.vendor_name || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{bill.totalAmount} {bill.currency}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(bill.bill_date).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(bill.due_date).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <button
+                        onClick={() => handleBillSelect(bill)}
+                        className="text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">No bills found</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 

@@ -1,26 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  CircularProgress,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-  FormLabel,
-  Snackbar,
-  Alert,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  Link,
-  useTheme,
-} from '@mui/material';
 import { usePlaidLink } from 'react-plaid-link';
 import { axiosInstance } from '@/lib/axiosConfig';
 
@@ -33,7 +11,6 @@ const ConnectBank = () => {
   const [linkToken, setLinkToken] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [connectedBankInfo, setConnectedBankInfo] = useState(null);
-  const theme = useTheme();
 
   const handleRegionChange = (event) => {
     setRegion(event.target.value);
@@ -151,50 +128,92 @@ const ConnectBank = () => {
   };
 
   return (
-    <Box sx={{ backgroundColor: theme.palette.background.default, p: 3, borderRadius: 2 }}>
-      <Typography variant="h4" gutterBottom>
+    <div className="bg-white p-6 rounded-lg shadow">
+      <h1 className="text-2xl font-bold mb-4">
         Connect Your Bank
-      </Typography>
+      </h1>
 
       {!connectedBankInfo ? (
         <>
-          <Typography variant="body1" paragraph>
+          <p className="mb-4">
             Please choose the region where your bank is located. This helps us provide you with the
             most appropriate connection method for your bank.
-          </Typography>
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Select Your Region</InputLabel>
-            <Select value={region} onChange={handleRegionChange}>
-              <MenuItem value="America">America</MenuItem>
-              <MenuItem value="Europe">Europe</MenuItem>
-              <MenuItem value="Africa">Africa</MenuItem>
-              <MenuItem value="Asia">Asia</MenuItem>
-            </Select>
-          </FormControl>
+          </p>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Select Your Region
+            </label>
+            <select
+              value={region}
+              onChange={handleRegionChange}
+              className="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="" disabled>Select a region</option>
+              <option value="America">America</option>
+              <option value="Europe">Europe</option>
+              <option value="Africa">Africa</option>
+              <option value="Asia">Asia</option>
+            </select>
+          </div>
 
           {region === 'Africa' && (
-            <FormControl component="fieldset" sx={{ mb: 2 }}>
-              <FormLabel component="legend">Choose a connection method</FormLabel>
-              <RadioGroup value={africanOption} onChange={handleAfricanOptionChange}>
-                <FormControlLabel value="Mobile Money" control={<Radio />} label="Mobile Money" />
-                <FormControlLabel value="Banks" control={<Radio />} label="Traditional Banks" />
-              </RadioGroup>
-            </FormControl>
+            <div className="mb-4">
+              <fieldset>
+                <legend className="text-sm font-medium text-gray-700 mb-2">Choose a connection method</legend>
+                <div className="space-y-2">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      value="Mobile Money"
+                      checked={africanOption === 'Mobile Money'}
+                      onChange={handleAfricanOptionChange}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="ml-2">Mobile Money</span>
+                  </label>
+                  <div>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        value="Banks"
+                        checked={africanOption === 'Banks'}
+                        onChange={handleAfricanOptionChange}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2">Traditional Banks</span>
+                    </label>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
           )}
 
           {region === 'Africa' && africanOption === 'Banks' && (
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Select Bank Provider</InputLabel>
-              <Select value={africanBankProvider} onChange={handleAfricanBankProviderChange}>
-                <MenuItem value="Mono">Mono</MenuItem>
-                <MenuItem value="Stitch">Stitch</MenuItem>
-              </Select>
-            </FormControl>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Select Bank Provider
+              </label>
+              <select
+                value={africanBankProvider}
+                onChange={handleAfricanBankProviderChange}
+                className="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="" disabled>Select a provider</option>
+                <option value="Mono">Mono</option>
+                <option value="Stitch">Stitch</option>
+              </select>
+            </div>
           )}
 
-          <Button
-            variant="contained"
-            fullWidth
+          <button
+            className={`w-full py-2 px-4 rounded-md ${
+              !region ||
+              (region === 'Africa' &&
+                (!africanOption || (africanOption === 'Banks' && !africanBankProvider))) ||
+              loading
+                ? 'bg-blue-300 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
             onClick={handleConnect}
             disabled={
               !region ||
@@ -203,53 +222,71 @@ const ConnectBank = () => {
               loading
             }
           >
-            {loading ? <CircularProgress size={24} /> : 'Connect'}
-          </Button>
+            {loading ? (
+              <svg className="animate-spin h-5 w-5 mx-auto text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : 'Connect'}
+          </button>
         </>
       ) : (
-        <Box>
-          <Typography variant="h5" gutterBottom color="primary">
+        <div>
+          <h2 className="text-xl font-bold text-blue-600 mb-2">
             Successfully Connected!
-          </Typography>
-          <Typography variant="body1" paragraph>
+          </h2>
+          <p className="mb-4">
             You are now connected to {connectedBankInfo.institution_name}.
-          </Typography>
-          <List>
+          </p>
+          <ul className="divide-y divide-gray-200">
             {connectedBankInfo.accounts.map((account, index) => (
-              <ListItem key={index}>
-                <ListItemText
-                  primary={`Account: ${account.name}`}
-                  secondary={`Type: ${account.type}, Balance: $${account.balances.current.toFixed(2)}`}
-                />
-              </ListItem>
+              <li key={index} className="py-3">
+                <div className="font-medium">Account: {account.name}</div>
+                <div className="text-sm text-gray-600">Type: {account.type}, Balance: ${account.balances.current.toFixed(2)}</div>
+              </li>
             ))}
-          </List>
-          <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+          </ul>
+          <p className="text-sm text-gray-500 mt-4">
             You can now view your transactions and account details in the Banking Dashboard.
-          </Typography>
-          <Button
-            variant="contained"
-            fullWidth
-            sx={{ mt: 2 }}
-            component={Link}
+          </p>
+          <a
             href="/dashboard/banking"
+            className="mt-4 w-full block py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white text-center rounded-md"
           >
             Go to Banking Dashboard
-          </Button>
-        </Box>
+          </a>
+        </div>
       )}
 
       {error && (
-        <Typography color="error" sx={{ mt: 2 }}>
+        <p className="mt-4 text-red-600">
           {error}
-        </Typography>
+        </p>
       )}
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+      
+      {snackbar.open && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+          <div className={`p-3 rounded-md shadow-lg ${
+            snackbar.severity === 'success' ? 'bg-green-50 text-green-800 border border-green-200' :
+            snackbar.severity === 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
+            'bg-blue-50 text-blue-800 border border-blue-200'
+          }`}>
+            <div className="flex items-center">
+              <span>{snackbar.message}</span>
+              <button 
+                onClick={handleCloseSnackbar}
+                className="ml-3 text-gray-400 hover:text-gray-500 focus:outline-none"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

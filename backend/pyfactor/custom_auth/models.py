@@ -17,15 +17,13 @@ from .tenant_context import get_current_tenant
 class TenantAwareModel(models.Model):
     """
     Abstract base model for all tenant-aware models.
-    Automatically filters queries by the current tenant.
+    Automatically includes a tenant_id field for Row Level Security.
     All models that need to be tenant-specific should inherit from this.
     """
-    tenant = models.ForeignKey(
-        'custom_auth.Tenant',
-        on_delete=models.CASCADE,
+    tenant_id = models.UUIDField(
         db_index=True,
-        related_name='+',  # Prevent reverse relation
-        help_text="The tenant this record belongs to"
+        null=True,
+        help_text="The tenant ID this record belongs to. Used by Row Level Security."
     )
     
     class Meta:
@@ -33,10 +31,11 @@ class TenantAwareModel(models.Model):
     
     def save(self, *args, **kwargs):
         """
-        Override save to automatically set the tenant if not provided.
+        Override save to automatically set the tenant_id if not provided.
         """
         if not self.tenant_id:
-            current_tenant = get_current_tenant()
+            from custom_auth.rls import get_current_tenant_id
+            current_tenant = get_current_tenant_id()
             if current_tenant:
                 self.tenant_id = current_tenant
         super().save(*args, **kwargs)
@@ -44,17 +43,16 @@ class TenantAwareModel(models.Model):
 class TenantManager(models.Manager):
     """
     Manager for tenant-aware models.
-    Automatically filters queries by the current tenant.
+    This is now mostly for backward compatibility, 
+    since RLS will now handle tenant isolation at the database level.
     """
     def get_queryset(self):
         """
-        Override get_queryset to filter by tenant.
+        With RLS, the database already handles tenant isolation,
+        so we don't need to filter here explicitly.
+        But we keep the method for backward compatibility.
         """
-        queryset = super().get_queryset()
-        current_tenant = get_current_tenant()
-        if current_tenant:
-            queryset = queryset.filter(tenant_id=current_tenant)
-        return queryset
+        return super().get_queryset()
         
     def all_tenants(self):
         """
@@ -278,69 +276,21 @@ from django.db.models.signals import pre_save
 from django.dispatch import receiver
 
 @receiver(pre_save, sender=Tenant)
-def ensure_schema_name_uses_underscores(sender, instance, **kwargs):
-    """Ensure schema name uses underscores instead of hyphens"""
-    if instance.schema_name:
-        # Check if schema name starts with tenant_ prefix
-        if not instance.schema_name.startswith('tenant_'):
-            original_schema_name = instance.schema_name
-            instance.schema_name = f"tenant_{instance.schema_name}"
-            print(f"[SCHEMA-NAME-FIX] Added tenant_ prefix to schema name: '{original_schema_name}' -> '{instance.schema_name}'")
-            
-            # Log to the Django logger
-            import logging
-            logger = logging.getLogger(__name__)
-            
-            # Get owner email if possible
-            owner_email = "unknown"
-            if instance.owner_id:  # Django automatically creates this field from the relationship
-                try:
-                    # Try to get owner directly from relationship first
-                    if hasattr(instance, 'owner') and instance.owner:
-                        owner_email = instance.owner.email
-                    else:
-                        # Fallback to query if relationship isn't loaded
-                        from django.contrib.auth import get_user_model
-                        User = get_user_model()
-                        owner = User.objects.get(id=instance.owner_id)
-                        owner_email = owner.email
-                except Exception as e:
-                    logger.debug(f"Could not get owner email: {str(e)}")
-                
-            logger.warning(
-                f"Schema name missing tenant_ prefix and was automatically fixed. "
-                f"Original: '{original_schema_name}', Fixed: '{instance.schema_name}', "
-                f"Tenant ID: {instance.id}, Owner ID: {instance.owner_id}, Owner Email: {owner_email}"
-            )
+def tenant_pre_save_handler(sender, instance, **kwargs):
+    """Pre-save handler for Tenant model"""
+    # No longer need to check schema_name since we're using RLS now
+    # Instead, ensure tenant has required fields for RLS
+    
+    # Make sure RLS is enabled by default
+    if instance.rls_enabled is None:
+        instance.rls_enabled = True
         
-        # Check if schema name contains hyphens
-        if '-' in instance.schema_name:
-            original_schema_name = instance.schema_name
-            instance.schema_name = instance.schema_name.replace('-', '_')
-            print(f"[SCHEMA-NAME-FIX] Converted schema name from '{original_schema_name}' to '{instance.schema_name}'")
-            
-            # Also log to the Django logger
-            import logging
-            logger = logging.getLogger(__name__)
-            
-            # Get owner email if possible
-            owner_email = "unknown"
-            if instance.owner_id:
-                try:
-                    # Try to get owner directly from relationship first
-                    if hasattr(instance, 'owner') and instance.owner:
-                        owner_email = instance.owner.email
-                    else:
-                        # Fallback to query if relationship isn't loaded
-                        from django.contrib.auth import get_user_model
-                        User = get_user_model()
-                        owner = User.objects.get(id=instance.owner_id)
-                        owner_email = owner.email
-                except Exception as e:
-                    logger.debug(f"Could not get owner email: {str(e)}")
-                
-            logger.warning(
-                f"Schema name contained hyphens and was automatically fixed. "
-                f"Original: '{original_schema_name}', Fixed: '{instance.schema_name}', "
-                f"Tenant ID: {instance.id}, Owner ID: {instance.owner_id}, Owner Email: {owner_email}"
-            )
+    # Set RLS setup date if not already set and RLS is enabled
+    if instance.rls_enabled and not instance.rls_setup_date:
+        from django.utils import timezone
+        instance.rls_setup_date = timezone.now()
+        
+    # Log to the Django logger
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.debug(f"Pre-save for tenant: {instance.id}, RLS enabled: {instance.rls_enabled}")
