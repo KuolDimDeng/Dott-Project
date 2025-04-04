@@ -142,7 +142,7 @@ export async function POST(request) {
           attributes: {
             'custom:businessid': finalTenantId,
             'custom:onboarding': 'COMPLETE',
-            'custom:setupdone': 'TRUE',
+            'custom:setupdone': 'true',
             'custom:updated_at': new Date().toISOString()
           }
         },

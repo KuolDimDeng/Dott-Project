@@ -18,12 +18,12 @@ export async function completeOnboarding() {
   
   try {
     // Minimal logging
-    logger.debug('[Onboarding] Updating to COMPLETE');
+    logger.debug('[Onboarding] Updating to complete');
     
     // Update user attributes with minimal object creation
     const userAttributes = {
-      'custom:onboarding': 'COMPLETE',
-      'custom:setupdone': 'TRUE',
+      'custom:onboarding': 'complete',
+      'custom:setupdone': 'true',
       'custom:updated_at': new Date().toISOString()
     };
     
@@ -54,8 +54,8 @@ export async function completeOnboarding() {
           },
           body: JSON.stringify({
             attributes: {
-              'custom:onboarding': 'COMPLETE',
-              'custom:setupdone': 'TRUE',
+              'custom:onboarding': 'complete',
+              'custom:setupdone': 'true',
               'custom:updated_at': new Date().toISOString()
             },
             forceUpdate: true
@@ -115,7 +115,7 @@ export async function completeOnboarding() {
           idToken: tokens.idToken.toString(),
           accessToken: tokens.accessToken.toString(),
           onboardingStep: 'complete',
-          onboardedStatus: 'COMPLETE',
+          onboardedStatus: 'complete',
           setupCompleted: true
         };
         

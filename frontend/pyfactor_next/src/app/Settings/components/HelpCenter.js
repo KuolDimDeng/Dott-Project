@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, TextField, Card } from '@/components/replaced';
+import { Button, TextField, Card } from '@/components/ui/TailwindComponents';
 
 const HelpCenter = () => {
   const [searchQuery, setSearchQuery] = useState('');

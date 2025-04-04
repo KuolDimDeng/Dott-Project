@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Fragment } from 'react';
+import React, { useState, useEffect, Fragment, useRef, useCallback } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -322,9 +322,9 @@ const TailwindCheckbox = ({ checked, onChange, name, label }) => {
 };
 
 // Component for tabbed product management
-const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product, onUpdate, onCancel }) => {
+const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product, onUpdate, onCancel, mode, salesContext }) => {
   // Support both isNewProduct and newProduct props for backward compatibility
-  const isCreatingNewProduct = isNewProduct || isNewProductProp || false;
+  const isCreatingNewProduct = isNewProduct || isNewProductProp || mode === "create" || false;
 
   // Add print styles for QR code
   useEffect(() => {
@@ -389,53 +389,168 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
   const [createdProductId, setCreatedProductId] = useState(null);
   const [isBarcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
   const [currentBarcodeProduct, setCurrentBarcodeProduct] = useState(null);
+  const [apiHealthStatus, setApiHealthStatus] = useState(null);
   const router = useRouter();
 
-  // State for individual form fields - more reliable than a single object
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
-  const [forSale, setForSale] = useState(true);
-  const [forRent, setForRent] = useState(false);
-  const [stockQuantity, setStockQuantity] = useState('');
-  const [reorderLevel, setReorderLevel] = useState('');
+  // State for form fields - use a single object for better state preservation during hot reloading
+  const [formState, setFormState] = useState({
+    name: '',
+    description: '',
+    price: '',
+    forSale: true,
+    forRent: false,
+    stockQuantity: '',
+    reorderLevel: ''
+  });
+  
+  // For edited product state - also use a single object
+  const [editFormState, setEditFormState] = useState({
+    name: '',
+    description: '',
+    price: '',
+    forSale: true,
+    forRent: false,
+    stockQuantity: '',
+    reorderLevel: ''
+  });
 
-  // For edited product state
-  const [editName, setEditName] = useState('');
-  const [editDescription, setEditDescription] = useState('');
-  const [editPrice, setEditPrice] = useState('');
-  const [editForSale, setEditForSale] = useState(true);
-  const [editForRent, setEditForRent] = useState(false);
-  const [editStockQuantity, setEditStockQuantity] = useState('');
-  const [editReorderLevel, setEditReorderLevel] = useState('');
-
-  // Use Tailwind checkbox component
-  const checkboxComponent = TailwindCheckbox;
-
+  // Ensure we always return the same number of hooks by keeping all hook calls unconditional
+  const [mounted, setMounted] = useState(false);
   useEffect(() => {
-    if (activeTab === 2) {
-      fetchProducts();
+    setMounted(true);
+  }, []);
+
+  // Reset editing state when tab changes to Create - keeping this unconditional
+  useEffect(() => {
+    if (activeTab === 0) {
+      setIsEditing(false);
     }
   }, [activeTab]);
+
+  // Handle edit product and view details with memoized functions
+  const handleEditClick = useCallback((product) => {
+    // First update the state
+    setEditedProduct(product);
+    setSelectedProduct(product);
+    setIsEditing(true);
+    
+    // Set edit form state
+    setEditFormState({
+      name: product.name || '',
+      description: product.description || '',
+      price: product.price || '',
+      forSale: product.for_sale !== false,
+      forRent: !!product.for_rent,
+      stockQuantity: product.stock_quantity || '',
+      reorderLevel: product.reorder_level || ''
+    });
+    
+    // Then switch to the create tab for editing
+    setActiveTab(0);
+  }, []);
+
+  const handleViewDetails = useCallback((product) => {
+    // Update the selected product first
+    setSelectedProduct(product);
+    
+    // Then switch to the details tab
+    setActiveTab(1);
+  }, []);
+  
+  const handleGenerateBarcode = useCallback((product) => {
+    setCurrentBarcodeProduct(product);
+    setBarcodeDialogOpen(true);
+  }, []);
+
+  // Handle form field changes
+  const handleFormChange = useCallback((e) => {
+    const { name, value, type, checked } = e.target;
+    
+    setFormState(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  }, []);
+  
+  // Handle edit form field changes
+  const handleEditFormChange = useCallback((e) => {
+    const { name, value, type, checked } = e.target;
+    
+    setEditFormState(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  }, []);
 
   // Initialize edit form when editing a product
   useEffect(() => {
     if (editedProduct) {
-      setEditName(editedProduct.name || '');
-      setEditDescription(editedProduct.description || '');
-      setEditPrice(editedProduct.price || '');
-      setEditForSale(editedProduct.for_sale !== false);
-      setEditForRent(!!editedProduct.for_rent);
-      setEditStockQuantity(editedProduct.stock_quantity || '');
-      setEditReorderLevel(editedProduct.reorder_level || '');
+      setEditFormState({
+        name: editedProduct.name || '',
+        description: editedProduct.description || '',
+        price: editedProduct.price || '',
+        forSale: editedProduct.for_sale !== false,
+        forRent: !!editedProduct.for_rent,
+        stockQuantity: editedProduct.stock_quantity || '',
+        reorderLevel: editedProduct.reorder_level || ''
+      });
     }
   }, [editedProduct]);
 
-  const fetchProducts = async () => {
+  // Check API health
+  const checkApiHealth = useCallback(async () => {
+    try {
+      // First try to ping the base API 
+      const healthCheck = await axiosInstance.get('/api/health', { 
+        timeout: 5000,
+        validateStatus: (status) => true // Accept any status code
+      });
+      
+      console.log('API health check:', healthCheck.status, healthCheck.data);
+      
+      return {
+        status: healthCheck.status < 400 ? 'ok' : 'error',
+        message: `API health check: ${healthCheck.status} ${healthCheck.statusText}`,
+        details: healthCheck.data
+      };
+    } catch (error) {
+      console.error('API health check error:', error);
+      return {
+        status: 'error',
+        message: `API unreachable: ${error.message}`,
+        error
+      };
+    }
+  }, []);
+
+  const fetchProducts = useCallback(async () => {
     setIsLoading(true);
     try {
       console.log('Fetching products from tenant schema...');
-      const response = await axiosInstance.get('/api/inventory/products/');
+      
+      // Get tenant ID from localStorage or cookies for RLS
+      const tenantId = localStorage.getItem('tenantId') || 
+                     getCookieValue('tenantId') || 
+                     getCookieValue('dev-tenant-id');
+      
+      // Helper function to get cookie value
+      function getCookieValue(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+      }
+      
+      // Add timeout to the request to prevent hanging
+      const response = await axiosInstance.get('/api/inventory/products/', {
+        timeout: 10000, // 10 second timeout
+        headers: {
+          'X-Tenant-ID': tenantId
+        },
+        params: {
+          tenant_id: tenantId
+        }
+      });
       
       // Log the response for debugging
       console.log('Products fetched:', response.data);
@@ -446,6 +561,43 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
         console.warn('Empty response data received from API');
       } else if (Array.isArray(response.data)) {
         parsedProducts = response.data;
+      } else if (typeof response.data === 'object') {
+        // Handle the new response format with _devMode flag
+        if (response.data._devMode) {
+          parsedProducts = Array.isArray(response.data.products) ? response.data.products : [];
+          console.log('Development mode detected, fetched mock products:', parsedProducts);
+          
+          // Check if we need to load from localStorage
+          if (response.data._checkLocalStorage && response.data._tenantId) {
+            try {
+              const localStorageKey = `products_${response.data._tenantId}`;
+              const storedProductsJSON = localStorage.getItem(localStorageKey);
+              
+              if (storedProductsJSON) {
+                let storedProducts = JSON.parse(storedProductsJSON);
+                
+                if (Array.isArray(storedProducts) && storedProducts.length > 0) {
+                  console.log(`Found ${storedProducts.length} locally stored products`, storedProducts);
+                  
+                  // Combine with existing products, avoiding duplicates by ID
+                  const existingIds = new Set(parsedProducts.map(p => p.id));
+                  const newStoredProducts = storedProducts.filter(p => !existingIds.has(p.id));
+                  
+                  parsedProducts = [...parsedProducts, ...newStoredProducts];
+                  console.log('Combined product list:', parsedProducts);
+                }
+              }
+            } catch (localStorageError) {
+              console.error('Error retrieving products from localStorage:', localStorageError);
+            }
+          }
+        } else if (response.data.products) {
+          // Regular response with products array
+          parsedProducts = response.data.products;
+        } else {
+          // Single product object
+          parsedProducts = [response.data];
+        }
       } else if (typeof response.data === 'string') {
         try {
           // Try to parse if it's a JSON string
@@ -456,107 +608,280 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
           console.error('Error parsing product data:', parseError);
           notifyError('Error parsing product data');
         }
-      } else if (typeof response.data === 'object') {
-        // Single product object
-        parsedProducts = [response.data];
       }
       
-      console.log('Parsed products:', parsedProducts);
-      setProducts(parsedProducts);
+      console.log('Final parsed products:', parsedProducts);
+      
+      // Filter products by tenant ID for extra security
+      const filteredProducts = parsedProducts.filter(product => 
+        !product.tenant_id || product.tenant_id === tenantId
+      );
+      
+      if (filteredProducts.length !== parsedProducts.length) {
+        console.warn(`Filtered out ${parsedProducts.length - filteredProducts.length} products belonging to other tenants`);
+      }
+      
+      setProducts(filteredProducts);
+      setApiHealthStatus({status: 'ok', message: 'API is working normally'});
+      
     } catch (error) {
-      notifyError('Failed to fetch products');
+      // Enhanced error handling
       console.error('Error fetching products:', error);
+      
+      // Get more detailed error information
+      const statusCode = error.response?.status;
+      const statusText = error.response?.statusText;
+      const responseData = error.response?.data;
+      
+      // Log more detailed error information
+      console.error('API Error Details:', {
+        endpoint: '/api/inventory/products/',
+        status: statusCode,
+        statusText: statusText,
+        message: error.message,
+        responseData: responseData
+      });
+      
+      // Check API health
+      if (statusCode === 500) {
+        // Check API health to see if it's a temporary issue
+        const healthStatus = await checkApiHealth();
+        setApiHealthStatus(healthStatus);
+        
+        notifyError('Server error: The product service is currently unavailable. Please try again later or contact support.');
+      } else if (statusCode === 401 || statusCode === 403) {
+        notifyError('Authentication error: You may need to log in again to access this data.');
+      } else {
+        notifyError(`Failed to fetch products: ${error.message}`);
+      }
+      
+      // Set empty products array to avoid undefined errors
       setProducts([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [notifyError, checkApiHealth]);
 
-  const handleTabChange = (event, newValue) => {
-    // Reset editing state when switching tabs
-    if (newValue === 0) {
-      setIsEditing(false);
+  // Fetch products when active tab is the product list
+  useEffect(() => {
+    if (activeTab === 2) {
+      fetchProducts();
     }
-    setActiveTab(newValue);
-  };
+  }, [activeTab, fetchProducts]);
+  
+  const retryFetchProducts = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      notifyInfo('Checking API health and retrying...');
+      
+      // Check API health first
+      const healthStatus = await checkApiHealth();
+      setApiHealthStatus(healthStatus);
+      
+      if (healthStatus.status === 'ok') {
+        await fetchProducts();
+      } else {
+        notifyError(`API health check failed: ${healthStatus.message}`);
+      }
+    } catch (error) {
+      console.error('Error in retry attempt:', error);
+      notifyError('Retry failed. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [checkApiHealth, fetchProducts, notifyError, notifyInfo]);
 
-  const handleCreateProduct = async (e) => {
+  // Create handlers for form field updates with useCallback
+  const handleNameChange = useCallback((e) => setFormState(prev => ({ ...prev, name: e.target.value })), []);
+  const handleDescriptionChange = useCallback((e) => setFormState(prev => ({ ...prev, description: e.target.value })), []);
+  const handlePriceChange = useCallback((e) => setFormState(prev => ({ ...prev, price: e.target.value })), []);
+  const handleForSaleChange = useCallback((e) => setFormState(prev => ({ ...prev, forSale: e.target.checked })), []);
+  const handleForRentChange = useCallback((e) => setFormState(prev => ({ ...prev, forRent: e.target.checked })), []);
+  const handleStockQuantityChange = useCallback((e) => setFormState(prev => ({ ...prev, stockQuantity: e.target.value })), []);
+  const handleReorderLevelChange = useCallback((e) => setFormState(prev => ({ ...prev, reorderLevel: e.target.value })), []);
+  
+  // Create handlers for edit form field updates
+  const handleEditNameChange = useCallback((e) => setEditFormState(prev => ({ ...prev, name: e.target.value })), []);
+  const handleEditDescriptionChange = useCallback((e) => setEditFormState(prev => ({ ...prev, description: e.target.value })), []);
+  const handleEditPriceChange = useCallback((e) => setEditFormState(prev => ({ ...prev, price: e.target.value })), []);
+  const handleEditForSaleChange = useCallback((e) => setEditFormState(prev => ({ ...prev, forSale: e.target.checked })), []);
+  const handleEditForRentChange = useCallback((e) => setEditFormState(prev => ({ ...prev, forRent: e.target.checked })), []);
+  const handleEditStockQuantityChange = useCallback((e) => setEditFormState(prev => ({ ...prev, stockQuantity: e.target.value })), []);
+  const handleEditReorderLevelChange = useCallback((e) => setEditFormState(prev => ({ ...prev, reorderLevel: e.target.value })), []);
+
+  // Create memoized tab navigation handlers
+  const handleCreateTab = useCallback(() => {
+    setActiveTab(0);
+  }, []);
+  
+  const handleDetailsTab = useCallback(() => {
+    if (selectedProduct) {
+      setActiveTab(1);
+    }
+  }, [selectedProduct]);
+  
+  const handleListTab = useCallback(() => {
+    setActiveTab(2);
+  }, []);
+
+  const handleCreateProduct = useCallback(async (e) => {
     e.preventDefault();
     
     // Validate required fields
-    if (!name.trim()) {
+    if (!formState.name) {
       notifyError('Product name is required');
       return;
     }
     
+    setIsSubmitting(true);
+    
+    // Get tenant ID from localStorage or cookies for RLS
+    const tenantId = localStorage.getItem('tenantId') || 
+                     getCookieValue('tenantId') || 
+                     getCookieValue('dev-tenant-id');
+    
+    // Helper function to get cookie value
+    function getCookieValue(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+    
+    // Prepare product data
+    const productData = {
+      name: formState.name,
+      description: formState.description,
+      price: parseFloat(formState.price) || 0,
+      for_sale: formState.forSale,
+      for_rent: formState.forRent,
+      stock_quantity: parseInt(formState.stockQuantity) || 0,
+      reorder_level: parseInt(formState.reorderLevel) || 0,
+      // Generate product code if not provided
+      product_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+      // Add tenant_id for RLS security
+      tenant_id: tenantId
+    };
+    
+    console.log('Creating product with data:', productData);
+    
     try {
-      setIsSubmitting(true);
-      
-      // Prepare data to submit
-      const productData = {
-        name: name.trim(),
-        description,
-        price: price || 0,
-        for_sale: forSale,
-        for_rent: forRent,
-        stock_quantity: stockQuantity || 0,
-        reorder_level: reorderLevel || 0,
-        product_code: `P-${Date.now().toString().slice(-6)}` // Generate a simple product code if not provided
-      };
-      
-      console.log('Creating product with data:', productData);
       const response = await axiosInstance.post('/api/inventory/products/', productData);
+      console.log('Create product response:', response.data);
       
-      // Log the created product
-      console.log('Product created successfully:', response.data);
-      
-      // Parse response data if needed
+      // Parse the response data
       let createdProduct;
       if (typeof response.data === 'string') {
         try {
           createdProduct = JSON.parse(response.data);
-        } catch (e) {
-          console.warn('Could not parse product response as JSON', e);
-          createdProduct = response.data;
+        } catch (parseError) {
+          console.error('Error parsing created product data:', parseError);
+          createdProduct = { id: 'unknown' };
         }
       } else {
         createdProduct = response.data;
       }
       
-      // Show success notification
-      notifySuccess(`Product "${productData.name}" created successfully`);
+      console.log('Parsed created product:', createdProduct);
       
-      // Set the newly created product for possible barcode generation
+      // Check if this is a development mode response with storage flag
+      if (createdProduct._devMode && createdProduct._storeLocally) {
+        // We need to store this in localStorage for development persistence
+        try {
+          const productToStore = {...createdProduct};
+          delete productToStore._devMode;
+          delete productToStore._storeLocally;
+          
+          const localStorageKey = `products_${tenantId}`;
+          let existingProducts = [];
+          
+          const existingProductsJSON = localStorage.getItem(localStorageKey);
+          if (existingProductsJSON) {
+            try {
+              const parsed = JSON.parse(existingProductsJSON);
+              if (Array.isArray(parsed)) {
+                existingProducts = parsed;
+              }
+            } catch (parseError) {
+              console.warn('Error parsing stored products, creating new array', parseError);
+            }
+          }
+          
+          // Add to localStorage if not already exists
+          const exists = existingProducts.some(p => p.id === productToStore.id);
+          if (!exists) {
+            existingProducts.push(productToStore);
+            localStorage.setItem(localStorageKey, JSON.stringify(existingProducts));
+            console.log(`Stored product ${productToStore.id} in localStorage for tenant ${tenantId}`);
+          }
+        } catch (storageError) {
+          console.warn('Error storing product in localStorage:', storageError);
+        }
+      }
+      
+      // Set the created product ID for the success dialog
       setCreatedProductId(createdProduct.id);
-      setCurrentBarcodeProduct(createdProduct);
       
-      // Show success dialog with option to print barcode
+      // Add the new product to the products list immediately
+      setProducts(prevProducts => {
+        // Check if the product already exists
+        const cleanProduct = {...createdProduct};
+        if (cleanProduct._devMode) delete cleanProduct._devMode;
+        if (cleanProduct._storeLocally) delete cleanProduct._storeLocally;
+        
+        const exists = prevProducts.some(p => p.id === cleanProduct.id);
+        if (exists) {
+          return prevProducts.map(p => p.id === cleanProduct.id ? cleanProduct : p);
+        } else {
+          return [...prevProducts, cleanProduct];
+        }
+      });
+      
+      // Show success notification
+      notifySuccess('Product created successfully');
+      
+      // Reset form fields
+      setFormState({
+        name: '',
+        description: '',
+        price: '',
+        forSale: true,
+        forRent: false,
+        stockQuantity: '',
+        reorderLevel: ''
+      });
+      
+      // Open the success dialog
       setSuccessDialogOpen(true);
       
-      // Reset form
-      setName('');
-      setDescription('');
-      setPrice('');
-      setForSale(true);
-      setForRent(false);
-      setStockQuantity('');
-      setReorderLevel('');
+      // Fetch products to ensure list is up to date
+      fetchProducts();
       
-      // Refresh product list after creation
-      await fetchProducts();
-      
-      // Switch to the list tab to show the newly created product
-      setActiveTab(2);
+      // Switch to the list tab using memoized handleListTab
+      setTimeout(() => {
+        handleListTab();
+      }, 0);
       
     } catch (error) {
-      notifyError(error.response?.data?.message || 'Error creating product');
       console.error('Error creating product:', error);
+      
+      // Log detailed error information
+      if (error.response) {
+        console.error('API Error Details:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      }
+      
+      notifyError(`Failed to create product: ${error.response?.data?.detail || error.message}`);
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [formState, notifySuccess, notifyError, fetchProducts, handleListTab]);
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = useCallback(async () => {
     if (!editedProduct) return;
     
     setIsSubmitting(true);
@@ -564,13 +889,13 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
       // Prepare edited product data
       const updatedProduct = {
         ...editedProduct,
-        name: editName,
-        description: editDescription,
-        price: editPrice,
-        for_sale: editForSale,
-        for_rent: editForRent,
-        stock_quantity: editStockQuantity,
-        reorder_level: editReorderLevel
+        name: editFormState.name,
+        description: editFormState.description,
+        price: editFormState.price,
+        for_sale: editFormState.forSale,
+        for_rent: editFormState.forRent,
+        stock_quantity: editFormState.stockQuantity,
+        reorder_level: editFormState.reorderLevel
       };
       
       const response = await axiosInstance.patch(`/api/inventory/products/${editedProduct.id}/`, updatedProduct);
@@ -588,9 +913,9 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [editedProduct, editFormState, products, notifySuccess, notifyError]);
 
-  const handleDeleteProduct = async (id) => {
+  const handleDeleteProduct = useCallback(async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     
     try {
@@ -605,24 +930,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
       notifyError(error.response?.data?.message || 'Error deleting product');
       console.error('Error deleting product:', error);
     }
-  };
-
-  const handleEditClick = (product) => {
-    setEditedProduct({ ...product });
-    setSelectedProduct(product);
-    setIsEditing(true);
-    setActiveTab(0); // Switch to "Create" tab for editing
-  };
-
-  const handleViewDetails = (product) => {
-    setSelectedProduct(product);
-    setActiveTab(1); // Switch to "Details" tab
-  };
-
-  const handleGenerateBarcode = (product) => {
-    setCurrentBarcodeProduct(product);
-    setBarcodeDialogOpen(true);
-  };
+  }, [products, notifySuccess, notifyError]);
 
   const dataGridColumns = [
     { 
@@ -675,7 +983,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
               size="small"
               onClick={(e) => {
                 e.stopPropagation();
-                handleViewDetails(params.row);
+                handleViewDetails(params.row.original);
               }}
             >
               View
@@ -686,7 +994,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
               size="small"
               onClick={(e) => {
                 e.stopPropagation();
-                handleEditClick(params.row);
+                handleEditClick(params.row.original);
               }}
             >
               Edit
@@ -697,7 +1005,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
               size="small"
               onClick={(e) => {
                 e.stopPropagation();
-                handleDeleteProduct(params.row.id);
+                handleDeleteProduct(params.row.original.id);
               }}
             >
               Delete
@@ -709,7 +1017,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
               startIcon={<QrCodeIcon fontSize="small" />}
               onClick={(e) => {
                 e.stopPropagation(); 
-                handleGenerateBarcode(params.row);
+                handleGenerateBarcode(params.row.original);
               }}
             >
               QR
@@ -720,10 +1028,86 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     },
   ];
 
+  // Additional memoized functions for event handling
+  const handleSuccessClose = useCallback(() => {
+    setSuccessDialogOpen(false);
+  }, []);
+  
+  const handleGenerateQRFromSuccess = useCallback(() => {
+    setSuccessDialogOpen(false);
+    // Get the product details and open barcode dialog
+    const createdProduct = products.find(p => p.id === createdProductId);
+    if (createdProduct) {
+      setCurrentBarcodeProduct(createdProduct);
+      setBarcodeDialogOpen(true);
+    }
+  }, [createdProductId, products]);
+  
+  const handlePrintQRCode = useCallback(() => {
+    // Add a class to body for print styling
+    document.body.classList.add('printing-qr-code');
+    // Print using browser print
+    window.print();
+    // Remove class after printing
+    setTimeout(() => {
+      document.body.classList.remove('printing-qr-code');
+    }, 1000);
+  }, []);
+
+  // Success Dialog component
+  const SuccessDialog = useCallback(() => {
+    return (
+      <Dialog open={successDialogOpen} onClose={handleSuccessClose}>
+        <DialogTitle className="border-b pb-2">
+          <div className="flex items-center">
+            <span className="text-green-600 mr-2">✓</span>
+            Product Created Successfully
+          </div>
+        </DialogTitle>
+        <DialogContent className="pt-4">
+          <Typography variant="h6" className="mb-2">Your product has been created successfully!</Typography>
+          <Typography variant="body1" className="mb-4">
+            Your product is now saved in the inventory system and can be managed from the Products List.
+          </Typography>
+          <Alert severity="info" className="mb-2">
+            <div className="flex items-center">
+              <QrCodeIcon className="mr-2" />
+              <Typography variant="body1" className="font-medium">
+                Print QR Code for Inventory Management
+              </Typography>
+            </div>
+            <Typography variant="body2" className="mt-1">
+              You can now generate and print a QR code label for this product to streamline your inventory management.
+            </Typography>
+          </Alert>
+        </DialogContent>
+        <DialogActions className="border-t p-3">
+          <Button onClick={handleSuccessClose}>
+            Close
+          </Button>
+          <Button 
+            variant="contained" 
+            color="primary"
+            onClick={handleGenerateQRFromSuccess}
+            startIcon={<QrCodeIcon fontSize="small" />}
+            className="px-6"
+          >
+            Generate QR Code
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }, [successDialogOpen, handleSuccessClose, handleGenerateQRFromSuccess]);
+
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false);
+    setEditedProduct(null);
+  }, []);
+
   // Modify the renderCreateForm to use the checkboxComponent
   const renderCreateForm = () => {
     // Use the determined checkbox component or fallback to a basic input
-    const CheckboxToUse = checkboxComponent || FallbackCheckbox;
+    const CheckboxToUse = TailwindCheckbox;
     
     // Fix for input fields
     const commonTextFieldProps = {
@@ -765,11 +1149,12 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     fullWidth
                     label="Product Name"
                     name="name"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
+                    value={editFormState.name}
+                    onChange={handleEditNameChange}
                     onClick={(e) => e.stopPropagation()}
                     required
                     className="mb-0"
+                    onInput={handleEditFormChange}
                   />
                 </div>
                 <div className="col-span-1">
@@ -779,14 +1164,15 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     label="Price"
                     name="price"
                     type="number"
-                    value={editPrice}
-                    onChange={(e) => setEditPrice(e.target.value)}
+                    value={editFormState.price}
+                    onChange={handleEditPriceChange}
                     onClick={(e) => e.stopPropagation()}
                     inputProps={{
                       ...commonTextFieldProps.inputProps,
                       startAdornment: <span>$</span>,
                     }}
                     className="mb-0"
+                    onInput={handleEditFormChange}
                   />
                 </div>
                 <div className="col-span-1">
@@ -794,12 +1180,13 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     {...commonTextFieldProps}
                     fullWidth
                     label="Stock Quantity"
-                    name="stock_quantity"
+                    name="stockQuantity"
                     type="number"
-                    value={editStockQuantity}
-                    onChange={(e) => setEditStockQuantity(e.target.value)}
+                    value={editFormState.stockQuantity}
+                    onChange={handleEditStockQuantityChange}
                     onClick={(e) => e.stopPropagation()}
                     className="mb-0"
+                    onInput={handleEditFormChange}
                   />
                 </div>
                 <div className="col-span-2">
@@ -808,12 +1195,13 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     fullWidth
                     label="Description"
                     name="description"
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
                     multiline="true"
-                    rows={3}
+                    rows={4}
+                    value={editFormState.description}
+                    onChange={handleEditDescriptionChange}
+                    onClick={(e) => e.stopPropagation()}
                     className="mb-0"
+                    onInput={handleEditFormChange}
                   />
                 </div>
                 <div className="col-span-1">
@@ -821,23 +1209,24 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     {...commonTextFieldProps}
                     fullWidth
                     label="Reorder Level"
-                    name="reorder_level"
+                    name="reorderLevel"
                     type="number"
-                    value={editReorderLevel}
-                    onChange={(e) => setEditReorderLevel(e.target.value)}
+                    value={editFormState.reorderLevel}
+                    onChange={handleEditReorderLevelChange}
                     onClick={(e) => e.stopPropagation()}
                     className="mb-0"
+                    onInput={handleEditFormChange}
                   />
                 </div>
                 <div className="col-span-1">
-                  <FormControl component="fieldset" fullWidth className="mb-0">
+                  <FormControl component="fieldset" className="mb-0">
                     <Typography variant="body1" className="font-medium mb-2">Availability</Typography>
                     <FormGroup row className="space-x-4">
                       <FormControlLabel
                         control={
                           <CheckboxToUse
-                            checked={editForSale}
-                            onChange={(e) => setEditForSale(e.target.checked)}
+                            checked={editFormState.forSale}
+                            onChange={handleEditForSaleChange}
                             name="for_sale"
                           />
                         }
@@ -846,8 +1235,8 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                       <FormControlLabel
                         control={
                           <CheckboxToUse
-                            checked={editForRent}
-                            onChange={(e) => setEditForRent(e.target.checked)}
+                            checked={editFormState.forRent}
+                            onChange={handleEditForRentChange}
                             name="for_rent"
                           />
                         }
@@ -860,10 +1249,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                   <Button
                     variant="outlined"
                     color="secondary"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditedProduct(null);
-                    }}
+                    onClick={handleCancelEdit}
                     className="px-6"
                   >
                     Cancel
@@ -891,11 +1277,12 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     required
                     label="Product Name"
                     name="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    value={formState.name}
+                    onChange={handleNameChange}
                     onClick={(e) => e.stopPropagation()}
                     placeholder="Enter product name"
                     className="mb-0"
+                    onInput={handleFormChange}
                   />
                 </div>
                 
@@ -908,11 +1295,12 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     name="price"
                     type="number"
                     inputProps={{ step: "0.01", min: "0" }}
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
+                    value={formState.price}
+                    onChange={handlePriceChange}
                     onClick={(e) => e.stopPropagation()}
                     placeholder="0.00"
                     className="mb-0"
+                    onInput={handleFormChange}
                   />
                 </div>
                 
@@ -921,14 +1309,15 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     {...commonTextFieldProps}
                     fullWidth
                     label="Stock Quantity"
-                    name="stock_quantity"
+                    name="stockQuantity"
                     type="number"
                     inputProps={{ step: "1", min: "0" }}
-                    value={stockQuantity}
-                    onChange={(e) => setStockQuantity(e.target.value)}
+                    value={formState.stockQuantity}
+                    onChange={handleStockQuantityChange}
                     onClick={(e) => e.stopPropagation()}
                     placeholder="0"
                     className="mb-0"
+                    onInput={handleFormChange}
                   />
                 </div>
                 
@@ -940,11 +1329,12 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     name="description"
                     multiline="true"
                     rows={4}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    value={formState.description}
+                    onChange={handleDescriptionChange}
                     onClick={(e) => e.stopPropagation()}
                     placeholder="Enter product description"
                     className="mb-0"
+                    onInput={handleFormChange}
                   />
                 </div>
                 
@@ -953,26 +1343,27 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     {...commonTextFieldProps}
                     fullWidth
                     label="Reorder Level"
-                    name="reorder_level"
+                    name="reorderLevel"
                     type="number"
-                    inputProps={{ min: "0" }}
-                    value={reorderLevel}
-                    onChange={(e) => setReorderLevel(e.target.value)}
+                    inputProps={{ step: "1", min: "0" }}
+                    value={formState.reorderLevel}
+                    onChange={handleReorderLevelChange}
                     onClick={(e) => e.stopPropagation()}
                     placeholder="0"
                     className="mb-0"
+                    onInput={handleFormChange}
                   />
                 </div>
                 
                 <div className="col-span-1">
-                  <FormControl component="fieldset" fullWidth className="mb-0">
-                    <Typography variant="body1" className="font-medium mb-2">Availability Options</Typography>
+                  <FormControl component="fieldset" className="mb-0">
+                    <Typography variant="body1" className="font-medium mb-2">Availability</Typography>
                     <FormGroup row className="space-x-4">
                       <FormControlLabel
                         control={
                           <CheckboxToUse
-                            checked={forSale}
-                            onChange={(e) => setForSale(e.target.checked)}
+                            checked={formState.forSale}
+                            onChange={handleForSaleChange}
                             name="for_sale"
                           />
                         }
@@ -981,8 +1372,8 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                       <FormControlLabel
                         control={
                           <CheckboxToUse
-                            checked={forRent}
-                            onChange={(e) => setForRent(e.target.checked)}
+                            checked={formState.forRent}
+                            onChange={handleForRentChange}
                             name="for_rent"
                           />
                         }
@@ -992,102 +1383,31 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                   </FormControl>
                 </div>
                 
-                <div className="col-span-2 mt-4 flex justify-end">
+                <div className="col-span-2 pt-4">
                   <Button
                     type="submit"
                     variant="contained"
                     color="primary"
-                    size="large"
+                    className="px-6 py-2"
                     disabled={isSubmitting}
-                    className="px-8 py-3"
                   >
-                    {isSubmitting ? 
-                      <div className="flex items-center">
+                    {isSubmitting ? (
+                      <>
                         <CircularProgress size="small" color="inherit" className="mr-2" />
                         Creating...
-                      </div> : 
+                      </>
+                    ) : (
                       'Create Product'
-                    }
+                    )}
                   </Button>
-                </div>
-                
-                {/* QR Code Information Section */}
-                <div className="col-span-2 mt-8 pt-6 border-t border-gray-200">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between">
-                    <div className="mb-4 md:mb-0 md:mr-6">
-                      <Typography variant="h6" className="font-medium mb-2">
-                        Inventory QR Code
-                      </Typography>
-                      <Typography variant="body2" className="text-gray-600">
-                        Print QR codes for your products to streamline inventory management.
-                        Scan codes with any QR reader for quick product identification and tracking.
-                      </Typography>
-                      <Typography variant="body2" className="text-gray-500 mt-2 italic">
-                        Create your product first to enable QR code generation.
-                      </Typography>
-                    </div>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      startIcon={<QrCodeIcon fontSize="small" />}
-                      disabled={true}
-                      className="whitespace-nowrap px-6 py-2 opacity-50"
-                    >
-                      Generate QR Code
-                    </Button>
-                  </div>
                 </div>
               </div>
             </form>
           )}
         </Paper>
         
-        {/* Success Dialog */}
-        <Dialog open={successDialogOpen} onClose={() => setSuccessDialogOpen(false)}>
-          <DialogTitle className="border-b pb-2">
-            <div className="flex items-center">
-              <span className="text-green-600 mr-2">✓</span>
-              Product Created Successfully
-            </div>
-          </DialogTitle>
-          <DialogContent className="pt-4">
-            <Typography variant="h6" className="mb-2">Your product has been created successfully!</Typography>
-            <Typography variant="body1" className="mb-4">
-              Your product is now saved in the inventory system and can be managed from the Products List.
-            </Typography>
-            <Alert severity="info" className="mb-2">
-              <div className="flex items-center">
-                <QrCodeIcon className="mr-2" />
-                <Typography variant="body1" className="font-medium">
-                  Print QR Code for Inventory Management
-                </Typography>
-              </div>
-              <Typography variant="body2" className="mt-1">
-                You can now generate and print a QR code label for this product to streamline your inventory management.
-              </Typography>
-            </Alert>
-          </DialogContent>
-          <DialogActions className="border-t p-3">
-            <Button onClick={() => setSuccessDialogOpen(false)}>Close</Button>
-            <Button 
-              variant="contained" 
-              color="primary"
-              onClick={() => {
-                setSuccessDialogOpen(false);
-                // Get the product details and open barcode dialog
-                const createdProduct = products.find(p => p.id === createdProductId);
-                if (createdProduct) {
-                  setCurrentBarcodeProduct(createdProduct);
-                  setBarcodeDialogOpen(true);
-                }
-              }}
-              startIcon={<QrCodeIcon fontSize="small" />}
-              className="px-6"
-            >
-              Generate QR Code
-            </Button>
-          </DialogActions>
-        </Dialog>
+        {/* Render the success dialog */}
+        <SuccessDialog />
       </div>
     );
   };
@@ -1159,7 +1479,9 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
           <Button
             variant="outlined"
             color="primary"
-            onClick={() => handleEditClick(selectedProduct)}
+            onClick={() => {
+              handleEditClick(selectedProduct);
+            }}
           >
             Edit Product
           </Button>
@@ -1167,7 +1489,9 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
             variant="contained"
             color="primary"
             startIcon={<QrCodeIcon fontSize="small" />}
-            onClick={() => handleGenerateBarcode(selectedProduct)}
+            onClick={() => {
+              handleGenerateBarcode(selectedProduct);
+            }}
           >
             Generate QR Code
           </Button>
@@ -1185,12 +1509,12 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
           accessor: row => row.product_code || row.productCode || `P-${row.id}`,
           id: 'product_code',
         },
-        {
-          Header: 'Name',
+        { 
+          Header: 'Name', 
           accessor: row => row.name || 'Unnamed Product',
           id: 'name',
         },
-        {
+        { 
           Header: 'Price',
           accessor: 'price',
           Cell: ({ value }) => `$${value || 0}`,
@@ -1282,11 +1606,9 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
             Products List
           </h2>
           <button 
+            type="button"
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onClick={() => {
-              setIsEditing(false);
-              setActiveTab(0);
-            }}
+            onClick={handleCreateTab}
           >
             + Create New Product
           </button>
@@ -1302,25 +1624,32 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
               <div className="overflow-x-auto">
                 <table {...getTableProps()} className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
-                    {headerGroups.map(headerGroup => (
-                      <tr {...headerGroup.getHeaderGroupProps()}>
-                        {headerGroup.headers.map(column => (
-                          <th
-                            {...column.getHeaderProps(column.getSortByToggleProps())}
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            {column.render('Header')}
-                            <span>
-                              {column.isSorted
-                                ? column.isSortedDesc
-                                  ? ' ▼'
-                                  : ' ▲'
-                                : ''}
-                            </span>
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
+                    {headerGroups.map(headerGroup => {
+                      const { key, ...headerGroupProps } = headerGroup.getHeaderGroupProps();
+                      return (
+                        <tr key={key} {...headerGroupProps}>
+                          {headerGroup.headers.map(column => {
+                            const { key, ...columnProps } = column.getHeaderProps(column.getSortByToggleProps());
+                            return (
+                              <th
+                                key={key}
+                                {...columnProps}
+                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                {column.render('Header')}
+                                <span>
+                                  {column.isSorted
+                                    ? column.isSortedDesc
+                                      ? ' ▼'
+                                      : ' ▲'
+                                    : ''}
+                                </span>
+                              </th>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
                   </thead>
                   <tbody
                     {...getTableBodyProps()}
@@ -1328,16 +1657,22 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                   >
                     {page.map((row, i) => {
                       prepareRow(row);
+                      const { key, ...rowProps } = row.getRowProps();
                       return (
                         <tr
-                          {...row.getRowProps()}
+                          key={key}
+                          {...rowProps}
                           className="hover:bg-gray-50 cursor-pointer"
-                          onClick={() => setSelectedProduct(row.original)}
+                          onClick={() => {
+                            setSelectedProduct(row.original);
+                          }}
                         >
                           {row.cells.map(cell => {
+                            const { key, ...cellProps } = cell.getCellProps();
                             return (
                               <td
-                                {...cell.getCellProps()}
+                                key={key}
+                                {...cellProps}
                                 className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                               >
                                 {cell.render('Cell')}
@@ -1355,7 +1690,9 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
               <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
                 <div className="flex-1 flex justify-between sm:hidden">
                   <button
-                    onClick={() => previousPage()}
+                    onClick={() => {
+                      previousPage();
+                    }}
                     disabled={!canPreviousPage}
                     className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
                       !canPreviousPage ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -1364,7 +1701,9 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     Previous
                   </button>
                   <button
-                    onClick={() => nextPage()}
+                    onClick={() => {
+                      nextPage();
+                    }}
                     disabled={!canNextPage}
                     className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
                       !canNextPage ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -1386,7 +1725,9 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                   <div>
                     <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                       <button
-                        onClick={() => gotoPage(0)}
+                        onClick={() => {
+                          gotoPage(0);
+                        }}
                         disabled={!canPreviousPage}
                         className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
                           !canPreviousPage ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
@@ -1396,7 +1737,9 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                         {'<<'}
                       </button>
                       <button
-                        onClick={() => previousPage()}
+                        onClick={() => {
+                          previousPage();
+                        }}
                         disabled={!canPreviousPage}
                         className={`relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium ${
                           !canPreviousPage ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
@@ -1406,7 +1749,9 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                         {'<'}
                       </button>
                       <button
-                        onClick={() => nextPage()}
+                        onClick={() => {
+                          nextPage();
+                        }}
                         disabled={!canNextPage}
                         className={`relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium ${
                           !canNextPage ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
@@ -1416,7 +1761,9 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                         {'>'}
                       </button>
                       <button
-                        onClick={() => gotoPage(pageCount - 1)}
+                        onClick={() => {
+                          gotoPage(pageCount - 1);
+                        }}
                         disabled={!canNextPage}
                         className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
                           !canNextPage ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
@@ -1535,24 +1882,17 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     <button
                       type="button"
                       className="inline-flex w-full justify-center items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto"
-                      onClick={() => {
-                        // Add a class to body for print styling
-                        document.body.classList.add('printing-qr-code');
-                        // Print using browser print
-                        window.print();
-                        // Remove class after printing
-                        setTimeout(() => {
-                          document.body.classList.remove('printing-qr-code');
-                        }, 1000);
-                      }}
+                      onClick={handlePrintQRCode}
                     >
                       <span role="img" aria-label="print" className="mr-1">🖨️</span>
                       Print QR Code
                     </button>
                     <button
                       type="button"
-                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
-                      onClick={() => setBarcodeDialogOpen(false)}
+                      className="inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                      onClick={() => {
+                        setBarcodeDialogOpen(false);
+                      }}
                     >
                       Close
                     </button>
@@ -1569,22 +1909,25 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     );
   };
 
+  // Ensure we're rendering the barcode dialog and success dialog correctly
   return (
     <div className="w-full pt-6">
       <div className="bg-white rounded-lg shadow-sm w-full overflow-hidden">
         <div className="border-b">
-          <nav className="flex -mb-px">
+          <nav className="flex justify-between">
             <button
+              type="button"
               className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
                 activeTab === 0
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
-              onClick={(e) => handleTabChange(e, 0)}
+              onClick={handleCreateTab}
             >
               {isEditing ? "Edit Product" : "Create Product"}
             </button>
             <button
+              type="button"
               className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
                 !selectedProduct
                   ? 'text-gray-400 border-transparent cursor-not-allowed'
@@ -1592,18 +1935,19 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
-              onClick={(e) => selectedProduct && handleTabChange(e, 1)}
+              onClick={handleDetailsTab}
               disabled={!selectedProduct}
             >
               Product Details
             </button>
             <button
+              type="button"
               className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
                 activeTab === 2
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
-              onClick={(e) => handleTabChange(e, 2)}
+              onClick={handleListTab}
             >
               Products List
             </button>
@@ -1612,12 +1956,20 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
       </div>
       
       <div className="mt-6">
-        {activeTab === 0 && renderCreateForm()}
-        {activeTab === 1 && renderProductDetails()}
-        {activeTab === 2 && renderProductsList()}
+        {/* Always render all components but hide the ones we don't need */}
+        <div style={{ display: activeTab === 0 ? 'block' : 'none' }}>
+          {renderCreateForm()}
+        </div>
+        <div style={{ display: activeTab === 1 ? 'block' : 'none' }}>
+          {renderProductDetails()}
+        </div>
+        <div style={{ display: activeTab === 2 ? 'block' : 'none' }}>
+          {renderProductsList()}
+        </div>
       </div>
       
-      {/* Barcode Dialog */}
+      {/* Always render these components to ensure hook call consistency */}
+      <SuccessDialog />
       {renderBarcodeDialog()}
     </div>
   );
@@ -1628,7 +1980,9 @@ ProductManagement.propTypes = {
   newProduct: PropTypes.bool, // For backward compatibility
   product: PropTypes.object,
   onUpdate: PropTypes.func,
-  onCancel: PropTypes.func
+  onCancel: PropTypes.func,
+  mode: PropTypes.string,
+  salesContext: PropTypes.bool
 };
 
 export default ProductManagement;

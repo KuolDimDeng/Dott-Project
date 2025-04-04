@@ -28,18 +28,49 @@ export function AuthLoadingState() {
   }
 
   if (status === 'authenticated') {
-    const onboardingStatus = session.user['custom:onboarding'];
+    // Get onboarding status and setupDone flag, normalize to lowercase for consistency
+    const onboardingStatus = (session.user['custom:onboarding'] || '').toLowerCase();
+    const setupDone = (session.user['custom:setupdone'] || '').toLowerCase();
+    
+    logger.debug('Checking authentication and onboarding status', {
+      onboardingStatus,
+      setupDone,
+      isComplete: onboardingStatus === 'complete' || setupDone === 'true',
+      userId: session.user.sub || session.user.id,
+      email: session.user.email
+    });
 
-    if (onboardingStatus !== 'complete') {
-      logger.debug('Onboarding incomplete, redirecting to onboarding', {
-        status: onboardingStatus,
-      });
-      router.push(`/onboarding/${onboardingStatus || 'business-info'}`);
+    // Only redirect to dashboard if onboarding is complete OR setup is done
+    if (onboardingStatus === 'complete' || setupDone === 'true') {
+      logger.debug('User authenticated with completed onboarding, proceeding to dashboard');
+      router.push('/dashboard');
       return null;
     }
-
-    logger.debug('User authenticated and onboarding complete');
-    router.push('/dashboard');
+    
+    // If onboarding is not complete or setup is not done, redirect to appropriate step
+    logger.debug('Onboarding incomplete, redirecting to appropriate step', {
+      status: onboardingStatus,
+      setupDone
+    });
+    
+    // Map onboarding status to the appropriate route
+    const onboardingStepMap = {
+      'not_started': 'business-info',
+      'not-started': 'business-info',
+      'business_info': 'business-info',
+      'business-info': 'business-info',
+      'subscription': 'subscription',
+      'payment': 'payment',
+      'setup': 'setup',
+      'database_setup': 'database-setup',
+      'database-setup': 'database-setup',
+      'review': 'review'
+    };
+    
+    // Get the appropriate step or default to business-info
+    const redirectStep = onboardingStepMap[onboardingStatus] || 'business-info';
+    
+    router.push(`/onboarding/${redirectStep}`);
     return null;
   }
 

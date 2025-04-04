@@ -16,10 +16,25 @@ export const resetPreviouslyOnboarded = () => {
 };
 
 export default function AuthButton({ variant = 'primary', size = 'medium', fullWidth = false }) {
-  const { user, loading } = useSession();
+  const { user, loading: sessionLoading } = useSession();
   const router = useRouter();
   const { t } = useTranslation();
   const [hasPreviouslyCompletedOnboarding, setHasPreviouslyCompletedOnboarding] = useState(false);
+  const [loading, setLoading] = useState(sessionLoading);
+  
+  // Ensure loading doesn't get stuck by using a timeout
+  useEffect(() => {
+    setLoading(sessionLoading);
+    
+    // If loading is true, set a timeout to clear it after 3 seconds
+    if (sessionLoading) {
+      const timeoutId = setTimeout(() => {
+        setLoading(false);
+      }, 3000);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [sessionLoading]);
   
   // Check localStorage on component mount to see if user previously completed onboarding
   useEffect(() => {
@@ -27,7 +42,7 @@ export default function AuthButton({ variant = 'primary', size = 'medium', fullW
     setHasPreviouslyCompletedOnboarding(previouslyOnboarded);
     
     // If user is authenticated and has completed onboarding, save this info
-    if (user?.attributes?.['custom:onboarding'] === 'COMPLETE') {
+    if (user?.attributes?.['custom:onboarding']?.toLowerCase() === 'complete') {
       localStorage.setItem('previouslyOnboarded', 'true');
     }
   }, [user]);
@@ -65,11 +80,11 @@ export default function AuthButton({ variant = 'primary', size = 'medium', fullW
 
   const getButtonConfig = () => {
     // Case 4: User is authenticated AND has completed onboarding
-    if (user && user.attributes?.['custom:onboarding'] === 'COMPLETE') {
+    if (user && user.attributes?.['custom:onboarding']?.toLowerCase() === 'complete') {
       return {
         text: t('your_dashboard', 'YOUR DASHBOARD'),
         action: async () => {
-          await updateCookies('complete', 'COMPLETE', true);
+          await updateCookies('complete', 'complete', true);
           router.push('/dashboard');
         }
       };

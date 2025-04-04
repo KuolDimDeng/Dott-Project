@@ -15,6 +15,9 @@ from functools import wraps
 import logging
 from onboarding.utils import get_schema_name_from_tenant_id
 from django.utils.deprecation import MiddlewareMixin
+from .services.redis_session import onboarding_session_service
+from .models import OnboardingProgress
+from django.utils import timezone
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -221,3 +224,93 @@ class AsyncSchemaTenantMiddleware:
         with connection.cursor() as cursor:
             cursor.execute("SET app.current_tenant = NULL")
             logger.debug("Cleared tenant context")
+
+class OnboardingSessionMiddleware(MiddlewareMixin):
+    """
+    Middleware for managing onboarding sessions using Redis
+    
+    This middleware ensures that onboarding data is properly stored and synced
+    between the Redis cache and the database, providing a seamless experience
+    for users during the onboarding process.
+    """
+    
+    def __init__(self, get_response=None):
+        self.get_response = get_response
+        self.onboarding_paths = ['/api/onboarding', '/onboarding']
+        
+    def process_request(self, request):
+        """Process incoming request to set up onboarding session"""
+        # Only process for onboarding-related paths
+        if not any(request.path.startswith(path) for path in self.onboarding_paths):
+            return None
+            
+        # Skip for unauthenticated users
+        if not request.user.is_authenticated:
+            return None
+            
+        # Get or create session ID from request cookies
+        session_id = request.COOKIES.get('onboardingSessionId')
+        if not session_id:
+            # Create new session ID
+            session_id = onboarding_session_service.create_session(str(request.user.id))
+            # Session ID will be set in cookie in the response
+            request.onboarding_session_id = session_id
+        
+        # Store session ID in request for access in views
+        request.onboarding_session_id = session_id
+        
+        # Try to sync onboarding progress with database
+        try:
+            # Get or create onboarding progress
+            progress, created = OnboardingProgress.objects.get_or_create(
+                user=request.user,
+                defaults={
+                    'tenant_id': request.user.id,
+                    'session_id': session_id,
+                    'last_session_activity': timezone.now()
+                }
+            )
+            
+            if not created:
+                # Update session activity
+                progress.record_session_activity(session_id)
+                
+            # Store progress in request for access in views
+            request.onboarding_progress = progress
+            
+        except Exception as e:
+            logger.error(f"Error syncing onboarding progress: {str(e)}")
+            
+        return None
+        
+    def process_response(self, request, response):
+        """Process response to set session cookie and sync data to database"""
+        # Only process for onboarding-related paths
+        if not any(request.path.startswith(path) for path in self.onboarding_paths):
+            return response
+            
+        # Skip for unauthenticated users
+        if not hasattr(request, 'user') or not request.user.is_authenticated:
+            return response
+            
+        # Set session cookie if new session created
+        if hasattr(request, 'onboarding_session_id'):
+            max_age = 24 * 60 * 60  # 24 hours
+            response.set_cookie(
+                'onboardingSessionId',
+                request.onboarding_session_id,
+                max_age=max_age,
+                httponly=True,
+                samesite='Lax',
+                secure=not settings.DEBUG
+            )
+            
+        # Sync data to database before request ends for non-GET requests
+        if request.method != 'GET' and hasattr(request, 'onboarding_session_id'):
+            session_id = request.onboarding_session_id
+            try:
+                onboarding_session_service.sync_to_db(session_id, OnboardingProgress)
+            except Exception as e:
+                logger.error(f"Error syncing session data to database: {str(e)}")
+                
+        return response

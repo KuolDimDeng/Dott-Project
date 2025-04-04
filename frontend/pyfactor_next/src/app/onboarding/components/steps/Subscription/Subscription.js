@@ -170,7 +170,7 @@ export function Subscription({ metadata }) {
             expiration.setDate(expiration.getDate() + 7);
             
             document.cookie = `onboardingStep=subscription; path=/; expires=${expiration.toUTCString()}`;
-            document.cookie = `onboardedStatus=BUSINESS_INFO; path=/; expires=${expiration.toUTCString()}`;
+            document.cookie = `onboardedStatus=business_info; path=/; expires=${expiration.toUTCString()}`;
             document.cookie = `businessName=${encodeURIComponent(metadata.businessName)}; path=/; expires=${expiration.toUTCString()}`;
             if (metadata.businessType) {
               document.cookie = `businessType=${encodeURIComponent(metadata.businessType)}; path=/; expires=${expiration.toUTCString()}`;
@@ -316,6 +316,15 @@ export function Subscription({ metadata }) {
       // Make plan ID consistent by always using lowercase
       const normalizedPlanId = planId.toLowerCase();
 
+      // Save the subscription plan to cookies regardless of plan type
+      if (typeof document !== 'undefined') {
+        const expiration = new Date();
+        expiration.setDate(expiration.getDate() + 7); // 7 days
+        
+        document.cookie = `subscriptionPlan=${normalizedPlanId}; path=/; expires=${expiration.toUTCString()}`;
+        document.cookie = `subscriptionInterval=${billingInterval}; path=/; expires=${expiration.toUTCString()}`;
+      }
+
       // If free plan, no payment needed
       if (normalizedPlanId === 'free') {
         // Set loading/status message
@@ -351,16 +360,16 @@ export function Subscription({ metadata }) {
             
             // Set our state to SUBSCRIPTION
             document.cookie = `onboardingStep=setup; path=/; expires=${expiration.toUTCString()}`;
-            document.cookie = `onboardedStatus=SUBSCRIPTION; path=/; expires=${expiration.toUTCString()}`;
-            document.cookie = `subplan=free; path=/; expires=${expiration.toUTCString()}`;
+            document.cookie = `onboardedStatus=subscription; path=/; expires=${expiration.toUTCString()}`;
+            document.cookie = `subplan=${normalizedPlanId}; path=/; expires=${expiration.toUTCString()}`;
           }
           
           // Update Cognito attributes via the API with more comprehensive set of attributes
           await updateUserAttributes({
             userAttributes: {
-              'custom:subplan': 'free',
-              'custom:onboarding': 'SUBSCRIPTION',
-              'custom:setupdone': 'FALSE',
+              'custom:subplan': normalizedPlanId,
+              'custom:onboarding': 'subscription',
+              'custom:setupdone': 'false',
               'custom:updated_at': new Date().toISOString(),
               'custom:businessName': businessData.businessName,
               'custom:businessType': businessData.businessType
@@ -448,6 +457,29 @@ export function Subscription({ metadata }) {
         // Set an error message indicating the selected plan
         setError(`Setting up ${normalizedPlanId} plan...`);
 
+        // Store the business info in cookies for paid plans too
+        if (typeof document !== 'undefined') {
+          const expiration = new Date();
+          expiration.setDate(expiration.getDate() + 7); // 7 days
+          
+          document.cookie = `onboardingStep=payment; path=/; expires=${expiration.toUTCString()}`;
+          document.cookie = `onboardedStatus=subscription; path=/; expires=${expiration.toUTCString()}`;
+          document.cookie = `subplan=${normalizedPlanId}; path=/; expires=${expiration.toUTCString()}`;
+        }
+        
+        // Update Cognito attributes for paid plans
+        await updateUserAttributes({
+          userAttributes: {
+            'custom:subplan': normalizedPlanId,
+            'custom:onboarding': 'payment',
+            'custom:setupdone': 'false',
+            'custom:updated_at': new Date().toISOString(),
+            'custom:businessName': businessData.businessName,
+            'custom:businessType': businessData.businessType,
+            'custom:subscriptioninterval': billingInterval
+          }
+        });
+
         // Make sure to store with consistent property names and normalized values
         sessionStorage.setItem(
           'pendingSubscription',
@@ -457,7 +489,9 @@ export function Subscription({ metadata }) {
             interval: billingInterval, // Include both for compatibility
             payment_method: paymentMethod,
             paymentMethod: paymentMethod, // Include both for compatibility
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            businessName: businessData.businessName,
+            businessType: businessData.businessType
           })
         );
         

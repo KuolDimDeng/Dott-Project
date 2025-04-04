@@ -2,7 +2,7 @@
 
 // In DashboardClientLayout.js
 import dynamic from 'next/dynamic';
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, useRef } from 'react';
 import { logger } from '@/utils/logger';
 import ErrorBoundaryHandler from '@/components/ErrorBoundaryHandler';
 import { useRouter } from 'next/navigation';
@@ -19,9 +19,18 @@ const ReactErrorDebugger = dynamic(
   { ssr: false, loading: () => null }
 );
 
+// Simplified import for FixInputEvent
 const FixInputEvent = dynamic(
-  () => import('./fixInputEvent').then(mod => mod),
-  { ssr: false, loading: () => null }
+  () => import('./fixInputEvent'),
+  { 
+    ssr: false, 
+    loading: () => null,
+    // Add error handling for this component
+    onError: (err) => {
+      console.error('Failed to load FixInputEvent component:', err);
+      return null;
+    }
+  }
 );
 
 const RootDiagnostics = dynamic(
@@ -77,6 +86,11 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 export default function DashboardClientLayout({ children }) {
     const [showDebugger, setShowDebugger] = useState(false);
     const router = useRouter();
+    
+    // Create the ref at component level
+    const originalErrorRef = useRef(console.error);
+    
+    // Force bypassed authentication in development mode - REMOVED FOR PRODUCTION
     
     // Check for authentication errors early
     useEffect(() => {
@@ -143,7 +157,7 @@ export default function DashboardClientLayout({ children }) {
     
     // Check onboarding status on mount
     useEffect(() => {
-        const verifyOnboardingComplete = () => {
+        const verifyOnboardingComplete = async () => {
             try {
                 // Get onboarding status from cookies
                 const getCookie = (name) => {
@@ -161,9 +175,56 @@ export default function DashboardClientLayout({ children }) {
                     onboardingStep
                 });
                 
+                // First check Cognito attributes via API
+                try {
+                    const profileResponse = await fetch('/api/user/profile', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (profileResponse.ok) {
+                        const profileData = await profileResponse.json();
+                        const cognitoOnboarding = profileData.profile.onboardingStatus;
+                        const cognitoSetupComplete = profileData.profile.setupComplete;
+                        
+                        logger.debug('[DashboardLayout] Comparing onboarding status:', {
+                            cookieStatus: onboardingStatus,
+                            cognitoStatus: cognitoOnboarding,
+                            cookieSetupComplete: onboardingStep === 'complete',
+                            cognitoSetupComplete
+                        });
+                        
+                        // If cookies indicate completed but Cognito doesn't, update Cognito
+                        if ((onboardingStatus === 'complete' || onboardingStep === 'complete') && 
+                            (cognitoOnboarding !== 'complete' || !cognitoSetupComplete)) {
+                            
+                            logger.info('[DashboardLayout] Updating Cognito to match cookies');
+                            
+                            await fetch('/api/user/update-attributes', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    attributes: {
+                                        'custom:onboarding': 'complete',
+                                        'custom:setupdone': 'true'
+                                    },
+                                    forceUpdate: true
+                                })
+                            });
+                        }
+                    }
+                } catch (apiError) {
+                    logger.error('[DashboardLayout] Error checking Cognito:', apiError);
+                    // Continue with cookie checks as fallback
+                }
+                
                 // If user is still in business info step, redirect to subscription
                 if (onboardingStatus === 'BUSINESS_INFO' || 
-                    (onboardingStep === 'subscription' && onboardingStatus !== 'COMPLETE')) {
+                    (onboardingStep === 'subscription' && onboardingStatus !== 'complete')) {
                     logger.warn('[DashboardLayout] User attempted to access dashboard without completing subscription');
                     
                     // Add a timestamp to avoid caching issues
@@ -187,9 +248,13 @@ export default function DashboardClientLayout({ children }) {
         setShowDebugger(false);
         localStorage.setItem('enableReactDebugger', 'false');
         
-        // Still allow keyboard shortcut to enable it if needed
+        // Only allow in controlled environments
         const handleKeyDown = (e) => {
-            if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+            // Only enable in controlled environments
+            const isAllowedEnvironment = window.location.hostname === 'localhost' || 
+                                       window.location.hostname.includes('dev-');
+            
+            if (isAllowedEnvironment && e.ctrlKey && e.shiftKey && e.key === 'D') {
                 e.preventDefault();
                 setShowDebugger(prev => {
                     const newValue = !prev;
@@ -206,19 +271,25 @@ export default function DashboardClientLayout({ children }) {
     
     // Add error boundary to catch any rendering errors
     useEffect(() => {
+        // Store the original error handler in a ref to avoid it being included in dependencies
+        originalErrorRef.current = console.error;
+        
         // Set up global error handler for React errors
-        const originalError = console.error;
         console.error = (...args) => {
-            // Check if this is a React error
-            const errorString = args.join(' ');
-            if (errorString.includes('render is not a function')) {
-                logger.error('[DashboardLayout] Caught "render is not a function" error:', {
-                    args,
-                    stack: new Error().stack
-                });
+            // Check for memory-related errors
+            let errorString = '';
+            try {
+                errorString = args
+                    .map(arg => 
+                        typeof arg === 'string' ? arg : 
+                        (arg instanceof Error ? arg.message : 
+                        JSON.stringify(arg))
+                    )
+                    .join(' ');
+            } catch (e) {
+                errorString = 'Error converting error to string';
             }
             
-            // Check for memory-related errors
             if (errorString.includes('out of memory') ||
                 errorString.includes('heap') ||
                 errorString.includes('allocation failed')) {
@@ -236,11 +307,12 @@ export default function DashboardClientLayout({ children }) {
             }
             
             // Call original error handler
-            originalError.apply(console, args);
+            originalErrorRef.current.apply(console, args);
         };
         
         return () => {
-            console.error = originalError;
+            // Restore the original error handler
+            console.error = originalErrorRef.current;
         };
     }, []);
     

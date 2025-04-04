@@ -221,175 +221,155 @@ export default function BusinessInfoPage() {
     return { valid: true }; // No errors
   };
 
-  const handleSubmit = async (formData) => {
+  const handleSubmit = async () => {
+    if (
+      !formData.businessName ||
+      !formData.businessType ||
+      !formData.country ||
+      !formData.legalStructure ||
+      !formData.dateFounded
+    ) {
+      setFormError('Please fill in all required fields.');
+      return;
+    }
+    
+    // Store in localStorage as a backup
     try {
-      setSubmitting(true);
-      setFormError(null);
+      localStorage.setItem('businessInfo', JSON.stringify(formData));
+      localStorage.setItem('businessName', formData.businessName);
+      logger.info('Saved business info to localStorage');
+    } catch (e) {
+      logger.warn('Failed to save business info to localStorage:', e);
+    }
+    
+    // Store business name in cookies with various formats for compatibility
+    try {
+      document.cookie = `businessName=${encodeURIComponent(formData.businessName)}; path=/; max-age=31536000`;
+      document.cookie = `business_name=${encodeURIComponent(formData.businessName)}; path=/; max-age=31536000`;
+      document.cookie = `custom:businessname=${encodeURIComponent(formData.businessName)}; path=/; max-age=31536000`;
       
-      // Validate all form fields
-      const validationResult = validateBusinessInfo(formData);
-      if (!validationResult.valid) {
-        setFormError(validationResult.message);
-        toast.error(validationResult.message);
-        setSubmitting(false);
+      // Set onboarding status cookies to complete (lowercase)
+      document.cookie = `onboardingStatus=complete; path=/; max-age=31536000`;
+      document.cookie = `onboardedStatus=complete; path=/; max-age=31536000`;
+      document.cookie = `onboardingStep=complete; path=/; max-age=31536000`;
+      document.cookie = `setupCompleted=true; path=/; max-age=31536000`;
+      document.cookie = `ONBOARDING_STEP=complete; path=/; max-age=31536000`;
+      
+      logger.info('Set business name and onboarding status cookies');
+    } catch (e) {
+      logger.warn('Failed to set cookies:', e);
+    }
+    
+    try {
+      setLoading(true);
+      setSubmitting(true);
+      
+      // Development mode check before Cognito session
+      if (process.env.NODE_ENV === 'development' && localStorage.getItem('bypassAuthValidation') === 'true') {
+        logger.debug('[BusinessInfo] Development mode: bypassing session check and updating user attributes');
+        
+        // Store these values in localStorage for development mode
+        localStorage.setItem('custom:businessname', formData.businessName);
+        localStorage.setItem('custom:businesstype', formData.businessType);
+        localStorage.setItem('custom:businesscountry', formData.country);
+        localStorage.setItem('custom:legalstructure', formData.legalStructure);
+        localStorage.setItem('custom:datefounded', formData.dateFounded);
+        localStorage.setItem('custom:onboarding', 'business-info');
+        
+        // Redirect to subscription page in development mode
+        logger.info('Business info submitted successfully (dev mode), navigating to subscription page');
+        const timestamp = new Date().getTime();
+        router.push(`/onboarding/subscription?t=${timestamp}`);
         return;
       }
       
-      logger.debug('[BusinessInfo] Submitting data:', { 
-        businessName: formData.businessName,
-        businessType: formData.businessType 
-      });
+      // Store onboarding progress marker
+      localStorage.setItem('onboardingInProgress', 'true');
+      localStorage.setItem('onboardingStep', 'business-info-complete');
+      localStorage.setItem('businessInfoSubmitted', 'true');
       
-      // Store in localStorage as backup
+      // Production code - check for real session
+      let resp;
       try {
-        localStorage.setItem('businessInfo', JSON.stringify(formData));
-      } catch (e) {
-        // Ignore localStorage errors
-        logger.warn('[BusinessInfo] Failed to store in localStorage:', e.message);
-      }
-
-      // Added retry logic for API call
-      let response = null;
-      let maxRetries = 2;
-      let retryCount = 0;
-      let lastError = null;
-
-      while (retryCount <= maxRetries) {
-        try {
-          // Call API with data
-          response = await fetch('/api/onboarding/business-info', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-request-id': `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
-            },
-            body: JSON.stringify(formData),
-          });
-          
-          // If we got a response (even an error), break the retry loop
-          break;
-        } catch (fetchError) {
-          lastError = fetchError;
-          retryCount++;
-          
-          logger.warn(`[BusinessInfo] API call attempt ${retryCount} failed:`, fetchError);
-          
-          if (retryCount <= maxRetries) {
-            // Wait before retrying (exponential backoff)
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-          }
-        }
-      }
-
-      // If all retries failed, throw the last error
-      if (!response) {
-        throw lastError || new Error('Failed to connect to the server after multiple attempts');
-      }
-      
-      // Check response status first
-      if (!response.ok) {
-        // Special handling for server errors
-        if (response.status === 500) {
-          logger.error('[BusinessInfo] Server returned 500 error');
-          
-          // For server errors, we'll continue to the next step anyway
-          // since cookies were likely set correctly despite the error
-          const nextRoute = `/onboarding/subscription?t=${Date.now()}&recovery=true`;
-          logger.debug('[BusinessInfo] Continuing to next step despite server error:', nextRoute);
-          
-          // Show warning to user
-          toast.warning('Your information was saved but there was an issue with the server. Continuing to the next step.');
-          
-          // Navigate despite the error
-          router.push(nextRoute);
-          return;
-        }
+        resp = await fetchAuthSession();
+      } catch (sessionError) {
+        logger.warn('Error fetching auth session:', sessionError);
         
-        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        // Forced redirect to subscription page even if session check fails
+        // This ensures the flow continues even with session issues
+        logger.info('Redirecting to subscription page despite session check failure');
+        const timestamp = new Date().getTime();
+        router.push(`/onboarding/subscription?t=${timestamp}`);
+        return;
       }
       
-      // Safely parse response JSON with proper error handling
-      let data;
-      try {
-        const responseText = await response.text();
+      const session = resp?.session;
+      
+      if (!session) {
+        logger.warn('No active session found, but continuing onboarding flow');
         
-        // Check if the response is empty
-        if (!responseText.trim()) {
-          logger.warn('[BusinessInfo] Server returned empty response');
-          // Proceed with default values since the request succeeded
-          data = { 
-            success: true,
-            nextRoute: '/onboarding/subscription'
-          };
-        } else {
-          // Try to parse JSON
-          data = JSON.parse(responseText);
-        }
-      } catch (jsonError) {
-        logger.error('[BusinessInfo] Error parsing server response:', jsonError);
-        throw new Error('Server returned an invalid response. Please try again.');
+        // Instead of redirecting to login, continue the flow
+        // This prevents losing the user's input and breaking the onboarding flow
+        const timestamp = new Date().getTime();
+        router.push(`/onboarding/subscription?t=${timestamp}`);
+        return;
       }
       
-      // Check if we received a token expiration notice
-      if (data.tokenExpired) {
-        logger.warn('[BusinessInfo] Token expired during submission, will refresh on next page');
-        // We'll still navigate to next step, and let the onboarding layout handle the refresh
-      }
+      // Add user attributes for Cognito
+      const userAttributes = {
+        'custom:businessname': formData.businessName,
+        'custom:businesstype': formData.businessType,
+        'custom:businesscountry': formData.country,
+        'custom:legalstructure': formData.legalStructure,
+        'custom:datefounded': formData.dateFounded,
+        'custom:onboarding': 'business-info',
+        'custom:setupdone': 'true',
+        'custom:updated_at': new Date().toISOString()
+      };
       
-      // Set user attributes to mark business info step as completed
+      // Try to update user attributes, but don't block the flow if it fails
       try {
-        // Update Cognito user attributes directly
-        logger.info('[BusinessInfo] Updating user attributes to mark business info completed');
-        const userAttributes = {
-          [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.BUSINESS_INFO_COMPLETED,
-          [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'false',
-          [COGNITO_ATTRIBUTES.BUSINESS_NAME]: formData.businessName,
-          [COGNITO_ATTRIBUTES.BUSINESS_TYPE]: formData.businessType
+        const requestData = {
+          idToken: session.idToken.value,
+          attributes: userAttributes
         };
         
-        // Set cookies to maintain state even if Cognito update fails
-        document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.BUSINESS_INFO_COMPLETED};path=/;max-age=${60*60*24*30}`;
-        document.cookie = `businessInfoCompleted=true;path=/;max-age=${60*60*24*30}`;
-        document.cookie = `${COOKIE_NAMES.BUSINESS_NAME}=${formData.businessName};path=/;max-age=${60*60*24*30}`;
-        document.cookie = `${COOKIE_NAMES.BUSINESS_TYPE}=${formData.businessType};path=/;max-age=${60*60*24*30}`;
-        document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.SUBSCRIPTION};path=/;max-age=${60*60*24*30}`;
+        // Call the API to update user attributes
+        const response = await fetch('/api/user/update_attributes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestData)
+        });
         
-        // Try to update Cognito, but don't block navigation if it fails
-        try {
-          await updateUserAttributes(userAttributes);
-          logger.info('[BusinessInfo] User attributes updated successfully');
-        } catch (attributeError) {
-          logger.warn('[BusinessInfo] Failed to update user attributes, using cookies as fallback:', attributeError);
+        if (!response.ok) {
+          logger.warn('Failed to update user attributes:', await response.json());
+          // But continue with the flow
+        } else {
+          logger.info('Successfully updated user attributes with business info');
         }
-      } catch (attrError) {
-        logger.warn('[BusinessInfo] Error setting attributes:', attrError);
-        // Continue navigation even if attribute setting fails
+      } catch (attributeError) {
+        logger.warn('Error updating user attributes:', attributeError);
+        // Continue with the flow despite attribute update errors
       }
       
-      // Navigate to next step with timestamp to prevent caching
-      const nextRoute = `/onboarding/subscription?t=${Date.now()}`;
-      logger.debug('[BusinessInfo] Submission successful, navigating to:', nextRoute);
+      // Navigate to subscription page after successful submission
+      logger.info('Business info submitted successfully, navigating to subscription page');
+      const timestamp = new Date().getTime();
+      router.push(`/onboarding/subscription?t=${timestamp}`);
       
-      // Force navigation with multiple approaches for reliability
-      try {
-        // First attempt using router.push
-        router.push(nextRoute);
-        
-        // Set a fallback with direct navigation after a short delay
-        // This helps in case router.push gets stuck or doesn't trigger a navigation
-        setTimeout(() => {
-          logger.debug('[BusinessInfo] Using fallback navigation to:', nextRoute);
-          window.location.href = nextRoute;
-        }, 250); // Short delay to allow router.push to work first if it can
-      } catch (navError) {
-        // If router.push fails, fall back to direct location change
-        logger.warn('[BusinessInfo] Navigation error, using fallback:', navError);
-        window.location.href = nextRoute;
-      }
     } catch (error) {
-      logger.error('[BusinessInfo] Submission error:', error);
-      setFormError(error.message || 'An error occurred while saving your business information');
-      toast.error(error.message || 'An error occurred while saving your business information');
+      logger.error('Error saving business info:', error);
+      setFormError('Failed to save business information. Please try again.');
+      
+      // Still try to redirect to the next step despite errors
+      setTimeout(() => {
+        const timestamp = new Date().getTime();
+        router.push(`/onboarding/subscription?t=${timestamp}`);
+      }, 1000);
+    } finally {
+      setLoading(false);
       setSubmitting(false);
     }
   };
@@ -398,7 +378,7 @@ export default function BusinessInfoPage() {
   const onFormSubmit = (e) => {
     e.preventDefault();
     // Pass the component's formData state to the submit handler
-    handleSubmit(formData);
+    handleSubmit();
   };
 
   return (

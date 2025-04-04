@@ -88,21 +88,40 @@ export async function GET(request) {
     }
     
     // Get onboarding status from user attributes
-    const onboardingStatus = user['custom:onboarding'] || 'NOT_STARTED';
-    logger.debug('[API] User onboarding status', { onboardingStatus });
+    // Normalize to lowercase for consistency
+    const onboardingStatus = (user['custom:onboarding'] || 'NOT_STARTED').toLowerCase();
+    logger.debug('[API] User onboarding status', { 
+      onboardingStatus,
+      originalStatus: user['custom:onboarding'] || 'NOT_STARTED'
+    });
     
-    // Map of valid steps for each status
-    const allowedSteps = {
-      'NOT_STARTED': ['business-info'],
-      'BUSINESS_INFO': ['business-info', 'subscription'],
-      'SUBSCRIPTION': ['business-info', 'subscription', 'payment'],
-      'PAYMENT': ['business-info', 'subscription', 'payment', 'setup'],
-      'SETUP': ['business-info', 'subscription', 'payment', 'setup', 'dashboard'],
-      'COMPLETE': ['dashboard']
+    // Map onboarding steps to allowed status values (all lowercase for consistency)
+    const stepAccess = {
+      'business-info': ['not_started', 'business_info', 'business-info', 'business-info-completed'],
+      'subscription': ['business_info', 'business-info', 'business-info-completed', 'subscription'],
+      'payment': ['subscription', 'payment'],
+      'setup': ['payment', 'setup', 'database-setup', 'database_setup'],
+      'database-setup': ['setup', 'database-setup', 'database_setup'],
+      'complete': ['setup', 'database-setup', 'database_setup', 'review', 'complete']
     };
     
+    // Check if onboarding is complete
+    const isComplete = onboardingStatus === 'complete' || onboardingStatus === 'completed';
+    
+    // For dashboard access, onboarding must be complete
+    if (requestedStep === 'dashboard' && !isComplete) {
+      logger.debug('[API] Dashboard access denied - onboarding incomplete', {
+        onboardingStatus
+      });
+      return NextResponse.json({
+        isValid: false,
+        redirectUrl: '/onboarding/business-info',
+        message: 'Onboarding incomplete'
+      });
+    }
+    
     // Check if requested step is allowed
-    const isAllowed = allowedSteps[onboardingStatus]?.includes(requestedStep);
+    const isAllowed = stepAccess[requestedStep]?.includes(onboardingStatus);
     
     if (!isAllowed) {
       // Find the appropriate step for this status

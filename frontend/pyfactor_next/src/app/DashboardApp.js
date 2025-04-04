@@ -162,7 +162,7 @@ const DashboardApp = ({ children }) => {
           
           // We'll still fetch and update attributes in the background, but don't redirect
           fetchUserAttributes().catch(() => ({})).then(attrs => {
-            if (attrs && (attrs[COGNITO_ATTRIBUTES.ONBOARDING_STATUS] !== ONBOARDING_STATUS.COMPLETE || attrs[COGNITO_ATTRIBUTES.SETUP_COMPLETED] !== 'TRUE')) {
+            if (attrs && (attrs[COGNITO_ATTRIBUTES.ONBOARDING_STATUS] !== ONBOARDING_STATUS.COMPLETE || attrs[COGNITO_ATTRIBUTES.SETUP_COMPLETED] !== 'true')) {
               logger.info('[DashboardApp] Updating Cognito attributes in background');
               fetch('/api/user/update-attributes', {
                 method: 'POST',
@@ -170,7 +170,7 @@ const DashboardApp = ({ children }) => {
                 body: JSON.stringify({
                   attributes: {
                     [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.COMPLETE,
-                    [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'TRUE'
+                    [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'true'
                   }
                 })
               }).catch(e => logger.warn('Failed to update attributes:', e));

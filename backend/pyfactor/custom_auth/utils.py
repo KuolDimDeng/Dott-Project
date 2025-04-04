@@ -151,9 +151,19 @@ def create_tenant_schema_for_user(user, business_name=None):
     business_id = getattr(user, 'custom', {}).get('businessid') or getattr(user, 'custom', {}).get('business_id')
     tenant, should_create = ensure_single_tenant_per_business(user, business_id)
     
-    # If tenant already exists, return it immediately
+    # If tenant already exists, update Cognito and return it immediately
     if tenant and not should_create:
         logger.info(f"[TENANT-CREATION-{process_id}] Using existing tenant {tenant.schema_name} for user {user.email}")
+        
+        # Ensure Cognito businessid is updated with tenant ID
+        try:
+            # Only update if user has a Cognito sub
+            if hasattr(user, 'cognito_sub') and user.cognito_sub:
+                update_cognito_tenant_id(user.cognito_sub, str(tenant.id))
+                logger.info(f"[TENANT-CREATION-{process_id}] Updated Cognito businessid for user {user.email}: {tenant.id}")
+        except Exception as e:
+            logger.warning(f"[TENANT-CREATION-{process_id}] Failed to update Cognito: {str(e)}")
+            
         return tenant
     
     # If user shouldn't create a tenant (non-OWNER without business association), return None
@@ -757,4 +767,48 @@ def ensure_auth_tables_in_schema(schema_name):
             
     except Exception as e:
         logger.error(f"[AUTH-TABLES-{request_id}] Error ensuring auth tables in schema {schema_name}: {str(e)}")
+        return False
+
+# Add a new function to update Cognito businessid attribute
+def update_cognito_tenant_id(cognito_sub, tenant_id):
+    """
+    Update Cognito user's businessid attribute with tenant ID
+    
+    Args:
+        cognito_sub: The user's Cognito sub (UUID)
+        tenant_id: The tenant ID to set
+    """
+    try:
+        import boto3
+        from botocore.exceptions import ClientError
+        from django.conf import settings
+        
+        # Create Cognito client
+        cognito = boto3.client(
+            'cognito-idp',
+            region_name=settings.AWS_REGION,
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+        )
+        
+        # Update user attributes
+        response = cognito.admin_update_user_attributes(
+            UserPoolId=settings.COGNITO_USER_POOL_ID,
+            Username=cognito_sub,
+            UserAttributes=[
+                {
+                    'Name': 'custom:businessid',
+                    'Value': tenant_id
+                }
+            ]
+        )
+        
+        logger.info(f"Updated Cognito businessid for user {cognito_sub}: {tenant_id}")
+        return True
+        
+    except ClientError as e:
+        logger.error(f"Cognito error updating businessid: {str(e)}")
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error updating Cognito businessid: {str(e)}")
         return False

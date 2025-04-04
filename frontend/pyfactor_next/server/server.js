@@ -4,6 +4,7 @@ const next = require('next');
 const path = require('path');
 const initSocketServer = require('./socketServer');
 
+// Read development mode from environment variables
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();

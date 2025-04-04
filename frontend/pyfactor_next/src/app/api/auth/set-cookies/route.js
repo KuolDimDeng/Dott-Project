@@ -73,7 +73,7 @@ export async function POST(request) {
     try {
       const decodedToken = parseJwt(idToken);
       cognitoOnboardingStatus = decodedToken['custom:onboarding'];
-      cognitoSetupDone = decodedToken['custom:setupdone'] === 'TRUE';
+      cognitoSetupDone = (decodedToken['custom:setupdone'] || '').toLowerCase() === 'true';
       
       logger.debug('[API] Extracted onboarding status from token:', { 
         cognitoOnboardingStatus,

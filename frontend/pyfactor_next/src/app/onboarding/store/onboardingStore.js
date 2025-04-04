@@ -61,6 +61,28 @@ const useOnboardingStore = create((set, get) => ({
         throw new Error('No valid session');
       }
 
+      // Store in localStorage for development mode if needed
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          // Store each piece of information individually for easier access
+          localStorage.setItem('businessName', info.businessName || '');
+          localStorage.setItem('businessType', info.businessType || '');
+          localStorage.setItem('businessSubtypes', info.businessSubtypes || '');
+          localStorage.setItem('businessId', info.businessId || '');
+          localStorage.setItem('businessCountry', info.country || '');
+          localStorage.setItem('businessState', info.businessState || '');
+          localStorage.setItem('legalStructure', info.legalStructure || '');
+          localStorage.setItem('dateFounded', info.dateFounded || '');
+          
+          // Also store the complete business info object
+          localStorage.setItem('onboardingBusinessInfo', JSON.stringify(info));
+          
+          console.log('💾 Saved business info to localStorage for development mode', info);
+        } catch (storageError) {
+          console.warn('Failed to save business info to localStorage:', storageError);
+        }
+      }
+
       // Update user attributes
       await updateUserAttributes({
         userAttributes: {
@@ -101,6 +123,23 @@ const useOnboardingStore = create((set, get) => ({
       const { tokens } = await fetchAuthSession();
       if (!tokens?.accessToken) {
         throw new Error('No valid session');
+      }
+
+      // Store in localStorage for development mode if needed
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          localStorage.setItem('subscriptionPlan', subscription.plan || '');
+          localStorage.setItem('subscriptionInterval', subscription.interval || '');
+          localStorage.setItem('onboardingSubscription', JSON.stringify(subscription));
+          
+          // Set a cookie for server-side access
+          document.cookie = `subscriptionPlan=${subscription.plan}; path=/; max-age=86400`;
+          document.cookie = `subscriptionInterval=${subscription.interval}; path=/; max-age=86400`;
+          
+          console.log('💾 Saved subscription info to localStorage for development mode', subscription);
+        } catch (storageError) {
+          console.warn('Failed to save subscription info to localStorage:', storageError);
+        }
       }
 
       // Update user attributes
@@ -147,11 +186,27 @@ const useOnboardingStore = create((set, get) => ({
         throw new Error('No valid session');
       }
 
+      // Store in localStorage for development mode if needed
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          localStorage.setItem('paymentId', payment.id || '');
+          localStorage.setItem('paymentVerified', 'true');
+          localStorage.setItem('paymentType', payment.paymentMethod?.type || 'credit_card');
+          localStorage.setItem('paymentLast4', payment.paymentMethod?.last4 || '4242');
+          localStorage.setItem('paymentExpiry', payment.paymentMethod?.expiry || '12/25');
+          localStorage.setItem('onboardingPayment', JSON.stringify(payment));
+          
+          console.log('💾 Saved payment info to localStorage for development mode', payment);
+        } catch (storageError) {
+          console.warn('Failed to save payment info to localStorage:', storageError);
+        }
+      }
+
       // Update user attributes
       await updateUserAttributes({
         userAttributes: {
           'custom:paymentid': payment.id,
-          'custom:payverified': 'TRUE',
+          'custom:payverified': 'true',
           'custom:onboarding': ONBOARDING_STATES.PAYMENT,
           'custom:updated_at': new Date().toISOString()
         }
@@ -185,6 +240,23 @@ const useOnboardingStore = create((set, get) => ({
         throw new Error('No valid session');
       }
       
+      // For development mode, save status in localStorage
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          localStorage.setItem('setupdone', 'true');
+          localStorage.setItem('onboardingStatus', ONBOARDING_STATES.COMPLETE);
+          localStorage.setItem('onboardingCompletedAt', new Date().toISOString());
+          
+          // Set cookies for server-side access
+          document.cookie = `setupdone=true; path=/; max-age=86400`;
+          document.cookie = `onboardingStatus=${ONBOARDING_STATES.COMPLETE}; path=/; max-age=86400`;
+          
+          console.log('💾 Saved setup completion to localStorage for development mode');
+        } catch (storageError) {
+          console.warn('Failed to save setup completion to localStorage:', storageError);
+        }
+      }
+      
       const requestId = crypto.randomUUID();
       let attributeUpdateSuccess = false;
       
@@ -198,7 +270,7 @@ const useOnboardingStore = create((set, get) => ({
       try {
         await updateUserAttributes({
           userAttributes: {
-            'custom:setupdone': 'TRUE',
+            'custom:setupdone': 'true',
             'custom:onboarding': ONBOARDING_STATES.COMPLETE,
             'custom:updated_at': new Date().toISOString(),
             'custom:onboardingCompletedAt': new Date().toISOString()
@@ -247,7 +319,7 @@ const useOnboardingStore = create((set, get) => ({
               },
               body: JSON.stringify({
                 attributes: {
-                  'custom:setupdone': 'TRUE',
+                  'custom:setupdone': 'true',
                   'custom:onboarding': ONBOARDING_STATES.COMPLETE,
                   'custom:updated_at': new Date().toISOString()
                 },
@@ -272,8 +344,8 @@ const useOnboardingStore = create((set, get) => ({
       
       // Set cookies for immediate status update
       if (attributeUpdateSuccess) {
-        document.cookie = `onboardingStep=COMPLETE; path=/; max-age=${60*60*24*7}`;
-        document.cookie = `onboardedStatus=COMPLETE; path=/; max-age=${60*60*24*7}`;
+        document.cookie = `onboardingStep=complete; path=/; max-age=${60*60*24*7}`;
+        document.cookie = `onboardedStatus=complete; path=/; max-age=${60*60*24*7}`;
         document.cookie = `setupCompleted=true; path=/; max-age=${60*60*24*7}`;
         
         // Update store state
@@ -336,7 +408,7 @@ const useOnboardingStore = create((set, get) => ({
         } : null,
         payment: attributes['custom:paymentid'] ? {
           id: attributes['custom:paymentid'],
-          verified: attributes['custom:payverified'] === 'TRUE'
+          verified: attributes['custom:payverified'] === 'true'
         } : null,
         isLoading: false,
         error: null

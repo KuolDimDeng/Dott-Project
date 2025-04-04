@@ -29,10 +29,10 @@ export async function GET(request) {
     });
     
     // For RLS, we can determine completion status
-    // Use user attributes from Cognito/auth system
-    const setupComplete = 
-      user?.['custom:setupdone'] === 'TRUE' || 
-      user?.['custom:onboarding'] === 'COMPLETE';
+    // Use user attributes from Cognito/auth system and normalize case
+    const setupDone = (user?.['custom:setupdone'] || '').toLowerCase() === 'true';
+    const onboardingComplete = (user?.['custom:onboarding'] || '').toLowerCase() === 'complete';
+    const setupComplete = setupDone || onboardingComplete;
     
     // Return status
     return NextResponse.json({

@@ -3,8 +3,80 @@ import { format } from 'date-fns';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useNotification } from '@/context/NotificationContext';
+import PropTypes from 'prop-types';
 
-const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
+// Tailwind theme utility to replace useTheme from MUI
+const getTailwindColor = (colorName, shade = 500) => {
+  const colors = {
+    primary: {
+      50: '#f0f9ff',
+      100: '#e0f2fe',
+      200: '#bae6fd',
+      300: '#7dd3fc',
+      400: '#38bdf8',
+      500: '#0ea5e9',
+      600: '#0284c7',
+      700: '#0369a1',
+      800: '#075985',
+      900: '#0c4a6e',
+    },
+    error: {
+      50: '#fef2f2',
+      100: '#fee2e2',
+      200: '#fecaca',
+      300: '#fca5a5',
+      400: '#f87171',
+      500: '#ef4444',
+      600: '#dc2626',
+      700: '#b91c1c',
+      800: '#991b1b',
+      900: '#7f1d1d',
+    },
+    warning: {
+      50: '#fffbeb',
+      100: '#fef3c7',
+      200: '#fde68a',
+      300: '#fcd34d',
+      400: '#fbbf24',
+      500: '#f59e0b',
+      600: '#d97706',
+      700: '#b45309',
+      800: '#92400e',
+      900: '#78350f',
+    },
+    success: {
+      50: '#f0fdf4',
+      100: '#dcfce7',
+      200: '#bbf7d0',
+      300: '#86efac',
+      400: '#4ade80',
+      500: '#22c55e',
+      600: '#16a34a',
+      700: '#15803d',
+      800: '#166534',
+      900: '#14532d',
+    },
+    gray: {
+      50: '#f9fafb',
+      100: '#f3f4f6',
+      200: '#e5e7eb',
+      300: '#d1d5db',
+      400: '#9ca3af',
+      500: '#6b7280',
+      600: '#4b5563',
+      700: '#374151',
+      800: '#1f2937',
+      900: '#111827',
+    }
+  };
+
+  return colors[colorName]?.[shade] || colors.primary[500];
+};
+
+const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
+  // Handle both newInvoice prop and mode prop for backward compatibility
+  const isNewInvoice = isNewInvoiceProp || mode === 'create';
+  
   const [activeTab, setActiveTab] = useState(isNewInvoice ? 0 : 2);
   const [invoices, setInvoices] = useState([]);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -24,7 +96,6 @@ const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
-  const theme = useTheme();
 
   useEffect(() => {
     fetchInvoices();
@@ -174,7 +245,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
       if (error.response && error.response.data) {
         console.error('Error details:', error.response.data);
       }
-      toast.error('Failed to create invoice');
+      notifyError('Failed to create invoice');
     }
   };
 
@@ -202,10 +273,10 @@ const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
       setSelectedInvoice(response.data);
       setIsEditing(false);
       fetchInvoices();
-      toast.success('Invoice updated successfully');
+      notifySuccess('Invoice updated successfully');
     } catch (error) {
       console.error('Error updating invoice:', error);
-      toast.error('Failed to update invoice');
+      notifyError('Failed to update invoice');
     }
   };
 
@@ -216,14 +287,14 @@ const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
   const handleConfirmDelete = async () => {
     try {
       await axiosInstance.delete(`/api/invoices/${selectedInvoice.id}/`);
-      toast.success('Invoice deleted successfully');
+      notifySuccess('Invoice deleted successfully');
       setDeleteDialogOpen(false);
       setSelectedInvoice(null);
       fetchInvoices();
       setActiveTab(2);
     } catch (error) {
       console.error('Error deleting invoice:', error);
-      toast.error('Failed to delete invoice');
+      notifyError('Failed to delete invoice');
     }
   };
 
@@ -733,6 +804,11 @@ const InvoiceManagement = ({ newInvoice: isNewInvoice = false }) => {
         )}
       </div>
   );
+};
+
+InvoiceManagement.propTypes = {
+  newInvoice: PropTypes.bool,
+  mode: PropTypes.string
 };
 
 export default InvoiceManagement;

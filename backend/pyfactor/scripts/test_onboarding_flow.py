@@ -376,6 +376,113 @@ class OnboardingFlowTester:
         
         return schema_exists
     
+    def test_tiered_storage(self):
+        """Test the tiered storage approach for onboarding"""
+        logger.info("Testing tiered storage approach for onboarding")
+        
+        # Create a session and store data
+        url = f"{self.base_url}/api/status/"
+        
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json",
+            "X-Request-Id": self.request_id
+        }
+        
+        # Get current onboarding status
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code != 200:
+            logger.error(f"Failed to get onboarding status: {response.status_code}")
+            logger.error(f"Response: {response.text}")
+            return False
+        
+        logger.info("Successfully retrieved onboarding status")
+        initial_data = response.json()
+        
+        # Store data in Redis session (business info step)
+        business_data = {
+            "step": "business-info",
+            "data": {
+                "business_info": {
+                    "name": "Test Business",
+                    "type": "Corporation",
+                    "country": "US",
+                    "legal_structure": "LLC"
+                }
+            }
+        }
+        
+        # Update onboarding status with business info
+        response = requests.post(url, headers=headers, json=business_data)
+        
+        if response.status_code != 200:
+            logger.error(f"Failed to update business info: {response.status_code}")
+            logger.error(f"Response: {response.text}")
+            return False
+        
+        logger.info("Successfully updated business info")
+        session_id = response.json().get('session_id')
+        logger.info(f"Session ID: {session_id}")
+        
+        # Get session cookie
+        onboarding_session_cookie = response.cookies.get('onboardingSessionId')
+        
+        if onboarding_session_cookie:
+            # Add session cookie to headers
+            headers['Cookie'] = f"onboardingSessionId={onboarding_session_cookie}"
+        
+        # Check that data was stored in Redis and DB
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code != 200:
+            logger.error(f"Failed to get updated status: {response.status_code}")
+            logger.error(f"Response: {response.text}")
+            return False
+        
+        updated_data = response.json()
+        logger.info(f"Updated data: {json.dumps(updated_data, indent=2)}")
+        
+        # Verify that business info was stored
+        business_info = updated_data.get('business_info', {})
+        if business_info.get('name') != "Test Business":
+            logger.error("Business info was not stored correctly")
+            return False
+        
+        logger.info("Business info was stored correctly in tiered storage")
+        
+        # Test subscription step
+        subscription_data = {
+            "step": "subscription",
+            "data": {
+                "selected_plan": "free",
+                "billing_cycle": "monthly"
+            }
+        }
+        
+        # Update subscription info
+        response = requests.post(url, headers=headers, json=subscription_data)
+        
+        if response.status_code != 200:
+            logger.error(f"Failed to update subscription: {response.status_code}")
+            logger.error(f"Response: {response.text}")
+            return False
+        
+        logger.info("Successfully updated subscription info")
+        
+        # Check that progress was updated
+        response = requests.get(url, headers=headers)
+        updated_data = response.json()
+        
+        if updated_data.get('current_step') != "subscription":
+            logger.error("Subscription step was not updated correctly")
+            return False
+        
+        # Test completing the onboarding process
+        complete_url = f"{self.base_url}/api/complete/"
+        response = requests.post(complete_url, headers=headers)
+        
+        if response.status_code != 200:
     def run_test(self):
         """Run the complete onboarding flow test"""
         try:

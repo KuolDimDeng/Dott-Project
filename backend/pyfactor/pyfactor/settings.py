@@ -111,7 +111,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -294,6 +294,10 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
         'max_retries': 5
     }
 }
+
+# Redis database numbers for different uses
+REDIS_TENANT_DB = 2  # Use a separate Redis database for tenant metadata
+REDIS_ONBOARDING_DB = 3  # Use a separate Redis database for onboarding sessions
 
 CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
 CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
@@ -617,6 +621,7 @@ MIDDLEWARE = [
     'custom_auth.middleware.RequestIDMiddleware',
     'custom_auth.middleware.TenantMiddleware',
     'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',
+    'onboarding.middleware.OnboardingSessionMiddleware',
 ]
 
 # Maximum number of database connections allowed

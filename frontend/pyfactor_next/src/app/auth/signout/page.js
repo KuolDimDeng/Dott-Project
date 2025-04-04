@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from '@/hooks/auth';
 import { logger } from '@/utils/logger';
 
@@ -24,20 +23,11 @@ export default function SignOut() {
   }, [signOut]);
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        gap: 2,
-      }}
-    >
-      <CircularProgress />
-      <Typography variant="body1" color="textSecondary">
+    <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
+      <p className="text-gray-600">
         Signing out...
-      </Typography>
-    </Box>
+      </p>
+    </div>
   );
 }

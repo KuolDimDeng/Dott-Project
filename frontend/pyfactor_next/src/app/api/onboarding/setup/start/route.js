@@ -98,7 +98,7 @@ export async function POST(request) {
     if (data.setup_complete) {
       // Update onboarding status to COMPLETE
       await updateOnboardingStep('COMPLETE', {
-        'custom:setupdone': 'TRUE',
+        'custom:setupdone': 'true',
         'custom:setupcompletetime': new Date().toISOString()
       }, {
         accessToken: accessToken,

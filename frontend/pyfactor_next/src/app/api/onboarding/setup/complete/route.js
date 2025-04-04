@@ -112,7 +112,7 @@ async function updateCognitoAttributes(requestId, token) {
     await updateUserAttributes({
       userAttributes: {
         'custom:onboarding': 'COMPLETE',
-        'custom:setupdone': 'TRUE',
+        'custom:setupdone': 'true',
         'custom:updated_at': new Date().toISOString()
       }
     });
@@ -140,7 +140,7 @@ async function updateCognitoAttributes(requestId, token) {
         body: JSON.stringify({
           attributes: {
             'custom:onboarding': 'COMPLETE',
-            'custom:setupdone': 'TRUE',
+            'custom:setupdone': 'true',
             'custom:updated_at': new Date().toISOString()
           },
           forceUpdate: true

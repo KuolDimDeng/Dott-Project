@@ -1,6 +1,6 @@
 "use strict";
 
-import { logger } from './logger';
+import { logger } from '@/utils/logger';
 
 // Don't import server-side modules directly
 // These will be dynamically imported when needed in server contexts
@@ -957,6 +957,12 @@ export const validateTenantIdFormat = (tenantId, logErrors = true) => {
     return null;
   }
 
+  // Special case for development tenant IDs
+  if (process.env.NODE_ENV === 'development' && tenantId.startsWith('dev-')) {
+    if (logErrors) console.log(`[TenantUtils] Accepting development tenant ID: "${tenantId}"`);
+    return tenantId;
+  }
+
   // Check if it's a valid UUID format
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
@@ -1022,6 +1028,3 @@ export const setSchemaName = (schemaName) => {
     }
   }
 };
-
-// These functions are already exported using ES Module syntax above
-// No need for additional exports here

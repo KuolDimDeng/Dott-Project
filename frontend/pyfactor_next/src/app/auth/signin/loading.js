@@ -1,34 +1,11 @@
 'use client';
 
-import { Box, CircularProgress, Paper } from '@mui/material';
-
 export default function SignInLoading() {
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        p: 3,
-      }}
-    >
-      <Paper
-        elevation={3}
-        sx={{
-          p: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          maxWidth: 400,
-          width: '100%',
-          height: 400, // Match approximate height of sign-in form
-          justifyContent: 'center',
-        }}
-      >
-        <CircularProgress size={48} />
-      </Paper>
-    </Box>
+    <div className="flex flex-col items-center justify-center min-h-screen p-6">
+      <div className="bg-white rounded-lg shadow-md p-8 flex flex-col items-center justify-center max-w-md w-full h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
+      </div>
+    </div>
   );
 }

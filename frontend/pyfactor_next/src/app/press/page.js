@@ -1,111 +1,46 @@
 'use client';
 
 import * as React from 'react';
-import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import HomeIcon from '@mui/icons-material/Home';
-import NewspaperIcon from '@mui/icons-material/Newspaper';
-import Paper from '@mui/material/Paper';
-import { useTheme } from '@mui/material/styles';
+import Link from 'next/link';
 
 export default function Press() {
-  const theme = useTheme();
-  const primaryColor = '#0a3d62'; // Navy blue to match About page
-  const hoverColor = '#3c6382'; // Lighter navy blue for hover
-
   return (
-    <Box
-      sx={{
-        width: '100%',
-        minHeight: '100vh',
-        color: theme.palette.text.primary,
-        backgroundColor: theme.palette.background.default,
-        py: { xs: 8, md: 12 },
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Container maxWidth="md">
+    <div className="w-full min-h-screen flex flex-col items-center justify-center py-8 md:py-12 bg-gray-50 text-gray-900">
+      <div className="container max-w-3xl px-4 mx-auto">
         {/* Home Button */}
-        <Box sx={{ mb: 6, display: 'flex', justifyContent: 'flex-start' }}>
-          <Button
-            variant="contained"
-            component="a"
+        <div className="mb-6 flex justify-start">
+          <Link 
             href="/"
-            startIcon={<HomeIcon />}
-            sx={{
-              backgroundColor: primaryColor,
-              '&:hover': {
-                backgroundColor: hoverColor,
-              },
-              borderRadius: '50px',
-              fontFamily: '"Inter", sans-serif',
-              fontWeight: 600,
-              boxShadow: '0 4px 14px 0 rgba(10, 61, 98, 0.39)',
-            }}
+            className="inline-flex items-center px-4 py-2 bg-[#0a3d62] hover:bg-[#3c6382] text-white rounded-full font-['Inter',sans-serif] font-semibold shadow-lg shadow-blue-900/30 transition-colors"
           >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+            </svg>
             Back to Home
-          </Button>
-        </Box>
+          </Link>
+        </div>
 
         {/* Under Development Message */}
-        <Paper
-          elevation={4}
-          sx={{
-            p: 6,
-            borderRadius: 4,
-            textAlign: 'center',
-            background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
-            border: `1px solid ${theme.palette.divider}`,
-          }}
-        >
-          <NewspaperIcon sx={{ fontSize: 80, color: primaryColor, mb: 3 }} />
+        <div className="p-6 md:p-8 rounded-2xl text-center bg-gradient-to-br from-white to-gray-50 border border-gray-200 shadow-xl">
+          <div className="mb-6 flex justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 text-[#0a3d62]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
+          </div>
           
-          <Typography
-            variant="h2"
-            sx={{
-              fontSize: { xs: '2rem', md: '3rem' },
-              fontWeight: 700,
-              mb: 3,
-              color: primaryColor,
-              fontFamily: '"Poppins", sans-serif',
-            }}
-          >
+          <h1 className="text-2xl md:text-3xl font-bold mb-3 text-[#0a3d62] font-['Poppins',sans-serif]">
             Press Page Under Development
-          </Typography>
+          </h1>
           
-          <Typography
-            variant="h5"
-            sx={{
-              color: theme.palette.text.secondary,
-              fontFamily: '"Inter", sans-serif',
-              mb: 4,
-              maxWidth: '600px',
-              mx: 'auto',
-            }}
-          >
+          <h2 className="text-lg md:text-xl text-gray-600 font-['Inter',sans-serif] mb-4 max-w-[600px] mx-auto">
             Our press and media resources section is coming soon!
-          </Typography>
+          </h2>
           
-          <Typography
-            variant="body1"
-            sx={{
-              color: theme.palette.text.secondary,
-              fontFamily: '"Inter", sans-serif',
-              fontSize: '1.1rem',
-              lineHeight: 1.6,
-              maxWidth: '700px',
-              mx: 'auto',
-            }}
-          >
+          <p className="text-gray-600 font-['Inter',sans-serif] text-base md:text-lg leading-relaxed max-w-[700px] mx-auto">
             We're currently developing a comprehensive press center with media resources, company news, and press releases. Check back soon for the latest updates on Dott's mission to empower small businesses.
-          </Typography>
-        </Paper>
-      </Container>
-    </Box>
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }

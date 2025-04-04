@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, CircularProgress } from '@mui/material';
 import ServiceForm from '../../components/ServiceForm';
 import { useParams } from 'next/navigation';
 
@@ -32,28 +31,28 @@ export default function EditServicePage() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Typography color="error">Error: {error}</Typography>
-      </Box>
+      <div className="p-6">
+        <p className="text-red-600">Error: {error}</p>
+      </div>
     );
   }
 
   return (
-    <Box>
-      <Box sx={{ p: 3, borderBottom: '1px solid #e0e0e0' }}>
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+    <div>
+      <div className="p-6 border-b border-gray-200">
+        <h1 className="text-2xl font-semibold">
           Edit Service: {service?.name}
-        </Typography>
-      </Box>
+        </h1>
+      </div>
       <ServiceForm mode="edit" service={service} />
-    </Box>
+    </div>
   );
 } 

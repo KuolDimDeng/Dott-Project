@@ -217,8 +217,8 @@ export async function completeOnboarding() {
     
     // Define attributes to update
     const userAttributes = {
-      'custom:onboarding': 'COMPLETE',
-      'custom:setupdone': 'TRUE',
+      'custom:onboarding': 'complete',
+      'custom:setupdone': 'true',
       'custom:updated_at': new Date().toISOString(),
       'custom:onboardingCompletedAt': new Date().toISOString()
     };
@@ -314,8 +314,8 @@ export async function completeOnboarding() {
     
     // Set cookies for immediate client-side status update
     if (attributeUpdateSuccess) {
-      document.cookie = `onboardingStep=COMPLETE; path=/; max-age=${60*60*24*7}`;
-      document.cookie = `onboardedStatus=COMPLETE; path=/; max-age=${60*60*24*7}`;
+      document.cookie = `onboardingStep=complete; path=/; max-age=${60*60*24*7}`;
+      document.cookie = `onboardedStatus=complete; path=/; max-age=${60*60*24*7}`;
       document.cookie = `setupCompleted=true; path=/; max-age=${60*60*24*7}`;
       
       logger.debug('[OnboardingUtils] Updated cookies for immediate status change', {
@@ -365,7 +365,7 @@ export async function getOnboardingStatus() {
       const userAttributes = await fetchUserAttributes();
       if (userAttributes) {
         statusData.cognitoStatus = userAttributes['custom:onboarding'];
-        statusData.cognitoSetupDone = userAttributes['custom:setupdone'] === 'TRUE';
+        statusData.cognitoSetupDone = (userAttributes['custom:setupdone'] || '').toLowerCase() === 'true';
         statusData.sourcesPriority.push('cognito');
         
         // Cognito is the source of truth, so set the status from here if available
@@ -453,23 +453,28 @@ export async function getOnboardingStatus() {
       statusData.localStorageStatus = statusData.cognitoStatus;
     }
     
-    // Map status to step if not already set
-    if (statusData.status && !statusData.step) {
-      switch (statusData.status) {
-        case 'NOT_STARTED':
+    // Set step based on status
+    if (statusData.status) {
+      // Normalize to lowercase
+      const statusLower = statusData.status.toLowerCase();
+      
+      switch (statusLower) {
+        case 'not_started':
+        case 'not-started':
           statusData.step = 'business-info';
           break;
-        case 'BUSINESS_INFO':
+        case 'business_info':
+        case 'business-info':
           statusData.step = 'subscription';
           break;
-        case 'SUBSCRIPTION':
+        case 'subscription':
           statusData.step = 'payment';
           break;
-        case 'PAYMENT':
+        case 'payment':
           statusData.step = 'setup';
           break;
-        case 'SETUP':
-        case 'COMPLETE':
+        case 'setup':
+        case 'complete':
           statusData.step = 'dashboard';
           break;
         default:
@@ -510,39 +515,46 @@ async function synchronizeOnboardingStatus(status, setupDone) {
     
     // Determine the appropriate step for the status
     let step = 'business-info';
-    switch (status) {
-      case 'BUSINESS_INFO':
+    
+    // Normalize status to lowercase
+    const statusLower = status?.toLowerCase();
+    
+    switch (statusLower) {
+      case 'business_info':
+      case 'business-info':
         step = 'subscription';
         break;
-      case 'SUBSCRIPTION':
+      case 'subscription':
         step = 'payment';
         break;
-      case 'PAYMENT':
+      case 'payment':
         step = 'setup';
         break;
-      case 'SETUP':
-      case 'COMPLETE':
+      case 'setup':
+      case 'complete':
         step = 'dashboard';
         break;
+      default:
+        step = 'business-info';
     }
     
-    // Update cookies
+    // Update cookies with normalized case
     try {
       const expiration = new Date();
       expiration.setDate(expiration.getDate() + 30); // 30 days
-      document.cookie = `onboardedStatus=${status}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+      document.cookie = `onboardedStatus=${statusLower || 'not_started'}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
       document.cookie = `onboardingStep=${step}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
       logger.debug('[synchronizeOnboardingStatus] Updated cookies');
     } catch (cookieError) {
       logger.warn('[synchronizeOnboardingStatus] Error updating cookies:', cookieError);
     }
     
-    // Update localStorage
+    // Update localStorage with normalized case
     try {
-      localStorage.setItem('onboardedStatus', status);
+      localStorage.setItem('onboardedStatus', statusLower || 'not_started');
       localStorage.setItem('onboardingStep', step);
-      localStorage.setItem('cognitoOnboardingStatus', status);
-      localStorage.setItem('cognitoSetupDone', setupDone ? 'TRUE' : 'FALSE');
+      localStorage.setItem('cognitoOnboardingStatus', statusLower || 'not_started');
+      localStorage.setItem('cognitoSetupDone', setupDone ? 'true' : 'false');
       logger.debug('[synchronizeOnboardingStatus] Updated localStorage');
     } catch (storageError) {
       logger.warn('[synchronizeOnboardingStatus] Error updating localStorage:', storageError);
@@ -563,7 +575,7 @@ async function synchronizeOnboardingStatus(status, setupDone) {
           body: JSON.stringify({
             attributes: {
               'custom:onboarding': status,
-              'custom:setupdone': setupDone ? 'TRUE' : 'FALSE'
+              'custom:setupdone': setupDone ? 'true' : 'false'
             }
           })
         });
@@ -812,7 +824,7 @@ export const updateOnboardingStatus = async (status, options = {}) => {
           
           // Add extra attributes for complete status
           if (status === ONBOARDING_STATUS.COMPLETE) {
-            userAttributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED] = 'TRUE';
+            userAttributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED] = 'true';
           }
           
           // Update attributes
@@ -854,20 +866,20 @@ export const updateOnboardingStatus = async (status, options = {}) => {
 export const isOnboardingComplete = () => {
   try {
     // Check cookies first (most reliable client-side indicator)
-    const cookieStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS);
-    const cookieSetupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED);
-    const cookieOnboardingStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP);
+    const cookieStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS)?.toLowerCase();
+    const cookieSetupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED)?.toLowerCase();
+    const cookieOnboardingStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP)?.toLowerCase();
     
     // Check localStorage as backup
-    const localStorageStatus = getLocalStorage(STORAGE_KEYS.ONBOARDING_STATUS);
-    const localStorageSetupCompleted = getLocalStorage(STORAGE_KEYS.SETUP_COMPLETED);
+    const localStorageStatus = getLocalStorage(STORAGE_KEYS.ONBOARDING_STATUS)?.toLowerCase();
+    const localStorageSetupCompleted = getLocalStorage(STORAGE_KEYS.SETUP_COMPLETED)?.toLowerCase();
     
-    // Return true if ANY source indicates completion
+    // Return true if ANY source indicates completion (using case-insensitive comparison)
     return (
-      cookieStatus === ONBOARDING_STATUS.COMPLETE ||
+      cookieStatus === 'complete' ||
       cookieSetupCompleted === 'true' ||
-      cookieOnboardingStep === ONBOARDING_STEPS.COMPLETE ||
-      localStorageStatus === ONBOARDING_STATUS.COMPLETE ||
+      cookieOnboardingStep === 'complete' ||
+      localStorageStatus === 'complete' ||
       localStorageSetupCompleted === 'true'
     );
   } catch (error) {

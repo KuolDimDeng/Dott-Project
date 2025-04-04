@@ -2,21 +2,49 @@ import { NextResponse } from 'next/server';
 import { validateServerSession } from '@/utils/serverUtils';
 import { logger } from '@/utils/logger';
 import { serverAxiosInstance } from '@/lib/axios/serverConfig';
+import { withRls, getTenantId } from '@/middleware/rls';
 
 /**
  * API endpoint to trigger tenant schema setup
  * This is a critical endpoint that ensures the tenant schema is properly created
  * and all user attributes are synchronized
  */
-export async function POST(request) {
+const schemaSetupHandler = async (request, context) => {
   try {
-    // Validate server session
-    const sessionValidation = await validateServerSession();
-    if (!sessionValidation.user) {
-      return NextResponse.json(
-        { error: 'Authentication required' }, 
-        { status: 401 }
-      );
+    // Get tenant ID from context (set by withRls middleware)
+    const tenantIdFromRls = context.tenantId;
+    const devMode = process.env.NODE_ENV === 'development' && request.headers.get('x-dev-mode') === 'true';
+    
+    // Validate server session (skip in development mode)
+    let sessionValidation;
+    if (!devMode) {
+      sessionValidation = await validateServerSession();
+      if (!sessionValidation.user) {
+        return NextResponse.json(
+          { error: 'Authentication required' }, 
+          { status: 401 }
+        );
+      }
+    } else {
+      // Create fake session for development mode
+      sessionValidation = {
+        user: {
+          sub: 'dev-user-123',
+          userId: 'dev-user-123',
+          email: request.headers.get('x-dev-user') || 'dev@example.com',
+          attributes: {
+            'custom:businessid': tenantIdFromRls,
+            'custom:onboarding': 'business-info',
+            'custom:setupdone': 'FALSE'
+          }
+        },
+        tokens: {
+          accessToken: 'dev-token',
+          idToken: 'dev-token'
+        }
+      };
+      
+      logger.info('[API] Using development mode session for schema setup');
     }
     
     const { user, tokens } = sessionValidation;
@@ -26,16 +54,20 @@ export async function POST(request) {
     // Log session info for debugging
     logger.info('[API] Schema setup triggered by user:', {
       userId,
-      email: userEmail
+      email: userEmail,
+      devMode
     });
     
     // Extract request data
     const body = await request.json();
     const { tenantId: requestTenantId, forceCreate = false } = body;
     
-    // Get tenant ID - using Cognito as source of truth
+    // Get tenant ID - prioritizing in this order:
+    // 1. RLS middleware tenant ID (includes dev mode)
+    // 2. Cognito tenant ID
+    // 3. Request body tenant ID
     const cognitoTenantId = user.attributes?.['custom:businessid'];
-    const finalTenantId = cognitoTenantId || requestTenantId;
+    const finalTenantId = tenantIdFromRls || cognitoTenantId || requestTenantId;
     
     if (!finalTenantId) {
       logger.error('[API] No valid tenant ID available for schema setup');
@@ -46,6 +78,31 @@ export async function POST(request) {
     }
     
     logger.info('[API] Using tenant ID for schema setup:', finalTenantId);
+    
+    // Development mode handling for schema setup
+    if (devMode) {
+      logger.info('[API] Development mode: simulating schema setup for tenant:', finalTenantId);
+      
+      // Store tenant ID in local storage via response cookies
+      const response = NextResponse.json({
+        tenantId: finalTenantId,
+        schemaCreated: true,
+        cognitoUpdated: true,
+        message: 'Tenant schema setup completed successfully (DEV MODE)',
+        isDevelopment: true
+      });
+      
+      // Set cookies for client-side consistency
+      setCookiesOnResponse(response, finalTenantId);
+      
+      // Also set the development tenant ID cookie
+      response.cookies.set('dev-tenant-id', finalTenantId, {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30 // 30 days
+      });
+      
+      return response;
+    }
     
     // Prepare request headers including tenant ID and authorization
     const headers = {
@@ -180,7 +237,7 @@ async function updateCognitoAttributes(accessToken, tenantId) {
         attributes: {
           'custom:businessid': tenantId,
           'custom:onboarding': 'COMPLETE',
-          'custom:setupdone': 'TRUE',
+          'custom:setupdone': 'true',
           'custom:updated_at': new Date().toISOString()
         }
       }
@@ -218,4 +275,7 @@ function setCookiesOnResponse(response, tenantId) {
     path: '/',
     maxAge: cookieMaxAge
   });
-} 
+}
+
+// Export the handler wrapped with RLS middleware
+export const POST = withRls(schemaSetupHandler); 

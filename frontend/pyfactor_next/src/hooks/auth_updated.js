@@ -237,19 +237,11 @@ export function useAuth() {
         email: userData.email,
         firstName: userData.firstName,
         lastName: userData.lastName,
-        attributeCount: 7, // Count of attributes being sent
-        autoSignIn: true,
-        authFlowType: 'USER_PASSWORD_AUTH'
+        attributeCount: Object.keys(userData).length
       });
       
-      // Verify Cognito configuration before attempting signup
-      logger.debug('[Auth] Verifying Cognito configuration:', {
-        region: process.env.NEXT_PUBLIC_AWS_REGION,
-        userPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID,
-        clientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID
-      });
-      
-      // Prepare user attributes
+      // Prepare user attributes with all required Cognito attributes
+      const timestamp = new Date().toISOString();
       const userAttributes = {
         email: userData.email,
         given_name: userData.firstName,
@@ -257,7 +249,27 @@ export function useAuth() {
         'custom:onboarding': 'NOT_STARTED',
         'custom:setupdone': 'FALSE',
         'custom:userrole': 'OWNER',
-        'custom:created_at': new Date().toISOString()
+        'custom:created_at': timestamp,
+        'custom:updated_at': timestamp,
+        'custom:lastlogin': timestamp,
+        'custom:firstname': userData.firstName,
+        'custom:lastname': userData.lastName,
+        'custom:acctstatus': 'PENDING',
+        'custom:attrversion': '1.0.0',
+        'custom:businesscountry': userData.country || 'US',
+        'custom:businessid': '', // Will be set after confirmation
+        'custom:businessname': userData.businessName || 'My Business',
+        'custom:businesstype': userData.businessType || 'Other',
+        'custom:datefounded': timestamp.split('T')[0], // Just the date part
+        'custom:legalstructure': userData.legalStructure || 'Sole Proprietorship',
+        'custom:paymentid': '',
+        'custom:paymentmethod': '',
+        'custom:payverified': 'FALSE',
+        'custom:preferences': JSON.stringify({}),
+        'custom:requirespayment': 'FALSE',
+        'custom:subplan': 'FREE',
+        'custom:subscriptioninterval': 'MONTHLY',
+        'custom:subscriptionstatus': 'ACTIVE'
       };
       
       logger.debug('[Auth] Prepared user attributes:', {
@@ -305,9 +317,19 @@ export function useAuth() {
             stack: error.stack
           });
           
+          // Check for specific error codes and translate them into user-friendly errors
+          let errorMessage = error.message;
+          if (error.code === 'UsernameExistsException') {
+            errorMessage = 'An account with this email already exists. Please sign in or reset your password.';
+          } else if (error.code === 'InvalidPasswordException') {
+            errorMessage = 'Password must be at least 8 characters and include uppercase, lowercase, numbers, and special characters.';
+          } else if (error.code === 'InvalidParameterException' && error.message.includes('username')) {
+            errorMessage = 'Please enter a valid email address.';
+          }
+          
           return {
             success: false,
-            error: error.message,
+            error: errorMessage,
             code: error.code,
             name: error.name
           };
@@ -325,6 +347,15 @@ export function useAuth() {
         nextStep: signUpResult.nextStep?.signUpStep,
         userId: signUpResult.userId
       });
+
+      // Store information for verification page
+      try {
+        sessionStorage.setItem('pendingVerificationEmail', userData.email);
+        sessionStorage.setItem('verificationCodeSent', 'true');
+        sessionStorage.setItem('verificationCodeTimestamp', Date.now().toString());
+      } catch (e) {
+        logger.warn('[Auth] Failed to store verification info in sessionStorage:', e);
+      }
 
       // Don't try to get session or create backend user yet - wait for confirmation
       if (!signUpResult.isSignUpComplete) {
@@ -415,9 +446,32 @@ export function useAuth() {
             name: error.name
           });
           
+          // Create user-friendly error messages for common confirmation errors
+          let errorMessage = error.message;
+          
+          if (error.code === 'CodeMismatchException') {
+            errorMessage = 'The verification code you entered is incorrect. Please check your email and try again.';
+          } else if (error.code === 'ExpiredCodeException') {
+            errorMessage = 'This verification code has expired. We\'ve sent a new code to your email.';
+            
+            // Attempt to resend the code automatically
+            try {
+              await authResendSignUpCode({ username: email });
+              errorMessage += ' Please check your inbox for the new code.';
+            } catch (resendError) {
+              logger.error('[Auth] Failed to resend verification code:', resendError);
+            }
+          } else if (error.code === 'NotAuthorizedException' && error.message.includes('already confirmed')) {
+            errorMessage = 'Your account is already confirmed. Please try signing in.';
+          } else if (error.code === 'UserNotFoundException') {
+            errorMessage = 'No account found with this email address. Please sign up first.';
+          } else if (error.code === 'LimitExceededException') {
+            errorMessage = 'Too many attempts. Please try again in a few minutes.';
+          }
+          
           return {
             success: false,
-            error: error.message,
+            error: errorMessage,
             code: error.code
           };
         }

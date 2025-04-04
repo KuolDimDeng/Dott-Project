@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, TextField, Button, Typography, Paper } from '@mui/material';
 
 // Create a component that directly manipulates the DOM for testing
 function DirectInputTest() {
@@ -73,19 +72,13 @@ function DirectInputTest() {
   }, []);
   
   return (
-    <div style={{ 
-      border: '2px solid blue', 
-      padding: '20px', 
-      borderRadius: '8px',
-      margin: '20px 0',
-      backgroundColor: '#f5f5f5'
-    }}>
-      <h3 style={{ marginTop: 0 }}>Direct DOM Input Test</h3>
+    <div className="border-2 border-blue-500 p-5 rounded-lg my-5 bg-gray-100">
+      <h3 className="mt-0 text-lg font-semibold">Direct DOM Input Test</h3>
       <p>This input bypasses React completely and works directly with the DOM:</p>
       
       <input ref={inputRef} type="text" placeholder="Type here to test..." />
       
-      <div style={{ marginTop: '20px', padding: '10px', border: '1px solid #ccc', backgroundColor: 'white' }}>
+      <div className="mt-5 p-3 border border-gray-300 bg-white">
         <p>Input value: <strong ref={outputRef}>(empty)</strong></p>
       </div>
     </div>
@@ -168,42 +161,25 @@ export default function TestInputPage() {
   }, []);
   
   return (
-    <Box sx={{ 
-      p: 4, 
-      minHeight: '100vh', 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center',
-      bgcolor: '#ffffff' // White background
-    }}>
-      <Typography variant="h4" component="h1" gutterBottom>
+    <div className="p-8 min-h-screen flex flex-col items-center bg-white">
+      <h1 className="text-2xl font-bold mb-4">
         Input Field Test Page
-      </Typography>
+      </h1>
       
-      <Typography variant="body1" paragraph>
+      <p className="text-gray-700 mb-6">
         This page tests different approaches to input field handling.
-      </Typography>
+      </p>
       
       {/* Direct DOM manipulation test */}
       <DirectInputTest />
       
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: 4, 
-          width: '100%', 
-          maxWidth: 600, 
-          mt: 4,
-          position: 'relative',
-          zIndex: 5 // Lower z-index than inputs
-        }}
-      >
-        <Typography variant="h6">
+      <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-2xl mt-6 relative z-10">
+        <h2 className="text-xl font-semibold mb-4">
           React State Input with stopPropagation
-        </Typography>
+        </h2>
         
-        <div style={{ marginBottom: '20px' }}>
-          <label htmlFor="react-input" style={{ display: 'block', marginBottom: '8px' }}>
+        <div className="mb-6">
+          <label htmlFor="react-input" className="block mb-2 text-gray-700">
             React Input (with stopPropagation):
           </label>
           <input
@@ -211,20 +187,13 @@ export default function TestInputPage() {
             type="text"
             value={input1}
             onChange={handleInput1Change}
-            style={{
-              width: '100%',
-              padding: '10px',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              fontSize: '16px',
-              position: 'relative',
-              zIndex: 9999 // Very high z-index
-            }}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-base relative z-50"
+            style={{ zIndex: 9999 }}
             placeholder="Type here..."
           />
-          <p>Current value: {input1 || '(empty)'}</p>
+          <p className="mt-2">Current value: {input1 || '(empty)'}</p>
           
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '10px' }}>
+          <div className="flex flex-wrap gap-2 mt-3">
             <button 
               onClick={() => setInput1(prev => prev + 'A')}
               className="test-btn"
@@ -252,29 +221,27 @@ export default function TestInputPage() {
           </div>
         </div>
         
-        <Typography variant="h6" style={{ marginTop: '40px' }}>
-          Material UI TextField
-        </Typography>
+        <h2 className="text-xl font-semibold mt-8 mb-4">
+          Tailwind Input
+        </h2>
         
-        <TextField
-          id="mui-input"
-          label="Material UI Input"
-          variant="outlined"
-          fullWidth
-          value={input2}
-          onChange={handleInput2Change}
-          placeholder="Type here..."
-          sx={{ 
-            mt: 2,
-            '& .MuiInputBase-input': {
-              position: 'relative',
-              zIndex: 9999
-            }
-          }}
-        />
-        <p>Current value: {input2 || '(empty)'}</p>
+        <div className="mb-4">
+          <label htmlFor="tailwind-input" className="block text-sm font-medium text-gray-700 mb-1">
+            Tailwind Input
+          </label>
+          <input
+            id="tailwind-input"
+            type="text"
+            value={input2}
+            onChange={handleInput2Change}
+            placeholder="Type here..."
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            style={{ position: 'relative', zIndex: 9999 }}
+          />
+        </div>
+        <p className="mt-2">Current value: {input2 || '(empty)'}</p>
         
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '10px' }}>
+        <div className="flex flex-wrap gap-2 mt-3">
           <button 
             onClick={() => setInput2(prev => prev + 'A')}
             className="test-btn"
@@ -300,28 +267,18 @@ export default function TestInputPage() {
             Clear
           </button>
         </div>
-      </Paper>
+      </div>
       
-      <Paper 
-        elevation={2}
-        sx={{ 
-          p: 3, 
-          mt: 4, 
-          width: '100%', 
-          maxWidth: 600,
-          bgcolor: '#fffde7'
-        }}
-      >
-        <Typography variant="h6" gutterBottom>
+      <div className="bg-amber-50 shadow rounded-lg p-6 mt-8 w-full max-w-2xl">
+        <h2 className="text-xl font-semibold mb-4">
           Debug Information:
-        </Typography>
-        <pre style={{ overflow: 'auto', maxHeight: '200px', backgroundColor: '#f5f5f5', padding: '10px' }}>
+        </h2>
+        <pre className="overflow-auto max-h-48 bg-gray-100 p-3 rounded">
           {JSON.stringify(debugInfo, null, 2)}
         </pre>
         
-        <Button 
-          variant="outlined" 
-          color="primary" 
+        <button 
+          className="mt-4 px-4 py-2 border border-blue-500 text-blue-500 rounded hover:bg-blue-50 transition-colors"
           onClick={() => {
             console.log('--- EVENT ABSORBERS DETECTOR ---');
             
@@ -345,11 +302,10 @@ export default function TestInputPage() {
             console.log(pointerNoneElements);
             console.log('--- END DETECTOR ---');
           }}
-          sx={{ mt: 2 }}
         >
           Detect Event Absorbers
-        </Button>
-      </Paper>
-    </Box>
+        </button>
+      </div>
+    </div>
   );
 }

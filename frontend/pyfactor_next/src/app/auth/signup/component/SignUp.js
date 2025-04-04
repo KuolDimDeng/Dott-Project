@@ -20,11 +20,41 @@ export default function SignUp() {
     confirmPassword: '',
     firstName: '',
     lastName: '',
+    businessName: '',
+    businessType: 'Other',
+    country: 'US',
+    legalStructure: 'Sole Proprietorship',
+    acceptTerms: false
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Debug logs for button state
+  useEffect(() => {
+    logger.debug('[SignUp] Button state:', {
+      isSubmitting,
+      authLoading,
+      isButtonDisabled: isSubmitting || authLoading,
+      error: !!error
+    });
+  }, [isSubmitting, authLoading, error]);
+
+  // Safety mechanism to ensure form doesn't get stuck in submitting state
+  useEffect(() => {
+    if (isSubmitting) {
+      // Auto-reset submission state after 10 seconds if stuck
+      const timeout = setTimeout(() => {
+        if (isSubmitting) {
+          logger.debug('[SignUp] Auto-resetting submission state after timeout');
+          setIsSubmitting(false);
+        }
+      }, 10000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isSubmitting]);
 
   useEffect(() => {
     logger.debug('[SignUp] Component mounted', {
@@ -40,6 +70,9 @@ export default function SignUp() {
         email: emailParam
       }));
     }
+    
+    // Reset any stuck loading states on mount
+    setIsSubmitting(false);
 
     return () => {
       logger.debug('[SignUp] Component unmounting');
@@ -67,6 +100,15 @@ export default function SignUp() {
 
   const validateForm = () => {
     try {
+      // Debug validation
+      logger.debug('[SignUp] Validating form:', {
+        passwordMatch: formData.password === formData.confirmPassword,
+        passwordLength: formData.password?.length || 0,
+        hasFirstName: !!formData.firstName,
+        hasLastName: !!formData.lastName,
+        hasEmail: !!formData.email
+      });
+    
       // Validate passwords match
       if (formData.password !== formData.confirmPassword) {
         throw new Error('Passwords do not match');
@@ -97,6 +139,7 @@ export default function SignUp() {
       return true;
     } catch (error) {
       setError(error.message);
+      logger.debug('[SignUp] Form validation failed:', { error: error.message });
       return false;
     }
   };
@@ -105,7 +148,8 @@ export default function SignUp() {
     try {
       logger.debug('[SignUp] Checking if email already exists:', { email });
       
-      const emailCheckResponse = await fetch('/api/auth/check-existing-email', {
+      // Make the API call to check if the email exists
+      const response = await fetch('/api/auth/check-existing-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,177 +158,161 @@ export default function SignUp() {
       });
       
       logger.debug('[SignUp] Email check response status:', { 
-        status: emailCheckResponse.status,
-        ok: emailCheckResponse.ok
+        status: response.status, 
+        ok: response.ok 
       });
       
-      if (!emailCheckResponse.ok) {
-        if (emailCheckResponse.status === 401) {
-          logger.error('[SignUp] Email check failed - authentication required:', { 
-            status: emailCheckResponse.status 
-          });
-          throw new Error('Email verification service requires authentication. Please try again later.');
-        } else {
-          logger.error('[SignUp] Email check failed with status:', { 
-            status: emailCheckResponse.status 
-          });
-          throw new Error(`Failed to check email (status ${emailCheckResponse.status}). Please try again.`);
+      // If the request was not successful
+      if (!response.ok) {
+        logger.debug('[SignUp] Email check failed with status:', { status: response.status });
+        
+        // For server errors, default to continuing with signup
+        // This is better than blocking user registration due to a check failure
+        if (response.status >= 500) {
+          return { exists: false };
         }
+        
+        throw new Error(`Failed to check email (status ${response.status}). Please try again.`);
       }
       
-      const emailCheckResult = await emailCheckResponse.json();
+      // Parse the JSON response
+      const data = await response.json();
+      logger.debug('[SignUp] Email check result:', data);
       
-      logger.debug('[SignUp] Email check result:', emailCheckResult);
-      
-      return emailCheckResult;
+      // Return the result, with a fallback to false if the API doesn't provide a clear answer
+      return { exists: data.exists === true };
     } catch (error) {
-      logger.error('[SignUp] Error checking email:', { 
+      logger.error('[SignUp] Error checking email:', {
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
-      throw error;
+      
+      // In case of any error, allow the registration to proceed
+      // The backend will validate the email uniqueness during signup anyway
+      return { exists: false };
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (isSubmitting) {
+      logger.debug('[SignUp] Submission already in progress, ignoring duplicate submit');
+      return;
+    }
+    
+    // Clear any previous errors
     setError('');
-    setSuccess('');
-    setIsRedirecting(false);
-
+    
     logger.debug('[SignUp] Form submission started:', {
       email: formData.email,
       hasPassword: !!formData.password,
-      formComplete: !!(formData.email && formData.password && formData.firstName && formData.lastName && formData.confirmPassword)
+      formComplete: !!formData.email && !!formData.password && !!formData.firstName && !!formData.lastName
     });
 
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
     try {
-      // First, check if the email already exists
-      const emailCheckResult = await checkExistingEmail(formData.email);
+      logger.debug('[SignUp] Submitting sign-up data');
+      setIsSubmitting(true);
       
-      if (emailCheckResult.exists) {
-        // Email already exists - inform user and redirect to sign in
-        setError('An account with this email already exists. Redirecting to sign in page...');
-        setTimeout(() => {
-          router.push('/auth/signin?email=' + encodeURIComponent(formData.email));
-        }, REDIRECT_DELAY);
+      // Validate form fields
+      if (!validateForm()) {
+        logger.debug('[SignUp] Form validation failed, aborting submission');
+        setIsSubmitting(false);
         return;
       }
       
-      // Email doesn't exist, proceed with sign up
-      const { getDefaultAttributes } = await import('@/utils/userAttributes');
-      const timestamp = new Date().toISOString();
-      
-      // Get default attributes and merge with custom ones
-      const initialAttributes = {
-        ...getDefaultAttributes(),
-        'custom:firstname': formData.firstName,
-        'custom:lastname': formData.lastName,
-        'custom:onboarding': 'NOT_STARTED',
-        'custom:userrole': 'OWNER',
-        'custom:acctstatus': 'PENDING',
-        'custom:created_at': timestamp,
-        'custom:updated_at': timestamp,
-        'custom:lastlogin': timestamp,
-        'custom:subplan': 'FREE',
-        'custom:subscriptioninterval': 'MONTHLY',
-        'custom:attrversion': '1.0.0',
-        'custom:setupdone': 'FALSE',
-        'custom:payverified': 'FALSE',
-      };
-      
-      // Store the email in localStorage to remember it was registered
+      // Check if email already exists
+      let emailExists = false;
       try {
-        if (typeof window !== 'undefined') {
-          const storedEmails = localStorage.getItem('existingEmails') || '[]';
-          const emailsList = JSON.parse(storedEmails);
-          
-          if (!emailsList.includes(formData.email.toLowerCase())) {
-            emailsList.push(formData.email.toLowerCase());
-            localStorage.setItem('existingEmails', JSON.stringify(emailsList));
-            logger.debug('[SignUp] Added email to local storage:', { email: formData.email });
-          }
-        }
-      } catch (e) {
-        logger.error('[SignUp] Error storing email in localStorage:', { error: e.message });
-        // Continue with signup even if local storage fails
+        const emailCheckResult = await checkExistingEmail(formData.email);
+        emailExists = emailCheckResult.exists;
+      } catch (emailCheckError) {
+        // Log the error but continue with signup
+        logger.debug('[SignUp] Error during email check, continuing with signup:', { 
+          error: emailCheckError.message 
+        });
+        // We'll let Cognito handle any duplicate email errors
       }
-
-      logger.debug('[SignUp] Signing up with attributes:', {
-        ...initialAttributes,
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        // Don't log the password
-      });
       
-      logger.debug('[SignUp] Calling signUp function with user data');
+      // If email exists, show a specific error message
+      if (emailExists) {
+        setError('This email is already registered. Please sign in instead.');
+        setIsSubmitting(false);
+        return;
+      }
       
-      // Add a timeout to prevent UI from getting stuck indefinitely
-      const signUpPromise = signUp({
+      // Proceed with signup using the auth context
+      const signUpData = {
         email: formData.email,
-        username: formData.email,
         password: formData.password,
         firstName: formData.firstName,
-        lastName: formData.lastName
+        lastName: formData.lastName,
+        businessName: formData.businessName,
+        businessType: formData.businessType,
+        country: formData.country,
+        legalStructure: formData.legalStructure
+      };
+      
+      logger.debug('[SignUp] Proceeding with signup for:', { 
+        email: signUpData.email, 
+        hasName: !!signUpData.firstName 
       });
       
-      // Create a timeout promise that rejects after 15 seconds
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('Sign up request timed out. Please try again.'));
-        }, 15000); // 15 seconds timeout
-      });
+      // Call the sign-up method from useAuth
+      const result = await signUp(signUpData);
       
-      // Race the signUp promise against the timeout
-      const result = await Promise.race([signUpPromise, timeoutPromise]);
-      
-      logger.debug('[SignUp] SignUp function returned result:', {
-        success: result.success,
-        hasError: !!result.error,
-        errorMessage: result.error,
-        errorCode: result.code
-      });
-
-      if (result.success) {
-        // Set success and redirecting state
-        setError('');
-        setSuccess('Account created successfully! Redirecting to email verification page...');
-        setIsRedirecting(true);
-        
-        // Set a flag to indicate that a verification code was sent during signup
-        try {
-          localStorage.setItem('signupCodeSent', 'true');
-          localStorage.setItem('signupCodeTimestamp', Date.now().toString());
-          logger.debug('[SignUp] Set verification code flags in localStorage');
-        } catch (e) {
-          logger.error('[SignUp] Error setting verification code flags:', e.message);
-        }
-        
-        // Delay to show success message
-        setTimeout(() => {
-          // Use string URL format which is more reliable
-          router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
-        }, REDIRECT_DELAY);
-      } else {
-        // Handle error
-        if (result.code === 'UsernameExistsException') {
-          setError('An account with this email already exists. Please sign in or reset your password.');
-        } else {
-          setError(result.error || 'Failed to create account. Please try again.');
-        }
-        setIsRedirecting(false);
+      if (!result.success) {
+        throw new Error(result.error || 'Sign up failed');
       }
+      
+      logger.debug('[SignUp] Signup successful, redirecting to verification page');
+      
+      // Set success message and indicate redirecting state
+      setSuccess('Account created! Please check your email for a verification code.');
+      setIsRedirecting(true);
+      
+      // Store information for verification page
+      try {
+        localStorage.setItem('signupCodeSent', 'true');
+        localStorage.setItem('signupCodeTimestamp', Date.now().toString());
+        localStorage.setItem('signupEmail', formData.email);
+        
+        // Remove any auto-signin data to ensure verification happens
+        localStorage.removeItem('tempPassword');
+        
+        // Log what we're storing
+        logger.debug('[SignUp] Stored verification data:', {
+          email: formData.email,
+          localStorage: {
+            signupCodeSent: true,
+            signupTimestamp: Date.now(),
+            hasEmail: !!formData.email
+          }
+        });
+      } catch (e) {
+        logger.error('[SignUp] Error storing verification data:', e);
+        // Ignore storage errors
+      }
+      
+      // Redirect to the verification page
+      setTimeout(() => {
+        router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
+      }, REDIRECT_DELAY);
+      
     } catch (error) {
-      logger.error('[SignUp] Error during sign-up:', { error: error.message, stack: error.stack });
-      setError(error.message || 'An unexpected error occurred. Please try again.');
-      setIsRedirecting(false);
+      logger.error('[SignUp] Error during sign-up:', { 
+        error: error.message, 
+        stack: error.stack 
+      });
+      
+      // Set appropriate error message
+      if (error.message.includes('already exists')) {
+        setError('This email is already registered. Please sign in instead.');
+      } else if (error.message.includes('password')) {
+        setError('Password must be at least 8 characters with uppercase, lowercase, number, and special character.');
+      } else {
+        setError(error.message || 'An error occurred during sign up. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -373,6 +401,15 @@ export default function SignUp() {
                 fullWidth
               />
               
+              {/* Button state debugging in dev mode */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="text-xs text-gray-500 mb-2">
+                  Button state: {isSubmitting ? 'Submitting' : 'Ready'} | 
+                  Auth: {authLoading ? 'Loading' : 'Ready'} | 
+                  {isSubmitting || authLoading ? ' Disabled' : ' Enabled'}
+                </div>
+              )}
+              
               <Button
                 type="submit"
                 variant="contained"
@@ -388,6 +425,21 @@ export default function SignUp() {
                   </div>
                 ) : 'Create Account'}
               </Button>
+              
+              {/* Add reset button in development only */}
+              {process.env.NODE_ENV === 'development' && (
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setIsSubmitting(false);
+                    setError('');
+                    console.log('Form state reset');
+                  }}
+                  className="mt-2 text-xs text-blue-600 hover:underline cursor-pointer"
+                >
+                  Reset Form State
+                </button>
+              )}
               
               {/* Add debug info in development only */}
               {process.env.NODE_ENV === 'development' && isSubmitting && (
@@ -413,6 +465,86 @@ export default function SignUp() {
                   </NextLink>
                 </Typography>
               </div>
+              
+              {/* Developer Debug Panel */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <details className="text-sm">
+                    <summary className="cursor-pointer text-gray-500 hover:text-gray-700 font-medium">
+                      Developer Debug Tools
+                    </summary>
+                    <div className="mt-3 space-y-3 p-3 bg-gray-50 rounded text-xs">
+                      <div className="grid grid-cols-2 gap-2">
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setIsSubmitting(false);
+                            setError('');
+                            localStorage.removeItem('auth_loading_state');
+                            console.log('Form state reset');
+                          }}
+                          className="px-2 py-1 bg-blue-100 text-blue-800 rounded"
+                        >
+                          Reset Form State
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            localStorage.clear();
+                            console.log('Local storage cleared');
+                          }}
+                          className="px-2 py-1 bg-red-100 text-red-800 rounded"
+                        >
+                          Clear Local Storage
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            // Fill with test data
+                            setFormData({
+                              email: 'test@example.com',
+                              password: 'Test1234!',
+                              confirmPassword: 'Test1234!',
+                              firstName: 'Test',
+                              lastName: 'User',
+                              businessName: 'Test Company',
+                              businessType: 'Other',
+                              country: 'US',
+                              legalStructure: 'Sole Proprietorship',
+                              acceptTerms: true
+                            });
+                            console.log('Form filled with test data');
+                          }}
+                          className="px-2 py-1 bg-green-100 text-green-800 rounded"
+                        >
+                          Fill Test Data
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            window.location.href = '/auth/signin';
+                          }}
+                          className="px-2 py-1 bg-purple-100 text-purple-800 rounded"
+                        >
+                          Go to Sign In
+                        </button>
+                      </div>
+                      <div className="text-gray-600 font-mono text-xs pt-2">
+                        <p>Form state: {JSON.stringify({
+                          email: formData.email?.length > 0,
+                          password: formData.password?.length > 0,
+                          confirmPassword: formData.confirmPassword?.length > 0,
+                          firstName: formData.firstName?.length > 0,
+                          lastName: formData.lastName?.length > 0,
+                          isSubmitting,
+                          authLoading,
+                          hasError: !!error
+                        })}</p>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              )}
             </form>
           )}
         </Paper>

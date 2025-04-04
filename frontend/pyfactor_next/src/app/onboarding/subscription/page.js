@@ -114,6 +114,56 @@ const generateRequestId = () => {
   }
 };
 
+// Helper to get business info from multiple sources
+const getBusinessInfoFromSources = () => {
+  const sources = {};
+  
+  // Try cookies first
+  const cookies = getCookies();
+  if (cookies.businessName) {
+    sources.cookies = {
+      businessName: cookies.businessName,
+      businessType: cookies.businessType || 'Other'
+    };
+  }
+  
+  // Try localStorage as fallback
+  try {
+    const storedInfo = localStorage.getItem('businessInfo');
+    if (storedInfo) {
+      try {
+        sources.localStorage = JSON.parse(storedInfo);
+      } catch (e) {
+        // Invalid JSON, ignore
+      }
+    }
+    
+    // Try individual keys
+    const businessName = localStorage.getItem('businessName') || localStorage.getItem('custom:businessname');
+    const businessType = localStorage.getItem('businessType') || localStorage.getItem('custom:businesstype');
+    
+    if (businessName) {
+      sources.localStorageKeys = {
+        businessName,
+        businessType: businessType || 'Other'
+      };
+    }
+  } catch (e) {
+    // localStorage access error, ignore
+  }
+  
+  // Combine sources, prioritizing cookies over localStorage
+  return {
+    // Return the business info from the first available source
+    businessInfo: sources.cookies || sources.localStorage || sources.localStorageKeys || { 
+      businessName: 'Your Business', 
+      businessType: 'Other' 
+    },
+    // Return all sources for debugging
+    sources
+  };
+};
+
 export default function SubscriptionPage() {
   const router = useRouter();
   const [businessData, setBusinessData] = useState({
@@ -130,6 +180,40 @@ export default function SubscriptionPage() {
   useEffect(() => {
     const initializeSubscription = async () => {
       try {
+        // Check for development mode bypass
+        const devMode = process.env.NODE_ENV === 'development';
+        const bypassAuth = localStorage.getItem('bypassAuthValidation') === 'true';
+        
+        if (devMode && bypassAuth) {
+          logger.debug('[SubscriptionPage] Development mode: bypassing auth checks');
+          
+          // Get business name from localStorage in dev mode
+          const businessName = localStorage.getItem('custom:businessname') || 
+                               localStorage.getItem('businessName') || 
+                               'Development Business';
+          
+          const businessType = localStorage.getItem('custom:businesstype') || 
+                               localStorage.getItem('businessType') || 
+                               'Other';
+          
+          setBusinessData({
+            businessName,
+            businessType
+          });
+          
+          setLoading(false);
+          return;
+        }
+        
+        // Get business info from all possible sources
+        const { businessInfo, sources } = getBusinessInfoFromSources();
+        logger.debug('[SubscriptionPage] Found business info from sources:', sources);
+        
+        // Only update state if we have a business name
+        if (businessInfo && businessInfo.businessName) {
+          setBusinessData(businessInfo);
+        }
+        
         // Debug cookie state
         const cookieData = {
           businessName: getCookies().businessName || '',
@@ -141,15 +225,6 @@ export default function SubscriptionPage() {
         };
         
         logger.debug('[SubscriptionPage] Initializing with cookies:', cookieData);
-        
-        // Verify we have business info either in cookies or state
-        if (!businessData.businessName && cookieData.businessName) {
-          setBusinessData(prev => ({
-            ...prev,
-            businessName: cookieData.businessName,
-            businessType: cookieData.businessType
-          }));
-        }
         
         // Try to get authentication session
         let session = null;
@@ -257,6 +332,10 @@ export default function SubscriptionPage() {
     setMessage(`Processing ${plan.name} plan selection...`);
     
     try {
+      // Set cookies and localStorage for development mode
+      const devMode = process.env.NODE_ENV === 'development';
+      const bypassAuth = localStorage.getItem('bypassAuthValidation') === 'true';
+      
       // For free plan, handle directly
       if (plan.id === 'free') {
         // Free plan doesn't need payment, go directly to dashboard
@@ -269,6 +348,21 @@ export default function SubscriptionPage() {
         document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
         document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
         document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+        
+        // Handle development mode bypass
+        if (devMode && bypassAuth) {
+          logger.debug('[SubscriptionPage] Development mode: bypassing Cognito attributes update');
+          
+          // Store in localStorage for development
+          localStorage.setItem('custom:subscription_plan', 'free');
+          localStorage.setItem('custom:billingCycle', billingCycle);
+          localStorage.setItem('custom:onboarding', 'complete');
+          localStorage.setItem('custom:setup_completed', 'true');
+          
+          // Go directly to dashboard
+          window.location.href = '/dashboard?newAccount=true&plan=free&dev=true';
+          return;
+        }
         
         // Update Cognito user attributes to mark onboarding as complete
         try {
@@ -299,6 +393,7 @@ export default function SubscriptionPage() {
         return;
       }
       
+      // Handle paid plans
       // Store selected plan in session storage
       if (typeof window !== 'undefined') {
         try {
@@ -332,6 +427,22 @@ export default function SubscriptionPage() {
       document.cookie = `selectedPlan=${plan.id}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
       document.cookie = `billingCycle=${billingCycle}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
       document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.PAYMENT}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      
+      // Handle development mode for paid plans - bypass payment and go to dashboard
+      if (devMode && bypassAuth) {
+        logger.debug('[SubscriptionPage] Development mode: bypassing payment for paid plan');
+        
+        // Store in localStorage for development
+        localStorage.setItem('custom:subscription_plan', plan.id);
+        localStorage.setItem('custom:billingCycle', billingCycle);
+        localStorage.setItem('custom:onboarding', 'complete');
+        localStorage.setItem('custom:setup_completed', 'true');
+        localStorage.setItem('custom:payment_completed', 'true');
+        
+        // Go directly to dashboard
+        window.location.href = '/dashboard?newAccount=true&plan=' + plan.id + '&dev=true';
+        return;
+      }
       
       // Redirect to payment page
       window.location.href = '/onboarding/payment';

@@ -78,7 +78,7 @@ export async function POST(request) {
     // Check the setupDone attribute if available
     let setupDone = false;
     if (user?.attributes?.['custom:setupdone']) {
-      setupDone = user.attributes['custom:setupdone']?.toUpperCase() === 'TRUE';
+      setupDone = (user.attributes['custom:setupdone'] || '').toLowerCase() === 'true';
     }
     
     if (setupDone && !forceSetup) {

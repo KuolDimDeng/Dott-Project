@@ -34,8 +34,10 @@ export async function POST(request) {
       body: JSON.stringify({
         force_complete: true,
         attributes: {
-          'custom:onboarding': 'COMPLETE',
-          'custom:setupdone': 'TRUE'
+          'custom:onboarding': 'complete',
+          'custom:setupdone': 'true',
+          'custom:acctstatus': 'ACTIVE',
+          'custom:updated_at': new Date().toISOString()
         }
       })
     });
@@ -86,8 +88,9 @@ export async function POST(request) {
           },
           body: JSON.stringify({
             attributes: {
-              'custom:onboarding': 'COMPLETE',
-              'custom:setupdone': 'TRUE',
+              'custom:onboarding': 'complete',
+              'custom:setupdone': 'true',
+              'custom:acctstatus': 'ACTIVE',
               'custom:updated_at': new Date().toISOString()
             },
             forceUpdate: true
@@ -162,12 +165,13 @@ export async function GET(request) {
 
     // Get user attributes
     const attributes = user.attributes || {};
-    const onboardingStatus = attributes['custom:onboarding'] || 'NOT_STARTED';
-    const setupDone = attributes['custom:setupdone'] === 'TRUE';
+    const onboardingStatus = (attributes['custom:onboarding'] || 'NOT_STARTED').toLowerCase();
+    // Normalize setupDone to handle both 'TRUE' and 'true' values
+    const setupDone = (attributes['custom:setupdone'] || '').toLowerCase() === 'true';
 
     return NextResponse.json({
       success: true,
-      isComplete: onboardingStatus === 'COMPLETE' && setupDone,
+      isComplete: onboardingStatus === 'complete' && setupDone,
       currentStatus: onboardingStatus,
       setupDone
     });

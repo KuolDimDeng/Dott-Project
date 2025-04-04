@@ -1,19 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Checkbox,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-} from '@mui/material';
 import { axiosInstance } from '@/lib/axiosConfig';
 
 const EmployeePermissions = ({ employee, open, onClose }) => {
@@ -62,44 +47,77 @@ const EmployeePermissions = ({ employee, open, onClose }) => {
     }
   };
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        Set Permissions for {employee.first_name} {employee.last_name}
-      </DialogTitle>
-      <DialogContent>
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="subtitle1" gutterBottom>
-            Select the menu options this employee can access:
-          </Typography>
-          <List>
-            {availablePermissions.map((permission) => (
-              <ListItem
-                key={permission.id}
-                button
-                onClick={() => handleTogglePermission(permission.id)}
-              >
-                <ListItemIcon>
-                  <Checkbox
-                    edge="start"
-                    checked={selectedPermissions.includes(permission.id)}
-                    tabIndex={-1}
-                    disableRipple
-                  />
-                </ListItemIcon>
-                <ListItemText primary={permission.name} />
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} variant="contained" color="primary">
-          Save Permissions
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        {/* Background overlay */}
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={onClose}></div>
+        
+        {/* Modal panel */}
+        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          {/* Header */}
+          <div className="bg-blue-50 px-4 py-3 border-b border-gray-200">
+            <h3 className="text-lg leading-6 font-medium text-gray-900">
+              Set Permissions for {employee.first_name} {employee.last_name}
+            </h3>
+          </div>
+          
+          {/* Content */}
+          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="mt-2">
+              <p className="text-sm text-gray-600 mb-4">
+                Select the menu options this employee can access:
+              </p>
+              <ul className="divide-y divide-gray-200">
+                {availablePermissions.map((permission) => (
+                  <li key={permission.id} className="py-2">
+                    <button 
+                      className="flex items-center w-full px-2 py-2 hover:bg-gray-50 rounded-md transition-colors group"
+                      onClick={() => handleTogglePermission(permission.id)}
+                    >
+                      <div className="flex-shrink-0 mr-3">
+                        <div className={`w-5 h-5 border-2 rounded flex items-center justify-center ${
+                          selectedPermissions.includes(permission.id) 
+                            ? 'bg-blue-500 border-blue-500' 
+                            : 'border-gray-300 group-hover:border-blue-400'
+                        }`}>
+                          {selectedPermissions.includes(permission.id) && (
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" clipRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-sm text-gray-700">{permission.name}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          
+          {/* Footer */}
+          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button
+              type="button"
+              onClick={handleSave}
+              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              Save Permissions
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

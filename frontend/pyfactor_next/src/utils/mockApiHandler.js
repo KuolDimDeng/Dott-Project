@@ -213,24 +213,5 @@ export const mockApiHandler = new MockApiHandler();
 
 // Auto-initialize if in development
 if (process.env.NODE_ENV === 'development') {
-  // We need to ensure this only runs in the browser
-  if (typeof window !== 'undefined') {
-    // Use a delayed initialization to ensure window is fully available
-    // and handle any errors that might occur
-    setTimeout(() => {
-      try {
-        // Check if already initialized (in case of hot module reloading)
-        if (!mockApiHandler.initialized) {
-          logger.info('[MockAPI] Starting initialization...');
-          mockApiHandler.initialize();
-        } else {
-          logger.info('[MockAPI] Already initialized, skipping.');
-        }
-      } catch (error) {
-        // Log any errors but don't break the app
-        console.error('[MockAPI] Error initializing mock API handler:', error);
-        logger.error('[MockAPI] Failed to initialize mock API:', error);
-      }
-    }, 100); // Slightly longer delay to ensure everything is ready
-  }
+  // Mock API initialization disabled - using production mode
 } 

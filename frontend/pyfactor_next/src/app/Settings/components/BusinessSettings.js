@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, TextField, Switch } from '@/components/replaced';
+import { Button, TextField, Switch } from '@/components/ui/TailwindComponents';
 
 const BusinessSettings = ({ selectedTab }) => {
   const renderContent = () => {

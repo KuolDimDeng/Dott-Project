@@ -63,7 +63,7 @@ export async function validateOnboardingStep(step) {
 
     const attributes = user.attributes || {};
     const currentStep = attributes['custom:onboarding'] || 'NOT_STARTED';
-    const setupDone = attributes['custom:setupdone'] === 'TRUE';
+    const setupDone = (attributes['custom:setupdone'] || '').toLowerCase() === 'true';
 
     // If setup is done, only allow dashboard access
     if (setupDone && step !== 'COMPLETE') {
@@ -131,7 +131,7 @@ export async function validateOnboardingStep(step) {
 export function getOnboardingProgress(attributes) {
   try {
     const currentStep = attributes['custom:onboarding'] || 'NOT_STARTED';
-    const setupDone = attributes['custom:setupdone'] === 'TRUE';
+    const setupDone = (attributes['custom:setupdone'] || '').toLowerCase() === 'true';
 
     if (setupDone) {
       return {

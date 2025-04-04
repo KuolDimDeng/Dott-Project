@@ -1,6 +1,6 @@
 // logger.js
 
-const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopment = false; // Always use production mode
 
 export const logger = {
   log: (...args) => {

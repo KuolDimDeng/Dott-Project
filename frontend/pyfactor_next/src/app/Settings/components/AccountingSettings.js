@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, TextField, Select } from '@/components/replaced';
+import { Button, TextField, Select } from '@/components/ui/TailwindComponents';
 
 const AccountingSettings = ({ selectedTab }) => {
   const currencies = [

@@ -1,12 +1,5 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/components/steps/BusinessInfo/BusinessInfo.styles.js
-import { styled } from '@mui/material/styles';
-import { Box } from '@mui/material';
 
-export const FormContainer = styled(Box)(({ theme }) => ({
-  marginTop: theme.spacing(4),
-  marginBottom: theme.spacing(4),
-  padding: theme.spacing(3),
-  backgroundColor: theme.palette.background.paper,
-  borderRadius: theme.shape.borderRadius,
-  boxShadow: theme.shadows[1],
-}));
+// Using Tailwind CSS classes instead of MUI styled components
+// These are exported as string constants for compatibility with existing code
+export const FormContainer = "mt-8 mb-8 p-6 bg-white rounded-lg shadow";

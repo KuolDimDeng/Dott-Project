@@ -1,4 +1,3 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/page.js
 import DashboardClient from './DashboardClient';
 
 /**
@@ -13,7 +12,12 @@ export const metadata = {
   description: 'Manage your business finances with PyFactor',
 };
 
-// Server component that simply renders the client component
-export default function DashboardPage() {
-  return <DashboardClient />;
-}
+// Server component that handles searchParams
+export default async function Dashboard({ searchParams }) {
+  // Extract query parameters safely with await to fix the sync-dynamic-apis error
+  const params = await searchParams;
+  const newAccount = params?.newAccount === 'true';
+  const plan = params?.plan || 'free';
+  
+  return <DashboardClient newAccount={newAccount} plan={plan} />;
+} 

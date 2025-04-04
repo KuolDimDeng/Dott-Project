@@ -1,113 +1,34 @@
-import { createTheme } from '@mui/material/styles';
-import { styled } from '@mui/material/styles';
-import { Box } from '@mui/material';
+// Tailwind CSS equivalents for styles
 
-export const theme = createTheme({
+// No longer need a theme definition with Tailwind, as styles are applied directly via classes
+export const theme = {
+  // Keep any theme-specific values needed by components
   palette: {
-    mode: 'light',
     primary: {
       main: '#1976d2',
-      contrastText: '#ffffff',
     },
     secondary: {
       main: '#ff9800',
-      contrastText: '#ffffff',
     },
     success: {
       main: '#4caf50',
-      light: '#e8f5e9',
-    },
-    background: {
-      default: '#f5f5f5',
-      paper: '#ffffff',
     }
   },
-  shape: {
-    borderRadius: 8,
-  },
-  typography: {
-    h4: {
-      fontWeight: 700,
-    },
-    h5: {
-      fontWeight: 600,
-    },
-    subtitle1: {
-      lineHeight: 1.6,
-    },
-  },
-  components: {
-    MuiChip: {
-      styleOverrides: {
-        root: {
-          fontWeight: 500,
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          fontWeight: 600,
-        },
-      },
-    },
-  },
-});
+};
 
-export const BillingToggle = styled(Box)(({ theme }) => ({
-  display: 'inline-flex',
-  alignItems: 'center',
-  backgroundColor: theme.palette.background.default,
-  border: `1px solid ${theme.palette.divider}`,
-  borderRadius: 30,
-  padding: 3,
-  position: 'relative',
-  cursor: 'pointer',
-  marginBottom: theme.spacing(4),
-  boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+// Tailwind classes as strings for compatibility
+export const BillingToggle = "inline-flex items-center bg-gray-100 border border-gray-200 rounded-full p-0.5 relative cursor-pointer mb-8 shadow-sm";
 
-  '& .MuiBillingToggle-option': {
-    padding: '8px 20px',
-    borderRadius: 28,
-    position: 'relative',
-    zIndex: 1,
-    transition: theme.transitions.create(['color', 'background-color'], {
-      duration: 200,
-    }),
-    color: theme.palette.text.primary,
-    fontWeight: 500,
-    userSelect: 'none',
+// CSS classes for toggle options to be applied in the component
+export const billingToggleOptionClasses = {
+  base: "px-5 py-2 rounded-full relative z-10 transition-colors duration-200 text-gray-800 font-medium select-none",
+  hover: "hover:bg-gray-200",
+  active: "bg-blue-600 text-white shadow-md"
+};
 
-    '&:hover:not(.active)': {
-      backgroundColor: 'rgba(0,0,0,0.04)',
-    },
+export const FeatureIcon = "w-5 h-5 flex items-center justify-center mr-2";
 
-    '&.active': {
-      backgroundColor: theme.palette.primary.main,
-      color: theme.palette.primary.contrastText,
-      boxShadow: '0 2px 4px rgba(25,118,210,0.25)',
-    },
-  },
-}));
-
-export const FeatureIcon = styled(Box)(({ theme }) => ({
-  width: 20,
-  height: 20,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginRight: theme.spacing(1),
-}));
-
-export const HighlightedFeature = styled(Box)(({ theme }) => ({
-  backgroundColor: theme.palette.secondary.light || 'rgba(255, 152, 0, 0.08)',
-  borderRadius: theme.shape.borderRadius,
-  padding: theme.spacing(0.5, 1),
-  marginBottom: theme.spacing(0.5),
-  display: 'flex',
-  alignItems: 'center',
-}));
+export const HighlightedFeature = "bg-amber-50 rounded-lg p-1 mb-1 flex items-center";
 
 export const tiers = [
   {

@@ -4,16 +4,23 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator, MaxLengthValidator
 from users.models import Business
 from django.conf import settings
+from django.utils import timezone
+import uuid
 
 User = get_user_model()
-
-import uuid
 
 class OnboardingProgress(models.Model):
     """Track user onboarding progress and status"""
 
     # Primary key
     id = models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True)
+
+    # Tenant relationship for RLS
+    tenant_id = models.UUIDField(null=False, blank=False, db_index=True)
+
+    # Session tracking
+    session_id = models.UUIDField(null=True, blank=True)
+    last_session_activity = models.DateTimeField(null=True, blank=True)
 
     # Onboarding status choices matching Cognito custom:onboarding attribute
     ONBOARDING_STATUS_CHOICES = [
@@ -158,57 +165,81 @@ class OnboardingProgress(models.Model):
         verbose_name = 'Onboarding Progress'
         verbose_name_plural = 'Onboarding Progress Records'
         ordering = ['-updated_at']
+        # Add RLS indices for better performance
+        indexes = [
+            models.Index(fields=['tenant_id'], name='onboard_tenant_idx'),
+            models.Index(fields=['session_id'], name='onboard_session_idx'),
+        ]
 
     def __str__(self):
         return f"{self.user.email} - {self.onboarding_status}"
-
-    def save(self, force_insert=False, *args, **kwargs):
-        # Ensure preferences JSON string meets Cognito constraints
-        if self.preferences:
-            prefs_str = str(self.preferences)
-            if len(prefs_str) < 2 or len(prefs_str) > 2048:
-                raise ValueError('Preferences must be between 2 and 2048 characters')
-
-        # Validate state transitions only for updates, not for new records
-        if not force_insert and self.pk:
-            try:
-                old_instance = OnboardingProgress.objects.get(pk=self.pk)
-                valid_transitions = {
-                    'not_started': ['business-info', 'setup'],
-                    'business-info': ['subscription', 'setup', 'complete'],  # Allow direct transition to setup or complete
-                    'subscription': ['payment', 'setup', 'complete'],  # Allow direct transition to setup or complete
-                    'payment': ['setup', 'complete'],  # Allow direct transition to complete
-                    'setup': ['complete', 'business-info', 'subscription'],  # Allow going back to previous steps
-                    'complete': ['business-info', 'subscription', 'setup']  # Allow updating after completion or restarting setup
-                }
-
-                if (self.onboarding_status != old_instance.onboarding_status and
-                    self.onboarding_status not in valid_transitions.get(old_instance.onboarding_status, [])):
-                    raise ValueError(
-                        f'Invalid state transition from {old_instance.onboarding_status} '
-                        f'to {self.onboarding_status}'
-                    )
-            except OnboardingProgress.DoesNotExist:
-                pass  # Skip validation for new records
-
-        super().save(force_insert=force_insert, *args, **kwargs)
-
-    def get_next_step(self):
-        """Determine the next step based on current status"""
-        step_sequence = {
-            'notstarted': 'business-info',
-            'business-info': 'subscription',
-            'subscription': 'payment',  # Default path, but can go to complete for free plan
-            'payment': 'setup',  # Default path, but can go to complete
-            'setup': 'complete',
-            'complete': None
+        
+    def save(self, *args, **kwargs):
+        """
+        Override save to ensure tenant_id is set and update session activity
+        """
+        # Set tenant_id from user if not provided
+        if not self.tenant_id and hasattr(self.user, 'id'):
+            self.tenant_id = self.user.id
+            
+        # Update session activity timestamp if session_id is set
+        if self.session_id:
+            self.last_session_activity = timezone.now()
+            
+        super().save(*args, **kwargs)
+        
+    def mark_step_complete(self, step):
+        """
+        Mark a step as complete and update progress
+        """
+        completed = self.completed_steps or []
+        if step not in completed:
+            completed.append(step)
+            self.completed_steps = completed
+            self.last_active_step = step
+            
+            # Update onboarding status and current step
+            self.onboarding_status = step
+            self.current_step = step
+            
+            # Determine next step
+            step_transitions = {
+                'business-info': 'subscription',
+                'subscription': 'payment',
+                'payment': 'setup',
+                'setup': 'complete',
+                'complete': 'complete'
+            }
+            self.next_step = step_transitions.get(step, 'business-info')
+            
+            # For 'complete' step, set completed timestamp
+            if step == 'complete':
+                self.completed_at = timezone.now()
+                
+            self.save()
+            
+    def record_session_activity(self, session_id):
+        """
+        Record session activity and update timestamp
+        """
+        self.session_id = session_id
+        self.last_session_activity = timezone.now()
+        self.save(update_fields=['session_id', 'last_session_activity'])
+            
+    @property
+    def progress_percentage(self):
+        """
+        Calculate progress percentage based on completed steps
+        """
+        step_values = {
+            'business-info': 25,
+            'subscription': 50, 
+            'payment': 75,
+            'setup': 90,
+            'complete': 100
         }
         
-        # Special case for free plan - go directly to complete
-        if self.onboarding_status == 'subscription' and self.selected_plan == 'free':
-            return 'complete'
-            
-        return step_sequence.get(self.onboarding_status)
+        return step_values.get(self.onboarding_status, 0)
 
     def validate_attribute_lengths(self):
         """Validate attribute lengths match Cognito constraints"""

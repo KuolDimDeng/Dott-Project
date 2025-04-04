@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Button, TextField, Card, Dialog } from '@/components/replaced';
+import { Button, TextField, Card, Dialog } from '@/components/ui/TailwindComponents';
 import { logger } from '@/utils/logger';
 
 // Mock function to simulate API call to AI service

@@ -89,6 +89,8 @@ export default function ClientLayout({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const refreshLockRef = useRef(false);
   const lastRefreshTimeRef = useRef(0);
+  // Store the original console.error to avoid dependencies
+  const originalErrorRef = useRef(null);
 
   // Initialize debugging tools
   useEffect(() => {
@@ -104,7 +106,7 @@ export default function ClientLayout({ children }) {
         
         // Add global error handler for "render is not a function" errors
         // but prevent infinite loops by not calling the original handler for certain errors
-        const originalError = console.error;
+        originalErrorRef.current = console.error;
         console.error = (...args) => {
           // Check for recursive errors immediately
           const stackDepth = new Error().stack.split('\n').filter(line => 
@@ -308,7 +310,7 @@ export default function ClientLayout({ children }) {
             // This prevents infinite loops
             if (!isMaxUpdateDepthError) {
               try {
-                originalError.apply(console, args);
+                originalErrorRef.current.apply(console, args);
               } catch (callError) {
                 // If applying the original error fails, log safely
                 logger.error('[ClientLayout] Failed to call original console.error:', {
@@ -317,7 +319,7 @@ export default function ClientLayout({ children }) {
                   pathname
                 });
                 // Fallback to basic console.error
-                originalError.call(console, errorString);
+                originalErrorRef.current.call(console, errorString);
               }
             } else {
               // Just log to our logger without calling original console.error
@@ -327,10 +329,10 @@ export default function ClientLayout({ children }) {
             // If our error handler itself fails, log safely and call original
             try {
               logger.error('[ClientLayout] Error in console.error handler:', handlerError);
-              originalError.apply(console, args);
+              originalErrorRef.current.apply(console, args);
             } catch (e) {
               // Last resort fallback
-              originalError.call(console, 'Error in error handler');
+              originalErrorRef.current.call(console, 'Error in error handler');
             }
           }
         };
@@ -344,7 +346,14 @@ export default function ClientLayout({ children }) {
         });
       }
     }
-  }, [debugInitialized, pathname]);
+    
+    // Cleanup function to restore original console.error
+    return () => {
+      if (originalErrorRef.current) {
+        console.error = originalErrorRef.current;
+      }
+    };
+  }, [debugInitialized, pathname, setDebugInitialized]);
 
   useEffect(() => {
     logger.debug('[ClientLayout] Component mounted, starting session check');

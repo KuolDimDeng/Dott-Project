@@ -108,7 +108,7 @@ export async function POST(request) {
     // Add onboarding attributes if requested
     if (updateOnboarding) {
       attributesToUpdate['custom:onboarding'] = 'COMPLETE';
-      attributesToUpdate['custom:setupdone'] = 'TRUE';
+      attributesToUpdate['custom:setupdone'] = 'true';
     }
     
     // Update Cognito attribute if tenant ID differs from Cognito

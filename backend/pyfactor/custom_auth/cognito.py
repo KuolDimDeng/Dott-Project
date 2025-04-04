@@ -9,6 +9,9 @@ from jwt import PyJWKClient
 from django.core.cache import cache
 from rest_framework.exceptions import AuthenticationFailed
 import requests
+import os
+import json
+import time
 
 
 logger = logging.getLogger(__name__)
@@ -98,11 +101,24 @@ class CognitoClient:
     def update_user_attributes(self, access_token, attributes):
         """Update user attributes in Cognito"""
         try:
-            # Convert attributes to Cognito format
-            user_attributes = [
-                {'Name': key, 'Value': str(value)}
-                for key, value in attributes.items()
-            ]
+            # Convert attributes to Cognito format and ensure custom attributes have the correct prefix
+            user_attributes = []
+            for key, value in attributes.items():
+                # Ensure custom attributes have the 'custom:' prefix
+                if not key.startswith('custom:') and not key in ['email', 'given_name', 'family_name', 'name', 'phone_number']:
+                    # These attribute types should have the custom: prefix
+                    custom_attr_patterns = ['business', 'onboarding', 'setup', 'sub', 'acc', 'payment', 
+                                           'preferences', 'legal', 'date', 'attr', 'use', 'pay', 'last']
+                    
+                    # Check if the key matches any of the patterns for custom attributes
+                    should_be_custom = any(pattern in key.lower() for pattern in custom_attr_patterns)
+                    
+                    if should_be_custom:
+                        key = f'custom:{key}'
+                        logger.debug(f"Converted attribute key to custom format: {key}")
+                
+                # Add the attribute to the list
+                user_attributes.append({'Name': key, 'Value': str(value)})
             
             response = self.client.update_user_attributes(
                 AccessToken=access_token,
@@ -357,11 +373,24 @@ def update_user_attributes_sync(user_id, attributes):
                 logger.warning(f"User {user_id} not found in Cognito")
                 return None
             
-            # Convert attributes to Cognito format
-            user_attributes = [
-                {'Name': key, 'Value': str(value)}
-                for key, value in attributes.items()
-            ]
+            # Convert attributes to Cognito format and ensure proper prefixes
+            user_attributes = []
+            for key, value in attributes.items():
+                # Ensure custom attributes have the 'custom:' prefix
+                if not key.startswith('custom:') and not key in ['email', 'given_name', 'family_name', 'name', 'phone_number']:
+                    # These attribute types should have the custom: prefix
+                    custom_attr_patterns = ['business', 'onboarding', 'setup', 'sub', 'acc', 'payment', 
+                                           'preferences', 'legal', 'date', 'attr', 'use', 'pay', 'last']
+                    
+                    # Check if the key matches any of the patterns for custom attributes
+                    should_be_custom = any(pattern in key.lower() for pattern in custom_attr_patterns)
+                    
+                    if should_be_custom:
+                        key = f'custom:{key}'
+                        logger.debug(f"Converted attribute key to custom format: {key}")
+                
+                # Add the attribute to the list
+                user_attributes.append({'Name': key, 'Value': str(value)})
             
             response = client.admin_update_user_attributes(
                 UserPoolId=settings.COGNITO_USER_POOL_ID,

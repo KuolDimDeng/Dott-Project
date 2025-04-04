@@ -86,7 +86,7 @@ export async function POST(request) {
           {
             attributes: {
               'custom:onboarding': 'COMPLETE',
-              'custom:setupdone': 'TRUE'
+              'custom:setupdone': 'true'
             }
           },
           { headers }
@@ -149,7 +149,7 @@ export async function POST(request) {
             {
               attributes: {
                 'custom:onboarding': 'COMPLETE',
-                'custom:setupdone': 'TRUE'
+                'custom:setupdone': 'true'
               }
             },
             { headers }

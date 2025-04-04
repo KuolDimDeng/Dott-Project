@@ -1,203 +1,188 @@
 import { NextResponse } from 'next/server';
-import { logger } from '@/utils/logger';
-import { getTokens } from '@/utils/apiUtils';
+import { applyRLS, verifyTenantId, getDefaultTenantId } from '@/middleware/dev-tenant-middleware';
+import { createDbConnector } from '@/config/database';
+import { logger } from '@/utils/serverLogger';
 
 /**
- * GET handler for fetching products
- * @param {Request} request 
- * @returns {Promise<NextResponse>}
+ * GET handler for product listing with tenant-aware RLS
  */
 export async function GET(request) {
-  logger.info('[API] Product GET request received');
+  logger.log('[API] Product GET request received');
   try {
-    // DEVELOPMENT MODE: Return mock data to bypass subscription requirements
-    // In production, remove this condition and always make the actual API call
+    // Extract the URL parameters
+    const { searchParams } = new URL(request.url);
+    const urlTenantId = searchParams.get('tenant_id');
+    const schema = searchParams.get('schema');
     
-    // Mock data for development
-    const mockProducts = [
-      {
-        id: '1',
-        name: 'Demo Product 1',
-        description: 'This is a demo product for development',
-        price: 19.99,
-        stock_quantity: 100,
-        reorder_level: 10,
-        product_code: 'DEMO-001',
-        is_for_sale: true,
-        is_for_rent: false,
-        salestax: 5,
-        height: 10,
-        width: 20,
-        height_unit: 'cm',
-        width_unit: 'cm',
-        weight: 0.5,
-        weight_unit: 'kg'
-      },
-      {
-        id: '2',
-        name: 'Demo Product 2',
-        description: 'Another test product for development',
-        price: 29.99,
-        stock_quantity: 50,
-        reorder_level: 5,
-        product_code: 'DEMO-002',
-        is_for_sale: true,
-        is_for_rent: true,
-        salestax: 5,
-        height: 15,
-        width: 25,
-        height_unit: 'cm',
-        width_unit: 'cm',
-        weight: 1.2,
-        weight_unit: 'kg'
-      },
-      {
-        id: '3',
-        name: 'Demo Product 3',
-        description: 'Third test product for development',
-        price: 39.99,
-        stock_quantity: 25,
-        reorder_level: 5,
-        product_code: 'DEMO-003',
-        is_for_sale: true,
-        is_for_rent: false,
-        salestax: 5,
-        height: 30,
-        width: 40,
-        height_unit: 'cm',
-        width_unit: 'cm',
-        weight: 2.0,
-        weight_unit: 'kg'
-      }
-    ];
+    // Extract tenant ID from headers and cookies
+    const headerTenantId = request.headers.get('x-tenant-id');
     
-    logger.info('[API] DEVELOPMENT MODE: Returning mock product data');
-    return NextResponse.json(mockProducts);
+    // First check Authorization and ID Token headers for JWT-derived tenant ID
+    const idToken = request.headers.get('X-Id-Token');
+    let jwtTenantId = null;
     
-    // COMMENTED OUT FOR DEVELOPMENT - RESTORE IN PRODUCTION
-    /*
-    // Extract all cookies from request for debugging
-    const cookieHeader = request.headers.get('cookie');
-    if (cookieHeader) {
-      const cookies = {};
-      cookieHeader.split(';').forEach(cookie => {
-        const [name, value] = cookie.trim().split('=');
-        if (name.toLowerCase().includes('token')) {
-          cookies[name] = 'present';
-        } else {
-          cookies[name] = value;
+    if (idToken) {
+      try {
+        const { jwtDecode } = await import('jwt-decode');
+        const decoded = jwtDecode(idToken);
+        
+        // Extract business ID from token as tenant ID
+        jwtTenantId = decoded['custom:businessid'] || null;
+        
+        if (jwtTenantId) {
+          logger.debug('Found tenant ID in JWT token:', jwtTenantId);
         }
-      });
-      logger.debug('[API] Request cookies:', cookies);
+      } catch (error) {
+        logger.error('Error decoding JWT token:', error.message);
+      }
     }
     
-    // Attempt to get tokens from request
-    const { accessToken, idToken, tenantId } = await getTokens(request);
+    const cookieHeader = request.headers.get('cookie');
+    let cookieTenantId = null;
+    let devTenantId = null;
     
-    // Direct extraction from cookie header as fallback
-    let finalAccessToken = accessToken;
-    let finalIdToken = idToken;
-    let finalTenantId = tenantId || '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
+    if (cookieHeader) {
+      cookieHeader.split(';').forEach(cookie => {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'tenantId') {
+          cookieTenantId = value;
+        } else if (name === 'dev-tenant-id') {
+          devTenantId = value;
+        }
+      });
+    }
     
-    if (!finalAccessToken || !finalIdToken) {
-      logger.debug('[API] Tokens not found via standard methods, attempting direct extraction');
+    // Check if schema parameter was provided and convert it to tenant_id if needed
+    let schemaTenantId = null;
+    if (schema && schema !== 'default_schema') {
+      // Try to extract tenant ID from schema name (if format is tenant_{id})
+      const schemaMatch = schema.match(/tenant_([a-f0-9_-]+)/i);
+      if (schemaMatch && schemaMatch[1]) {
+        schemaTenantId = schemaMatch[1].replace(/_/g, '-');
+      }
+    }
+    
+    // Determine tenant ID with priority
+    const kuolDengTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
+    const isKuolDeng = cookieHeader?.includes('authUser=kuol.deng@example.com');
+    
+    const tenantId = urlTenantId || 
+                     jwtTenantId ||  // Prioritize JWT token tenant ID
+                     headerTenantId || 
+                     cookieTenantId || 
+                     devTenantId || 
+                     schemaTenantId ||
+                     (isKuolDeng ? kuolDengTenantId : null) ||
+                     getDefaultTenantId();
+    
+    logger.log(`[API] Listing products for tenant: ${tenantId}, schema: ${schema}`);
+    
+    // Verify tenant exists (development only)
+    const tenant = verifyTenantId(tenantId);
+    if (!tenant && process.env.NODE_ENV !== 'production') {
+      logger.warn(`[API] Invalid tenant ID: ${tenantId}, using default`);
+    }
+    
+    // DEVELOPMENT MODE: Use the development database connector
+    if (process.env.NODE_ENV !== 'production') {
+      const dbConnector = createDbConnector({ tenantId });
       
-      if (cookieHeader) {
-        cookieHeader.split(';').forEach(cookie => {
-          const [name, value] = cookie.trim().split('=');
-          if (!name || !value) return;
-          
-          const lowerName = name.toLowerCase();
-          if ((lowerName.includes('access') || lowerName.includes('auth')) && !finalAccessToken) {
-            finalAccessToken = value;
-            logger.debug('[API] Directly extracted access token from cookies');
-          } else if (lowerName.includes('id') && lowerName.includes('token') && !finalIdToken) {
-            finalIdToken = value;
-            logger.debug('[API] Directly extracted ID token from cookies');
-          } else if ((lowerName.includes('tenant') || lowerName.includes('business')) && !finalTenantId) {
-            finalTenantId = value;
-            logger.debug('[API] Directly extracted tenant ID from cookies');
+      // Handle special case for schema=default_schema from older components
+      if (schema === 'default_schema') {
+        logger.log('[API] Using default_schema compatibility mode');
+      }
+      
+      // Fetch products from the dev database (localStorage)
+      let products = await dbConnector.find('products');
+      
+      // If no products exist yet, create some default ones
+      if (products.length === 0) {
+        logger.log('[API] No products found, creating default products');
+        
+        // Create default products
+        const defaultProducts = [
+          {
+            name: 'Sample Product 1',
+            description: 'This is a sample product',
+            price: 19.99,
+            inventory: 100,
+            stock_quantity: 100,
+            tenant_id: tenantId,
+            created_at: new Date().toISOString()
+          },
+          {
+            name: 'Sample Product 2',
+            description: 'Another sample product',
+            price: 29.99,
+            inventory: 50,
+            stock_quantity: 50,
+            tenant_id: tenantId,
+            created_at: new Date().toISOString()
           }
+        ];
+        
+        // Insert default products
+        for (const product of defaultProducts) {
+          await dbConnector.insert('products', product);
+        }
+        
+        // Fetch products again
+        products = await dbConnector.find('products');
+      }
+      
+      // Return data in the format expected by the frontend
+      if (schema) {
+        // Older format expected by some components
+        return NextResponse.json(products);
+      } else {
+        // Newer format with tenant ID
+        return NextResponse.json({
+          products,
+          _tenantId: tenantId,
+          _devMode: true,
+          _storeLocally: true,
+          _checkLocalStorage: true
         });
       }
     }
     
-    // If still no tokens, check for direct headers
-    if (!finalAccessToken) {
-      const authHeader = request.headers.get('authorization');
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        finalAccessToken = authHeader.replace('Bearer ', '');
-        logger.debug('[API] Extracted access token from Authorization header');
-      }
+    // PRODUCTION CODE BELOW
+    // Get products from backend API
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+      throw new Error('API key not configured');
     }
     
-    if (!finalIdToken) {
-      finalIdToken = request.headers.get('x-id-token');
-      if (finalIdToken) {
-        logger.debug('[API] Extracted ID token from X-Id-Token header');
-      }
-    }
-    
-    if (!finalTenantId) {
-      finalTenantId = request.headers.get('x-tenant-id');
-      if (finalTenantId) {
-        logger.debug('[API] Extracted tenant ID from X-Tenant-ID header');
-      }
-    }
-    
-    // Log the results of our extraction attempts
-    logger.debug('[API] Final token status:', {
-      hasAccessToken: !!finalAccessToken,
-      hasIdToken: !!finalIdToken,
-      hasTenantId: !!finalTenantId,
-      tenantId: finalTenantId
-    });
-    
-    // If we still don't have tokens, return error
-    if (!finalAccessToken || !finalIdToken) {
-      logger.error('[API] Failed to extract required tokens after all attempts');
-      return NextResponse.json({
-        error: 'Authentication required',
-        code: 'session_expired',
-        message: 'Your session has expired. Please sign in again.'
-      }, { status: 401 });
-    }
-    
-    // Use direct fetch instead of axiosInstance to bypass interceptors
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/inventory/products/`;
-    logger.debug(`[API] Making direct fetch request to ${apiUrl}`);
-    
-    const response = await fetch(apiUrl, {
-      method: 'GET',
+    // Format endpoint based on whether schema or tenant_id is used
+    const endpoint = schema 
+      ? `${process.env.API_ENDPOINT}/products?schema=${schema}`
+      : `${process.env.API_ENDPOINT}/products?tenant_id=${tenantId}`;
+      
+    // RLS: Apply tenant filter to ensure only the tenant's products are returned
+    const response = await fetch(endpoint, {
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${finalAccessToken}`,
-        'X-Id-Token': finalIdToken,
-        'X-Tenant-ID': finalTenantId,
-        'X-Schema-Name': `tenant_${finalTenantId.replace(/-/g, '_')}`
+        'Authorization': `Bearer ${apiKey}`,
+        'x-tenant-id': tenantId
       }
     });
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      logger.error('[API] Backend API error:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorData
-      });
-      
-      return NextResponse.json(errorData || {
-        error: 'Backend API error',
-        message: response.statusText
-      }, { status: response.status });
+      throw new Error(`API returned ${response.status}: ${await response.text()}`);
     }
     
     const data = await response.json();
-    logger.info(`[API] Product GET successful, returned ${data?.length || 0} products`);
-    return NextResponse.json(data);
-    */
+    
+    // Additional RLS filter to ensure only the tenant's products are returned
+    const filteredProducts = applyRLS(data.products || data, tenantId);
+    
+    // Return in the expected format based on request
+    if (schema) {
+      return NextResponse.json(filteredProducts);
+    } else {
+      return NextResponse.json({ products: filteredProducts });
+    }
   } catch (error) {
-    logger.error('[API] Product GET error:', error.message, error.stack);
+    logger.error('[API] Product GET error:', error.message);
     return NextResponse.json({ 
       error: 'Failed to fetch products',
       message: error.message 
@@ -206,312 +191,151 @@ export async function GET(request) {
 }
 
 /**
- * POST handler for creating a new product
- * @param {Request} request 
- * @returns {Promise<NextResponse>}
+ * POST handler for product creation with tenant-aware RLS
  */
 export async function POST(request) {
-  logger.info('[API] Product POST request received');
+  logger.log('[API] Product POST request received');
   try {
     // Get request body
     const productData = await request.json();
     logger.debug('[API] Product POST data:', productData);
     
-    // DEVELOPMENT MODE: Return mock data to demonstrate in development
-    // while also adding tenant ID verification
+    // Check URL parameters for schema
+    const { searchParams } = new URL(request.url);
+    const schema = searchParams.get('schema');
     
-    // IMPROVED: Get and validate tenant ID before creating product
-    // This is critical even in dev mode to catch tenant ID inconsistencies
+    // Extract tenant info from request
+    const headerTenantId = request.headers.get('x-tenant-id');
+
+    // First check Authorization and ID Token headers for JWT-derived tenant ID
+    const idToken = request.headers.get('X-Id-Token');
+    let jwtTenantId = null;
     
-    // Extract cookies for tenant ID verification
+    if (idToken) {
+      try {
+        const { jwtDecode } = await import('jwt-decode');
+        const decoded = jwtDecode(idToken);
+        
+        // Extract business ID from token as tenant ID
+        jwtTenantId = decoded['custom:businessid'] || null;
+        
+        if (jwtTenantId) {
+          logger.debug('Found tenant ID in JWT token:', jwtTenantId);
+        }
+      } catch (error) {
+        logger.error('Error decoding JWT token:', error.message);
+      }
+    }
+    
     const cookieHeader = request.headers.get('cookie');
     let cookieTenantId = null;
-    let cognitoBusinessId = null;
+    let devTenantId = null;
     
     if (cookieHeader) {
       cookieHeader.split(';').forEach(cookie => {
         const [name, value] = cookie.trim().split('=');
         if (name === 'tenantId') {
           cookieTenantId = value;
+        } else if (name === 'dev-tenant-id') {
+          devTenantId = value;
         }
       });
     }
     
-    // Get tenant ID from headers as well
-    const headerTenantId = request.headers.get('x-tenant-id');
+    // Check if schema parameter was provided and convert it to tenant_id if needed
+    let schemaTenantId = null;
+    if (schema && schema !== 'default_schema') {
+      // Try to extract tenant ID from schema name (if format is tenant_{id})
+      const schemaMatch = schema.match(/tenant_([a-f0-9_-]+)/i);
+      if (schemaMatch && schemaMatch[1]) {
+        schemaTenantId = schemaMatch[1].replace(/_/g, '-');
+      }
+    }
     
-    // Get tenant ID from Cognito profile if possible
-    try {
-      // Try to get auth tokens using the standard utility
-      const { accessToken, idToken } = await getTokens(request);
+    // Determine tenant ID with priority
+    const kuolDengTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
+    const isKuolDeng = cookieHeader?.includes('authUser=kuol.deng@example.com');
+    
+    const tenantId = productData.tenant_id || 
+                     jwtTenantId ||  // Prioritize JWT token tenant ID
+                     headerTenantId || 
+                     cookieTenantId || 
+                     devTenantId || 
+                     schemaTenantId ||
+                     (isKuolDeng ? kuolDengTenantId : null) || 
+                     getDefaultTenantId();
+    
+    logger.debug('Tenant ID determined for product creation:', tenantId);
+    logger.debug('Schema parameter:', schema);
+    
+    // DEVELOPMENT MODE: Use the development database connector
+    if (process.env.NODE_ENV !== 'production') {
+      const dbConnector = createDbConnector({ tenantId });
       
-      if (idToken) {
-        // Try to decode the JWT to get the user attributes
-        try {
-          const [header, payload, signature] = idToken.split('.');
-          const decodedPayload = JSON.parse(Buffer.from(payload, 'base64').toString());
-          
-          // Extract business ID from Cognito attributes
-          cognitoBusinessId = decodedPayload['custom:businessid'];
-          
-          logger.debug('[API] Extracted business ID from token:', cognitoBusinessId);
-        } catch (decodeError) {
-          logger.warn('[API] Failed to decode ID token:', decodeError.message);
-        }
+      // Create product with tenant ID
+      const enhancedProductData = {
+        ...productData,
+        tenant_id: tenantId,
+        // Ensure product has both tenantId and tenant_id for compatibility
+        tenantId: tenantId
+      };
+      
+      // Insert into dev database
+      const createdProduct = await dbConnector.insert('products', enhancedProductData);
+      
+      logger.info('Created product with RLS tenant_id:', tenantId);
+      
+      // Return in the format expected by the client
+      if (schema === 'default_schema') {
+        return NextResponse.json(createdProduct, { status: 201 });
+      } else {
+        // Add dev flags to support local storage in the client
+        return NextResponse.json({
+          ...createdProduct,
+          _devMode: true,
+          _storeLocally: true
+        }, { status: 201 });
       }
-    } catch (tokenError) {
-      logger.warn('[API] Failed to get tokens:', tokenError.message);
     }
     
-    // Determine the correct tenant ID to use
-    // Priority: 1. Cognito business ID, 2. Cookie tenant ID, 3. Header tenant ID
-    let finalTenantId = cognitoBusinessId || cookieTenantId || headerTenantId;
-    
-    // Log the tenant ID resolution for debugging
-    logger.info('[API] Tenant ID resolution for product creation:', {
-      cognitoBusinessId,
-      cookieTenantId,
-      headerTenantId,
-      finalTenantId
-    });
-    
-    // Check for mismatches and log warnings
-    if (cognitoBusinessId && cookieTenantId && cognitoBusinessId !== cookieTenantId) {
-      logger.warn('[API] ⚠️ CRITICAL: Tenant ID mismatch between Cognito and cookies:', {
-        cognitoId: cognitoBusinessId,
-        cookieId: cookieTenantId,
-        using: finalTenantId
-      });
-    }
-    
-    // Ensure we have a tenant ID before proceeding
-    if (!finalTenantId) {
-      logger.error('[API] No tenant ID found for product creation');
-      return NextResponse.json({
-        error: 'Tenant ID required',
-        message: 'No tenant ID available for product creation'
-      }, { status: 400 });
-    }
-    
-    // Generate schema name for the response
-    const schemaName = `tenant_${finalTenantId.replace(/-/g, '_')}`;
-    
-    // Create a mock response with the submitted data AND tenant information
-    const mockCreatedProduct = {
-      id: Math.floor(Math.random() * 1000).toString(), // Generate random ID
+    // PRODUCTION CODE BELOW
+    // Ensure the product data includes the tenant ID for RLS
+    const enhancedProductData = {
       ...productData,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      product_code: `PROD-${Math.floor(Math.random() * 10000)}`,
-      // Add tenant information for transparency
-      _meta: {
-        tenant_id: finalTenantId,
-        schema_name: schemaName
-      }
+      tenant_id: tenantId,
+      tenantId: tenantId // Include both formats for compatibility
     };
     
-    logger.info('[API] DEVELOPMENT MODE: Created product in tenant schema:', {
-      productId: mockCreatedProduct.id,
-      tenantId: finalTenantId,
-      schemaName
-    });
-    
-    // Create response with tenant ID cookie to ensure consistency
-    const jsonResponse = NextResponse.json(mockCreatedProduct, { status: 201 });
-    
-    // Set cookie with the correct tenant ID to maintain consistency
-    jsonResponse.cookies.set('tenantId', finalTenantId, {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-      sameSite: 'lax',
-      httpOnly: true
-    });
-    
-    return jsonResponse;
-    
-    // COMMENTED OUT FOR DEVELOPMENT - RESTORE IN PRODUCTION
-    /*
-    // Extract all cookies from request for debugging
-    const cookieHeader = request.headers.get('cookie');
-    if (cookieHeader) {
-      const cookies = {};
-      cookieHeader.split(';').forEach(cookie => {
-        const [name, value] = cookie.trim().split('=');
-        if (name.toLowerCase().includes('token')) {
-          cookies[name] = 'present';
-        } else {
-          cookies[name] = value;
-        }
-      });
-      logger.debug('[API] Request cookies:', cookies);
+    // Call the real API endpoint to create the product
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+      throw new Error('API key not configured');
     }
     
-    // Attempt to get tokens from request
-    const { accessToken, idToken, tenantId } = await getTokens(request);
+    // Format the endpoint based on schema or tenant_id
+    const endpoint = schema 
+      ? `${process.env.API_ENDPOINT}/products?schema=${schema}`
+      : `${process.env.API_ENDPOINT}/products`;
     
-    // IMPROVED: Get tenant ID from Cognito profile for verification
-    let cognitoBusinessId = null;
-    
-    if (idToken) {
-      // Try to decode the JWT to get the user attributes
-      try {
-        const [header, payload, signature] = idToken.split('.');
-        const decodedPayload = JSON.parse(Buffer.from(payload, 'base64').toString());
-        
-        // Extract business ID from Cognito attributes
-        cognitoBusinessId = decodedPayload['custom:businessid'];
-        
-        logger.debug('[API] Extracted business ID from token:', cognitoBusinessId);
-      } catch (decodeError) {
-        logger.warn('[API] Failed to decode ID token:', decodeError.message);
-      }
-    }
-    
-    // Direct extraction from cookie header as fallback
-    let finalAccessToken = accessToken;
-    let finalIdToken = idToken;
-    let finalTenantId = cognitoBusinessId || tenantId;
-    
-    if (!finalAccessToken || !finalIdToken) {
-      logger.debug('[API] Tokens not found via standard methods, attempting direct extraction');
-      
-      if (cookieHeader) {
-        cookieHeader.split(';').forEach(cookie => {
-          const [name, value] = cookie.trim().split('=');
-          if (!name || !value) return;
-          
-          const lowerName = name.toLowerCase();
-          if ((lowerName.includes('access') || lowerName.includes('auth')) && !finalAccessToken) {
-            finalAccessToken = value;
-            logger.debug('[API] Directly extracted access token from cookies');
-          } else if (lowerName.includes('id') && lowerName.includes('token') && !finalIdToken) {
-            finalIdToken = value;
-            logger.debug('[API] Directly extracted ID token from cookies');
-          } else if ((lowerName.includes('tenant') || lowerName.includes('business')) && !finalTenantId) {
-            const cookieTenantId = value;
-            
-            // Check for mismatch between Cognito and cookie
-            if (cognitoBusinessId && cookieTenantId !== cognitoBusinessId) {
-              logger.warn('[API] ⚠️ Tenant ID mismatch between Cognito and cookies:', {
-                cognitoId: cognitoBusinessId,
-                cookieId: cookieTenantId
-              });
-              // Prioritize Cognito ID
-              finalTenantId = cognitoBusinessId;
-            } else {
-              finalTenantId = cookieTenantId;
-            }
-            
-            logger.debug('[API] Using tenant ID:', finalTenantId);
-          }
-        });
-      }
-    }
-    
-    // If still no tokens, check for direct headers
-    if (!finalAccessToken) {
-      const authHeader = request.headers.get('authorization');
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        finalAccessToken = authHeader.replace('Bearer ', '');
-        logger.debug('[API] Extracted access token from Authorization header');
-      }
-    }
-    
-    if (!finalIdToken) {
-      finalIdToken = request.headers.get('x-id-token');
-      if (finalIdToken) {
-        logger.debug('[API] Extracted ID token from X-Id-Token header');
-      }
-    }
-    
-    if (!finalTenantId) {
-      const headerTenantId = request.headers.get('x-tenant-id');
-      
-      // Check for mismatch between Cognito and header
-      if (cognitoBusinessId && headerTenantId !== cognitoBusinessId) {
-        logger.warn('[API] ⚠️ Tenant ID mismatch between Cognito and header:', {
-          cognitoId: cognitoBusinessId,
-          headerId: headerTenantId
-        });
-        // Prioritize Cognito ID
-        finalTenantId = cognitoBusinessId;
-      } else if (headerTenantId) {
-        finalTenantId = headerTenantId;
-        logger.debug('[API] Using tenant ID from header');
-      }
-    }
-    
-    // Generate schema name for the correct tenant
-    const schemaName = finalTenantId ? `tenant_${finalTenantId.replace(/-/g, '_')}` : null;
-    
-    // Log the results of our extraction attempts
-    logger.debug('[API] Final token and tenant status:', {
-      hasAccessToken: !!finalAccessToken,
-      hasIdToken: !!finalIdToken,
-      hasTenantId: !!finalTenantId,
-      tenantId: finalTenantId,
-      cognitoBusinessId,
-      schemaName
-    });
-    
-    // If we still don't have tokens or tenant ID, return error
-    if (!finalAccessToken || !finalIdToken || !finalTenantId) {
-      logger.error('[API] Missing required authentication or tenant information');
-      return NextResponse.json({
-        error: 'Authentication or tenant information incomplete',
-        code: 'invalid_request',
-        message: 'Your request is missing required authentication or tenant information.'
-      }, { status: 400 });
-    }
-    
-    // Use direct fetch instead of axiosInstance to bypass interceptors
-    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/inventory/products/`;
-    logger.debug(`[API] Making direct fetch request to ${apiUrl}`);
-    
-    const response = await fetch(apiUrl, {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${finalAccessToken}`,
-        'X-Id-Token': finalIdToken,
-        'X-Tenant-ID': finalTenantId,
-        'X-Schema-Name': schemaName
+        'Authorization': `Bearer ${apiKey}`,
+        'x-tenant-id': tenantId
       },
-      body: JSON.stringify(productData)
+      body: JSON.stringify(enhancedProductData)
     });
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      logger.error('[API] Backend API error:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorData
-      });
-      
-      return NextResponse.json(errorData || {
-        error: 'Backend API error',
-        message: response.statusText
-      }, { status: response.status });
+      throw new Error(`API returned ${response.status}: ${await response.text()}`);
     }
     
-    const data = await response.json();
-    logger.info(`[API] Product POST successful, created product ID: ${data?.id || 'unknown'}`);
+    const createdProduct = await response.json();
     
-    // Create response with consistent tenant ID cookie
-    const jsonResponse = NextResponse.json(data, { status: 201 });
-    
-    // Set cookie with the correct tenant ID to maintain consistency
-    jsonResponse.cookies.set('tenantId', finalTenantId, {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-      sameSite: 'lax',
-      httpOnly: true
-    });
-    
-    return jsonResponse;
-    */
+    return NextResponse.json(createdProduct, { status: 201 });
   } catch (error) {
-    logger.error('[API] Product POST error:', error.message, error.stack);
+    logger.error('Product POST error:', error.message, error.stack);
     return NextResponse.json({ 
       error: 'Failed to create product',
       message: error.message 

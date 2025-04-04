@@ -22,7 +22,7 @@ export async function testUpdateAttributes() {
       const result = await updateUserAttributes({
         userAttributes: {
           'custom:onboarding': 'COMPLETE',
-          'custom:setupdone': 'TRUE',
+          'custom:setupdone': 'true',
           'custom:attrversion': 'v1.0.1'
         }
       });
@@ -41,7 +41,7 @@ export async function testUpdateAttributes() {
         logger.info('[DebugCognito] Attempting update with legacy format');
         await updateUserAttributes({
           'custom:onboarding': 'COMPLETE',
-          'custom:setupdone': 'TRUE',
+          'custom:setupdone': 'true',
           'custom:attrversion': 'v1.0.1'
         });
         

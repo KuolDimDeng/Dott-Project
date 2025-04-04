@@ -128,8 +128,8 @@ class CognitoJWTAuthentication(JWTAuthentication):
                 is_development = getattr(settings, 'DEBUG', False)
                 enforce_aws_auth = getattr(settings, 'USE_AWS_AUTH', True)
                 
-                if is_development and not enforce_aws_auth:
-                    # In development mode, log a warning but continue
+                if is_development:
+                    # In development mode, log a warning but always continue
                     logger.warning("Token has expired but continuing in development mode")
                     # Extract payload without verification for development mode
                     try:
@@ -178,8 +178,8 @@ class CognitoJWTAuthentication(JWTAuthentication):
             is_development = getattr(settings, 'DEBUG', False) 
             enforce_aws_auth = getattr(settings, 'USE_AWS_AUTH', True)
             
-            if is_development and not enforce_aws_auth:
-                # In development mode, log a warning but continue
+            if is_development:
+                # In development mode, log a warning but always continue
                 logger.warning("Token has expired but continuing in development mode (main handler)")
                 # Extract payload without verification for development mode
                 try:

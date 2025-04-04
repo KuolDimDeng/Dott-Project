@@ -1,12 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Box, Typography, Button, Paper, Alert, Divider } from '@mui/material';
 import UltraOptimizedInventoryList from '../components/UltraOptimizedInventoryList';
 import { useRouter } from 'next/navigation';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import SpeedIcon from '@mui/icons-material/Speed';
-import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { logger } from '@/utils/logger';
 import { ultraOptimizedInventoryService } from '@/services/ultraOptimizedInventoryService';
 
@@ -29,62 +25,68 @@ export default function UltraOptimizedInventoryPage() {
   }, []);
 
   return (
-    <Box sx={{ p: 3, maxWidth: '1200px', mx: 'auto' }}>
+    <div className="p-6 max-w-7xl mx-auto">
       {/* Page header */}
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: 3, 
-          mb: 3, 
-          borderRadius: 2,
-          background: 'linear-gradient(to right, #1a237e, #3949ab)'
-        }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
-              <RocketLaunchIcon sx={{ mr: 1 }} /> Ultra-Optimized Inventory
-            </Typography>
-            <Typography variant="body1" sx={{ color: 'white', mt: 1, opacity: 0.9 }}>
+      <div className="p-6 mb-6 rounded-lg shadow-lg bg-gradient-to-r from-indigo-900 to-indigo-700">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-white flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+              Ultra-Optimized Inventory
+            </h1>
+            <p className="text-white mt-2 opacity-90">
               Maximum performance with ultra-optimized backend and frontend
-            </Typography>
-          </Box>
-          <Box>
-            <Button
-              variant="contained"
-              color="secondary"
-              startIcon={<ArrowBackIcon />}
+            </p>
+          </div>
+          <div className="flex space-x-3">
+            <button
+              className="bg-purple-500 hover:bg-purple-600 text-white font-medium py-2 px-4 rounded inline-flex items-center"
               onClick={() => router.push('/inventory/optimized')}
-              sx={{ mr: 1 }}
             >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
               Optimized View
-            </Button>
-            <Button
-              variant="outlined"
-              color="inherit"
-              startIcon={<ArrowBackIcon />}
+            </button>
+            <button
+              className="border border-white text-white hover:bg-white hover:bg-opacity-10 font-medium py-2 px-4 rounded inline-flex items-center"
               onClick={() => router.push('/inventory')}
-              sx={{ color: 'white', borderColor: 'white' }}
             >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
               Standard View
-            </Button>
-          </Box>
-        </Box>
-      </Paper>
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Information alert */}
-      <Alert severity="info" sx={{ mb: 3 }}>
-        <Typography variant="subtitle1" fontWeight="bold">
-          About Ultra-Optimized Inventory
-        </Typography>
-        <Typography variant="body2">
-          This page uses ultra-optimized endpoints and advanced caching strategies for maximum performance.
-          It includes features like progressive loading, stale-while-revalidate caching, offline support, and more.
-        </Typography>
-      </Alert>
+      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-blue-800">
+              About Ultra-Optimized Inventory
+            </h3>
+            <div className="mt-2 text-sm text-blue-700">
+              <p>
+                This page uses ultra-optimized endpoints and advanced caching strategies for maximum performance.
+                It includes features like progressive loading, stale-while-revalidate caching, offline support, and more.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Performance features */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
           { 
             title: 'Ultra-Lightweight API', 
@@ -119,57 +121,66 @@ export default function UltraOptimizedInventoryPage() {
             description: 'Choose between ultra-fast, standard, or detailed views' 
           }
         ].map((feature, index) => (
-          <Paper key={index} sx={{ p: 2, flex: '1 1 250px', borderLeft: '4px solid #3949ab' }}>
-            <Typography variant="h6" fontWeight="bold">{feature.title}</Typography>
-            <Typography variant="body2">{feature.description}</Typography>
-          </Paper>
+          <div key={index} className="bg-white p-4 rounded shadow-md border-l-4 border-indigo-700">
+            <h3 className="text-lg font-bold">{feature.title}</h3>
+            <p className="text-sm text-gray-600">{feature.description}</p>
+          </div>
         ))}
-      </Box>
+      </div>
 
       {/* Performance comparison */}
-      <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-        <Typography variant="h5" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-          <SpeedIcon sx={{ mr: 1 }} /> Performance Comparison
-        </Typography>
-        <Typography variant="body2" sx={{ mb: 2 }}>
+      <div className="bg-white p-6 mb-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold text-gray-800 mb-3 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          Performance Comparison
+        </h2>
+        <p className="text-sm text-gray-600 mb-4">
           The ultra-optimized inventory system offers significant performance improvements over the standard implementation:
-        </Typography>
+        </p>
         
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 2 }}>
-          <Box sx={{ flex: '1 1 200px' }}>
-            <Typography variant="subtitle1" fontWeight="bold" color="primary">Standard Implementation</Typography>
-            <Divider sx={{ mb: 1 }} />
-            <Typography variant="body2">• 30-second API timeout</Typography>
-            <Typography variant="body2">• Full data serialization</Typography>
-            <Typography variant="body2">• Basic caching</Typography>
-            <Typography variant="body2">• No offline support</Typography>
-            <Typography variant="body2">• No prefetching</Typography>
-          </Box>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <h3 className="font-semibold text-blue-600 mb-2">Standard Implementation</h3>
+            <div className="border-b border-gray-200 mb-2"></div>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• 30-second API timeout</li>
+              <li>• Full data serialization</li>
+              <li>• Basic caching</li>
+              <li>• No offline support</li>
+              <li>• No prefetching</li>
+            </ul>
+          </div>
           
-          <Box sx={{ flex: '1 1 200px' }}>
-            <Typography variant="subtitle1" fontWeight="bold" color="secondary">Optimized Implementation</Typography>
-            <Divider sx={{ mb: 1 }} />
-            <Typography variant="body2">• 15-second API timeout</Typography>
-            <Typography variant="body2">• Lightweight serialization</Typography>
-            <Typography variant="body2">• Redis caching (5 min TTL)</Typography>
-            <Typography variant="body2">• Basic offline support</Typography>
-            <Typography variant="body2">• Simple prefetching</Typography>
-          </Box>
+          <div>
+            <h3 className="font-semibold text-purple-600 mb-2">Optimized Implementation</h3>
+            <div className="border-b border-gray-200 mb-2"></div>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• 15-second API timeout</li>
+              <li>• Lightweight serialization</li>
+              <li>• Redis caching (5 min TTL)</li>
+              <li>• Basic offline support</li>
+              <li>• Simple prefetching</li>
+            </ul>
+          </div>
           
-          <Box sx={{ flex: '1 1 200px' }}>
-            <Typography variant="subtitle1" fontWeight="bold" color="success.main">Ultra-Optimized Implementation</Typography>
-            <Divider sx={{ mb: 1 }} />
-            <Typography variant="body2">• 5-second API timeout</Typography>
-            <Typography variant="body2">• Ultra-lightweight serialization</Typography>
-            <Typography variant="body2">• Tiered caching with stale-while-revalidate</Typography>
-            <Typography variant="body2">• Full offline support</Typography>
-            <Typography variant="body2">• Intelligent prefetching</Typography>
-          </Box>
-        </Box>
-      </Paper>
+          <div>
+            <h3 className="font-semibold text-green-600 mb-2">Ultra-Optimized Implementation</h3>
+            <div className="border-b border-gray-200 mb-2"></div>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• 5-second API timeout</li>
+              <li>• Ultra-lightweight serialization</li>
+              <li>• Tiered caching with stale-while-revalidate</li>
+              <li>• Full offline support</li>
+              <li>• Intelligent prefetching</li>
+            </ul>
+          </div>
+        </div>
+      </div>
 
       {/* Main inventory component */}
       <UltraOptimizedInventoryList />
-    </Box>
+    </div>
   );
 }

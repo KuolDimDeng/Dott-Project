@@ -1,43 +1,14 @@
 'use client';
 
-import {
-  Box,
-  Paper,
-  CircularProgress,
-  Typography,
-} from '@mui/material';
-
 export default function VerifyEmailLoading() {
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        p: 3,
-      }}
-    >
-      <Paper
-        elevation={3}
-        sx={{
-          p: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          maxWidth: 400,
-          width: '100%',
-          height: 400, // Match the height of the verify email form
-          justifyContent: 'center',
-          gap: 2,
-        }}
-      >
-        <CircularProgress size={48} />
-        <Typography variant="body2" color="text.secondary">
+    <div className="flex flex-col items-center justify-center min-h-screen p-6">
+      <div className="bg-white rounded-lg shadow-md p-8 flex flex-col items-center justify-center max-w-md w-full h-[400px] space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
+        <p className="text-sm text-gray-600">
           Loading verification page...
-        </Typography>
-      </Paper>
-    </Box>
+        </p>
+      </div>
+    </div>
   );
 }

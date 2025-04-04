@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/serverLogger';
 import { getServerUser } from '@/utils/getServerUser';
+import { cookies } from 'next/headers';
+import { getDefaultTenantId } from '@/middleware/dev-tenant-middleware';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * API endpoint to fetch user profile data
@@ -8,72 +11,172 @@ import { getServerUser } from '@/utils/getServerUser';
  * Optimized for RLS architecture to quickly return user information
  * without unnecessary database queries.
  */
-export async function GET(request) {
-  const requestId = crypto.randomUUID();
-  const startTime = Date.now();
-  
+export async function GET(req) {
   try {
-    // Check if this is a prefetch request
-    const isPrefetch = request.headers.get('x-prefetch') === 'true';
+    // Extract the email and tenantId from query params
+    const { searchParams } = new URL(req.url);
+    const email = searchParams.get('email');
+    const tenantId = searchParams.get('tenantId');
     
-    // Get user information directly from Cognito attributes
-    const user = await getServerUser(request);
+    // Extract tenant ID from headers
+    const headerTenantId = req.headers.get('x-tenant-id');
     
-    if (!user || !user.sub) {
-      logger.warn('[UserProfile] No user found', { requestId });
+    // Extract tenant ID from cookies
+    const cookieHeader = req.headers.get('cookie');
+    
+    // Helper to extract cookies
+    const getCookieValue = (cookieHeader, name) => {
+      if (!cookieHeader) return null;
+      const match = cookieHeader.match(new RegExp(`${name}=([^;]+)`));
+      return match ? decodeURIComponent(match[1]) : null;
+    };
+    
+    const cookieTenantId = getCookieValue(cookieHeader, 'tenantId');
+    
+    // Extract Cognito ID from cookies which serves as tenant ID
+    const cognitoUserMatch = cookieHeader?.match(/CognitoIdentityServiceProvider\.[^.]+\.LastAuthUser=([^;]+)/);
+    const cognitoUserId = cognitoUserMatch ? cognitoUserMatch[1] : null;
+    
+    // Use tenant ID from multiple sources, prioritizing query params, headers, then cookies
+    const effectiveTenantId = tenantId || headerTenantId || cookieTenantId || cognitoUserId;
+    
+    if (effectiveTenantId) {
+      console.log(`[API] Using dynamically retrieved tenant ID: ${effectiveTenantId}`);
+    } else {
+      console.log('[API] No tenant ID found, will attempt to retrieve from user authentication');
+    }
+    
+    // Try to get user from server-side authentication
+    const serverUser = await getServerUser(req);
+    if (serverUser) {
+      logger.info('[API] Retrieved authenticated user from server:', {
+        email: serverUser.email,
+        userId: serverUser.sub,
+        tenantId: effectiveTenantId || serverUser.sub // Use user ID as tenant ID if none provided
+      });
+      
+      // Return authenticated user information
       return NextResponse.json({
-        success: false,
-        error: 'No user found',
-        requestId
+        profile: {
+          id: serverUser.sub || serverUser.username,
+          email: serverUser.email,
+          name: serverUser.name || `${serverUser.given_name || ''} ${serverUser.family_name || ''}`.trim(),
+          firstName: serverUser.given_name || serverUser.first_name,
+          lastName: serverUser.family_name || serverUser.last_name,
+          fullName: serverUser.name || `${serverUser.given_name || ''} ${serverUser.family_name || ''}`.trim(),
+          tenantId: effectiveTenantId || serverUser.sub,
+          role: serverUser['custom:role'] || 'user',
+          onboardingStatus: serverUser['custom:onboarding'] || 'incomplete',
+          setupComplete: serverUser['custom:setupdone'] === 'true',
+          businessName: serverUser['custom:businessname'],
+          businessType: serverUser['custom:businesstype'],
+          subscription_type: serverUser['custom:subplan'] || 'free',
+          preferences: {
+            theme: 'light',
+            notificationsEnabled: true
+          }
+        }
+      });
+    }
+    
+    // Extract email from cookies as fallback
+    let authUser = null;
+    let businessName = null;
+    let businessType = null;
+    let firstName = null;
+    let lastName = null;
+    
+    if (cookieHeader) {
+      authUser = getCookieValue(cookieHeader, 'authUser');
+      businessName = getCookieValue(cookieHeader, 'businessName');
+      businessType = getCookieValue(cookieHeader, 'businessType');
+      firstName = getCookieValue(cookieHeader, 'firstName') || 
+                 getCookieValue(cookieHeader, 'given_name') || 
+                 getCookieValue(cookieHeader, 'first_name');
+      lastName = getCookieValue(cookieHeader, 'lastName') || 
+               getCookieValue(cookieHeader, 'family_name') || 
+               getCookieValue(cookieHeader, 'last_name');
+    }
+    
+    // Use the email from the query params or cookies
+    const userEmail = email || authUser;
+    
+    if (!userEmail || !effectiveTenantId) {
+      // If we don't have user email or tenant ID, return error
+      return NextResponse.json({ 
+        error: 'No authenticated user found',
+        message: 'Please sign in to access your profile' 
       }, { status: 401 });
     }
     
-    logger.debug('[UserProfile] Fetching user profile', { 
-      userSub: user.sub,
-      requestId,
-      isPrefetch
-    });
+    logger.info(`[API] Creating profile with email: ${userEmail} and tenant ID: ${effectiveTenantId}`);
     
-    // For RLS, we can immediately return profile info from Cognito attributes
-    // No need for database queries
-    
-    // Create a response with user profile data
-    const response = {
-      success: true,
-      profile: {
-        userId: user.sub,
-        email: user.email || '',
-        name: user.name || user.given_name || user.email?.split('@')[0] || 'User',
-        businessId: user['custom:businessid'] || '',
-        businessName: user['custom:businessname'] || '',
-        businessType: user['custom:businesstype'] || '',
-        legalStructure: user['custom:legalstructure'] || '',
-        country: user['custom:businesscountry'] || '',
-        accountStatus: user['custom:acctstatus'] || 'ACTIVE',
-        onboardingStatus: user['custom:onboarding'] || 'COMPLETE',
-        setupComplete: user['custom:setupdone'] === 'TRUE',
-        lastUpdated: user['custom:updated_at'] || new Date().toISOString()
-      },
-      isPrefetched: isPrefetch,
-      responseTime: Date.now() - startTime,
-      timestamp: new Date().toISOString(),
-      requestId
-    };
-    
-    return NextResponse.json(response);
-    
-  } catch (error) {
-    logger.error('[UserProfile] Error fetching user profile', {
-      error: error.message,
-      stack: error.stack,
-      requestId
-    });
-    
+    // Return profile data with the tenant ID
     return NextResponse.json({
-      success: false,
+      profile: {
+        id: effectiveTenantId,
+        email: userEmail,
+        tenantId: effectiveTenantId,
+        role: 'user',
+        firstName: firstName || '',
+        lastName: lastName || '',
+        name: firstName && lastName ? `${firstName} ${lastName}` : (firstName || userEmail),
+        fullName: firstName && lastName ? `${firstName} ${lastName}` : (firstName || ''),
+        businessName: businessName || '',
+        businessType: businessType || '',
+        onboardingStatus: 'incomplete', // Default status
+        setupComplete: false,
+        subscription_type: 'free',
+        preferences: {
+          theme: 'light',
+          notificationsEnabled: true
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[API] User profile GET error:', error.message);
+    return NextResponse.json({ 
       error: 'Failed to fetch user profile',
-      message: error.message,
-      requestId
+      message: error.message 
+    }, { status: 500 });
+  }
+}
+
+/**
+ * POST handler for updating user profile
+ */
+export async function POST(request) {
+  console.log('[API] User profile POST request received');
+  try {
+    // First authenticate the user
+    const serverUser = await getServerUser(request);
+    if (!serverUser) {
+      return NextResponse.json({ 
+        error: 'Authentication required',
+        message: 'You must be signed in to update your profile'
+      }, { status: 401 });
+    }
+    
+    // Get request body
+    const profileData = await request.json();
+    console.debug('[API] User profile POST data:', profileData);
+    
+    // Extract the tenantId from the request
+    const tenantId = profileData.tenantId || serverUser.sub;
+    
+    // Return the updated profile (in production this would save to database)
+    return NextResponse.json({
+      id: serverUser.sub,
+      email: serverUser.email,
+      ...profileData,
+      tenantId: tenantId,
+      updated_at: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[API] User profile POST error:', error.message);
+    return NextResponse.json({ 
+      error: 'Failed to update user profile',
+      message: error.message 
     }, { status: 500 });
   }
 } 

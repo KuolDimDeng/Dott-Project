@@ -29,10 +29,16 @@ export default function AdminRoute({ children }) {
           }
 
           // Check onboarding status
-          if (session?.user?.['custom:onboarding'] !== 'completed') {
+          const isSetupDone = session?.user?.['custom:onboarding']?.toLowerCase() === 'true';
+          const isOnboardingComplete = session?.user?.['custom:onboarding']?.toLowerCase() === 'complete';
+
+          if (!isSetupDone && !isOnboardingComplete) {
             logger.debug('Onboarding not completed, redirecting to onboarding');
-            router.push('/onboarding');
-            return;
+            // Generate redirect URL with same-origin location for security
+            const baseUrl = origin || window.location.origin;
+            const redirectUrl = `${baseUrl}/onboarding/business-info?from=admin&ts=${Date.now()}`;
+            window.location.replace(redirectUrl);
+            return null;
           }
         }
       } catch (error) {
@@ -53,9 +59,13 @@ export default function AdminRoute({ children }) {
   }
 
   // If we have a valid session and user is admin, render the children
+  // Case-insensitive comparison for onboarding status
+  const onboardingComplete = session?.user?.['custom:onboarding']?.toLowerCase() === 'complete' || 
+                           session?.user?.['custom:onboarding']?.toLowerCase() === 'completed';
+  
   if (status === 'authenticated' && 
       session?.user?.['custom:role'] === 'admin' &&
-      session?.user?.['custom:onboarding'] === 'completed') {
+      onboardingComplete) {
     return children;
   }
 

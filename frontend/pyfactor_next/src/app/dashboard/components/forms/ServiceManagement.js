@@ -94,7 +94,23 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
       logger.info('[ServiceManagement] Fetching services from API');
       const response = await axiosInstance.get('/api/services/');
       logger.info('[ServiceManagement] Services fetched successfully:', response.data.length);
-      setServices(response.data);
+      
+      // Map API field names to form field names
+      const mappedServices = response.data.map(service => ({
+        id: service.id,
+        name: service.service_name,
+        description: service.description,
+        price: service.price,
+        is_for_sale: service.is_for_sale,
+        is_recurring: service.is_recurring,
+        salestax: service.salestax,
+        duration: service.duration,
+        billing_cycle: service.billing_cycle,
+        tenant_id: service.tenant_id,
+        created_at: service.created_at
+      }));
+      
+      setServices(mappedServices);
     } catch (error) {
       logger.error('[ServiceManagement] Error fetching services:', error);
       let errorMessage = 'Error fetching services';
@@ -135,8 +151,20 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
     setIsSubmitting(true);
     logger.info('[ServiceManagement] Creating service:', newService);
     try {
-      logger.debug('[ServiceManagement] Sending POST request to /api/create-service/');
-      const response = await axiosInstance.post('/api/create-service/', newService);
+      // Map form field names to API expected field names
+      const mappedService = {
+        service_name: newService.name,
+        description: newService.description,
+        price: parseFloat(newService.price) || 0,
+        is_for_sale: newService.is_for_sale,
+        is_recurring: newService.is_recurring,
+        salestax: parseFloat(newService.salestax) || 0,
+        duration: newService.duration,
+        billing_cycle: newService.billing_cycle,
+      };
+      
+      logger.debug('[ServiceManagement] Sending POST request to /api/services/ with mapped data:', mappedService);
+      const response = await axiosInstance.post('/api/services/', mappedService);
       logger.info('[ServiceManagement] Service created successfully:', response.data);
       toast.success('Service created successfully');
       setNewService({
@@ -187,9 +215,22 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
     setIsSubmitting(true);
     logger.info('[ServiceManagement] Saving edited service:', editedService);
     try {
+      // Map form field names to API expected field names
+      const mappedService = {
+        service_name: editedService.name,
+        description: editedService.description,
+        price: parseFloat(editedService.price) || 0,
+        is_for_sale: editedService.is_for_sale,
+        is_recurring: editedService.is_recurring,
+        salestax: parseFloat(editedService.salestax) || 0,
+        duration: editedService.duration,
+        billing_cycle: editedService.billing_cycle,
+      };
+      
+      logger.debug('[ServiceManagement] Updating service with mapped data:', mappedService);
       const response = await axiosInstance.patch(
         `/api/services/${selectedService.id}/`,
-        editedService
+        mappedService
       );
       logger.info('[ServiceManagement] Service updated successfully:', response.data);
       setSelectedService(response.data);

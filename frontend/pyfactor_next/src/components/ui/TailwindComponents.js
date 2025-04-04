@@ -1695,3 +1695,114 @@ export const Snackbar = ({
     </div>
   );
 };
+
+export const Switch = ({
+  checked = false,
+  onChange,
+  label,
+  disabled = false,
+  className = '',
+  ...props
+}) => {
+  return (
+    <div className={`flex items-center ${className}`}>
+      <label className="inline-flex items-center cursor-pointer">
+        <div className="relative">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={onChange}
+            disabled={disabled}
+            className="sr-only"
+            {...props}
+          />
+          <div className={`block w-10 h-6 rounded-full ${checked ? 'bg-primary-main' : 'bg-gray-300'} ${disabled ? 'opacity-50' : ''}`}></div>
+          <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${checked ? 'transform translate-x-4' : ''}`}></div>
+        </div>
+        {label && <span className="ml-3 text-sm font-medium text-gray-700">{label}</span>}
+      </label>
+    </div>
+  );
+};
+
+// Adding Dialog component
+export const Dialog = ({
+  open = false,
+  onClose,
+  children,
+  title,
+  maxWidth = 'sm',
+  fullWidth = false,
+  className = '',
+  ...props
+}) => {
+  if (!open) return null;
+
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget && onClose) {
+      onClose(e);
+    }
+  };
+
+  const maxWidthClasses = {
+    xs: 'max-w-xs',
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+    '2xl': 'max-w-2xl',
+    '3xl': 'max-w-3xl',
+    '4xl': 'max-w-4xl',
+    '5xl': 'max-w-5xl',
+    '6xl': 'max-w-6xl',
+    '7xl': 'max-w-7xl',
+    full: 'max-w-full',
+  };
+
+  const widthClass = fullWidth ? 'w-full' : '';
+  const maxWidthClass = maxWidthClasses[maxWidth] || maxWidthClasses.sm;
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+      onClick={handleBackdropClick}
+      {...props}
+    >
+      <div 
+        className={`bg-white rounded-lg shadow-xl ${widthClass} ${maxWidthClass} ${className}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {title && (
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900">{title}</h2>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-500 focus:outline-none"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
+        <div className={!title ? 'p-6' : 'px-6 py-4'}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};

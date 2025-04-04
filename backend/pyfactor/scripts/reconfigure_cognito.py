@@ -122,11 +122,34 @@ def reconfigure_cognito_user_pool():
             },
             AutoVerifiedAttributes=['email'],
             EmailConfiguration={
-                'EmailSendingAccount': 'COGNITO_DEFAULT'
+                'EmailSendingAccount': 'COGNITO_DEFAULT',
+                'From': 'no-reply@verificationemail.com',  # Optional: Set a from address
+                'ReplyToEmailAddress': 'no-reply@verificationemail.com'  # Optional: Set a reply-to address
             },
+            # Configure verification message template to prevent duplicates
+            EmailVerificationMessage='Thank you for signing up! Your verification code is {####}',
+            EmailVerificationSubject='Your verification code',
             AdminCreateUserConfig={
                 'AllowAdminCreateUserOnly': False,
-                'UnusedAccountValidityDays': 7
+                'UnusedAccountValidityDays': 7,
+                'InviteMessageTemplate': {
+                    'EmailMessage': 'Your username is {username} and temporary password is {####}.',
+                    'EmailSubject': 'Your temporary password',
+                    'SMSMessage': 'Your username is {username} and temporary password is {####}.'
+                }
+            },
+            # Disable triggers that might be causing duplicate emails
+            LambdaConfig={
+                'PreSignUp': None,
+                'CustomMessage': None,
+                'PostConfirmation': 'cognito-post-confirmation-trigger',
+                'PreAuthentication': None,
+                'PostAuthentication': None,
+                'DefineAuthChallenge': None,
+                'CreateAuthChallenge': None,
+                'VerifyAuthChallengeResponse': None,
+                'PreTokenGeneration': None,
+                'UserMigration': None
             }
         )
 

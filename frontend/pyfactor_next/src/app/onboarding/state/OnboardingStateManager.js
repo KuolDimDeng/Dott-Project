@@ -453,7 +453,7 @@ export class OnboardingStateManager extends FormStateManager {
       };
 
       if (updates.onboarding === ONBOARDING_STATES.COMPLETE) {
-        cognitoAttributes['custom:setupdone'] = 'TRUE';
+        cognitoAttributes['custom:setupdone'] = 'true';
         cognitoAttributes['custom:acctstatus'] = 'ACTIVE';
       }
 

@@ -95,12 +95,88 @@ const MOCK_PRODUCTS = [
   }
 ];
 
+// Mock business and user data for development environment
+const MOCK_BUSINESS_INFO = {
+  businessName: "Development Business",
+  businessType: "Technology",
+  businessSubtypes: "software,consulting",
+  businessId: "dev-tenant-123",
+  country: "US",
+  businessState: "California",
+  legalStructure: "LLC",
+  dateFounded: "2022-01-15",
+  address: "123 Tech Blvd, San Francisco, CA 94105",
+  phoneNumber: "415-555-1234",
+  taxId: "12-3456789"
+};
+
+// Mock user data for development environment
+const MOCK_USER_INFO = {
+  userId: "dev-user-id",
+  email: "kuoldimdeng@outlook.com",
+  firstName: "Kuol",
+  lastName: "Deng",
+  fullName: "Kuol Deng",
+  role: "OWNER",
+  createdAt: new Date(Date.now() - 30*24*60*60*1000).toISOString(),
+  lastLogin: new Date().toISOString()
+};
+
+// Mock subscription data for development environment
+const MOCK_SUBSCRIPTION_INFO = {
+  plan: "PROFESSIONAL", // Options: FREE, BASIC, PROFESSIONAL, ENTERPRISE
+  interval: "MONTHLY", // Options: MONTHLY, ANNUAL
+  price: 49.99,
+  status: "ACTIVE",
+  features: [
+    "inventory_management",
+    "invoicing",
+    "customer_management",
+    "reporting",
+    "multi_user",
+    "advanced_analytics"
+  ],
+  startDate: new Date().toISOString(),
+  nextBillingDate: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
+  paymentMethod: {
+    type: "credit_card",
+    last4: "4242",
+    expiry: "12/25"
+  }
+};
+
 /**
  * Get mock products for testing and fallback
  * @returns {Array} List of mock products
  */
 export const getMockProducts = () => {
   return [...MOCK_PRODUCTS];
+};
+
+/**
+ * Get business, user, and subscription data for development environment
+ * This function combines all development values into a single object
+ * @returns {Object} Combined development values
+ */
+export const getDevelopmentValues = () => {
+  return {
+    business: { ...MOCK_BUSINESS_INFO },
+    user: { ...MOCK_USER_INFO },
+    subscription: { ...MOCK_SUBSCRIPTION_INFO },
+    products: [...MOCK_PRODUCTS],
+    // Include system information
+    system: {
+      environment: "development",
+      version: "1.0.0",
+      timestamp: new Date().toISOString(),
+      features: {
+        inventory: true,
+        accounting: true,
+        crm: true,
+        reports: true
+      }
+    }
+  };
 };
 
 /**

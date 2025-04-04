@@ -70,7 +70,7 @@ export default function SetupPage() {
         
         document.cookie = `setupCompleted=true; ${cookieOptions}`;
         document.cookie = `onboardingStep=complete; ${cookieOptions}`;
-        document.cookie = `onboardedStatus=COMPLETE; ${cookieOptions}`;
+        document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
         document.cookie = `hasSession=true; ${cookieOptions}`;
         
         // Set localStorage flags
@@ -105,7 +105,7 @@ export default function SetupPage() {
         
         document.cookie = `setupCompleted=true; ${cookieOptions}`;
         document.cookie = `onboardingStep=complete; ${cookieOptions}`;
-        document.cookie = `onboardedStatus=COMPLETE; ${cookieOptions}`;
+        document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
         document.cookie = `hasSession=true; ${cookieOptions}`;
         
         localStorage.setItem('setupComplete', 'true');
@@ -178,7 +178,7 @@ export default function SetupPage() {
           
           document.cookie = `setupCompleted=true; ${cookieOptions}`;
           document.cookie = `onboardingStep=complete; ${cookieOptions}`;
-          document.cookie = `onboardedStatus=COMPLETE; ${cookieOptions}`;
+          document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
           
           localStorage.setItem('setupComplete', 'true');
           localStorage.setItem('setupTimestamp', Date.now().toString());
@@ -243,7 +243,7 @@ export default function SetupPage() {
         // Set final cookies and localStorage
         document.cookie = `setupCompleted=true; ${cookieOptions}`;
         document.cookie = `onboardingStep=complete; ${cookieOptions}`;
-        document.cookie = `onboardedStatus=COMPLETE; ${cookieOptions}`;
+        document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
         document.cookie = `hasSession=true; ${cookieOptions}`;
         
         localStorage.setItem('setupComplete', 'true');

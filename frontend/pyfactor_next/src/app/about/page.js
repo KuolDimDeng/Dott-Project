@@ -1,31 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useTheme } from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
-import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
-import Grid from '@mui/material/Grid';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import HomeIcon from '@mui/icons-material/Home';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import Paper from '@mui/material/Paper';
-import Divider from '@mui/material/Divider';
-import Avatar from '@mui/material/Avatar';
-
-// Icons
-import EmojiObjectsIcon from '@mui/icons-material/EmojiObjects';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import SpeedIcon from '@mui/icons-material/Speed';
-import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
-import LanguageIcon from '@mui/icons-material/Language';
-import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
-import BubbleChartIcon from '@mui/icons-material/BubbleChart';
-import QueryStatsIcon from '@mui/icons-material/QueryStats';
 
 // Define keyframes animation styles
 const progressAnimationKeyframes = `
@@ -40,7 +17,6 @@ const progressAnimationKeyframes = `
 `;
 
 export default function AboutUs() {
-  const theme = useTheme();
   const router = useRouter();
 
   // Add global styles for keyframes animation
@@ -57,7 +33,6 @@ export default function AboutUs() {
   }, []);
 
   const primaryColor = '#0a3d62'; // Navy blue
-  const hoverColor = '#3c6382'; // Lighter navy blue for hover
   const secondaryColor = '#ff9800'; // Orange accent for emphasis
   const accentGreen = '#4caf50'; // Green for innovative features
 
@@ -116,22 +91,38 @@ export default function AboutUs() {
     {
       title: "Simplicity",
       description: "We design our platform with intuitive interfaces that make complex business operations straightforward and accessible to everyone, regardless of technical expertise.",
-      icon: <EmojiObjectsIcon sx={{ fontSize: 36, color: primaryColor }} />
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke={primaryColor} className="w-9 h-9">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+        </svg>
+      )
     },
     {
       title: "Innovation",
       description: "We continuously evolve our platform with cutting-edge features that anticipate the changing needs of small businesses in an increasingly digital economy.",
-      icon: <AutoAwesomeIcon sx={{ fontSize: 36, color: secondaryColor }} />
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke={secondaryColor} className="w-9 h-9">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+        </svg>
+      )
     },
     {
       title: "Empowerment",
       description: "We believe in giving small business owners the same caliber of tools that larger enterprises enjoy, leveling the playing field and enabling growth on their terms.",
-      icon: <AccessibilityNewIcon sx={{ fontSize: 36, color: accentGreen }} />
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke={accentGreen} className="w-9 h-9">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
+        </svg>
+      )
     },
     {
       title: "Customer Focus",
       description: "Every feature we develop, every support interaction we have, and every business decision we make is guided by what will best serve our customers' success.",
-      icon: <SpeedIcon sx={{ fontSize: 36, color: '#e91e63' }} />
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="#e91e63" className="w-9 h-9">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+        </svg>
+      )
     }
   ];
 
@@ -140,903 +131,331 @@ export default function AboutUs() {
     {
       title: "All-in-One Platform",
       description: "Dott integrates accounting, invoicing, inventory, HR, and payment processing in one unified platform, eliminating the need for multiple subscriptions and fragmented data.",
-      icon: <BubbleChartIcon fontSize="large" />
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3" />
+        </svg>
+      )
     },
     {
       title: "Global & Local",
       description: "Our platform works with local payment methods, tax regulations, and business practices while maintaining global standards of security and functionality.",
-      icon: <LanguageIcon fontSize="large" />
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+        </svg>
+      )
     },
     {
       title: "Enterprise Security",
       description: "Bank-level encryption, compliance with international data protection standards, and regular security audits keep your business data safe.",
-      icon: <VerifiedUserIcon fontSize="large" />
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+        </svg>
+      )
     },
     {
       title: "Data-Driven Insights",
       description: "Turn your financial data into actionable insights with visual reports and dashboards that help you make informed business decisions.",
-      icon: <QueryStatsIcon fontSize="large" />
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
+        </svg>
+      )
     }
   ];
 
   return (
-    <Box
-      id="about"
-      sx={{
-        width: '100%',
-        color: theme.palette.mode === 'light' ? '#333' : '#FFF',
-        backgroundColor: theme.palette.background.default,
-      }}
-    >
+    <div id="about" className="w-full text-gray-800 bg-gray-50">
       {/* Hero Section with Gradient Background */}
-      <Box 
-        sx={{
-          background: `linear-gradient(135deg, ${theme.palette.primary.main}22 0%, ${theme.palette.primary.main}44 100%)`,
-          pt: { xs: 10, md: 16 },
-          pb: { xs: 8, md: 12 },
-          position: 'relative',
-          overflow: 'hidden'
-        }}
-      >
+      <div className="relative bg-gradient-to-br from-blue-50 to-blue-100 pt-16 pb-12 md:pt-24 md:pb-20 overflow-hidden">
         {/* Decorative circles */}
-        <Box 
-          sx={{
-            position: 'absolute',
-            width: '300px',
-            height: '300px',
-            borderRadius: '50%',
-            background: `radial-gradient(circle, ${primaryColor}22 0%, transparent 70%)`,
-            top: '-50px',
-            right: '-100px',
-            zIndex: 0
-          }}
-        />
-        <Box 
-          sx={{
-            position: 'absolute',
-            width: '200px',
-            height: '200px',
-            borderRadius: '50%',
-            background: `radial-gradient(circle, ${secondaryColor}22 0%, transparent 70%)`,
-            bottom: '50px',
-            left: '-50px',
-            zIndex: 0
-          }}
-        />
+        <div className="absolute w-72 h-72 rounded-full bg-gradient-to-r from-blue-200/20 to-transparent top-[-50px] right-[-100px]"></div>
+        <div className="absolute w-52 h-52 rounded-full bg-gradient-to-r from-orange-200/20 to-transparent bottom-[50px] left-[-50px]"></div>
         
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+        <div className="container max-w-7xl mx-auto px-4 relative z-10">
           {/* Home Button */}
-          <Box sx={{ mb: 6, display: 'flex', justifyContent: 'flex-start' }}>
-            <Button
-              variant="contained"
-              component="a"
+          <div className="mb-12 flex justify-start">
+            <a
               href="/"
-              startIcon={<HomeIcon />}
-              sx={{
-                backgroundColor: primaryColor,
-                '&:hover': {
-                  backgroundColor: hoverColor,
-                },
-                borderRadius: '50px',
-                fontFamily: '"Inter", sans-serif',
-                fontWeight: 600,
-                boxShadow: '0 4px 14px 0 rgba(10, 61, 98, 0.39)',
-              }}
+              className="inline-flex items-center px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-full font-semibold shadow-lg transition-colors"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+              </svg>
               Back to Home
-            </Button>
-          </Box>
+            </a>
+          </div>
         
           {/* Title and Mission Statement */}
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={7}>
-              <Box>
-                <Typography 
-                  variant="overline" 
-                  sx={{ 
-                    color: primaryColor, 
-                    letterSpacing: 2,
-                    fontWeight: 600,
-                    fontSize: '1rem'
-                  }}
-                >
-                  OUR STORY
-                </Typography>
-                <Typography
-                  variant="h1"
-                  sx={{
-                    fontSize: { xs: '2.5rem', md: 'clamp(3rem, 6vw, 4rem)' },
-                    fontWeight: 800,
-                    mb: 3,
-                    background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    fontFamily: '"Poppins", sans-serif',
-                    letterSpacing: '-0.02em',
-                    lineHeight: 1.2
-                  }}
-                >
-                  Empowering Small Businesses Worldwide
-                </Typography>
-                <Typography
-                  variant="h4"
-                  sx={{
-                    color: theme.palette.text.primary,
-                    fontFamily: '"Inter", sans-serif',
-                    fontWeight: 500,
-                    fontSize: { xs: '1.2rem', md: '1.5rem' },
-                    lineHeight: 1.5,
-                    mb: 4,
-                    maxWidth: '90%'
-                  }}
-                >
-                  We build technology that helps small businesses thrive in a digital world.
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={5} sx={{ display: 'flex', justifyContent: 'center' }}>
-              <Box 
-                sx={{ 
-                  position: 'relative',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '30% 70% 70% 30% / 30% 30% 70% 70%',
-                    background: `linear-gradient(135deg, ${primaryColor}33 0%, ${secondaryColor}33 100%)`,
-                    top: '10%',
-                    left: '10%',
-                    zIndex: -1
-                  }
-                }}
-              >
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+            <div className="md:col-span-7">
+              <span className="text-blue-900 tracking-wider font-semibold text-base uppercase">
+                OUR STORY
+              </span>
+              <h1 className="text-4xl md:text-[clamp(3rem,6vw,4rem)] font-extrabold mt-2 mb-6 bg-gradient-to-r from-blue-900 to-orange-500 bg-clip-text text-transparent leading-tight font-['Poppins',sans-serif] tracking-tight">
+                Empowering Small Businesses Worldwide
+              </h1>
+              <p className="text-xl md:text-2xl font-medium text-gray-700 max-w-xl leading-relaxed">
+                We build technology that helps small businesses thrive in a digital world.
+              </p>
+            </div>
+            <div className="md:col-span-5 flex justify-center">
+              <div className="relative">
+                <div className="absolute w-full h-full rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-gradient-to-br from-blue-900/20 to-orange-500/20 top-[10%] left-[10%] -z-10"></div>
                 <Image
                   src="/static/images/Team-Building-4--Streamline-Brooklyn.png"
                   alt="Dott Team Illustration"
                   width={550}
                   height={400}
-                  style={{ 
-                    maxWidth: '100%', 
-                    height: 'auto', 
-                    borderRadius: '20px',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
-                  }}
+                  className="max-w-full h-auto rounded-xl shadow-2xl"
                   priority
                 />
-              </Box>
-            </Grid>
-          </Grid>
-        </Container>
-      </Box>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content */}
-      <Container maxWidth="lg">
+      <div className="container max-w-7xl mx-auto px-4">
         {/* Company Overview */}
-        <Box sx={{ py: { xs: 8, md: 12 } }}>
-          <Grid container spacing={8} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <Box sx={{ position: 'relative' }}>
-                <Typography
-                  variant="h2"
-                  sx={{
-                    fontSize: { xs: '2rem', md: '2.75rem' },
-                    fontWeight: 700,
-                    mb: 4,
-                    color: primaryColor,
-                    fontFamily: '"Poppins", sans-serif',
-                    position: 'relative',
-                    '&::after': {
-                      content: '""',
-                      position: 'absolute',
-                      left: 0,
-                      bottom: -10,
-                      width: 80,
-                      height: 4,
-                      borderRadius: 2,
-                      backgroundColor: secondaryColor
-                    }
-                  }}
-                >
-                  Who We Are
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: theme.palette.text.primary,
-                    fontFamily: '"Inter", sans-serif',
-                    fontSize: '1.1rem',
-                    lineHeight: 1.8,
-                    mb: 3
-                  }}
-                >
-                  Founded in 2023, Dott is a comprehensive business management platform designed specifically for small businesses, freelancers, consultants, and micro-enterprises. We combine financial management, HR tools, inventory tracking, and integrated payment solutions into one seamless platform.
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: theme.palette.text.primary,
-                    fontFamily: '"Inter", sans-serif',
-                    fontSize: '1.1rem',
-                    lineHeight: 1.8,
-                    mb: 3
-                  }}
-                >
-                  What sets Dott apart is our deep understanding of the unique challenges faced by small businesses, especially in emerging markets. Our platform adapts to local business environments while maintaining global best practices in financial management and security.
-                </Typography>
-                <Box 
-                  sx={{ 
-                    mt: 5,
-                    p: 3,
-                    borderRadius: 2,
-                    border: `1px solid ${theme.palette.divider}`,
-                    backgroundColor: theme.palette.background.paper,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
-                  }}
-                >
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontFamily: '"Poppins", sans-serif',
-                      fontWeight: 600,
-                      color: secondaryColor,
-                      mb: 2
-                    }}
-                  >
-                    Our Impact
-                  </Typography>
-                  <Stack direction="row" spacing={4} sx={{ mb: 2 }}>
-                    <Box textAlign="center">
-                      <Typography variant="h3" color="primary" fontWeight={700}>15K+</Typography>
-                      <Typography variant="body2">Active Businesses</Typography>
-                    </Box>
-                    <Box textAlign="center">
-                      <Typography variant="h3" color="primary" fontWeight={700}>32</Typography>
-                      <Typography variant="body2">Countries</Typography>
-                    </Box>
-                    <Box textAlign="center">
-                      <Typography variant="h3" color="primary" fontWeight={700}>$120M</Typography>
-                      <Typography variant="body2">Processed Monthly</Typography>
-                    </Box>
-                  </Stack>
-                </Box>
-              </Box>
-            </Grid>
+        <div className="py-16 md:py-24">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+            <div className="relative">
+              <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-8 font-['Poppins',sans-serif] relative after:content-[''] after:absolute after:left-0 after:bottom-[-10px] after:w-20 after:h-1 after:bg-orange-500 after:rounded-full">
+                Who We Are
+              </h2>
+              <p className="text-lg text-gray-700 leading-relaxed mb-6 font-['Inter',sans-serif]">
+                Founded in 2023, Dott is a comprehensive business management platform designed specifically for small businesses, freelancers, consultants, and micro-enterprises. We combine financial management, HR tools, inventory tracking, and integrated payment solutions into one seamless platform.
+              </p>
+              <p className="text-lg text-gray-700 leading-relaxed mb-6 font-['Inter',sans-serif]">
+                What sets Dott apart is our deep understanding of the unique challenges faced by small businesses, especially in emerging markets. Our platform adapts to local business environments while maintaining global best practices in financial management and security.
+              </p>
+              <div className="mt-10 p-6 rounded-lg border border-gray-200 bg-white shadow-md">
+                <h3 className="text-xl font-semibold text-orange-500 mb-4 font-['Poppins',sans-serif]">
+                  Our Impact
+                </h3>
+                <div className="flex flex-wrap justify-between gap-4">
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-blue-900">15K+</p>
+                    <p className="text-sm text-gray-600">Active Businesses</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-blue-900">32</p>
+                    <p className="text-sm text-gray-600">Countries</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-blue-900">$120M</p>
+                    <p className="text-sm text-gray-600">Processed Monthly</p>
+                  </div>
+                </div>
+              </div>
+            </div>
             
-            <Grid item xs={12} md={6}>
-              {/* Mission & Vision Cards with subtle floating animation */}
-              <Stack spacing={4}>
-                <Paper 
-                  elevation={4} 
-                  sx={{ 
-                    p: 4, 
-                    borderRadius: 4,
-                    position: 'relative',
-                    overflow: 'hidden',
-                    transition: 'all 0.3s ease',
-                    transform: 'translateY(0)',
-                    '&:hover': {
-                      transform: 'translateY(-8px)',
-                      boxShadow: '0 20px 40px rgba(3, 169, 244, 0.2)'
-                    },
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      width: '100%',
-                      height: '100%',
-                      background: `linear-gradient(135deg, ${primaryColor}11 0%, ${primaryColor}22 100%)`,
-                      zIndex: -1
-                    }
-                  }}
-                >
-                  <Box 
-                    sx={{ 
-                      position: 'absolute', 
-                      top: 15, 
-                      right: 15,
-                      background: primaryColor,
-                      borderRadius: '50%',
-                      width: 40,
-                      height: 40,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white'
-                    }}
-                  >
-                    <AutoAwesomeIcon />
-                  </Box>
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      fontWeight: 700,
-                      fontFamily: '"Poppins", sans-serif',
-                      color: primaryColor,
-                      mb: 3,
-                    }}
-                  >
-                    Our Mission
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      color: theme.palette.text.primary,
-                      fontFamily: '"Inter", sans-serif',
-                      fontSize: '1.1rem',
-                      lineHeight: 1.8,
-                      mb: 2
-                    }}
-                  >
-                    At Dott, our mission is to empower small businesses to thrive by providing them with affordable, accessible, and powerful management tools that simplify day-to-day operations. We believe that when the administrative burden is reduced, creativity and growth can flourish.
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      color: theme.palette.text.primary,
-                      fontFamily: '"Inter", sans-serif',
-                      fontSize: '1.1rem',
-                      lineHeight: 1.8,
-                    }}
-                  >
-                    We're committed to breaking down technological barriers and making sophisticated business management accessible to entrepreneurs regardless of their technical background or location.
-                  </Typography>
-                </Paper>
+            <div className="space-y-8">
+              {/* Mission Card */}
+              <div className="relative bg-white rounded-2xl shadow-lg p-8 transform transition-all hover:-translate-y-2 hover:shadow-xl">
+                <div className="absolute top-4 right-4 bg-blue-900 text-white w-10 h-10 rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-blue-900 mb-4 font-['Poppins',sans-serif]">
+                  Our Mission
+                </h3>
+                <p className="text-gray-700 leading-relaxed mb-4 font-['Inter',sans-serif]">
+                  At Dott, our mission is to empower small businesses to thrive by providing them with affordable, accessible, and powerful management tools that simplify day-to-day operations. We believe that when the administrative burden is reduced, creativity and growth can flourish.
+                </p>
+                <p className="text-gray-700 leading-relaxed font-['Inter',sans-serif]">
+                  We're committed to breaking down technological barriers and making sophisticated business management accessible to entrepreneurs regardless of their technical background or location.
+                </p>
+              </div>
 
-                <Paper 
-                  elevation={4} 
-                  sx={{ 
-                    p: 4, 
-                    borderRadius: 4,
-                    position: 'relative',
-                    overflow: 'hidden',
-                    transition: 'all 0.3s ease',
-                    transform: 'translateY(0)',
-                    '&:hover': {
-                      transform: 'translateY(-8px)',
-                      boxShadow: '0 20px 40px rgba(255, 152, 0, 0.2)'
-                    },
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      width: '100%',
-                      height: '100%',
-                      background: `linear-gradient(135deg, ${secondaryColor}11 0%, ${secondaryColor}22 100%)`,
-                      zIndex: -1
-                    }
-                  }}
-                >
-                  <Box 
-                    sx={{ 
-                      position: 'absolute', 
-                      top: 15, 
-                      right: 15,
-                      background: secondaryColor,
-                      borderRadius: '50%',
-                      width: 40,
-                      height: 40,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white'
-                    }}
-                  >
-                    <LanguageIcon />
-                  </Box>
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      fontWeight: 700,
-                      fontFamily: '"Poppins", sans-serif',
-                      color: secondaryColor,
-                      mb: 3,
-                    }}
-                  >
-                    Our Vision
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      color: theme.palette.text.primary,
-                      fontFamily: '"Inter", sans-serif',
-                      fontSize: '1.1rem',
-                      lineHeight: 1.8,
-                      mb: 2
-                    }}
-                  >
-                    We envision a world where small businesses have access to the same quality of management tools as large corporations, but tailored to their specific needs and scale. Our goal is to become the essential operating system for small businesses worldwide.
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      color: theme.palette.text.primary,
-                      fontFamily: '"Inter", sans-serif',
-                      fontSize: '1.1rem',
-                      lineHeight: 1.8,
-                    }}
-                  >
-                    By 2030, we aim to help one million small businesses improve their operational efficiency, financial health, and growth prospects through our integrated platform that evolves with their needs.
-                  </Typography>
-                </Paper>
-              </Stack>
-            </Grid>
-          </Grid>
-        </Box>
+              {/* Vision Card */}
+              <div className="relative bg-white rounded-2xl shadow-lg p-8 transform transition-all hover:-translate-y-2 hover:shadow-xl">
+                <div className="absolute top-4 right-4 bg-orange-500 text-white w-10 h-10 rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-orange-500 mb-4 font-['Poppins',sans-serif]">
+                  Our Vision
+                </h3>
+                <p className="text-gray-700 leading-relaxed mb-4 font-['Inter',sans-serif]">
+                  We envision a world where small businesses have access to the same quality of management tools as large corporations, but tailored to their specific needs and scale. Our goal is to become the essential operating system for small businesses worldwide.
+                </p>
+                <p className="text-gray-700 leading-relaxed font-['Inter',sans-serif]">
+                  By 2030, we aim to help one million small businesses improve their operational efficiency, financial health, and growth prospects through our integrated platform that evolves with their needs.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Company Journey Section */}
-        <Box 
-          sx={{ 
-            py: { xs: 8, md: 12 },
-            background: theme.palette.mode === 'light' ? '#f8f9fa' : theme.palette.background.paper,
-            borderRadius: 4,
-            mx: { xs: -2, md: -4 },
-            px: { xs: 2, md: 4 },
-            boxShadow: 'inset 0 0 20px rgba(0,0,0,0.03)'
-          }}
-        >
-          <Typography
-            variant="h2"
-            align="center"
-            sx={{
-              fontSize: { xs: '2rem', md: '2.75rem' },
-              fontWeight: 700,
-              mb: 8,
-              color: primaryColor,
-              fontFamily: '"Poppins", sans-serif',
-              position: 'relative',
-              display: 'inline-block',
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                left: '30%',
-                right: '30%',
-                bottom: -10,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: secondaryColor
-              }
-            }}
-          >
+        <div className="py-16 md:py-24 bg-gray-100 rounded-2xl -mx-4 px-4 md:px-8 shadow-inner">
+          <h2 className="text-3xl md:text-4xl font-bold text-blue-900 text-center mb-16 font-['Poppins',sans-serif] inline-block relative after:content-[''] after:absolute after:left-[30%] after:right-[30%] after:bottom-[-10px] after:h-1 after:bg-orange-500 after:rounded-full mx-auto">
             Our Journey
-          </Typography>
+          </h2>
 
-          <Grid container spacing={4}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {milestones.map((milestone, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index}>
-                <Paper 
-                  elevation={3} 
-                  sx={{ 
-                    height: '100%',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    borderRadius: 3,
-                    transition: 'transform 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-8px)',
-                      boxShadow: '0 12px 30px rgba(0,0,0,0.15)'
-                    }
-                  }}
-                >
-                  <Box 
-                    sx={{ 
-                      height: 6, 
-                      width: '100%', 
-                      backgroundColor: milestone.color 
-                    }} 
-                  />
-                  <Box sx={{ p: 3 }}>
-                    <Typography 
-                      variant="h4" 
-                      sx={{ 
-                        mb: 1,
-                        fontWeight: 700, 
-                        color: milestone.color,
-                        fontFamily: '"Poppins", sans-serif',
-                      }}
-                    >
-                      {milestone.year}
-                    </Typography>
-                    <Typography 
-                      variant="h6" 
-                      fontWeight={600} 
-                      gutterBottom
-                      sx={{ fontFamily: '"Poppins", sans-serif' }}
-                    >
-                      {milestone.title}
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                      {milestone.description}
-                    </Typography>
-                  </Box>
-                </Paper>
-              </Grid>
+              <div key={index} className="bg-white rounded-xl shadow-md h-full relative overflow-hidden transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl">
+                <div 
+                  className="h-1.5 w-full" 
+                  style={{ backgroundColor: milestone.color }}
+                ></div>
+                <div className="p-6">
+                  <h3 
+                    className="text-2xl font-bold mb-2 font-['Poppins',sans-serif]"
+                    style={{ color: milestone.color }}
+                  >
+                    {milestone.year}
+                  </h3>
+                  <h4 className="text-xl font-semibold mb-2 font-['Poppins',sans-serif]">
+                    {milestone.title}
+                  </h4>
+                  <p className="text-gray-600">
+                    {milestone.description}
+                  </p>
+                </div>
+              </div>
             ))}
-          </Grid>
+          </div>
           
           {/* Journey Line */}
-          <Box 
-            sx={{ 
-              position: 'relative',
-              mt: 6,
-              mx: 'auto',
-              width: '80%',
-              height: 4,
-              backgroundColor: '#e0e0e0',
-              borderRadius: 2,
-              overflow: 'hidden'
-            }}
-          >
-            <Box 
-              sx={{ 
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                background: `linear-gradient(90deg, ${primaryColor} 0%, ${secondaryColor} 50%, ${accentGreen} 100%)`,
-                animation: 'progressAnimation 3s ease-in-out infinite alternate'
-              }}
-            />
-          </Box>
-        </Box>
+          <div className="relative mt-12 mx-auto w-4/5 h-1 bg-gray-300 rounded-full overflow-hidden">
+            <div 
+              className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-blue-900 via-orange-500 to-green-500 animate-[progressAnimation_3s_ease-in-out_infinite_alternate]"
+            ></div>
+          </div>
+        </div>
 
         {/* Core Values Section */}
-        <Box sx={{ py: { xs: 8, md: 12 } }}>
-          <Typography
-            variant="h2"
-            align="center"
-            sx={{
-              fontSize: { xs: '2rem', md: '2.75rem' },
-              fontWeight: 700,
-              mb: 2,
-              color: primaryColor,
-              fontFamily: '"Poppins", sans-serif',
-            }}
-          >
+        <div className="py-16 md:py-24">
+          <h2 className="text-3xl md:text-4xl font-bold text-blue-900 text-center mb-4 font-['Poppins',sans-serif]">
             Our Core Values
-          </Typography>
+          </h2>
           
-          <Typography
-            variant="h6"
-            align="center"
-            sx={{
-              maxWidth: '800px',
-              margin: '0 auto',
-              mb: 8,
-              color: theme.palette.text.secondary,
-              fontWeight: 400,
-              lineHeight: 1.6
-            }}
-          >
+          <p className="text-xl text-gray-600 text-center max-w-3xl mx-auto mb-16 leading-relaxed">
             These principles guide every decision we make and every feature we build
-          </Typography>
+          </p>
 
-          <Grid container spacing={4}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {values.map((value, index) => (
-              <Grid item xs={12} sm={6} key={index}>
-                <Paper
-                  elevation={3}
-                  sx={{ 
-                    p: 4, 
-                    height: '100%',
-                    borderRadius: 4,
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-8px)',
-                      boxShadow: '0 12px 20px rgba(0,0,0,0.1)'
-                    }
-                  }}
-                >
-                  <Box sx={{ mb: 3 }}>
-                    {value.icon}
-                  </Box>
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      fontWeight: 600,
-                      fontFamily: '"Poppins", sans-serif',
-                      mb: 2,
-                    }}
-                  >
-                    {value.title}
-                  </Typography>
-                  <Typography variant="body1" sx={{ color: theme.palette.text.secondary, lineHeight: 1.7 }}>
-                    {value.description}
-                  </Typography>
-                </Paper>
-              </Grid>
+              <div 
+                key={index}
+                className="bg-white rounded-2xl shadow-lg p-8 h-full transition-all duration-300 hover:-translate-y-2 hover:shadow-xl"
+              >
+                <div className="mb-6">
+                  {value.icon}
+                </div>
+                <h3 className="text-xl font-semibold mb-3 font-['Poppins',sans-serif]">
+                  {value.title}
+                </h3>
+                <p className="text-gray-600 leading-relaxed">
+                  {value.description}
+                </p>
+              </div>
             ))}
-          </Grid>
-        </Box>
+          </div>
+        </div>
 
         {/* What Makes Us Different */}
-        <Box 
-          sx={{ 
-            py: { xs: 8, md: 12 },
-            background: `linear-gradient(135deg, ${primaryColor}11 0%, ${secondaryColor}11 100%)`,
-            borderRadius: 4,
-            mx: { xs: -2, md: -4 },
-            px: { xs: 2, md: 4 }
-          }}
-        >
-          <Typography
-            variant="h2"
-            align="center"
-            sx={{
-              fontSize: { xs: '2rem', md: '2.75rem' },
-              fontWeight: 700,
-              mb: 8,
-              color: primaryColor,
-              fontFamily: '"Poppins", sans-serif',
-            }}
-          >
+        <div className="py-16 md:py-24 bg-gradient-to-br from-blue-50 to-orange-50 rounded-2xl -mx-4 px-4 md:px-8">
+          <h2 className="text-3xl md:text-4xl font-bold text-blue-900 text-center mb-16 font-['Poppins',sans-serif]">
             What Makes Dott Different
-          </Typography>
+          </h2>
 
-          <Grid container spacing={4}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {features.map((feature, index) => (
-              <Grid item xs={12} md={6} key={index}>
-                <Box 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'flex-start', 
-                    p: 3,
-                    backgroundColor: theme.palette.background.paper,
-                    borderRadius: 3,
-                    boxShadow: '0 8px 25px rgba(0,0,0,0.05)',
-                    height: '100%',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: '0 15px 35px rgba(0,0,0,0.1)'
-                    }
-                  }}
-                >
-                  <Box 
-                    sx={{ 
-                      mr: 3, 
-                      p: 1.5, 
-                      borderRadius: '12px', 
-                      color: 'white', 
-                      background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center' 
-                    }}
-                  >
-                    {feature.icon}
-                  </Box>
-                  <Box>
-                    <Typography 
-                      variant="h6" 
-                      sx={{ 
-                        mb: 1,
-                        fontWeight: 600,
-                        fontFamily: '"Poppins", sans-serif', 
-                      }}
-                    >
-                      {feature.title}
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                      {feature.description}
-                    </Typography>
-                  </Box>
-                </Box>
-              </Grid>
+              <div 
+                key={index}
+                className="flex bg-white rounded-xl shadow-md p-6 items-start transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+              >
+                <div className="mr-4 p-3 rounded-xl text-white bg-gradient-to-r from-blue-900 to-orange-500 flex-shrink-0">
+                  {feature.icon}
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 font-['Poppins',sans-serif]">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    {feature.description}
+                  </p>
+                </div>
+              </div>
             ))}
-          </Grid>
-        </Box>
+          </div>
+        </div>
 
         {/* Social Impact Section */}
-        <Box sx={{ py: { xs: 8, md: 12 } }}>
-          <Grid container spacing={6} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <Box 
-                sx={{ 
-                  position: 'relative',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    width: '85%',
-                    height: '85%',
-                    borderRadius: '30% 70% 70% 30% / 30% 30% 70% 70%',
-                    background: `linear-gradient(135deg, ${accentGreen}33 0%, ${primaryColor}33 100%)`,
-                    bottom: '-5%',
-                    right: '-5%',
-                    zIndex: -1
-                  }
-                }}
-              >
-                <Image
-                  src="/static/images/Team-Building-4--Streamline-Brooklyn.png"
-                  alt="Social Impact Illustration"
-                  width={550}
-                  height={400}
-                  style={{ 
-                    maxWidth: '100%', 
-                    height: 'auto', 
-                    borderRadius: '20px',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
-                  }}
-                />
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Typography
-                variant="h2"
-                sx={{
-                  fontSize: { xs: '2rem', md: '2.75rem' },
-                  fontWeight: 700,
-                  mb: 4,
-                  color: accentGreen,
-                  fontFamily: '"Poppins", sans-serif',
-                  position: 'relative',
-                  '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    left: 0,
-                    bottom: -10,
-                    width: 80,
-                    height: 4,
-                    borderRadius: 2,
-                    backgroundColor: primaryColor
-                  }
-                }}
-              >
+        <div className="py-16 md:py-24">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div className="relative">
+              <div className="absolute w-[85%] h-[85%] rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-gradient-to-br from-green-500/20 to-blue-900/20 bottom-[-5%] right-[-5%] -z-10"></div>
+              <Image
+                src="/static/images/Team-Building-4--Streamline-Brooklyn.png"
+                alt="Social Impact Illustration"
+                width={550}
+                height={400}
+                className="max-w-full h-auto rounded-xl shadow-2xl"
+              />
+            </div>
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold text-green-600 mb-8 font-['Poppins',sans-serif] relative after:content-[''] after:absolute after:left-0 after:bottom-[-10px] after:w-20 after:h-1 after:bg-blue-900 after:rounded-full">
                 Our Social Impact
-              </Typography>
+              </h2>
               
-              <Typography
-                variant="body1"
-                sx={{
-                  color: theme.palette.text.primary,
-                  fontFamily: '"Inter", sans-serif',
-                  fontSize: '1.1rem',
-                  lineHeight: 1.8,
-                  mb: 3
-                }}
-              >
+              <p className="text-lg text-gray-700 leading-relaxed mb-6 font-['Inter',sans-serif]">
                 Beyond providing software, Dott is committed to making a positive impact on the small business ecosystem. We regularly conduct workshops, produce educational content, and partner with organizations that support entrepreneurship in underserved communities.
-              </Typography>
+              </p>
               
-              <Typography
-                variant="body1"
-                sx={{
-                  color: theme.palette.text.primary,
-                  fontFamily: '"Inter", sans-serif',
-                  fontSize: '1.1rem',
-                  lineHeight: 1.8,
-                  mb: 0
-                }}
-              >
+              <p className="text-lg text-gray-700 leading-relaxed font-['Inter',sans-serif]">
                 Through our Dott Grants program, we provide free access to our platform for non-profits and social enterprises making a difference in their communities. To date, we've supported over 200 organizations globally with technology that amplifies their impact.
-              </Typography>
-            </Grid>
-          </Grid>
-        </Box>
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* CTA Section */}
-        <Box 
-          sx={{ 
-            py: { xs: 6, md: 10 },
-            my: { xs: 4, md: 8 },
-            textAlign: 'center',
-            backgroundColor: theme.palette.background.paper,
-            borderRadius: 4,
-            boxShadow: '0 10px 40px rgba(0,0,0,0.05)',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-        >
+        <div className="py-12 md:py-20 my-8 md:my-16 text-center bg-white rounded-2xl shadow-lg relative overflow-hidden">
           {/* Decorative elements */}
-          <Box 
-            sx={{ 
-              position: 'absolute', 
-              top: -100, 
-              right: -100, 
-              width: 200, 
-              height: 200, 
-              borderRadius: '50%', 
-              background: `radial-gradient(circle, ${primaryColor}22 0%, transparent 70%)`,
-              zIndex: 0
-            }} 
-          />
-          <Box 
-            sx={{ 
-              position: 'absolute', 
-              bottom: -80, 
-              left: -80, 
-              width: 160, 
-              height: 160, 
-              borderRadius: '50%', 
-              background: `radial-gradient(circle, ${secondaryColor}22 0%, transparent 70%)`,
-              zIndex: 0
-            }} 
-          />
+          <div className="absolute top-[-100px] right-[-100px] w-52 h-52 rounded-full bg-blue-900/10"></div>
+          <div className="absolute bottom-[-80px] left-[-80px] w-40 h-40 rounded-full bg-orange-500/10"></div>
           
-          <Container maxWidth="md" sx={{ position: 'relative', zIndex: 1 }}>
-            <Typography
-              variant="h2"
-              sx={{
-                fontSize: { xs: '1.8rem', md: '2.5rem' },
-                fontWeight: 700,
-                mb: 3,
-                color: primaryColor,
-                fontFamily: '"Poppins", sans-serif',
-              }}
-            >
+          <div className="max-w-3xl mx-auto px-4 relative z-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-6 font-['Poppins',sans-serif]">
               Ready to Transform Your Business?
-            </Typography>
+            </h2>
             
-            <Typography
-              variant="h6"
-              sx={{
-                color: theme.palette.text.secondary,
-                fontWeight: 400,
-                mb: 5,
-                maxWidth: '700px',
-                mx: 'auto'
-              }}
-            >
+            <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
               Join thousands of businesses that use Dott to streamline operations, 
               reduce costs, and drive growth. Get started today!
-            </Typography>
+            </p>
             
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} justifyContent="center">
-              <Button
-                variant="contained"
-                size="large"
-                component="a"
+            <div className="flex flex-col sm:flex-row gap-6 justify-center">
+              <a
                 href="/#pricing"
-                sx={{
-                  fontSize: '1.1rem',
-                  px: 4,
-                  py: 1.5,
-                  backgroundColor: primaryColor,
-                  '&:hover': {
-                    backgroundColor: hoverColor,
-                  },
-                  borderRadius: '50px',
-                  fontFamily: '"Inter", sans-serif',
-                  fontWeight: 600,
-                  letterSpacing: '0.02em',
-                  boxShadow: '0 4px 14px 0 rgba(10, 61, 98, 0.39)',
-                }}
+                className="inline-flex px-8 py-3 bg-blue-900 hover:bg-blue-800 text-white text-lg font-semibold rounded-full shadow-lg transition-colors"
               >
                 Start Your Free Trial
-              </Button>
+              </a>
               
-              <Button
-                variant="outlined"
-                size="large"
-                component="a"
+              <a
                 href="/contact"
-                sx={{
-                  fontSize: '1.1rem',
-                  px: 4,
-                  py: 1.5,
-                  borderColor: secondaryColor,
-                  color: secondaryColor,
-                  '&:hover': {
-                    borderColor: secondaryColor,
-                    backgroundColor: `${secondaryColor}11`,
-                  },
-                  borderRadius: '50px',
-                  fontFamily: '"Inter", sans-serif',
-                  fontWeight: 600,
-                  letterSpacing: '0.02em',
-                }}
+                className="inline-flex px-8 py-3 border-2 border-orange-500 text-orange-500 hover:bg-orange-50 text-lg font-semibold rounded-full transition-colors"
               >
                 Contact Sales
-              </Button>
-            </Stack>
-          </Container>
-        </Box>
+              </a>
+            </div>
+          </div>
+        </div>
         
-      </Container>
-    </Box>
+      </div>
+    </div>
   );
 }

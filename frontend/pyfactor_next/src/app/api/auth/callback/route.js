@@ -58,7 +58,7 @@ export async function POST(request) {
       const businessInfoDone = userAttributes['custom:business_info_done'] === 'TRUE';
       const subscriptionDone = userAttributes['custom:subscription_done'] === 'TRUE'; 
       const paymentDone = userAttributes['custom:payment_done'] === 'TRUE';
-      const setupDone = userAttributes['custom:setupdone'] === 'TRUE';
+      const setupDone = (userAttributes['custom:setupdone'] || '').toLowerCase() === 'true';
       
       response.cookies.set('businessInfoCompleted', businessInfoDone ? 'true' : 'false', cookieOptions);
       response.cookies.set('subscriptionCompleted', subscriptionDone ? 'true' : 'false', cookieOptions);

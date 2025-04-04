@@ -1,6 +1,6 @@
 // This file is server-side only - do not import in client components
 import { cookies, headers } from 'next/headers';
-import { logger } from '@/utils/logger';
+import { logger } from './serverLogger';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 
 export async function validateServerSession(providedTokens) {

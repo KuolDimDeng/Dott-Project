@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { validateServerSession } from '@/utils/serverUtils';
-import { logger } from '@/utils/logger';
-import { uuidv4 } from 'uuid';
+import { logger } from '@/utils/serverLogger';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * API endpoint to update user attributes
@@ -10,7 +10,7 @@ import { uuidv4 } from 'uuid';
  */
 export async function POST(request) {
   const requestId = uuidv4();
-  logger.debug(`[API] Update attributes request initiated: ${requestId}`);
+  logger.info(`[API] Update attributes request initiated: ${requestId}`);
   
   try {
     // Get the authenticated user from the session
@@ -77,8 +77,8 @@ export async function POST(request) {
     
     // Special case: If it's a critical onboarding fix, allow it regardless of validation
     const isFixingOnboarding = forceUpdate === true && 
-                              attributes['custom:onboarding'] === 'COMPLETE' && 
-                              attributes['custom:setupdone'] === 'TRUE';
+                              attributes['custom:onboarding']?.toLowerCase() === 'complete' && 
+                              attributes['custom:setupdone']?.toLowerCase() === 'true';
     
     // Filter out attributes that are not allowed to be updated
     const filteredAttributes = isFixingOnboarding ? attributes : Object.entries(attributes)
@@ -102,11 +102,25 @@ export async function POST(request) {
       });
     }
     
+    // Normalize onboarding status to lowercase for consistency
+    if (filteredAttributes['custom:onboarding']) {
+      // Check for any case variation of 'complete'
+      if (filteredAttributes['custom:onboarding'].toLowerCase() === 'complete') {
+        filteredAttributes['custom:onboarding'] = 'complete';
+      }
+    }
+    
+    // Ensure that if onboarding is complete and setup is done, they are both set correctly
+    if (filteredAttributes['custom:onboarding']?.toLowerCase() === 'complete' || filteredAttributes['custom:setupdone']?.toLowerCase() === 'true') {
+      filteredAttributes['custom:onboarding'] = 'complete';
+      filteredAttributes['custom:setupdone'] = 'true';
+    }
+    
     // Special handling for onboarding attributes - set all related attributes
-    if (filteredAttributes['custom:onboarding'] === 'COMPLETE' || filteredAttributes['custom:setupdone'] === 'TRUE') {
+    if (filteredAttributes['custom:onboarding']?.toLowerCase() === 'complete' || filteredAttributes['custom:setupdone']?.toLowerCase() === 'true') {
       // Ensure both attributes are set together
-      filteredAttributes['custom:onboarding'] = 'COMPLETE';
-      filteredAttributes['custom:setupdone'] = 'TRUE';
+      filteredAttributes['custom:onboarding'] = 'complete';
+      filteredAttributes['custom:setupdone'] = 'true';
       
       // Set updated_at timestamp if not already set
       if (!filteredAttributes['custom:updated_at']) {
@@ -144,10 +158,28 @@ export async function POST(request) {
     const endpoint = `https://cognito-idp.${region}.amazonaws.com/`;
     
     // Create the attribute updates
-    const userAttributes = Object.entries(filteredAttributes).map(([Name, Value]) => ({
-      Name,
-      Value: String(Value)
-    }));
+    const userAttributes = Object.entries(filteredAttributes).map(([Name, Value]) => {
+      // Ensure custom attributes have the 'custom:' prefix
+      const formattedName = Name.includes(':') ? Name : 
+                            (Name.match(/^(business|sub|setup|onboarding|payment|legal|date|acc|preferences|updated)/i) ? 
+                            `custom:${Name}` : Name);
+      
+      // Convert to string and trim if needed
+      let formattedValue = Value;
+      if (typeof formattedValue !== 'string') {
+        formattedValue = String(formattedValue);
+      }
+      
+      // Log the transformation for debugging
+      if (formattedName !== Name) {
+        logger.debug(`[API] Attribute transformed: ${Name} -> ${formattedName}`);
+      }
+      
+      return {
+        Name: formattedName,
+        Value: formattedValue
+      };
+    });
     
     // Get the user ID from the token
     const sub = user?.sub || tokens?.idToken?.payload?.sub;

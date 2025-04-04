@@ -18,6 +18,7 @@ import { fetchAuthSession } from '@aws-amplify/auth';
 import { NotificationProvider, useNotification } from '@/context/NotificationContext';
 import useEnsureTenant from '@/hooks/useEnsureTenant';
 import { useAuth } from '@/hooks/auth';
+import { ToastProvider } from '@/components/Toast/ToastProvider';
 
 // Lazy load components to reduce initial memory usage
 const RenderMainContent = lazy(() =>
@@ -29,7 +30,7 @@ const RenderMainContent = lazy(() =>
 // Create an empty loading component (removed spinner)
 const LoadingComponent = () => null;
 
-function DashboardContent({ setupStatus, customContent }) {
+function DashboardContent({ setupStatus, customContent, mockData }) {
   const { user, isAuthenticated, logout } = useAuth();
   const router = useRouter();
   const { showNotification } = useNotification();
@@ -153,8 +154,93 @@ function DashboardContent({ setupStatus, customContent }) {
 
   const fetchUserData = useCallback(async () => {
     try {
+      // Development mode bypass - use mock data
+      if (process.env.NODE_ENV === 'development' && 
+          (localStorage.getItem('bypassAuthValidation') === 'true' || 
+           localStorage.getItem('devModeNoRedirect') === 'true')) {
+        console.log('🧪 Development mode: Using mock user data');
+        
+        // Get business name from various sources
+        const businessName = localStorage.getItem('businessName') || 
+                             document.cookie.split('; ').find(row => row.startsWith('businessName='))?.split('=')[1] || 
+                             'My Business';
+                             
+        // Get subscription info from localStorage or cookies
+        const subscriptionPlan = localStorage.getItem('subscriptionPlan') || 
+                                document.cookie.split('; ').find(row => row.startsWith('subscriptionPlan='))?.split('=')[1] || 
+                                'free';
+        const subscriptionInterval = localStorage.getItem('subscriptionInterval') || 
+                                    document.cookie.split('; ').find(row => row.startsWith('subscriptionInterval='))?.split('=')[1] || 
+                                    'MONTHLY';
+        
+        // Get business info from localStorage or cookies
+        const businessType = localStorage.getItem('businessType') || 
+                           document.cookie.split('; ').find(row => row.startsWith('businessType='))?.split('=')[1] || 
+                           'Technology';
+        const legalStructure = localStorage.getItem('legalStructure') || 
+                             document.cookie.split('; ').find(row => row.startsWith('legalStructure='))?.split('=')[1] || 
+                             'LLC';
+        const businessCountry = localStorage.getItem('businessCountry') || 
+                              document.cookie.split('; ').find(row => row.startsWith('businessCountry='))?.split('=')[1] || 
+                              'US';
+        const businessState = localStorage.getItem('businessState') || 
+                            document.cookie.split('; ').find(row => row.startsWith('businessState='))?.split('=')[1] || 
+                            'California';
+                            
+        // Get user details from cookies or localStorage
+        const getCookie = (name) => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop().split(';').shift();
+          return null;
+        };
+        
+        const userEmail = localStorage.getItem('userEmail') || 
+                         getCookie('email') || 
+                         getCookie('authUser') || 
+                         'user@example.com';
+        const firstName = localStorage.getItem('firstName') || 
+                         getCookie('firstName') || 
+                         getCookie('given_name') || 
+                         userEmail.split('@')[0];
+        const lastName = localStorage.getItem('lastName') || 
+                        getCookie('lastName') || 
+                        getCookie('family_name') || 
+                        '';
+        
+        // Create mock user data for development
+        const mockUserData = {
+          sub: 'dev-user-id',
+          email: userEmail,
+          email_verified: true,
+          given_name: firstName,
+          family_name: lastName,
+          first_name: firstName,
+          last_name: lastName,
+          full_name: `${firstName} ${lastName}`.trim(),
+          subscription_type: subscriptionPlan.toLowerCase(),
+          original_subscription_type: subscriptionPlan.toUpperCase(),
+          business_name: businessName,
+          onboarding_status: 'complete',
+          'custom:businessid': localStorage.getItem('tenantId') || getCookie('tenantId') || userEmail.split('@')[0] + '-tenant',
+          'custom:businessname': businessName,
+          'custom:businesstype': businessType,
+          'custom:onboarding': 'complete',
+          'custom:setupdone': 'true',
+          'custom:subscriptioninterval': subscriptionInterval,
+          'custom:legalstructure': legalStructure,
+          'custom:businesscountry': businessCountry,
+          'custom:businessstate': businessState,
+        };
+        
+        setUserData(mockUserData);
+        setShowHome(true);
+        return;
+      }
+      
       // Check for authentication first to handle sign-out cases properly
       try {
+        // Normal authentication flow for production
         // Check if we have pending schema setup
         const pendingSetupStr = sessionStorage.getItem('pendingSchemaSetup');
         const isPendingSetup = !!pendingSetupStr;
@@ -194,13 +280,25 @@ function DashboardContent({ setupStatus, customContent }) {
         subscriptionPlan = typeof subscriptionPlan === 'string' ? subscriptionPlan.toLowerCase() : 'free';
         
         // Get onboarding status with similar fallback approach
-        const cognitoOnboarding = attributes['custom:onboarding'] || 'NOT_STARTED';
+        const cognitoOnboarding = attributes['custom:onboarding'] || 'not_started';
         const cookieOnboarding = document.cookie
           .split('; ')
           .find(row => row.startsWith('onboardedStatus='))
           ?.split('=')[1];
         
-        const onboardingStatus = cookieOnboarding || cognitoOnboarding;
+        // Ensure onboarding status is lowercase for consistency
+        let onboardingStatus = cookieOnboarding || cognitoOnboarding;
+        if (onboardingStatus) {
+          onboardingStatus = onboardingStatus.toLowerCase();
+          // Handle specific uppercase values we've seen in logs
+          if (onboardingStatus === 'business_info') {
+            onboardingStatus = 'business_info';
+          } else if (onboardingStatus === 'not_started') {
+            onboardingStatus = 'not_started';
+          } else if (onboardingStatus === 'business-info') {
+            onboardingStatus = 'business_info';
+          }
+        }
         
         // Check if subscription expired (from login token)
         // Extract from sessionStorage if available
@@ -565,16 +663,34 @@ function DashboardContent({ setupStatus, customContent }) {
     setUiState(prev => ({ ...prev, showCreateMenu: false }));
   };
 
-  // Load user data on mount with auth check
+  // Initial auth check and data fetching
   useEffect(() => {
     let isMounted = true;
     
     const checkAuthAndFetchData = async () => {
       try {
-        // Check if the user is logged in before fetching data
-        const auth = await import('aws-amplify/auth');
-        
         try {
+          // Skip auth checks in development mode if bypass is enabled
+          if (process.env.NODE_ENV === 'development' && 
+              (localStorage.getItem('bypassAuthValidation') === 'true' || 
+               localStorage.getItem('devModeNoRedirect') === 'true')) {
+            console.log('🧪 Development mode: Bypassing authentication check in Dashboard');
+            
+            // No need to set tenant status since it comes from the hook
+            // and is already initialized to 'verified'
+            console.log('🧪 Development mode: Using existing tenant status:', tenantStatus);
+            
+            // Still fetch user data but don't redirect on failure
+            try {
+              if (isMounted) {
+                fetchUserData();
+              }
+            } catch (dataError) {
+              console.log('🧪 Error fetching data in dev mode, using defaults');
+            }
+            return;
+          }
+          
           // Try getting the current session first as a lightweight check
           await auth.getCurrentUser();
           
@@ -583,6 +699,12 @@ function DashboardContent({ setupStatus, customContent }) {
             fetchUserData();
           }
         } catch (authError) {
+          // Skip auth redirects in development mode
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🧪 Development mode: Authentication error but continuing:', authError);
+            return;
+          }
+          
           // User is not authenticated, redirect to sign in
           logger.debug('User not authenticated, redirecting to sign-in page');
           if (isMounted) {
@@ -591,6 +713,13 @@ function DashboardContent({ setupStatus, customContent }) {
         }
       } catch (error) {
         logger.error('Error checking auth state:', error);
+        
+        // Skip redirect in development mode
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🧪 Development mode: Error in auth check but continuing');
+          return;
+        }
+        
         // Redirect on error as a fallback
         if (isMounted) {
           router.push('/auth/signin');
@@ -604,7 +733,7 @@ function DashboardContent({ setupStatus, customContent }) {
     return () => {
       isMounted = false;
     };
-  }, [fetchUserData, router]);
+  }, [fetchUserData, router, tenantStatus]);
   
   // Handle sign out
   const handleSignOut = useCallback(async () => {
@@ -666,7 +795,7 @@ function DashboardContent({ setupStatus, customContent }) {
           userData={userData}
           anchorEl={anchorEl}
           openMenu={openMenu}
-          handleClick={setAnchorEl}
+          handleClick={(event) => setAnchorEl(event.currentTarget)}
           handleClose={() => setAnchorEl(null)}
           settingsAnchorEl={settingsAnchorEl}
           settingsMenuOpen={settingsMenuOpen}
@@ -958,11 +1087,38 @@ function DashboardContent({ setupStatus, customContent }) {
   );
 }
 
-export default function Dashboard({ children, setupStatus }) {
+export default function Dashboard({ newAccount, plan, mockData }) {
+  console.log('Dashboard rendering with props:', { newAccount, plan, mockData });
+  
+  // In development mode, use the mockData and bypass authentication
+  if (process.env.NODE_ENV === 'development' && mockData) {
+    console.log('🧪 Development mode: Using mock data for dashboard', mockData);
+    // Store mock data in localStorage for components that might need it
+    localStorage.setItem('mockBusinessName', mockData.businessName);
+    localStorage.setItem('mockBusinessType', mockData.businessType);
+    
+    return (
+      <NotificationProvider>
+        <ErrorBoundary>
+          <ToastProvider>
+            <DashboardContent 
+              setupStatus="completed" 
+              mockData={mockData}
+            />
+          </ToastProvider>
+        </ErrorBoundary>
+      </NotificationProvider>
+    );
+  }
+
   return (
     <NotificationProvider>
       <ErrorBoundary>
-        <DashboardContent setupStatus={setupStatus} customContent={children} />
+        <ToastProvider>
+          <Suspense fallback={<div className="h-screen w-full flex items-center justify-center"><CircularProgress /></div>}>
+            <DashboardContent setupStatus={setupStatus} />
+          </Suspense>
+        </ToastProvider>
       </ErrorBoundary>
     </NotificationProvider>
   );

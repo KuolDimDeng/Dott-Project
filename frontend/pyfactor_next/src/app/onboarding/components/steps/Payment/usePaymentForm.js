@@ -181,16 +181,19 @@ export const usePaymentForm = () => {
         
         // Prepare the attributes to update
         const userAttributes = {
-          'custom:onboarding': 'COMPLETE',
-          'custom:subplan': plan.toUpperCase(),
-          'custom:setupdone': 'TRUE',
+          'custom:onboarding': 'payment',
           'custom:updated_at': new Date().toISOString()
         };
         
         logger.debug('[usePaymentForm] Updating user attributes directly', userAttributes);
         
         // Update Cognito attributes
-        await updateUserAttributes({ userAttributes });
+        await updateUserAttributes({
+          userAttributes: {
+            'custom:onboarding': 'payment',
+            'custom:updated_at': new Date().toISOString()
+          }
+        });
         
         logger.debug('[usePaymentForm] User attributes updated successfully');
       } catch (attrError) {
@@ -209,8 +212,10 @@ export const usePaymentForm = () => {
         } else {
           logger.warn('[usePaymentForm] updateOnboardingStatus function not available, skipping status update');
           // Try to update cookies directly as a fallback
-          document.cookie = "onboardingStep=complete;path=/;max-age=31536000";
-          document.cookie = "onboardedStatus=COMPLETE;path=/;max-age=31536000";
+          const expirationDate = new Date();
+          expirationDate.setFullYear(expirationDate.getFullYear() + 1);
+          document.cookie = `onboardingStep=payment; path=/; expires=${expirationDate.toUTCString()}`;
+          document.cookie = `onboardedStatus=payment; path=/; expires=${expirationDate.toUTCString()}`;
           document.cookie = `subscriptionPlan=${plan.toUpperCase()};path=/;max-age=31536000`;
         }
       } catch (statusError) {

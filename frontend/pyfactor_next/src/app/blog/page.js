@@ -1,19 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { useTheme } from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Grid';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardMedia from '@mui/material/CardMedia';
-import Button from '@mui/material/Button';
-import HomeIcon from '@mui/icons-material/Home';
-import Chip from '@mui/material/Chip';
-import Stack from '@mui/material/Stack';
-import Divider from '@mui/material/Divider';
 import { useRouter } from 'next/navigation';
 
 // Blog article data
@@ -81,7 +68,6 @@ const blogArticles = [
 ];
 
 export default function Blog() {
-  const theme = useTheme();
   const router = useRouter();
   const primaryColor = '#0a3d62'; // Navy blue to match About page
   const hoverColor = '#3c6382'; // Lighter navy blue for hover
@@ -90,351 +76,137 @@ export default function Blog() {
   const regularArticles = blogArticles.filter(article => !article.featured);
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        color: theme.palette.mode === 'light' ? '#333' : '#FFF',
-        backgroundColor: theme.palette.background.default,
-        pt: 12, // Add padding top to account for fixed AppBar
-        pb: 8,
-      }}
-    >
-      <Container maxWidth="lg">
+    <div className="w-full text-gray-800 bg-white pt-12 pb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Home Button */}
-        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'flex-start' }}>
-          <Button
-            variant="contained"
-            component="a"
-            href="/"
-            startIcon={<HomeIcon />}
-            sx={{
-              backgroundColor: primaryColor,
-              '&:hover': {
-                backgroundColor: hoverColor,
-              },
-              borderRadius: '50px',
-              fontFamily: '"Inter", sans-serif',
-              fontWeight: 600,
-              boxShadow: '0 4px 14px 0 rgba(10, 61, 98, 0.39)',
-            }}
+        <div className="mb-8 flex justify-start">
+          <a 
+            href="/" 
+            className="inline-flex items-center px-4 py-2 bg-[#0a3d62] text-white rounded-full font-semibold shadow-lg hover:bg-[#3c6382] transition-colors duration-200"
           >
+            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+            </svg>
             Back to Home
-          </Button>
-        </Box>
+          </a>
+        </div>
 
         {/* Blog Header */}
-        <Box sx={{ mb: 6, textAlign: 'center' }}>
-          <Typography
-            variant="h1"
-            sx={{
-              fontSize: { xs: '2.5rem', md: '3.5rem' },
-              fontWeight: 800,
-              mb: 2,
-              color: primaryColor,
-              fontFamily: '"Poppins", sans-serif',
-            }}
-          >
+        <div className="mb-12 text-center">
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-[#0a3d62] font-poppins">
             Dott Blog
-          </Typography>
-          <Typography
-            variant="h5"
-            sx={{
-              color: theme.palette.text.secondary,
-              fontFamily: '"Inter", sans-serif',
-              maxWidth: '800px',
-              mx: 'auto',
-            }}
-          >
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto font-inter">
             Insights, tips, and strategies to help small businesses thrive in today's digital economy
-          </Typography>
-        </Box>
+          </p>
+        </div>
 
         {/* Featured Articles */}
-        <Box sx={{ mb: 8 }}>
-          <Typography
-            variant="h4"
-            sx={{
-              fontSize: { xs: '1.5rem', md: '1.75rem' },
-              fontWeight: 700,
-              mb: 3,
-              color: primaryColor,
-              fontFamily: '"Poppins", sans-serif',
-              position: 'relative',
-              display: 'inline-block',
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                left: 0,
-                bottom: -8,
-                width: 60,
-                height: 3,
-                borderRadius: 1.5,
-                backgroundColor: theme.palette.primary.main,
-              }
-            }}
-          >
+        <div className="mb-16">
+          <h2 className="text-xl md:text-2xl font-bold mb-8 text-[#0a3d62] font-poppins relative inline-block after:content-[''] after:absolute after:left-0 after:bottom-[-8px] after:w-[60px] after:h-[3px] after:rounded-md after:bg-blue-600">
             Featured Articles
-          </Typography>
+          </h2>
 
-          <Grid container spacing={4}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {featuredArticles.map((article) => (
-              <Grid item xs={12} md={6} key={article.id}>
-                <Card 
-                  sx={{ 
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    borderRadius: 4,
-                    overflow: 'hidden',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-                    transition: 'transform 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-8px)',
-                      boxShadow: '0 15px 35px rgba(0,0,0,0.15)'
-                    }
-                  }}
-                >
-                  <CardMedia
-                    component="img"
-                    height="240"
-                    image={article.image}
+              <div 
+                key={article.id}
+                className="h-full flex flex-col rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 bg-white"
+              >
+                <div className="h-60 overflow-hidden">
+                  <img
+                    src={article.image}
                     alt={article.title}
-                    sx={{ objectFit: 'cover' }}
+                    className="w-full h-full object-cover"
                   />
-                  <CardContent sx={{ flexGrow: 1, p: 3 }}>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                      <Chip 
-                        label={article.category} 
-                        size="small" 
-                        sx={{ 
-                          backgroundColor: primaryColor,
-                          color: 'white',
-                          fontWeight: 600,
-                          fontSize: '0.7rem'
-                        }} 
-                      />
-                      <Typography variant="caption" color="text.secondary">
-                        {article.date} • {article.readTime}
-                      </Typography>
-                    </Stack>
-                    <Typography
-                      variant="h5"
-                      component="h2"
-                      sx={{
-                        fontWeight: 700,
-                        mb: 2,
-                        fontFamily: '"Poppins", sans-serif',
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {article.title}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        mb: 3,
-                        fontFamily: '"Inter", sans-serif',
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      {article.excerpt}
-                    </Typography>
-                    <Button
-                      size="small"
-                      sx={{
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        color: primaryColor,
-                        '&:hover': {
-                          backgroundColor: `${primaryColor}11`
-                        }
-                      }}
-                    >
-                      Read More
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Grid>
+                </div>
+                <div className="flex-grow p-6">
+                  <div className="flex items-center mb-4 space-x-2">
+                    <span className="px-2 py-1 text-xs font-semibold text-white bg-[#0a3d62] rounded-md">
+                      {article.category}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {article.date} • {article.readTime}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold mb-3 font-poppins leading-snug">
+                    {article.title}
+                  </h3>
+                  <p className="text-gray-600 mb-4 font-inter text-sm leading-relaxed">
+                    {article.excerpt}
+                  </p>
+                  <button className="text-[#0a3d62] font-semibold hover:bg-[#0a3d62]/10 px-3 py-1 rounded-md transition-colors">
+                    Read More
+                  </button>
+                </div>
+              </div>
             ))}
-          </Grid>
-        </Box>
+          </div>
+        </div>
 
-        <Divider sx={{ mb: 6 }} />
+        <hr className="mb-12" />
 
         {/* Recent Articles */}
-        <Box sx={{ mb: 6 }}>
-          <Typography
-            variant="h4"
-            sx={{
-              fontSize: { xs: '1.5rem', md: '1.75rem' },
-              fontWeight: 700,
-              mb: 3,
-              color: primaryColor,
-              fontFamily: '"Poppins", sans-serif',
-              position: 'relative',
-              display: 'inline-block',
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                left: 0,
-                bottom: -8,
-                width: 60,
-                height: 3,
-                borderRadius: 1.5,
-                backgroundColor: theme.palette.primary.main,
-              }
-            }}
-          >
+        <div className="mb-12">
+          <h2 className="text-xl md:text-2xl font-bold mb-8 text-[#0a3d62] font-poppins relative inline-block after:content-[''] after:absolute after:left-0 after:bottom-[-8px] after:w-[60px] after:h-[3px] after:rounded-md after:bg-blue-600">
             Recent Articles
-          </Typography>
+          </h2>
 
-          <Grid container spacing={3}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {regularArticles.map((article) => (
-              <Grid item xs={12} sm={6} md={4} key={article.id}>
-                <Card 
-                  sx={{ 
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    borderRadius: 3,
-                    overflow: 'hidden',
-                    boxShadow: '0 5px 15px rgba(0,0,0,0.08)',
-                    transition: 'transform 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: '0 10px 25px rgba(0,0,0,0.12)'
-                    }
-                  }}
-                >
-                  <CardMedia
-                    component="img"
-                    height="180"
-                    image={article.image}
+              <div 
+                key={article.id}
+                className="h-full flex flex-col rounded-xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white"
+              >
+                <div className="h-44 overflow-hidden">
+                  <img
+                    src={article.image}
                     alt={article.title}
-                    sx={{ objectFit: 'cover' }}
+                    className="w-full h-full object-cover"
                   />
-                  <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-                      <Chip 
-                        label={article.category} 
-                        size="small" 
-                        sx={{ 
-                          backgroundColor: `${primaryColor}22`,
-                          color: primaryColor,
-                          fontWeight: 600,
-                          fontSize: '0.7rem'
-                        }} 
-                      />
-                      <Typography variant="caption" color="text.secondary">
-                        {article.date}
-                      </Typography>
-                    </Stack>
-                    <Typography
-                      variant="h6"
-                      component="h3"
-                      sx={{
-                        fontWeight: 700,
-                        mb: 1.5,
-                        fontFamily: '"Poppins", sans-serif',
-                        lineHeight: 1.3,
-                        fontSize: '1.1rem'
-                      }}
-                    >
-                      {article.title}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        mb: 2,
-                        fontFamily: '"Inter", sans-serif',
-                        fontSize: '0.85rem',
-                        lineHeight: 1.6,
-                        display: '-webkit-box',
-                        overflow: 'hidden',
-                        WebkitBoxOrient: 'vertical',
-                        WebkitLineClamp: 3,
-                      }}
-                    >
-                      {article.excerpt}
-                    </Typography>
-                    <Button
-                      size="small"
-                      sx={{
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        color: primaryColor,
-                        fontSize: '0.8rem',
-                        pl: 0,
-                        '&:hover': {
-                          backgroundColor: 'transparent',
-                          textDecoration: 'underline'
-                        }
-                      }}
-                    >
-                      Read More
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Grid>
+                </div>
+                <div className="flex-grow p-5">
+                  <div className="flex items-center mb-3 space-x-2">
+                    <span className="px-2 py-0.5 text-xs font-semibold text-[#0a3d62] bg-[#0a3d62]/10 rounded-md">
+                      {article.category}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {article.date}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold mb-2 font-poppins leading-snug">
+                    {article.title}
+                  </h3>
+                  <p className="text-gray-600 mb-3 font-inter text-sm leading-relaxed line-clamp-3">
+                    {article.excerpt}
+                  </p>
+                  <button className="text-[#0a3d62] font-semibold hover:underline text-sm pl-0">
+                    Read More
+                  </button>
+                </div>
+              </div>
             ))}
-          </Grid>
-        </Box>
+          </div>
+        </div>
 
         {/* Subscribe Banner */}
-        <Box 
-          sx={{ 
-            p: 5, 
-            borderRadius: 4, 
-            textAlign: 'center',
-            background: `linear-gradient(135deg, ${primaryColor} 0%, ${hoverColor} 100%)`,
-            color: 'white',
-            boxShadow: '0 10px 30px rgba(10, 61, 98, 0.3)',
-            mt: 6
-          }}
+        <div 
+          className="p-10 rounded-2xl text-center text-white mt-12 shadow-xl"
+          style={{background: `linear-gradient(135deg, #0a3d62 0%, #3c6382 100%)`}}
         >
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              mb: 2,
-              fontFamily: '"Poppins", sans-serif',
-            }}
-          >
+          <h3 className="text-2xl font-bold mb-4 font-poppins">
             Subscribe to Our Newsletter
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{
-              mb: 3,
-              fontFamily: '"Inter", sans-serif',
-              maxWidth: '700px',
-              mx: 'auto',
-              opacity: 0.9
-            }}
-          >
+          </h3>
+          <p className="mb-6 font-inter max-w-2xl mx-auto opacity-90">
             Get the latest insights, tips, and resources delivered directly to your inbox.
-          </Typography>
-          <Button
-            variant="contained"
-            size="large"
-            sx={{
-              backgroundColor: 'white',
-              color: primaryColor,
-              fontWeight: 600,
-              px: 4,
-              py: 1.5,
-              borderRadius: 50,
-              '&:hover': {
-                backgroundColor: 'rgba(255,255,255,0.9)',
-              }
-            }}
+          </p>
+          <button
+            className="bg-white text-[#0a3d62] font-semibold px-8 py-3 rounded-full hover:bg-white/90 transition-colors"
           >
             Coming Soon
-          </Button>
-        </Box>
-      </Container>
-    </Box>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

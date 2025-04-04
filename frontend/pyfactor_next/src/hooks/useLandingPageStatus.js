@@ -20,12 +20,33 @@ export function useLandingPageStatus() {
   const { refreshSession } = useSession();
   const { startPolling, stopPolling } = useOnboardingPolling();
   const { loadOnboardingState } = useOnboardingStore();
+  
+  // Add a timeout to prevent loading state from getting stuck
+  useEffect(() => {
+    const loadingTimeout = setTimeout(() => {
+      if (status.isLoading) {
+        logger.warn('[LandingStatus] Loading timeout reached, forcing state to not loading');
+        setStatus(prev => ({
+          ...prev,
+          isLoading: false,
+          error: prev.error || 'Loading timeout reached'
+        }));
+      }
+    }, 5000); // 5 second timeout
+    
+    return () => clearTimeout(loadingTimeout);
+  }, [status.isLoading]);
 
   useEffect(() => {
     const checkStatus = async () => {
       try {
+        logger.debug('[LandingStatus] Checking authentication status...');
+        
         // Get current session using v6 API
-        const { tokens } = await fetchAuthSession();
+        const { tokens } = await fetchAuthSession().catch(error => {
+          logger.debug('[LandingStatus] Error fetching auth session:', error);
+          return { tokens: null };
+        });
         
         if (!tokens?.idToken) {
           logger.debug('[LandingStatus] No valid tokens found, user is not authenticated');
@@ -68,7 +89,7 @@ export function useLandingPageStatus() {
         }
 
         // Check onboarding status
-        const setupDone = user.attributes?.['custom:setupdone'] === 'TRUE';
+        const setupDone = (user.attributes?.['custom:setupdone'] || '').toLowerCase() === 'true';
         const onboardingStatus = user.attributes?.['custom:onboarding'] || ONBOARDING_STATES.NOT_STARTED;
 
         // Load onboarding state

@@ -35,9 +35,89 @@ export function useSession() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const refreshInProgressRef = useRef(false);
+  const loadingTimeoutRef = useRef(null);
   
   // Function to refresh the session
   const refreshSession = useCallback(async () => {
+    // Clear any existing loading timeout
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    
+    // Set a timeout to clear loading state after 5 seconds regardless of session result
+    loadingTimeoutRef.current = setTimeout(() => {
+      setIsLoading(false);
+      logger.warn('[useSession] Loading timeout reached, forcing loading state to false');
+    }, 5000);
+    
+    // Development mode bypass handling
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        // Check if bypass is enabled
+        const bypassAuth = localStorage.getItem('bypassAuthValidation') === 'true';
+        const authSuccess = localStorage.getItem('authSuccess') === 'true';
+        
+        if (bypassAuth && authSuccess) {
+          logger.info('[useSession] Development mode: using bypass auth');
+          
+          // Create a mock session
+          const mockSession = {
+            tokens: {
+              idToken: {
+                toString: () => 'mock-id-token',
+                payload: {
+                  email: localStorage.getItem('authUser') || 'user@example.com',
+                  email_verified: true,
+                  'custom:onboarding': 'complete',
+                  'custom:setupdone': 'true',
+                  exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour from now
+                }
+              },
+              accessToken: {
+                toString: () => 'mock-access-token',
+                payload: {
+                  sub: 'user-123',
+                  exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour from now
+                }
+              }
+            }
+          };
+          
+          // User attributes
+          const mockAttributes = {
+            email: localStorage.getItem('authUser') || 'user@example.com',
+            email_verified: true,
+            'custom:onboarding': 'complete',
+            'custom:setupdone': 'true',
+            'custom:tenantId': localStorage.getItem('tenantId') || 'user-tenant'
+          };
+          
+          // Set mock session
+          setSession({
+            ...mockSession,
+            userAttributes: mockAttributes
+          });
+          
+          // Set cookies for server API routes
+          if (typeof document !== 'undefined') {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + 24 * 60 * 60 * 1000);
+            document.cookie = `bypassAuthValidation=true; path=/; expires=${expires.toUTCString()}`;
+            document.cookie = `authUser=${mockAttributes.email}; path=/; expires=${expires.toUTCString()}`;
+            document.cookie = `tenantId=${mockAttributes['custom:tenantId']}; path=/; expires=${expires.toUTCString()}`;
+            document.cookie = `hasSession=true; path=/; expires=${expires.toUTCString()}`;
+          }
+          
+          setError(null);
+          setIsLoading(false);
+          
+          return mockSession;
+        }
+      } catch (devError) {
+        logger.error('[useSession] Error in development mode bypass:', devError);
+      }
+    }
+    
     // Prevent duplicate refresh attempts - both local and global
     if (refreshInProgressRef.current || (typeof window !== 'undefined' && window.__tokenRefreshInProgress)) {
       logger.debug('[useSession] Refresh already in progress, skipping');
@@ -111,169 +191,58 @@ export function useSession() {
             const domain = window.location.hostname === 'localhost' ? '' : `domain=${window.location.hostname}; `;
             const secure = window.location.protocol === 'https:' ? 'secure; ' : '';
             
-            document.cookie = `idToken=${sessionData.tokens.idToken.toString()}; path=/; ${domain}${secure}expires=${expires.toUTCString()}; SameSite=Lax`;
-            document.cookie = `accessToken=${sessionData.tokens.accessToken.toString()}; path=/; ${domain}${secure}expires=${expires.toUTCString()}; SameSite=Lax`;
-            
-            // Add a flag to indicate we have a valid session
-            document.cookie = `hasSession=true; path=/; ${domain}${secure}expires=${expires.toUTCString()}; SameSite=Lax`;
-            
-            logger.debug('[useSession] Session cookies stored with enhanced security');
-          }
-          
-          // Try to get user attributes
-          try {
-            const userAttributes = await fetchUserAttributes();
-            logger.debug('[useSession] User attributes fetched with session');
-            
-            setSession({
-              ...sessionData,
-              userAttributes
-            });
-          } catch (attributesError) {
-            logger.warn('[useSession] Could not fetch user attributes during refresh:', attributesError);
-            throw attributesError;
+            document.cookie = `authToken=${sessionData.tokens.idToken.toString()}; path=/; expires=${expires.toUTCString()}; ${domain}${secure}samesite=lax`;
+            document.cookie = `hasSession=true; path=/; expires=${expires.toUTCString()}; ${domain}${secure}samesite=lax`;
           }
           
           setError(null);
           setIsLoading(false);
+          
           return sessionData;
         }
       } catch (sessionError) {
-        logger.warn('[useSession] Error fetching initial session:', sessionError);
-        // Continue to force refresh
+        logger.error('[useSession] Error fetching session:', sessionError);
+        setError(sessionError);
+        setIsLoading(false);
+        return null;
       }
-      
-      // If we get here, we need to try a forced refresh with retries
-      const maxRetries = 3;
-      
-      for (let attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-          // Add exponential backoff delay starting from 2nd attempt
-          if (attempt > 0) {
-            const backoffMs = Math.pow(2, attempt) * 500;
-            logger.debug(`[useSession] Attempt #${attempt + 1}: Waiting ${backoffMs}ms before retry`);
-            await new Promise(resolve => setTimeout(resolve, backoffMs));
-          }
-          
-          logger.debug(`[useSession] Attempting forced session refresh (attempt ${attempt + 1}/${maxRetries})`);
-          const sessionData = await fetchAuthSession({ forceRefresh: true });
-          
-          if (sessionData?.tokens?.idToken) {
-            // Verify token expiration
-            try {
-              const decodedToken = JSON.parse(atob(sessionData.tokens.idToken.toString().split('.')[1]));
-              const now = Math.floor(Date.now() / 1000);
-              
-              if (decodedToken.exp && decodedToken.exp < now) {
-                logger.debug('[useSession] Token expired after force refresh, retrying');
-                throw new Error('Token expired');
-              }
-            } catch (tokenError) {
-              logger.warn('[useSession] Token verification failed after force refresh:', tokenError);
-              throw tokenError;
-            }
-            
-            logger.debug(`[useSession] Forced refresh succeeded on attempt #${attempt + 1}`);
-            
-            // Store tokens in cookies
-            if (typeof document !== 'undefined') {
-              // Use more secure cookie settings
-              const expires = new Date();
-              expires.setTime(expires.getTime() + 24 * 60 * 60 * 1000); // 24 hours
-              const domain = window.location.hostname === 'localhost' ? '' : `domain=${window.location.hostname}; `;
-              const secure = window.location.protocol === 'https:' ? 'secure; ' : '';
-              
-              document.cookie = `idToken=${sessionData.tokens.idToken.toString()}; path=/; ${domain}${secure}expires=${expires.toUTCString()}; SameSite=Lax`;
-              document.cookie = `accessToken=${sessionData.tokens.accessToken.toString()}; path=/; ${domain}${secure}expires=${expires.toUTCString()}; SameSite=Lax`;
-              document.cookie = `hasSession=true; path=/; ${domain}${secure}expires=${expires.toUTCString()}; SameSite=Lax`;
-              
-              logger.debug('[useSession] Session cookies refreshed with enhanced security');
-            }
-            
-            // Try to get user attributes
-            try {
-              const userAttributes = await fetchUserAttributes();
-              setSession({
-                ...sessionData,
-                userAttributes
-              });
-              logger.debug('[useSession] User attributes fetched after force refresh');
-            } catch (attributesError) {
-              logger.warn('[useSession] Could not fetch attributes after force refresh:', attributesError);
-              throw attributesError;
-            }
-            
-            setError(null);
-            setIsLoading(false);
-            return sessionData;
-          }
-        } catch (refreshError) {
-          logger.warn(`[useSession] Force refresh attempt #${attempt + 1} failed:`, refreshError);
-          // Continue to next attempt
-        }
-      }
-      
-      // If we get here, all attempts failed
-      logger.warn('[useSession] All session refresh attempts failed');
-      
-      // Clear invalid session data
-      setSession(null);
-      setError(new Error('Failed to refresh session after multiple attempts'));
+    } catch (refreshError) {
+      logger.error('[useSession] Error refreshing session:', refreshError);
+      setError(refreshError);
       setIsLoading(false);
-      return false;
-    } catch (err) {
-      logger.error('[useSession] Unhandled error in refreshSession:', err);
-      setError(err);
-      setIsLoading(false);
-      setSession(null);
-      return false;
+      return null;
     } finally {
-      // Always release locks
-      refreshInProgressRef.current = false;
+      // Reset global lock
       if (typeof window !== 'undefined') {
-        // Short delay to prevent immediate retries
-        setTimeout(() => {
-          window.__tokenRefreshInProgress = false;
-        }, 1000);
+        window.__tokenRefreshInProgress = false;
       }
+      refreshInProgressRef.current = false;
     }
   }, [session]);
-  
-  // Set up session refresh interval
+
   useEffect(() => {
-    let mounted = true;
+    refreshSession();
     
-    const initialCheck = async () => {
-      if (mounted) {
-        await refreshSession();
-      }
-    };
-    
-    initialCheck();
-    
-    // Set up a timer to periodically refresh the session
-    const intervalId = setInterval(() => {
-      if (mounted) {
-        refreshSession();
-      }
-    }, TOKEN_REFRESH_INTERVAL);
-    
-    // Also refresh on window focus
-    const handleFocus = () => {
-      if (mounted) {
-        logger.debug('[useSession] Window focused, checking session');
-        refreshSession();
-      }
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    
+    // Cleanup when component unmounts
     return () => {
-      mounted = false;
-      clearInterval(intervalId);
-      window.removeEventListener('focus', handleFocus);
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
     };
   }, [refreshSession]);
-  
-  return { session, isLoading, error, refreshSession };
+
+  // Extra useEffect to prevent loading state from being stuck
+  useEffect(() => {
+    // Set a hard timeout to ensure loading state doesn't get stuck
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false);
+        logger.warn('[useSession] Global loading timeout reached, forcing loading state to false');
+      }
+    }, 7000); // A bit longer than the refreshSession timeout
+    
+    return () => clearTimeout(timeout);
+  }, [isLoading]);
+
+  return { user: session, loading: isLoading, error };
 }

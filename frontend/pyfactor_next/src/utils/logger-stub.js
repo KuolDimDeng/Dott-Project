@@ -1,41 +1,61 @@
-// This is a simplified version of logger.js that doesn't depend on the debug module
-// It will replace the original logger.js temporarily
+// This is a universal logger implementation that works in both client and server environments
+// without dependencies on external logging libraries
 
-// Simple logger implementation that doesn't rely on debug
-const LOG_LEVELS = {
-  DEBUG: 'debug',
-  INFO: 'info',
-  WARN: 'warn',
-  ERROR: 'error',
-};
-
-// Create a simple logger function
-function createLogger(namespace) {
-  const logger = {};
-  
-  // Create methods for each log level
-  Object.values(LOG_LEVELS).forEach(level => {
-    logger[level] = function(...args) {
-      // Only log in development or if specifically enabled
-      if (typeof window !== 'undefined' && 
-          (process.env.NODE_ENV === 'development' || window.__DEBUG_ENABLED__)) {
-        console[level](`[${namespace}] [${level.toUpperCase()}]:`, ...args);
+// Simple logger implementation with console fallbacks
+const createLogger = (namespace) => {
+  // Safe log function that handles errors and circular references
+  const safeLog = (level, ...args) => {
+    try {
+      // Convert complex objects to safe strings (avoiding circular references)
+      const safeArgs = args.map(arg => {
+        if (typeof arg === 'object' && arg !== null) {
+          try {
+            return JSON.stringify(arg);
+          } catch (e) {
+            return `[Complex object: ${Object.keys(arg).join(', ')}]`;
+          }
+        }
+        return arg;
+      });
+      
+      // Format: [namespace] message args...
+      console[level](`[${namespace}]`, ...safeArgs);
+    } catch (e) {
+      // Last-resort fallback
+      try {
+        console.log(`[ERROR] Logger failed:`, e.message);
+      } catch {
+        // Nothing we can do at this point
       }
-    };
-  });
-  
-  return logger;
-}
+    }
+  };
+
+  // Create the logger object with all standard methods
+  return {
+    debug: (...args) => safeLog('log', ...args),
+    info: (...args) => safeLog('info', ...args),
+    warn: (...args) => safeLog('warn', ...args),
+    error: (...args) => safeLog('error', ...args),
+    log: (...args) => safeLog('log', ...args)
+  };
+};
 
 // Create a default logger instance
-const logger = createLogger('pyfactor');
+const defaultLogger = createLogger('pyfactor');
 
-// Export the logger and utilities
-module.exports = {
+// Export the logger object
+export const logger = defaultLogger;
+
+// Also export individual functions
+export const { debug, info, warn, error, log } = defaultLogger;
+
+// For CommonJS compatibility
+export default {
   logger,
-  createLogger,
-  LOG_LEVELS,
+  debug,
+  info,
+  warn,
+  error,
+  log,
+  createLogger
 };
-
-// For ESM imports
-module.exports.default = module.exports;

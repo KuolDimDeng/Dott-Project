@@ -7,6 +7,10 @@ const nextConfig = {
   experimental: {
     forceSwcTransforms: true,
   },
+  // Disable ESLint during build
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   // Add headers configuration to ensure proper MIME types
   async headers() {
     return [

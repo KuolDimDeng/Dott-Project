@@ -116,9 +116,8 @@ export const setOnboardingCookies = (attributes, cookieOptions = null) => {
                          attributes.paymentDone === 'true' || 
                          attributes.paymentDone === true;
                          
-    const setupDone = attributes['custom:setupdone'] === 'TRUE' || 
-                       attributes.setupCompleted === 'true' || 
-                       attributes.setupCompleted === true;
+    const setupDone = (attributes['custom:setupdone'] || '').toLowerCase() === 'true' ||
+                    (attributes['custom:onboarding'] || '').toLowerCase() === 'complete';
     
     // Set individual step cookies
     document.cookie = `businessInfoCompleted=${businessInfoDone ? 'true' : 'false'}; ${options}`;
@@ -244,9 +243,8 @@ export const determineOnboardingStep = (attributes) => {
                        attributes.paymentDone === 'true' || 
                        attributes.paymentDone === true;
   
-  const setupDone = attributes['custom:setupdone'] === 'TRUE' || 
-                     attributes.setupCompleted === 'true' || 
-                     attributes.setupCompleted === true;
+  const setupDone = (attributes['custom:setupdone'] || '').toLowerCase() === 'true' ||
+                    (attributes['custom:onboarding'] || '').toLowerCase() === 'complete';
   
   if (!businessInfoDone) {
     return 'business-info';

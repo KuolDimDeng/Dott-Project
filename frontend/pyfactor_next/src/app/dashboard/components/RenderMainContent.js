@@ -1,7 +1,8 @@
 'use client';
 
 import React, { Suspense, lazy } from 'react';
-import { TransportDashboard, VehicleManagement } from './transport';
+// Remove the direct imports and replace with lazy loading
+// import { TransportDashboard, VehicleManagement } from './transport';
 
 // Empty loading component (removed spinner)
 const LoadingComponent = () => null;
@@ -87,6 +88,10 @@ const BankTransactions = lazy(() => import('./forms/BankTransactionPage'));
 const InventoryManagement = lazy(() => import('@/app/inventory/components/InventoryManagement.js'));
 const Home = lazy(() => import('./Home'));
 const HRDashboard = lazy(() => import('./forms/HRDashboard.js'));
+
+// Add lazy loading for Transport components
+const TransportDashboard = lazy(() => import('./transport/TransportDashboard.js'));
+const VehicleManagement = lazy(() => import('./transport/VehicleManagement.js'));
 
 // CRM Components
 const CRMDashboard = lazy(() => import('./crm/CRMDashboard'));
@@ -374,15 +379,32 @@ function RenderMainContent({
       return (
         <Suspense fallback={<LoadingComponent />}>
           <ContentWrapper>
-            {selectedOption === 'Transaction' && <TransactionForm />}
-            {selectedOption === 'Product' && <ProductManagement mode="create" />}
-            {selectedOption === 'Service' && <ServiceManagement mode="create" />}
-            {selectedOption === 'Invoice' && <InvoiceManagement mode="create" />}
-            {selectedOption === 'Bill' && <BillManagement mode="create" />}
-            {selectedOption === 'Estimate' && <EstimateManagement mode="create" />}
-            {selectedOption === 'Customer' && <CustomerList mode="create" onCreateCustomer={handleCreateCustomer} />}
-            {selectedOption === 'Vendor' && <VendorManagement mode="create" />}
-            {/* Add other create options as needed */}
+            {/* Render components with proper props even when conditions aren't met
+                to ensure hook ordering consistency */}
+            <div style={{ display: selectedOption === 'Transaction' ? 'block' : 'none' }}>
+              <TransactionForm />
+            </div>
+            <div style={{ display: selectedOption === 'Product' ? 'block' : 'none' }}>
+              <ProductManagement mode="create" />
+            </div>
+            <div style={{ display: selectedOption === 'Service' ? 'block' : 'none' }}>
+              <ServiceManagement mode="create" />
+            </div>
+            <div style={{ display: selectedOption === 'Invoice' ? 'block' : 'none' }}>
+              <InvoiceManagement mode="create" />
+            </div>
+            <div style={{ display: selectedOption === 'Bill' ? 'block' : 'none' }}>
+              <BillManagement mode="create" />
+            </div>
+            <div style={{ display: selectedOption === 'Estimate' ? 'block' : 'none' }}>
+              <EstimateManagement mode="create" />
+            </div>
+            <div style={{ display: selectedOption === 'Customer' ? 'block' : 'none' }}>
+              <CustomerList mode="create" onCreateCustomer={handleCreateCustomer} />
+            </div>
+            <div style={{ display: selectedOption === 'Vendor' ? 'block' : 'none' }}>
+              <VendorManagement mode="create" />
+            </div>
           </ContentWrapper>
         </Suspense>
       );
@@ -412,7 +434,9 @@ function RenderMainContent({
         <Suspense fallback={<LoadingComponent />}>
           <ContentWrapper>
             {view === 'sales-dashboard' && <SalesAnalysis />}
-            {view === 'sales-products' && <ProductManagement salesContext={true} />}
+            <div style={{ display: view === 'sales-products' ? 'block' : 'none' }}>
+              <ProductManagement salesContext={true} />
+            </div>
             {view === 'sales-services' && <ServiceManagement salesContext={true} />}
             {view === 'sales-reports' && <ReportDisplay type="sales" />}
           </ContentWrapper>
@@ -452,7 +476,9 @@ function RenderMainContent({
         {showCustomerList && <CustomerList onCreateCustomer={handleCreateCustomer} onSelectCustomer={handleCustomerSelect} />}
         {showCustomerDetails && selectedCustomer && <CustomerDetails customer={selectedCustomer} onBack={handleBackToCustomerDetails} />}
         {selectedInvoiceId && <InvoiceDetails invoiceId={selectedInvoiceId} onBack={handleBackFromInvoice} />}
-        {showProductManagement && <ProductManagement />}
+        <div style={{ display: showProductManagement ? 'block' : 'none' }}>
+          <ProductManagement />
+        </div>
         {showServiceManagement && <ServiceManagement />}
         {showEstimateManagement && <EstimateManagement />}
         {showSalesOrderManagement && <SalesOrderManagement />}
@@ -504,6 +530,7 @@ function RenderMainContent({
         {showInventoryItems && <InventoryItems />}
         {showBankTransactions && <BankTransactions />}
         {showInventoryManagement && <InventoryManagement />}
+        {showHome && <Home />}
       </Suspense>
     );
   };

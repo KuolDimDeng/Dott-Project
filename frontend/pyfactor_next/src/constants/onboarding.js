@@ -36,17 +36,17 @@ export const STORAGE_KEYS = {
 
 // Onboarding status values - standardized across the application
 export const ONBOARDING_STATUS = {
-  NOT_STARTED: 'NOT_STARTED',
-  IN_PROGRESS: 'IN_PROGRESS',
-  BUSINESS_INFO: 'BUSINESS_INFO',
-  BUSINESS_INFO_COMPLETED: 'BUSINESS_INFO_COMPLETED',
-  SUBSCRIPTION: 'SUBSCRIPTION',
-  SUBSCRIPTION_COMPLETED: 'SUBSCRIPTION_COMPLETED',
-  PAYMENT: 'PAYMENT',
-  PAYMENT_COMPLETED: 'PAYMENT_COMPLETED',
-  SETUP: 'SETUP',
-  SETUP_COMPLETED: 'SETUP_COMPLETED',
-  COMPLETE: 'COMPLETE',
+  NOT_STARTED: 'not_started',
+  IN_PROGRESS: 'in_progress',
+  BUSINESS_INFO: 'business_info',
+  BUSINESS_INFO_COMPLETED: 'business_info_completed',
+  SUBSCRIPTION: 'subscription',
+  SUBSCRIPTION_COMPLETED: 'subscription_completed',
+  PAYMENT: 'payment',
+  PAYMENT_COMPLETED: 'payment_completed',
+  SETUP: 'setup',
+  SETUP_COMPLETED: 'setup_completed',
+  COMPLETE: 'complete',
 };
 
 // Onboarding step values for URLs/routing
@@ -61,12 +61,12 @@ export const ONBOARDING_STEPS = {
 
 // Simplified onboarding states for UI
 export const ONBOARDING_STATES = {
-  NOT_STARTED: 'NOT_STARTED',
-  BUSINESS_INFO: 'BUSINESS_INFO',
-  SUBSCRIPTION: 'SUBSCRIPTION', 
-  PAYMENT: 'PAYMENT',
-  SETUP: 'SETUP',
-  COMPLETE: 'COMPLETE',
+  NOT_STARTED: 'not_started',
+  BUSINESS_INFO: 'business_info',
+  SUBSCRIPTION: 'subscription', 
+  PAYMENT: 'payment',
+  SETUP: 'setup',
+  COMPLETE: 'complete',
 };
 
 export default {

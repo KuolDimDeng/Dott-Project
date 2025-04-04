@@ -1,10 +1,5 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/components/shared/StepProgress/StepProgress.styles.js
-import { styled } from '@mui/material/styles';
-import { Stepper } from '@mui/material';
 
-export const CustomStepper = styled(Stepper)(({ theme }) => ({
-    marginBottom: theme.spacing(4),
-    '& .MuiStepLabel-label': {
-        fontSize: '0.875rem'
-    }
-}));
+// Using Tailwind CSS classes instead of MUI styled components
+// These are exported as string constants for compatibility with existing code
+export const CustomStepper = "mb-8 text-sm";

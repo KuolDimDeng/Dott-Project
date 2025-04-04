@@ -48,6 +48,12 @@ export default function KeyboardEventFixer() {
       // Skip processing if fix is disabled or no input is focused
       if (!isFixActive || !focusedInput || e.__redirected) return;
       
+      // Check if focusedInput is still in the DOM
+      if (!document.contains(focusedInput)) {
+        focusedInput = null;
+        return;
+      }
+      
       // Throttle processing to avoid performance issues
       const now = Date.now();
       if (now - lastFixTime < THROTTLE_MS) return;
@@ -66,16 +72,21 @@ export default function KeyboardEventFixer() {
             (focusedInput.tagName.toLowerCase() === 'input' || 
              focusedInput.tagName.toLowerCase() === 'textarea')) {
           
-          const start = focusedInput.selectionStart || 0;
-          const end = focusedInput.selectionEnd || 0;
-          const value = focusedInput.value || '';
-          
-          // Simulate typing by manually updating the input value
-          const newValue = value.substring(0, start) + e.key + value.substring(end);
-          focusedInput.value = newValue;
-          
-          // Check if the input is still valid and in the DOM before manipulating selection
           try {
+            // Safety check before manipulating the input
+            if (!focusedInput || !focusedInput.isConnected) {
+              focusedInput = null;
+              return;
+            }
+            
+            const start = focusedInput.selectionStart || 0;
+            const end = focusedInput.selectionEnd || 0;
+            const value = focusedInput.value || '';
+            
+            // Simulate typing by manually updating the input value
+            const newValue = value.substring(0, start) + e.key + value.substring(end);
+            focusedInput.value = newValue;
+            
             // Set cursor position
             if (focusedInput && focusedInput.isConnected) {
               focusedInput.selectionStart = start + 1;
