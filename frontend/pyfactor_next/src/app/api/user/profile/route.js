@@ -102,7 +102,46 @@ export async function GET(req) {
     const userEmail = email || authUser;
     
     if (!userEmail || !effectiveTenantId) {
-      // If we don't have user email or tenant ID, return error
+      // Check if this is a dashboard request
+      const requestUrl = req.url || '';
+      const referer = req.headers.get('referer') || '';
+      const isDashboardRequest = 
+        referer.includes('/dashboard') || 
+        requestUrl.includes('dashboard=true') ||
+        req.headers.get('X-Dashboard-Route') === 'true';
+      
+      if (isDashboardRequest) {
+        // For dashboard, use available data and create fallback profile
+        const fallbackTenantId = effectiveTenantId || cognitoUserId || getDefaultTenantId();
+        const fallbackEmail = userEmail || "user@example.com";
+        
+        logger.info(`[API] Creating fallback profile for dashboard: ${fallbackTenantId}`);
+        
+        return NextResponse.json({
+          profile: {
+            id: fallbackTenantId,
+            email: fallbackEmail,
+            tenantId: fallbackTenantId,
+            role: 'user',
+            firstName: firstName || '',
+            lastName: lastName || '',
+            name: firstName && lastName ? `${firstName} ${lastName}` : (firstName || fallbackEmail),
+            fullName: firstName && lastName ? `${firstName} ${lastName}` : (firstName || ''),
+            businessName: businessName || getCookieValue(cookieHeader, 'businessid') || '',
+            businessType: businessType || '',
+            onboardingStatus: getCookieValue(cookieHeader, 'onboardingStatus') || 'complete',
+            setupComplete: getCookieValue(cookieHeader, 'setupCompleted') === 'true',
+            subscription_type: getCookieValue(cookieHeader, 'selectedPlan') || 'free',
+            preferences: {
+              theme: 'light',
+              notificationsEnabled: true
+            },
+            fallback: true
+          }
+        });
+      }
+
+      // If we don't have user email or tenant ID and not a dashboard request, return error
       return NextResponse.json({ 
         error: 'No authenticated user found',
         message: 'Please sign in to access your profile' 

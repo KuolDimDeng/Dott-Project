@@ -205,18 +205,6 @@ export const confirmUserBypass = async (email) => {
   }
 };
 
-// If in development mode, expose helper function to window
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  window.confirmUserBypass = confirmUserBypass;
-}
-
-// Expose the function to the window object in development mode
-if (process.env.NODE_ENV === 'development') {
-  if (typeof window !== 'undefined') {
-    window.confirmUserDirectly = confirmUserDirectly;
-  }
-}
-
 // Add a simple helper for manual confirmation
 export const manualConfirmUser = async (userEmail) => {
   console.log('Manually confirming user:', userEmail);
@@ -237,60 +225,6 @@ export const manualConfirmUser = async (userEmail) => {
     return { success: false, error: error.message || 'Unknown error' };
   }
 };
-
-// Expose the manual confirmation function to the window
-if (typeof window !== 'undefined') {
-  window.manualConfirmUser = manualConfirmUser;
-}
-
-// Expose all helper functions in development mode
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  window.confirmUserBypass = confirmUserBypass;
-  window.confirmUserDirectly = confirmUserDirectly;
-  window.manualConfirmUser = manualConfirmUser;
-  
-  // Add a special function that combines direct confirmation and login
-  window.confirmAndSignIn = async (email, password) => {
-    console.log('🔄 Confirming and signing in user:', email);
-    
-    try {
-      // First confirm the user
-      const confirmResult = await manualConfirmUser(email);
-      console.log('Confirmation result:', confirmResult);
-      
-      if (!confirmResult.success) {
-        console.warn('⚠️ Confirmation may have failed, but trying to sign in anyway');
-      }
-      
-      // Then try to sign in
-      console.log('Attempting sign in...');
-      const { signIn } = await import('@/config/amplifyUnified');
-      
-      const signInResult = await signIn({
-        username: email,
-        password,
-        options: {
-          authFlowType: 'USER_PASSWORD_AUTH',
-          clientMetadata: {
-            bypass_verification: 'true'
-          }
-        }
-      });
-      
-      console.log('✅ Sign in result:', signInResult);
-      return { success: true, confirmResult, signInResult };
-    } catch (error) {
-      console.error('❌ Error in confirm and sign in:', error);
-      return { success: false, error: error.message };
-    }
-  };
-  
-  console.log('🛠️ Auth helper functions available in console:');
-  console.log('- window.confirmUserBypass(email)');
-  console.log('- window.confirmUserDirectly(email)');
-  console.log('- window.manualConfirmUser(email)');
-  console.log('- window.confirmAndSignIn(email, password)');
-}
 
 // ES module exports
 export { isTokenExpired, signInWithSocialProvider, getRefreshedAccessToken };

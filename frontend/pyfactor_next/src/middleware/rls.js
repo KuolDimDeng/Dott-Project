@@ -23,46 +23,29 @@ export const getTenantId = (user, request) => {
     return user.sub;
   }
   
-  // For development mode, check environment variable first
+  // For development mode, use environment variable or user ID
   if (process.env.NODE_ENV === 'development') {
-    // Check env var first (highest priority for dev mode)
-    if (process.env.DEV_TENANT_ID) {
-      logger.debug('[RLS] Using environment variable tenant ID', { 
-        tenantId: process.env.DEV_TENANT_ID 
+    // Check for tenant ID in the request
+    const tenantIdFromRequest = request?.cookies?.get('tenantId')?.value;
+    
+    if (tenantIdFromRequest) {
+      logger.debug('[RLS] Using tenant ID from request cookies', { 
+        tenantId: tenantIdFromRequest
       });
-      return process.env.DEV_TENANT_ID;
+      return tenantIdFromRequest;
     }
     
-    // Then check development mode headers
-    if (request) {
-      const isDev = request.headers.get('x-dev-mode') === 'true';
-      if (isDev) {
-        const devTenantId = request.headers.get('x-tenant-id');
-        if (devTenantId) {
-          logger.debug('[RLS] Using development tenant ID from headers', { devTenantId });
-          return devTenantId;
-        }
-      }
+    // Try to get user.sub as fallback
+    if (user && user.sub) {
+      logger.debug('[RLS] Using user sub as tenant ID fallback', { 
+        tenantId: user.sub
+      });
+      return user.sub;
     }
     
-    // Then check cookies
-    if (request) {
-      const cookies = request.cookies || new Map();
-      const bypassAuth = cookies.get('bypassAuthValidation')?.value === 'true';
-      
-      if (bypassAuth) {
-        const cookieTenantId = cookies.get('dev-tenant-id')?.value;
-        if (cookieTenantId) {
-          logger.debug('[RLS] Using tenant ID from cookies', { tenantId: cookieTenantId });
-          return cookieTenantId;
-        }
-        
-        // Fallback to default dev tenant ID if no cookie
-        const devTenantId = 'dev-tenant-123';
-        logger.debug('[RLS] Using fallback development tenant ID', { devTenantId });
-        return devTenantId;
-      }
-    }
+    // Log warning about missing tenant ID but don't hardcode one
+    logger.warn('[RLS] No tenant ID found in development mode');
+    return null;
   }
   
   // Fallback - in production, this should never happen

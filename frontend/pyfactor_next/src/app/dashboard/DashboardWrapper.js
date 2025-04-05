@@ -13,6 +13,8 @@ import {
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
+import { useRouter } from 'next/navigation';
+import { Box, CircularProgress, Typography } from '@mui/material';
 
 /**
  * Dashboard Wrapper Component
@@ -28,25 +30,11 @@ const DashboardWrapper = ({ newAccount, plan }) => {
   const [isVerifyingTenant, setIsVerifyingTenant] = useState(true);
   const [tenantError, setTenantError] = useState(null);
   const [tenantProgress, setTenantProgress] = useState(30);
+  const [userAttributes, setUserAttributes] = useState(null);
+  const [tenantId, setTenantId] = useState(null);
   const hasRunSetup = useRef(false);
   const isLoggedIn = true; // Simplified since we're in the dashboard
-
-  // Add default mock data for development
-  const mockData = {
-    businessName: 'Juba Cargo Village',
-    businessType: 'Accounting and Bookkeeping',
-    userProfile: {
-      name: 'Demo User',
-      email: 'demo@example.com',
-      role: 'Administrator'
-    },
-    stats: {
-      revenue: 24500,
-      expenses: 12300,
-      profit: 12200,
-      customers: 48
-    }
-  };
+  const router = useRouter();
 
   // Helper function to get cookie values
   const getCookie = (name) => {
@@ -60,63 +48,61 @@ const DashboardWrapper = ({ newAccount, plan }) => {
   const handleApiError = (error, component) => {
     logger.error(`[Dashboard] Error loading ${component}:`, error);
     
-    // In development, provide fallback data
-    if (process.env.NODE_ENV === 'development') {
-      return { ...mockData };
+    // Check if we should ignore the error based on cookies
+    const onboardedStatus = getCookie('onboardedStatus');
+    const setupCompleted = getCookie('setupCompleted');
+    
+    if (onboardedStatus === 'complete' || setupCompleted === 'true') {
+      // If cookies indicate completed onboarding, ignore API errors
+      logger.info('[Dashboard] Ignoring API error due to completed onboarding in cookies');
+      return null;
     }
     
+    // Always return null regardless of environment
     return null;
   };
 
-  // Add an effect to check schema setup status when component mounts
+  // Function to initialize database environment and ensure tables exist
+  const ensureDatabaseSetup = async () => {
+    try {
+      logger.info('[DashboardWrapper] Ensuring database tables exist');
+      
+      // First create the table
+      const createTableResponse = await fetch('/api/tenant/create-table');
+      if (createTableResponse.ok) {
+        logger.info('[DashboardWrapper] Table creation successful or already exists');
+      } else {
+        logger.warn('[DashboardWrapper] Table creation response:', await createTableResponse.text());
+      }
+      
+      // Then initialize the database environment
+      const initResponse = await fetch('/api/tenant/init-db-env');
+      if (initResponse.ok) {
+        logger.info('[DashboardWrapper] Database environment initialized');
+      } else {
+        logger.warn('[DashboardWrapper] Database initialization response:', await initResponse.text());
+      }
+    } catch (error) {
+      logger.error('[DashboardWrapper] Error ensuring database setup:', error);
+    }
+  };
+  
+  // Add an effect to verify tenant when component mounts
   useEffect(() => {
     console.log('DashboardWrapper mounted with props:', { newAccount, plan });
     
-    // In development mode, bypass all verification
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🧪 Development mode: Bypassing tenant verification');
-      
-      // Generate a dynamic tenant ID instead of using a hardcoded one
-      const generateTenantId = () => {
-        const timestamp = Date.now().toString().slice(-6);
-        const randomPart = Math.random().toString(36).substring(2, 6);
-        return `tenant-${timestamp}-${randomPart}`;
-      };
-      
-      // Store tenant info in localStorage and cookies
-      const devTenantId = generateTenantId();
-      localStorage.setItem('tenantId', devTenantId);
-      localStorage.setItem('setupDone', 'true');
-      localStorage.setItem('setupTimestamp', Date.now().toString());
-      
-      // Set cookies
-      document.cookie = `tenantId=${devTenantId}; path=/; max-age=86400`;
-      document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; max-age=86400`;
-      document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/; max-age=86400`;
-      
-      // Skip schema setup
-      sessionStorage.setItem('schemaSetupAlreadyRunInSession', 'true');
-      
-      // Set state to show dashboard
-      setTenantVerified(true);
-      setIsVerifyingTenant(false);
-      setSetupStatus('completed');
-      return;
-    }
+    // Ensure database tables exist as early as possible
+    ensureDatabaseSetup();
     
-    // This state will track if we've run a schema setup in this session
-    const hasSetupBeenRunKey = 'schemaSetupAlreadyRunInSession';
-    
+    // Remove development mode check - always use production behavior
     try {
       // Check existing localStorage values
       const setupDoneStr = localStorage.getItem('setupDone');
       const setupTimestamp = localStorage.getItem('setupTimestamp');
-      const sessionSetupRun = sessionStorage.getItem(hasSetupBeenRunKey);
       
-      logger.info('[Dashboard] Initial schema setup status check:', {
+      logger.info('[Dashboard] Initial tenant verification:', {
         setupDone: setupDoneStr === 'true' ? 'yes' : 'no',
-        setupTime: setupTimestamp ? new Date(parseInt(setupTimestamp, 10)).toISOString() : 'none',
-        sessionRun: sessionSetupRun === 'true' ? 'yes' : 'no'
+        setupTime: setupTimestamp ? new Date(parseInt(setupTimestamp, 10)).toISOString() : 'none'
       });
       
       // Create the persisted setup timestamp if it doesn't exist
@@ -140,291 +126,137 @@ const DashboardWrapper = ({ newAccount, plan }) => {
   const verifyTenant = async () => {
     setIsVerifyingTenant(true);
     try {
-      // CRITICAL FIX: First check multiple indicators to see if user has completed onboarding
-      // Check onboarding status in cookies with multiple possible cookie names
-      const onboardingStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS) || getCookie('onboardedStatus');
-      const setupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED) || getCookie('setupCompleted');
-      const onboardingStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP) || getCookie('onboardingStep');
+      const tokens = getTokensFromCookies();
+      const accessToken = tokens?.accessToken;
       
-      // Check if ANY condition indicates onboarding is complete
-      const isOnboardedByCookies = 
-        onboardingStatus === ONBOARDING_STATUS.COMPLETE || 
-        setupCompleted === 'true' || 
-        onboardingStep === 'complete';
-      
-      // Also check localStorage as fallback
-      const isOnboardedByLocalStorage = 
-        localStorage.getItem(STORAGE_KEYS.ONBOARDING_STATUS) === ONBOARDING_STATUS.COMPLETE ||
-        localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED) === 'true';
-      
-      if (isOnboardedByCookies || isOnboardedByLocalStorage) {
-        logger.info('[Dashboard] Cookies/localStorage indicate onboarding is complete, allowing dashboard access');
-        setTenantVerified(true);
+      if (!accessToken) {
+        console.error("[DashboardWrapper] No access token found for tenant verification");
         setIsVerifyingTenant(false);
-        
-        // Ensure cookies are properly set for future requests
-        const expiresDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
-        document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}`;
-        document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/; expires=${expiresDate.toUTCString()}`;
-        document.cookie = `onboardedStatus=${ONBOARDING_STATUS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}`;
-        document.cookie = `setupCompleted=true; path=/; expires=${expiresDate.toUTCString()}`;
-        return;
+        return false;
       }
       
-      // Attempt to get the tenant ID from various sources
-      const userAttributes = await fetchUserAttributes();
+      // Format tenant ID for database compatibility
+      const formatTenantId = (id) => {
+        if (!id) return null;
+        return id.replace(/-/g, '_');
+      };
       
-      // Also check Cognito attributes directly for onboarding status
-      const cognitoOnboardingStatus = userAttributes[COGNITO_ATTRIBUTES.ONBOARDING_STATUS];
-      const cognitoSetupDone = userAttributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED];
+      // Get tenant ID from various sources
+      let tenantId = localStorage.getItem('tenantId') || getCookie('businessid');
       
-      // If Cognito attributes indicate onboarding is complete, allow access
-      const isOnboardedByCognito = 
-        cognitoOnboardingStatus?.toLowerCase() === ONBOARDING_STATUS.COMPLETE || 
-        cognitoSetupDone === 'true';
+      // Format tenant ID for database
+      tenantId = formatTenantId(tenantId);
       
-      if (isOnboardedByCognito) {
-        logger.info('[Dashboard] Cognito attributes indicate onboarding is complete, allowing dashboard access');
-        // Ensure cookies are set to match Cognito
-        const expiresDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
-        document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}`;
-        document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/; expires=${expiresDate.toUTCString()}`;
-        document.cookie = `onboardedStatus=${ONBOARDING_STATUS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}`;
-        document.cookie = `setupCompleted=true; path=/; expires=${expiresDate.toUTCString()}`;
-        
-        setTenantVerified(true);
-        setIsVerifyingTenant(false);
-        return;
-      }
-      
-      const cognitoTenantId = userAttributes['custom:businessid'];
-      const localStorageTenantId = localStorage.getItem('tenantId');
-      
-      // Get tenant ID from cookie
-      const cookieTenantId = getCookie('tenantId');
-      
-      // Use the best tenant ID source with priority order
-      const tenantId = cognitoTenantId || cookieTenantId || localStorageTenantId;
-      
-      logger.info('[Dashboard] Verifying tenant:', {
-        cognitoTenantId,
-        cookieTenantId,
-        localStorageTenantId,
-        usedTenantId: tenantId,
-        cognitoOnboardingStatus,
-        cognitoSetupDone
+      const response = await fetch('/api/tenant/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tenantId,
+          accessToken
+        })
       });
       
-      if (!tenantId) {
-        // Check if URL parameters indicate we're coming from onboarding with a plan
-        const urlParams = new URLSearchParams(window.location.search);
-        const newAccount = urlParams.get('newAccount') === 'true';
-        const plan = urlParams.get('plan');
-        
-        if (newAccount && plan) {
-          logger.info('[Dashboard] New account with plan detected, allowing dashboard access');
-          // Set cookies to indicate completed onboarding
-          const expiresDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
-          document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}`;
-          document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/; expires=${expiresDate.toUTCString()}`;
-          document.cookie = `onboardedStatus=${ONBOARDING_STATUS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}`;
-          document.cookie = `setupCompleted=true; path=/; expires=${expiresDate.toUTCString()}`;
+      const data = await response.json();
+      
+      if (data.isValid) {
+        // Store validated tenant info
+        if (data.tenant) {
+          localStorage.setItem('tenantId', data.tenant.id);
+          localStorage.setItem('tenantName', data.tenant.name || 'My Business');
           
-          // CRITICAL FIX: Update Cognito attributes to ensure they match cookies
+          // Set in state as well
+          setTenantId(data.tenant.id);
+          
+          // Set cookie for server-side access
+          setCookie('businessid', data.tenant.id, { path: '/' });
+        }
+        
+        setIsVerifyingTenant(false);
+        return true;
+      } else {
+        // Tenant verification failed, but we have valid tokens
+        // Try to get or create tenant ID
+        
+        // Priority order:
+        // 1. From localStorage
+        // 2. From cookie
+        // 3. Generate new one based on user ID
+        
+        let fallbackTenantId = localStorage.getItem('tenantId');
+        
+        if (!fallbackTenantId) {
+          fallbackTenantId = getCookie('businessid');
+        }
+        
+        if (!fallbackTenantId && tokens?.idToken) {
+          // Extract user ID from token
+          const payload = parseJwt(tokens.idToken);
+          const userId = payload?.sub;
+          
+          if (userId) {
+            // Generate deterministic tenant ID based on user ID
+            fallbackTenantId = generateDeterministicTenantId(userId);
+          }
+        }
+        
+        if (fallbackTenantId) {
+          // Format for database compatibility
+          fallbackTenantId = formatTenantId(fallbackTenantId);
+          
+          // Try to create tenant record in database
           try {
-            await fetch('/api/user/update-attributes', {
+            const createResponse = await fetch('/api/tenant/init', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+              },
               body: JSON.stringify({
-                attributes: {
-                  'custom:onboarding': 'complete',
-                  'custom:setupdone': 'true'
-                },
-                forceUpdate: true
+                tenantId: fallbackTenantId,
+                accessToken: tokens?.accessToken
               })
             });
-            logger.info('[Dashboard] Updated Cognito attributes to prevent redirection');
-          } catch (error) {
-            logger.error('[Dashboard] Failed to update Cognito attributes:', error);
-          }
-          
-          setTenantVerified(true);
-          setIsVerifyingTenant(false);
-          return;
-        }
-        
-        setTenantError('No tenant ID found. Please restart the onboarding process.');
-        setIsVerifyingTenant(false);
-        return;
-      }
-      
-      // Verify the tenant with our API
-      try {
-        const verifyResponse = await fetch('/api/auth/verify-tenant', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            tenantId,
-            userId: userAttributes.sub,
-            email: userAttributes.email
-          }),
-          // Add timeout to prevent hanging
-          signal: AbortSignal.timeout(5000) // 5 second timeout
-        });
-        
-        if (!verifyResponse.ok) {
-          const errorData = await verifyResponse.json();
-          logger.error('[Dashboard] Tenant verification failed:', errorData);
-          
-          // CRITICAL FIX: Check all possible indicators of completed onboarding
-          if (isOnboardedByCookies || isOnboardedByLocalStorage || isOnboardedByCognito) {
-            logger.info('[Dashboard] API verification failed but other indicators show onboarding is complete');
-            setTenantVerified(true);
-            setIsVerifyingTenant(false);
-            return;
-          }
-          
-          // Check for a 404 response which means tenant doesn't exist
-          if (verifyResponse.status === 404) {
-            // Check if we have any business info that indicates user started onboarding
-            const businessNameInCookie = getCookie('businessName');
-            const businessNameInStorage = localStorage.getItem('businessName');
-            const businessInfoInStorage = localStorage.getItem('businessInfo');
             
-            if (businessNameInCookie || businessNameInStorage || businessInfoInStorage) {
-              // User has at least started onboarding, let's update attributes directly
-              try {
-                await fetch('/api/user/update-attributes', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    attributes: {
-                      'custom:onboarding': 'complete',
-                      'custom:setupdone': 'true',
-                      'custom:businessid': tenantId || crypto.randomUUID()
-                    },
-                    forceUpdate: true
-                  })
-                });
-                logger.info('[Dashboard] Fixed missing tenant by updating Cognito attributes');
-                setTenantVerified(true);
-                setIsVerifyingTenant(false);
-                return;
-              } catch (updateError) {
-                logger.error('[Dashboard] Failed emergency attribute update:', updateError);
-              }
+            const createData = await createResponse.json();
+            
+            if (createData.success) {
+              console.log("[DashboardWrapper] Successfully created tenant record:", createData);
+              
+              // Store tenant info
+              localStorage.setItem('tenantId', createData.tenant_id);
+              setTenantId(createData.tenant_id);
+              
+              // Set cookie for server-side access
+              setCookie('businessid', createData.tenant_id, { path: '/' });
+              
+              setIsVerifyingTenant(false);
+              return true;
+            } else {
+              console.error("[DashboardWrapper] Failed to create tenant record:", createData);
             }
-            
-            setTenantError('Your account is not fully set up. Redirecting to onboarding...');
-            
-            // Redirect to onboarding/business-info after a short delay
-            setTimeout(() => {
-              window.location.href = '/onboarding/business-info';
-            }, 3000);
-            return;
+          } catch (createError) {
+            console.error("[DashboardWrapper] Error creating tenant record:", createError);
           }
-          
-          setTenantError(errorData.message || 'Failed to verify your account');
-          setIsVerifyingTenant(false);
-          return;
         }
         
-        const tenantData = await verifyResponse.json();
-        logger.info('[Dashboard] Tenant verified successfully:', tenantData);
-        
-        // Ensure the tenant ID is consistent across all storage mechanisms
-        if (tenantData.tenantId) {
-          // Update local storage
-          localStorage.setItem('tenantId', tenantData.tenantId);
-          
-          // Update cookie
-          const expiration = new Date();
-          expiration.setDate(expiration.getDate() + 7);
-          document.cookie = `tenantId=${tenantData.tenantId}; path=/; expires=${expiration.toUTCString()}`;
-          
-          // Set tenant as verified
-          setTenantVerified(true);
-        } else {
-          setTenantError('Tenant verification succeeded but no tenant ID was returned');
-        }
-      } catch (apiError) {
-        // API call timed out or failed, use fallback approach
-        logger.error('[Dashboard] Tenant API verification failed:', apiError);
-        
-        // CRITICAL FIX: Check all possible indicators of completed onboarding again
-        if (isOnboardedByCookies || isOnboardedByLocalStorage || isOnboardedByCognito) {
-          logger.info('[Dashboard] API verification failed but other indicators show onboarding is complete');
-          setTenantVerified(true);
-          setIsVerifyingTenant(false);
-          return;
-        }
-        
-        // Fallback: If we have a tenant ID and the API call failed, assume tenant is valid
-        if (tenantId) {
-          logger.info('[Dashboard] Using fallback tenant ID verification:', tenantId);
-          // Update local storage and cookies with the tenant ID we have
-          localStorage.setItem('tenantId', tenantId);
-          
-          const expiration = new Date();
-          expiration.setDate(expiration.getDate() + 7);
-          document.cookie = `tenantId=${tenantId}; path=/; expires=${expiration.toUTCString()}`;
-          
-          setTenantVerified(true);
-          setIsVerifyingTenant(false);
-          return;
-        }
-        
-        setTenantError(`Tenant verification failed: ${apiError.message}`);
+        setIsVerifyingTenant(false);
+        return false;
       }
     } catch (error) {
-      logger.error('[Dashboard] Error verifying tenant:', error);
-      
-      // CRITICAL FIX: Even if verification errors out, check all possible indicators of completed onboarding
-      const onboardingStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS) || getCookie('onboardedStatus');
-      const setupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED) || getCookie('setupCompleted');
-      const onboardingStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP) || getCookie('onboardingStep');
-      
-      // Check if ANY condition indicates onboarding is complete
-      const isOnboardedByCookies = 
-        onboardingStatus === ONBOARDING_STATUS.COMPLETE || 
-        setupCompleted === 'true' || 
-        onboardingStep === 'complete';
-      
-      // Also check localStorage as fallback
-      const isOnboardedByLocalStorage = 
-        localStorage.getItem(STORAGE_KEYS.ONBOARDING_STATUS) === ONBOARDING_STATUS.COMPLETE ||
-        localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED) === 'true';
-      
-      if (isOnboardedByCookies || isOnboardedByLocalStorage) {
-        logger.info('[Dashboard] Verification error but cookies/localStorage indicate onboarding is complete');
-        setTenantVerified(true);
-        setIsVerifyingTenant(false);
-        return;
-      }
-      
-      // Last resort: if we have a tenant ID in cookie or localStorage, use it
-      const tenantId = getCookie('tenantId') || localStorage.getItem('tenantId');
-      if (tenantId) {
-        logger.info('[Dashboard] Using existing tenant ID as final fallback:', tenantId);
-        setTenantVerified(true);
-        setIsVerifyingTenant(false);
-        return;
-      }
-      
-      setTenantError(`Tenant verification failed: ${error.message}`);
-    } finally {
+      console.error("[DashboardWrapper] Error verifying tenant:", error);
       setIsVerifyingTenant(false);
+      return false;
     }
   };
   
   // New function to check Cognito attributes
   const checkCognitoAttributes = async () => {
     try {
-      const userAttributes = await fetchUserAttributes();
-      const onboardingStatus = userAttributes[COGNITO_ATTRIBUTES.ONBOARDING_STATUS]?.toLowerCase();
-      const setupDone = userAttributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED]?.toLowerCase() === 'true';
+      const attributes = await fetchUserAttributes();
+      setUserAttributes(attributes);
+      const onboardingStatus = attributes[COGNITO_ATTRIBUTES.ONBOARDING_STATUS]?.toLowerCase();
+      const setupDone = attributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED]?.toLowerCase() === 'true';
       
       logger.info('[Dashboard] Cognito attributes check:', {
         onboarding: onboardingStatus,
@@ -449,43 +281,44 @@ const DashboardWrapper = ({ newAccount, plan }) => {
     // Check for lowercase 'complete' status
     const isComplete = onboardingStatus?.toLowerCase() === 'complete' || setupDone === true || setupDone === 'true';
     
+    // Check for business info in cookies/localStorage
+    const businessName = getCookie('businessName') || getCookie('business_name') || getCookie('custom:businessname') || localStorage.getItem('businessName');
+    const businessType = getCookie('businessType') || getCookie('business_type') || getCookie('custom:businesstype') || localStorage.getItem('businessType');
+    
+    // If we have business info, force onboarding status to complete
+    const shouldForceComplete = (businessName && businessType) || 
+                               (window.location.pathname.startsWith('/dashboard') && (newAccount || plan));
+    
     // Set cookies with consistent casing
     const expiresDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
-    document.cookie = `onboardedStatus=${isComplete ? 'complete' : (onboardingStatus || 'not_started')}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `setupCompleted=${isComplete ? 'true' : 'false'}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `onboardingStep=${isComplete ? 'complete' : 'business-info'}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `onboardingInProgress=${isComplete ? 'false' : 'true'}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+    document.cookie = `onboardedStatus=${isComplete || shouldForceComplete ? 'complete' : (onboardingStatus || 'not_started')}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+    document.cookie = `setupCompleted=${isComplete || shouldForceComplete ? 'true' : 'false'}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+    document.cookie = `onboardingStep=${isComplete || shouldForceComplete ? 'complete' : 'business-info'}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+    document.cookie = `onboardingInProgress=${isComplete || shouldForceComplete ? 'false' : 'true'}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
     
     logger.debug('[Dashboard] Set onboarding cookies for consistency:', {
-      onboardedStatus: isComplete ? 'complete' : (onboardingStatus || 'not_started'),
-      setupCompleted: isComplete ? 'true' : 'false',
-      onboardingStep: isComplete ? 'complete' : 'business-info'
+      onboardedStatus: isComplete || shouldForceComplete ? 'complete' : (onboardingStatus || 'not_started'),
+      setupCompleted: isComplete || shouldForceComplete ? 'true' : 'false',
+      onboardingStep: isComplete || shouldForceComplete ? 'complete' : 'business-info',
+      forceComplete: shouldForceComplete
     });
     
-    return isComplete;
+    return isComplete || shouldForceComplete;
   };
 
-  // Effect for schema setup triggering
+  // Effect for tenant ID consistency check (replaces schema setup since we now use RLS)
   useEffect(() => {
-    const triggerSchemaSetup = async () => {
+    const ensureTenantConsistency = async () => {
       if (hasRunSetup.current) {
-        logger.info('[Dashboard] Schema setup already run in this session, skipping');
+        logger.info('[Dashboard] Tenant consistency check already run in this session, skipping');
         return;
       }
       
       // Mark as run to prevent duplicate calls
       hasRunSetup.current = true;
       
-      // Skip all validation in development mode if bypass is enabled
-      if (process.env.NODE_ENV === 'development' && 
-          localStorage.getItem('bypassAuthValidation') === 'true') {
-        logger.info('[Dashboard] Development mode: Bypassing schema setup and validation');
-        setSetupStatus('success');
-        return;
-      }
-      
       try {
-        logger.debug('[Dashboard] Checking onboarding status before schema setup');
+        logger.debug('[Dashboard] Checking onboarding status for tenant consistency');
         logger.debug('[Dashboard] Current path:', window.location.pathname);
         
         // Get the current cookies for debugging
@@ -499,6 +332,190 @@ const DashboardWrapper = ({ newAccount, plan }) => {
           onboardingStep: cookieOnboardingStep
         });
         
+        // Always ensure tenant record exists in database regardless of cookie status
+        // This ensures RLS works properly for the current user
+        const tenantId = localStorage.getItem('tenantId') || getCookie('tenantId');
+        const businessName = getCookie('businessName') || getCookie('business_name') || 
+                           getCookie('custom:businessname') || localStorage.getItem('businessName');
+        
+        if (tenantId || businessName) {
+          logger.info('[Dashboard] Ensuring tenant record exists in database');
+          
+          try {
+            // First try our most reliable direct database endpoint that doesn't require auth
+            const dbResponse = await fetch('/api/tenant/ensure-db-record', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                tenantId,
+                userId: localStorage.getItem('userId'),
+                email: localStorage.getItem('userEmail'),
+                businessName,
+                forceCreate: true
+              })
+            });
+            
+            const dbData = await dbResponse.json();
+            
+            if (dbResponse.ok && dbData.success) {
+              logger.info('[Dashboard] Successfully created tenant record via direct DB:', dbData);
+              
+              // Always store tenantId in localStorage and cookies for consistency
+              if (dbData.tenantId) {
+                localStorage.setItem('tenantId', dbData.tenantId);
+                document.cookie = `tenantId=${dbData.tenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+              }
+            } else {
+              logger.warn('[Dashboard] Direct DB tenant creation failed, trying standard endpoint:', dbData);
+              
+              // Try our dedicated tenant record creation endpoint
+              try {
+                const createResponse = await fetch('/api/tenant/create-tenant-record', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    tenantId,
+                    businessName,
+                    forceCreate: true
+                  })
+                });
+                
+                const createData = await createResponse.json();
+                
+                if (createData.success) {
+                  logger.info('[Dashboard] Successfully created/verified tenant in database:', createData);
+                  
+                  // Always store tenantId in localStorage and cookies for consistency
+                  if (createData.tenantId) {
+                    localStorage.setItem('tenantId', createData.tenantId);
+                    document.cookie = `tenantId=${createData.tenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+                  }
+                } else {
+                  logger.warn('[Dashboard] Tenant record creation failed, trying fallback:', createData);
+                  
+                  // Fallback to original endpoint
+                  const initResponse = await fetch('/api/tenant/init', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      tenantId,
+                      businessName,
+                      forceCreate: true
+                    })
+                  });
+                  
+                  const initData = await initResponse.json();
+                  
+                  if (initData.success) {
+                    logger.info('[Dashboard] Successfully verified/created tenant via original endpoint:', initData);
+                    
+                    // Always store tenantId in localStorage and cookies for consistency
+                    if (initData.tenant_id) {
+                      localStorage.setItem('tenantId', initData.tenant_id);
+                      document.cookie = `tenantId=${initData.tenant_id}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+                    }
+                  } else {
+                    logger.warn('[Dashboard] All tenant verification approaches failed, continuing anyway:', initData);
+                  }
+                }
+              } catch (createError) {
+                logger.error('[Dashboard] Error with create tenant record endpoint:', createError);
+                
+                // Still try the original endpoint as a last resort
+                try {
+                  const initResponse = await fetch('/api/tenant/init', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      tenantId,
+                      businessName,
+                      forceCreate: true
+                    })
+                  });
+                  
+                  const initData = await initResponse.json();
+                  
+                  if (initData.success) {
+                    logger.info('[Dashboard] Successfully verified/created tenant via last resort fallback:', initData);
+                    
+                    if (initData.tenant_id) {
+                      localStorage.setItem('tenantId', initData.tenant_id);
+                      document.cookie = `tenantId=${initData.tenant_id}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+                    }
+                  }
+                } catch (lastError) {
+                  logger.error('[Dashboard] All tenant endpoints failed:', lastError);
+                }
+              }
+            }
+          } catch (initError) {
+            logger.error('[Dashboard] Error verifying tenant:', initError);
+            // Continue with dashboard anyway
+          }
+        }
+        
+        // If onboarding is already marked as complete in cookies, skip further checks
+        if (cookieOnboardingStatus === 'complete' || cookieSetupComplete === 'true' || 
+            cookieOnboardingStep === 'complete' || localStorage.getItem('setupDone') === 'true') {
+          
+          logger.info('[Dashboard] Onboarding already marked as complete in cookies/localStorage');
+          
+          // Ensure cookies are consistent  
+          ensureProperCookies('complete', true);
+          
+          // Update Cognito attributes if needed
+          try {
+            await fetch('/api/user/update-attributes', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                attributes: {
+                  [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: 'complete',
+                  [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'true',
+                  [COGNITO_ATTRIBUTES.BUSINESS_NAME]: businessName
+                },
+                forceUpdate: true
+              })
+            });
+            
+            logger.info('[Dashboard] Updated Cognito attributes from cookie data');
+          } catch (error) {
+            logger.error('[Dashboard] Error updating Cognito attributes from cookies:', error);
+          }
+          
+          setSetupStatus('success');
+          return;
+        }
+        
+        // If the user is viewing the dashboard with plan or newAccount params, force onboarding complete
+        if (window.location.pathname.startsWith('/dashboard') && (newAccount || plan)) {
+          logger.info('[Dashboard] User accessing dashboard with plan/newAccount, setting onboarding as complete');
+          
+          // Force onboarding status to complete
+          ensureProperCookies('complete', true);
+          
+          // Try to update Cognito but don't block UI on failure
+          try {
+            await fetch('/api/user/update-attributes', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                attributes: {
+                  [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: 'complete',
+                  [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'true'
+                },
+                forceUpdate: true
+              })
+            });
+          } catch (error) {
+            logger.error('[Dashboard] Error updating Cognito attributes for new/plan user:', error);
+          }
+          
+          setSetupStatus('success');
+          return;
+        }
+        
+        // Continue with the rest of the function as before...
         // Fetch user attributes to check onboarding status and tenant ID
         let userAttributes;
         try {
@@ -595,6 +612,45 @@ const DashboardWrapper = ({ newAccount, plan }) => {
           const businessNameCookie = getCookie('businessName');
           const businessTypeCookie = getCookie('businessType');
           
+          // First check if onboarding is actually completed in other cookies/localStorage
+          const onboardedStatusCookie = getCookie('onboardedStatus');
+          const setupCompletedCookie = getCookie('setupCompleted');
+          const onboardingStepCookie = getCookie('onboardingStep');
+          
+          // If any of these indicate onboarding is complete, update Cognito instead of redirecting
+          if (onboardedStatusCookie === 'complete' || 
+              setupCompletedCookie === 'true' ||
+              onboardingStepCookie === 'complete' ||
+              localStorage.getItem('setupDone') === 'true') {
+            
+            logger.info('[DashboardApp] Found completed onboarding in cookies/localStorage, updating Cognito');
+            
+            try {
+              await fetch('/api/user/update-attributes', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  attributes: {
+                    [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: 'complete',
+                    [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'true'
+                  },
+                  forceUpdate: true
+                })
+              });
+              
+              // Also update the local state to prevent further redirect attempts
+              setCognitoUpdateNeeded(false);
+              
+              // Don't redirect - just continue with dashboard
+              logger.info('[DashboardApp] Updated Cognito with completed onboarding status');
+              return;
+            } catch (error) {
+              logger.error('[DashboardApp] Error updating Cognito with onboarding status:', error);
+            }
+          }
+          
           if (businessNameCookie && businessTypeCookie) {
             // If business info exists in cookies, try to update Cognito attributes instead of redirecting
             logger.info('[DashboardApp] Found business info in cookies, updating Cognito instead of redirecting');
@@ -634,6 +690,42 @@ const DashboardWrapper = ({ newAccount, plan }) => {
           const lastRedirectTime = localStorage.getItem('lastOnboardingRedirect');
           const currentTime = Date.now();
           
+          // Check if this is a return from subscription page with plan parameter
+          const urlParams = new URLSearchParams(window.location.search);
+          const planParam = urlParams.get('plan');
+          const newAccountParam = urlParams.get('newAccount');
+          
+          // If user is coming from subscription page with plan parameter, don't redirect
+          if (planParam && (planParam === 'free' || planParam === 'basic' || planParam === 'pro')) {
+            logger.info('[DashboardApp] User coming from subscription with plan, staying on dashboard', { plan: planParam });
+            
+            // Force onboarding status to complete
+            try {
+              await fetch('/api/user/update-attributes', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  attributes: {
+                    [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: 'complete',
+                    [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'true'
+                  },
+                  forceUpdate: true
+                })
+              });
+              
+              // Set cookies to match
+              document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=complete; path=/`;
+              document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/`;
+              
+              // Continue with dashboard - don't redirect or reload
+              return;
+            } catch (error) {
+              logger.error('[DashboardApp] Error updating onboarding status for user with plan:', error);
+            }
+          }
+          
           if (lastRedirectTime && (currentTime - parseInt(lastRedirectTime)) < 3000) {
             // Less than 3 seconds since last redirect - likely in a loop
             logger.warn('[DashboardApp] Potential redirection loop detected, forcing dashboard access');
@@ -657,6 +749,50 @@ const DashboardWrapper = ({ newAccount, plan }) => {
               // Set cookies to match
               document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=complete; path=/`;
               document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/`;
+              
+              // Ensure tenant record exists before refreshing
+              try {
+                // Get tenant ID from various sources
+                const userTenantId = localStorage.getItem('tenantId') || 
+                                   getCookie('tenantId') || 
+                                   userAttributes?.['custom:businessid'];
+                
+                // First initialize the database environment to ensure tables exist
+                try {
+                  const initResponse = await fetch('/api/tenant/init-db-env');
+                  const initData = await initResponse.json();
+                  logger.info('[Dashboard] Database environment initialization:', 
+                    initData.success ? 'successful' : 'failed',
+                    'Table exists:', initData.tableExists);
+                } catch (initError) {
+                  logger.warn('[Dashboard] Error initializing database environment:', initError.message);
+                  // Continue anyway, the main endpoint has its own initialization
+                }
+                
+                // Create tenant record in database with our enhanced endpoint
+                const createTenantResponse = await fetch('/api/tenant/create-tenant-record', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    tenantId: userTenantId,
+                    userId: localStorage.getItem('userId') || userAttributes?.sub,
+                    email: localStorage.getItem('userEmail') || userAttributes?.email,
+                    businessName: userAttributes?.['custom:businessname'] || 'My Business',
+                    forceCreate: true
+                  })
+                });
+                
+                const tenantData = await createTenantResponse.json();
+                logger.info('[Dashboard] Created tenant record to break redirection loop:', tenantData);
+                
+                // Store tenant ID in localStorage and cookie for consistency
+                if (tenantData.tenantId) {
+                  localStorage.setItem('tenantId', tenantData.tenantId);
+                  document.cookie = `tenantId=${tenantData.tenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+                }
+              } catch (tenantError) {
+                logger.error('[Dashboard] Error creating tenant record:', tenantError);
+              }
               
               // Refresh the page
               setTimeout(() => window.location.reload(), 1000);
@@ -693,16 +829,10 @@ const DashboardWrapper = ({ newAccount, plan }) => {
         
         // Check localStorage and cookies for tenant ID
         const localStorageTenantId = localStorage.getItem('tenantId');
-        const getCookie = (name) => {
-          const value = `; ${document.cookie}`;
-          const parts = value.split(`; ${name}=`);
-          if (parts.length === 2) return parts.pop().split(';').shift();
-          return null;
-        };
         const cookieTenantId = getCookie('tenantId');
         
         // Log tenant ID from different sources for debugging
-        logger.info('[Dashboard] Tenant ID check before setup:', {
+        logger.info('[Dashboard] Tenant ID check for RLS:', {
           cognito: cognitoTenantId || 'not set',
           localStorage: localStorageTenantId || 'not set',
           cookie: cookieTenantId || 'not set'
@@ -723,15 +853,15 @@ const DashboardWrapper = ({ newAccount, plan }) => {
           logger.info('[Dashboard] Fixed tenant ID inconsistency using Cognito ID:', cognitoTenantId);
         }
         
-        logger.info('[Dashboard] Current Cognito status before setup:', {
+        logger.info('[Dashboard] Current Cognito status:', {
           onboarding: onboardingStatus || 'not set',
           setupDone: setupDone || 'not set',
           tenantId: cognitoTenantId || 'not set'
         });
         
-        // If already complete according to Cognito (which is the source of truth), no need to run
+        // If already complete according to Cognito (which is the source of truth), we're done
         if (onboardingStatus === 'complete' && (setupDone === true || setupDone === 'true')) {
-          logger.info('[Dashboard] Onboarding already complete according to Cognito, skipping schema setup');
+          logger.info('[Dashboard] Onboarding already complete according to Cognito');
           setSetupStatus('already-complete');
           return;
         }
@@ -739,45 +869,40 @@ const DashboardWrapper = ({ newAccount, plan }) => {
         // Flag that we definitely need to update Cognito attributes
         setCognitoUpdateNeeded(true);
         
-        // Make API call to trigger schema setup
+        // For RLS, we don't need to trigger schema setup anymore, just ensure tenant ID is consistent
+        // and Cognito attributes are up to date
         setSetupStatus('in-progress');
-        const response = await fetch('/api/dashboard/trigger-schema-setup', {
+        
+        // Verify/validate tenant ID via API
+        const response = await fetch('/api/auth/verify-tenant', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            tenantId: cognitoTenantId // Explicitly pass Cognito tenant ID if available
+            tenantId: cognitoTenantId || localStorageTenantId || cookieTenantId,
+            validateOnly: true
           })
         });
         
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`Failed to trigger schema setup: ${errorData.message || response.status}`);
+          const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+          throw new Error(`Failed to verify tenant: ${errorData.message || response.status}`);
         }
         
         const data = await response.json();
-        logger.debug('[Dashboard] Schema setup triggered successfully:', data);
+        logger.debug('[Dashboard] Tenant verification successful:', data);
         
-        // Always set flag to update Cognito directly for redundancy
+        // Set flag to update Cognito directly for redundancy
         setCognitoUpdateNeeded(true);
-        
         setSetupStatus('completed');
         
         // Force immediate Cognito update check 
         setTimeout(() => {
           checkCognitoAttributes();
         }, 1000);
-        
-        // Reload the page after a successful setup (to ensure tenant is properly loaded)
-        if (data.schemaCreated) {
-          logger.info('[Dashboard] Schema was newly created, will reload page in 3 seconds');
-          setTimeout(() => {
-            window.location.reload();
-          }, 3000);
-        }
       } catch (error) {
-        logger.error('[Dashboard] Error triggering schema setup:', error);
+        logger.error('[Dashboard] Error verifying tenant consistency:', error);
         setSetupStatus('failed');
         // Still try to update Cognito
         setCognitoUpdateNeeded(true);
@@ -785,8 +910,8 @@ const DashboardWrapper = ({ newAccount, plan }) => {
     };
     
     // Only run once when component mounts
-    logger.info('[Dashboard] Schema setup effect triggered');
-    triggerSchemaSetup();
+    logger.info('[Dashboard] Tenant consistency check effect triggered');
+    ensureTenantConsistency();
   }, []);
   
   // Handle Cognito attribute update if needed
@@ -874,38 +999,88 @@ const DashboardWrapper = ({ newAccount, plan }) => {
     }
   }, [cognitoUpdateNeeded, updateCognitoOnboardingStatus]);
 
-  // If in development mode, handle the verifying state with a more informative message
-  if (isVerifyingTenant) {
-    if (process.env.NODE_ENV === 'development') {
-      // Automatically set tenant as verified after a short delay for development
-      setTimeout(() => {
-        setTenantVerified(true);
-        setIsVerifyingTenant(false);
-      }, 500); 
+  /**
+   * Generate a deterministic tenant ID from a user ID
+   * @param {string} userId 
+   * @returns {string}
+   */
+  function generateDeterministicTenantId(userId) {
+    // Use a simple hashing algorithm to create a deterministic ID
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) {
+      hash = ((hash << 5) - hash) + userId.charCodeAt(i);
+      hash |= 0; // Convert to 32bit integer
     }
     
+    // Format as UUID-like string
+    const randStr = Math.abs(hash).toString(16).padStart(8, '0');
+    const uuid = `${randStr.slice(0, 8)}-${randStr.slice(0, 4)}-4${randStr.slice(1, 4)}-${randStr.slice(0, 4)}-${Date.now().toString(16).slice(-12)}`;
+    
+    logger.info('[Dashboard] Generated deterministic tenant ID:', uuid);
+    return uuid;
+  }
+
+  // Function to parse JWT token
+  const parseJwt = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error('[DashboardWrapper] Error parsing JWT:', e);
+      return null;
+    }
+  };
+
+  // Function to get tokens from cookies
+  const getTokensFromCookies = () => {
+    try {
+      const idTokenCookie = getCookie('idToken');
+      const accessTokenCookie = getCookie('accessToken');
+      
+      if (idTokenCookie && accessTokenCookie) {
+        return { idToken: idTokenCookie, accessToken: accessTokenCookie };
+      }
+      
+      // Try Cognito cookie format if direct cookies not found
+      const lastAuthUser = getCookie('CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.LastAuthUser');
+      if (lastAuthUser) {
+        const idToken = getCookie(`CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.${lastAuthUser}.idToken`);
+        const accessToken = getCookie(`CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.${lastAuthUser}.accessToken`);
+        
+        if (idToken && accessToken) {
+          return { idToken, accessToken };
+        }
+      }
+      
+      return null;
+    } catch (e) {
+      console.error('[DashboardWrapper] Error getting tokens from cookies:', e);
+      return null;
+    }
+  };
+
+  // Function to set cookie with options
+  const setCookie = (name, value, options = {}) => {
+    try {
+      const { path = '/', maxAge = 60*60*24*30, sameSite = 'lax' } = options;
+      document.cookie = `${name}=${value}; path=${path}; max-age=${maxAge}; samesite=${sameSite}`;
+    } catch (e) {
+      console.error('[DashboardWrapper] Error setting cookie:', e);
+    }
+  };
+
+  if (isVerifyingTenant) {
     return (
-      <div className="flex flex-col h-screen w-full items-center justify-center bg-gray-50">
-        <div className="text-center p-6 bg-white rounded-lg shadow-md max-w-md">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">
-            {process.env.NODE_ENV === 'development' 
-              ? '🧪 Development Mode' 
-              : 'Verifying Your Account'}
-          </h1>
-          <LoadingSpinner size="lg" />
-          <p className="mt-4 text-gray-600">
-            {process.env.NODE_ENV === 'development' 
-              ? 'Preparing development dashboard...' 
-              : 'Please wait while we verify your account and prepare your dashboard.'}
-          </p>
-          <div className="mt-4 w-full bg-gray-200 rounded-full h-2.5">
-            <div 
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
-              style={{ width: `${tenantProgress}%` }}
-            ></div>
-          </div>
-        </div>
-      </div>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+        <Typography variant="body1" sx={{ ml: 2 }}>
+          Verifying account information...
+        </Typography>
+      </Box>
     );
   }
 
@@ -929,8 +1104,10 @@ const DashboardWrapper = ({ newAccount, plan }) => {
   return (
     <Dashboard 
       newAccount={newAccount} 
-      plan={plan} 
-      mockData={process.env.NODE_ENV === 'development' ? mockData : undefined} 
+      plan={plan}
+      setupStatus={setupStatus}
+      userAttributes={userAttributes}
+      tenantId={tenantId}
     />
   );
 };

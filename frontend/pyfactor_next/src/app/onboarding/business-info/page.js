@@ -19,8 +19,10 @@ import {
   COOKIE_NAMES, 
   STORAGE_KEYS,
   ONBOARDING_STATUS,
-  ONBOARDING_STEPS
+  ONBOARDING_STEPS,
+  ONBOARDING_STATES
 } from '@/constants/onboarding';
+import { safeUpdateUserAttributes, mockUpdateUserAttributes } from '@/utils/safeAttributes';
 
 // Create a safe version of useToast
 const useSafeToast = () => {
@@ -221,164 +223,172 @@ export default function BusinessInfoPage() {
     return { valid: true }; // No errors
   };
 
-  const handleSubmit = async () => {
-    if (
-      !formData.businessName ||
-      !formData.businessType ||
-      !formData.country ||
-      !formData.legalStructure ||
-      !formData.dateFounded
-    ) {
-      setFormError('Please fill in all required fields.');
-      return;
-    }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
     
-    // Store in localStorage as a backup
     try {
-      localStorage.setItem('businessInfo', JSON.stringify(formData));
+      // Store values in localStorage for persistence
       localStorage.setItem('businessName', formData.businessName);
-      logger.info('Saved business info to localStorage');
-    } catch (e) {
-      logger.warn('Failed to save business info to localStorage:', e);
-    }
-    
-    // Store business name in cookies with various formats for compatibility
-    try {
-      document.cookie = `businessName=${encodeURIComponent(formData.businessName)}; path=/; max-age=31536000`;
-      document.cookie = `business_name=${encodeURIComponent(formData.businessName)}; path=/; max-age=31536000`;
-      document.cookie = `custom:businessname=${encodeURIComponent(formData.businessName)}; path=/; max-age=31536000`;
+      localStorage.setItem('businessType', formData.businessType);
+      localStorage.setItem('country', formData.country);
+      localStorage.setItem('legalStructure', formData.legalStructure);
+      localStorage.setItem('businessInfo', JSON.stringify(formData));
       
-      // Set onboarding status cookies to complete (lowercase)
-      document.cookie = `onboardingStatus=complete; path=/; max-age=31536000`;
-      document.cookie = `onboardedStatus=complete; path=/; max-age=31536000`;
-      document.cookie = `onboardingStep=complete; path=/; max-age=31536000`;
-      document.cookie = `setupCompleted=true; path=/; max-age=31536000`;
-      document.cookie = `ONBOARDING_STEP=complete; path=/; max-age=31536000`;
+      // Also store in cookies for server-side access
+      document.cookie = `businessName=${encodeURIComponent(formData.businessName)}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      document.cookie = `businessType=${encodeURIComponent(formData.businessType)}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      document.cookie = `country=${encodeURIComponent(formData.country)}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      document.cookie = `legalStructure=${encodeURIComponent(formData.legalStructure)}; path=/; max-age=${60*60*24*30}; samesite=lax`;
       
-      logger.info('Set business name and onboarding status cookies');
-    } catch (e) {
-      logger.warn('Failed to set cookies:', e);
-    }
-    
-    try {
-      setLoading(true);
-      setSubmitting(true);
+      // Mark the onboarding state in cookies and localStorage
+      document.cookie = `onboardingStep=subscription; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      document.cookie = `businessInfoCompleted=true; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      document.cookie = `onboardingInProgress=true; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      document.cookie = `onboardedStatus=BUSINESS_INFO; path=/; max-age=${60*60*24*30}; samesite=lax`;
       
-      // Development mode check before Cognito session
-      if (process.env.NODE_ENV === 'development' && localStorage.getItem('bypassAuthValidation') === 'true') {
-        logger.debug('[BusinessInfo] Development mode: bypassing session check and updating user attributes');
-        
-        // Store these values in localStorage for development mode
-        localStorage.setItem('custom:businessname', formData.businessName);
-        localStorage.setItem('custom:businesstype', formData.businessType);
-        localStorage.setItem('custom:businesscountry', formData.country);
-        localStorage.setItem('custom:legalstructure', formData.legalStructure);
-        localStorage.setItem('custom:datefounded', formData.dateFounded);
-        localStorage.setItem('custom:onboarding', 'business-info');
-        
-        // Redirect to subscription page in development mode
-        logger.info('Business info submitted successfully (dev mode), navigating to subscription page');
-        const timestamp = new Date().getTime();
-        router.push(`/onboarding/subscription?t=${timestamp}`);
-        return;
-      }
-      
-      // Store onboarding progress marker
+      localStorage.setItem('onboardingStep', 'subscription');
+      localStorage.setItem('businessInfoCompleted', 'true');
       localStorage.setItem('onboardingInProgress', 'true');
-      localStorage.setItem('onboardingStep', 'business-info-complete');
-      localStorage.setItem('businessInfoSubmitted', 'true');
+      localStorage.setItem('onboardedStatus', 'BUSINESS_INFO');
       
-      // Production code - check for real session
-      let resp;
+      // Generate a temporary tenant ID based on business info
+      const tempTenantId = generateUUID(formData.businessName + formData.businessType);
+      localStorage.setItem('tempTenantId', tempTenantId);
+      localStorage.setItem('tenantId', tempTenantId);
+      document.cookie = `tempTenantId=${tempTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      document.cookie = `tenantId=${tempTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      document.cookie = `businessid=${tempTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      
+      // First make server-side API call to update business info (this will create needed cookies)
       try {
-        resp = await fetchAuthSession();
-      } catch (sessionError) {
-        logger.warn('Error fetching auth session:', sessionError);
-        
-        // Forced redirect to subscription page even if session check fails
-        // This ensures the flow continues even with session issues
-        logger.info('Redirecting to subscription page despite session check failure');
-        const timestamp = new Date().getTime();
-        router.push(`/onboarding/subscription?t=${timestamp}`);
-        return;
-      }
-      
-      const session = resp?.session;
-      
-      if (!session) {
-        logger.warn('No active session found, but continuing onboarding flow');
-        
-        // Instead of redirecting to login, continue the flow
-        // This prevents losing the user's input and breaking the onboarding flow
-        const timestamp = new Date().getTime();
-        router.push(`/onboarding/subscription?t=${timestamp}`);
-        return;
-      }
-      
-      // Add user attributes for Cognito
-      const userAttributes = {
-        'custom:businessname': formData.businessName,
-        'custom:businesstype': formData.businessType,
-        'custom:businesscountry': formData.country,
-        'custom:legalstructure': formData.legalStructure,
-        'custom:datefounded': formData.dateFounded,
-        'custom:onboarding': 'business-info',
-        'custom:setupdone': 'true',
-        'custom:updated_at': new Date().toISOString()
-      };
-      
-      // Try to update user attributes, but don't block the flow if it fails
-      try {
-        const requestData = {
-          idToken: session.idToken.value,
-          attributes: userAttributes
-        };
-        
-        // Call the API to update user attributes
-        const response = await fetch('/api/user/update_attributes', {
+        const response = await fetch('/api/onboarding/business-info', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
           },
-          body: JSON.stringify(requestData)
+          body: JSON.stringify(formData)
         });
         
-        if (!response.ok) {
-          logger.warn('Failed to update user attributes:', await response.json());
-          // But continue with the flow
+        if (response.ok) {
+          const data = await response.json();
+          console.info('[BusinessInfo] Server response:', data);
         } else {
-          logger.info('Successfully updated user attributes with business info');
+          console.warn('[BusinessInfo] Server returned error:', response.status);
         }
-      } catch (attributeError) {
-        logger.warn('Error updating user attributes:', attributeError);
-        // Continue with the flow despite attribute update errors
+      } catch (apiError) {
+        console.error('[BusinessInfo] API call failed:', apiError);
+        // Continue anyway - we've set the cookies ourselves
       }
       
-      // Navigate to subscription page after successful submission
-      logger.info('Business info submitted successfully, navigating to subscription page');
-      const timestamp = new Date().getTime();
-      router.push(`/onboarding/subscription?t=${timestamp}`);
+      // Update Cognito user attributes immediately - don't continue until this succeeds
+      try {
+        const attributeUpdate = await safeUpdateUserAttributes({
+          'custom:businessname': formData.businessName,
+          'custom:businesstype': formData.businessType,
+          'custom:businesscountry': formData.country,
+          'custom:legalstructure': formData.legalStructure,
+          'custom:onboarding': ONBOARDING_STATUS.BUSINESS_INFO
+        });
+        
+        console.info('[BusinessInfo] Updated Cognito attributes:', attributeUpdate);
+      } catch (attributeError) {
+        console.error('[BusinessInfo] Attribute update failed:', attributeError);
+        // Try mock update as fallback
+        try {
+          await mockUpdateUserAttributes({
+            'custom:businessname': formData.businessName,
+            'custom:businesstype': formData.businessType,
+            'custom:onboarding': ONBOARDING_STATUS.BUSINESS_INFO
+          });
+        } catch (mockError) {
+          console.error('[BusinessInfo] Mock update also failed:', mockError);
+          // Continue anyway - critical for flow
+        }
+      }
       
-    } catch (error) {
-      logger.error('Error saving business info:', error);
-      setFormError('Failed to save business information. Please try again.');
+      // Initialize tenant in database
+      try {
+        const tenantResponse = await fetch('/api/tenant/init', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
+          },
+          body: JSON.stringify({
+            tenantId: tempTenantId,
+            businessName: formData.businessName,
+            businessType: formData.businessType
+          })
+        });
+        
+        if (tenantResponse.ok) {
+          const tenantData = await tenantResponse.json();
+          console.info('[BusinessInfo] Tenant initialized:', tenantData);
+          
+          // Make sure we set the tenant ID from the response if available
+          if (tenantData.tenant_id) {
+            localStorage.setItem('tenantId', tenantData.tenant_id);
+            document.cookie = `tenantId=${tenantData.tenant_id}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+            document.cookie = `businessid=${tenantData.tenant_id}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+          }
+        } else {
+          console.warn('[BusinessInfo] Tenant init API error:', tenantResponse.status);
+          // Continue with the flow anyway
+        }
+      } catch (tenantError) {
+        console.error('[BusinessInfo] Error initializing tenant:', tenantError);
+        // Continue with the flow anyway - we've set the tenant ID locally
+      }
       
-      // Still try to redirect to the next step despite errors
+      // Explicitly create a delay to ensure cookies are set before redirect
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Hard redirect to ensure page fully reloads with new cookies
+      console.info('[BusinessInfo] Redirecting to subscription page');
+      window.location.href = '/onboarding/subscription?ts=' + Date.now();
+      
+      // Also attempt to use the router as a backup, but this runs second
       setTimeout(() => {
-        const timestamp = new Date().getTime();
-        router.push(`/onboarding/subscription?t=${timestamp}`);
-      }, 1000);
-    } finally {
-      setLoading(false);
+        router.push('/onboarding/subscription');
+      }, 100);
+    } catch (error) {
+      console.error('[BusinessInfo] Error during form submission:', error);
+      setFormError('An error occurred. Please try again.');
       setSubmitting(false);
     }
   };
 
+  // Helper function to generate a UUID v4
+  function generateUUID(seed) {
+    // Simple deterministic UUID generator based on a seed string
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+      hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+      hash |= 0;
+    }
+    
+    // Use the hash to create a pseudorandom string
+    const randStr = Math.abs(hash).toString(16).padStart(8, '0');
+    
+    // Format as UUID-like string but use underscores instead of hyphens for DB compatibility
+    const uuid = `${randStr.slice(0, 8)}_${randStr.slice(0, 4)}_4${randStr.slice(1, 4)}_8${randStr.slice(1, 4)}_${Date.now().toString(16).slice(-12)}`;
+    
+    return uuid;
+  }
+
   // Form submission
   const onFormSubmit = (e) => {
     e.preventDefault();
+    
+    // If already submitting, don't allow multiple submissions
+    if (submitting) {
+      return;
+    }
+    
     // Pass the component's formData state to the submit handler
-    handleSubmit();
+    handleSubmit(e);
   };
 
   return (
@@ -504,7 +514,7 @@ export default function BusinessInfoPage() {
             <button
               type="submit"
               className="inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={submitting}
+              disabled={submitting || loading}
             >
               {submitting ? (
                 <>

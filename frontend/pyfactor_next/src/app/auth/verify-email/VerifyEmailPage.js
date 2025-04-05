@@ -63,25 +63,12 @@ export default function VerifyEmailPage() {
     try {
       logger.debug('[VerifyEmail] Attempting to verify email', { email, codeLength: code.length });
       
-      // Actually verify the email with Cognito
-      const { isSignUpComplete, nextStep } = await confirmSignUp({
-        username: email,
-        confirmationCode: code
-      });
-      
-      logger.debug('[VerifyEmail] Email verification result', { 
-        isSignUpComplete, 
-        nextStep: nextStep?.signUpStep 
-      });
-      
-      if (isSignUpComplete) {
-        // Since the admin API is having issues, we'll skip that step
-        // and just proceed with the successful verification
-
-        logger.debug('[VerifyEmail] Skipping admin API call due to credential issues');
+      // Check if we already know the user is confirmed from localStorage
+      const verifiedEmail = localStorage.getItem('verifiedEmail');
+      if (verifiedEmail === email) {
+        logger.debug('[VerifyEmail] Email already verified according to localStorage, skipping confirmSignUp');
         
         // Set verification flags
-        localStorage.setItem('verifiedEmail', email);
         localStorage.setItem('justVerified', 'true');
         localStorage.setItem('emailVerifiedTimestamp', Date.now().toString());
         
@@ -89,21 +76,125 @@ export default function VerifyEmailPage() {
         localStorage.removeItem('pyfactor_email');
         localStorage.removeItem('needs_verification');
         
+        // Try to verify the email attribute directly
+        try {
+          const baseUrl = window.location.origin;
+          logger.debug('[VerifyEmail] Ensuring email_verified attribute is set via admin API');
+          
+          const adminResponse = await fetch(`${baseUrl}/api/admin/verify-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email })
+          });
+          
+          if (adminResponse.ok) {
+            logger.debug('[VerifyEmail] Successfully marked email as verified via admin API');
+          } else {
+            logger.warn('[VerifyEmail] Failed to mark email as verified via admin API');
+          }
+        } catch (adminError) {
+          logger.warn('[VerifyEmail] Error calling admin verify-email API', { 
+            error: adminError.message 
+          });
+        }
+        
         // Show success message
-        setSuccessMessage('Email verified successfully! Redirecting to sign in page...');
+        setSuccessMessage('Email already verified! Redirecting to sign in page...');
         
         // Redirect to sign-in page
         setTimeout(() => {
           router.push('/auth/signin');
         }, 1500);
-      } else {
-        throw new Error('Email verification failed. Please try again.');
+        
+        return;
+      }
+      
+      try {
+        // Actually verify the email with Cognito
+        const { isSignUpComplete, nextStep } = await confirmSignUp({
+          username: email,
+          confirmationCode: code
+        });
+        
+        logger.debug('[VerifyEmail] Email verification result', { 
+          isSignUpComplete, 
+          nextStep: nextStep?.signUpStep 
+        });
+        
+        if (isSignUpComplete) {
+          // Set verification flags
+          localStorage.setItem('verifiedEmail', email);
+          localStorage.setItem('justVerified', 'true');
+          localStorage.setItem('emailVerifiedTimestamp', Date.now().toString());
+          
+          // Clean up verification data
+          localStorage.removeItem('pyfactor_email');
+          localStorage.removeItem('needs_verification');
+          
+          // Show success message
+          setSuccessMessage('Email verified successfully! Redirecting to sign in page...');
+          
+          // Redirect to sign-in page
+          setTimeout(() => {
+            router.push('/auth/signin');
+          }, 1500);
+        } else {
+          throw new Error('Email verification failed. Please try again.');
+        }
+      } catch (verifyError) {
+        // Special handling for already confirmed users
+        if (verifyError.message?.includes('User cannot be confirmed') && verifyError.message?.includes('CONFIRMED')) {
+          // User is already confirmed, this is actually a success case
+          logger.info('[VerifyEmail] User is already confirmed, treating as success');
+          
+          // Try to verify the email through admin API since the user is already confirmed
+          try {
+            const baseUrl = window.location.origin;
+            logger.debug('[VerifyEmail] Attempting to mark email as verified via admin API');
+            
+            const adminResponse = await fetch(`${baseUrl}/api/admin/verify-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ email })
+            });
+            
+            if (adminResponse.ok) {
+              logger.debug('[VerifyEmail] Successfully marked email as verified via admin API');
+            } else {
+              logger.warn('[VerifyEmail] Failed to mark email as verified via admin API');
+            }
+          } catch (adminError) {
+            logger.warn('[VerifyEmail] Error calling admin verify-email API', { 
+              error: adminError.message 
+            });
+          }
+          
+          // Set verification flags
+          localStorage.setItem('verifiedEmail', email);
+          localStorage.setItem('justVerified', 'true');
+          localStorage.setItem('emailVerifiedTimestamp', Date.now().toString());
+          
+          // Clean up verification data
+          localStorage.removeItem('pyfactor_email');
+          localStorage.removeItem('needs_verification');
+          
+          // Show success message
+          setSuccessMessage('Account already verified! Redirecting to sign in page...');
+          
+          // Redirect to sign-in page
+          setTimeout(() => {
+            router.push('/auth/signin');
+          }, 1500);
+        } else {
+          throw verifyError; // Re-throw for the outer catch block to handle
+        }
       }
     } catch (error) {
-      logger.error('[VerifyEmail] Verification error:', { 
-        message: error.message, 
-        code: error.code 
-      });
+      logger.error('[VerifyEmail] Verification error:', error);
       
       // Handle specific errors
       if (error.code === 'CodeMismatchException') {
@@ -205,6 +296,31 @@ export default function VerifyEmailPage() {
         setError('We couldn\'t find an account with this email address.');
       } else if (error.message?.includes('network') || error.code === 'NetworkError') {
         setError('Network error. Please check your internet connection and try again.');
+      } 
+      // Special handling for already confirmed users
+      else if (error.message?.includes('User is already confirmed')) {
+        // User is already confirmed, treat as success
+        logger.info('[VerifyEmail] User is already confirmed, redirecting to sign in');
+        
+        // Set verification flags
+        localStorage.setItem('verifiedEmail', email);
+        localStorage.setItem('justVerified', 'true');
+        localStorage.setItem('emailVerifiedTimestamp', Date.now().toString());
+        
+        // Clean up verification data
+        localStorage.removeItem('pyfactor_email');
+        localStorage.removeItem('needs_verification');
+        
+        // Show success message
+        setSuccessMessage('Your account is already verified! Redirecting to sign in...');
+        
+        // Redirect to sign-in page after a short delay
+        setTimeout(() => {
+          router.push('/auth/signin');
+        }, 1500);
+        
+        // Don't show error for this case
+        return;
       } else {
         setError(error.message || 'An error occurred. Please try again.');
       }

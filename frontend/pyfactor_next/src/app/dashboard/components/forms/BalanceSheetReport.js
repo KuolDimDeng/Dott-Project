@@ -97,67 +97,50 @@ export default function BalanceSheetReport() {
   const liabilities = data.Liabilities || {};
   const equity = data.Equity || {};
 
+  const totalLiabilitiesEquity = (liabilities.total || 0) + (equity.total || 0);
+
   return (
-    <div className="bg-gray-50 p-6 rounded-lg">
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-800">Balance Sheet</h1>
-        </div>
+    <div className="bg-white shadow sm:rounded-lg">
+      <div className="px-4 py-5 sm:p-6">
+        <h3 className="text-lg leading-6 font-medium text-gray-900">
+          Balance Sheet
+        </h3>
         
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Item
-                </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              <tr className="bg-gray-100">
-                <td colSpan={2} className="px-6 py-3 font-semibold">Assets</td>
-              </tr>
-              <ExpandableRow name="Current Assets" data={assets.Current} />
-              <ExpandableRow name="Non-Current Assets" data={assets.NonCurrent} />
-              <tr className="bg-gray-50">
-                <td className="px-6 py-4 font-semibold">Total Assets</td>
-                <td className="px-6 py-4 font-semibold text-right">${formatAmount(assets.total)}</td>
-              </tr>
-
-              <tr className="bg-gray-100">
-                <td colSpan={2} className="px-6 py-3 font-semibold">Liabilities</td>
-              </tr>
-              <ExpandableRow name="Current Liabilities" data={liabilities.Current} />
-              <ExpandableRow name="Non-Current Liabilities" data={liabilities.NonCurrent} />
-              <tr className="bg-gray-50">
-                <td className="px-6 py-4 font-semibold">Total Liabilities</td>
-                <td className="px-6 py-4 font-semibold text-right">${formatAmount(liabilities.total)}</td>
-              </tr>
-
-              <tr className="bg-gray-100">
-                <td colSpan={2} className="px-6 py-3 font-semibold">Equity</td>
-              </tr>
-              <ExpandableRow name="Equity Accounts" data={equity} />
-              <tr className="bg-gray-50">
-                <td className="px-6 py-4 font-semibold">Total Equity</td>
-                <td className="px-6 py-4 font-semibold text-right">${formatAmount(equity.total)}</td>
-              </tr>
-
-              <tr className="bg-blue-50">
-                <td className="px-6 py-4 font-bold">Total Liabilities and Equity</td>
-                <td className="px-6 py-4 font-bold text-right">${formatAmount((liabilities.total || 0) + (equity.total || 0))}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        {process.env.NODE_ENV === 'development' && (
-          <div className="p-6 border-t border-gray-200">
-            <p className="text-sm text-gray-500 mb-2">Raw data for debugging:</p>
-            <pre className="bg-gray-100 p-4 rounded text-xs overflow-auto max-h-60">{JSON.stringify(data, null, 2)}</pre>
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <div className="spinner"></div>
+          </div>
+        ) : error ? (
+          <div className="mt-4 text-sm text-red-600">
+            {error}
+          </div>
+        ) : data ? (
+          <>
+            <div className="mt-6">
+              <h4 className="text-md font-medium text-gray-700 mb-3">Assets</h4>
+              {renderSection(data.assets)}
+            </div>
+            
+            <div className="mt-6">
+              <h4 className="text-md font-medium text-gray-700 mb-3">Liabilities</h4>
+              {renderSection(data.liabilities)}
+            </div>
+            
+            <div className="mt-6">
+              <h4 className="text-md font-medium text-gray-700 mb-3">Equity</h4>
+              {renderSection(data.equity)}
+            </div>
+            
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="flex justify-between font-semibold">
+                <span>Total Liabilities + Equity</span>
+                <span>${formatAmount(totalLiabilitiesEquity)}</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="mt-4 text-sm text-gray-600">
+            No balance sheet data available. Please check back later.
           </div>
         )}
       </div>

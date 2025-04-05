@@ -6,9 +6,29 @@
 // Enhanced safe logger implementation
 const safeLog = (level, prefix, ...args) => {
   try {
+    // Ensure we have valid arguments
+    if (!args || args.length === 0) {
+      console[level](`[pyfactor] [${prefix}]:`, "(no data)");
+      return;
+    }
+    
     // Convert complex objects to safe strings (avoiding circular references)
     const safeArgs = args.map(arg => {
-      if (typeof arg === 'object' && arg !== null) {
+      if (arg === undefined) {
+        return "(undefined)";
+      }
+      if (arg === null) {
+        return "(null)";
+      }
+      if (arg instanceof Error) {
+        return {
+          message: arg.message || "No message",
+          code: arg.code,
+          name: arg.name || "Error",
+          stack: arg.stack
+        };
+      }
+      else if (typeof arg === 'object' && arg !== null) {
         try {
           return JSON.parse(JSON.stringify(arg));
         } catch (e) {

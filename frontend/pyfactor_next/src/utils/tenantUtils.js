@@ -256,14 +256,31 @@ async function checkTenantExists(tenantId) {
         statusText: response.statusText
       });
       
-      // Fallback for testing - always return true for our hard-coded tenant
-      if (tenantId === 'b7fee399-ffca-4151-b636-94ccb65b3cd0' || 
-          tenantId === '1cb7418e-34e7-40b7-b165-b79654efe21f') {
-        logger.debug('[TenantUtils] API failed but using fallback for known tenant ID');
-        return { 
-          exists: true,
-          correctTenantId: tenantId
-        };
+      // Rather than using hardcoded tenant IDs, let's create one if needed
+      // but only for valid UUID format tenant IDs
+      if (tenantId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
+        logger.debug('[TenantUtils] API failed but tenant ID format is valid, attempting to create tenant');
+        try {
+          // Try to create the tenant with this ID
+          const createResponse = await fetch('/api/tenant/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ tenantId, createIfMissing: true })
+          });
+          
+          if (createResponse.ok) {
+            logger.info('[TenantUtils] Successfully created tenant for ID:', tenantId);
+            return { 
+              exists: true,
+              correctTenantId: tenantId,
+              created: true
+            };
+          }
+        } catch (e) {
+          logger.error('[TenantUtils] Error creating tenant:', e);
+        }
       }
       
       return { exists: false };
@@ -284,14 +301,30 @@ async function checkTenantExists(tenantId) {
   } catch (error) {
     logger.error('[TenantUtils] Error checking tenant existence:', error);
     
-    // Fallback for testing - always return true for our hard-coded tenant
-    if (tenantId === 'b7fee399-ffca-4151-b636-94ccb65b3cd0' || 
-        tenantId === '1cb7418e-34e7-40b7-b165-b79654efe21f') {
-      logger.debug('[TenantUtils] Exception but using fallback for known tenant ID');
-      return { 
-        exists: true,
-        correctTenantId: tenantId
-      };
+    // Instead of hardcoded IDs, try to create the tenant if it has a valid UUID format
+    if (tenantId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
+      logger.debug('[TenantUtils] Exception but tenant ID format is valid, attempting to create tenant');
+      try {
+        // Try to create the tenant with this ID
+        const createResponse = await fetch('/api/tenant/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ tenantId, createIfMissing: true })
+        });
+        
+        if (createResponse.ok) {
+          logger.info('[TenantUtils] Successfully created tenant for ID after error:', tenantId);
+          return { 
+            exists: true,
+            correctTenantId: tenantId,
+            created: true
+          };
+        }
+      } catch (e) {
+        logger.error('[TenantUtils] Error creating tenant after exception:', e);
+      }
     }
     
     return { exists: false };
@@ -945,51 +978,58 @@ export const getInventoryHeaders = () => {
 };
 
 /**
- * Validates and standardizes a tenant ID 
- * If the tenant ID is not valid, it returns null
+ * Validates that a tenant ID is in the correct format
  * @param {string} tenantId - The tenant ID to validate
- * @param {boolean} logErrors - Whether to log validation errors
+ * @param {boolean} logErrors - Whether to log errors
  * @returns {string|null} The validated tenant ID or null if invalid
  */
-export const validateTenantIdFormat = (tenantId, logErrors = true) => {
+export function validateTenantIdFormat(tenantId, logErrors = true) {
+  // Early exits for invalid inputs
   if (!tenantId) {
     if (logErrors) console.warn('[TenantUtils] Empty tenant ID provided');
     return null;
   }
-
-  // Special case for development tenant IDs
-  if (process.env.NODE_ENV === 'development' && tenantId.startsWith('dev-')) {
-    if (logErrors) console.log(`[TenantUtils] Accepting development tenant ID: "${tenantId}"`);
-    return tenantId;
-  }
-
-  // Check if it's a valid UUID format
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
-  if (!uuidPattern.test(tenantId)) {
-    // Try to clean the tenant ID - sometimes it has surrounding quotes or whitespace
-    const cleanedId = tenantId.trim().replace(/^["']|["']$/g, '');
-    
-    if (uuidPattern.test(cleanedId)) {
-      if (logErrors) console.warn(`[TenantUtils] Fixed invalid tenant ID format: "${tenantId}" -> "${cleanedId}"`);
-      return cleanedId;
-    }
-    
-    // Check if it's a UUID without dashes
-    const noDashesPattern = /^[0-9a-f]{32}$/i;
-    if (noDashesPattern.test(cleanedId)) {
-      // Add dashes to create a valid UUID
-      const formattedId = `${cleanedId.slice(0,8)}-${cleanedId.slice(8,12)}-${cleanedId.slice(12,16)}-${cleanedId.slice(16,20)}-${cleanedId.slice(20)}`;
-      if (logErrors) console.warn(`[TenantUtils] Converted no-dashes UUID: "${cleanedId}" -> "${formattedId}"`);
-      return formattedId;
-    }
-    
-    if (logErrors) console.error(`[TenantUtils] Invalid tenant ID format: "${tenantId}"`);
+  if (typeof tenantId !== 'string') {
+    if (logErrors) console.warn(`[TenantUtils] Invalid tenant ID type: ${typeof tenantId}`);
     return null;
   }
   
-  return tenantId;
-};
+  // Accept any string that looks reasonably like a UUID (more lenient validation)
+  // This regex allows for UUIDs with or without hyphens
+  const uuid4Pattern = /^[0-9a-f]{8}(-?)[0-9a-f]{4}\1[0-9a-f]{4}\1[0-9a-f]{4}\1[0-9a-f]{12}$/i;
+  
+  // Also accept simplified formats that might be generated deterministically
+  const simplifiedPattern = /^[0-9a-f-]{8,40}$/i;
+  
+  if (uuid4Pattern.test(tenantId) || simplifiedPattern.test(tenantId)) {
+    // Return the tenant ID, but replace hyphens with underscores for DB compatibility
+    return tenantId.replace(/-/g, '_');
+  }
+  
+  if (logErrors) console.warn(`[TenantUtils] Invalid tenant ID format: "${tenantId}"`);
+  return null;
+}
+
+/**
+ * Formats a tenant ID for use in the database
+ * @param {string} tenantId - The tenant ID to format
+ * @returns {string} The formatted tenant ID with hyphens replaced by underscores
+ */
+export function formatTenantIdForDatabase(tenantId) {
+  if (!tenantId) return null;
+  return tenantId.replace(/-/g, '_');
+}
+
+/**
+ * Formats a tenant ID for display
+ * @param {string} tenantId - The tenant ID to format
+ * @returns {string} The formatted tenant ID with underscores replaced by hyphens
+ */
+export function formatTenantIdForDisplay(tenantId) {
+  if (!tenantId) return null;
+  return tenantId.replace(/_/g, '-');
+}
 
 /**
  * Set the current tenant ID

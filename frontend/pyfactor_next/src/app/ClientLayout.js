@@ -28,6 +28,30 @@ const ReactErrorDebugger = dynamic(
   }
 );
 
+// Force React to think it's in production mode
+if (typeof window !== 'undefined') {
+    // Override the development mode warning
+    const originalConsoleLog = console.log;
+    console.log = function(...args) {
+        // Skip React DevTools download message
+        if (
+            args.length > 0 && 
+            typeof args[0] === 'string' && 
+            args[0].includes('Download the React DevTools')
+        ) {
+            return;
+        }
+        return originalConsoleLog.apply(this, args);
+    };
+
+    // Hide React development mode by overriding the env
+    Object.defineProperty(window, '__REACT_DEVTOOLS_GLOBAL_HOOK__', {
+        get() {
+            return { isDisabled: true };
+        }
+    });
+}
+
 // Helper function to check cookie-based access for onboarding pages
 const checkCookieBasedAccess = (pathname) => {
   try {

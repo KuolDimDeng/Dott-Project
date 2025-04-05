@@ -23,12 +23,14 @@ logger.debug('[AmplifyUnified] Configuration values:', {
   AWS_REGION
 });
 
+// NOTE: Enhanced version of updateUserAttributes moved to @/utils/safeAttributes.js
+
 // Configure Amplify
 export const configureAmplify = () => {
   try {
     // Store the current environment
     const environment = process.env.NODE_ENV;
-    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isDevelopment = false; // Force production mode to fix dashboard loading issues
     
     logger.info('[AmplifyUnified] Configuring Amplify', { 
       environment, 

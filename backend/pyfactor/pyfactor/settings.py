@@ -41,6 +41,13 @@ PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID')
 PLAID_SECRET = os.getenv('PLAID_SECRET')
 PLAID_ENV = os.getenv('PLAID_ENV', 'sandbox')
 
+# Check for Plaid credentials and allow placeholders in development
+if not PLAID_CLIENT_ID or not PLAID_SECRET:
+    print("Warning: Real Plaid credentials not set. Using placeholders for development.")
+    PLAID_CLIENT_ID = PLAID_CLIENT_ID or "placeholder_client_id"
+    PLAID_SECRET = PLAID_SECRET or "placeholder_secret"
+    
+# Verify Plaid credentials aren't empty (which would cause runtime errors)
 if not PLAID_CLIENT_ID or not PLAID_SECRET:
     raise ValueError("Plaid credentials are not set in the environment variables.")
 
@@ -48,31 +55,43 @@ ENCRYPTION_KEY = Fernet.generate_key()
 
 
 
-STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
-STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
-STRIPE_PRICE_ID_MONTHLY = os.getenv('STRIPE_PRICE_ID_MONTHLY')
-STRIPE_PRICE_ID_ANNUAL = os.getenv('STRIPE_PRICE_ID_ANNUAL')
+# Stripe integration settings
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'placeholder_pub_key')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', 'placeholder_secret_key')
+STRIPE_PRICE_ID_MONTHLY = os.getenv('STRIPE_PRICE_ID_MONTHLY', 'placeholder_price_id_monthly')
+STRIPE_PRICE_ID_ANNUAL = os.getenv('STRIPE_PRICE_ID_ANNUAL', 'placeholder_price_id_annual')
+
+# Print warning for development mode
+if STRIPE_PUBLISHABLE_KEY.startswith('placeholder_') or STRIPE_SECRET_KEY.startswith('placeholder_'):
+    print("Warning: Using placeholder Stripe credentials. Payments will not work.")
 
 # AWS Settings
-AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', 'placeholder_aws_key')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', 'placeholder_aws_secret')
 AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
 
+# Print warning for development mode
+if AWS_ACCESS_KEY_ID.startswith('placeholder_') or AWS_SECRET_ACCESS_KEY.startswith('placeholder_'):
+    print("Warning: Using placeholder AWS credentials. Some AWS services may not work.")
+
 # AWS Cognito Settings
-COGNITO_USER_POOL_ID = os.getenv('AWS_COGNITO_USER_POOL_ID')
-COGNITO_APP_CLIENT_ID = os.getenv('AWS_COGNITO_CLIENT_ID')
-COGNITO_DOMAIN = os.getenv('AWS_COGNITO_DOMAIN')
+COGNITO_USER_POOL_ID = os.getenv('AWS_COGNITO_USER_POOL_ID', 'us-east-1_JPL8vGfb6')
+COGNITO_APP_CLIENT_ID = os.getenv('AWS_COGNITO_CLIENT_ID', '1o5v84mrgn4gt87khtr179uc5b') 
+COGNITO_DOMAIN = os.getenv('AWS_COGNITO_DOMAIN', 'pyfactor-dev.auth.us-east-1.amazoncognito.com')
 
-
-
-
-# Stripe settings
-
+# Check Cognito configuration
 if not all([COGNITO_USER_POOL_ID, COGNITO_APP_CLIENT_ID, COGNITO_DOMAIN]):
     print("Warning: Cognito credentials are not fully configured:")
     print(f"User Pool ID: {'Set' if COGNITO_USER_POOL_ID else 'Missing'}")
     print(f"App Client ID: {'Set' if COGNITO_APP_CLIENT_ID else 'Missing'}")
     print(f"Domain: {'Set' if COGNITO_DOMAIN else 'Missing'}")
+    
+    # Set defaults for development if needed
+    COGNITO_USER_POOL_ID = COGNITO_USER_POOL_ID or 'us-east-1_JPL8vGfb6'
+    COGNITO_APP_CLIENT_ID = COGNITO_APP_CLIENT_ID or '1o5v84mrgn4gt87khtr179uc5b'
+    COGNITO_DOMAIN = COGNITO_DOMAIN or 'pyfactor-dev.auth.us-east-1.amazoncognito.com'
+    
+    print("Using default Cognito settings for development.")
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join(PROJECT_ROOT, '.venv/lib/python3.12/site-packages'))
@@ -752,9 +771,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'dj_db_conn_pool.backends.postgresql',
         'NAME': os.getenv('DB_NAME', 'dott_main'),
-        'USER': os.getenv('DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'postgres'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'USER': os.getenv('DB_USER', 'dott_admin'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'RRfXU6uPPUbBEg1JqGTJ'),
+        'HOST': os.getenv('DB_HOST', 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com'),
         'PORT': os.getenv('DB_PORT', '5432'),
         'TIME_ZONE': 'UTC',
         'CONN_MAX_AGE': 0,  # Set to 0 to let the pool manage connection lifetime
@@ -784,10 +803,10 @@ DATABASES = {
 
     'taxes': {
         'ENGINE': 'dj_db_conn_pool.backends.postgresql',
-        'NAME': os.getenv('TAX_DB_NAME', 'dott_taxes'),
-        'USER': os.getenv('TAX_DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('TAX_DB_PASSWORD', 'postgres'),
-        'HOST': os.getenv('TAX_DB_HOST', 'localhost'),
+        'NAME': os.getenv('TAX_DB_NAME', 'dott_main'),
+        'USER': os.getenv('TAX_DB_USER', 'dott_admin'),
+        'PASSWORD': os.getenv('TAX_DB_PASSWORD', 'RRfXU6uPPUbBEg1JqGTJ'),
+        'HOST': os.getenv('TAX_DB_HOST', 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com'),
         'PORT': os.getenv('TAX_DB_PORT', '5432'),
         'CONN_MAX_AGE': 0,  # Set to 0 to let the pool manage connection lifetime
         'OPTIONS': {

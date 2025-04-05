@@ -71,6 +71,123 @@ const getRequestId = () => {
   }
 };
 
+// Safely extract tenant ID from various sources with improved error handling
+const getSafeTenantId = () => {
+  try {
+    if (typeof window === 'undefined') return null;
+    
+    let tenantId = null;
+    let source = null;
+    
+    // Try localStorage first
+    try {
+      tenantId = localStorage.getItem('tenantId');
+      if (tenantId) {
+        source = 'localStorage';
+        logger.debug('[TenantUtils] Retrieved tenant ID from localStorage:', tenantId);
+      }
+    } catch (e) {
+      logger.warn('[TenantUtils] Error accessing localStorage:', e);
+    }
+    
+    // Try sessionStorage next
+    if (!tenantId) {
+      try {
+        tenantId = sessionStorage.getItem('verified_tenant_id') || sessionStorage.getItem('tenantId');
+        if (tenantId) {
+          source = 'sessionStorage';
+          logger.debug('[TenantUtils] Retrieved tenant ID from sessionStorage:', tenantId);
+        }
+      } catch (e) {
+        logger.warn('[TenantUtils] Error accessing sessionStorage:', e);
+      }
+    }
+    
+    // Try cookies next
+    if (!tenantId) {
+      try {
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+          try {
+            const [key, value] = cookie.trim().split('=');
+            if (key && value) {
+              acc[key] = value;
+            }
+          } catch (e) {
+            // Skip malformed cookie
+          }
+          return acc;
+        }, {});
+        
+        tenantId = cookies.tenantId || cookies.businessid;
+        if (tenantId) {
+          source = 'cookies';
+          logger.debug('[TenantUtils] Retrieved tenant ID from cookies:', tenantId);
+        }
+      } catch (e) {
+        logger.warn('[TenantUtils] Error accessing cookies:', e);
+      }
+    }
+    
+    // Try Cognito storage as a last resort
+    if (!tenantId) {
+      try {
+        // Look for Cognito storage keys
+        const cognitoKey = Object.keys(localStorage).find(key => 
+          key.includes('CognitoIdentityServiceProvider') && key.includes('LastAuthUser')
+        );
+        
+        if (cognitoKey) {
+          const lastAuthUser = localStorage.getItem(cognitoKey);
+          if (lastAuthUser) {
+            // User storage often contains the tenantId
+            const userDataKey = Object.keys(localStorage).find(key => 
+              key.includes('CognitoIdentityServiceProvider') && 
+              key.includes(lastAuthUser) && 
+              key.includes('userData')
+            );
+            
+            if (userDataKey) {
+              try {
+                const userData = JSON.parse(localStorage.getItem(userDataKey));
+                tenantId = userData?.tenantId || userData?.['custom:tenantId'] || userData?.['custom:businessid'];
+                if (tenantId) {
+                  source = 'cognito_storage';
+                  logger.debug('[TenantUtils] Retrieved tenant ID from Cognito storage:', tenantId);
+                }
+              } catch (e) {
+                logger.warn('[TenantUtils] Error parsing Cognito user data:', e);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        logger.warn('[TenantUtils] Error checking Cognito storage:', e);
+      }
+    }
+    
+    // Validate the tenant ID format if we have one
+    if (tenantId) {
+      // Format validation - basic check that it looks like a UUID or business ID
+      const isValidFormat = (
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId) || // UUID format
+        /^[0-9a-f]{8}[_-][0-9a-f]{4}[_-][0-9a-f]{4}[_-][0-9a-f]{4}[_-][0-9a-f]{12}$/i.test(tenantId) || // Formatted UUID
+        /^[0-9a-f]{6,12}[_-]{0,4}$/i.test(tenantId) // Short business ID format
+      );
+      
+      if (!isValidFormat) {
+        logger.warn(`[TenantUtils] Retrieved tenant ID has invalid format: ${tenantId}`);
+        // Use it anyway, better than nothing
+      }
+    }
+    
+    logger.debug(`[TenantUtils] getSafeTenantId result: ${tenantId || 'null'} (source: ${source || 'none'})`);
+    return tenantId;
+  } catch (error) {
+    logger.error('[TenantUtils] Error in getSafeTenantId:', error);
+    return null;
+  }
+};
+
 /**
  * Hook for tenant ID initialization and verification
  * This hook ensures consistent tenant IDs across the application during login/auth
@@ -138,12 +255,27 @@ export function useTenantInitialization() {
             }
           }
 
-          // FALLBACK: If no tenant ID found yet, use our known tenant ID from the database
+          // FALLBACK: If no tenant ID found yet, generate one or fetch from server
           if (!tenantId) {
-            // Use the tenant ID observed in the logs
-            tenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff'; 
-            tenantSource = 'hardcoded_fallback';
-            logger.debug('[TenantInit] Using hardcoded fallback tenant ID:', tenantId);
+            // Generate a deterministic UUID based on user ID if possible
+            if (user?.userId) {
+              try {
+                tenantId = uuidv5(user.userId, TENANT_NAMESPACE);
+                tenantSource = 'generated_from_userid';
+                logger.debug('[TenantInit] Generated tenant ID from user ID:', tenantId);
+              } catch (e) {
+                logger.error('[TenantInit] Error generating tenant ID:', e);
+                // Fallback to random UUID if generation fails
+                tenantId = uuidv4();
+                tenantSource = 'random_generated';
+                logger.debug('[TenantInit] Generated random tenant ID as fallback:', tenantId);
+              }
+            } else {
+              // Generate a random UUID if no user ID is available
+              tenantId = uuidv4();
+              tenantSource = 'random_generated';
+              logger.debug('[TenantInit] Generated random tenant ID:', tenantId);
+            }
           }
 
           // Get a request ID for deduplication
@@ -237,8 +369,8 @@ export function useTenantInitialization() {
                 
                 logger.error('[TenantInit] Tenant verification failed:', { 
                   status: response.status, 
-                  error: errorText,
-                  data: errorData
+                  error: errorText || 'Unknown error',
+                  data: errorData || {}
                 });
                 
                 // Fallback tenant ID is either the one we have or a default
@@ -290,19 +422,41 @@ export function useTenantInitialization() {
                 throw new Error(responseData.message || 'Tenant verification failed');
               }
             } catch (fetchError) {
-              logger.error('[TenantInit] Fetch error during tenant verification:', { 
-                message: fetchError.message,
-                stack: fetchError.stack,
-                error: fetchError,
-                tenantId
-              });
+              // Format the error object properly for logging
+              const errorInfo = {
+                message: fetchError.message || 'Unknown error',
+                stack: fetchError.stack || '',
+                name: fetchError.name || 'Error'
+              };
+              
+              logger.error('[TenantInit] Fetch error during tenant verification:', errorInfo);
               
               // Fall back to the tenantId we already have
-              logger.debug('[TenantInit] API error, using hardcoded tenant ID');
-              storeTenantInfo(tenantId);
-              setTenantId(tenantId);
-              setInitialized(true);
-              return tenantId;
+              logger.debug('[TenantInit] API error, using previously retrieved tenant ID');
+              // Only use the tenant ID if it's in proper UUID format
+              if (tenantId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
+                storeTenantInfo(tenantId);
+                setTenantId(tenantId);
+                setInitialized(true);
+                return tenantId;
+              } else {
+                // Otherwise generate a deterministic one from user
+                logger.debug('[TenantInit] Invalid tenant ID format, generating from user ID');
+                const userId = user?.userId;
+                if (userId) {
+                  try {
+                    const generatedTenantId = uuidv5(userId, TENANT_NAMESPACE);
+                    storeTenantInfo(generatedTenantId);
+                    setTenantId(generatedTenantId);
+                    setInitialized(true);
+                    return generatedTenantId;
+                  } catch (genError) {
+                    logger.error('[TenantInit] Error generating tenant ID:', genError);
+                  }
+                }
+                // Last resort fallback
+                return null;
+              }
             }
           } catch (tokenError) {
             logger.error('[TenantInit] Error getting tokens for tenant verification:', tokenError);
@@ -311,22 +465,42 @@ export function useTenantInitialization() {
         } catch (error) {
           logger.error('[TenantInit] Error during tenant initialization:', error);
           
-          // Use fallback ID as last resort
-          const fallbackId = tenantId || '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-          logger.debug('[TenantInit] Using fallback tenant ID after error:', fallbackId);
-          storeTenantInfo(fallbackId);
-          setTenantId(fallbackId);
+          // Generate tenant ID from user ID if possible
+          if (user?.userId) {
+            try {
+              const generatedTenantId = uuidv5(user.userId, TENANT_NAMESPACE);
+              logger.debug('[TenantInit] Generated tenant ID from user ID after error:', generatedTenantId);
+              storeTenantInfo(generatedTenantId);
+              setTenantId(generatedTenantId);
+              setInitialized(true);
+              return generatedTenantId;
+            } catch (genError) {
+              logger.error('[TenantInit] Error generating tenant ID from user ID:', genError);
+            }
+          }
+          
+          // Use existing tenant ID if it's valid
+          if (tenantId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
+            logger.debug('[TenantInit] Using existing tenant ID after error:', tenantId);
+            storeTenantInfo(tenantId);
+            setTenantId(tenantId);
+            setInitialized(true);
+            return tenantId;
+          }
+          
+          // No valid tenant ID available
+          logger.warn('[TenantInit] No valid tenant ID available after error');
+          setError(new Error('Could not determine tenant ID'));
           setInitialized(true);
-          return fallbackId;
+          return null;
         }
       } else {
-        // No authenticated user - use hardcoded tenant ID
-        const defaultTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-        logger.debug('[TenantInit] No authenticated user, using default tenant ID');
-        storeTenantInfo(defaultTenantId);
-        setTenantId(defaultTenantId);
+        // No authenticated user - redirect to login
+        logger.debug('[TenantInit] No authenticated user, tenant ID cannot be determined');
+        // Don't set a tenant ID when there's no authenticated user
+        setError(new Error('Authentication required'));
         setInitialized(true);
-        return defaultTenantId;
+        return null;
       }
     } catch (initError) {
       const defaultTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';

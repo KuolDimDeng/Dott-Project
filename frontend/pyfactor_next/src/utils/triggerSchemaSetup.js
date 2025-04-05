@@ -4,42 +4,66 @@ import { API_BASE_URL } from '@/config/constants';
 import { logMemoryUsage, trackMemory, detectMemorySpike } from '@/utils/memoryDebug';
 
 /**
- * Optimized utility function to trigger schema setup when user reaches the dashboard
- * This will check for any pending schema setup and initiate it if needed
+ * Optimized utility function to verify tenant consistency for Row Level Security (RLS)
+ * This function has replaced the schema setup since we now use RLS instead of schema-per-tenant
  * Memory optimizations:
  * - Reduced logging verbosity
  * - Minimized object creation
  * - Simplified error handling
  * - Added memory tracking to identify potential memory leaks
  */
-export async function triggerSchemaSetup() {
+export async function verifyTenantForRLS() {
   // Track memory at the start of the function
-  trackMemory('triggerSchemaSetup', 'start');
+  trackMemory('verifyTenantForRLS', 'start');
   
   // Use a simple string instead of an object for request ID
-  const requestId = `setup-${Date.now().toString(36)}`;
+  const requestId = `tenant-${Date.now().toString(36)}`;
   
   try {
     // Minimal logging with fewer objects
-    logger.debug(`[Schema] Checking setup (${requestId})`);
+    logger.debug(`[Tenant] Verifying tenant for RLS (${requestId})`);
     
     // Track memory before auth token retrieval
-    trackMemory('triggerSchemaSetup', 'before-getAuthToken');
+    trackMemory('verifyTenantForRLS', 'before-getAuthToken');
     
     const token = await getAuthToken();
     
     // Track memory after auth token retrieval
-    trackMemory('triggerSchemaSetup', 'after-getAuthToken');
+    trackMemory('verifyTenantForRLS', 'after-getAuthToken');
     
     if (!token) {
       return { success: false, error: 'Authentication required' };
     }
     
-    // Use a single endpoint variable to avoid string concatenation in multiple places
-    const endpoint = `${API_BASE_URL}/onboarding/dashboard/setup/`;
+    // Get tenant ID from various sources
+    let tenantId;
+    try {
+      // First check localStorage
+      if (typeof localStorage !== 'undefined') {
+        tenantId = localStorage.getItem('tenantId');
+      }
+      
+      // Then check cookies if not found in localStorage
+      if (!tenantId && typeof document !== 'undefined') {
+        const cookies = document.cookie.split(';');
+        for (const cookie of cookies) {
+          const [name, value] = cookie.trim().split('=');
+          if (name === 'tenantId' && value) {
+            tenantId = value;
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore errors accessing storage
+      logger.warn(`[Tenant] Error accessing storage: ${e.message}`);
+    }
+    
+    // Use tenant verification endpoint 
+    const endpoint = `${API_BASE_URL}/auth/verify-tenant`;
     
     // Track memory before API request
-    trackMemory('triggerSchemaSetup', 'before-fetch');
+    trackMemory('verifyTenantForRLS', 'before-fetch');
     
     // Make the API request with minimal headers
     const response = await fetch(endpoint, {
@@ -48,21 +72,25 @@ export async function triggerSchemaSetup() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
         'X-Request-Id': requestId
-      }
+      },
+      body: JSON.stringify({
+        tenantId,
+        validateOnly: true
+      })
     });
     
     // Track memory after API request
-    trackMemory('triggerSchemaSetup', 'after-fetch');
+    trackMemory('verifyTenantForRLS', 'after-fetch');
     
     // Handle 404 early to avoid parsing JSON unnecessarily
     if (response.status === 404) {
       // Track memory at the end of the function
-      trackMemory('triggerSchemaSetup', 'end-404');
-      return { success: true, status: 'no_pending_setup' };
+      trackMemory('verifyTenantForRLS', 'end-404');
+      return { success: false, status: 'tenant_not_found' };
     }
     
     // Track memory before JSON parsing
-    trackMemory('triggerSchemaSetup', 'before-json');
+    trackMemory('verifyTenantForRLS', 'before-json');
     
     // Parse JSON only once
     let data;
@@ -70,7 +98,7 @@ export async function triggerSchemaSetup() {
       data = await response.json();
     } catch (parseError) {
       // Track memory on parse error
-      trackMemory('triggerSchemaSetup', 'json-parse-error');
+      trackMemory('verifyTenantForRLS', 'json-parse-error');
       
       return {
         success: false,
@@ -80,18 +108,18 @@ export async function triggerSchemaSetup() {
     }
     
     // Track memory after JSON parsing
-    trackMemory('triggerSchemaSetup', 'after-json');
+    trackMemory('verifyTenantForRLS', 'after-json');
     
     // Check for memory spikes after JSON parsing (which can be memory intensive)
     const spike = detectMemorySpike(20);
     if (spike) {
-      console.warn('[Memory Spike in Schema Setup]', spike);
+      console.warn('[Memory Spike in Tenant Verification]', spike);
     }
     
     // Handle error responses
     if (!response.ok) {
       // Track memory on error response
-      trackMemory('triggerSchemaSetup', 'error-response');
+      trackMemory('verifyTenantForRLS', 'error-response');
       
       return {
         success: false,
@@ -100,24 +128,41 @@ export async function triggerSchemaSetup() {
       };
     }
     
+    // Store tenant ID if we got a valid one from the API
+    if (data.tenantId) {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('tenantId', data.tenantId);
+        }
+        
+        if (typeof document !== 'undefined') {
+          const expiration = new Date();
+          expiration.setDate(expiration.getDate() + 30);
+          document.cookie = `tenantId=${data.tenantId}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+        }
+      } catch (e) {
+        logger.warn(`[Tenant] Error saving tenant ID: ${e.message}`);
+      }
+    }
+    
     // Log success with minimal data
-    logger.info(`[Schema] Setup initiated (${requestId})`);
+    logger.info(`[Tenant] Verification complete (${requestId})`);
     
     // Track memory at the end of successful execution
-    trackMemory('triggerSchemaSetup', 'end-success');
+    trackMemory('verifyTenantForRLS', 'end-success');
     
     // Return minimal success response
     return {
       success: true,
-      taskId: data.task_id,
-      status: 'setup_initiated'
+      tenantId: data.tenantId,
+      status: 'verified'
     };
   } catch (error) {
     // Track memory on exception
-    trackMemory('triggerSchemaSetup', 'exception');
+    trackMemory('verifyTenantForRLS', 'exception');
     
     // Simplified error logging
-    logger.error(`[Schema] Setup error: ${error.message}`);
+    logger.error(`[Tenant] Verification error: ${error.message}`);
     
     return {
       success: false,
@@ -126,3 +171,6 @@ export async function triggerSchemaSetup() {
     };
   }
 }
+
+// Export the old function name as an alias to the new one for backward compatibility
+export const triggerSchemaSetup = verifyTenantForRLS;

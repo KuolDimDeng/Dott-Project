@@ -25,7 +25,7 @@ class OnboardingProgress(models.Model):
     # Onboarding status choices matching Cognito custom:onboarding attribute
     ONBOARDING_STATUS_CHOICES = [
         ('not_started', 'Not Started'),
-        ('business-info', 'Business Info'),
+        ('business_info', 'Business Info'),
         ('subscription', 'Subscription'),
         ('payment', 'Payment'),
         ('setup', 'Setup'),

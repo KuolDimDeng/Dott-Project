@@ -86,7 +86,23 @@ const InventoryItems = lazy(() => import('@/app/inventory/components/InventoryIt
 const MainDashboard = lazy(() => import('./dashboards/MainDashboard'));
 const BankTransactions = lazy(() => import('./forms/BankTransactionPage'));
 const InventoryManagement = lazy(() => import('@/app/inventory/components/InventoryManagement.js'));
-const Home = lazy(() => import('./Home'));
+// Adding error handling to chunk loading
+const Home = lazy(() => 
+  import('./Home').catch(err => {
+    console.error('Error loading Home component:', err);
+    return { 
+      default: ({ userData }) => (
+        <div className="p-4">
+          <h1 className="text-xl font-semibold mb-2">Dashboard Home</h1>
+          <p className="mb-4">Welcome to your dashboard!</p>
+          <div className="bg-blue-100 p-3 rounded">
+            <p>Some dashboard components are currently loading. Please refresh the page if content doesn't appear.</p>
+          </div>
+        </div>
+      ) 
+    };
+  })
+);
 const HRDashboard = lazy(() => import('./forms/HRDashboard.js'));
 
 // Add lazy loading for Transport components

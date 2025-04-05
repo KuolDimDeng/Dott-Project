@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { 
   CognitoIdentityProviderClient, 
-  AdminConfirmSignUpCommand 
+  AdminConfirmSignUpCommand,
+  AdminUpdateUserAttributesCommand
 } from '@aws-sdk/client-cognito-identity-provider';
-import { logger } from '@/utils/logger';
+import { logger } from '@/utils/serverLogger';
 
 /**
  * API route to confirm a user via admin API
@@ -94,6 +95,30 @@ export async function POST(request) {
         email, 
         result: result.$metadata 
       });
+      
+      // Also mark email as verified
+      try {
+        logger.debug('[API] /admin/confirm-user - Setting email_verified attribute to true');
+        const adminUpdateAttributesCommand = new AdminUpdateUserAttributesCommand({
+          UserPoolId: userPoolId,
+          Username: email,
+          UserAttributes: [
+            {
+              Name: 'email_verified',
+              Value: 'true'
+            }
+          ]
+        });
+        
+        await client.send(adminUpdateAttributesCommand);
+        logger.info('[API] /admin/confirm-user - Set email_verified attribute to true');
+      } catch (attrError) {
+        logger.error('[API] /admin/confirm-user - Error setting email_verified attribute', {
+          message: attrError.message,
+          code: attrError.code
+        });
+        // Continue anyway since the main confirmation succeeded
+      }
       
       // Return success response
       return NextResponse.json(

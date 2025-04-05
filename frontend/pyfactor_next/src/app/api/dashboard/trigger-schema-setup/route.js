@@ -124,6 +124,72 @@ export async function POST(request) {
       } catch (fallbackError) {
         logger.error('[API] Fallback schema setup also failed:', fallbackError.message);
         setupError = fallbackError;
+        
+        // Third approach: Use dedicated tenant record creation endpoint
+        try {
+          logger.info('[API] Attempting dedicated tenant record creation endpoint');
+          
+          // Use our specialized endpoint that focuses solely on tenant record creation
+          const tenantRecordResponse = await fetch(new URL('/api/tenant/create-tenant-record', request.url).toString(), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${tokens.accessToken}`,
+              'X-Id-Token': tokens.idToken.toString()
+            },
+            body: JSON.stringify({
+              tenantId: finalTenantId,
+              userId,
+              email: userEmail,
+              businessName: user.attributes?.['custom:businessname'] || 'My Business'
+            })
+          });
+          
+          const tenantRecordResult = await tenantRecordResponse.json();
+          logger.info('[API] Tenant record creation attempt result:', tenantRecordResult);
+          
+          if (tenantRecordResponse.ok && tenantRecordResult.success) {
+            logger.info('[API] Tenant record creation successful');
+            setupResponse = { data: tenantRecordResult };
+            setupSuccess = true;
+          } else {
+            logger.error('[API] Tenant record creation failed:', tenantRecordResult);
+            
+            // Fallback to original direct database approach
+            try {
+              logger.info('[API] Falling back to legacy direct database approach as last resort');
+              
+              const directDbResponse = await fetch(new URL('/api/tenant/init', request.url).toString(), {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${tokens.accessToken}`,
+                  'X-Id-Token': tokens.idToken.toString()
+                },
+                body: JSON.stringify({
+                  tenantId: finalTenantId,
+                  userId,
+                  email: userEmail,
+                  businessName: user.attributes?.['custom:businessname'] || 'My Business'
+                })
+              });
+              
+              if (directDbResponse.ok) {
+                const directDbResult = await directDbResponse.json();
+                logger.info('[API] Direct database tenant creation successful:', directDbResult);
+                setupResponse = { data: directDbResult };
+                setupSuccess = true;
+              } else {
+                const errorText = await directDbResponse.text().catch(() => 'Unknown error');
+                logger.error('[API] Direct database approach failed:', errorText);
+              }
+            } catch (directDbError) {
+              logger.error('[API] Error with direct database approach:', directDbError);
+            }
+          }
+        } catch (recordCreationError) {
+          logger.error('[API] Error with tenant record creation:', recordCreationError);
+        }
       }
     }
     

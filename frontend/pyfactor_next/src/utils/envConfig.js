@@ -132,8 +132,8 @@ export function getAmplifyConfig() {
 
 // Environment helpers
 export const envConfig = {
-  isDevelopment: process.env.NEXT_PUBLIC_ENV === 'development',
-  isProduction: process.env.NEXT_PUBLIC_ENV === 'production',
+  isDevelopment: false,
+  isProduction: true,
   logLevel: process.env.NEXT_PUBLIC_LOG_LEVEL || 'debug',
   apiUrl: process.env.NEXT_PUBLIC_API_URL,
   appUrl: process.env.NEXT_PUBLIC_APP_URL,

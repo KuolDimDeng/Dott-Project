@@ -7,6 +7,10 @@ const nextConfig = {
   experimental: {
     forceSwcTransforms: true,
   },
+  // Force production mode environment variables
+  env: {
+    NEXT_PUBLIC_ENV: 'production',
+  },
   // Disable ESLint during build
   eslint: {
     ignoreDuringBuilds: true,

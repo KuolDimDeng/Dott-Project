@@ -13,7 +13,8 @@ const schemaSetupHandler = async (request, context) => {
   try {
     // Get tenant ID from context (set by withRls middleware)
     const tenantIdFromRls = context.tenantId;
-    const devMode = process.env.NODE_ENV === 'development' && request.headers.get('x-dev-mode') === 'true';
+    // Force devMode to false to fix dashboard loading issues after onboarding
+    const devMode = false;
     
     // Validate server session (skip in development mode)
     let sessionValidation;
@@ -89,7 +90,7 @@ const schemaSetupHandler = async (request, context) => {
         schemaCreated: true,
         cognitoUpdated: true,
         message: 'Tenant schema setup completed successfully (DEV MODE)',
-        isDevelopment: true
+        isDevelopment: false
       });
       
       // Set cookies for client-side consistency

@@ -16,15 +16,31 @@ const COOKIE_OPTIONS = {
 /**
  * Ensure a proper response is always returned
  */
-function createSafeResponse(data, status = 200) {
+function createSafeResponse(data, status = 200, additionalHeaders = null) {
   try {
-    return NextResponse.json(data, { status });
+    // Create response object with headers
+    const headers = additionalHeaders || new Headers();
+    headers.append('Content-Type', 'application/json');
+    headers.append('Cache-Control', 'no-cache, no-store');
+    
+    // Add navigation header for subscription page
+    headers.append('X-Next-Route', '/onboarding/subscription');
+    
+    return NextResponse.json(data, { 
+      status, 
+      headers 
+    });
   } catch (error) {
     console.error('[api/onboarding/business-info] Error creating response:', error);
     // Absolutely minimal response that should never fail
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json');
+    headers.append('Cache-Control', 'no-cache, no-store');
+    headers.append('X-Next-Route', '/onboarding/subscription');
+    
     return new Response(JSON.stringify({ success: false, error: 'Failed to create response' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers
     });
   }
 }
@@ -83,10 +99,14 @@ export async function POST(request) {
     const headers = Object.fromEntries(request.headers.entries());
     const isFastPath = headers['x-fast-path'] === 'true';
     
+    // Set navigation response header to help with redirect
+    const responseHeaders = new Headers();
+    responseHeaders.append('X-Next-Route', '/onboarding/subscription');
+    
     // If fast path, return immediately with just the navigation cookies
     if (isFastPath) {
       console.log('[api/onboarding/business-info] Using fast path, returning early');
-      return createSafeResponse(responseData);
+      return createSafeResponse(responseData, 200, responseHeaders);
     }
     
     console.log('[api/onboarding/business-info] Getting server user');

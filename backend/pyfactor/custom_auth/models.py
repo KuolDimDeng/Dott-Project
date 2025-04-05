@@ -1,296 +1,96 @@
-"""
-Base models for the custom_auth application.
-Includes User, Tenant, and other core models.
-"""
-#Users/kuoldeng/projectx/backend/pyfactor/custom_auth/models.py
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from django.utils import timezone
 import uuid
+from django.utils import timezone
 from django.conf import settings
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 
-# Import tenant context
-from .tenant_context import get_current_tenant
+# Import the TenantAwareModel from tenant_base_model.py
+from .tenant_base_model import TenantAwareModel, TenantAwareManager as TenantManager
 
-class TenantAwareModel(models.Model):
+class Tenant(models.Model):
     """
-    Abstract base model for all tenant-aware models.
-    Automatically includes a tenant_id field for Row Level Security.
-    All models that need to be tenant-specific should inherit from this.
+    Tenant model for multi-tenant functionality.
+    This stores information about each tenant's database schema.
     """
-    tenant_id = models.UUIDField(
-        db_index=True,
-        null=True,
-        help_text="The tenant ID this record belongs to. Used by Row Level Security."
-    )
-    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    owner_id = models.CharField(max_length=255, null=True, blank=True)
+    schema_name = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+    rls_enabled = models.BooleanField(default=True)
+    rls_setup_date = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
     class Meta:
-        abstract = True
-    
+        db_table = 'custom_auth_tenant'
+        managed = False  # Tell Django not to manage this table, it's shared with Next.js
+
     def save(self, *args, **kwargs):
-        """
-        Override save to automatically set the tenant_id if not provided.
-        """
-        if not self.tenant_id:
-            from custom_auth.rls import get_current_tenant_id
-            current_tenant = get_current_tenant_id()
-            if current_tenant:
-                self.tenant_id = current_tenant
+        self.updated_at = timezone.now()
+        if not self.schema_name:
+            self.schema_name = f"tenant_{str(self.id).replace('-', '_')}"
         super().save(*args, **kwargs)
 
-class TenantManager(models.Manager):
-    """
-    Manager for tenant-aware models.
-    This is now mostly for backward compatibility, 
-    since RLS will now handle tenant isolation at the database level.
-    """
-    def get_queryset(self):
-        """
-        With RLS, the database already handles tenant isolation,
-        so we don't need to filter here explicitly.
-        But we keep the method for backward compatibility.
-        """
-        return super().get_queryset()
-        
-    def all_tenants(self):
-        """
-        Return all records across all tenants.
-        Use with caution.
-        """
-        return super().get_queryset()
+    def __str__(self):
+        return f"{self.name} ({self.schema_name})"
+
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, password=None, **extra_fields):
+    """Custom manager for User model with no username field."""
+    
+    use_in_migrations = True
+    
+    def _create_user(self, email, password, **extra_fields):
+        """Create and save a User with the given email and password."""
         if not email:
-            raise ValueError('The Email field must be set')
+            raise ValueError('The given email must be set')
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
-
-    def create_superuser(self, email, password=None, **extra_fields):
+    
+    def create_user(self, email, password=None, **extra_fields):
+        """Create and save a regular User with the given email and password."""
+        extra_fields.setdefault('is_staff', False)
+        extra_fields.setdefault('is_superuser', False)
+        return self._create_user(email, password, **extra_fields)
+    
+    def create_superuser(self, email, password, **extra_fields):
+        """Create and save a SuperUser with the given email and password."""
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-
-        if not extra_fields.get('is_staff'):
+        
+        if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
-        if not extra_fields.get('is_superuser'):
+        if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
+        
+        return self._create_user(email, password, **extra_fields)
 
-        return self.create_user(email, password, **extra_fields)
 
-    def get_by_natural_key(self, email):
-        return self.get(email=email)
-
-class Tenant(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=100)
-    # Use UUID field directly to completely break circular dependency
-    owner_id = models.UUIDField(null=True, blank=True)
-    # This is a property to maintain API compatibility
-    @property
-    def owner(self):
-        if not self.owner_id:
-            return None
-        # Import here to avoid circular import
-        from django.apps import apps
-        User = apps.get_model('custom_auth', 'User')
-        try:
-            return User.objects.get(id=self.owner_id)
-        except User.DoesNotExist:
-            return None
+class User(AbstractUser):
+    """Custom user model using email as the unique identifier."""
     
-    @owner.setter
-    def owner(self, user_obj):
-        if user_obj is None:
-            self.owner_id = None
-        else:
-            self.owner_id = user_obj.id
-            
-    created_on = models.DateTimeField(auto_now_add=True)
-    is_active = models.BooleanField(default=True)
-    
-    # Tenant status fields
-    setup_status = models.CharField(
-        max_length=20,
-        choices=[
-            ('not_started', 'Not Started'),
-            ('pending', 'Pending'),
-            ('in_progress', 'In Progress'),
-            ('active', 'Active'),
-            ('complete', 'Complete'),
-            ('error', 'Error'),
-        ],
-        default='not_started'
-    )
-    
-    # RLS-specific fields
-    rls_enabled = models.BooleanField(default=True, help_text="Whether Row Level Security is enabled for this tenant")
-    rls_setup_date = models.DateTimeField(null=True, blank=True, help_text="When RLS was first set up for this tenant")
-    
-    # These fields are still relevant for tenant management
-    last_setup_attempt = models.DateTimeField(null=True, blank=True)
-    setup_error_message = models.TextField(null=True, blank=True)
-    storage_quota_bytes = models.BigIntegerField(default=2 * 1024 * 1024 * 1024)  # Default 2GB in bytes
-    
-    # Add archive tracking fields
-    last_archive_date = models.DateTimeField(null=True, blank=True)
-    archive_retention_days = models.IntegerField(default=2555)  # 7 years default
-    
-    # Add archive notification and decision fields
-    archive_expiry_notification_sent = models.BooleanField(default=False)
-    archive_expiry_notification_date = models.DateTimeField(null=True, blank=True)
-    archive_user_decision = models.CharField(
-        max_length=20, 
-        choices=[
-            ('pending', 'Pending Decision'),
-            ('export', 'Export and Delete'),
-            ('delete', 'Delete Without Export'),
-            ('extend', 'Extend Retention'),
-        ],
-        default='pending'
-    )
-
-    class Meta:
-        db_table = 'custom_auth_tenant'
-
-    def __str__(self):
-        return self.name
-
-    # Helper methods for quota management
-    @property
-    def storage_quota_gb(self):
-        return self.storage_quota_bytes / (1024 * 1024 * 1024)
-    
-    @storage_quota_gb.setter
-    def storage_quota_gb(self, gb_value):
-        self.storage_quota_bytes = int(gb_value * 1024 * 1024 * 1024)
-
-class User(AbstractBaseUser, PermissionsMixin):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    username = None
     email = models.EmailField('email address', unique=True)
-    first_name = models.CharField(max_length=100, blank=True)
-    last_name = models.CharField(max_length=100, blank=True)
     is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(default=timezone.now)
-    email_confirmed = models.BooleanField(default=False)  # For email verification
-    confirmation_token = models.UUIDField(default=uuid.uuid4, editable=False)  # For email verification
-    is_onboarded = models.BooleanField(default=False)  # Tracks onboarding completion
-    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True)  # Optional, for payment integration
-    cognito_sub = models.CharField(max_length=36, unique=True, null=True, blank=True)  # Cognito user ID
-
-    # Store tenant_id directly instead of using a ForeignKey
-    tenant_id = models.UUIDField(null=True, blank=True)
     
-    # Property to maintain API compatibility
-    @property
-    def tenant(self):
-        if not self.tenant_id:
-            return None
-        # Import here to avoid circular import
-        from django.apps import apps
-        Tenant = apps.get_model('custom_auth', 'Tenant')
-        try:
-            return Tenant.objects.get(id=self.tenant_id)
-        except Tenant.DoesNotExist:
-            return None
+    # Tenant relationship
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null=True, blank=True, related_name='users')
     
-    @tenant.setter
-    def tenant(self, tenant_obj):
-        if tenant_obj is None:
-            self.tenant_id = None
-        else:
-            self.tenant_id = tenant_obj.id
-
-
+    # Additional fields
+    cognito_sub = models.CharField(max_length=255, null=True, blank=True)
+    phone_number = models.CharField(max_length=20, null=True, blank=True)
+    
     USERNAME_FIELD = 'email'
-    EMAIL_FIELD = 'email'
     REQUIRED_FIELDS = []
-
+    
     objects = UserManager()
-
-    ROLE_CHOICES = [
-        ('OWNER', 'Business Owner'),
-        ('ADMIN', 'Administrator'),
-        ('EMPLOYEE', 'Employee')
-    ]
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='OWNER')
-
-    OCCUPATION_CHOICES = [
-        ('OWNER', 'Owner'),
-        ('Freelancer', 'Freelancer'),
-        ('CEO', 'Chief Executive Officer'),
-        ('CFO', 'Chief Financial Officer'),
-        ('CTO', 'Chief Technology Officer'),
-        ('COO', 'Chief Operating Officer'),
-        ('MANAGER', 'Manager'),
-        ('DIRECTOR', 'Director'),
-        ('SUPERVISOR', 'Supervisor'),
-        ('TEAM_LEAD', 'Team Lead'),
-        ('ACCOUNTANT', 'Accountant'),
-        ('FINANCIAL_ANALYST', 'Financial Analyst'),
-        ('HR_MANAGER', 'HR Manager'),
-        ('MARKETING_MANAGER', 'Marketing Manager'),
-        ('SALES_MANAGER', 'Sales Manager'),
-        ('CUSTOMER_SERVICE_REP', 'Customer Service Representative'),
-        ('ADMINISTRATIVE_ASSISTANT', 'Administrative Assistant'),
-        ('CLERK', 'Clerk'),
-        ('DEVELOPER', 'Developer'),
-        ('DESIGNER', 'Designer'),
-        ('CONSULTANT', 'Consultant'),
-        ('STAFF', 'Staff'),
-        ('EMPLOYEE', 'Employee'),
-        ('ENGINEER', 'Engineer'),
-        ('CONTRACTOR', 'Contractor'),
-        ('TRAINER', 'Trainer'),
-        ('IT_ADMIN', 'IT Admin'),
-        ('IT_SUPPORT', 'IT Support'),
-        ('OTHER', 'Other'),
-    ]
-    occupation = models.CharField(max_length=50, choices=OCCUPATION_CHOICES, default='OWNER')
-
+    
     class Meta:
         db_table = 'custom_auth_user'
-
+    
     def __str__(self):
         return self.email
-
-    @property
-    def full_name(self):
-        """Returns the user's full name or email if names are not provided."""
-        if self.first_name or self.last_name:
-            return f"{self.first_name} {self.last_name}".strip()
-        return self.email
-
-    def get_short_name(self):
-        """Returns the user's first name."""
-        return self.first_name
-
-
-# Add pre-save signal to ensure schema names use underscores
-from django.db.models.signals import pre_save
-from django.dispatch import receiver
-
-@receiver(pre_save, sender=Tenant)
-def tenant_pre_save_handler(sender, instance, **kwargs):
-    """Pre-save handler for Tenant model"""
-    # No longer need to check schema_name since we're using RLS now
-    # Instead, ensure tenant has required fields for RLS
-    
-    # Make sure RLS is enabled by default
-    if instance.rls_enabled is None:
-        instance.rls_enabled = True
-        
-    # Set RLS setup date if not already set and RLS is enabled
-    if instance.rls_enabled and not instance.rls_setup_date:
-        from django.utils import timezone
-        instance.rls_setup_date = timezone.now()
-        
-    # Log to the Django logger
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.debug(f"Pre-save for tenant: {instance.id}, RLS enabled: {instance.rls_enabled}")

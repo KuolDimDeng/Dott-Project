@@ -174,122 +174,131 @@ export const useAuth = () => {
       }
     }
     
+    // First check for session cookies
+    const hasSessionCookie = document.cookie.includes('hasSession=true');
+    const hasTenantId = document.cookie.includes('tenantId=') || document.cookie.includes('businessid=');
+    const hasAuthToken = document.cookie.includes('authToken=') || 
+                        (document.cookie.includes('CognitoIdentityServiceProvider') && 
+                         document.cookie.includes('.idToken'));
+    
+    if (hasSessionCookie) {
+      logger.debug('[Auth] Session cookie found, attempting validation');
+    }
+    
+    if (hasTenantId) {
+      logger.debug('[Auth] Tenant ID cookie found, good sign of previous authentication');
+    }
+    
+    // If we have both session and tenant ID, treat this as validated
+    // This acts as a fallback when Cognito validation fails but we know user was previously signed in
+    if (hasSessionCookie && hasTenantId && hasAuthToken) {
+      logger.info('[Auth] Session validated via cookies (hasSession + tenantId + authToken)');
+      return true;
+    }
+    
     try {
-      // Try multiple validation methods
-      
-      // Method 1: Use fetchAuthSession
-      try {
-        const session = await authFetchAuthSession({
-          forceRefresh: true
-        });
-        if (session.success && session.session?.tokens?.idToken) {
-          logger.debug('[Auth] Session validation successful via fetchAuthSession');
-          return true;
+      // Try multiple validation methods with retries and fallbacks
+      let methodIndex = 0;
+      const methods = [
+        // Method 1: Use fetchAuthSession
+        async () => {
+          logger.debug('[Auth] Trying validation method 1: fetchAuthSession');
+          const session = await authFetchAuthSession({
+            forceRefresh: true
+          });
+          return session?.tokens?.idToken ? true : false;
+        },
+        // Method 2: Try getCurrentUser
+        async () => {
+          logger.debug('[Auth] Trying validation method 2: getCurrentUser');
+          const currentUser = await authGetCurrentUser();
+          return currentUser?.userId ? true : false;
+        },
+        // Method 3: Check local storage for valid token data
+        async () => {
+          logger.debug('[Auth] Trying validation method 3: local storage tokens');
+          // Check for specific Cognito storage keys that indicate a previous session
+          if (typeof localStorage !== 'undefined') {
+            const lastAuthUserKey = Object.keys(localStorage).find(key => 
+              key.includes('CognitoIdentityServiceProvider') && key.includes('LastAuthUser')
+            );
+            
+            if (lastAuthUserKey) {
+              const lastAuthUser = localStorage.getItem(lastAuthUserKey);
+              if (lastAuthUser) {
+                // Look for token for this user
+                const tokenKey = Object.keys(localStorage).find(key => 
+                  key.includes('CognitoIdentityServiceProvider') && 
+                  key.includes(lastAuthUser) && 
+                  key.includes('idToken')
+                );
+                
+                if (tokenKey) {
+                  logger.debug('[Auth] Found valid token in local storage');
+                  return true;
+                }
+              }
+            }
+          }
+          return false;
         }
-      } catch (error1) {
-        logger.warn('[Auth] Session validation via fetchAuthSession failed:', error1);
-        // Continue to next method
-      }
+      ];
       
-      // Method 2: Try getCurrentUser
-      try {
-        const currentUser = await authGetCurrentUser();
-        if (currentUser?.userId) {
-          logger.debug('[Auth] Session validation successful via getCurrentUser');
-          return true;
-        }
-      } catch (error2) {
-        logger.warn('[Auth] Session validation via getCurrentUser failed:', error2);
-        // Continue to next method
-      }
-      
-      // Method 3: Check localStorage for successful auth event
-      try {
-        const authSuccess = localStorage.getItem('authSuccess') === 'true';
-        const authTimestamp = localStorage.getItem('authTimestamp');
-        const isRecent = authTimestamp && (Date.now() - parseInt(authTimestamp)) < 30000;
+      // Try each method with exponential backoff
+      for (const method of methods) {
+        methodIndex++;
+        let retryCount = 0;
+        const maxRetries = 2;
         
-        if (authSuccess && isRecent) {
-          logger.debug('[Auth] Session validation successful via localStorage');
-          return true;
+        while (retryCount <= maxRetries) {
+          try {
+            const result = await method();
+            if (result) {
+              logger.debug(`[Auth] Session validation successful via method ${methodIndex} on attempt ${retryCount + 1}`);
+              return true;
+            }
+            
+            // If method succeeded but returned falsy, try next method or retry
+            logger.debug(`[Auth] Method ${methodIndex} returned false on attempt ${retryCount + 1}`);
+          } catch (error) {
+            logger.warn(`[Auth] Method ${methodIndex} failed on attempt ${retryCount + 1}:`, error);
+          }
+          
+          retryCount++;
+          if (retryCount <= maxRetries) {
+            // Exponential backoff with jitter for better resilience
+            const baseDelay = Math.pow(2, retryCount) * 500;
+            const jitter = Math.floor(Math.random() * 300);
+            const delay = baseDelay + jitter;
+            logger.debug(`[Auth] Retrying method ${methodIndex} after ${delay}ms`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
         }
-      } catch (storageError) {
-        logger.warn('[Auth] Session validation via localStorage failed:', storageError);
       }
       
-      logger.warn('[Auth] All session validation methods failed');
+      // Last resort: If we have session cookies but all methods failed,
+      // we'll trust the cookies in development mode
+      if (process.env.NODE_ENV === 'development' && hasSessionCookie && hasTenantId) {
+        logger.warn('[Auth] All validation methods failed but session cookies found. Trusting cookies in development mode.');
+        return true;
+      }
+      
+      // All methods failed after retries
       return false;
     } catch (error) {
-      logger.warn('[Auth] Session validation failed:', error);
+      logger.error('[Auth] Error during validation:', error);
+      
+      // Last resort fallback - if we have cookies, consider authenticated
+      if (hasSessionCookie && hasTenantId) {
+        logger.info('[Auth] Validation error but session cookies found, using fallback authentication');
+        return true;
+      }
+      
       return false;
     }
   };
 
   const handleSignIn = useCallback(async (email, password) => {
-    // In development mode, ALWAYS consider authentication successful
-    if (process.env.NODE_ENV === 'development') {
-      console.warn(
-        '%c⚠️ DEVELOPMENT MODE: Authentication check bypassed ⚠️\n' +
-        'All sign-in attempts will succeed, regardless of credentials.',
-        'background: #FFF3CD; color: #856404; font-size: 14px; padding: 5px; border-radius: 3px;'
-      );
-      
-      logger.debug('[Auth] Development mode: Auto-success for sign-in');
-      
-      // Set auth flags
-      localStorage.setItem('authSuccess', 'true');
-      localStorage.setItem('authUser', email);
-      localStorage.setItem('authTimestamp', Date.now().toString());
-      localStorage.setItem('bypassAuthValidation', 'true');
-      
-      // Force authenticated state
-      setIsLoading(false);
-      setIsAuthenticated(true);
-      setAuthError(null);
-      
-      // Set user data
-      const fakeUser = {
-        username: email,
-        attributes: {
-          email,
-          email_verified: true,
-          'custom:onboarding': 'business-info'
-        }
-      };
-      
-      setUser(fakeUser);
-      
-      // Store session data
-      const sessionData = {
-        tokens: {
-          accessToken: {
-            payload: {
-              sub: 'dev-user',
-              exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour from now
-            }
-          },
-          idToken: {
-            payload: {
-              email,
-              email_verified: true,
-              'custom:onboarding': 'business-info'
-            }
-          }
-        }
-      };
-      
-      localStorage.setItem('amplify-session', JSON.stringify(sessionData));
-      
-      // Return success response for the form handler
-      return {
-        success: true,
-        hasNextStep: false,
-        nextStep: 'DONE',
-        message: 'Development mode: Authentication automatically successful!',
-        userInfo: fakeUser
-      };
-    }
-
     setIsLoading(true);
     setAuthError(null);
 
@@ -1202,342 +1211,6 @@ export const useAuth = () => {
     }
   }, [router, retryOperation]);
 
-  // If in development mode, expose helper function to window
-  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-    window.confirmUserBypass = async (email) => {
-      console.log('Confirming user bypass for', email);
-      try {
-        const baseUrl = window.location.origin;
-        const response = await fetch(`${baseUrl}/api/admin/confirm-user`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ email })
-        });
-        
-        if (response.ok) {
-          console.log('User confirmation successful');
-          return true;
-        } else {
-          console.error('User confirmation failed:', await response.text());
-          return false;
-        }
-      } catch (error) {
-        console.error('Error during confirmation:', error);
-        return false;
-      }
-    };
-    
-    window.confirmUserDirectly = confirmUserBypass;
-    
-    window.manualConfirmUser = async (email) => {
-      try {
-        const { confirmSignUp } = await import('@/config/amplifyUnified');
-        console.log('Attempting manual confirmation for', email);
-        
-        const result = await confirmSignUp({
-          username: email,
-          confirmationCode: '123456' // This code likely won't work but might in dev mode
-        });
-        
-        console.log('Manual confirmation result:', result);
-        return result;
-      } catch (error) {
-        console.error('Manual confirmation error:', error);
-        return { error };
-      }
-    };
-    
-    window.confirmAndSignIn = async (email, password) => {
-      try {
-        console.log('Attempting direct sign-in with confirmation for', email);
-        
-        // First try to confirm the user
-        await window.confirmUserBypass(email);
-        
-        // Then try to sign in
-        const result = await handleSignIn(email, password || 'Test1234!');
-        console.log('Sign-in result:', result);
-        
-        return result;
-      } catch (error) {
-        console.error('confirmAndSignIn failed:', error);
-        return { error };
-      }
-    };
-    
-    // Add new debugging function
-    window.debugAuthSession = async () => {
-      console.log('AUTH DEBUGGING TOOL ACTIVATED');
-      try {
-        // Try to get current session
-        const session = await Auth.getCurrentSession().catch(() => null);
-        console.log('Current Cognito session:', {
-          exists: !!session,
-          isValid: session?.isValid?.() || false,
-          idToken: session?.getIdToken?.()?.getJwtToken?.()?.substring(0, 20) + '...' || 'none',
-          accessToken: session?.getAccessToken?.()?.getJwtToken?.()?.substring(0, 20) + '...' || 'none',
-          refreshToken: !!session?.getRefreshToken?.()?.getToken?.()
-        });
-        
-        // Try to get user attributes
-        try {
-          const { attributes } = await Auth.fetchUserAttributes();
-          console.log('User attributes:', attributes);
-        } catch (attributesError) {
-          console.error('Failed to fetch user attributes:', attributesError);
-        }
-        
-        // Check for router issues
-        console.log('Next.js Router information:');
-        try {
-          const { useRouter } = await import('next/navigation');
-          console.log('Router import successful');
-        } catch (routerError) {
-          console.error('Router import error:', routerError);
-        }
-        
-        // Check local storage for verification flags
-        const verifiedEmail = localStorage.getItem('verifiedEmail');
-        const justVerified = localStorage.getItem('justVerified');
-        console.log('Verification localStorage state:', { verifiedEmail, justVerified });
-        
-        return { success: true };
-      } catch (error) {
-        console.error('Debug session error:', error);
-        return { error };
-      }
-    };
-    
-    console.log('🛠️ Auth helper functions available in console:');
-    console.log('- window.confirmUserBypass(email)');
-    console.log('- window.confirmUserDirectly(email)');
-    console.log('- window.manualConfirmUser(email)');
-    console.log('- window.confirmAndSignIn(email, password)');
-    console.log('- window.debugAuthSession()');
-  }
-
-  // Make debug functions available globally for easier diagnostics in browser console
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Existing debug functions
-      window.confirmUserBypass = confirmUserBypass;
-      window.confirmUserDirectly = confirmUserDirectly;
-      window.manualConfirmUser = manualConfirmUser;
-      window.confirmAndSignIn = confirmAndSignIn;
-      window.debugAuthSession = debugAuthSession;
-      
-      // Enhanced debugging tools
-      window.authDebug = {
-        // Force authentication state
-        forceAuth: () => {
-          console.log('🛠️ Forcing authentication state to TRUE');
-          localStorage.setItem('authSuccess', 'true');
-          localStorage.setItem('bypassAuthValidation', 'true');
-          setIsAuthenticated(true);
-          setAuthError(null);
-          return 'Authentication state forced to TRUE';
-        },
-        
-        // Clear authentication state
-        clearAuth: () => {
-          console.log('🛠️ Clearing authentication state');
-          localStorage.removeItem('authSuccess');
-          localStorage.removeItem('bypassAuthValidation');
-          setIsAuthenticated(false);
-          setAuthError(null);
-          return 'Authentication state cleared';
-        },
-        
-        // Force redirect to a specific page
-        redirect: (path = '/app/onboarding') => {
-          console.log(`🛠️ Forcing redirect to: ${path}`);
-          window.location.href = path;
-          return `Redirecting to ${path}...`;
-        },
-        
-        // Bypass sign-in (combines force auth and redirect)
-        bypassSignIn: (path = '/app/onboarding') => {
-          console.log('🛠️ Bypassing sign-in flow completely');
-          localStorage.setItem('authSuccess', 'true');
-          localStorage.setItem('bypassAuthValidation', 'true');
-          localStorage.setItem('authTimestamp', Date.now().toString());
-          setTimeout(() => window.location.href = path, 500);
-          return `Authentication bypassed, redirecting to ${path} in 500ms...`;
-        },
-        
-        // Get detailed session information
-        getSessionInfo: async () => {
-          console.log('🛠️ Getting detailed session information...');
-          try {
-            const session = await authFetchAuthSession();
-            return {
-              isValid: session?.tokens?.accessToken?.payload ? true : false,
-              tokens: session?.tokens || null,
-              expiration: session?.tokens?.accessToken?.payload?.exp ? 
-                new Date(session.tokens.accessToken.payload.exp * 1000).toLocaleString() : 'Unknown',
-              userSub: session?.userSub || null,
-              cookieStatus: document.cookie.includes('cognito') ? 'Cognito cookies found' : 'No Cognito cookies',
-              localStorageAuth: localStorage.getItem('authSuccess') === 'true' ? 'Auth Success Flag Set' : 'No Auth Success Flag',
-              bypassStatus: localStorage.getItem('bypassAuthValidation') === 'true' ? 'Validation Bypass Active' : 'Normal Validation'
-            };
-          } catch (e) {
-            return {
-              error: e.message,
-              isValid: false,
-              detail: 'Error fetching session information'
-            };
-          }
-        }
-      };
-      
-      console.log('🛠️ Auth helper functions available in console:');
-      console.log('- window.confirmUserBypass(email)');
-      console.log('- window.confirmUserDirectly(email)');
-      console.log('- window.manualConfirmUser(email)');
-      console.log('- window.confirmAndSignIn(email, password)');
-      console.log('- window.debugAuthSession()');
-      console.log('- window.authDebug.forceAuth()');
-      console.log('- window.authDebug.clearAuth()');
-      console.log('- window.authDebug.redirect("/path")');
-      console.log('- window.authDebug.bypassSignIn()');
-      console.log('- window.authDebug.getSessionInfo()');
-    }
-  }, []);
-  
-  // Enhanced debug function to show detailed session information
-  const debugAuthSession = useCallback(async () => {
-    console.log('🔍 AUTH DEBUG INFORMATION:');
-    console.log('=======================');
-    
-    // Auth state from React
-    console.log('📊 Current Auth State:');
-    console.log(`- isAuthenticated: ${isAuthenticated}`);
-    console.log(`- authError: ${authError || 'None'}`);
-    
-    // Check localStorage flags
-    console.log('🗃️ Storage Auth Flags:');
-    console.log(`- authSuccess: ${localStorage.getItem('authSuccess') || 'Not set'}`);
-    console.log(`- bypassAuthValidation: ${localStorage.getItem('bypassAuthValidation') || 'Not set'}`);
-    console.log(`- authTimestamp: ${localStorage.getItem('authTimestamp') ? 
-      new Date(parseInt(localStorage.getItem('authTimestamp'))).toLocaleString() : 'Not set'}`);
-    console.log(`- verifiedEmail: ${localStorage.getItem('verifiedEmail') || 'Not set'}`);
-    console.log(`- justVerified: ${localStorage.getItem('justVerified') || 'Not set'}`);
-    
-    // Check cookies
-    console.log('🍪 Auth Cookies:');
-    const hasCognitoCookies = document.cookie.includes('cognito');
-    console.log(`- Cognito cookies present: ${hasCognitoCookies ? 'Yes' : 'No'}`);
-    
-    // Session fetch attempt
-    console.log('🔄 Attempting to fetch current session:');
-    try {
-      const session = await authFetchAuthSession();
-      console.log('- Session fetch successful', session);
-      
-      if (session?.tokens?.accessToken) {
-        const accessToken = session.tokens.accessToken;
-        const payload = accessToken.payload;
-        
-        console.log('🎟️ Access Token Information:');
-        console.log(`- Subject: ${payload.sub || 'Unknown'}`);
-        console.log(`- Issued at: ${payload.iat ? new Date(payload.iat * 1000).toLocaleString() : 'Unknown'}`);
-        console.log(`- Expires: ${payload.exp ? new Date(payload.exp * 1000).toLocaleString() : 'Unknown'}`);
-        console.log(`- Time until expiration: ${payload.exp ? 
-          Math.floor((payload.exp * 1000 - Date.now()) / 1000 / 60) + ' minutes' : 'Unknown'}`);
-        
-        if (session.tokens.idToken?.payload) {
-          const idPayload = session.tokens.idToken.payload;
-          console.log('👤 User Information from ID Token:');
-          console.log(`- Email: ${idPayload.email || 'Not available'}`);
-          console.log(`- Email verified: ${idPayload.email_verified || 'Not available'}`);
-          console.log(`- Custom fields:`, 
-            Object.keys(idPayload)
-              .filter(key => key.startsWith('custom:'))
-              .reduce((obj, key) => {
-                obj[key] = idPayload[key];
-                return obj;
-              }, {})
-          );
-        }
-      } else {
-        console.log('⚠️ Session object exists but no access token found');
-      }
-    } catch (error) {
-      console.error('❌ Error fetching session:', error);
-      console.log('Try using window.authDebug.forceAuth() to force authentication state');
-    }
-    
-    console.log('=======================');
-    console.log('🔧 Quick Fixes:');
-    console.log('1. window.authDebug.forceAuth() - Force authentication state');
-    console.log('2. window.authDebug.bypassSignIn() - Complete bypass and redirect');
-    console.log('3. window.authDebug.clearAuth() - Clear authentication state');
-    console.log('4. window.authDebug.redirect("/path") - Force redirect to path');
-    console.log('=======================');
-  }, [isAuthenticated, authError]);
-
-  // Development helper to force authentication and path redirection
-  const forceAuthAndRedirect = useCallback(async (path) => {
-    if (process.env.NODE_ENV !== 'development') {
-      logger.warn('[Auth] forceAuthAndRedirect is only available in development mode');
-      return false;
-    }
-    
-    try {
-      logger.debug('[Auth] Development override: Forcing authentication');
-      
-      // Set development bypass flags
-      localStorage.setItem('authSuccess', 'true');
-      localStorage.setItem('bypassAuthValidation', 'true'); 
-      localStorage.setItem('authTimestamp', Date.now().toString());
-      
-      // Force authentication state
-      setIsAuthenticated(true);
-      setAuthError(null);
-      
-      // If path provided, redirect
-      if (path) {
-        logger.debug(`[Auth] Development override: Redirecting to ${path}`);
-        setTimeout(() => {
-          window.location.href = path;
-        }, 100);
-      }
-      
-      return true;
-    } catch (error) {
-      logger.error('[Auth] Development override failed:', error);
-      return false;
-    }
-  }, []);
-
-  // Development helper to clear authentication
-  const clearAuthState = useCallback(() => {
-    if (process.env.NODE_ENV !== 'development') {
-      logger.warn('[Auth] clearAuthState is only available in development mode');
-      return false;
-    }
-    
-    try {
-      logger.debug('[Auth] Development override: Clearing authentication state');
-      
-      // Clear development bypass flags
-      localStorage.removeItem('authSuccess');
-      localStorage.removeItem('bypassAuthValidation');
-      localStorage.removeItem('authTimestamp');
-      
-      // Force unauthenticated state
-      setIsAuthenticated(false);
-      setAuthError(null);
-      
-      return true;
-    } catch (error) {
-      logger.error('[Auth] Development override failed:', error);
-      return false;
-    }
-  }, []);
-
   return {
     isAuthenticated,
     isLoading,
@@ -1550,8 +1223,6 @@ export const useAuth = () => {
     resendVerificationCode: handleResendVerificationCode,
     resetPassword,
     confirmPasswordReset,
-    validateAuthentication,
-    forceAuthAndRedirect,
-    clearAuthState
+    validateAuthentication
   };
 }

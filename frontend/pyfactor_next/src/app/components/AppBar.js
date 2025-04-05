@@ -351,7 +351,7 @@ export default function AppBar() {
         </div>
 
         {/* Auth Button */}
-        <AuthButton variant="primary" size="medium" />
+        <AuthButton theme="light" />
       </div>
     </nav>
   );

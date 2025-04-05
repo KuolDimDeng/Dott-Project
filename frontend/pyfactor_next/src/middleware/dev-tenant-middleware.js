@@ -165,13 +165,15 @@ export function verifyTenantId(tenantId) {
  * @returns {string} Default tenant ID
  */
 export function getDefaultTenantId() {
-  // Check environment variable first
-  if (process.env.DEFAULT_TENANT_ID) {
-    return process.env.DEFAULT_TENANT_ID;
+  // Generate a UUID tenant ID - this is just for complete fallback
+  // In production or normal operation, the tenant ID should come from Cognito
+  try {
+    return uuidv4(); // Generate UUID dynamically
+  } catch (error) {
+    console.error('[Tenant Middleware] Error generating default tenant ID:', error);
+    // Very last resort fallback - but this should never be reached in normal operation
+    return null;
   }
-  
-  // Generate a dynamic tenant ID instead of hardcoded value
-  return uuidv4(); // Generate a new UUID for tenant ID
 }
 
 /**

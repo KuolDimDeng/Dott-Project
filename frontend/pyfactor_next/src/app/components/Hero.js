@@ -59,7 +59,7 @@ export default function Hero() {
           </p>
           
           <div className="mt-10">
-            <AuthButton size="large" variant="primary" />
+            <AuthButton theme="light" />
           </div>
           
           <div className="mt-16 max-w-5xl mx-auto">

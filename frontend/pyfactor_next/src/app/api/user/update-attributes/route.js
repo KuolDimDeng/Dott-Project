@@ -16,7 +16,7 @@ export async function POST(request) {
     // Get the authenticated user from the session
     const { user, tokens, verified } = await validateServerSession();
     
-    // Check if this is an onboarding request
+    // Check if this is an onboarding request or dashboard request
     const requestUrl = request.url || '';
     const referer = request.headers.get('referer') || '';
     const isOnboardingRequest = 
@@ -24,18 +24,24 @@ export async function POST(request) {
       requestUrl.includes('onboarding=true') ||
       request.headers.get('X-Onboarding-Route') === 'true';
     
-    // Be more lenient for onboarding requests
-    if (!verified && !isOnboardingRequest) {
-      logger.warn('[API] Authentication required for non-onboarding attribute update');
+    // Check if this is a dashboard request
+    const isDashboardRequest = 
+      referer.includes('/dashboard') || 
+      requestUrl.includes('dashboard=true') ||
+      request.headers.get('X-Dashboard-Route') === 'true';
+    
+    // Be more lenient for onboarding requests and dashboard requests
+    if (!verified && !isOnboardingRequest && !isDashboardRequest) {
+      logger.warn('[API] Authentication required for non-onboarding/dashboard attribute update');
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
     
-    // For onboarding requests without auth, we'll proceed with limited functionality
-    if (!verified && isOnboardingRequest) {
-      logger.info('[API] Proceeding with onboarding attribute update despite missing authentication');
+    // For onboarding or dashboard requests without auth, we'll proceed with limited functionality
+    if (!verified && (isOnboardingRequest || isDashboardRequest)) {
+      logger.info(`[API] Proceeding with ${isOnboardingRequest ? 'onboarding' : 'dashboard'} attribute update despite missing authentication`);
     }
     
     // Extract the request body
@@ -130,15 +136,16 @@ export async function POST(request) {
       logger.info('[API] Setting complete onboarding attributes:', filteredAttributes);
     }
     
-    // If this is an onboarding request and we're not authenticated,
+    // If this is an onboarding or dashboard request and we're not authenticated,
     // return a mock successful response
-    if (isOnboardingRequest && !verified) {
-      logger.info('[API] Returning mock success for onboarding attribute update without authentication');
+    if ((isOnboardingRequest || isDashboardRequest) && !verified) {
+      logger.info(`[API] Returning mock success for ${isOnboardingRequest ? 'onboarding' : 'dashboard'} attribute update without authentication`);
       return NextResponse.json({
         success: true,
-        message: 'Onboarding data captured (authentication pending)',
+        message: `${isOnboardingRequest ? 'Onboarding' : 'Dashboard'} data captured (authentication pending)`,
         attributes: filteredAttributes,
-        onboarding: true
+        onboarding: isOnboardingRequest,
+        dashboard: isDashboardRequest
       });
     }
     

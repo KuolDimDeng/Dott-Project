@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import DashboardLanguageSelector from './LanguageSelector';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import { useNotification } from '@/context/NotificationContext';
 import { logger } from '@/utils/logger';
+import { Avatar } from '@mui/material';
 
 const AppBar = ({
   drawerOpen,
@@ -32,6 +33,71 @@ const AppBar = ({
   // Create a ref for the dropdown menu and button
   const userMenuRef = useRef(null);
   const profileButtonRef = useRef(null);
+
+  // Helper function to consistently generate initials from user data
+  const generateInitialsFromNames = useCallback((firstNameValue, lastNameValue, emailValue) => {
+    if (!firstNameValue && !lastNameValue && !emailValue) return '';
+    
+    if (firstNameValue && lastNameValue) {
+      return `${firstNameValue.charAt(0).toUpperCase()}${lastNameValue.charAt(0).toUpperCase()}`;
+    } else if (firstNameValue) {
+      // Try to extract a second initial from email
+      if (emailValue && emailValue.includes('@')) {
+        const emailName = emailValue.split('@')[0];
+        if (emailName.includes('.')) {
+          const emailParts = emailName.split('.');
+          if (emailParts.length >= 2 && emailParts[1].length > 0) {
+            return `${firstNameValue.charAt(0).toUpperCase()}${emailParts[1].charAt(0).toUpperCase()}`;
+          }
+        }
+      }
+      return firstNameValue.charAt(0).toUpperCase();
+    } else if (lastNameValue) {
+      return lastNameValue.charAt(0).toUpperCase();
+    } else if (emailValue) {
+      // Try to extract initials from email format (first.last@domain.com)
+      const emailName = emailValue.split('@')[0];
+      if (emailName.includes('.')) {
+        const emailParts = emailName.split('.');
+        if (emailParts.length >= 2 && emailParts[0].length > 0 && emailParts[1].length > 0) {
+          return `${emailParts[0].charAt(0).toUpperCase()}${emailParts[1].charAt(0).toUpperCase()}`;
+        }
+      }
+      return emailValue.charAt(0).toUpperCase();
+    }
+    
+    return '';
+  }, []);
+
+  // Update initials whenever user data changes
+  useEffect(() => {
+    if (userData) {
+      const firstName = userData.first_name || userData.firstName || userData.given_name;
+      const lastName = userData.last_name || userData.lastName || userData.family_name;
+      const email = userData.email;
+      
+      const initials = generateInitialsFromNames(firstName, lastName, email);
+      if (initials) {
+        logger.info('[AppBar] Setting initials from userData:', { firstName, lastName, email, initials });
+        setUserInitials(initials);
+      }
+    }
+  }, [userData, generateInitialsFromNames]);
+
+  // Update initials when profile data changes
+  useEffect(() => {
+    if (profileData?.userData) {
+      const firstName = profileData.userData.first_name || profileData.userData.firstName || profileData.userData.given_name;
+      const lastName = profileData.userData.last_name || profileData.userData.lastName || profileData.userData.family_name;
+      const email = profileData.userData.email;
+      
+      const initials = generateInitialsFromNames(firstName, lastName, email);
+      if (initials) {
+        logger.info('[AppBar] Setting initials from profileData:', { firstName, lastName, email, initials });
+        setUserInitials(initials);
+      }
+    }
+  }, [profileData, generateInitialsFromNames]);
 
   // Add a click-away listener to close the menu
   useEffect(() => {
@@ -174,8 +240,19 @@ const AppBar = ({
           const first = firstName.charAt(0).toUpperCase();
           const last = lastName.charAt(0).toUpperCase();
           initials = first + last;
+          logger.info('[AppBar] Generated initials from cookies:', { firstName, lastName, initials });
         } else if (firstName) {
-          initials = firstName.charAt(0).toUpperCase();
+          // Try to extract last initial from email or username
+          const lastInitial = email && email.includes('@') && email.split('@')[0].includes('.') ? 
+                              email.split('@')[0].split('.')[1].charAt(0).toUpperCase() : '';
+          
+          if (lastInitial) {
+            initials = `${firstName.charAt(0).toUpperCase()}${lastInitial}`;
+            logger.info('[AppBar] Generated initials from first name and email:', { firstName, email, initials });
+          } else {
+            initials = firstName.charAt(0).toUpperCase();
+            logger.info('[AppBar] Only first initial available from cookies:', { firstName, initials });
+          }
         } else if (lastName) {
           initials = lastName.charAt(0).toUpperCase();
         } else if (email) {
@@ -190,11 +267,73 @@ const AppBar = ({
         // Fetch user profile from API
         let profileApiData = null;
         try {
-          const response = await fetch('/api/user/profile');
+          // Make API request with tenant ID to get correct profile
+          const tenantId = localStorage.getItem('tenantId') || 
+                          getCookie('tenantId') || 
+                          getCookie('custom:businessid');
+          
+          const url = tenantId ? 
+            `/api/user/profile?tenantId=${encodeURIComponent(tenantId)}` : 
+            '/api/user/profile';
+          
+          const response = await fetch(url);
           if (response.ok) {
             const data = await response.json();
             profileApiData = data;
             logger.debug('Retrieved profile data:', profileApiData);
+            
+            // Log specifically what user attributes we found
+            logger.info('Retrieved user profile with attributes:', {
+              firstName: data.profile?.firstName || data.profile?.first_name,
+              lastName: data.profile?.lastName || data.profile?.last_name,
+              email: data.profile?.email,
+              businessName: data.profile?.businessName || data.profile?.business_name,
+              subscriptionType: data.profile?.subscriptionType || data.profile?.subscription_type
+            });
+            
+            // Use profile data to update user information
+            if (data.profile) {
+              const profileFirstName = data.profile.firstName || data.profile.first_name;
+              const profileLastName = data.profile.lastName || data.profile.last_name;
+              const profileEmail = data.profile.email;
+              
+              // Extract real user information and override any mock data
+              setProfileData({
+                business_name: data.profile.businessName || data.profile.business_name || locallyStoredName || 'My Business',
+                subscription_type: data.profile.subscription_type || data.profile.subscriptionType || 'free',
+                email: profileEmail,
+                first_name: profileFirstName || '',
+                last_name: profileLastName || '',
+                tenant_id: data.profile.tenantId
+              });
+              
+              // Generate initials from profile data
+              if (profileFirstName && profileLastName) {
+                const initials = `${profileFirstName.charAt(0).toUpperCase()}${profileLastName.charAt(0).toUpperCase()}`;
+                logger.info('[AppBar] Setting initials from profile data:', initials);
+                setUserInitials(initials);
+              } else if (profileFirstName && profileEmail && profileEmail.includes('.') && profileEmail.includes('@')) {
+                // Try to extract initials from email (kuol.dimdeng@outlook.com -> KD)
+                const nameParts = profileEmail.split('@')[0].split('.');
+                if (nameParts.length >= 2 && nameParts[1].length > 0) {
+                  const initials = `${profileFirstName.charAt(0).toUpperCase()}${nameParts[1].charAt(0).toUpperCase()}`;
+                  logger.info('[AppBar] Setting initials from profile name + email parts:', initials);
+                  setUserInitials(initials);
+                } else {
+                  setUserInitials(profileFirstName.charAt(0).toUpperCase());
+                }
+              }
+              
+              // Update user data with real information - no mock data
+              setUserData({
+                email: profileEmail,
+                firstName: profileFirstName || '',
+                lastName: profileLastName || '',
+                first_name: profileFirstName || '',
+                last_name: profileLastName || '',
+                tenantId: data.profile.tenantId
+              });
+            }
           }
         } catch (apiError) {
           logger.warn('API call to fetch profile failed:', apiError);
@@ -380,6 +519,7 @@ const AppBar = ({
     if (!userInitials && userData) {
       const firstName = userData.first_name || userData.firstName || userData.given_name;
       const lastName = userData.last_name || userData.lastName || userData.family_name;
+      const email = userData.email || localStorage.getItem('authUser');
       
       if (firstName && lastName) {
         const first = firstName.charAt(0).toUpperCase();
@@ -387,6 +527,19 @@ const AppBar = ({
         setUserInitials(first + last);
         console.log("Initializing userInitials from userData:", first + last);
       } else if (firstName) {
+        // Try to extract last initial from email if available
+        if (email && email.includes('@')) {
+          const namePart = email.split('@')[0];
+          if (namePart.includes('.') && !namePart.startsWith('.') && !namePart.endsWith('.')) {
+            const parts = namePart.split('.');
+            if (parts.length >= 2 && parts[1].length > 0) {
+              const initials = `${firstName.charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
+              setUserInitials(initials);
+              console.log("Initializing userInitials from firstName and email:", initials);
+              return;
+            }
+          }
+        }
         const initial = firstName.charAt(0).toUpperCase();
         setUserInitials(initial);
         console.log("Initializing userInitials from firstName:", initial);
@@ -394,10 +547,55 @@ const AppBar = ({
         const initial = lastName.charAt(0).toUpperCase();
         setUserInitials(initial);
         console.log("Initializing userInitials from lastName:", initial);
-      } else if (userData.email) {
-        const initial = userData.email.charAt(0).toUpperCase();
+      } else if (email) {
+        // Try to extract initials from email if in format "first.last@domain.com"
+        if (email.includes('@')) {
+          const namePart = email.split('@')[0];
+          if (namePart.includes('.') && !namePart.startsWith('.') && !namePart.endsWith('.')) {
+            const parts = namePart.split('.');
+            if (parts.length >= 2) {
+              const initials = `${parts[0].charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
+              setUserInitials(initials);
+              console.log("Initializing userInitials from email parts:", initials);
+              return;
+            }
+          }
+        }
+        const initial = email.charAt(0).toUpperCase();
         setUserInitials(initial);
         console.log("Initializing userInitials from email:", initial);
+      } else {
+        // Try to extract email from cookies as last resort
+        const getCookieEmail = () => {
+          const cookies = document.cookie.split(';');
+          for (const cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'email' || name.includes('email')) {
+              return value;
+            }
+          }
+          return null;
+        };
+        
+        const cookieEmail = getCookieEmail();
+        if (cookieEmail) {
+          // Try to extract initials from email if in format "first.last@domain.com"
+          if (cookieEmail.includes('@')) {
+            const namePart = cookieEmail.split('@')[0];
+            if (namePart.includes('.') && !namePart.startsWith('.') && !namePart.endsWith('.')) {
+              const parts = namePart.split('.');
+              if (parts.length >= 2) {
+                const initials = `${parts[0].charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
+                setUserInitials(initials);
+                console.log("Initializing userInitials from cookie email parts:", initials);
+                return;
+              }
+            }
+          }
+          const initial = cookieEmail.charAt(0).toUpperCase();
+          setUserInitials(initial);
+          console.log("Initializing userInitials from cookie email:", initial);
+        }
       }
     }
   }, [userData, userInitials]);
@@ -406,65 +604,278 @@ const AppBar = ({
   useEffect(() => {
     const fetchCorrectUserDetails = async () => {
       try {
-        // Extract tenant ID from userData or cookies
-        const tenantIdFromUserData = userData?.['custom:businessid'] || userData?.tenantId || userData?.businessId;
-        const tenantIdFromLocalStorage = localStorage.getItem('tenantId');
-        const tenantIdFromCookie = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('tenantId='))
-          ?.split('=')[1];
-          
-        // Get tenant ID from multiple sources with clear priority
-        const effectiveTenantId = tenantIdFromUserData || tenantIdFromCookie || tenantIdFromLocalStorage;
+        // Extract businessName from cookies
+        const cookieBusinessName = getBusinessNameFromCookies();
+        // Moved to a higher scope to be used throughout the function
+        const businessNameFromStorage = localStorage.getItem('businessName') || localStorage.getItem('businessname');
         
-        // Log all sources of tenant ID for debugging
-        logger.info('[AppBar] Tenant ID sources:', {
-          fromUserData: tenantIdFromUserData || '(not found)',
-          fromCookie: tenantIdFromCookie || '(not found)',
-          fromLocalStorage: tenantIdFromLocalStorage || '(not found)',
-          effectiveTenantId: effectiveTenantId || '(not found)'
-        });
+        // Get Tenant ID from multiple sources
+        const tenantIdFromStorage = localStorage.getItem('tenantId');
+        const tenantIdFromCookie = (() => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; tenantId=`);
+          if (parts.length === 2) return parts.pop().split(';').shift();
+          return null;
+        })();
+        const tenantIdFromUserData = userData?.tenantId || userData?.['custom:businessid'];
         
-        if (!effectiveTenantId) {
-          logger.warn('[AppBar] Could not find tenant ID from any source. User profile might be incomplete.');
-          return; // Don't attempt to fetch without a tenant ID
+        const effectiveTenantId = tenantIdFromStorage || tenantIdFromCookie || tenantIdFromUserData;
+        logger.debug('[AppBar] Using tenant ID:', effectiveTenantId);
+        
+        // Get email from userData or storage
+        const email = userData?.email || localStorage.getItem('email') || localStorage.getItem('userEmail');
+        
+        // Extract name parts from email if available (e.g., kuol.dimdeng@outlook.com -> Kuol Dimdeng)
+        let firstName = userData?.first_name || userData?.firstName;
+        let lastName = userData?.last_name || userData?.lastName;
+        
+        // If we don't have first/last name but have email, try to extract from email format
+        if ((!firstName || !lastName) && email && email.includes('@')) {
+          const namePart = email.split('@')[0];
+          if (namePart.includes('.')) {
+            const parts = namePart.split('.');
+            if (parts.length >= 2) {
+              // Capitalize first letter for better display
+              const extractedFirst = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+              const extractedLast = parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
+              
+              firstName = firstName || extractedFirst;
+              lastName = lastName || extractedLast;
+              
+              logger.info('[AppBar] Extracted name from email format:', { 
+                email, 
+                extractedFirst, 
+                extractedLast 
+              });
+            } else {
+              // For emails without period separator (like kuoldimdeng@outlook.com)
+              // Try to intelligently split the name if it looks like a combined name
+              if (namePart.length > 3) {
+                // Look for potential name patterns
+                const match = namePart.match(/([a-z]+)([A-Z][a-z]+)/);
+                if (match && match.length >= 3) {
+                  // CamelCase pattern detected (e.g., kuolDimdeng)
+                  const extractedFirst = match[1].charAt(0).toUpperCase() + match[1].slice(1);
+                  const extractedLast = match[2];
+                  
+                  firstName = firstName || extractedFirst;
+                  lastName = lastName || extractedLast;
+                  
+                  logger.info('[AppBar] Extracted name from camelCase email:', {
+                    email,
+                    extractedFirst,
+                    extractedLast
+                  });
+                } else {
+                  // For simple names without separators, use intelligent splitting
+                  // This is a best effort approach for cases like "kuoldimdeng"
+                  // For simplicity, we'll assume first name is first half, last name is second half
+                  // More sophisticated approaches could use name dictionaries or ML
+                  const midPoint = Math.floor(namePart.length / 2);
+                  const extractedFirst = namePart.substring(0, midPoint).charAt(0).toUpperCase() + 
+                                        namePart.substring(0, midPoint).slice(1).toLowerCase();
+                  const extractedLast = namePart.substring(midPoint).charAt(0).toUpperCase() + 
+                                        namePart.substring(midPoint).slice(1).toLowerCase();
+                  
+                  firstName = firstName || extractedFirst;
+                  lastName = lastName || extractedLast;
+                  
+                  logger.info('[AppBar] Split combined email name:', {
+                    email,
+                    extractedFirst,
+                    extractedLast
+                  });
+                }
+              } else {
+                // For very short email names, just use as first name
+                firstName = firstName || (namePart.charAt(0).toUpperCase() + namePart.slice(1));
+                
+                logger.info('[AppBar] Using email name as first name:', {
+                  email,
+                  firstName
+                });
+              }
+            }
+          }
         }
         
-        logger.info(`[AppBar] Fetching user profile with tenant ID: ${effectiveTenantId}`);
+        // If we have first/last name or email, use it for initials
+        if (firstName || lastName || email) {
+          let initials = '';
+          
+          if (firstName && lastName) {
+            initials = `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
+          } else if (firstName) {
+            // Always try to get both initials, even if we only have first name
+            initials = firstName.charAt(0).toUpperCase();
+            // Try to get last initial from email or other sources
+            if (email && email.includes('@')) {
+              const namePart = email.split('@')[0];
+              // Check if email contains both names (e.g., first.last@domain.com)
+              if (namePart.includes('.') && !namePart.startsWith('.') && !namePart.endsWith('.')) {
+                const parts = namePart.split('.');
+                if (parts.length >= 2 && parts[1].length > 0) {
+                  initials += parts[1].charAt(0).toUpperCase();
+                }
+              }
+            }
+          } else if (lastName) {
+            initials = lastName.charAt(0).toUpperCase();
+          } else if (email) {
+            initials = email.charAt(0).toUpperCase();
+            // Try to extract a second initial from email if possible
+            if (email.includes('@')) {
+              const namePart = email.split('@')[0];
+              if (namePart.includes('.') && !namePart.startsWith('.') && !namePart.endsWith('.')) {
+                const parts = namePart.split('.');
+                if (parts.length >= 2) {
+                  initials = `${parts[0].charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
+                }
+              }
+            }
+          }
+          
+          // Log when we set initials
+          if (initials) {
+            logger.debug('[AppBar] Setting initials from userData:', initials);
+            setUserInitials(initials);
+          }
+        }
         
-        // Use both query param and header for maximum compatibility
-        const url = `/api/user/profile?tenantId=${encodeURIComponent(effectiveTenantId)}`;
+        // If no tenant ID found, try using saved business name as fallback
+        if ((!effectiveTenantId || effectiveTenantId === "(not found)") && (cookieBusinessName || businessNameFromStorage)) {
+          const businessName = cookieBusinessName || businessNameFromStorage;
+          logger.debug('[AppBar] Found business name in alternate storage:', businessName);
+          // Update profile data with business name even without tenant ID
+          setProfileData(prevData => ({
+            ...(prevData || {}),
+            business_name: businessName,
+            userData: {
+              ...(prevData?.userData || {}),
+              first_name: firstName || '',
+              last_name: lastName || '',
+              email: email || ''
+            }
+          }));
+        }
         
-        const headers = {
-          'X-Tenant-ID': effectiveTenantId,
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+        if (!effectiveTenantId || effectiveTenantId === "(not found)") {
+          logger.debug('[AppBar] No tenant ID found - skipping record verification');
+          return;
+        }
+        
+        logger.debug('[AppBar] Fetching user profile with tenant ID:', effectiveTenantId);
+        
+        // Make API request to fetch profile data
+        const authTokenHeader = localStorage.getItem('authToken') || 
+                               cookies.authToken || 
+                               cookies.idToken || 
+                               (cookies.CognitoIdentityServiceProvider && 
+                                cookies.CognitoIdentityServiceProvider.includes('idToken')) ?
+                               { Authorization: `Bearer ${localStorage.getItem('authToken') || cookies.authToken || cookies.idToken}` } : {};
+        
+        const requestInfo = {
+          url: `/api/user/profile?tenantId=${effectiveTenantId}`,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+            ...authTokenHeader
+          }
         };
         
-        logger.debug('[AppBar] Making API request to:', { url, headers });
+        logger.debug('[AppBar] Making API request to:', requestInfo);
+        const response = await fetch(requestInfo.url, { headers: requestInfo.headers });
         
-        const response = await fetch(url, { headers });
         if (response.ok) {
           const profileData = await response.json();
           logger.debug('[AppBar] Fetched profile data with tenant ID:', profileData);
+          
+          // Log specifically what attributes we found for debugging
+          logger.info('[AppBar] User profile attributes with tenant ID:', {
+            firstName: profileData.firstName || profileData.first_name,
+            lastName: profileData.lastName || profileData.last_name,
+            email: profileData.email,
+            businessName: profileData.businessName || profileData.business_name,
+            subscriptionType: profileData.subscriptionType || profileData.subscription_type,
+            tenantId: effectiveTenantId
+          });
           
           if (profileData) {
             // Extract first and last name
             const firstName = profileData.firstName || profileData.first_name || profileData.given_name;
             const lastName = profileData.lastName || profileData.last_name || profileData.family_name;
+            const profileEmail = profileData.email;
             
-            if (firstName || lastName || profileData.email) {
+            // If missing name info but have email, try to extract from email format
+            let extractedFirst = firstName;
+            let extractedLast = lastName;
+            
+            if ((!extractedFirst || !extractedLast) && profileEmail && profileEmail.includes('@')) {
+              const namePart = profileEmail.split('@')[0];
+              if (namePart.includes('.')) {
+                const parts = namePart.split('.');
+                if (parts.length >= 2) {
+                  // Capitalize first letter of each name part
+                  if (!extractedFirst) {
+                    extractedFirst = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+                  }
+                  if (!extractedLast) {
+                    extractedLast = parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
+                  }
+                  logger.info('[AppBar] Extracted name from email in profile data:', { 
+                    email: profileEmail, 
+                    extractedFirst, 
+                    extractedLast 
+                  });
+                }
+              }
+            }
+            
+            if (firstName || lastName || profileEmail || extractedFirst || extractedLast) {
               let initials = '';
               
               if (firstName && lastName) {
                 const first = firstName.charAt(0).toUpperCase();
                 const last = lastName.charAt(0).toUpperCase();
                 initials = first + last;
+              } else if (extractedFirst && extractedLast) {
+                const first = extractedFirst.charAt(0).toUpperCase();
+                const last = extractedLast.charAt(0).toUpperCase();
+                initials = first + last;
               } else if (firstName) {
+                // Always try to get both initials, even if only firstName is available
                 initials = firstName.charAt(0).toUpperCase();
+                // Try to extract last initial from email if possible
+                if (profileEmail && profileEmail.includes('@')) {
+                  const namePart = profileEmail.split('@')[0];
+                  // Check if email contains both names (first.last@domain.com)
+                  if (namePart.includes('.') && !namePart.startsWith('.') && !namePart.endsWith('.')) {
+                    const parts = namePart.split('.');
+                    if (parts.length >= 2 && parts[1].length > 0) {
+                      initials += parts[1].charAt(0).toUpperCase();
+                    }
+                  }
+                }
               } else if (lastName) {
                 initials = lastName.charAt(0).toUpperCase();
-              } else if (profileData.email) {
-                initials = profileData.email.charAt(0).toUpperCase();
+              } else if (profileEmail) {
+                // Try to extract initials from email (first.last@domain.com format)
+                const email = profileEmail;
+                if (email.includes('@')) {
+                  const namePart = email.split('@')[0];
+                  if (namePart.includes('.')) {
+                    const parts = namePart.split('.');
+                    if (parts.length >= 2) {
+                      initials = `${parts[0].charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
+                    } else {
+                      initials = email.charAt(0).toUpperCase();
+                    }
+                  } else {
+                    initials = email.charAt(0).toUpperCase();
+                  }
+                } else {
+                  initials = email.charAt(0).toUpperCase();
+                }
               }
               
               if (initials) {
@@ -477,15 +888,22 @@ const AppBar = ({
                 ...(prevData || {}),
                 userData: {
                   ...profileData,
-                  first_name: firstName || '',
-                  last_name: lastName || '',
-                  email: profileData.email || ''
+                  first_name: firstName || extractedFirst || '',
+                  last_name: lastName || extractedLast || '',
+                  email: profileEmail || ''
                 },
                 business_name: profileData.businessName || profileData.business_name || '',
                 subscription_type: profileData.subscriptionType || profileData.subscription_type || 'free',
                 // Store the tenant ID for consistency checks
                 tenant_id: effectiveTenantId
               }));
+              
+              // Update userData with real information, not mock data
+              if (userData) {
+                userData.first_name = firstName || extractedFirst || userData.first_name || '';
+                userData.last_name = lastName || extractedLast || userData.last_name || '';
+                userData.email = profileEmail || userData.email;
+              }
             }
           }
         } else {
@@ -513,10 +931,8 @@ const AppBar = ({
                                profileData.userData.firstName || 
                                profileData.userData.given_name;
       const profileLastName = profileData.userData.last_name ||
-                              profileData.userData.lastName ||
+                              profileData.userData.lastName || 
                               profileData.userData.family_name;
-      
-      logger.debug("[AppBar] Profile data initials check:", { profileFirstName, profileLastName });
       
       if (profileFirstName && profileLastName) {
         return `${profileFirstName.charAt(0).toUpperCase()}${profileLastName.charAt(0).toUpperCase()}`;
@@ -524,37 +940,98 @@ const AppBar = ({
         return profileFirstName.charAt(0).toUpperCase();
       } else if (profileLastName) {
         return profileLastName.charAt(0).toUpperCase();
-      } else if (profileData.userData.email) {
-        return profileData.userData.email.charAt(0).toUpperCase();
+      }
+      
+      // Try email from profileData
+      const profileEmail = profileData.userData.email;
+      if (profileEmail && profileEmail.includes('@')) {
+        const namePart = profileEmail.split('@')[0];
+        if (namePart.includes('.')) {
+          const parts = namePart.split('.');
+          if (parts.length >= 2) {
+            return `${parts[0].charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
+          }
+        }
+        return profileEmail.charAt(0).toUpperCase();
       }
     }
     
-    // Fall back to userData from auth
-    const firstName = userData?.first_name || userData?.firstName || userData?.given_name;
-    const lastName = userData?.last_name || userData?.lastName || userData?.family_name;
-    
-    logger.debug("[AppBar] Direct initials calculation - userData:", { firstName, lastName });
-    
-    if (firstName && lastName) {
-      return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
-    } else if (firstName) {
-      return firstName.charAt(0).toUpperCase();
-    } else if (lastName) {
-      return lastName.charAt(0).toUpperCase();
-    } else if (userData?.email) {
-      return userData.email.charAt(0).toUpperCase();
+    // Fall back to userData
+    if (userData) {
+      const firstName = userData.first_name || userData.firstName || userData.given_name;
+      const lastName = userData.last_name || userData.lastName || userData.family_name;
+      
+      if (firstName && lastName) {
+        return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
+      } else if (firstName) {
+        return firstName.charAt(0).toUpperCase();
+      } else if (lastName) {
+        return lastName.charAt(0).toUpperCase();
+      }
+      
+      // Try email from userData
+      const email = userData.email;
+      if (email && email.includes('@')) {
+        const namePart = email.split('@')[0];
+        if (namePart.includes('.')) {
+          const parts = namePart.split('.');
+          if (parts.length >= 2) {
+            return `${parts[0].charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
+          }
+        }
+        return email.charAt(0).toUpperCase();
+      }
     }
     
-    // If no data found from any source, return empty string
-    return '';
-  }, [userData, userInitials, profileData]);
+    // Ultimate fallback
+    return 'U';
+  }, [userInitials, profileData, userData]);
+  
+  // Combine profile data with user data for display
+  const effectiveUserData = useMemo(() => {
+    return {
+      ...(userData || {}),
+      ...(profileData?.userData || {})
+    };
+  }, [userData, profileData]);
+  
+  // Determine which initials to display
+  const displayInitials = userInitials || directInitials;
+  
+  // Log the final initials that will be displayed
+  useEffect(() => {
+    logger.info('[AppBar] Final initials display:', {
+      displayInitials,
+      userInitialsState: userInitials,
+      calculatedInitials: directInitials,
+      userData: userData ? {
+        first_name: userData.first_name || userData.firstName || userData.given_name,
+        last_name: userData.last_name || userData.lastName || userData.family_name
+      } : 'No userData',
+      profileData: profileData?.userData ? {
+        first_name: profileData.userData.first_name || profileData.userData.firstName,
+        last_name: profileData.userData.last_name || profileData.userData.lastName
+      } : 'No profileData'
+    });
 
-  // Use initials from state or direct calculation - no hardcoded fallback
-  const displayInitials = userInitials || directInitials || '';
-  
-  // Use profile data for display if available, fall back to props
-  const effectiveUserData = profileData?.userData || userData;
-  
+    // Force both initials if we clearly have first and last name but only showing one initial
+    if (displayInitials && displayInitials.length === 1) {
+      const firstName = userData?.first_name || userData?.firstName || 
+                       userData?.given_name || profileData?.userData?.first_name || 
+                       profileData?.userData?.firstName || profileData?.userData?.given_name;
+      
+      const lastName = userData?.last_name || userData?.lastName || 
+                      userData?.family_name || profileData?.userData?.last_name || 
+                      profileData?.userData?.lastName || profileData?.userData?.family_name;
+      
+      if (firstName && lastName) {
+        const newInitials = `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
+        logger.info('[AppBar] Forcing both initials:', { from: displayInitials, to: newInitials });
+        setUserInitials(newInitials);
+      }
+    }
+  }, [displayInitials, userInitials, directInitials, userData, profileData]);
+
   // Tenant ID validation to ensure we're showing the right data
   const authenticatedTenantId = userData?.['custom:businessid'] || userData?.tenantId || userData?.businessId;
   const profileTenantId = profileData?.tenant_id;
@@ -570,14 +1047,18 @@ const AppBar = ({
   // Only use profile data if it's for the authenticated tenant
   const isValidProfileData = !authenticatedTenantId || !profileTenantId || authenticatedTenantId === profileTenantId;
   
-  // Prioritize tenant-specific data for business name
+  // Prioritize tenant-specific data for business name with added fallbacks
   const effectiveBusinessName = isValidProfileData && profileData?.business_name 
     ? profileData.business_name 
-    : userData?.business_name || '';
+    : userData?.business_name || userData?.['custom:businessname'] || 
+      (typeof window !== 'undefined' && localStorage.getItem('businessName')) || 
+      'My Business';
   
   const effectiveSubscriptionType = isValidProfileData && profileData?.subscription_type 
     ? profileData.subscription_type 
-    : userData?.subscription_type || 'free';
+    : userData?.subscription_type || userData?.['custom:subscription'] || 
+      (typeof window !== 'undefined' && localStorage.getItem('subscriptionType')) || 
+      'free';
   
   // Log the generated initials and input data for debugging
   logger.debug("[AppBar] Final initials calculation:", {
@@ -614,6 +1095,25 @@ const AppBar = ({
   // For debugging, log what initials should be directly
   const fullName = `${userData?.first_name || ''} ${userData?.last_name || ''}`;
   logger.info("[AppBar] User full name:", fullName);
+  
+  // Double-check that we're using both initials if available
+  if (userData?.first_name && userData?.last_name) {
+    const expectedInitials = `${userData.first_name.charAt(0).toUpperCase()}${userData.last_name.charAt(0).toUpperCase()}`;
+    logger.info('[AppBar] Expected initials from user full name:', expectedInitials);
+    if (userInitials !== expectedInitials) {
+      logger.warn('[AppBar] Initials mismatch:', { current: userInitials, expected: expectedInitials });
+      // Force update of initials
+      setUserInitials(expectedInitials);
+    }
+  } else if (profileData?.userData?.first_name && profileData?.userData?.last_name) {
+    const expectedInitials = `${profileData.userData.first_name.charAt(0).toUpperCase()}${profileData.userData.last_name.charAt(0).toUpperCase()}`;
+    logger.info('[AppBar] Expected initials from profile data:', expectedInitials);
+    if (userInitials !== expectedInitials) {
+      logger.warn('[AppBar] Initials mismatch:', { current: userInitials, expected: expectedInitials });
+      // Force update of initials
+      setUserInitials(expectedInitials);
+    }
+  }
 
   // Define getSubscriptionLabel function before using it
   const getSubscriptionLabel = (type) => {
@@ -777,13 +1277,41 @@ const AppBar = ({
             aria-expanded={openMenu ? 'true' : undefined}
             className="flex items-center justify-center text-white hover:bg-white/10 p-0.5 rounded-full"
           >
-            <div className="w-8 h-8 rounded-full bg-primary-main text-white border-2 border-white flex items-center justify-center text-sm font-medium">
-              {displayInitials || (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                </svg>
-              )}
-            </div>
+            <Avatar 
+              sx={{ 
+                bgcolor: 'primary.main', 
+                color: 'white',
+                width: 32,
+                height: 32,
+                fontSize: '1rem'
+              }}
+            >
+              {displayInitials || (() => {
+                // Final fallback - calculate initials directly at render time
+                const firstName = effectiveUserData?.first_name || effectiveUserData?.firstName || '';
+                const lastName = effectiveUserData?.last_name || effectiveUserData?.lastName || '';
+                
+                if (firstName && lastName) {
+                  return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
+                } else if (firstName) {
+                  return firstName.charAt(0).toUpperCase();
+                } else if (lastName) {
+                  return lastName.charAt(0).toUpperCase();
+                } else if (effectiveUserData?.email) {
+                  const email = effectiveUserData.email;
+                  const namePart = email.split('@')[0];
+                  if (namePart.includes('.')) {
+                    const parts = namePart.split('.');
+                    if (parts.length >= 2) {
+                      return `${parts[0].charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
+                    }
+                  }
+                  return email.charAt(0).toUpperCase();
+                } else {
+                  return 'User';
+                }
+              })()}
+            </Avatar>
           </button>
           
           {/* User dropdown menu */}
@@ -799,24 +1327,85 @@ const AppBar = ({
                   <div className="p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
                     <div className="flex items-center mb-2">
                       <div className="w-10 h-10 rounded-full bg-primary-main text-white border-2 border-white flex items-center justify-center text-base font-medium mr-3">
-                        {displayInitials || (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                          </svg>
-                        )}
+                        {displayInitials || (() => {
+                          // Final fallback - calculate initials directly at render time
+                          const firstName = effectiveUserData?.first_name || effectiveUserData?.firstName || '';
+                          const lastName = effectiveUserData?.last_name || effectiveUserData?.lastName || '';
+                          
+                          if (firstName && lastName) {
+                            return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
+                          } else if (firstName) {
+                            return firstName.charAt(0).toUpperCase();
+                          } else if (lastName) {
+                            return lastName.charAt(0).toUpperCase();
+                          } else if (effectiveUserData?.email) {
+                            const email = effectiveUserData.email;
+                            const namePart = email.split('@')[0];
+                            if (namePart.includes('.')) {
+                              const parts = namePart.split('.');
+                              if (parts.length >= 2) {
+                                return `${parts[0].charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
+                              }
+                            }
+                            return email.charAt(0).toUpperCase();
+                          } else {
+                            return 'User';
+                          }
+                        })()}
                       </div>
                       <div>
-                        <h6 className="font-bold">
-                          {effectiveUserData.fullName || effectiveUserData.name || `${effectiveUserData.firstName || effectiveUserData.firstname || ''} ${effectiveUserData.lastName || effectiveUserData.lastname || ''}`.trim() || effectiveUserData.email?.split('@')[0] || ''}
-                        </h6>
-                        <p className="text-sm text-gray-600">
-                          {effectiveUserData.email || ''}
-                        </p>
-                        {profileData?.account_status && (
-                          <p className="text-xs text-gray-500">
-                            Status: {profileData.account_status}
-                          </p>
-                        )}
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold">
+                            {/* Display full name when available */}
+                            {(() => {
+                              const firstName = effectiveUserData?.first_name || effectiveUserData?.firstName || '';
+                              const lastName = effectiveUserData?.last_name || effectiveUserData?.lastName || '';
+                              
+                              if (firstName && lastName) {
+                                return `${firstName} ${lastName}`;
+                              } else if (firstName) {
+                                return firstName;
+                              } else if (lastName) {
+                                return lastName;
+                              } else if (effectiveUserData?.email) {
+                                // If no name available, show the email
+                                return effectiveUserData.email;
+                              } else {
+                                return 'User';
+                              }
+                            })()}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {/* Show the email as secondary text if we also have a name */}
+                            {(() => {
+                              const firstName = effectiveUserData?.first_name || effectiveUserData?.firstName;
+                              const lastName = effectiveUserData?.last_name || effectiveUserData?.lastName;
+                              
+                              // Only show email as secondary if we have a name to show as primary
+                              if ((firstName || lastName) && effectiveUserData?.email) {
+                                return effectiveUserData.email;
+                              }
+                              
+                              // Otherwise show business name if available
+                              const businessName = profileData?.business_name || 
+                                                  localStorage.getItem('businessName') ||
+                                                  localStorage.getItem('businessname');
+                              if (businessName) {
+                                return businessName;
+                              }
+                              
+                              // Fallback to subscription info
+                              const subscription = profileData?.subscription_type || 
+                                                 effectiveUserData?.subscription_type || 
+                                                 effectiveUserData?.subscriptionType;
+                              if (subscription) {
+                                return `${subscription.charAt(0).toUpperCase()}${subscription.slice(1)} Plan`;
+                              }
+                              
+                              return '';
+                            })()}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     
@@ -907,17 +1496,15 @@ const AppBar = ({
                     <span className="text-sm text-primary-dark font-medium">Help Center</span>
                   </div>
                   
-                  <div className="border-t border-gray-200"></div>
-                  
-                  <div className="px-4 py-3">
+                  <div className="border-t border-gray-200">
                     <button
-                      className="w-full bg-red-600 hover:bg-red-700 text-white py-2 font-medium flex items-center justify-center rounded"
                       onClick={handleLogout}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white py-2 font-medium flex items-center justify-center rounded"
                     >
                       <svg className="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                       </svg>
-                      Sign out
+                      Sign out {effectiveUserData?.email ? `(${effectiveUserData.email})` : ''}
                     </button>
                   </div>
                   
