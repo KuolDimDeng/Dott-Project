@@ -21,36 +21,6 @@ export default function SetupInProgress() {
     );
   }
 
-  return (
-    <ErrorBoundary>
-      <div className="flex flex-col items-center justify-center min-h-screen p-6">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8 flex flex-col items-center max-w-md w-full">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white text-center mb-2">
-            {stepMessage || 'Setting up your dashboard...'}
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 text-center mb-4">
-            We're preparing your workspace. This may take a few moments.
-            Please don't close this window.
-          </p>
-          
-          {/* Progress bar */}
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-4">
-            <div 
-              className="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all duration-300 ease-in-out" 
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            {progress}% Complete
-          </p>
-          {currentStep && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Current step: {currentStep}
-            </p>
-          )}
-        </div>
-      </div>
-    </ErrorBoundary>
-  );
+  // Skip showing loading screen
+  return null;
 }

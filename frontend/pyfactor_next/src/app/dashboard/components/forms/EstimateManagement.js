@@ -1,14 +1,25 @@
-import React, { useState, useEffect, Fragment } from 'react';
+'use client';
+
+import React, { useState, useEffect, Fragment, useCallback, useMemo, useReducer } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
+import { useMemoryOptimizer } from '@/utils/memoryManager';
 import { useToast } from '@/components/Toast/ToastProvider';
 import DatePickerWrapper from '@/components/ui/DatePickerWrapper';
 
 const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
   const [activeTab, setActiveTab] = useState(isNewEstimate ? 0 : 2);
-  const [estimates, setEstimates] = useState([]);
+  const [estimates, setEstimates] = useState(() => []);
   const [selectedEstimate, setSelectedEstimate] = useState(null);
-  const [newEstimate, setNewEstimate] = useState({
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalEstimates, setTotalEstimates] = useState(0);
+
+// TODO: Consider using useReducer instead of multiple useState calls
+/* Example:
+const [state, dispatch] = useReducer(reducer, initialState);
+*/
+  const [newEstimate, setNewEstimate] = useState(() => ({
     title: 'Estimate',
     summary: '',
     customerRef: '',
@@ -20,81 +31,28 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
     currency: 'USD',
     footer: '',
     totalAmount: 0, // Initialize with 0
-  });
+  }));
   const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editedEstimate, setEditedEstimate] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [userSchema, setUserSchema] = useState('');
-  const [customers, setCustomers] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [services, setServices] = useState([]);
+
+// TODO: Consider using useReducer instead of multiple useState calls
+/* Example:
+const [state, dispatch] = useReducer(reducer, initialState);
+*/
+  const [customers, setCustomers] = useState(() => []);
+  const [products, setProducts] = useState(() => []);
+  const [services, setServices] = useState(() => []);
   const [customersLoading, setCustomersLoading] = useState(true);
   const [customersError, setCustomersError] = useState(null);
+  // Add a ref to track if we've already logged the estimates
+  const loggedEstimatesRef = React.useRef(false);
 
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
-
-  const fetchUserProfile = async () => {
-    try {
-      const response = await axiosInstance.get('/api/profile/');
-      console.log('User profile:', response.data);
-      
-      // Check if schema_name exists, use a fallback if not
-      const schemaName = response.data.schema_name || 'default_schema';
-      setUserSchema(schemaName);
-      console.log('User schema:', schemaName);
-      
-      // If we got a fallback or mock profile, log it but don't show error to user
-      if (response.data._error) {
-        logger.warn('Using fallback profile data:', response.data._error);
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      logger.error('Error fetching user profile:', error);
-      
-      // Set a default schema name to prevent further errors
-      setUserSchema('default_schema');
-      toast.warning('Using default profile settings');
-    }
-  };
-
-  const handleCustomerChange = (event) => {
-    const selectedId = event.target.value;
-    const customerData = customers.find((customer) => customer.id === selectedId);
-
-    setNewEstimate((prevEstimate) => ({
-      ...prevEstimate,
-      customerRef: selectedId,
-      customer: customerData
-        ? {
-            id: selectedId,
-            name: customerData.name || `${customerData.first_name} ${customerData.last_name}`,
-          }
-        : null,
-      customer_name: customerData
-        ? customerData.customerName || `${customerData.first_name} ${customerData.last_name}`
-        : '',
-    }));
-  };
-
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
-
-  useEffect(() => {
-    if (userSchema) {
-      console.log('Fetching data for schema:', userSchema);
-      fetchEstimates(userSchema);
-      fetchCustomers(userSchema);
-      fetchProducts(userSchema);
-      fetchServices(userSchema);
-    }
-  }, [userSchema]);
-
-  const fetchCustomers = async () => {
+  // Memoize the fetchCustomers function
+  const fetchCustomers = useCallback(async () => {
     try {
       setCustomersLoading(true);
       setCustomersError(null);
@@ -127,18 +85,24 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
     } finally {
       setCustomersLoading(false);
     }
-  };
+  }, [userSchema, toast]);
 
-  const transformEstimates = (estimates) => {
-    return estimates.map((estimate) => ({
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
+
+  // Memoize the transformEstimates function
+  const transformEstimates = useCallback((estimatesList) => {
+    return (estimatesList || []).map((estimate) => ({
       ...estimate,
       customer: `${estimate.customer_name} (Account: ${estimate.customer_ref || ''})`,
       totalAmount: parseFloat(estimate.totalAmount || 0).toFixed(2), // Format the totalAmount
       items: estimate.items || [],
     }));
-  };
+  }, []);
 
-  const fetchEstimates = async (schema_name) => {
+  // Memoize the fetchEstimates function with pagination
+  const fetchEstimates = useCallback(async (schema_name) => {
     try {
       // Validate schema_name to prevent API errors
       if (!schema_name) {
@@ -146,35 +110,44 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
         schema_name = 'default_schema';
       }
       
-      console.log('Fetching estimates from schema:', schema_name);
-
+      // Use paginated API request
       const response = await axiosInstance.get('/api/estimates/', {
-        params: { schema: schema_name },
+        params: { 
+          schema: schema_name,
+          page: page + 1, // API uses 1-indexed pages
+          limit: pageSize
+        },
       });
 
-      console.log('Raw API response for estimates:', response.data);
+      // Remove excessive logging
+      logger.debug(`Fetched ${response.data?.length || 0} estimates`);
 
       // Handle empty response
-      if (!response.data || !Array.isArray(response.data)) {
-        logger.warn('Invalid estimates data format:', response.data);
+      if (!response.data) {
+        logger.warn('Invalid estimates data format');
         setEstimates([]);
         return;
       }
 
+      // Extract pagination data if available
+      const estimatesData = Array.isArray(response.data) ? response.data : 
+                           (response.data.results || []);
+      const total = response.data.count || estimatesData.length;
+      
       // Use the transformEstimates function
-      const transformedEstimates = transformEstimates(response.data);
-
-      console.log('Transformed estimates:', transformedEstimates);
+      const transformedEstimates = transformEstimates(estimatesData);
+      
       setEstimates(transformedEstimates);
+      setTotalEstimates(total);
     } catch (error) {
-      console.error('Error fetching estimates', error);
-      logger.error('Error fetching estimates:', error);
+      logger.error('Error fetching estimates:', error.message);
       setEstimates([]); // Set empty array to prevent rendering errors
       toast.warning('Unable to load estimates. Please try again later.');
     }
-  };
+  }, [transformEstimates, toast, page, pageSize]);
 
-  const fetchProducts = async () => {
+  // Memoize the fetchProducts function
+  const fetchProducts = useCallback(async () => {
     try {
       const response = await axiosInstance.get('/api/products/', {
         params: { schema: userSchema || 'default_schema' },
@@ -185,9 +158,10 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
       setProducts([]); // Set empty array to prevent rendering errors
       toast.warning('Unable to load products. Please try again later.');
     }
-  };
+  }, [userSchema, toast]);
 
-  const fetchServices = async () => {
+  // Memoize the fetchServices function
+  const fetchServices = useCallback(async () => {
     try {
       const response = await axiosInstance.get('/api/services/', {
         params: { schema: userSchema || 'default_schema' },
@@ -198,35 +172,78 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
       setServices([]); // Set empty array to prevent rendering errors
       toast.warning('Unable to load services. Please try again later.');
     }
-  };
+  }, [userSchema, toast]);
 
-  const handleTabChange = (newValue) => {
+  // Memoize the fetchUserProfile function
+  const fetchUserProfile = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get('/api/profile/');
+      console.log('User profile:', response.data);
+      
+      // Check if schema_name exists, use a fallback if not
+      const schemaName = response.data.schema_name || 'default_schema';
+      setUserSchema(schemaName);
+      console.log('User schema:', schemaName);
+      
+      // If we got a fallback or mock profile, log it but don't show error to user
+      if (response.data._error) {
+        logger.warn('Using fallback profile data:', response.data._error);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      logger.error('Error fetching user profile:', error);
+      
+      // Set a default schema name to prevent further errors
+      setUserSchema('default_schema');
+      toast.warning('Using default profile settings');
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, [fetchUserProfile]);
+
+  useEffect(() => {
+    if (userSchema) {
+      fetchEstimates(userSchema);
+      fetchCustomers();
+      fetchProducts();
+      fetchServices();
+    }
+  }, [userSchema, fetchEstimates, fetchCustomers, fetchProducts, fetchServices]);
+
+  // Memoize the handleTabChange function
+  const handleTabChange = useCallback((newValue) => {
     setActiveTab(newValue);
-  };
+  }, []);
 
-  const handleInputChange = (event) => {
+  // Memoize the handleInputChange function
+  const handleInputChange = useCallback((event) => {
     const { name, value } = event.target;
     setNewEstimate((prev) => ({
       ...prev,
       [name]: value,
     }));
-  };
+  }, []);
 
-  const handleDateChange = (date, name) => {
+  // Memoize the handleDateChange function
+  const handleDateChange = useCallback((date, name) => {
     setNewEstimate((prev) => ({
       ...prev,
       [name]: date,
     }));
-  };
+  }, []);
 
-  const handleItemAdd = () => {
+  // Memoize the handleItemAdd function
+  const handleItemAdd = useCallback(() => {
     setNewEstimate((prev) => ({
       ...prev,
       items: [...prev.items, { product: '', quantity: 1, unitPrice: 0 }],
     }));
-  };
+  }, []);
 
-  const calculateTotalAmount = (items, discount) => {
+  // Memoize the calculateTotalAmount function
+  const calculateTotalAmount = useCallback((items, discount) => {
     if (!items) return 0;
 
     const total = items.reduce((sum, item) => {
@@ -238,53 +255,55 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
     const discountValue = Number(discount) || 0;
     const totalAmount = total - discountValue;
 
-    console.log('Calculated total amount:', totalAmount);
     return totalAmount;
-  };
+  }, []);
 
-  const handleItemChange = (index, field, value) => {
-    const newItems = [...newEstimate.items];
-    newItems[index][field] = value;
+  // Memoize the handleItemChange function
+  const handleItemChange = useCallback((index, field, value) => {
+    setNewEstimate((prev) => {
+      const newItems = [...prev.items];
+      newItems[index][field] = value;
 
-    if (field === 'product') {
-      const selectedItem = [...products, ...services].find((item) => item.id === value);
-      if (selectedItem) {
-        newItems[index].unitPrice = parseFloat(selectedItem.price) || 0;
+      if (field === 'product') {
+        const selectedItem = [...products, ...services].find((item) => item.id === value);
+        if (selectedItem) {
+          newItems[index].unitPrice = parseFloat(selectedItem.price) || 0;
+        }
       }
-    }
 
-    if (field === 'quantity' || field === 'unitPrice') {
-      newItems[index][field] = parseFloat(value) || 0;
-    }
+      if (field === 'quantity' || field === 'unitPrice') {
+        newItems[index][field] = parseFloat(value) || 0;
+      }
 
-    const updatedEstimate = {
-      ...newEstimate,
-      items: newItems,
-      totalAmount: calculateTotalAmount(newItems, newEstimate.discount),
-    };
+      return {
+        ...prev,
+        items: newItems,
+        totalAmount: calculateTotalAmount(newItems, prev.discount),
+      };
+    });
+  }, [products, services, calculateTotalAmount]);
 
-    console.log('Updated estimate with recalculated totalAmount:', updatedEstimate);
-    setNewEstimate(updatedEstimate);
-  };
-
-  const handleDiscountChange = (event) => {
+  // Memoize the handleDiscountChange function
+  const handleDiscountChange = useCallback((event) => {
     const discount = parseFloat(event.target.value) || 0;
     setNewEstimate((prev) => ({
       ...prev,
       discount: discount,
       totalAmount: calculateTotalAmount(prev.items, discount),
     }));
-  };
+  }, [calculateTotalAmount]);
 
-  const handleItemRemove = (index) => {
-    const updatedItems = newEstimate.items.filter((_, i) => i !== index);
-    const updatedEstimate = {
-      ...newEstimate,
-      items: updatedItems,
-      totalAmount: calculateTotalAmount(updatedItems, newEstimate.discount),
-    };
-    setNewEstimate(updatedEstimate);
-  };
+  // Memoize the handleItemRemove function
+  const handleItemRemove = useCallback((index) => {
+    setNewEstimate((prev) => {
+      const updatedItems = prev.items.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        items: updatedItems,
+        totalAmount: calculateTotalAmount(updatedItems, prev.discount),
+      };
+    });
+  }, [calculateTotalAmount]);
 
   const handleCreateEstimate = async (e) => {
     e.preventDefault();
@@ -297,7 +316,7 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
         return date instanceof Date ? date.toISOString().split('T')[0] : date;
       };
 
-      const transformedItems = newEstimate.items.map((item) => ({
+      const transformedItems = (newEstimate.items || []).map((item) => ({
         product: item.product,
         quantity: parseInt(item.quantity),
         unit_price: parseFloat(item.unitPrice),
@@ -419,6 +438,216 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
     handleExportClose();
   };
 
+  // Add pagination handlers
+  const handlePageChange = useCallback((newPage) => {
+    setPage(newPage);
+  }, []);
+
+  const handlePageSizeChange = useCallback((event) => {
+    setPageSize(Number(event.target.value));
+    setPage(0); // Reset to first page
+  }, []);
+
+  // Update the estimatesList to include pagination controls
+  const estimatesList = useMemo(() => {
+    return (
+      <div className="mt-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-medium">
+            Estimate List
+          </h2>
+          
+          <div className="relative">
+            <button
+              type="button"
+              onClick={handleExportClick}
+              className="border border-blue-800 text-blue-800 hover:bg-blue-800 hover:text-white px-4 py-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center"
+            >
+              Export
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {exportMenuOpen && (
+              <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg z-10">
+                <div className="py-1">
+                  <button 
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => handleExport('PDF')}
+                  >
+                    PDF
+                  </button>
+                  <button 
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => handleExport('CSV')}
+                  >
+                    CSV
+                  </button>
+                  <button 
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => handleExport('Excel')}
+                  >
+                    Excel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Title
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Customer
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Amount
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {(estimates || []).map((estimate) => (
+                  <tr 
+                    key={estimate.id} 
+                    onClick={() => handleEstimateSelect(estimate)}
+                    className="hover:bg-gray-50 cursor-pointer"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {estimate.title}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {estimate.customer_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(estimate.date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {estimate.totalAmount
+                        ? Number(estimate.totalAmount).toFixed(2)
+                        : '0.00'}{' '}
+                      {estimate.currency}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Add pagination controls */}
+          <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => handlePageChange(Math.max(0, page - 1))}
+                disabled={page === 0}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => handlePageChange(page + 1)}
+                disabled={(page + 1) * pageSize >= totalEstimates}
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{page * pageSize + 1}</span> to{' '}
+                  <span className="font-medium">
+                    {Math.min((page + 1) * pageSize, totalEstimates)}
+                  </span>{' '}
+                  of <span className="font-medium">{totalEstimates}</span> results
+                </p>
+              </div>
+              <div>
+                <select
+                  value={pageSize}
+                  onChange={handlePageSizeChange}
+                  className="mr-4 border border-gray-300 rounded-md py-1 px-2 text-sm"
+                >
+                  {[5, 10, 25, 50].map((size) => (
+                    <option key={size} value={size}>
+                      {size} per page
+                    </option>
+                  ))}
+                </select>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => handlePageChange(0)}
+                    disabled={page === 0}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                  >
+                    <span className="sr-only">First</span>
+                    <span aria-hidden="true">&laquo;</span>
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(Math.max(0, page - 1))}
+                    disabled={page === 0}
+                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                  >
+                    <span className="sr-only">Previous</span>
+                    <span aria-hidden="true">&lsaquo;</span>
+                  </button>
+                  {/* Page numbers */}
+                  {[...Array(Math.min(5, Math.ceil(totalEstimates / pageSize)))].map((_, i) => {
+                    const pageNumber = page - 2 + i;
+                    if (pageNumber < 0 || pageNumber >= Math.ceil(totalEstimates / pageSize)) {
+                      return null;
+                    }
+                    return (
+                      <button
+                        key={pageNumber}
+                        onClick={() => handlePageChange(pageNumber)}
+                        className={`relative inline-flex items-center px-4 py-2 border ${
+                          page === pageNumber ? 'bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        } text-sm font-medium`}
+                      >
+                        {pageNumber + 1}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => handlePageChange(page + 1)}
+                    disabled={(page + 1) * pageSize >= totalEstimates}
+                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                  >
+                    <span className="sr-only">Next</span>
+                    <span aria-hidden="true">&rsaquo;</span>
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(Math.ceil(totalEstimates / pageSize) - 1)}
+                    disabled={(page + 1) * pageSize >= totalEstimates}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                  >
+                    <span className="sr-only">Last</span>
+                    <span aria-hidden="true">&raquo;</span>
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }, [estimates, totalEstimates, page, pageSize, handlePageChange, handleExportClick, handleEstimateSelect]);
+
+  // Reset the logged estimates ref when the estimates change
+  useEffect(() => {
+    loggedEstimatesRef.current = false;
+  }, [estimates]);
+
   return (
     <div className="bg-gray-50 p-6 rounded-lg">
       <h1 className="text-2xl font-semibold mb-4">
@@ -506,11 +735,11 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
                   id="customerRef"
                   name="customerRef"
                   value={newEstimate.customerRef}
-                  onChange={handleCustomerChange}
+                  onChange={handleInputChange}
                   className={`w-full rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border ${customersError ? 'border-red-500' : 'border-gray-300'}`}
                 >
                   <option value="">Select a customer</option>
-                  {customers.map((customer) => (
+                  {(customers || []).map((customer) => (
                     <option key={customer.id} value={String(customer.id)}>
                       {customer.customerName || `${customer.first_name} ${customer.last_name}`}
                     </option>
@@ -552,7 +781,7 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
               <div className="mt-6">
                 <h3 className="text-md font-medium mb-2">Items</h3>
                 
-                {newEstimate.items.map((item, index) => (
+                {(newEstimate.items || []).map((item, index) => (
                   <div key={index} className="flex flex-wrap items-center mb-4 gap-3">
                     <div className="grow lg:max-w-md">
                       <label htmlFor={`product-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
@@ -565,12 +794,12 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
                         className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border"
                       >
                         <option value="">Select a product/service</option>
-                        {products.map((product) => (
+                        {(products || []).map((product) => (
                           <option key={product.id} value={product.id}>
                             {product.name}
                           </option>
                         ))}
-                        {services.map((service) => (
+                        {(services || []).map((service) => (
                           <option key={service.id} value={service.id}>
                             {service.name}
                           </option>
@@ -906,104 +1135,7 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
         )}
 
         {/* Estimate List Tab */}
-        {activeTab === 2 && (
-          <div className="mt-6">
-            {console.log('Rendering estimate list:', estimates)}
-
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-medium">
-                Estimate List
-              </h2>
-              
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={handleExportClick}
-                  className="border border-blue-800 text-blue-800 hover:bg-blue-800 hover:text-white px-4 py-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center"
-                >
-                  Export
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                
-                {exportMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg z-10">
-                    <div className="py-1">
-                      <button 
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => handleExport('PDF')}
-                      >
-                        PDF
-                      </button>
-                      <button 
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => handleExport('CSV')}
-                      >
-                        CSV
-                      </button>
-                      <button 
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => handleExport('Excel')}
-                      >
-                        Excel
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Title
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Customer
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total Amount
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {estimates.map((estimate) => (
-                      <tr 
-                        key={estimate.id} 
-                        onClick={() => handleEstimateSelect(estimate)}
-                        className="hover:bg-gray-50 cursor-pointer"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {estimate.title}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {estimate.customer_name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(estimate.date).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {console.log('Estimate in list row:', estimate)}
-                          {estimate.totalAmount
-                            ? Number(estimate.totalAmount).toFixed(2)
-                            : '0.00'}{' '}
-                          {estimate.currency}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
+        {activeTab === 2 && estimatesList}
 
         {/* Delete Confirmation Dialog */}
         {deleteDialogOpen && (
@@ -1062,4 +1194,4 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
   );
 };
 
-export default EstimateManagement;
+export default React.memo(EstimateManagement);

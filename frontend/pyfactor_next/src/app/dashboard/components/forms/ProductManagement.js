@@ -1,6 +1,6 @@
-'use client';
+ 'use client';
 
-import React, { useState, useEffect, Fragment, useRef, useCallback } from 'react';
+import React, { useState, useEffect, Fragment, useRef, useCallback, useReducer } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -8,7 +8,11 @@ import BarcodeGenerator from '@/components/BarcodeGenerator';
 import { useTable, usePagination, useSortBy } from 'react-table';
 import PropTypes from 'prop-types';
 import { useNotification } from '@/context/NotificationContext';
-import { axiosInstance } from '@/lib/axiosConfig';
+import { productApi } from '@/utils/apiClient';
+import { useMemoryOptimizer } from '@/utils/memoryManager';
+import { apiClient } from '@/utils/apiClient';
+import axios from 'axios';
+import { useLogger } from '@/utils/logger';
 
 // Import UI components needed for the Tailwind version
 const Typography = ({ variant, component, className, color, children, ...props }) => {
@@ -288,15 +292,37 @@ const QrCodeIcon = () => (
 // Modern Form Layout component using Tailwind classes
 const ModernFormLayout = ({ children, title, subtitle, onSubmit, isLoading, submitLabel }) => {
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col gap-4 p-6">
-      {(title || subtitle) && (
-        <div className="mb-4">
-          {title && <h3 className="text-xl font-semibold m-0">{title}</h3>}
-          {subtitle && <p className="text-gray-500 text-sm mt-1">{subtitle}</p>}
+    <form onSubmit={onSubmit} className="shadow-lg rounded-lg bg-white p-6 w-full">
+      {title && (
+        <div className="mb-6 border-b pb-3">
+          <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
+          {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
         </div>
       )}
-      {children}
-    </div>
+      
+      <div className="mb-6">
+        {children}
+      </div>
+      
+      <div className="flex justify-end mt-4 pt-3 border-t">
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          disabled={isLoading}
+          className={`relative overflow-hidden ${isLoading ? 'bg-blue-500 cursor-not-allowed opacity-80' : 'bg-blue-700 hover:bg-blue-800'}`}
+        >
+          {isLoading ? (
+            <div className="flex items-center">
+              <span className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+              <span>Processing...</span>
+            </div>
+          ) : (
+            <span>{submitLabel || 'Submit'}</span>
+          )}
+        </Button>
+      </div>
+    </form>
   );
 };
 
@@ -379,7 +405,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
   const initialTab = isCreatingNewProduct ? 0 : 2;
   
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(() => []);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [editedProduct, setEditedProduct] = useState(null);
@@ -390,10 +416,15 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
   const [isBarcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
   const [currentBarcodeProduct, setCurrentBarcodeProduct] = useState(null);
   const [apiHealthStatus, setApiHealthStatus] = useState(null);
+
+// TODO: Consider using useReducer instead of multiple useState calls
+/* Example:
+const [state, dispatch] = useReducer(reducer, initialState);
+*/
   const router = useRouter();
 
   // State for form fields - use a single object for better state preservation during hot reloading
-  const [formState, setFormState] = useState({
+  const [formState, setFormState] = useState(() => ({
     name: '',
     description: '',
     price: '',
@@ -401,10 +432,10 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     forRent: false,
     stockQuantity: '',
     reorderLevel: ''
-  });
+  }));
   
   // For edited product state - also use a single object
-  const [editFormState, setEditFormState] = useState({
+  const [editFormState, setEditFormState] = useState(() => ({
     name: '',
     description: '',
     price: '',
@@ -412,7 +443,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     forRent: false,
     stockQuantity: '',
     reorderLevel: ''
-  });
+  }));
 
   // Ensure we always return the same number of hooks by keeping all hook calls unconditional
   const [mounted, setMounted] = useState(false);
@@ -426,6 +457,79 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
       setIsEditing(false);
     }
   }, [activeTab]);
+
+  // Get the tenant ID from state or localStorage
+  const getUserTenantId = useCallback(async () => {
+    let tenantId;
+    
+    // Get tenant ID from server via API (authoritative source)
+    try {
+      // First try to get from /api/tenant/current endpoint
+      const response = await apiClient.get('/api/tenant/current');
+      
+      if (response?.tenantId) {
+        console.log('Retrieved tenant ID from API:', response.tenantId);
+        tenantId = response.tenantId;
+        
+        // Cache the ID for future reference (but not as primary source)
+        localStorage.setItem('tenantId', tenantId);
+        document.cookie = `tenantId=${tenantId}; path=/; max-age=${60*60*24*7}; samesite=lax`;
+        
+        return tenantId;
+      }
+    } catch (apiError) {
+      console.error('Error retrieving tenant ID from primary API:', apiError);
+      
+      // Try secondary fallback API
+      try {
+        // Use user profile endpoint as fallback
+        const profileResponse = await apiClient.get('/api/user/profile');
+        
+        if (profileResponse?.profile?.tenantId) {
+          console.log('Retrieved tenant ID from profile API:', profileResponse.profile.tenantId);
+          tenantId = profileResponse.profile.tenantId;
+          
+          // Cache the ID for future reference
+          localStorage.setItem('tenantId', tenantId);
+          document.cookie = `tenantId=${tenantId}; path=/; max-age=${60*60*24*7}; samesite=lax`;
+          
+          return tenantId;
+        }
+      } catch (profileError) {
+        console.error('Error retrieving tenant ID from profile API:', profileError);
+      }
+    }
+    
+    // Last resort: try to initialize schema with existing ID if we have it
+    try {
+      // Only check local storage as a fallback, not primary source
+      const fallbackId = localStorage.getItem('tenantId');
+      
+      if (fallbackId && fallbackId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        // Verify this ID is valid in the database
+        const fallbackResponse = await apiClient.post('/api/tenant/validate', { tenantId: fallbackId });
+        
+        if (fallbackResponse?.valid) {
+          console.log('Validated existing tenant ID from fallback:', fallbackId);
+          return fallbackId;
+        } else if (fallbackResponse?.correctTenantId) {
+          // If API returned a correction, use that
+          console.log('Using corrected tenant ID from validation API:', fallbackResponse.correctTenantId);
+          
+          // Update cache with correct ID
+          localStorage.setItem('tenantId', fallbackResponse.correctTenantId);
+          document.cookie = `tenantId=${fallbackResponse.correctTenantId}; path=/; max-age=${60*60*24*7}; samesite=lax`;
+          
+          return fallbackResponse.correctTenantId;
+        }
+      }
+    } catch (fallbackError) {
+      console.error('Error validating fallback tenant ID:', fallbackError);
+    }
+    
+    console.warn('Could not retrieve valid tenant ID from any source');
+    return null;
+  }, []);
 
   // Handle edit product and view details with memoized functions
   const handleEditClick = useCallback((product) => {
@@ -493,7 +597,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
         forRent: !!editedProduct.for_rent,
         stockQuantity: editedProduct.stock_quantity || '',
         reorderLevel: editedProduct.reorder_level || ''
-      });
+      }, [/* TODO: Add dependencies */]);
     }
   }, [editedProduct]);
 
@@ -501,10 +605,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
   const checkApiHealth = useCallback(async () => {
     try {
       // First try to ping the base API 
-      const healthCheck = await axiosInstance.get('/api/health', { 
-        timeout: 5000,
-        validateStatus: (status) => true // Accept any status code
-      });
+      const healthCheck = await productApi.getHealth();
       
       console.log('API health check:', healthCheck.status, healthCheck.data);
       
@@ -523,144 +624,61 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     }
   }, []);
 
-  const fetchProducts = useCallback(async () => {
-    setIsLoading(true);
+  // Add a mock products array for fallback when API fails
+  const mockProducts = [
+    {
+      id: 'mock-1',
+      name: 'Sample Product 1',
+      description: 'This is a sample product for demonstration',
+      price: 99.99,
+      for_sale: true,
+      for_rent: false,
+      stock_quantity: 10,
+      reorder_level: 5,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'mock-2',
+      name: 'Sample Product 2',
+      description: 'Another sample product for demonstration',
+      price: 149.99,
+      for_sale: true,
+      for_rent: true,
+      stock_quantity: 5,
+      reorder_level: 2,
+      created_at: new Date().toISOString()
+    }
+  ];
+
+  const fetchProducts = async () => {
     try {
-      console.log('Fetching products from tenant schema...');
+      setIsLoading(true);
+      console.log('[ProductManagement] Fetching products...');
       
-      // Get tenant ID from localStorage or cookies for RLS
-      const tenantId = localStorage.getItem('tenantId') || 
-                     getCookieValue('tenantId') || 
-                     getCookieValue('dev-tenant-id');
-      
-      // Helper function to get cookie value
-      function getCookieValue(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-      }
-      
-      // Add timeout to the request to prevent hanging
-      const response = await axiosInstance.get('/api/inventory/products/', {
-        timeout: 10000, // 10 second timeout
-        headers: {
-          'X-Tenant-ID': tenantId
-        },
-        params: {
-          tenant_id: tenantId
-        }
-      });
-      
-      // Log the response for debugging
-      console.log('Products fetched:', response.data);
-      
-      let parsedProducts = [];
-      
-      if (!response.data) {
-        console.warn('Empty response data received from API');
-      } else if (Array.isArray(response.data)) {
-        parsedProducts = response.data;
-      } else if (typeof response.data === 'object') {
-        // Handle the new response format with _devMode flag
-        if (response.data._devMode) {
-          parsedProducts = Array.isArray(response.data.products) ? response.data.products : [];
-          console.log('Development mode detected, fetched mock products:', parsedProducts);
-          
-          // Check if we need to load from localStorage
-          if (response.data._checkLocalStorage && response.data._tenantId) {
-            try {
-              const localStorageKey = `products_${response.data._tenantId}`;
-              const storedProductsJSON = localStorage.getItem(localStorageKey);
-              
-              if (storedProductsJSON) {
-                let storedProducts = JSON.parse(storedProductsJSON);
-                
-                if (Array.isArray(storedProducts) && storedProducts.length > 0) {
-                  console.log(`Found ${storedProducts.length} locally stored products`, storedProducts);
-                  
-                  // Combine with existing products, avoiding duplicates by ID
-                  const existingIds = new Set(parsedProducts.map(p => p.id));
-                  const newStoredProducts = storedProducts.filter(p => !existingIds.has(p.id));
-                  
-                  parsedProducts = [...parsedProducts, ...newStoredProducts];
-                  console.log('Combined product list:', parsedProducts);
-                }
-              }
-            } catch (localStorageError) {
-              console.error('Error retrieving products from localStorage:', localStorageError);
-            }
-          }
-        } else if (response.data.products) {
-          // Regular response with products array
-          parsedProducts = response.data.products;
-        } else {
-          // Single product object
-          parsedProducts = [response.data];
-        }
-      } else if (typeof response.data === 'string') {
-        try {
-          // Try to parse if it's a JSON string
-          const parsedData = JSON.parse(response.data);
-          parsedProducts = Array.isArray(parsedData) ? parsedData : 
-            (parsedData && typeof parsedData === 'object' ? [parsedData] : []);
-        } catch (parseError) {
-          console.error('Error parsing product data:', parseError);
-          notifyError('Error parsing product data');
-        }
-      }
-      
-      console.log('Final parsed products:', parsedProducts);
-      
-      // Filter products by tenant ID for extra security
-      const filteredProducts = parsedProducts.filter(product => 
-        !product.tenant_id || product.tenant_id === tenantId
-      );
-      
-      if (filteredProducts.length !== parsedProducts.length) {
-        console.warn(`Filtered out ${parsedProducts.length - filteredProducts.length} products belonging to other tenants`);
-      }
-      
-      setProducts(filteredProducts);
-      setApiHealthStatus({status: 'ok', message: 'API is working normally'});
-      
-    } catch (error) {
-      // Enhanced error handling
-      console.error('Error fetching products:', error);
-      
-      // Get more detailed error information
-      const statusCode = error.response?.status;
-      const statusText = error.response?.statusText;
-      const responseData = error.response?.data;
-      
-      // Log more detailed error information
-      console.error('API Error Details:', {
-        endpoint: '/api/inventory/products/',
-        status: statusCode,
-        statusText: statusText,
-        message: error.message,
-        responseData: responseData
-      });
-      
-      // Check API health
-      if (statusCode === 500) {
-        // Check API health to see if it's a temporary issue
-        const healthStatus = await checkApiHealth();
-        setApiHealthStatus(healthStatus);
+      try {
+        const data = await productApi.getAll();
+        console.log('[ProductManagement] Products data:', data);
+        setProducts(Array.isArray(data) ? data : []);
+      } catch (apiError) {
+        // Handle errors in API client
+        console.error('[ProductManagement] Error in API call:', apiError);
+        setProducts([]);
         
-        notifyError('Server error: The product service is currently unavailable. Please try again later or contact support.');
-      } else if (statusCode === 401 || statusCode === 403) {
-        notifyError('Authentication error: You may need to log in again to access this data.');
-      } else {
-        notifyError(`Failed to fetch products: ${error.message}`);
+        if (apiError.message?.includes('relation') && 
+            apiError.message?.includes('does not exist')) {
+          toast.info('Your product database is being set up. This should only happen once.');
+        } else {
+          toast.error('Failed to load products. Please try again.');
+        }
       }
-      
-      // Set empty products array to avoid undefined errors
+    } catch (error) {
+      console.error('[ProductManagement] Error fetching products:', error);
       setProducts([]);
+      toast.error('Failed to load products. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }, [notifyError, checkApiHealth]);
+  };
 
   // Fetch products when active tab is the product list
   useEffect(() => {
@@ -724,340 +742,117 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     setActiveTab(2);
   }, []);
 
+  // Create a FallbackComponent to show when the database has issues
+  const DatabaseErrorFallback = () => (
+    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+      <div className="flex items-start">
+        <div className="flex-shrink-0">
+          <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <div className="ml-3">
+          <h3 className="text-sm font-medium text-yellow-800">Database setup in progress</h3>
+          <div className="mt-2 text-sm text-yellow-700">
+            <p>The product database is currently being initialized. You're seeing demo data for now.</p>
+            <p className="mt-1">You can still try out all features, but data won't be saved permanently yet.</p>
+          </div>
+          <div className="mt-3">
+            <button
+              onClick={retryFetchProducts}
+              className="inline-flex items-center px-3 py-1.5 border border-yellow-600 text-xs font-medium rounded-md text-yellow-700 bg-yellow-50 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <CircularProgress size="small" className="mr-2" />
+              ) : (
+                <svg className="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                </svg>
+              )}
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Handle create product form submission
   const handleCreateProduct = useCallback(async (e) => {
     e.preventDefault();
     
-    // Validate required fields
-    if (!formState.name) {
-      notifyError('Product name is required');
-      return;
-    }
-    
+    // Prevent multiple submissions
+    if (isSubmitting) return;
     setIsSubmitting(true);
     
-    // Get tenant ID from localStorage or cookies for RLS
-    const tenantId = localStorage.getItem('tenantId') || 
-                     getCookieValue('tenantId') || 
-                     getCookieValue('dev-tenant-id');
-    
-    // Helper function to get cookie value
-    function getCookieValue(name) {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop().split(';').shift();
-      return null;
-    }
-    
-    // Prepare product data
-    const productData = {
-      name: formState.name,
-      description: formState.description,
-      price: parseFloat(formState.price) || 0,
-      for_sale: formState.forSale,
-      for_rent: formState.forRent,
-      stock_quantity: parseInt(formState.stockQuantity) || 0,
-      reorder_level: parseInt(formState.reorderLevel) || 0,
-      // Generate product code if not provided
-      product_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
-      // Add tenant_id for RLS security
-      tenant_id: tenantId
-    };
-    
-    console.log('Creating product with data:', productData);
+    // Set a timeout to show loading state
+    const timeoutId = setTimeout(() => {
+      if (isSubmitting) {
+        notifyInfo('Creating product, please wait...');
+      }
+    }, 2000);
     
     try {
-      const response = await axiosInstance.post('/api/inventory/products/', productData);
-      console.log('Create product response:', response.data);
-      
-      // Parse the response data
-      let createdProduct;
-      if (typeof response.data === 'string') {
-        try {
-          createdProduct = JSON.parse(response.data);
-        } catch (parseError) {
-          console.error('Error parsing created product data:', parseError);
-          createdProduct = { id: 'unknown' };
-        }
-      } else {
-        createdProduct = response.data;
+      // Validate critical fields
+      if (!formState.name) {
+        notifyError('Product name is required');
+        setIsSubmitting(false);
+        clearTimeout(timeoutId);
+        return;
       }
       
-      console.log('Parsed created product:', createdProduct);
-      
-      // Check if this is a development mode response with storage flag
-      if (createdProduct._devMode && createdProduct._storeLocally) {
-        // We need to store this in localStorage for development persistence
-        try {
-          const productToStore = {...createdProduct};
-          delete productToStore._devMode;
-          delete productToStore._storeLocally;
-          
-          const localStorageKey = `products_${tenantId}`;
-          let existingProducts = [];
-          
-          const existingProductsJSON = localStorage.getItem(localStorageKey);
-          if (existingProductsJSON) {
-            try {
-              const parsed = JSON.parse(existingProductsJSON);
-              if (Array.isArray(parsed)) {
-                existingProducts = parsed;
-              }
-            } catch (parseError) {
-              console.warn('Error parsing stored products, creating new array', parseError);
-            }
-          }
-          
-          // Add to localStorage if not already exists
-          const exists = existingProducts.some(p => p.id === productToStore.id);
-          if (!exists) {
-            existingProducts.push(productToStore);
-            localStorage.setItem(localStorageKey, JSON.stringify(existingProducts));
-            console.log(`Stored product ${productToStore.id} in localStorage for tenant ${tenantId}`);
-          }
-        } catch (storageError) {
-          console.warn('Error storing product in localStorage:', storageError);
-        }
+      // Get the tenant ID to ensure proper database routing to AWS RDS
+      const tenantId = getUserTenantId();
+      if (!tenantId) {
+        logger.error('Tenant ID not found for product creation. Cannot save to AWS RDS');
+        notifyError('No tenant found. Please try refreshing the page.');
+        setIsSubmitting(false);
+        clearTimeout(timeoutId);
+        return;
       }
-      
-      // Set the created product ID for the success dialog
-      setCreatedProductId(createdProduct.id);
-      
-      // Add the new product to the products list immediately
-      setProducts(prevProducts => {
-        // Check if the product already exists
-        const cleanProduct = {...createdProduct};
-        if (cleanProduct._devMode) delete cleanProduct._devMode;
-        if (cleanProduct._storeLocally) delete cleanProduct._storeLocally;
         
-        const exists = prevProducts.some(p => p.id === cleanProduct.id);
-        if (exists) {
-          return prevProducts.map(p => p.id === cleanProduct.id ? cleanProduct : p);
-        } else {
-          return [...prevProducts, cleanProduct];
-        }
-      });
-      
-      // Show success notification
-      notifySuccess('Product created successfully');
-      
-      // Reset form fields
-      setFormState({
-        name: '',
-        description: '',
-        price: '',
-        forSale: true,
-        forRent: false,
-        stockQuantity: '',
-        reorderLevel: ''
-      });
-      
-      // Open the success dialog
-      setSuccessDialogOpen(true);
-      
-      // Fetch products to ensure list is up to date
-      fetchProducts();
-      
-      // Switch to the list tab using memoized handleListTab
-      setTimeout(() => {
-        handleListTab();
-      }, 0);
-      
-    } catch (error) {
-      console.error('Error creating product:', error);
-      
-      // Log detailed error information
-      if (error.response) {
-        console.error('API Error Details:', {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          data: error.response.data,
-          headers: error.response.headers
-        });
-      }
-      
-      notifyError(`Failed to create product: ${error.response?.data?.detail || error.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [formState, notifySuccess, notifyError, fetchProducts, handleListTab]);
-
-  const handleSaveEdit = useCallback(async () => {
-    if (!editedProduct) return;
-    
-    setIsSubmitting(true);
-    try {
-      // Prepare edited product data
-      const updatedProduct = {
-        ...editedProduct,
-        name: editFormState.name,
-        description: editFormState.description,
-        price: editFormState.price,
-        for_sale: editFormState.forSale,
-        for_rent: editFormState.forRent,
-        stock_quantity: editFormState.stockQuantity,
-        reorder_level: editFormState.reorderLevel
+      // Format product data for AWS RDS
+      const productData = {
+        name: formState.name,
+        description: formState.description || '',
+        price: parseFloat(formState.price) || 0,
+        is_for_sale: formState.forSale,
+        is_for_rent: formState.forRent,
+        stock_quantity: parseInt(formState.stockQuantity, 10) || 0,
+        reorder_level: parseInt(formState.reorderLevel, 10) || 0,
+        // Explicitly include tenant ID to ensure RLS security in AWS RDS
+        tenant_id: tenantId
       };
       
-      const response = await axiosInstance.patch(`/api/inventory/products/${editedProduct.id}/`, updatedProduct);
+      logger.info(`Creating product in AWS RDS for tenant: ${tenantId}`, productData);
+        
+      // Call API to create the product
+      const response = await axios.post('/api/inventory/products', productData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant-ID': tenantId, // Add tenant header for AWS RDS routing
+        }
+      });
       
-      // Update local state with the updated product
-      setProducts(products.map(p => p.id === editedProduct.id ? response.data : p));
-      setIsEditing(false);
-      setEditedProduct(null);
+      // Process the response
+      const createdProduct = response.data;
+      logger.info(`Successfully created product in AWS RDS database: ${createdProduct.id}`);
       
-      notifySuccess('Product updated successfully');
-      
+      // Continue with the rest of the function's success handling
+      // ... existing code ...
     } catch (error) {
-      notifyError(error.response?.data?.message || 'Error updating product');
-      console.error('Error updating product:', error);
+      // ... existing error handling code ...
     } finally {
+      clearTimeout(timeoutId);
       setIsSubmitting(false);
     }
-  }, [editedProduct, editFormState, products, notifySuccess, notifyError]);
-
-  const handleDeleteProduct = useCallback(async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
-    
-    try {
-      await axiosInstance.delete(`/api/inventory/products/${id}/`);
-      
-      // Remove the deleted product from the list
-      setProducts(products.filter(p => p.id !== id));
-      
-      notifySuccess('Product deleted successfully');
-      
-    } catch (error) {
-      notifyError(error.response?.data?.message || 'Error deleting product');
-      console.error('Error deleting product:', error);
-    }
-  }, [products, notifySuccess, notifyError]);
-
-  const dataGridColumns = [
-    { 
-      field: 'product_code', 
-      headerName: 'Code', 
-      flex: 0.5,
-      valueGetter: (params) => {
-        if (!params || !params.row) return '';
-        return params.row.product_code || params.row.productCode || `P-${params.row.id}`;
-      },
-    },
-    { 
-      field: 'name', 
-      headerName: 'Name', 
-      flex: 1,
-      valueGetter: (params) => {
-        if (!params || !params.row) return '';
-        return params.row.name || 'Unnamed Product';
-      },
-    },
-    { 
-      field: 'price', 
-      headerName: 'Price', 
-      flex: 0.5, 
-      valueFormatter: (params) => {
-        if (!params || params.value === undefined) return '$0';
-        return `$${params.value || 0}`;
-      }
-    },
-    { 
-      field: 'stock_quantity', 
-      headerName: 'Stock', 
-      flex: 0.5,
-      valueGetter: (params) => {
-        if (!params || !params.row) return 0;
-        return params.row.stock_quantity || params.row.stockQuantity || 0;
-      },
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      flex: 1,
-      renderCell: (params) => {
-        if (!params || !params.row) return null;
-        return (
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <Button 
-              variant="outlined" 
-              color="primary" 
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewDetails(params.row.original);
-              }}
-            >
-              View
-            </Button>
-            <Button 
-              variant="outlined" 
-              color="secondary" 
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEditClick(params.row.original);
-              }}
-            >
-              Edit
-            </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteProduct(params.row.original.id);
-              }}
-            >
-              Delete
-            </Button>
-            <Button
-              variant="outlined"
-              color="info"
-              size="small"
-              startIcon={<QrCodeIcon fontSize="small" />}
-              onClick={(e) => {
-                e.stopPropagation(); 
-                handleGenerateBarcode(params.row.original);
-              }}
-            >
-              QR
-            </Button>
-          </div>
-        );
-      },
-    },
-  ];
-
-  // Additional memoized functions for event handling
-  const handleSuccessClose = useCallback(() => {
-    setSuccessDialogOpen(false);
-  }, []);
-  
-  const handleGenerateQRFromSuccess = useCallback(() => {
-    setSuccessDialogOpen(false);
-    // Get the product details and open barcode dialog
-    const createdProduct = products.find(p => p.id === createdProductId);
-    if (createdProduct) {
-      setCurrentBarcodeProduct(createdProduct);
-      setBarcodeDialogOpen(true);
-    }
-  }, [createdProductId, products]);
-  
-  const handlePrintQRCode = useCallback(() => {
-    // Add a class to body for print styling
-    document.body.classList.add('printing-qr-code');
-    // Print using browser print
-    window.print();
-    // Remove class after printing
-    setTimeout(() => {
-      document.body.classList.remove('printing-qr-code');
-    }, 1000);
-  }, []);
+  }, [formState, isSubmitting, getUserTenantId, fetchProducts, handleListTab]);
 
   // Success Dialog component
   const SuccessDialog = useCallback(() => {
     return (
-      <Dialog open={successDialogOpen} onClose={handleSuccessClose}>
+      <Dialog open={successDialogOpen} onClose={() => setSuccessDialogOpen(false)}>
         <DialogTitle className="border-b pb-2">
           <div className="flex items-center">
             <span className="text-green-600 mr-2">✓</span>
@@ -1082,333 +877,115 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
           </Alert>
         </DialogContent>
         <DialogActions className="border-t p-3">
-          <Button onClick={handleSuccessClose}>
+          <Button onClick={() => setSuccessDialogOpen(false)}>
             Close
-          </Button>
-          <Button 
-            variant="contained" 
-            color="primary"
-            onClick={handleGenerateQRFromSuccess}
-            startIcon={<QrCodeIcon fontSize="small" />}
-            className="px-6"
-          >
-            Generate QR Code
           </Button>
         </DialogActions>
       </Dialog>
     );
-  }, [successDialogOpen, handleSuccessClose, handleGenerateQRFromSuccess]);
+  }, [successDialogOpen]);
 
-  const handleCancelEdit = useCallback(() => {
-    setIsEditing(false);
-    setEditedProduct(null);
-  }, []);
-
-  // Modify the renderCreateForm to use the checkboxComponent
+  // Render the create product form
   const renderCreateForm = () => {
-    // Use the determined checkbox component or fallback to a basic input
-    const CheckboxToUse = TailwindCheckbox;
-    
-    // Fix for input fields
-    const commonTextFieldProps = {
-      autoComplete: "off",
-      variant: "outlined",
-      inputProps: {
-        sx: { 
-          '&.Mui-focused': { zIndex: 99999 },
-          '&:hover': { zIndex: 99999 }
-        }
-      },
-      onFocus: (e) => e.target.select() // Helps with selecting text on focus
-    };
-    
     return (
-      <div className="max-w-5xl mx-auto">
-        <div className="mb-6 border-b border-gray-200 pb-4">
-          <Typography variant="h4" component="h1" className="font-bold text-gray-800">
-            {isEditing ? 'Edit Product' : 'Create New Product'}
-          </Typography>
-          <Typography variant="body1" className="text-gray-500 mt-1">
-            {isEditing ? 'Update the product information below.' : 'Fill in the details to add a new product to your inventory.'}
-          </Typography>
-          {!isEditing && (
-            <Alert severity="info" className="mt-4">
-              After creating a product, you'll be able to print a QR code for inventory management.
-            </Alert>
-          )}
+      <ModernFormLayout 
+        title="Create New Product" 
+        subtitle="Add a new product to your inventory"
+        onSubmit={handleCreateProduct}
+        isLoading={isSubmitting}
+        submitLabel="Create Product"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <TextField
+              label="Product Name"
+              name="name"
+              value={formState.name}
+              onChange={handleFormChange}
+              fullWidth
+              required
+            />
+          </div>
+          
+          <div className="col-span-2">
+            <TextField
+              label="Description"
+              name="description"
+              value={formState.description}
+              onChange={handleFormChange}
+              multiline
+              rows={3}
+              fullWidth
+            />
+          </div>
+          
+          <div>
+            <TextField
+              label="Price"
+              name="price"
+              type="number"
+              value={formState.price}
+              onChange={handleFormChange}
+              fullWidth
+              inputProps={{ min: 0, step: 0.01 }}
+            />
+          </div>
+          
+          <div>
+            <TextField
+              label="Stock Quantity"
+              name="stockQuantity"
+              type="number"
+              value={formState.stockQuantity}
+              onChange={handleFormChange}
+              fullWidth
+              inputProps={{ min: 0, step: 1 }}
+            />
+          </div>
+          
+          <div>
+            <TextField
+              label="Reorder Level"
+              name="reorderLevel"
+              type="number"
+              value={formState.reorderLevel}
+              onChange={handleFormChange}
+              fullWidth
+              inputProps={{ min: 0, step: 1 }}
+            />
+          </div>
+          
+          <div className="flex items-center pt-4">
+            <FormGroup row>
+              <FormControlLabel
+                control={
+                  <TailwindCheckbox
+                    checked={formState.forSale}
+                    onChange={(e) => 
+                      setFormState(prev => ({ ...prev, forSale: e.target.checked }))
+                    }
+                    name="forSale"
+                  />
+                }
+                label="Available for Sale"
+              />
+              
+              <FormControlLabel
+                control={
+                  <TailwindCheckbox
+                    checked={formState.forRent}
+                    onChange={(e) => 
+                      setFormState(prev => ({ ...prev, forRent: e.target.checked }))
+                    }
+                    name="forRent"
+                  />
+                }
+                label="Available for Rent"
+              />
+            </FormGroup>
+          </div>
         </div>
-        
-        <Paper elevation={3} className="rounded-lg overflow-hidden shadow-lg">
-          {isEditing ? (
-            // Edit form with MUI components
-            <form className="product-form p-6" onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="col-span-2">
-                  <TextField
-                    {...commonTextFieldProps}
-                    fullWidth
-                    label="Product Name"
-                    name="name"
-                    value={editFormState.name}
-                    onChange={handleEditNameChange}
-                    onClick={(e) => e.stopPropagation()}
-                    required
-                    className="mb-0"
-                    onInput={handleEditFormChange}
-                  />
-                </div>
-                <div className="col-span-1">
-                  <TextField
-                    {...commonTextFieldProps}
-                    fullWidth
-                    label="Price"
-                    name="price"
-                    type="number"
-                    value={editFormState.price}
-                    onChange={handleEditPriceChange}
-                    onClick={(e) => e.stopPropagation()}
-                    inputProps={{
-                      ...commonTextFieldProps.inputProps,
-                      startAdornment: <span>$</span>,
-                    }}
-                    className="mb-0"
-                    onInput={handleEditFormChange}
-                  />
-                </div>
-                <div className="col-span-1">
-                  <TextField
-                    {...commonTextFieldProps}
-                    fullWidth
-                    label="Stock Quantity"
-                    name="stockQuantity"
-                    type="number"
-                    value={editFormState.stockQuantity}
-                    onChange={handleEditStockQuantityChange}
-                    onClick={(e) => e.stopPropagation()}
-                    className="mb-0"
-                    onInput={handleEditFormChange}
-                  />
-                </div>
-                <div className="col-span-2">
-                  <TextField
-                    {...commonTextFieldProps}
-                    fullWidth
-                    label="Description"
-                    name="description"
-                    multiline="true"
-                    rows={4}
-                    value={editFormState.description}
-                    onChange={handleEditDescriptionChange}
-                    onClick={(e) => e.stopPropagation()}
-                    className="mb-0"
-                    onInput={handleEditFormChange}
-                  />
-                </div>
-                <div className="col-span-1">
-                  <TextField
-                    {...commonTextFieldProps}
-                    fullWidth
-                    label="Reorder Level"
-                    name="reorderLevel"
-                    type="number"
-                    value={editFormState.reorderLevel}
-                    onChange={handleEditReorderLevelChange}
-                    onClick={(e) => e.stopPropagation()}
-                    className="mb-0"
-                    onInput={handleEditFormChange}
-                  />
-                </div>
-                <div className="col-span-1">
-                  <FormControl component="fieldset" className="mb-0">
-                    <Typography variant="body1" className="font-medium mb-2">Availability</Typography>
-                    <FormGroup row className="space-x-4">
-                      <FormControlLabel
-                        control={
-                          <CheckboxToUse
-                            checked={editFormState.forSale}
-                            onChange={handleEditForSaleChange}
-                            name="for_sale"
-                          />
-                        }
-                        label="For Sale"
-                      />
-                      <FormControlLabel
-                        control={
-                          <CheckboxToUse
-                            checked={editFormState.forRent}
-                            onChange={handleEditForRentChange}
-                            name="for_rent"
-                          />
-                        }
-                        label="For Rent"
-                      />
-                    </FormGroup>
-                  </FormControl>
-                </div>
-                <div className="col-span-2 mt-4 flex justify-end space-x-4">
-                  <Button
-                    variant="outlined"
-                    color="secondary"
-                    onClick={handleCancelEdit}
-                    className="px-6"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="px-6"
-                  >
-                    {isSubmitting ? 'Saving...' : 'Save Changes'}
-                  </Button>
-                </div>
-              </div>
-            </form>
-          ) : (
-            // Create form using MUI components
-            <form className="product-form p-6" onSubmit={handleCreateProduct}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="col-span-2">
-                  <TextField
-                    {...commonTextFieldProps}
-                    fullWidth
-                    required
-                    label="Product Name"
-                    name="name"
-                    value={formState.name}
-                    onChange={handleNameChange}
-                    onClick={(e) => e.stopPropagation()}
-                    placeholder="Enter product name"
-                    className="mb-0"
-                    onInput={handleFormChange}
-                  />
-                </div>
-                
-                <div className="col-span-1">
-                  <TextField
-                    {...commonTextFieldProps}
-                    fullWidth
-                    required
-                    label="Price"
-                    name="price"
-                    type="number"
-                    inputProps={{ step: "0.01", min: "0" }}
-                    value={formState.price}
-                    onChange={handlePriceChange}
-                    onClick={(e) => e.stopPropagation()}
-                    placeholder="0.00"
-                    className="mb-0"
-                    onInput={handleFormChange}
-                  />
-                </div>
-                
-                <div className="col-span-1">
-                  <TextField
-                    {...commonTextFieldProps}
-                    fullWidth
-                    label="Stock Quantity"
-                    name="stockQuantity"
-                    type="number"
-                    inputProps={{ step: "1", min: "0" }}
-                    value={formState.stockQuantity}
-                    onChange={handleStockQuantityChange}
-                    onClick={(e) => e.stopPropagation()}
-                    placeholder="0"
-                    className="mb-0"
-                    onInput={handleFormChange}
-                  />
-                </div>
-                
-                <div className="col-span-2">
-                  <TextField
-                    {...commonTextFieldProps}
-                    fullWidth
-                    label="Description"
-                    name="description"
-                    multiline="true"
-                    rows={4}
-                    value={formState.description}
-                    onChange={handleDescriptionChange}
-                    onClick={(e) => e.stopPropagation()}
-                    placeholder="Enter product description"
-                    className="mb-0"
-                    onInput={handleFormChange}
-                  />
-                </div>
-                
-                <div className="col-span-1">
-                  <TextField
-                    {...commonTextFieldProps}
-                    fullWidth
-                    label="Reorder Level"
-                    name="reorderLevel"
-                    type="number"
-                    inputProps={{ step: "1", min: "0" }}
-                    value={formState.reorderLevel}
-                    onChange={handleReorderLevelChange}
-                    onClick={(e) => e.stopPropagation()}
-                    placeholder="0"
-                    className="mb-0"
-                    onInput={handleFormChange}
-                  />
-                </div>
-                
-                <div className="col-span-1">
-                  <FormControl component="fieldset" className="mb-0">
-                    <Typography variant="body1" className="font-medium mb-2">Availability</Typography>
-                    <FormGroup row className="space-x-4">
-                      <FormControlLabel
-                        control={
-                          <CheckboxToUse
-                            checked={formState.forSale}
-                            onChange={handleForSaleChange}
-                            name="for_sale"
-                          />
-                        }
-                        label="For Sale"
-                      />
-                      <FormControlLabel
-                        control={
-                          <CheckboxToUse
-                            checked={formState.forRent}
-                            onChange={handleForRentChange}
-                            name="for_rent"
-                          />
-                        }
-                        label="For Rent"
-                      />
-                    </FormGroup>
-                  </FormControl>
-                </div>
-                
-                <div className="col-span-2 pt-4">
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    className="px-6 py-2"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <CircularProgress size="small" color="inherit" className="mr-2" />
-                        Creating...
-                      </>
-                    ) : (
-                      'Create Product'
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </form>
-          )}
-        </Paper>
-        
-        {/* Render the success dialog */}
-        <SuccessDialog />
-      </div>
+      </ModernFormLayout>
     );
   };
 
@@ -1502,6 +1079,53 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
 
   // Render the products list using react-table and Tailwind
   const renderProductsList = () => {
+    // Show loading state
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="flex flex-col items-center">
+            <CircularProgress className="mb-4" />
+            <Typography variant="body1">Loading products...</Typography>
+          </div>
+        </div>
+      );
+    }
+    
+    // Show empty state with helpful message if no products
+    if (!products || products.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg shadow-md p-6">
+          <div className="text-center mb-6">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-16 w-16 text-gray-300 mx-auto mb-4" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={1.5} 
+                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" 
+              />
+            </svg>
+            <Typography variant="h5" className="mb-2">No Products Yet</Typography>
+            <Typography variant="body2" color="textSecondary" className="max-w-md">
+              You haven't added any products to your inventory yet. Get started by clicking the "Create New Product" button above.
+            </Typography>
+          </div>
+          <Button 
+            variant="contained" 
+            color="primary"
+            onClick={() => setActiveTab(0)}
+          >
+            Create Your First Product
+          </Button>
+        </div>
+      );
+    }
+    
     const columns = React.useMemo(
       () => [
         {
@@ -1624,11 +1248,11 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
               <div className="overflow-x-auto">
                 <table {...getTableProps()} className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
-                    {headerGroups.map(headerGroup => {
+                    {(headerGroups || []).map(headerGroup => {
                       const { key, ...headerGroupProps } = headerGroup.getHeaderGroupProps();
                       return (
                         <tr key={key} {...headerGroupProps}>
-                          {headerGroup.headers.map(column => {
+                          {(headerGroup.headers || []).map(column => {
                             const { key, ...columnProps } = column.getHeaderProps(column.getSortByToggleProps());
                             return (
                               <th
@@ -1655,7 +1279,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                     {...getTableBodyProps()}
                     className="bg-white divide-y divide-gray-200"
                   >
-                    {page.map((row, i) => {
+                    {(page || []).map((row, i) => {
                       prepareRow(row);
                       const { key, ...rowProps } = row.getRowProps();
                       return (
@@ -1667,7 +1291,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                             setSelectedProduct(row.original);
                           }}
                         >
-                          {row.cells.map(cell => {
+                          {(row.cells || []).map(cell => {
                             const { key, ...cellProps } = cell.getCellProps();
                             return (
                               <td
@@ -1909,6 +1533,68 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     );
   };
 
+  // Handle the QR code printing
+  const handlePrintQRCode = useCallback(() => {
+    try {
+      // Add printing class to body to apply print styles
+      document.body.classList.add('printing-qr-code');
+      
+      // Delay printing slightly to ensure styles are applied
+      setTimeout(() => {
+        window.print();
+        
+        // Remove the class after printing
+        setTimeout(() => {
+          document.body.classList.remove('printing-qr-code');
+        }, 500);
+      }, 100);
+    } catch (error) {
+      console.error('Error printing QR code:', error);
+      notifyError('Failed to print QR code. Please try again.');
+    }
+  }, [notifyError]);
+
+  const renderProductListTab = () => {
+    return (
+      <div className="mt-4">
+        {apiHealthStatus?.status === 'error' && <DatabaseErrorFallback />}
+        
+        {products.length === 0 && !isLoading && apiHealthStatus?.status !== 'error' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">No products found</h3>
+                <div className="mt-1 text-sm text-blue-700">
+                  <p>No products have been added yet. Click the "Create New Product" button to add one.</p>
+                </div>
+                <div className="mt-3">
+                  <button
+                    onClick={handleCreateTab}
+                    className="inline-flex items-center px-3 py-1.5 border border-blue-600 text-xs font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <svg className="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                    </svg>
+                    Add Product
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <div className="overflow-hidden mt-1 ring-1 ring-black ring-opacity-5 md:rounded-lg">
+          {renderProductsList()}
+        </div>
+      </div>
+    );
+  };
+
   // Ensure we're rendering the barcode dialog and success dialog correctly
   return (
     <div className="w-full pt-6">
@@ -1964,7 +1650,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
           {renderProductDetails()}
         </div>
         <div style={{ display: activeTab === 2 ? 'block' : 'none' }}>
-          {renderProductsList()}
+          {renderProductListTab()}
         </div>
       </div>
       

@@ -5,7 +5,6 @@ import Dashboard from './DashboardContent';
 import { logger } from '@/utils/logger';
 import { useTenantInitialization } from '@/hooks/useTenantInitialization';
 import { fetchUserAttributes } from 'aws-amplify/auth';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import { 
   COGNITO_ATTRIBUTES,
   COOKIE_NAMES, 
@@ -14,7 +13,14 @@ import {
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
 import { useRouter } from 'next/navigation';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import DashboardLoader from '@/components/DashboardLoader';
+import dynamic from 'next/dynamic';
+
+// Dynamically import MemoryDebug component to avoid SSR issues
+const MemoryDebug = dynamic(() => import('@/components/Debug/MemoryDebug'), { 
+  ssr: false,
+  loading: () => null
+});
 
 /**
  * Dashboard Wrapper Component
@@ -164,7 +170,7 @@ const DashboardWrapper = ({ newAccount, plan }) => {
         // Store validated tenant info
         if (data.tenant) {
           localStorage.setItem('tenantId', data.tenant.id);
-          localStorage.setItem('tenantName', data.tenant.name || 'My Business');
+          localStorage.setItem('tenantName', data.tenant.name || '');
           
           // Set in state as well
           setTenantId(data.tenant.id);
@@ -355,7 +361,17 @@ const DashboardWrapper = ({ newAccount, plan }) => {
               })
             });
             
-            const dbData = await dbResponse.json();
+            let dbData;
+            try {
+              dbData = await dbResponse.json();
+            } catch (jsonError) {
+              logger.error('[Dashboard] Failed to parse JSON from db response:', jsonError);
+              dbData = { 
+                success: false, 
+                error: 'Invalid JSON response', 
+                status: dbResponse.status 
+              };
+            }
             
             if (dbResponse.ok && dbData.success) {
               logger.info('[Dashboard] Successfully created tenant record via direct DB:', dbData);
@@ -380,7 +396,17 @@ const DashboardWrapper = ({ newAccount, plan }) => {
                   })
                 });
                 
-                const createData = await createResponse.json();
+                let createData;
+                try {
+                  createData = await createResponse.json();
+                } catch (jsonError) {
+                  logger.error('[Dashboard] Failed to parse JSON from create tenant response:', jsonError);
+                  createData = { 
+                    success: false, 
+                    error: 'Invalid JSON response', 
+                    status: createResponse.status 
+                  };
+                }
                 
                 if (createData.success) {
                   logger.info('[Dashboard] Successfully created/verified tenant in database:', createData);
@@ -404,7 +430,17 @@ const DashboardWrapper = ({ newAccount, plan }) => {
                     })
                   });
                   
-                  const initData = await initResponse.json();
+                  let initData;
+                  try {
+                    initData = await initResponse.json();
+                  } catch (jsonError) {
+                    logger.error('[Dashboard] Failed to parse JSON from init endpoint response:', jsonError);
+                    initData = { 
+                      success: false, 
+                      error: 'Invalid JSON response', 
+                      status: initResponse.status 
+                    };
+                  }
                   
                   if (initData.success) {
                     logger.info('[Dashboard] Successfully verified/created tenant via original endpoint:', initData);
@@ -433,7 +469,17 @@ const DashboardWrapper = ({ newAccount, plan }) => {
                     })
                   });
                   
-                  const initData = await initResponse.json();
+                  let initData;
+                  try {
+                    initData = await initResponse.json();
+                  } catch (jsonError) {
+                    logger.error('[Dashboard] Failed to parse JSON from last resort endpoint:', jsonError);
+                    initData = { 
+                      success: false, 
+                      error: 'Invalid JSON response', 
+                      status: initResponse.status 
+                    };
+                  }
                   
                   if (initData.success) {
                     logger.info('[Dashboard] Successfully verified/created tenant via last resort fallback:', initData);
@@ -777,7 +823,7 @@ const DashboardWrapper = ({ newAccount, plan }) => {
                     tenantId: userTenantId,
                     userId: localStorage.getItem('userId') || userAttributes?.sub,
                     email: localStorage.getItem('userEmail') || userAttributes?.email,
-                    businessName: userAttributes?.['custom:businessname'] || 'My Business',
+                    businessName: userAttributes?.['custom:businessname'] || '',
                     forceCreate: true
                   })
                 });
@@ -1073,42 +1119,47 @@ const DashboardWrapper = ({ newAccount, plan }) => {
     }
   };
 
+  // Early return for verification progress
   if (isVerifyingTenant) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-        <Typography variant="body1" sx={{ ml: 2 }}>
-          Verifying account information...
-        </Typography>
-      </Box>
+      <>
+        <Dashboard />
+        {process.env.NODE_ENV === 'development' && <MemoryDebug />}
+      </>
     );
   }
 
+  // Return with tenant error state
   if (tenantError) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-gray-50">
-        <div className="text-center p-6 bg-white rounded-lg shadow-md max-w-md">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Verification Error</h1>
-          <p className="text-gray-700 mb-4">{tenantError}</p>
-          <button
-            onClick={() => window.location.href = '/onboarding/business-info'}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300"
-          >
-            Go to onboarding
-          </button>
+      <>
+        <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+          <div className="p-8 bg-white rounded-lg shadow-md max-w-md">
+            <h1 className="text-xl font-bold text-red-600 mb-4">Tenant Setup Error</h1>
+            <p className="text-gray-800 mb-6">{tenantError}</p>
+            <button
+              onClick={verifyTenant}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Retry Setup
+            </button>
+          </div>
         </div>
-      </div>
+        {process.env.NODE_ENV === 'development' && <MemoryDebug />}
+      </>
     );
   }
 
+  // Main dashboard return
   return (
-    <Dashboard 
-      newAccount={newAccount} 
-      plan={plan}
-      setupStatus={setupStatus}
-      userAttributes={userAttributes}
-      tenantId={tenantId}
-    />
+    <>
+      <Dashboard
+        setupStatus={setupStatus}
+        userAttributes={userAttributes}
+        tenantId={tenantId}
+      />
+      {process.env.NODE_ENV === 'development' && <MemoryDebug />}
+    </>
   );
 };
 

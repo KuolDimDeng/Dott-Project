@@ -2,6 +2,13 @@
 
 ## Recent Fixes
 
+### April 2, 2025
+
+- Added comprehensive memory management utilities to prevent server crashes
+- Implemented memory monitoring tools and garbage collection scheduling
+- Fixed "JavaScript heap out of memory" errors by increasing memory limits
+- Added memory debugging UI component for development environment
+
 ### April 1, 2025
 
 - Fixed issue with dynamic imports in token utilities that caused "SyntaxError: import declarations may only appear at top level of a module"
@@ -25,7 +32,67 @@ Alternatively, you can use the standard development server:
 pnpm run dev
 ```
 
+For development with high memory needs (recommended):
+
+```bash
+pnpm run dev-high-memory
+```
+
+For development with memory debugging and heap inspection:
+
+```bash
+pnpm run dev-debug
+```
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Memory Management
+
+### Memory Monitoring
+
+The application includes memory monitoring tools that help diagnose and fix memory-related issues:
+
+1. **Memory Monitor UI**: Available in development mode, shows heap usage statistics
+2. **Server-side monitoring**: Run `pnpm run monitor` in a separate terminal to track server memory usage
+
+### Memory Optimization Tools
+
+Memory optimization utilities are available at:
+- `src/utils/memoryManager.js` - Core memory management functionality
+- `src/components/Debug/MemoryDebug.js` - UI component for memory debugging
+- `server/memory-fix.js` - Server-side memory optimizations
+- `scripts/monitor-memory.js` - External memory monitoring script
+
+### Common Memory Issues and Solutions
+
+If your server keeps shutting down due to memory issues:
+
+1. **Increase memory allocation**:
+   ```bash
+   # For development
+   pnpm run dev-high-memory
+   
+   # For production builds
+   NODE_OPTIONS="--max-old-space-size=8192" pnpm run build
+   ```
+
+2. **Monitor memory usage**:
+   ```bash
+   # In a separate terminal while the server is running
+   pnpm run monitor
+   ```
+
+3. **Enable heap snapshots** (for detailed debugging):
+   ```bash
+   # Start server with inspector
+   NODE_OPTIONS="--inspect --max-old-space-size=8192" pnpm run dev
+   ```
+
+4. **Clean up resources**:
+   ```bash
+   # Clear cache and temporary files
+   pnpm run clear
+   ```
 
 ## Troubleshooting
 

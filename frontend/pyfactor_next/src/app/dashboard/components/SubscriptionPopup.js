@@ -2,21 +2,67 @@ import React, { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { CheckCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/hooks/auth';
-import { useSnackbar } from '@/hooks/useSnackbar';
+import { useNotification } from '@/context/NotificationContext';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
+import { logger } from '@/utils/logger';
 
 const SubscriptionPopup = ({ open, onClose }) => {
   const { userData, updateUserAttributes } = useAuth();
-  const { showSnackbar } = useSnackbar();
+  const { notifySuccess, notifyError } = useNotification();
   
-  const [selectedPlan, setSelectedPlan] = useState(userData?.subscription_type || 'free');
+  // Default to professional plan if user is on free plan
+  const [selectedPlan, setSelectedPlan] = useState((userData?.subscription_type === 'free' ? 'professional' : userData?.subscription_type) || 'professional');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [billingCycle, setBillingCycle] = useState('monthly');
+  const [isRedirectingToStripe, setIsRedirectingToStripe] = useState(false);
+  const [stripeLoaded, setStripeLoaded] = useState(false);
+  
+  // Load Stripe script when component mounts
+  useEffect(() => {
+    // Skip if already loaded
+    if (window.Stripe || document.getElementById('stripe-js')) {
+      setStripeLoaded(true);
+      return;
+    }
+    
+    const script = document.createElement('script');
+    script.id = 'stripe-js';
+    script.src = 'https://js.stripe.com/v3/';
+    script.async = true;
+    
+    script.onload = () => {
+      logger.debug('Stripe script loaded successfully');
+      setStripeLoaded(true);
+    };
+    
+    script.onerror = () => {
+      logger.error('Failed to load Stripe script');
+      // Try again after a brief delay
+      setTimeout(() => {
+        if (!window.Stripe) {
+          document.body.removeChild(script);
+          document.body.appendChild(script);
+        }
+      }, 1000);
+    };
+    
+    document.body.appendChild(script);
+    
+    return () => {
+      // Cleanup only if component unmounts during loading
+      if (document.body.contains(script) && !window.Stripe) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
   
   // Reset selected plan when popup opens
   useEffect(() => {
     if (open) {
-      setSelectedPlan(userData?.subscription_type || 'free');
+      // If user is on free plan, default to professional; otherwise use their current plan
+      setSelectedPlan((userData?.subscription_type === 'free' ? 'professional' : userData?.subscription_type) || 'professional');
+      setIsSubmitting(false);
+      setIsRedirectingToStripe(false);
     }
   }, [open, userData]);
   
@@ -32,6 +78,97 @@ const SubscriptionPopup = ({ open, onClose }) => {
   const handleBillingCycleChange = (event) => {
     setBillingCycle(event.target.value);
   };
+
+  // Function to create a Stripe checkout session
+  const createStripeCheckoutSession = async (planId, billingCycleOption) => {
+    try {
+      // Get the Stripe price ID based on the selected plan and billing cycle
+      const priceId = getPriceIdForPlan(planId, billingCycleOption);
+      
+      logger.debug('Creating checkout session with:', { planId, billingCycle: billingCycleOption, priceId });
+      
+      // Call API to create a Stripe checkout session
+      const response = await fetch('/api/checkout/create-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          priceId,
+          planId,
+          billingCycle: billingCycleOption 
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP error ${response.status}` }));
+        throw new Error(errorData.error || 'Failed to create checkout session');
+      }
+      
+      const { sessionId } = await response.json();
+      
+      if (!sessionId) {
+        throw new Error('No session ID returned from server');
+      }
+      
+      logger.debug('Checkout session created:', { sessionId });
+      return sessionId;
+    } catch (error) {
+      logger.error('Error creating Stripe checkout session:', error);
+      throw error;
+    }
+  };
+
+  // Helper function to get the appropriate Stripe price ID
+  const getPriceIdForPlan = (planId, cycle) => {
+    // Using Stripe test price IDs - these should be changed to your actual IDs in production
+    const priceMap = {
+      professional: {
+        monthly: 'price_1ODp08C4RUQfzaQv1KdILW1U', // Monthly Professional Plan (Test ID)
+        yearly: 'price_1ODp08C4RUQfzaQv1AcXLAC7'   // Annual Professional Plan (Test ID)
+      },
+      enterprise: {
+        monthly: 'price_1ODp2LC4RUQfzaQv5oMDFy7S', // Monthly Enterprise Plan (Test ID)
+        yearly: 'price_1ODp2LC4RUQfzaQv2O9UaBwD'   // Annual Enterprise Plan (Test ID)
+      }
+    };
+    
+    return priceMap[planId]?.[cycle] || priceMap.professional.monthly;
+  };
+
+  // Redirect to Stripe Checkout
+  const redirectToStripeCheckout = async (sessionId) => {
+    try {
+      // Wait for Stripe to be loaded if necessary
+      if (!window.Stripe) {
+        let attempts = 0;
+        while (!window.Stripe && attempts < 50) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        
+        if (!window.Stripe) {
+          throw new Error('Stripe failed to load after multiple attempts');
+        }
+      }
+      
+      // Get Stripe public key from environment or use test key
+      const stripePublicKey = process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || 'pk_test_51ODoxjC4RUQfzaQvAwu25BEEGxbIWy1S2aFBnpUwPDj11NB5HrxgR1aOLJW5UCEsXfShcbxnjv6fzXmRQO8tFHnK00wTFhG7Rx';
+      
+      logger.debug('Initializing Stripe with key:', stripePublicKey);
+      const stripe = window.Stripe(stripePublicKey);
+      
+      // Redirect to Stripe Checkout
+      logger.debug('Redirecting to checkout with session ID:', sessionId);
+      const { error } = await stripe.redirectToCheckout({ sessionId });
+      
+      if (error) {
+        logger.error('Stripe redirect error:', error);
+        throw new Error(error.message || 'Failed to redirect to Stripe checkout');
+      }
+    } catch (error) {
+      logger.error('Error redirecting to Stripe:', error);
+      throw error;
+    }
+  };
   
   const handleSubmit = async () => {
     if (selectedPlan === userData?.subscription_type) {
@@ -40,21 +177,52 @@ const SubscriptionPopup = ({ open, onClose }) => {
     }
     
     setIsSubmitting(true);
+    
     try {
-      await updateUserAttributes({
-        subscription_type: selectedPlan
-      });
-      showSnackbar('Subscription updated successfully', 'success');
-      onClose();
+      // If upgrading to a paid plan, redirect to Stripe checkout
+      if (selectedPlan === 'professional' || selectedPlan === 'enterprise') {
+        setIsRedirectingToStripe(true);
+        
+        // Store selected plan info in sessionStorage for the payment page
+        try {
+          sessionStorage.setItem('pendingSubscription', JSON.stringify({
+            plan: selectedPlan,
+            billing_interval: billingCycle,
+            interval: billingCycle,
+            payment_method: 'credit_card',
+            timestamp: new Date().toISOString()
+          }));
+        } catch (e) {
+          logger.warn('Error storing subscription info in sessionStorage:', e);
+        }
+        
+        try {
+          // Create a checkout session
+          const sessionId = await createStripeCheckoutSession(selectedPlan, billingCycle);
+          
+          // Redirect to Stripe checkout
+          await redirectToStripeCheckout(sessionId);
+        } catch (error) {
+          notifyError('Failed to start checkout process. Please try again.');
+          setIsRedirectingToStripe(false);
+          setIsSubmitting(false);
+        }
+      } else {
+        // For downgrades or lateral changes, just update the attribute
+        await updateUserAttributes({
+          subscription_type: selectedPlan
+        });
+        notifySuccess('Subscription updated successfully');
+        onClose();
+      }
     } catch (error) {
       console.error('Error updating subscription:', error);
-      showSnackbar('Failed to update subscription. Please try again.', 'error');
-    } finally {
+      notifyError('Failed to update subscription. Please try again.');
       setIsSubmitting(false);
     }
   };
   
-  const plans = [
+  const allPlans = [
     {
       id: 'free',
       name: 'Free Plan',
@@ -103,6 +271,9 @@ const SubscriptionPopup = ({ open, onClose }) => {
     },
   ];
   
+  // Filter out the free plan
+  const plans = allPlans.filter(plan => plan.id !== 'free');
+  
   // Helper function for plan color classes
   const getPlanColorClasses = (planId) => {
     const colorMap = {
@@ -116,7 +287,7 @@ const SubscriptionPopup = ({ open, onClose }) => {
 
   return (
     <Transition.Root show={open} as={Fragment}>
-      <Dialog as="div" className="relative z-10" onClose={onClose}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -129,7 +300,7 @@ const SubscriptionPopup = ({ open, onClose }) => {
           <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
         </Transition.Child>
 
-        <div className="fixed inset-0 z-10 overflow-y-auto">
+        <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
             <Transition.Child
               as={Fragment}
@@ -140,10 +311,10 @@ const SubscriptionPopup = ({ open, onClose }) => {
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-xl bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-5xl sm:p-6">
-                <div className="flex items-center justify-between mb-4">
+              <Dialog.Panel className="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-6xl">
+                <div className="flex items-center justify-between px-6 pt-5 pb-4">
                   <Dialog.Title as="h3" className="text-2xl font-semibold leading-6 text-gray-900">
-                    Choose Your Plan
+                    Upgrade Your Subscription
                   </Dialog.Title>
                   <button
                     type="button"
@@ -155,29 +326,30 @@ const SubscriptionPopup = ({ open, onClose }) => {
                   </button>
                 </div>
                 
-                <div className="px-4 pb-4">
+                <div className="px-6 pb-4">
+                  <p className="text-gray-600 mb-6">Select a premium plan to unlock advanced features and capabilities.</p>
                   <div className="flex items-center space-x-4">
                     <label className="inline-flex items-center">
                       <input
                         type="radio"
-                        className="form-radio h-4 w-4 text-indigo-600"
+                        className="form-radio h-5 w-5 text-blue-600"
                         name="billingCycle"
                         value="monthly"
                         checked={billingCycle === 'monthly'}
                         onChange={handleBillingCycleChange}
                       />
-                      <span className="ml-2">Monthly Billing</span>
+                      <span className="ml-2 text-gray-700">Monthly Billing</span>
                     </label>
                     <label className="inline-flex items-center">
                       <input
                         type="radio"
-                        className="form-radio h-4 w-4 text-indigo-600"
+                        className="form-radio h-5 w-5 text-blue-600"
                         name="billingCycle"
                         value="yearly"
                         checked={billingCycle === 'yearly'}
                         onChange={handleBillingCycleChange}
                       />
-                      <span className="ml-2 flex items-center">
+                      <span className="ml-2 flex items-center text-gray-700">
                         Annual Billing
                         <span className="ml-2 bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">
                           SAVE 15%
@@ -187,8 +359,8 @@ const SubscriptionPopup = ({ open, onClose }) => {
                   </div>
                 </div>
                 
-                <div className="px-4 pb-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="px-6 pb-6">
+                  <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-2">
                     {plans.map((plan) => {
                       const colorClasses = getPlanColorClasses(plan.id);
                       const isSelected = selectedPlan === plan.id;
@@ -219,7 +391,7 @@ const SubscriptionPopup = ({ open, onClose }) => {
                             <h2 className="text-xl font-semibold mb-2">
                               {plan.name}
                             </h2>
-                            <p className={`text-2xl font-bold mb-2 ${colorClasses.text}`}>
+                            <p className={`text-3xl font-bold mb-4 ${colorClasses.text}`}>
                               ${plan.price[billingCycle]}
                               <span className="text-sm text-gray-500 font-normal ml-1">
                                 {billingCycle === 'monthly' ? '/month' : '/year'}
@@ -227,11 +399,11 @@ const SubscriptionPopup = ({ open, onClose }) => {
                             </p>
                             
                             {/* Plan features */}
-                            <ul className="mt-4 space-y-2">
+                            <ul className="mt-4 space-y-3">
                               {plan.features.map((feature, index) => (
                                 <li key={index} className="flex items-start">
                                   <CheckCircleIcon className={`h-5 w-5 ${colorClasses.text} mr-2 flex-shrink-0 mt-0.5`} />
-                                  <span>{feature}</span>
+                                  <span className="text-gray-700">{feature}</span>
                                 </li>
                               ))}
                             </ul>
@@ -249,10 +421,13 @@ const SubscriptionPopup = ({ open, onClose }) => {
                                 }`}
                             >
                               {isSubmitting && isSelected ? (
-                                <svg className="animate-spin h-5 w-5 mx-auto text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
+                                <div className="flex items-center justify-center">
+                                  <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  {isRedirectingToStripe ? 'Preparing...' : 'Processing...'}
+                                </div>
                               ) : (
                                 isCurrentPlan ? 'Current Plan' : 'Select Plan'
                               )}
@@ -264,7 +439,7 @@ const SubscriptionPopup = ({ open, onClose }) => {
                   </div>
                 </div>
                 
-                <div className="flex justify-center px-4 py-3 mt-4">
+                <div className="flex justify-center px-6 py-4 bg-gray-50 rounded-b-xl">
                   <button
                     type="button"
                     onClick={onClose}
@@ -285,12 +460,15 @@ const SubscriptionPopup = ({ open, onClose }) => {
                     `}
                   >
                     {isSubmitting ? (
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
+                      <div className="flex items-center">
+                        <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        {isRedirectingToStripe ? 'Preparing Checkout...' : 'Processing...'}
+                      </div>
                     ) : (
-                      'Confirm Selection'
+                      'Confirm Upgrade'
                     )}
                   </button>
                 </div>

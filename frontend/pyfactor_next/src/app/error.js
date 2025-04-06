@@ -2,22 +2,15 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { logger } from '@/utils/logger';
 
 export default function Error({ error, reset }) {
   useEffect(() => {
-    // Safely log the error information
-    try {
-      logger.error('Application error:', error?.message || 'Unknown error');
-      
-      // Don't log the full error object as it might contain circular references
-      if (error?.stack) {
-        logger.error('Error stack:', error.stack);
-      }
-    } catch (loggingError) {
-      // Fallback if logger has issues
-      console.error('[Error boundary] Failed to log error:', loggingError);
-      console.error('[Original error]:', error);
+    // Log the error information without using logger
+    console.error('[pyfactor] [Application error]:', error?.message || 'Unknown error');
+    
+    // Log the stack trace if available
+    if (error?.stack) {
+      console.error('[pyfactor] [Error stack]:', error.stack);
     }
   }, [error]);
 

@@ -17,6 +17,7 @@ import {
 } from '@/config/amplifyUnified';
 import { useSession } from './useSession';
 import { setupHubDeduplication } from '@/utils/refreshUserSession';
+import { safeUpdateUserAttributes } from '@/utils/safeAttributes';
 
 // Initialize Hub protection on import
 setupHubDeduplication();
@@ -1216,6 +1217,7 @@ export const useAuth = () => {
     isLoading,
     authError,
     user,
+    userData: user,
     signIn: handleSignIn,
     signOut: handleSignOut,
     signUp: handleSignUp,
@@ -1223,6 +1225,7 @@ export const useAuth = () => {
     resendVerificationCode: handleResendVerificationCode,
     resetPassword,
     confirmPasswordReset,
-    validateAuthentication
+    validateAuthentication,
+    updateUserAttributes: safeUpdateUserAttributes
   };
 }

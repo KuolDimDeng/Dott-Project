@@ -129,329 +129,393 @@ def ensure_schema_consistency(schema_name, reference_schema='public'):
 
 def create_tenant_schema_for_user(user, business_name=None):
     """
-    Create a tenant schema for a user immediately after authentication.
+    Creates a new tenant schema for a user if they don't already have one.
     
     Args:
-        user: The authenticated user
-        business_name: Optional business name for the tenant
-    
+        user: User object
+        business_name: Optional business name to use for the tenant
+        
     Returns:
-        Tenant: The created tenant object
+        Tenant object that was created or retrieved
     """
-    process_id = uuid.uuid4()
-    start_time = time.time()
-    logger.info(f"[TENANT-CREATION-{process_id}] Creating tenant schema for user {user.email} (ID: {user.id})")
+    from django.db import connection, transaction
+    from custom_auth.models import Tenant
+    import uuid
+    from django.utils import timezone
+    import random
+    import string
+    import logging
+    import time  # Add time import for measuring elapsed time
     
-    # Ensure user has a valid email address
-    if not user.email:
-        logger.error(f"[TENANT-CREATION-{process_id}] Cannot create tenant for user without email address (ID: {user.id})")
-        raise ValueError("Cannot create tenant for user without email address")
+    logger = logging.getLogger(__name__)
+    process_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    start_time = time.time()  # Define start_time for measuring elapsed time
     
-    # Use the failsafe to ensure one tenant per business owner
-    business_id = getattr(user, 'custom', {}).get('businessid') or getattr(user, 'custom', {}).get('business_id')
-    tenant, should_create = ensure_single_tenant_per_business(user, business_id)
+    logger.info(f"[TENANT-CREATION-{process_id}] Creating tenant schema for user {user.email}")
     
-    # If tenant already exists, update Cognito and return it immediately
-    if tenant and not should_create:
-        logger.info(f"[TENANT-CREATION-{process_id}] Using existing tenant {tenant.schema_name} for user {user.email}")
-        
-        # Ensure Cognito businessid is updated with tenant ID
-        try:
-            # Only update if user has a Cognito sub
-            if hasattr(user, 'cognito_sub') and user.cognito_sub:
-                update_cognito_tenant_id(user.cognito_sub, str(tenant.id))
-                logger.info(f"[TENANT-CREATION-{process_id}] Updated Cognito businessid for user {user.email}: {tenant.id}")
-        except Exception as e:
-            logger.warning(f"[TENANT-CREATION-{process_id}] Failed to update Cognito: {str(e)}")
-            
-        return tenant
-    
-    # If user shouldn't create a tenant (non-OWNER without business association), return None
-    if not should_create and tenant is None:
-        logger.warning(f"[TENANT-CREATION-{process_id}] User {user.email} is not allowed to create a tenant")
-        return None
-    
-    # Check if another tenant creation might be in progress for this user (using a lock mechanism)
-    lock_acquired = acquire_user_lock(user.id, timeout=30)
-    if not lock_acquired:
-        logger.warning(f"[TENANT-CREATION-{process_id}] Could not acquire lock for user {user.email}, another tenant creation may be in progress")
-        
-        # Double-check if tenant was created while waiting for lock
-        check_tenant = Tenant.objects.filter(owner=user).first()
-        if check_tenant:
-            logger.info(f"[TENANT-CREATION-{process_id}] Tenant {check_tenant.schema_name} found for user {user.email} while waiting for lock")
-            if not user.tenant or user.tenant.id != check_tenant.id:
-                user.tenant = check_tenant
-                user.save(update_fields=['tenant'])
-            return check_tenant
-        
-        # Wait and retry
-        time.sleep(5)
-        return create_tenant_schema_for_user(user, business_name)
-    
+    # First, check if the user already has a tenant by email
     try:
-        # Generate schema name and tenant name
-        tenant_id = uuid.uuid4()
-        schema_name = f"tenant_{str(tenant_id).replace('-', '_')}"
-        tenant_name = business_name or f"{user.first_name}'s Business"
-        
-        # Check if schema already exists
+        # Look up tenant by user email - most reliable way to find existing tenant
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT EXISTS (
-                    SELECT 1 FROM information_schema.schemata 
-                    WHERE schema_name = %s
-                )
-            """, [schema_name])
+                SELECT t.id, t.schema_name, t.name, t.owner_id FROM custom_auth_tenant t
+                JOIN custom_auth_user u ON u.tenant_id = t.id
+                WHERE u.email = %s
+                LIMIT 1
+            """, [user.email])
             
-            schema_exists = cursor.fetchone()[0]
-            if schema_exists:
-                logger.warning(f"[TENANT-CREATION-{process_id}] Schema {schema_name} already exists, generating a new one")
-                tenant_id = uuid.uuid4()
-                schema_name = f"tenant_{str(tenant_id).replace('-', '_')}"
-        
-        # Use a transaction to ensure the tenant record and schema are created atomically
-        try:
-            with transaction.atomic():
-                # Double-check no tenant was created in the meantime (race condition)
-                user_tenant = Tenant.objects.filter(owner=user).first()
-                if user_tenant:
-                    logger.warning(f"[TENANT-CREATION-{process_id}] Race condition detected - tenant {user_tenant.schema_name} was created for user {user.email} during this operation")
-                    if not user.tenant or user.tenant.id != user_tenant.id:
-                        user.tenant = user_tenant
-                        user.save(update_fields=['tenant'])
-                    return user_tenant
+            existing_tenant = cursor.fetchone()
+            
+            if existing_tenant:
+                tenant_id, schema_name, tenant_name, owner_id = existing_tenant
+                logger.info(f"[TENANT-CREATION-{process_id}] Found existing tenant for user {user.email}: {tenant_id} ({schema_name})")
                 
-                # Create tenant record
-                logger.debug(f"[TENANT-CREATION-{process_id}] Creating tenant record in database")
-                tenant = Tenant.objects.create(
-                    id=tenant_id,
-                    schema_name=schema_name,
-                    name=tenant_name,
-                    owner=user,
-                    database_status='pending',
-                    setup_status='in_progress'
-                )
-                logger.info(f"[TENANT-CREATION-{process_id}] Created tenant record with ID: {tenant.id}")
+                # If user has multiple tenants, log warning for later cleanup
+                cursor.execute("""
+                    SELECT COUNT(*) FROM custom_auth_tenant t
+                    JOIN custom_auth_user u ON u.tenant_id = t.id
+                    WHERE u.email = %s
+                """, [user.email])
                 
-                # Link tenant to user immediately to prevent race conditions
-                user.tenant = tenant
-                user.save(update_fields=['tenant'])
-                logger.info(f"[TENANT-CREATION-{process_id}] Linked tenant {tenant.schema_name} to user {user.email}")
+                tenant_count = cursor.fetchone()[0]
+                if tenant_count > 1:
+                    logger.warning(f"[TENANT-CREATION-{process_id}] User {user.email} has {tenant_count} tenants! Need cleanup.")
                 
-                # Create schema in database
-                logger.debug(f"[TENANT-CREATION-{process_id}] Creating schema in database")
-                with connection.cursor() as cursor:
-                    # Create schema
-                    logger.debug(f"[TENANT-CREATION-{process_id}] Executing CREATE SCHEMA IF NOT EXISTS for {schema_name}")
-                    cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
-                    
-                    # Verify schema was created
-                    cursor.execute("""
-                        SELECT schema_name FROM information_schema.schemata
-                        WHERE schema_name = %s
-                    """, [schema_name])
-                    schema_exists = cursor.fetchone() is not None
-                    logger.debug(f"[TENANT-CREATION-{process_id}] Schema creation verified: {schema_exists}")
-                    
-                    # Set up permissions
-                    db_user = connection.settings_dict['USER']
-                    logger.debug(f"[TENANT-CREATION-{process_id}] Setting up permissions for user {db_user}")
-                    cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {db_user}')
-                    cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {db_user}')
-                    cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {db_user}')
-                    
-                    # Set search path for migrations
-                    logger.debug(f"[TENANT-CREATION-{process_id}] Setting search path to {schema_name},public")
-                    cursor.execute(f'SET search_path TO "{schema_name}",public')
-                    
-                    # Verify search path was set correctly
-                    cursor.execute('SHOW search_path')
-                    current_path = cursor.fetchone()[0]
-                    logger.debug(f"[TENANT-CREATION-{process_id}] Current search path: {current_path}")
-                    logger.debug(f"[TENANT-CREATION-{process_id}] Search path contains schema: {schema_name in current_path}")
-                    
-                    # Create essential auth tables in the new schema
-                    logger.info(f"[TENANT-CREATION-{process_id}] Creating essential auth tables in schema {schema_name}")
-                    try:
-                        # Create auth tables with the same structure as in public schema
-                        cursor.execute(f"""
-                            -- Create auth tables
-                            CREATE TABLE IF NOT EXISTS "{schema_name}"."custom_auth_user" (
-                                id UUID PRIMARY KEY,
-                                password VARCHAR(128) NOT NULL,
-                                last_login TIMESTAMP WITH TIME ZONE NULL,
-                                is_superuser BOOLEAN NOT NULL,
-                                email VARCHAR(254) NOT NULL UNIQUE,
-                                first_name VARCHAR(100) NOT NULL DEFAULT '',
-                                last_name VARCHAR(100) NOT NULL DEFAULT '',
-                                is_active BOOLEAN NOT NULL DEFAULT TRUE,
-                                is_staff BOOLEAN NOT NULL DEFAULT FALSE,
-                                date_joined TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-                                email_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
-                                confirmation_token UUID NOT NULL DEFAULT gen_random_uuid(),
-                                is_onboarded BOOLEAN NOT NULL DEFAULT FALSE,
-                                stripe_customer_id VARCHAR(255) NULL,
-                                role VARCHAR(20) NOT NULL DEFAULT 'OWNER',
-                                occupation VARCHAR(50) NOT NULL DEFAULT 'OWNER',
-                                tenant_id UUID NULL,
-                                cognito_sub VARCHAR(36) NULL
-                            );
-                            
-                            CREATE INDEX IF NOT EXISTS custom_auth_user_email_key ON "{schema_name}"."custom_auth_user" (email);
-                            CREATE INDEX IF NOT EXISTS idx_user_tenant ON "{schema_name}"."custom_auth_user" (tenant_id);
-                            
-                            -- Auth User Permissions
-                            CREATE TABLE IF NOT EXISTS "{schema_name}"."custom_auth_user_user_permissions" (
-                                id SERIAL PRIMARY KEY,
-                                user_id UUID NOT NULL REFERENCES "{schema_name}"."custom_auth_user"(id),
-                                permission_id INTEGER NOT NULL,
-                                CONSTRAINT custom_auth_user_user_permissions_user_id_permission_id_key UNIQUE (user_id, permission_id)
-                            );
-                            
-                            -- Auth User Groups
-                            CREATE TABLE IF NOT EXISTS "{schema_name}"."custom_auth_user_groups" (
-                                id SERIAL PRIMARY KEY,
-                                user_id UUID NOT NULL REFERENCES "{schema_name}"."custom_auth_user"(id),
-                                group_id INTEGER NOT NULL,
-                                CONSTRAINT custom_auth_user_groups_user_id_group_id_key UNIQUE (user_id, group_id)
-                            );
-                            
-                            -- Tenant table
-                            CREATE TABLE IF NOT EXISTS "{schema_name}"."custom_auth_tenant" (
-                                id UUID PRIMARY KEY,
-                                schema_name VARCHAR(63) NOT NULL UNIQUE,
-                                name VARCHAR(100) NOT NULL,
-                                created_on TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-                                is_active BOOLEAN NOT NULL DEFAULT TRUE,
-                                setup_status VARCHAR(20) NOT NULL,
-                                setup_task_id VARCHAR(255) NULL,
-                                last_setup_attempt TIMESTAMP WITH TIME ZONE NULL,
-                                setup_error_message TEXT NULL,
-                                last_health_check TIMESTAMP WITH TIME ZONE NULL,
-                                storage_quota_bytes BIGINT NOT NULL DEFAULT 2147483648,
-                                owner_id UUID NOT NULL REFERENCES "{schema_name}"."custom_auth_user"(id)
-                            );
-                        """)
-                        
-                        # Copy the user to the new schema
-                        cursor.execute(f"""
-                            INSERT INTO "{schema_name}"."custom_auth_user" 
-                            (id, password, last_login, is_superuser, email, first_name, last_name, 
-                             is_active, is_staff, date_joined, email_confirmed, confirmation_token, 
-                             is_onboarded, stripe_customer_id, role, occupation, tenant_id, cognito_sub)
-                            VALUES (
-                                %s, %s, %s, %s, %s, %s, %s, 
-                                %s, %s, %s, %s, %s, 
-                                %s, %s, %s, %s, %s, %s
-                            )
-                            ON CONFLICT (id) DO NOTHING
-                        """, [
-                            str(user.id), user.password, user.last_login, user.is_superuser,
-                            user.email, user.first_name, user.last_name,
-                            user.is_active, user.is_staff, user.date_joined, user.email_confirmed,
-                            str(user.confirmation_token) if user.confirmation_token else uuid.uuid4(),
-                            user.is_onboarded, user.stripe_customer_id, user.role, user.occupation,
-                            str(tenant.id), user.cognito_sub
-                        ])
-                        
-                        # Copy the tenant to the new schema
-                        cursor.execute(f"""
-                            INSERT INTO "{schema_name}"."custom_auth_tenant"
-                            (id, schema_name, name, created_on, is_active, setup_status, 
-                             setup_task_id, last_setup_attempt, setup_error_message,
-                             last_health_check, storage_quota_bytes, owner_id)
-                            VALUES (
-                                %s, %s, %s, %s, %s, %s,
-                                %s, %s, %s,
-                                %s, %s, %s
-                            )
-                            ON CONFLICT (id) DO NOTHING
-                        """, [
-                            str(tenant.id), tenant.schema_name, tenant.name, tenant.created_on,
-                            tenant.is_active, tenant.setup_status,
-                            tenant.setup_task_id, tenant.last_setup_attempt, tenant.setup_error_message,
-                            tenant.last_health_check, tenant.storage_quota_bytes, str(user.id)
-                        ])
-                        
-                        logger.info(f"[TENANT-CREATION-{process_id}] Successfully copied user and tenant to schema {schema_name}")
-                        
-                        # Verify auth tables were created
-                        cursor.execute(f"""
-                            SELECT EXISTS (
-                                SELECT 1 FROM information_schema.tables 
-                                WHERE table_schema = %s AND table_name = 'custom_auth_user'
-                            )
-                        """, [schema_name])
-                        auth_table_exists = cursor.fetchone()[0]
-                        logger.info(f"[TENANT-CREATION-{process_id}] Auth table exists in schema {schema_name}: {auth_table_exists}")
-                        
-                    except Exception as e:
-                        logger.error(f"[TENANT-CREATION-{process_id}] Error creating auth tables in schema {schema_name}: {str(e)}")
-                        # Continue with schema creation even if auth tables fail
-                    
-                    # Create essential tables for multi-tenancy
-                    try:
-                        logger.debug(f"[TENANT-CREATION-{process_id}] Setting up django_migrations table")
-                        # Set up django_migrations table
-                        cursor.execute(f"""
-                            CREATE TABLE IF NOT EXISTS "{schema_name}"."django_migrations" (
-                                id SERIAL PRIMARY KEY,
-                                app VARCHAR(255) NOT NULL,
-                                name VARCHAR(255) NOT NULL,
-                                applied TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-                            );
-                        """)
-                        
-                        # Set up django_migrations table
-                        cursor.execute(f"""
-                            INSERT INTO "{schema_name}"."django_migrations" (app, name)
-                            VALUES ('auth', '0001_initial'), ('contenttypes', '0001_initial'), ('sessions', '0001_initial');
-                        """)
-                        
-                        logger.info(f"[TENANT-CREATION-{process_id}] Successfully set up django_migrations table in schema {schema_name}")
-                    except Exception as e:
-                        logger.error(f"[TENANT-CREATION-{process_id}] Error setting up django_migrations table in schema {schema_name}: {str(e)}")
-                    
-                    # Reset search path if we changed it
-                    if current_path:
-                        cursor.execute(f'SET search_path TO {current_path}')
+                # Link the tenant to the user if not already linked
+                if str(user.tenant_id) != str(tenant_id):
+                    logger.info(f"[TENANT-CREATION-{process_id}] Linking existing tenant {tenant_id} to user {user.email}")
+                    user.tenant_id = tenant_id
+                    user.save(update_fields=['tenant_id'])
                 
-                # Run a comprehensive schema consistency check
-                logger.info(f"[TENANT-CREATION-{process_id}] Running comprehensive schema consistency check for {schema_name}")
-                schema_check_start = time.time()
-                try:
-                    ensure_schema_consistency(schema_name)
-                    schema_check_time = time.time() - schema_check_start
-                    logger.info(f"[TENANT-CREATION-{process_id}] Schema consistency check completed in {schema_check_time:.2f} seconds")
-                except Exception as e:
-                    schema_check_time = time.time() - schema_check_start
-                    logger.error(f"[TENANT-CREATION-{process_id}] Error during schema consistency check after {schema_check_time:.2f} seconds: {str(e)}")
-                    # Continue even if schema consistency check fails
-                
+                # Return the existing tenant object
+                return Tenant.objects.get(id=tenant_id)
+    except Exception as e:
+        logger.error(f"[TENANT-CREATION-{process_id}] Error checking for existing tenant: {str(e)}")
+        # Continue with tenant creation as fallback
+
+    # If we get here, either no tenant exists or we couldn't find it
+    # Original tenant creation logic follows
+    try:
+        # Check if user already has a tenant linked to their account
+        if user.tenant_id:
+            tenant = Tenant.objects.filter(id=user.tenant_id).first()
+            if tenant:
+                logger.info(f"[TENANT-CREATION-{process_id}] User already has tenant: {tenant.schema_name}")
                 return tenant
-                
-        except Exception as e:
-            logger.error(f"[TENANT-CREATION-{process_id}] Error creating tenant: {str(e)}")
-            # If we get here, the transaction was rolled back
-            # Check if tenant was created by a concurrent process
+        
+        # Ensure user has a valid email address
+        if not user.email:
+            logger.error(f"[TENANT-CREATION-{process_id}] Cannot create tenant for user without email address (ID: {user.id})")
+            raise ValueError("Cannot create tenant for user without email address")
+        
+        # Use the failsafe to ensure one tenant per business owner
+        business_id = getattr(user, 'custom', {}).get('businessid') or getattr(user, 'custom', {}).get('business_id')
+        tenant, should_create = ensure_single_tenant_per_business(user, business_id)
+        
+        # If tenant already exists, update Cognito and return it immediately
+        if tenant and not should_create:
+            logger.info(f"[TENANT-CREATION-{process_id}] Using existing tenant {tenant.schema_name} for user {user.email}")
+            
+            # Ensure Cognito businessid is updated with tenant ID
+            try:
+                # Only update if user has a Cognito sub
+                if hasattr(user, 'cognito_sub') and user.cognito_sub:
+                    update_cognito_tenant_id(user.cognito_sub, str(tenant.id))
+                    logger.info(f"[TENANT-CREATION-{process_id}] Updated Cognito businessid for user {user.email}: {tenant.id}")
+            except Exception as e:
+                logger.warning(f"[TENANT-CREATION-{process_id}] Failed to update Cognito: {str(e)}")
+            
+            return tenant
+        
+        # If user shouldn't create a tenant (non-OWNER without business association), return None
+        if not should_create and tenant is None:
+            logger.warning(f"[TENANT-CREATION-{process_id}] User {user.email} is not allowed to create a tenant")
+            return None
+        
+        # Check if another tenant creation might be in progress for this user (using a lock mechanism)
+        lock_acquired = acquire_user_lock(user.id, timeout=30)
+        if not lock_acquired:
+            logger.warning(f"[TENANT-CREATION-{process_id}] Could not acquire lock for user {user.email}, another tenant creation may be in progress")
+            
+            # Double-check if tenant was created while waiting for lock
             check_tenant = Tenant.objects.filter(owner=user).first()
             if check_tenant:
-                logger.warning(f"[TENANT-CREATION-{process_id}] Found tenant {check_tenant.schema_name} created by concurrent process for user {user.email}")
+                logger.info(f"[TENANT-CREATION-{process_id}] Tenant {check_tenant.schema_name} found for user {user.email} while waiting for lock")
                 if not user.tenant or user.tenant.id != check_tenant.id:
                     user.tenant = check_tenant
                     user.save(update_fields=['tenant'])
                 return check_tenant
-            raise
-    finally:
-        # Make sure we always release the lock
-        if lock_acquired:
-            release_user_lock(user.id)
+            
+            # Wait and retry
+            time.sleep(5)
+            return create_tenant_schema_for_user(user, business_name)
         
-        # Log the total time spent
-        elapsed_time = time.time() - start_time
-        logger.info(f"[TENANT-CREATION-{process_id}] Tenant creation process completed in {elapsed_time:.2f} seconds")
+        try:
+            # Generate schema name and tenant name
+            tenant_id = uuid.uuid4()
+            schema_name = f"tenant_{str(tenant_id).replace('-', '_')}"
+            tenant_name = business_name or f"{user.first_name}'s Business"
+            
+            # Check if schema already exists
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT 1 FROM information_schema.schemata 
+                        WHERE schema_name = %s
+                    )
+                """, [schema_name])
+                
+                schema_exists = cursor.fetchone()[0]
+                if schema_exists:
+                    logger.warning(f"[TENANT-CREATION-{process_id}] Schema {schema_name} already exists, generating a new one")
+                    tenant_id = uuid.uuid4()
+                    schema_name = f"tenant_{str(tenant_id).replace('-', '_')}"
+            
+            # Use a transaction to ensure the tenant record and schema are created atomically
+            try:
+                with transaction.atomic():
+                    # Double-check no tenant was created in the meantime (race condition)
+                    user_tenant = Tenant.objects.filter(owner=user).first()
+                    if user_tenant:
+                        logger.warning(f"[TENANT-CREATION-{process_id}] Race condition detected - tenant {user_tenant.schema_name} was created for user {user.email} during this operation")
+                        if not user.tenant or user.tenant.id != user_tenant.id:
+                            user.tenant = user_tenant
+                            user.save(update_fields=['tenant'])
+                        return user_tenant
+                    
+                    # Create tenant record
+                    logger.debug(f"[TENANT-CREATION-{process_id}] Creating tenant record in database")
+                    tenant = Tenant.objects.create(
+                        id=tenant_id,
+                        schema_name=schema_name,
+                        name=tenant_name,
+                        owner=user,
+                        database_status='pending',
+                        setup_status='in_progress'
+                    )
+                    logger.info(f"[TENANT-CREATION-{process_id}] Created tenant record with ID: {tenant.id}")
+                    
+                    # Link tenant to user immediately to prevent race conditions
+                    user.tenant = tenant
+                    user.save(update_fields=['tenant'])
+                    logger.info(f"[TENANT-CREATION-{process_id}] Linked tenant {tenant.schema_name} to user {user.email}")
+                    
+                    # Create schema in database
+                    logger.debug(f"[TENANT-CREATION-{process_id}] Creating schema in database")
+                    with connection.cursor() as cursor:
+                        # Create schema
+                        logger.debug(f"[TENANT-CREATION-{process_id}] Executing CREATE SCHEMA IF NOT EXISTS for {schema_name}")
+                        cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
+                        
+                        # Verify schema was created
+                        cursor.execute("""
+                            SELECT schema_name FROM information_schema.schemata
+                            WHERE schema_name = %s
+                        """, [schema_name])
+                        schema_exists = cursor.fetchone() is not None
+                        logger.debug(f"[TENANT-CREATION-{process_id}] Schema creation verified: {schema_exists}")
+                        
+                        # Set up permissions
+                        db_user = connection.settings_dict['USER']
+                        logger.debug(f"[TENANT-CREATION-{process_id}] Setting up permissions for user {db_user}")
+                        cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {db_user}')
+                        cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {db_user}')
+                        cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {db_user}')
+                        
+                        # Set search path for migrations
+                        logger.debug(f"[TENANT-CREATION-{process_id}] Setting search path to {schema_name},public")
+                        cursor.execute(f'SET search_path TO "{schema_name}",public')
+                        
+                        # Verify search path was set correctly
+                        cursor.execute('SHOW search_path')
+                        current_path = cursor.fetchone()[0]
+                        logger.debug(f"[TENANT-CREATION-{process_id}] Current search path: {current_path}")
+                        logger.debug(f"[TENANT-CREATION-{process_id}] Search path contains schema: {schema_name in current_path}")
+                        
+                        # Create essential auth tables in the new schema
+                        logger.info(f"[TENANT-CREATION-{process_id}] Creating essential auth tables in schema {schema_name}")
+                        try:
+                            # Create auth tables with the same structure as in public schema
+                            cursor.execute(f"""
+                                -- Create auth tables
+                                CREATE TABLE IF NOT EXISTS "{schema_name}"."custom_auth_user" (
+                                    id UUID PRIMARY KEY,
+                                    password VARCHAR(128) NOT NULL,
+                                    last_login TIMESTAMP WITH TIME ZONE NULL,
+                                    is_superuser BOOLEAN NOT NULL,
+                                    email VARCHAR(254) NOT NULL UNIQUE,
+                                    first_name VARCHAR(100) NOT NULL DEFAULT '',
+                                    last_name VARCHAR(100) NOT NULL DEFAULT '',
+                                    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                                    is_staff BOOLEAN NOT NULL DEFAULT FALSE,
+                                    date_joined TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                                    email_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
+                                    confirmation_token UUID NOT NULL DEFAULT gen_random_uuid(),
+                                    is_onboarded BOOLEAN NOT NULL DEFAULT FALSE,
+                                    stripe_customer_id VARCHAR(255) NULL,
+                                    role VARCHAR(20) NOT NULL DEFAULT 'OWNER',
+                                    occupation VARCHAR(50) NOT NULL DEFAULT 'OWNER',
+                                    tenant_id UUID NULL,
+                                    cognito_sub VARCHAR(36) NULL
+                                );
+                                
+                                CREATE INDEX IF NOT EXISTS custom_auth_user_email_key ON "{schema_name}"."custom_auth_user" (email);
+                                CREATE INDEX IF NOT EXISTS idx_user_tenant ON "{schema_name}"."custom_auth_user" (tenant_id);
+                                
+                                -- Auth User Permissions
+                                CREATE TABLE IF NOT EXISTS "{schema_name}"."custom_auth_user_user_permissions" (
+                                    id SERIAL PRIMARY KEY,
+                                    user_id UUID NOT NULL REFERENCES "{schema_name}"."custom_auth_user"(id),
+                                    permission_id INTEGER NOT NULL,
+                                    CONSTRAINT custom_auth_user_user_permissions_user_id_permission_id_key UNIQUE (user_id, permission_id)
+                                );
+                                
+                                -- Auth User Groups
+                                CREATE TABLE IF NOT EXISTS "{schema_name}"."custom_auth_user_groups" (
+                                    id SERIAL PRIMARY KEY,
+                                    user_id UUID NOT NULL REFERENCES "{schema_name}"."custom_auth_user"(id),
+                                    group_id INTEGER NOT NULL,
+                                    CONSTRAINT custom_auth_user_groups_user_id_group_id_key UNIQUE (user_id, group_id)
+                                );
+                                
+                                -- Tenant table
+                                CREATE TABLE IF NOT EXISTS "{schema_name}"."custom_auth_tenant" (
+                                    id UUID PRIMARY KEY,
+                                    schema_name VARCHAR(63) NOT NULL UNIQUE,
+                                    name VARCHAR(100) NOT NULL,
+                                    created_on TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                                    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                                    setup_status VARCHAR(20) NOT NULL,
+                                    setup_task_id VARCHAR(255) NULL,
+                                    last_setup_attempt TIMESTAMP WITH TIME ZONE NULL,
+                                    setup_error_message TEXT NULL,
+                                    last_health_check TIMESTAMP WITH TIME ZONE NULL,
+                                    storage_quota_bytes BIGINT NOT NULL DEFAULT 2147483648,
+                                    owner_id UUID NOT NULL REFERENCES "{schema_name}"."custom_auth_user"(id)
+                                );
+                            """)
+                            
+                            # Copy the user to the new schema
+                            cursor.execute(f"""
+                                INSERT INTO "{schema_name}"."custom_auth_user" 
+                                (id, password, last_login, is_superuser, email, first_name, last_name, 
+                                 is_active, is_staff, date_joined, email_confirmed, confirmation_token, 
+                                 is_onboarded, stripe_customer_id, role, occupation, tenant_id, cognito_sub)
+                                VALUES (
+                                    %s, %s, %s, %s, %s, %s, %s, 
+                                    %s, %s, %s, %s, %s, 
+                                    %s, %s, %s, %s, %s, %s
+                                )
+                                ON CONFLICT (id) DO NOTHING
+                            """, [
+                                str(user.id), user.password, user.last_login, user.is_superuser,
+                                user.email, user.first_name, user.last_name,
+                                user.is_active, user.is_staff, user.date_joined, user.email_confirmed,
+                                str(user.confirmation_token) if user.confirmation_token else uuid.uuid4(),
+                                user.is_onboarded, user.stripe_customer_id, user.role, user.occupation,
+                                str(tenant.id), user.cognito_sub
+                            ])
+                            
+                            # Copy the tenant to the new schema
+                            cursor.execute(f"""
+                                INSERT INTO "{schema_name}"."custom_auth_tenant"
+                                (id, schema_name, name, created_on, is_active, setup_status, 
+                                 setup_task_id, last_setup_attempt, setup_error_message,
+                                 last_health_check, storage_quota_bytes, owner_id)
+                                VALUES (
+                                    %s, %s, %s, %s, %s, %s,
+                                    %s, %s, %s,
+                                    %s, %s, %s
+                                )
+                                ON CONFLICT (id) DO NOTHING
+                            """, [
+                                str(tenant.id), tenant.schema_name, tenant.name, tenant.created_on,
+                                tenant.is_active, tenant.setup_status,
+                                tenant.setup_task_id, tenant.last_setup_attempt, tenant.setup_error_message,
+                                tenant.last_health_check, tenant.storage_quota_bytes, str(user.id)
+                            ])
+                            
+                            logger.info(f"[TENANT-CREATION-{process_id}] Successfully copied user and tenant to schema {schema_name}")
+                            
+                            # Verify auth tables were created
+                            cursor.execute(f"""
+                                SELECT EXISTS (
+                                    SELECT 1 FROM information_schema.tables 
+                                    WHERE table_schema = %s AND table_name = 'custom_auth_user'
+                                )
+                            """, [schema_name])
+                            auth_table_exists = cursor.fetchone()[0]
+                            logger.info(f"[TENANT-CREATION-{process_id}] Auth table exists in schema {schema_name}: {auth_table_exists}")
+                            
+                        except Exception as e:
+                            logger.error(f"[TENANT-CREATION-{process_id}] Error creating auth tables in schema {schema_name}: {str(e)}")
+                            # Continue with schema creation even if auth tables fail
+                        
+                        # Create essential tables for multi-tenancy
+                        try:
+                            logger.debug(f"[TENANT-CREATION-{process_id}] Setting up django_migrations table")
+                            # Set up django_migrations table
+                            cursor.execute(f"""
+                                CREATE TABLE IF NOT EXISTS "{schema_name}"."django_migrations" (
+                                    id SERIAL PRIMARY KEY,
+                                    app VARCHAR(255) NOT NULL,
+                                    name VARCHAR(255) NOT NULL,
+                                    applied TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+                                );
+                            """)
+                            
+                            # Set up django_migrations table
+                            cursor.execute(f"""
+                                INSERT INTO "{schema_name}"."django_migrations" (app, name)
+                                VALUES ('auth', '0001_initial'), ('contenttypes', '0001_initial'), ('sessions', '0001_initial');
+                            """)
+                            
+                            logger.info(f"[TENANT-CREATION-{process_id}] Successfully set up django_migrations table in schema {schema_name}")
+                        except Exception as e:
+                            logger.error(f"[TENANT-CREATION-{process_id}] Error setting up django_migrations table in schema {schema_name}: {str(e)}")
+                        
+                        # Reset search path if we changed it
+                        if current_path:
+                            cursor.execute(f'SET search_path TO {current_path}')
+                    
+                    # Run a comprehensive schema consistency check
+                    logger.info(f"[TENANT-CREATION-{process_id}] Running comprehensive schema consistency check for {schema_name}")
+                    schema_check_start = time.time()
+                    try:
+                        ensure_schema_consistency(schema_name)
+                        schema_check_time = time.time() - schema_check_start
+                        logger.info(f"[TENANT-CREATION-{process_id}] Schema consistency check completed in {schema_check_time:.2f} seconds")
+                    except Exception as e:
+                        schema_check_time = time.time() - schema_check_start
+                        logger.error(f"[TENANT-CREATION-{process_id}] Error during schema consistency check after {schema_check_time:.2f} seconds: {str(e)}")
+                        # Continue even if schema consistency check fails
+                    
+                    return tenant
+                    
+            except Exception as e:
+                logger.error(f"[TENANT-CREATION-{process_id}] Error creating tenant: {str(e)}")
+                # If we get here, the transaction was rolled back
+                # Check if tenant was created by a concurrent process
+                check_tenant = Tenant.objects.filter(owner=user).first()
+                if check_tenant:
+                    logger.warning(f"[TENANT-CREATION-{process_id}] Found tenant {check_tenant.schema_name} created by concurrent process for user {user.email}")
+                    if not user.tenant or user.tenant.id != check_tenant.id:
+                        user.tenant = check_tenant
+                        user.save(update_fields=['tenant'])
+                    return check_tenant
+                raise
+        finally:
+            # Make sure we always release the lock
+            if lock_acquired:
+                release_user_lock(user.id)
+            
+            # Log the total time spent
+            elapsed_time = time.time() - start_time
+            logger.info(f"[TENANT-CREATION-{process_id}] Tenant creation process completed in {elapsed_time:.2f} seconds")
 
+    except Exception as e:
+        logger.error(f"[TENANT-CREATION-{process_id}] Error creating tenant: {str(e)}")
+        return None  # Add a default return at the end of the function
 
 def custom_exception_handler(exc, context):
     """

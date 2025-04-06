@@ -1,19 +1,20 @@
-// This is a simple polyfill for 'process/browser'
-// It's used to fix the "Module not found: Can't resolve 'process/browser'" error
-// in the debug module
+/**
+ * This is a replacement for process/browser that avoids the
+ * "exports is not defined" error in Next.js App Router
+ */
 
-const process = {
-  env: {
-    NODE_ENV: typeof window !== 'undefined' ? (window.process?.env?.NODE_ENV || 'production') : 'production',
-    DEBUG: typeof window !== 'undefined' ? (window.process?.env?.DEBUG || '') : '',
-  },
+// Simple CommonJS-only process polyfill
+// Using a pure CommonJS approach to avoid exports/module conflicts
+
+const processPolyfill = {
+  env: typeof process !== 'undefined' && process.env ? process.env : {},
   browser: true,
-  version: '1.0.0',
-  nextTick: typeof queueMicrotask !== 'undefined' ? queueMicrotask : callback => setTimeout(callback, 0)
+  version: '',
+  platform: '',
+  nextTick: function(fn) {
+    setTimeout(fn, 0);
+  }
 };
 
-if (typeof window !== 'undefined' && !window.process) {
-  window.process = process;
-}
-
-module.exports = process;
+// Export as CommonJS only - using ESM syntax causes issues in Next.js
+module.exports = processPolyfill;

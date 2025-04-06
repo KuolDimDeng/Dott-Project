@@ -9,6 +9,8 @@ import { useRouter } from 'next/navigation';
 import { fetchAuthSession, signOut } from 'aws-amplify/auth';
 import { SessionProvider } from '@/contexts/SessionContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ClientDataSync } from '@/app/dashboard/DashboardClient';
+import { NotificationProvider } from '@/context/NotificationContext';
 
 // Use a more direct approach for dynamic imports
 const KeyboardFixerLoader = dynamic(
@@ -122,7 +124,10 @@ export default function ClientLayout({ children }) {
       `}</style>
       <SessionProvider>
         <ThemeProvider>
-          {children}
+          <NotificationProvider>
+            <ClientDataSync />
+            {children}
+          </NotificationProvider>
         </ThemeProvider>
       </SessionProvider>
     </>

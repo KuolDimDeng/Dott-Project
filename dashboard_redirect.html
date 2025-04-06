@@ -1,0 +1,26 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Redirecting to Dashboard</title>
+            <script>
+                // Store auth tokens in local storage
+                localStorage.setItem('idToken', 'eyJraWQiOiJZazhCdjlxRlwvaXBwbTNtOTVETTE5S3BTVWtQYUU4NDdyMUY4bVJUMEZ3ST0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJkNGY4MDQzOC02MDMxLTcwYzEtNmM0Mi0zZjBmZmY4YWJhOWIiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY3VzdG9tOmJ1c2luZXNzaWQiOiIxNzY3N2FmNS1kNDk5LTQ2OGQtOTQyMi0zZDdhNTZmZjY3MzUiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMV9KUEw4dkdmYjYiLCJjb2duaXRvOnVzZXJuYW1lIjoiZDRmODA0MzgtNjAzMS03MGMxLTZjNDItM2YwZmZmOGFiYTliIiwiZ2l2ZW5fbmFtZSI6Ikt1b2wiLCJvcmlnaW5fanRpIjoiNDgyOThlOTEtOTAzYy00NmE1LWJjNWYtZDFhZDg4MTQwZjY4IiwiYXVkIjoiMW81djg0bXJnbjRndDg3a2h0cjE3OXVjNWIiLCJldmVudF9pZCI6IjFmM2FhMThlLWMyOTMtNDgxOC04NjI5LWMwOWIwZTYwMDkyZSIsInRva2VuX3VzZSI6ImlkIiwiYXV0aF90aW1lIjoxNzQzODcxMzQ4LCJuYW1lIjoiS3VvbCBEZW5nIiwiZXhwIjoxNzQzODc0OTQ4LCJpYXQiOjE3NDM4NzEzNDgsImZhbWlseV9uYW1lIjoiRGVuZyIsImp0aSI6IjI5MWE3Mzc2LWU5MWMtNDAwZi04ZDczLTk5ZGI3YmEyY2Q5YyIsImVtYWlsIjoia3VvbGRpbWRlbmdAb3V0bG9vay5jb20ifQ.nQDNVpn8d7LEH6mR0Kgnu75-kDDkilC1d_e_lLMtUQmqWMCLpduaPj1vcgJKoisobjfQWmj1IYQGbMyJRqa6KGL6mdwuskfBthkm6MNBaBziggIc7k6WHbPUhYFPOIZGKz4pL_9pCdhteXSCfIwkwoZCFcM-JL5z3G1YLG2F7AH18PmnXt9ULmlxlFOq7im4hoR1Y1_AlYDPHlvlQzyGEIngJyzVjw508YyhcFgG_cPxSZAZYplJRtbfln-WmhNVvi0fus5_MHtWGzPYMpakJskNJFtSBNkAeoYLzWLteMz2a53V4U0bhDBaEamsZ3NGYkSrgZGVP7yxjq-RxXpc0w');
+                localStorage.setItem('accessToken', 'eyJraWQiOiJHSjlVTHpSaXJsUGpFM3NwZTdEVWJlZ3doMEV3RFZyZnd4TklvTHpDTk9FPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiJkNGY4MDQzOC02MDMxLTcwYzEtNmM0Mi0zZjBmZmY4YWJhOWIiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMV9KUEw4dkdmYjYiLCJjbGllbnRfaWQiOiIxbzV2ODRtcmduNGd0ODdraHRyMTc5dWM1YiIsIm9yaWdpbl9qdGkiOiI0ODI5OGU5MS05MDNjLTQ2YTUtYmM1Zi1kMWFkODgxNDBmNjgiLCJldmVudF9pZCI6IjFmM2FhMThlLWMyOTMtNDgxOC04NjI5LWMwOWIwZTYwMDkyZSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoiYXdzLmNvZ25pdG8uc2lnbmluLnVzZXIuYWRtaW4iLCJhdXRoX3RpbWUiOjE3NDM4NzEzNDgsImV4cCI6MTc0Mzg3NDk0OCwiaWF0IjoxNzQzODcxMzQ4LCJqdGkiOiIzMDAyMmIzYy05NjZkLTRkMmUtYWQ0Ni02NTAxNWJjYjc0NzgiLCJ1c2VybmFtZSI6ImQ0ZjgwNDM4LTYwMzEtNzBjMS02YzQyLTNmMGZmZjhhYmE5YiJ9.BOe2R6nH7pagolQDTo2mZI8yVAssh9EscA6Y2uk07sYJuQ5NO2R6Mr0RIrTXjDhPj7LC_m3sJ48qMPbDz3OwAC3r0HeZ7H1z5BGPwcBG8IV7eBHNBNREAH-HwqD3SkqA5hhLdu1UgW_iyx-TteOmBpmQ3C3wr02LMMiVWVvXt4z5uzDGx9vVlVgSyT9iKDd64VD7sqa2gB3d5VygcwTQwPBJDpgyH4Knq0f6v_l54s8R1T0SWuxgx01QBNOR0puvCxykEvDCYAvprB4HWjBOvuKmw8BAzOUL_ChwsN999JvnRzMrVfE_SBFS274xihjQ7rO5JigKeGsaE6hE7mJT4g');
+                localStorage.setItem('refreshToken', 'eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ.OwX38QOaOQXn6Dvo7Us29V7KSJC4yMNOgwilJq_oKY950c7ngTPzFMZTSAD3W6__3cE7Ipmx7uLVuSzvXkh5ZXruJQIF3BE6MOKgl-Sh7mT8_vuaodMrlTcYw06ELtuZGHAJxE_ZixxmqUQ275gpdMYh2XmBbBWW9J4OSPBRSxeH8bcuA5Y5mbDviAl0OqMfUCldJsWsRevQZae4GrD-swh2fJPkXz7Y6VgGdqdTanw1mtRJacJ7aavYyghhDnl5gOWNq552k4DTQcxvrcUAkzeiQQ3AT-JkuTCd8nAoC1hUqJSg-JoRc4paN8FEK0VyHA0QXKjZEqYBmtAphicCkA.RCrOLjMlPM29F1zu.AX6Gy8_EiaZr3yYj4WtuiUhdtnTL4TFtC-_Ugr2a3jM-RcWFMi-uzoA8TLzy-l2-xflXqYtiPzJHQK6ZXCSRqQhXelfiDigFHty594xEe42v_wB7cRmSAkyeDYBnacXGOshYmF57RkHn57atCFIsdFYJLoPA3aG8qs3tcBzyqDxzWaB1RGGHrcu4eMx8zjahoHDoCG2tTxwy5xRv03_YGhTAkLMDiL8tfZN_Rv87pHB4Jbp41Po4j1nSRLVaHEwoTr9usGfeTSyIuUFP-hJzGrmx2ItvWWUHa25ct0XZr8swh8_eEcCjVJHidFAjRTOKBEWkSz18rhqTe-preuIHcxcgGTsZHTLvMnNhDESiXWWKkr1r_LYWss8PFRdHvOouMcoW1T98AYvX7gr8NWi2_q3KO_H12YSO2YnuNFJ5nJ95dr7MNh76KiWS1N26JJ13PAO1hP_fpdKIAVSzJIpqK0QHt_T-JxzFVyTDI8DpIGOWHi6QsHjkzFTgJZ1u46VdC06-6_2sqqWK6vFyy4Bfc9jQUtAT1670kCeJ1kYhBj_GlM_wZyUQDnwpYACEYggxQHKya-VVYD_aVIu4hLb-O4nI50RG4_dp8XbZk3B8ijvisgvFYWQoKtR4mKiB_sTmW9ZP8Av4S7y8rEx5BzLFVBehzLKWLHkIf2Qsj1V_32gcXQTD0PWH6keBQdgUYWgfMP_fWmQ8lJnwBnBeNPbUoSRry0lBRZ5sauASvvZt5bZJTgzqIX-66NBiuPJf7uo04Zg-6e0mTXWAK8Zp4C0xoVcgHchhpw2IA761xmQ4wRPw3HQ16BGXLyBLZMUiha3dVaBQTcFAwxAiz-MROYrSfoVO5yiXsMbCrVtkMHwtDKgG0tfTYWSbdhTn7inIJAbQUP8Q1leSRgwGGDaoTgc-VKFYdErl9liudY3wT8-7KCvo8QKHY5P5n_9zAtJJHqpDxC4SXgxHpJYT86S3EhubhStzdYCQjMIQN6fzGIilpVoxtt6wabugXNqtFiysOyFNO2us_fx9om3fEKl3AldeoevFOsDh9YZtHgy6eAG2dxU-3fDpWEJHLPTIGuHHlJmRQV2IuDKJlMb4JL21P-8_lqqjc2LmB53S0dUYoHEZ5ktW-iIjZs1qxakYrWMi8Saa0_9rlj5505OSkVWCikujWaGPzUfyYbQsm10Q6LNm1ohbxzo7vOErYzl2uEP775LD7nnT5gziB1t3QiAHNyY1qHYjPtfO8zsF_7thyQpKDvnGj44cQTLKp2OoGRV8RIAYO2n1XrV36JloMIoI-DD4gsRba98a2-S5DWMSHlSCffb4jzP3LasF4YW7EA.eTsTWUN3_X7KhHWK5N6QlA');
+                localStorage.setItem('email', 'kuoldimdeng@outlook.com');
+                localStorage.setItem('tenantId', '17677af5-d499-468d-9422-3d7a56ff6735');
+                
+                // Set cookies if needed
+                document.cookie = "tenantId=17677af5-d499-468d-9422-3d7a56ff6735; path=/; SameSite=Lax";
+                
+                // Redirect to dashboard
+                window.location.href = "http://localhost:3000/dashboard";
+            </script>
+        </head>
+        <body>
+            <h1>Redirecting to Dashboard...</h1>
+            <p>If you are not redirected automatically, <a href="http://localhost:3000/dashboard">click here</a>.</p>
+        </body>
+        </html>
+        

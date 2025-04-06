@@ -2,12 +2,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.db import IntegrityError, transaction
-from custom_auth.models import Tenant
+from custom_auth.models import Tenant, User
 from custom_auth.serializers import TenantSerializer
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 import logging
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 
 logger = logging.getLogger('Pyfactor')
 
@@ -322,3 +324,87 @@ class ValidateTenantView(APIView):
                 'valid': False,
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class TenantByEmailView(APIView):
+    """
+    API endpoint to get tenant information for a user by their email address.
+    This helps ensure each user has exactly one tenant, even if they have multiple
+    authentication mechanisms.
+    """
+    permission_classes = [AllowAny]
+    
+    def get(self, request, email):
+        """
+        Get tenant information for a user by email
+        
+        Args:
+            request: HTTP request
+            email: Email address to find tenant for
+            
+        Returns:
+            Response with tenant ID if found
+        """
+        logger.info(f"Looking up tenant by email: {email}")
+        
+        # Sanitize and validate the email
+        try:
+            validate_email(email)
+        except ValidationError:
+            logger.warning(f"Invalid email address format: {email}")
+            return Response(
+                {"detail": "Invalid email address format"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Look up user by email address
+        try:
+            user = User.objects.filter(email=email).first()
+            
+            if not user:
+                logger.info(f"No user found with email: {email}")
+                return Response(
+                    {"detail": "No user found with this email address"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # If user exists, check if they have an associated tenant
+            if user.tenant_id:
+                tenant = Tenant.objects.filter(id=user.tenant_id).first()
+                if tenant:
+                    logger.info(f"Found tenant for email {email}: {tenant.id}")
+                    return Response({
+                        "tenantId": str(tenant.id),
+                        "schemaName": tenant.schema_name,
+                        "name": tenant.name,
+                        "isActive": tenant.is_active
+                    })
+            
+            # If no tenant directly associated with user, check for any tenant where user is the owner
+            tenant = Tenant.objects.filter(owner_id=user.id).first()
+            if tenant:
+                logger.info(f"Found tenant where user is owner for email {email}: {tenant.id}")
+                
+                # Update user-tenant association for future lookups
+                user.tenant_id = tenant.id
+                user.save(update_fields=['tenant_id'])
+                
+                return Response({
+                    "tenantId": str(tenant.id),
+                    "schemaName": tenant.schema_name,
+                    "name": tenant.name,
+                    "isActive": tenant.is_active
+                })
+            
+            # No tenant found for this user
+            logger.info(f"No tenant found for email: {email}")
+            return Response(
+                {"detail": "No tenant associated with this email address"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+        except Exception as e:
+            logger.error(f"Error looking up tenant by email {email}: {str(e)}")
+            return Response(
+                {"detail": "Error processing request"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

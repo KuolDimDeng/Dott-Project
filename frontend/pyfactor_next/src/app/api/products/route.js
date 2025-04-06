@@ -1,13 +1,33 @@
 import { NextResponse } from 'next/server';
 import { applyRLS, verifyTenantId, getDefaultTenantId } from '@/middleware/dev-tenant-middleware';
-// Only import pg in production, otherwise it's not needed
-const isProd = process.env.NODE_ENV === 'production' || process.env.USE_RDS === 'true';
-let Pool;
-if (isProd) {
-  import('pg').then((pg) => {
-    Pool = pg.Pool;
-  }).catch(e => console.error('Failed to load pg module:', e));
-}
+import axios from 'axios';
+import { createDbPool } from '../tenant/db-config';
+
+// Create a DB pool for AWS RDS
+const createAwsRdsPool = async () => {
+  // Only import pg when needed to avoid issues with serverless environments
+  const { Pool } = await import('pg');
+  
+  // Determine SSL configuration
+  const useSSL = process.env.AWS_RDS_SSL === 'true';
+  const sslConfig = useSSL ? { rejectUnauthorized: false } : false;
+  
+  // Create a connection pool with AWS RDS parameters
+  return new Pool({
+    host: process.env.AWS_RDS_HOST,
+    port: parseInt(process.env.AWS_RDS_PORT || '5432'),
+    database: process.env.AWS_RDS_DATABASE || 'dott_main',
+    user: process.env.AWS_RDS_USER,
+    password: process.env.AWS_RDS_PASSWORD,
+    ssl: sslConfig,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
+  });
+};
+
+// Define the backend API URL
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:8000';
 
 // Simple in-memory mock database for development
 const mockDb = {
@@ -39,152 +59,114 @@ const mockDb = {
  * GET handler for products with tenant-aware RLS
  */
 export async function GET(request) {
-  console.log('[API] Products GET request received');
+  let pool = null;
+  let client = null;
+  
   try {
-    // Extract the URL parameters
-    const { searchParams } = new URL(request.url);
-    const urlTenantId = searchParams.get('tenant_id');
-    const schema = searchParams.get('schema');
+    // Get schema from query params
+    const url = new URL(request.url);
+    const schema = url.searchParams.get('schema') || 'public';
     
-    // Extract tenant ID from headers and cookies
-    const headerTenantId = request.headers.get('x-tenant-id');
+    console.log(`[api/products] GET request received with schema: ${schema}`);
     
-    const cookieHeader = request.headers.get('cookie');
-    let cookieTenantId = null;
-    let devTenantId = null;
+    // Create database connection
+    pool = await createDbPool();
     
-    if (cookieHeader) {
-      cookieHeader.split(';').forEach(cookie => {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'tenantId') {
-          cookieTenantId = value;
-        } else if (name === 'dev-tenant-id') {
-          devTenantId = value;
-        }
-      });
+    // Get a client with transaction
+    client = await pool.connect();
+    
+    // Create schema if it doesn't exist
+    await client.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
+    
+    // Check if products table exists
+    const checkTableQuery = `
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = $1
+        AND table_name = 'products'
+      )
+    `;
+    
+    const tableExists = await client.query(checkTableQuery, [schema]);
+    
+    if (!tableExists.rows[0].exists) {
+      console.log(`[api/products] Products table doesn't exist in schema ${schema}, creating it`);
+      
+      // Create products table
+      const createTableQuery = `
+        CREATE TABLE IF NOT EXISTS "${schema}"."products" (
+          "id" SERIAL PRIMARY KEY,
+          "product_name" VARCHAR(255) NOT NULL,
+          "description" TEXT,
+          "price" DECIMAL(10, 2) NOT NULL DEFAULT 0,
+          "sku" VARCHAR(50),
+          "is_for_sale" BOOLEAN DEFAULT true,
+          "stock_quantity" INTEGER DEFAULT 0,
+          "weight" DECIMAL(10, 2),
+          "dimensions" VARCHAR(100),
+          "image_url" TEXT,
+          "category" VARCHAR(100),
+          "tenant_id" VARCHAR(100),
+          "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        -- Add RLS policy for multi-tenant security
+        ALTER TABLE "${schema}"."products" ENABLE ROW LEVEL SECURITY;
+        
+        -- Create policy that restricts access to rows based on tenant_id
+        DROP POLICY IF EXISTS tenant_isolation_policy ON "${schema}"."products";
+        CREATE POLICY tenant_isolation_policy ON "${schema}"."products"
+          USING (tenant_id = current_setting('app.current_tenant_id', TRUE));
+      `;
+      
+      await client.query(createTableQuery);
+      
+      // Return empty array for new table
+      console.log(`[api/products] Created new products table in schema ${schema}`);
+      return NextResponse.json([]);
     }
     
-    // Determine the tenant ID to use, with priority
-    const kuolDengTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-    const isKuolDeng = cookieHeader?.includes('authUser=kuol.deng@example.com');
+    // Extract tenant ID from query params or headers
+    const tenantId = url.searchParams.get('tenantId') || 
+                    request.headers.get('x-tenant-id') || 
+                    'default';
     
-    // Check if schema parameter was provided and convert it to tenant_id if needed
-    let schemaTenantId = null;
-    if (schema && schema !== 'default_schema') {
-      // Try to extract tenant ID from schema name (if format is tenant_{id})
-      const schemaMatch = schema.match(/tenant_([a-f0-9_-]+)/i);
-      if (schemaMatch && schemaMatch[1]) {
-        schemaTenantId = schemaMatch[1].replace(/_/g, '-');
-      }
-    }
+    // Apply RLS policy by setting tenant ID in session
+    await client.query(`SET LOCAL app.current_tenant_id = '${tenantId}'`);
     
-    const tenantId = urlTenantId || 
-                     headerTenantId || 
-                     cookieTenantId || 
-                     devTenantId || 
-                     schemaTenantId ||
-                     (isKuolDeng ? kuolDengTenantId : null) ||
-                     getDefaultTenantId();
+    // Query to get products
+    const query = `
+      SELECT * FROM "${schema}"."products"
+      ORDER BY "product_name" ASC
+    `;
     
-    console.log(`[API] Listing products for tenant: ${tenantId}, schema: ${schema}`);
+    const result = await client.query(query);
+    console.log(`[api/products] Successfully retrieved ${result.rows.length} products`);
     
-    // Connect to the actual RDS database
-    if (process.env.NODE_ENV === 'production' || process.env.USE_RDS === 'true') {
-      // Make sure we have the Pool class available
-      if (!Pool) {
-        console.warn('[API] PostgreSQL module not loaded, falling back to mock data');
-        // Return filtered mock data
-        const filteredProducts = mockDb.products.filter(p => p.tenant_id === tenantId);
-        return NextResponse.json(filteredProducts);
-      }
-      
-      try {
-        // Create a connection pool to the RDS database
-        const pool = new Pool({
-          host: process.env.RDS_HOSTNAME,
-          port: process.env.RDS_PORT,
-          database: process.env.RDS_DB_NAME,
-          user: process.env.RDS_USERNAME,
-          password: process.env.RDS_PASSWORD,
-          ssl: { rejectUnauthorized: false }
-        });
-        
-        // Construct the tenant-specific schema name
-        const schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
-        
-        // SQL query with RLS (Row Level Security)
-        const query = `
-          SELECT * FROM ${schemaName}.products 
-          WHERE tenant_id = $1
-          ORDER BY product_name ASC
-        `;
-        
-        const result = await pool.query(query, [tenantId]);
-        
-        // Close the connection pool
-        await pool.end();
-        
-        return NextResponse.json(result.rows);
-      } catch (dbError) {
-        console.error('[API] Database error:', dbError);
-        
-        // Close the connection pool on error if it exists
-        try {
-          if (pool) await pool.end();
-        } catch (e) {
-          // Ignore any errors from pool.end()
-        }
-        
-        throw new Error(`Database error: ${dbError.message}`);
-      }
-    } else {
-      // DEVELOPMENT MODE: Use mock data directly
-      const filteredProducts = mockDb.products.filter(p => p.tenant_id === tenantId);
-      
-      // If no products exist yet, create some with the current tenant ID
-      if (filteredProducts.length === 0) {
-        console.log('[API] No products found for this tenant, creating default products');
-        
-        // Create default products with the current tenant ID
-        const defaultProducts = [
-          {
-            id: `product-${Date.now()}-1`,
-            product_name: 'Standard Shipping Container',
-            description: 'Standard 20ft shipping container for general cargo',
-            sku: 'CONT-STD-20',
-            price: 2500.00,
-            unit: 'each',
-            tenant_id: tenantId,
-            created_at: new Date().toISOString()
-          },
-          {
-            id: `product-${Date.now()}-2`,
-            product_name: 'Large Shipping Container',
-            description: 'Large 40ft shipping container for bulk cargo',
-            sku: 'CONT-LRG-40',
-            price: 4500.00,
-            unit: 'each',
-            tenant_id: tenantId,
-            created_at: new Date().toISOString()
-          }
-        ];
-        
-        // Add the products to the mock database
-        mockDb.products.push(...defaultProducts);
-        
-        // Return the newly created products
-        return NextResponse.json(defaultProducts);
-      }
-      
-      // Return products with tenant ID information
-      return NextResponse.json(filteredProducts);
-    }
+    return NextResponse.json(result.rows);
   } catch (error) {
-    console.error('[API] Product GET error:', error.message);
-    return NextResponse.json({ 
-      error: 'Failed to fetch products',
-      message: error.message 
-    }, { status: 500 });
+    console.error(`[api/products] Error fetching products:`, error);
+    
+    // Check if error is about relation not existing
+    if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+      console.log('[api/products] Table does not exist yet. Returning empty array.');
+      return NextResponse.json([]);
+    }
+    
+    // Check for connection errors
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT' || error.message?.includes('timeout')) {
+      console.error('[api/products] Database connection error:', error.message);
+      return NextResponse.json([], { status: 200 }); // Return empty array with 200 status
+    }
+    
+    return NextResponse.json(
+      { message: error.message, error: error.stack },
+      { status: 500 }
+    );
+  } finally {
+    if (client) client.release();
+    if (pool) await pool.end().catch(err => console.error('[api/products] Error closing pool:', err));
   }
 }
 
@@ -192,134 +174,202 @@ export async function GET(request) {
  * POST handler for product creation with tenant-aware RLS
  */
 export async function POST(request) {
-  console.log('[API] Product POST request received');
+  let pool = null;
+  let client = null;
+  
   try {
-    // Get request body
-    const productData = await request.json();
-    console.debug('[API] Product POST data:', productData);
+    // Get schema from query params
+    const url = new URL(request.url);
+    const schema = url.searchParams.get('schema') || 'public';
     
-    // Extract tenant info from request
-    const headerTenantId = request.headers.get('x-tenant-id');
+    // Parse request body
+    const body = await request.json();
     
-    const cookieHeader = request.headers.get('cookie');
-    let cookieTenantId = null;
-    let devTenantId = null;
+    console.log(`[api/products] POST request received with schema: ${schema}`);
     
-    if (cookieHeader) {
-      cookieHeader.split(';').forEach(cookie => {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'tenantId') {
-          cookieTenantId = value;
-        } else if (name === 'dev-tenant-id') {
-          devTenantId = value;
-        }
+    // Create database connection
+    pool = await createDbPool();
+    
+    // Get a client with transaction
+    client = await pool.connect();
+    
+    // Start transaction
+    await client.query('BEGIN');
+    
+    // Check if schema exists, if not create it
+    try {
+      await client.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
+      
+      // Check if products table exists
+      const checkTableQuery = `
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = $1
+          AND table_name = 'products'
+        )
+      `;
+      
+      const tableExists = await client.query(checkTableQuery, [schema]);
+      
+      if (!tableExists.rows[0].exists) {
+        console.log(`[api/products] Products table doesn't exist in schema ${schema}, creating it`);
+        
+        // Create products table
+        const createTableQuery = `
+          CREATE TABLE IF NOT EXISTS "${schema}"."products" (
+            "id" SERIAL PRIMARY KEY,
+            "product_name" VARCHAR(255) NOT NULL,
+            "description" TEXT,
+            "price" DECIMAL(10, 2) NOT NULL DEFAULT 0,
+            "sku" VARCHAR(50),
+            "is_for_sale" BOOLEAN DEFAULT true,
+            "stock_quantity" INTEGER DEFAULT 0,
+            "weight" DECIMAL(10, 2),
+            "dimensions" VARCHAR(100),
+            "image_url" TEXT,
+            "category" VARCHAR(100),
+            "tenant_id" VARCHAR(100),
+            "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+          
+          -- Add RLS policy for multi-tenant security
+          ALTER TABLE "${schema}"."products" ENABLE ROW LEVEL SECURITY;
+          
+          -- Create policy that restricts access to rows based on tenant_id
+          DROP POLICY IF EXISTS tenant_isolation_policy ON "${schema}"."products";
+          CREATE POLICY tenant_isolation_policy ON "${schema}"."products"
+            USING (tenant_id = current_setting('app.current_tenant_id', TRUE));
+        `;
+        
+        await client.query(createTableQuery);
+      }
+    } catch (error) {
+      console.error(`[api/products] Error creating products table:`, error);
+      throw error;
+    }
+    
+    // Map fields if necessary
+    const productData = {
+      product_name: body.name || body.product_name,
+      description: body.description,
+      price: body.price,
+      sku: body.product_code || body.sku,
+      is_for_sale: body.for_sale || body.is_for_sale || true,
+      stock_quantity: body.stock_quantity || 0,
+      tenant_id: body.tenant_id
+    };
+    
+    console.log(`[api/products] Creating product: ${JSON.stringify(productData)}`);
+    
+    // Query to create product
+    const query = `
+      -- Set RLS policy
+      SET LOCAL app.current_tenant_id = '${productData.tenant_id}';
+      
+      INSERT INTO "${schema}"."products" (
+        "product_name", "description", "price", "sku", 
+        "is_for_sale", "stock_quantity", "tenant_id"
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *
+    `;
+    
+    const values = [
+      productData.product_name,
+      productData.description,
+      productData.price,
+      productData.sku,
+      productData.is_for_sale,
+      productData.stock_quantity,
+      productData.tenant_id
+    ];
+    
+    const result = await client.query(query, values);
+    
+    // Commit the transaction
+    await client.query('COMMIT');
+    
+    console.log(`[api/products] Successfully created product with ID: ${result.rows[0].id}`);
+    
+    return NextResponse.json(result.rows[0]);
+  } catch (error) {
+    // Rollback the transaction if it was started
+    if (client) {
+      await client.query('ROLLBACK').catch(err => {
+        console.error('[api/products] Error rolling back transaction:', err);
       });
     }
     
-    // Determine tenant ID with priority
-    const kuolDengTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-    const isKuolDeng = cookieHeader?.includes('authUser=kuol.deng@example.com');
+    console.error(`[api/products] Error creating product:`, error);
     
-    const tenantId = productData.tenant_id || 
-                     headerTenantId || 
-                     cookieTenantId || 
-                     devTenantId || 
-                     (isKuolDeng ? kuolDengTenantId : null) || 
-                     getDefaultTenantId();
-    
-    console.debug('[API] Tenant ID determined for product creation:', tenantId);
-    
-    // Create product with tenant ID to ensure RLS
-    const enhancedProductData = {
-      ...productData,
-      id: `product-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      tenant_id: tenantId,
-      created_at: new Date().toISOString()
-    };
-    
-    // Connect to the actual RDS database in production
-    if (process.env.NODE_ENV === 'production' || process.env.USE_RDS === 'true') {
-      // Make sure we have the Pool class available
-      if (!Pool) {
-        console.warn('[API] PostgreSQL module not loaded, falling back to mock data');
-        // Add to mock database
-        mockDb.products.push(enhancedProductData);
-        console.log('[API] Created product with mock data. Tenant ID:', tenantId);
-        return NextResponse.json(enhancedProductData, { status: 201 });
-      }
-      
+    // Check if error is about relation not existing
+    if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
       try {
-        // Create a connection pool to the RDS database
-        const pool = new Pool({
-          host: process.env.RDS_HOSTNAME,
-          port: process.env.RDS_PORT,
-          database: process.env.RDS_DB_NAME,
-          user: process.env.RDS_USERNAME,
-          password: process.env.RDS_PASSWORD,
-          ssl: { rejectUnauthorized: false }
-        });
-        
-        // Construct the tenant-specific schema name
-        const schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
-        
-        // SQL query to insert product with tenant ID for RLS
-        const query = `
-          INSERT INTO ${schemaName}.products (
-            product_name, 
-            description, 
-            sku, 
-            price, 
-            unit, 
-            tenant_id, 
-            created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-          RETURNING *
-        `;
-        
-        const values = [
-          enhancedProductData.product_name,
-          enhancedProductData.description,
-          enhancedProductData.sku,
-          enhancedProductData.price,
-          enhancedProductData.unit,
-          tenantId,
-          enhancedProductData.created_at
-        ];
-        
-        const result = await pool.query(query, values);
-        
-        // Close the connection pool
-        await pool.end();
-        
-        console.log('[API] Created product with RLS tenant_id:', tenantId);
-        
-        return NextResponse.json(result.rows[0], { status: 201 });
-      } catch (dbError) {
-        console.error('[API] Database error:', dbError);
-        
-        // Close the connection pool on error
-        try {
-          if (pool) await pool.end();
-        } catch (e) {
-          // Ignore any errors from pool.end()
+        // Create schema directly if possible
+        if (client) {
+          const schema = url.searchParams.get('schema') || 
+                        `tenant_${(body?.tenant_id || 'default').replace(/-/g, '_')}`;
+          
+          console.log(`[api/products] Directly initializing schema: ${schema}`);
+          
+          // Create schema
+          await client.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"`);
+          
+          // Create products table
+          const createTableQuery = `
+            CREATE TABLE IF NOT EXISTS "${schema}"."products" (
+              "id" SERIAL PRIMARY KEY,
+              "product_name" VARCHAR(255) NOT NULL,
+              "description" TEXT,
+              "price" DECIMAL(10, 2) NOT NULL DEFAULT 0,
+              "sku" VARCHAR(50),
+              "is_for_sale" BOOLEAN DEFAULT true,
+              "stock_quantity" INTEGER DEFAULT 0,
+              "weight" DECIMAL(10, 2),
+              "dimensions" VARCHAR(100),
+              "image_url" TEXT,
+              "category" VARCHAR(100),
+              "tenant_id" VARCHAR(100),
+              "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+          `;
+          
+          await client.query(createTableQuery);
+          
+          return NextResponse.json({
+            message: 'Schema initialized, please try creating the product again',
+            schemaCreated: true
+          }, { status: 202 });
         }
-        
-        throw new Error(`Database error: ${dbError.message}`);
+      } catch (initError) {
+        console.error(`[api/products] Error initializing schema:`, initError);
       }
-    } else {
-      // DEVELOPMENT MODE: Use mock database
-      mockDb.products.push(enhancedProductData);
       
-      console.log('[API] Created product with mock data. Tenant ID:', tenantId);
-      
-      // Return created product
-      return NextResponse.json(enhancedProductData, { status: 201 });
+      return NextResponse.json(
+        { message: 'Products table does not exist. Schema initialization failed. Please try again.' },
+        { status: 500 }
+      );
     }
-  } catch (error) {
-    console.error('[API] Product POST error:', error.message);
-    return NextResponse.json({ 
-      error: 'Failed to create product',
-      message: error.message 
-    }, { status: 500 });
+    
+    // Check for connection errors
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT' || error.message?.includes('timeout')) {
+      return NextResponse.json(
+        { 
+          message: 'Database connection failed. The server might be temporarily unavailable. Please try again later.',
+          error: error.message,
+          temporary: true
+        },
+        { status: 503 } // Service Unavailable
+      );
+    }
+    
+    return NextResponse.json(
+      { message: error.message, error: error.stack },
+      { status: 500 }
+    );
+  } finally {
+    if (client) client.release();
+    if (pool) await pool.end().catch(err => console.error('[api/products] Error closing pool:', err));
   }
 } 

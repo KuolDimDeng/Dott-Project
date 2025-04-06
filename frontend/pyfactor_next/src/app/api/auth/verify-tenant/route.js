@@ -52,126 +52,160 @@ async function getEmailToTenantMapping(email) {
  */
 export async function POST(request) {
   try {
-    // Check if this is a dashboard request
-    const referer = request.headers.get('referer') || '';
-    const isDashboardRequest = referer.includes('/dashboard');
+    // Get request data and headers
+    const body = await request.json();
     
-    // Get tenant ID and user info from request body
-    let body;
-    try {
-      body = await request.json();
-    } catch (parseError) {
-      logger.error('[verify-tenant] Error parsing request body:', parseError.message);
-      
-      // For dashboard requests, provide a more graceful fallback
-      if (isDashboardRequest) {
-        const fallbackTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-        logger.info('[verify-tenant] Dashboard request, providing fallback tenant ID for parse error');
-        
-        return NextResponse.json({
-          success: true,
-          message: 'Using fallback tenant ID for dashboard',
-          tenant_id: fallbackTenantId,
-          name: 'Dashboard Fallback',
-          status: 'active',
-          fallback: true
-        }, { status: 200 });
-      }
-      
-      return NextResponse.json({
-        success: false,
-        message: 'Invalid request format',
-        error: 'Could not parse request body'
-      }, { status: 400 });
-    }
-    
-    const { tenantId, userId, email } = body;
+    // Extract data from request
+    const { tenantId: providedTenantId, userId, email, username } = body;
+    const requestId = request.headers.get('X-Request-ID') || uuidv4();
 
-    // Validate required fields
-    if (!userId) {
-      logger.warn('[verify-tenant] Missing userId in request');
-      return NextResponse.json({
-        success: false,
-        message: 'Missing required field: userId',
-        fallbackTenantId: '18609ed2-1a46-4d50-bc4e-483d6e3405ff'
-      }, { status: 400 });
-    }
-
-    logger.debug('[verify-tenant] Verifying tenant:', { 
-      tenantId, 
+    logger.info('[verify-tenant] Tenant verification request', { 
+      requestId,
       userId,
       email,
-      hasEmail: !!email
+      providedTenantId,
+      hasUsername: !!username
     });
 
-    // Get auth headers for backend requests
-    let authHeaders;
-    let accessToken;
-    try {
-      authHeaders = await getAuthHeaders();
-      accessToken = await getAccessToken();
-    } catch (authError) {
-      logger.error('[verify-tenant] Failed to get auth headers:', authError.message);
-      return NextResponse.json({
-        success: false,
-        message: 'Authentication error',
-        error: authError.message,
-        fallbackTenantId: tenantId || '18609ed2-1a46-4d50-bc4e-483d6e3405ff'
-      }, { status: 401 });
+    // Extract authentication headers
+    const authorizationHeader = request.headers.get('Authorization');
+    const idToken = request.headers.get('X-Id-Token');
+    
+    // Log headers for debugging
+    logger.debug('[verify-tenant] Headers present', { 
+      hasAuth: !!authorizationHeader,
+      hasIdToken: !!idToken,
+    });
+    
+    // Build headers for backend API calls
+    const authHeaders = {
+      'X-Request-ID': requestId
+    };
+    
+    // Add ID token if available
+    if (idToken) {
+      authHeaders['X-Id-Token'] = idToken;
     }
     
-    // If we don't have an access token, use a fallback but still return success
+    // Add user ID if available
+    if (userId) {
+      authHeaders['X-User-ID'] = userId;
+    }
+    
+    // Extract access token from authorization header
+    let accessToken = null;
+    if (authorizationHeader && authorizationHeader.startsWith('Bearer ')) {
+      accessToken = authorizationHeader.substring(7);
+      logger.debug('[verify-tenant] Extracted access token from authorization header');
+    }
+    
     if (!accessToken) {
-      logger.warn('[verify-tenant] No access token available, using fallback tenant ID');
-      const fallbackTenantId = tenantId || '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-      
-      // For dashboard requests, provide a formatted response
-      if (isDashboardRequest) {
-        logger.info('[verify-tenant] Dashboard request with no access token, providing formatted fallback');
+      logger.warn('[verify-tenant] No access token provided');
+    }
+    
+    // If email is provided, let's prioritize looking up tenant by email first
+    // This is the most reliable way to find a user's tenant
+    if (email) {
+      try {
+        logger.info('[verify-tenant] Looking up tenant by email:', { email });
         
-        // Store the fallback tenant ID in a cookie
-        try {
+        // Make API call to find tenant by email
+        const emailLookupResponse = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/by-email/${encodeURIComponent(email)}`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...authHeaders,
+              Authorization: `Bearer ${accessToken}`
+            }
+          }
+        );
+        
+        // If email lookup succeeds, use that tenant ID
+        if (emailLookupResponse.data && emailLookupResponse.data.tenantId) {
+          const foundTenantId = emailLookupResponse.data.tenantId;
+          logger.info('[verify-tenant] Found tenant by email lookup:', { 
+            email, 
+            tenantId: foundTenantId 
+          });
+          
+          // Store the tenant ID in a cookie
           const cookieStore = cookies();
-          cookieStore.set('tenantId', fallbackTenantId, { 
+          cookieStore.set('tenantId', foundTenantId, {
             path: '/',
             maxAge: 60 * 60 * 24 * 7, // 7 days
             sameSite: 'strict'
           });
-        } catch (cookieError) {
-          logger.error('[verify-tenant] Error setting cookie:', cookieError.message);
+          
+          // Return the found tenant ID
+          return NextResponse.json({
+            success: true,
+            message: 'Found existing tenant by email',
+            tenantId: foundTenantId,
+            schemaName: `tenant_${foundTenantId.replace(/-/g, '_')}`,
+            source: 'email_tenant_lookup'
+          });
         }
-        
-        return NextResponse.json({
-          success: true,
-          message: 'Tenant initialized successfully via fallback method',
-          tenant_id: fallbackTenantId.replace(/-/g, '_'),
-          name: body.businessName || 'Fallback Business',
-          status: 'active',
-          fallback: true
-        }, { status: 200 });
-      }
-      
-      // Store the fallback tenant ID in a cookie
-      try {
-        const cookieStore = cookies();
-        cookieStore.set('tenantId', fallbackTenantId, { 
-          path: '/',
-          maxAge: 60 * 60 * 24 * 7, // 7 days
-          sameSite: 'strict'
+      } catch (error) {
+        // Log error but continue with other verification methods
+        logger.error('[verify-tenant] Error looking up tenant by email:', {
+          error: error.message,
+          email
         });
-      } catch (cookieError) {
-        logger.error('[verify-tenant] Error setting cookie:', cookieError.message);
       }
-      
-      return NextResponse.json({
-        success: true,
-        message: 'Using fallback tenant ID due to missing access token',
-        tenantId: fallbackTenantId,
-        fallback: true,
-        source: 'api_fallback'
-      }, { status: 200 });
     }
-
+    
+    // If a specific tenant ID is provided, verify it exists
+    if (providedTenantId && accessToken) {
+      try {
+        // Check if tenant exists and is valid
+        logger.info('[verify-tenant] Checking if provided tenant exists:', { providedTenantId });
+        
+        const tenantCheckResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/exists/${providedTenantId}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              ...authHeaders,
+              Authorization: `Bearer ${accessToken}`
+            }
+          }
+        ).then(res => res.json());
+        
+        if (tenantCheckResponse.exists) {
+          logger.info('[verify-tenant] Provided tenant exists, using it:', { providedTenantId });
+          
+          // Store the tenant ID in a cookie
+          const cookieStore = cookies();
+          cookieStore.set('tenantId', providedTenantId, {
+            path: '/',
+            maxAge: 60 * 60 * 24 * 7, // 7 days
+            sameSite: 'strict'
+          });
+          
+          return NextResponse.json({
+            success: true,
+            message: 'Using verified existing tenant',
+            tenantId: providedTenantId,
+            schemaName: `tenant_${providedTenantId.replace(/-/g, '_')}`,
+            source: 'verified_existing'
+          });
+        } else {
+          logger.warn('[verify-tenant] Provided tenant does not exist, will try other methods');
+        }
+      } catch (error) {
+        logger.error('[verify-tenant] Error checking if tenant exists:', {
+          error: error.message,
+          providedTenantId
+        });
+      }
+    }
+    
+    // Check if this is a dashboard request
+    const referer = request.headers.get('referer') || '';
+    const isDashboardRequest = referer.includes('/dashboard');
+    
     // First check if a tenant already exists for this user on the backend
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/tenant/current`, {
@@ -267,8 +301,8 @@ export async function POST(request) {
     }
     
     // If a valid tenant ID was provided and no existing tenant was found
-    if (tenantId) {
-      logger.info('[verify-tenant] Using provided tenant ID:', { tenantId });
+    if (providedTenantId) {
+      logger.info('[verify-tenant] Using provided tenant ID:', { tenantId: providedTenantId });
       
       // Verify this tenant exists and isn't assigned to another user
       try {
@@ -279,7 +313,7 @@ export async function POST(request) {
             'Content-Type': 'application/json',
             ...authHeaders
           },
-          body: JSON.stringify({ tenantId })
+          body: JSON.stringify({ tenantId: providedTenantId })
         });
         
         // Proper error handling for the response
@@ -294,7 +328,7 @@ export async function POST(request) {
           const correctTenantId = tenantCheckResponse.correctTenantId;
           
           logger.warn('[verify-tenant] Tenant belongs to another user, using correct tenant ID:', { 
-            providedTenantId: tenantId,
+            providedTenantId,
             correctTenantId
           });
           
@@ -318,11 +352,11 @@ export async function POST(request) {
         
         // If the tenant exists, store it and return success
         if (tenantCheckResponse.exists) {
-          logger.info('[verify-tenant] Tenant exists, storing in cookie:', { tenantId });
+          logger.info('[verify-tenant] Tenant exists, storing in cookie:', { tenantId: providedTenantId });
           
           // Store the tenant ID in a cookie
           const cookieStore = await cookies();
-          await cookieStore.set('tenantId', tenantId, { 
+          await cookieStore.set('tenantId', providedTenantId, { 
             path: '/',
             maxAge: 60 * 60 * 24 * 7, // 7 days
             sameSite: 'strict'
@@ -331,8 +365,8 @@ export async function POST(request) {
           return NextResponse.json({
             success: true,
             message: 'Tenant verified',
-            tenantId: tenantId,
-            schemaName: `tenant_${tenantId.replace(/-/g, '_')}`,
+            tenantId: providedTenantId,
+            schemaName: `tenant_${providedTenantId.replace(/-/g, '_')}`,
             source: 'tenant_exists'
           });
         }
@@ -343,9 +377,9 @@ export async function POST(request) {
       
       // If we reach here, the tenant doesn't exist or couldn't be verified
       // Store the tenant ID in a cookie anyway and proceed with onboarding
-      logger.info('[verify-tenant] Using provided tenant ID with no verification:', { tenantId });
+      logger.info('[verify-tenant] Using provided tenant ID with no verification:', { tenantId: providedTenantId });
       const cookieStore = await cookies();
-      await cookieStore.set('tenantId', tenantId, { 
+      await cookieStore.set('tenantId', providedTenantId, { 
         path: '/',
         maxAge: 60 * 60 * 24 * 7, // 7 days
         sameSite: 'strict'
@@ -354,8 +388,8 @@ export async function POST(request) {
       return NextResponse.json({
         success: true,
         message: 'Using provided tenant ID',
-        tenantId: tenantId,
-        schemaName: `tenant_${tenantId.replace(/-/g, '_')}`,
+        tenantId: providedTenantId,
+        schemaName: `tenant_${providedTenantId.replace(/-/g, '_')}`,
         source: 'provided_unverified'
       });
     }
@@ -430,7 +464,7 @@ export async function POST(request) {
           logger.error('[verify-tenant] Failed to create new tenant:', createResponse.data);
           
           // Provide a fallback tenant ID
-          const fallbackTenantId = tenantId || '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
+          const fallbackTenantId = providedTenantId || '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
           
           // Store the fallback tenant ID in a cookie
           const cookieStore = await cookies();
@@ -458,7 +492,7 @@ export async function POST(request) {
         });
         
         // Provide a fallback tenant ID
-        const fallbackTenantId = tenantId || '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
+        const fallbackTenantId = providedTenantId || '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
         
         // Store the fallback tenant ID in a cookie
         const cookieStore = await cookies();
@@ -485,7 +519,7 @@ export async function POST(request) {
       });
       
       // Provide a fallback tenant ID
-      const fallbackTenantId = tenantId || '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
+      const fallbackTenantId = providedTenantId || '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
       
       // Store the fallback tenant ID in a cookie
       try {

@@ -77,24 +77,6 @@ export default function SignUpForm() {
         username: formData.username 
       });
       
-      // Development mode shortcut - disabled for troubleshooting
-      if (false && process.env.NODE_ENV === 'development') {
-        logger.debug('[SignUpForm] Development mode: simulating successful signup');
-        
-        // Store email for verification page
-        localStorage.setItem('pyfactor_email', formData.username);
-        localStorage.setItem('needs_verification', 'true');
-        
-        // Success message and redirect to verification page
-        setSuccessMessage('Account created successfully! Redirecting to verification page...');
-        
-        setTimeout(() => {
-          router.push(`/auth/verify-email?email=${encodeURIComponent(formData.username)}`);
-        }, 1500);
-        
-        return;
-      }
-      
       // Actual sign-up process
       const { isSignUpComplete, userId, nextStep } = await signUp({
         username: formData.username,
@@ -201,7 +183,7 @@ export default function SignUpForm() {
       
       {/* Success message */}
       {successMessage && (
-        <div className="bg-green-50 border-l-4 border-green-400 p-4">
+        <div className="bg-green-50 border-l-4 border-green-400 p-4" role="alert">
           <p className="text-green-700">{successMessage}</p>
         </div>
       )}
@@ -223,14 +205,13 @@ export default function SignUpForm() {
             className={`appearance-none block w-full px-3 py-2 border ${
               errors.username ? 'border-red-300' : 'border-gray-300'
             } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-            disabled={isSubmitting}
           />
           {errors.username && (
-            <p className="mt-1 text-sm text-red-600">{errors.username}</p>
+            <p className="mt-2 text-sm text-red-600">{errors.username}</p>
           )}
         </div>
       </div>
-
+      
       {/* Password field */}
       <div>
         <label htmlFor="password" className="block text-sm font-medium text-gray-700">
@@ -248,21 +229,17 @@ export default function SignUpForm() {
             className={`appearance-none block w-full px-3 py-2 border ${
               errors.password ? 'border-red-300' : 'border-gray-300'
             } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-            disabled={isSubmitting}
           />
           {errors.password && (
-            <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+            <p className="mt-2 text-sm text-red-600">{errors.password}</p>
           )}
-          <p className="mt-1 text-xs text-gray-500">
-            Password must be at least 8 characters and include an uppercase letter, a number, and a special character.
-          </p>
         </div>
       </div>
-
-      {/* Confirm Password field */}
+      
+      {/* Confirm password field */}
       <div>
         <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-          Confirm Password
+          Confirm password
         </label>
         <div className="mt-1">
           <input
@@ -276,45 +253,36 @@ export default function SignUpForm() {
             className={`appearance-none block w-full px-3 py-2 border ${
               errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
             } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-            disabled={isSubmitting}
           />
           {errors.confirmPassword && (
-            <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+            <p className="mt-2 text-sm text-red-600">{errors.confirmPassword}</p>
           )}
         </div>
       </div>
-
-      {/* Submit button */}
+      
       <div>
         <button
           type="submit"
-          disabled={isSubmitting || Object.keys(errors).some(key => errors[key])}
-          className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-            isSubmitting || Object.keys(errors).some(key => errors[key])
-              ? 'bg-blue-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+          disabled={isSubmitting}
+          className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+            isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
           }`}
         >
-          {isSubmitting ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Creating Account...
-            </>
-          ) : (
-            'Create Account'
-          )}
+          {isSubmitting ? 'Creating account...' : 'Create account'}
         </button>
       </div>
-
-      {/* Sign in link */}
-      <div className="text-sm text-center mt-4">
-        <span className="text-gray-600">Already have an account?</span>{' '}
-        <Link href="/auth/signin" className="font-medium text-blue-600 hover:text-blue-500">
-          Sign in instead
-        </Link>
+      
+      <div className="text-center mt-4">
+        <p className="text-sm text-gray-600">
+          By signing up, you agree to our{' '}
+          <Link href="/terms" className="font-medium text-blue-600 hover:text-blue-500">
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link href="/privacy" className="font-medium text-blue-600 hover:text-blue-500">
+            Privacy Policy
+          </Link>
+        </p>
       </div>
     </form>
   );

@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/utils/logger';
 import DashboardWrapper from './DashboardWrapper';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { COOKIE_NAMES, ONBOARDING_STATUS } from '@/constants/onboarding';
 import { fetchAuthSession, fetchUserAttributes } from '@aws-amplify/auth';
-import { CircularProgress } from '@mui/material';
 import dynamic from 'next/dynamic';
 import React from 'react';
+import DashboardLoader from '@/components/DashboardLoader';
+import { useNotification } from '@/context/NotificationContext';
+import { useSession } from 'next-auth/react';
 
 // Dynamically import DatabaseAdmin component to avoid loading it until needed
 const DatabaseAdmin = dynamic(() => import('@/components/DatabaseAdmin'), {
@@ -54,22 +56,7 @@ function checkForUserOnboardingData() {
 // Helper to get business name from user data
 function getUserBusinessName() {
   try {
-    // Try to get from localStorage businessInfo
-    const businessInfo = localStorage.getItem('businessInfo');
-    if (businessInfo) {
-      try {
-        const parsedInfo = JSON.parse(businessInfo);
-        if (parsedInfo.businessName) return parsedInfo.businessName;
-      } catch (e) {
-        // Invalid JSON, continue to other methods
-      }
-    }
-    
-    // Try localStorage direct key
-    const businessName = localStorage.getItem('businessName');
-    if (businessName) return businessName;
-    
-    // Try cookies
+    // Try cookies first
     const getCookie = (name) => {
       const value = `; ${document.cookie}`;
       const parts = value.split(`; ${name}=`);
@@ -77,10 +64,30 @@ function getUserBusinessName() {
       return null;
     };
     
-    return getCookie('businessName');
+    const cookieName = getCookie('businessName') || getCookie('custom:businessname');
+    if (cookieName) return cookieName;
+    
+    // Then try localStorage
+    if (typeof localStorage !== 'undefined') {
+      try {
+        // Try businessInfo object
+        const storedInfo = localStorage.getItem('businessInfo');
+        if (storedInfo) {
+          const parsedInfo = JSON.parse(storedInfo);
+          if (parsedInfo.businessName) return parsedInfo.businessName;
+        }
+        
+        // Try direct key
+        const directName = localStorage.getItem('businessName');
+        if (directName) return directName;
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+    }
   } catch (e) {
-    return null;
+    // Ignore any errors in this helper
   }
+  return null;
 }
 
 // Helper to get business type from user data
@@ -107,11 +114,14 @@ function getUserBusinessType() {
 export default function DashboardClient({ newAccount, plan }) {
   const [isClient, setIsClient] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userData, setUserData] = useState(null);
   const router = useRouter();
   const [isVerifyingTenant, setIsVerifyingTenant] = useState(true);
   const [tenantVerified, setTenantVerified] = useState(false);
   const [setupStatus, setSetupStatus] = useState('pending');
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Replace constant logging with first-render-only logging
   const isFirstRender = React.useRef(true);
@@ -119,6 +129,48 @@ export default function DashboardClient({ newAccount, plan }) {
     console.log('DashboardClient initial render with props:', { newAccount, plan });
     isFirstRender.current = false;
   }
+  
+  // Add searchParams
+  const searchParams = useSearchParams();
+  
+  // Add notification context
+  const { notifySuccess, notifyError, notifyWarning } = useNotification();
+  
+  // Dashboard loading component
+  const DashboardLoadingState = () => (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+        <h2 className="text-xl font-semibold mb-2">Loading your dashboard...</h2>
+        <p className="text-gray-500">Please wait while we retrieve your data.</p>
+      </div>
+    </div>
+  );
+
+  // Dashboard error component
+  const DashboardErrorState = () => (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center p-6 bg-red-50 rounded-lg max-w-md">
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          className="h-12 w-12 text-red-500 mx-auto mb-4" 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <h2 className="text-xl font-semibold mb-2">Unable to load dashboard</h2>
+        <p className="text-gray-700 mb-4">{error || "There was a problem loading your data. Please try again later."}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  );
   
   // Function to fix missing attributes if needed
   async function ensureUserAttributesComplete(session, userData) {
@@ -198,7 +250,7 @@ export default function DashboardClient({ newAccount, plan }) {
             break;
           case 'custom:businessname':
             // Try to get business name from cookies or localStorage
-            const businessName = getBestBusinessName() || 'My Business';
+            const businessName = getBestBusinessName() || '';
             attributesToUpdate[attr] = userData['custom:businessname'] || businessName;
             break;
           case 'custom:businesstype':
@@ -249,7 +301,8 @@ export default function DashboardClient({ newAccount, plan }) {
               }
               
               // Try direct key
-              return localStorage.getItem('businessName');
+              const directName = localStorage.getItem('businessName');
+              if (directName) return directName;
             } catch (e) {
               // Ignore localStorage errors
             }
@@ -355,6 +408,7 @@ export default function DashboardClient({ newAccount, plan }) {
                 localStorage.setItem('tenantId', tenantId);
               }
               
+              setIsAuthenticated(true);
               setTenantVerified(true);
               setIsVerifyingTenant(false);
               setSetupStatus('success');
@@ -394,36 +448,76 @@ export default function DashboardClient({ newAccount, plan }) {
     verifyCognitoState();
   }, []);
   
+  // Function to fix tenant schema issues in AWS RDS
+  const setupAwsRdsTables = useCallback(async (tenantId) => {
+    if (!tenantId) {
+      console.error('[DashboardClient] Cannot set up tables: No tenant ID provided');
+      return { success: false, error: 'No tenant ID provided' };
+    }
+    
+    try {
+      console.log(`[DashboardClient] Setting up AWS RDS tables for tenant: ${tenantId}`);
+      
+      // Create the schema first
+      const schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
+      
+      // Call our AWS RDS table creation endpoint
+      const response = await fetch(`/api/db/create-aws-tables`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[DashboardClient] AWS RDS table setup complete:', data);
+        return { success: true, data };
+      } else {
+        const errorData = await response.json();
+        console.error('[DashboardClient] Failed to set up AWS RDS tables:', errorData);
+        return { success: false, error: errorData };
+      }
+    } catch (error) {
+      console.error('[DashboardClient] Error setting up AWS RDS tables:', error.message);
+      return { success: false, error: error.message };
+    }
+  }, []);
+
+  // Initialize database and ensure tables exist
+  const initializeDatabase = async () => {
+    try {
+      console.log('[DashboardClient] Initializing database connection to AWS RDS');
+      
+      // Get tenant ID from localStorage or cookies
+      const localStorageTenantId = localStorage.getItem('tenantId');
+      const cookieTenantId = (() => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; tenantId=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+      })();
+      
+      const tenantId = localStorageTenantId || cookieTenantId;
+      
+      if (!tenantId) {
+        console.warn('[DashboardClient] No tenant ID found for database initialization, skipping table setup');
+        return;
+      }
+      
+      // Set up AWS RDS tables with the tenant ID
+      const result = await setupAwsRdsTables(tenantId);
+      
+      if (result.success) {
+        console.log('[DashboardClient] AWS RDS tables set up successfully');
+      } else {
+        console.warn('[DashboardClient] AWS RDS table setup issues:', result.error);
+      }
+    } catch (error) {
+      console.error('[DashboardClient] Error initializing AWS RDS:', error);
+    }
+  };
+  
   // This ensures we're only rendering on the client
   useEffect(() => {
     setIsClient(true);
     
-    // Initialize database and ensure tables exist
-    const initializeDatabase = async () => {
-      try {
-        logger.info('[DashboardClient] Initializing database on client mount');
-        
-        // First create the table
-        const createTableResponse = await fetch('/api/tenant/create-table');
-        if (createTableResponse.ok) {
-          logger.info('[DashboardClient] Table creation successful or already exists');
-        } else {
-          logger.warn('[DashboardClient] Table creation response:', await createTableResponse.text());
-        }
-        
-        // Then initialize the database environment
-        const initResponse = await fetch('/api/tenant/init-db-env');
-        if (initResponse.ok) {
-          logger.info('[DashboardClient] Database environment initialized');
-        } else {
-          logger.warn('[DashboardClient] Database initialization response:', await initResponse.text());
-        }
-      } catch (error) {
-        logger.error('[DashboardClient] Error initializing database:', error);
-      }
-    };
-    
-    // Run database initialization immediately
+    // Run database initialization immediately with AWS RDS
     initializeDatabase();
     
     // Ensure consistent tenant ID on initialization
@@ -440,7 +534,7 @@ export default function DashboardClient({ newAccount, plan }) {
         
         // If we have inconsistent IDs or none at all, fetch from the server
         if (!localStorageTenantId || !cookieTenantId || localStorageTenantId !== cookieTenantId) {
-          logger.info('[DashboardClient] Tenant ID inconsistency detected, fetching from server');
+          console.log('[DashboardClient] Tenant ID inconsistency detected, fetching from server');
           
           try {
             // Request the tenant ID from the server based on the authenticated user
@@ -454,13 +548,16 @@ export default function DashboardClient({ newAccount, plan }) {
             if (response.ok) {
               const data = await response.json();
               if (data.tenantId) {
-                logger.info('[DashboardClient] Retrieved tenant ID from server:', data.tenantId);
+                console.log('[DashboardClient] Retrieved tenant ID from server:', data.tenantId);
                 localStorage.setItem('tenantId', data.tenantId);
                 document.cookie = `tenantId=${data.tenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
                 
+                // Set up AWS RDS tables for this tenant
+                await setupAwsRdsTables(data.tenantId);
+                
                 // Also store the source for debugging
                 if (data.source) {
-                  logger.debug('[DashboardClient] Tenant ID source:', data.source);
+                  console.log('[DashboardClient] Tenant ID source:', data.source);
                 }
               } else {
                 // If server doesn't have a tenant ID for this user, get from Cognito
@@ -469,32 +566,15 @@ export default function DashboardClient({ newAccount, plan }) {
                   const cognitoTenantId = userAttributes['custom:businessid'];
                   
                   if (cognitoTenantId) {
-                    logger.info('[DashboardClient] Using tenant ID from Cognito:', cognitoTenantId);
+                    console.log('[DashboardClient] Using tenant ID from Cognito:', cognitoTenantId);
                     localStorage.setItem('tenantId', cognitoTenantId);
                     document.cookie = `tenantId=${cognitoTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
                     
+                    // Set up AWS RDS tables for this tenant
+                    await setupAwsRdsTables(cognitoTenantId);
+                    
                     // Ensure tenant record exists in database and update server
                     try {
-                      // First ensure the tenant record exists in the database
-                      const tenantResponse = await fetch('/api/tenant/ensure-db-record', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                          tenantId: cognitoTenantId,
-                          userId: userAttributes.sub,
-                          email: userAttributes.email,
-                          businessName: userAttributes['custom:businessname'] || 'My Business'
-                        })
-                      });
-                      
-                      if (tenantResponse.ok) {
-                        const tenantData = await tenantResponse.json();
-                        logger.info('[DashboardClient] Tenant record created in database:', tenantData);
-                      } else {
-                        logger.warn('[DashboardClient] Failed to create tenant record in database:', 
-                          await tenantResponse.text().catch(() => 'Unknown error'));
-                      }
-                      
                       // Also update the tenant API
                       await fetch('/api/user/tenant', {
                         method: 'POST',
@@ -503,97 +583,124 @@ export default function DashboardClient({ newAccount, plan }) {
                         },
                         body: JSON.stringify({ tenantId: cognitoTenantId })
                       });
-                      logger.debug('[DashboardClient] Updated server with Cognito tenant ID');
+                      console.log('[DashboardClient] Updated server with Cognito tenant ID');
                     } catch (updateError) {
-                      logger.warn('[DashboardClient] Failed to update server with tenant ID:', updateError);
+                      console.warn('[DashboardClient] Failed to update server with tenant ID:', updateError);
                     }
                   } else {
-                    // Generate a deterministic UUID based on user ID if possible
-                    // This ensures the same user always gets the same tenant ID
-                    try {
-                      // Generate a deterministic UUID based on user sub
-                      const userId = userAttributes.sub;
-                      const { v5: uuidv5 } = require('uuid');
-                      const TENANT_NAMESPACE = '9a551c44-4ade-4f89-b078-0af8be794c23';
-                      const deterministicTenantId = uuidv5(userId, TENANT_NAMESPACE);
-                      
-                      logger.info('[DashboardClient] Generated deterministic tenant ID from user ID:', deterministicTenantId);
-                      localStorage.setItem('tenantId', deterministicTenantId);
-                      document.cookie = `tenantId=${deterministicTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
-                    } catch (uuidError) {
-                      // If deterministic generation fails, fall back to random UUID as absolute last resort
-                      const newTenantId = crypto.randomUUID();
-                      logger.warn('[DashboardClient] UUID error, generated random tenant ID as last resort:', newTenantId);
-                      localStorage.setItem('tenantId', newTenantId);
-                      document.cookie = `tenantId=${newTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
-                    }
-                    
-                    // Ensure tenant exists in database and update server
-                    try {
-                      // Get the final tenant ID (from either deterministicTenantId or newTenantId)
-                      const finalTenantId = localStorage.getItem('tenantId');
-                      
-                      // Initialize the database environment first
+                    // ONLY CREATE NEW TENANT IF EXPLICITLY REQUESTED
+                    // Check if we're in a new account flow that actually requires a new tenant
+                    if (newAccount === true) {
+                      // Generate a deterministic UUID based on user ID if possible
+                      // This ensures the same user always gets the same tenant ID
                       try {
-                        const initResponse = await fetch('/api/tenant/init-db-env');
-                        if (initResponse.ok) {
-                          const initData = await initResponse.json();
-                          logger.info('[DashboardClient] Database environment initialization:', 
-                            initData.success ? 'successful' : 'failed',
-                            'Table exists:', initData.tableExists);
+                        // Generate a deterministic UUID based on user sub
+                        const userId = userAttributes.sub;
+                        const { v5: uuidv5 } = require('uuid');
+                        const TENANT_NAMESPACE = '9a551c44-4ade-4f89-b078-0af8be794c23';
+                        const deterministicTenantId = uuidv5(userId, TENANT_NAMESPACE);
+                        
+                        console.log('[DashboardClient] Generated deterministic tenant ID from user ID:', deterministicTenantId);
+                        localStorage.setItem('tenantId', deterministicTenantId);
+                        document.cookie = `tenantId=${deterministicTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+                        
+                        // Use the schema manager to ensure tables and schema exist
+                        await ensureTenantSchema(deterministicTenantId, userAttributes);
+                      } catch (uuidError) {
+                        // If deterministic generation fails, fall back to random UUID as absolute last resort
+                        const newTenantId = crypto.randomUUID();
+                        console.warn('[DashboardClient] UUID error, generated random tenant ID as last resort:', newTenantId);
+                        localStorage.setItem('tenantId', newTenantId);
+                        document.cookie = `tenantId=${newTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+                        
+                        // Use the schema manager to ensure tables and schema exist
+                        await ensureTenantSchema(newTenantId, userAttributes);
+                      }
+                      
+                      // Ensure tenant exists in database and update server
+                      try {
+                        // Get the final tenant ID (from either deterministicTenantId or newTenantId)
+                        const finalTenantId = localStorage.getItem('tenantId');
+                        
+                        // Initialize the database environment first
+                        try {
+                          const initResponse = await fetch('/api/tenant/init-db-env');
+                          if (initResponse.ok) {
+                            try {
+                              const initData = await initResponse.json();
+                              console.log('[DashboardClient] Database environment initialization:', 
+                                initData.success ? 'successful' : 'failed',
+                                'Table exists:', initData.tableExists);
+                            } catch (jsonError) {
+                              console.error('[DashboardClient] Failed to parse init-db-env response:', jsonError);
+                              // Continue with the process despite parsing error
+                            }
+                          }
+                        } catch (initError) {
+                          console.warn('[DashboardClient] Error initializing database environment:', initError.message);
+                          // Continue anyway since ensure-db-record has its own initialization
                         }
-                      } catch (initError) {
-                        logger.warn('[DashboardClient] Error initializing database environment:', initError.message);
-                        // Continue anyway since ensure-db-record has its own initialization
+                        
+                        // Now ensure the tenant record exists in the database
+                        const tenantResponse = await fetch('/api/tenant/ensure-db-record', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ 
+                            tenantId: finalTenantId,
+                            userId: userAttributes.sub,
+                            email: userAttributes.email,
+                            businessName: userAttributes['custom:businessname'],
+                            forceCreate: true
+                          })
+                        });
+                        
+                        if (tenantResponse.ok) {
+                          try {
+                            const tenantData = await tenantResponse.json();
+                            console.log('[DashboardClient] Generated tenant ID saved to database:', tenantData);
+                          } catch (jsonError) {
+                            console.error('[DashboardClient] Failed to parse tenant response:', jsonError);
+                            // Continue despite parsing error
+                          }
+                        } else {
+                          try {
+                            const errorText = await tenantResponse.text();
+                            console.warn('[DashboardClient] Failed to save generated tenant ID to database:', errorText);
+                          } catch (textError) {
+                            console.warn('[DashboardClient] Failed to save generated tenant ID to database. Status:', tenantResponse.status);
+                          }
+                        }
+                        
+                        // Also update the tenant API
+                        await fetch('/api/user/tenant', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({ tenantId: finalTenantId })
+                        });
+                        console.log('[DashboardClient] Updated server with generated tenant ID');
+                      } catch (updateError) {
+                        console.warn('[DashboardClient] Failed to update server with tenant ID:', updateError);
                       }
-                      
-                      // Now ensure the tenant record exists in the database
-                      const tenantResponse = await fetch('/api/tenant/ensure-db-record', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                          tenantId: finalTenantId,
-                          userId: userAttributes.sub,
-                          email: userAttributes.email,
-                          businessName: userAttributes['custom:businessname'] || 'My Business',
-                          forceCreate: true
-                        })
-                      });
-                      
-                      if (tenantResponse.ok) {
-                        const tenantData = await tenantResponse.json();
-                        logger.info('[DashboardClient] Generated tenant ID saved to database:', tenantData);
-                      } else {
-                        logger.warn('[DashboardClient] Failed to save generated tenant ID to database:', 
-                          await tenantResponse.text().catch(() => 'Unknown error'));
-                      }
-                      
-                      // Also update the tenant API
-                      await fetch('/api/user/tenant', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ tenantId: finalTenantId })
-                      });
-                      logger.debug('[DashboardClient] Updated server with generated tenant ID');
-                    } catch (updateError) {
-                      logger.warn('[DashboardClient] Failed to update server with tenant ID:', updateError);
+                    } else {
+                      console.log('[DashboardClient] No tenant ID found, but new account flow not detected. Not creating a new tenant.');
+                      notifyWarning('Unable to determine your organization information. Please log out and log back in.');
                     }
                   }
                 } catch (cognitoError) {
-                  logger.error('[DashboardClient] Error fetching Cognito attributes:', cognitoError);
+                  console.error('[DashboardClient] Error fetching Cognito attributes:', cognitoError);
                 }
               }
             } else {
               // If API request fails, fall back to Cognito
-              logger.warn('[DashboardClient] Tenant API request failed, falling back to Cognito');
+              console.warn('[DashboardClient] Tenant API request failed, falling back to Cognito');
               try {
                 const userAttributes = await fetchUserAttributes();
                 const cognitoTenantId = userAttributes['custom:businessid'];
                 
                 if (cognitoTenantId) {
-                  logger.info('[DashboardClient] Using tenant ID from Cognito after API failure:', cognitoTenantId);
+                  console.log('[DashboardClient] Using tenant ID from Cognito after API failure:', cognitoTenantId);
                   localStorage.setItem('tenantId', cognitoTenantId);
                   document.cookie = `tenantId=${cognitoTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
                 } else {
@@ -605,40 +712,40 @@ export default function DashboardClient({ newAccount, plan }) {
                       const TENANT_NAMESPACE = '9a551c44-4ade-4f89-b078-0af8be794c23';
                       const generatedTenantId = uuidv5(userId, TENANT_NAMESPACE);
                       
-                      logger.info('[DashboardClient] Generated deterministic tenant ID from user ID:', generatedTenantId);
+                      console.log('[DashboardClient] Generated deterministic tenant ID from user ID:', generatedTenantId);
                       localStorage.setItem('tenantId', generatedTenantId);
                       document.cookie = `tenantId=${generatedTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
                     } else {
                       // Random UUID as absolute last resort
                       const newTenantId = crypto.randomUUID();
-                      logger.warn('[DashboardClient] No user ID available, using random UUID:', newTenantId);
+                      console.warn('[DashboardClient] No user ID available, using random UUID:', newTenantId);
                       localStorage.setItem('tenantId', newTenantId);
                       document.cookie = `tenantId=${newTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
                     }
                   } catch (uuidError) {
                     // If UUID generation fails, use simple random UUID
                     const newTenantId = crypto.randomUUID();
-                    logger.error('[DashboardClient] UUID generation error, using random UUID:', newTenantId);
+                    console.error('[DashboardClient] UUID generation error, using random UUID:', newTenantId);
                     localStorage.setItem('tenantId', newTenantId);
                     document.cookie = `tenantId=${newTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
                   }
                 }
               } catch (cognitoError) {
-                logger.error('[DashboardClient] Error fetching Cognito attributes after API failure:', cognitoError);
+                console.error('[DashboardClient] Error fetching Cognito attributes after API failure:', cognitoError);
                 // Ultimate fallback - generate random UUID
                 const newTenantId = crypto.randomUUID();
-                logger.warn('[DashboardClient] All tenant ID sources failed, using random UUID:', newTenantId);
+                console.warn('[DashboardClient] All tenant ID sources failed, using random UUID:', newTenantId);
                 localStorage.setItem('tenantId', newTenantId);
                 document.cookie = `tenantId=${newTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
               }
             }
           } catch (fetchError) {
-            logger.error('[DashboardClient] Error fetching tenant ID from server:', fetchError);
+            console.error('[DashboardClient] Error fetching tenant ID from server:', fetchError);
           }
         }
       } catch (e) {
         // Log but don't throw errors
-        logger.error('[DashboardClient] Error ensuring consistent tenant ID:', e);
+        console.error('[DashboardClient] Error ensuring consistent tenant ID:', e);
       }
     };
     
@@ -648,22 +755,29 @@ export default function DashboardClient({ newAccount, plan }) {
     // First check if user is authenticated by fetching Cognito attributes
     const checkOnboardingStatus = async () => {
       try {
-        logger.info('[DashboardClient] Starting authentication and onboarding status check');
+        console.log('[DashboardClient] Starting authentication and onboarding status check');
         
         // First check if we have a valid auth session
         const session = await fetchAuthSession();
         if (!session?.tokens?.accessToken) {
-          logger.warn('[DashboardClient] No valid auth session found, will redirect to sign-in');
+          console.warn('[DashboardClient] No valid auth session found, will redirect to sign-in');
           // Add delay to see logs before redirect
           await new Promise(resolve => setTimeout(resolve, 1000));
           router.push('/auth/signin');
           return;
         }
         
+        // User has valid session, set authenticated
+        setIsAuthenticated(true);
+        
         // Get user attributes to check onboarding status
         try {
           const userAttributes = await fetchUserAttributes();
-          logger.info('[DashboardClient] User attributes fetched:', {
+          
+          // Store user attributes in state
+          setUserData(userAttributes);
+          
+          console.log('[DashboardClient] User attributes fetched:', {
             hasBusinessId: !!userAttributes['custom:businessid'],
             hasBusinessName: !!userAttributes['custom:businessname'],
             onboardingStatus: userAttributes['custom:onboarding'],
@@ -673,11 +787,11 @@ export default function DashboardClient({ newAccount, plan }) {
           // ENHANCED CHECK: If user has completed onboarding according to Cognito, we're good
           if (userAttributes['custom:onboarding']?.toLowerCase() === 'complete' || 
               userAttributes['custom:setupdone']?.toLowerCase() === 'true') {
-            logger.info('[DashboardClient] User has completed onboarding, showing dashboard');
+            console.log('[DashboardClient] User has completed onboarding, showing dashboard');
             
             // Check for tenant ID to ensure RLS works properly
             if (!userAttributes['custom:businessid']) {
-              logger.warn('[DashboardClient] Missing tenant ID in Cognito, will generate one for RLS');
+              console.warn('[DashboardClient] Missing tenant ID in Cognito, will generate one for RLS');
               // Generate a deterministic UUID from user ID to ensure consistency
               try {
                 const { v5: uuidv5 } = require('uuid');
@@ -688,22 +802,22 @@ export default function DashboardClient({ newAccount, plan }) {
                 userAttributes['custom:businessid'] = generatedTenantId;
                 localStorage.setItem('tenantId', generatedTenantId);
                 document.cookie = `tenantId=${generatedTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
-                logger.info('[DashboardClient] Generated tenant ID for RLS:', generatedTenantId);
+                console.log('[DashboardClient] Generated tenant ID for RLS:', generatedTenantId);
               } catch (e) {
-                logger.error('[DashboardClient] Error generating tenant ID:', e);
+                console.error('[DashboardClient] Error generating tenant ID:', e);
               }
             }
             
             // Fix any missing attributes in the background
             ensureUserAttributesComplete(session, userAttributes)
-              .then(result => logger.debug('[DashboardClient] Attribute check result:', result))
-              .catch(err => logger.error('[DashboardClient] Background attribute check error:', err));
+              .then(result => console.debug('[DashboardClient] Attribute check result:', result))
+              .catch(err => console.error('[DashboardClient] Background attribute check error:', err));
               
             setIsReady(true);
             return;
           }
         } catch (attrError) {
-          logger.warn('[DashboardClient] Error fetching user attributes, using cookies as fallback:', attrError);
+          console.warn('[DashboardClient] Error fetching user attributes, using cookies as fallback:', attrError);
           
           // Even if we can't get attributes, we can use cookies
           const getCookie = (name) => {
@@ -718,7 +832,7 @@ export default function DashboardClient({ newAccount, plan }) {
           const setupCompleted = getCookie('setupCompleted') || getCookie('setupDone');
           
           if (onboardingStatus === 'complete' || setupCompleted === 'true') {
-            logger.info('[DashboardClient] Cookies indicate onboarding is complete, showing dashboard');
+            console.log('[DashboardClient] Cookies indicate onboarding is complete, showing dashboard');
             setIsReady(true);
             return;
           }
@@ -726,12 +840,12 @@ export default function DashboardClient({ newAccount, plan }) {
         
         // Set isReady true even if we don't have attributes or cookies
         // The DashboardWrapper will handle further verification
-        logger.info('[DashboardClient] Proceeding to dashboard, DashboardWrapper will handle verification');
+        console.log('[DashboardClient] Proceeding to dashboard, DashboardWrapper will handle verification');
         setIsReady(true);
         
       } catch (error) {
         // Log error and redirect
-        logger.error('[DashboardClient] Error checking auth status:', error);
+        console.error('[DashboardClient] Error checking auth status:', error);
         router.push('/auth/signin?returnUrl=' + encodeURIComponent('/dashboard'));
       }
     };
@@ -750,59 +864,261 @@ export default function DashboardClient({ newAccount, plan }) {
     return () => clearTimeout(timeout);
   }, [router]);
   
-  // Only render on the client to prevent SSR issues
-  if (!isClient || !isReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-center p-4">
-          <div className="animate-pulse flex flex-col items-center">
-            <div className="w-12 h-12 rounded-full bg-blue-400 mb-4"></div>
-            <div className="h-4 w-32 bg-gray-400 rounded mb-2"></div>
-            <div className="h-3 w-24 bg-gray-300 rounded"></div>
-          </div>
-          <p className="mt-4 text-sm text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+  // Function to refresh user data
+  const refreshUserData = useCallback(async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      console.log('[DashboardClient] Refreshing user data');
+      const userAttributes = await fetchUserAttributes();
+      setUserData(userAttributes);
+      return userAttributes;
+    } catch (error) {
+      console.error('[DashboardClient] Error refreshing user data:', error);
+      return null;
+    }
+  }, [isAuthenticated]);
+  
+  // Helper function to handle subscription success
+  useEffect(() => {
+    const handleSubscriptionSuccess = async () => {
+      const subscriptionSuccess = searchParams.get('subscription_success');
+      const sessionId = searchParams.get('session_id');
+      
+      if (subscriptionSuccess === 'true' && sessionId) {
+        console.log(`[Subscription] Processing successful subscription with session ID: ${sessionId}`);
+        
+        try {
+          // Call our session-success API to verify and process the subscription
+          const response = await fetch('/api/checkout/session-success', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              session_id: sessionId
+            })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('[Subscription] Successfully processed checkout session:', data);
+            notifySuccess('Subscription successfully upgraded!');
+            
+            // Refresh user data to get the updated subscription status
+            await refreshUserData();
+            
+            // Clean the URL by removing query parameters
+            const url = new URL(window.location.href);
+            url.searchParams.delete('subscription_success');
+            url.searchParams.delete('session_id');
+            window.history.replaceState({}, document.title, url.toString());
+          } else {
+            const errorData = await response.json();
+            console.error('[Subscription] Failed to process checkout session:', errorData);
+            notifyError('Failed to verify subscription. Please contact support.');
+          }
+        } catch (error) {
+          console.error('[Subscription] Error processing subscription:', error);
+          notifyError('An error occurred while processing your subscription.');
+        }
+      }
+    };
+    
+    // Only run if authenticated
+    if (isAuthenticated) {
+      handleSubscriptionSuccess();
+    }
+  }, [searchParams, isAuthenticated, notifySuccess, notifyError]);
+  
+  // Update loading state based on data availability
+  useEffect(() => {
+    // Set loading to false only when we have real data
+    if (userData && Object.keys(userData).length > 0 && tenantVerified) {
+      setIsLoading(false);
+    }
+  }, [userData, tenantVerified]);
+  
+  // Show loading state if still loading tenant or user data
+  if (isLoading || isVerifyingTenant || !tenantVerified) {
+    return <DashboardLoadingState />;
   }
-  
-  if (isVerifyingTenant) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="inline-block">
-            <CircularProgress />
-          </div>
-          <p className="mt-4 text-gray-600">Verifying account information...</p>
-        </div>
-      </div>
-    );
+
+  // Show error state if there's an error
+  if (error || setupStatus === 'failed') {
+    return <DashboardErrorState />;
   }
-  
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-center max-w-md p-6 bg-white rounded shadow-md">
-          <h2 className="text-xl font-semibold text-red-600 mb-4">Error</h2>
-          <p className="mb-4 text-gray-700">{error}</p>
-          <button
-            onClick={() => window.location.href = '/auth/signin'}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-          >
-            Sign In
-          </button>
-        </div>
-      </div>
-    );
+
+  // Don't show the dashboard until we have actual userData
+  if (!userData || Object.keys(userData).length === 0) {
+    return <DashboardLoadingState />;
   }
-  
-  console.log('🚀 Rendering DashboardWrapper with:', { newAccount, plan });
-  
+
+  if (!isClient) {
+    return <DashboardWrapper 
+      newAccount={userData?.['custom:isNew'] === 'true' || newAccount === 'true'}
+      plan={plan || userData?.['custom:plan']}
+    />;
+  }
+
   return (
-    <DashboardWrapper 
-      newAccount={newAccount} 
-      plan={plan}
-      setupStatus={setupStatus}
-    />
+    <>
+      {/* Admin panel for admin users */}
+      {userData?.['custom:isadmin'] === 'true' && isAuthenticated && searchParams.get('admin') === 'true' && (
+        <div className="min-h-screen">
+          <DatabaseAdmin />
+        </div>
+      )}
+      
+      {/* Always render DashboardWrapper */}
+      <DashboardWrapper 
+        newAccount={userData?.['custom:isNew'] === 'true' || newAccount === 'true'}
+        plan={plan || userData?.['custom:plan']}
+      />
+    </>
   );
+}
+
+/**
+ * Ensure the tenant schema exists
+ */
+const ensureTenantSchema = async (tenantId, userAttributes) => {
+  try {
+    // Call the schema manager API
+    const schemaManagerResponse = await fetch('/api/tenant/schema-manager', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        tenantId: tenantId,
+        userId: userAttributes.sub,
+        businessName: userAttributes['custom:businessname'],
+        forceCreate: true // Explicitly request tenant creation
+      })
+    });
+    
+    if (schemaManagerResponse.ok) {
+      const schemaResult = await schemaManagerResponse.json();
+      console.log('[DashboardClient] Schema manager result:', schemaResult);
+      
+      // Also update the user API
+      await fetch('/api/user/tenant', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tenantId: tenantId })
+      });
+      console.log('[DashboardClient] Updated server with tenant ID');
+      
+      return schemaResult;
+    } else {
+      console.error('[DashboardClient] Schema manager API failed:', await schemaManagerResponse.text());
+      return null;
+    }
+  } catch (error) {
+    console.error('[DashboardClient] Error ensuring tenant schema:', error);
+    return null;
+  }
+};
+
+export function ClientDataSync() {
+  const [synced, setSynced] = useState(false);
+  const { data: session, status } = useSession();
+  
+  useEffect(() => {
+    // Only run once the session is loaded
+    if (status === 'loading') {
+      return;
+    }
+    
+    const syncData = () => {
+      try {
+        // Get tenant IDs from various sources
+        const tenantIdCookie = getCookie('tenantId');
+        const businessIdCookie = getCookie('businessid') || getCookie('custom:businessid');
+        const localStorageTenantId = localStorage.getItem('tenantId');
+        
+        console.log('[ClientDataSync] Checking tenant IDs:', { 
+          tenantIdCookie, 
+          businessIdCookie, 
+          localStorageTenantId
+        });
+        
+        // Get the session tenant ID as the source of truth
+        const sessionTenantId = session?.user?.['custom:businessid'] || 
+                               (session?.user?.businessId && session?.user?.businessId !== 'undefined' 
+                                ? session.user.businessId : null);
+        
+        // If we have a session tenant ID but not in local storage/cookies, update them
+        if (sessionTenantId && (!localStorageTenantId || !tenantIdCookie)) {
+          console.log('[ClientDataSync] Updating local storage and cookies with session tenant ID:', sessionTenantId);
+          
+          // Set in local storage
+          localStorage.setItem('tenantId', sessionTenantId);
+          
+          // Set cookie with 30-day expiration
+          document.cookie = `tenantId=${sessionTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+        }
+        
+        // If no session tenant ID but we have it in local storage, make sure cookies are set
+        else if (!sessionTenantId && localStorageTenantId) {
+          console.log('[ClientDataSync] Using local storage tenant ID for cookies:', localStorageTenantId);
+          document.cookie = `tenantId=${localStorageTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+        }
+        
+        // If no tenant ID anywhere but user is authenticated, create one
+        else if (!sessionTenantId && !localStorageTenantId && !tenantIdCookie && session?.user) {
+          // Generate a deterministic tenant ID based on user ID
+          // This is a simplified implementation - in production you would want to validate with the server
+          const userId = session.user.id || session.user.sub;
+          if (userId) {
+            console.log('[ClientDataSync] Generating tenant ID for user:', userId);
+            
+            // Call the API to create/retrieve a tenant ID
+            fetch('/api/tenant/create-tenant-record', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId,
+                email: session.user.email
+              })
+            })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success && data.tenant_id) {
+                console.log('[ClientDataSync] Created tenant ID:', data.tenant_id);
+                localStorage.setItem('tenantId', data.tenant_id);
+                document.cookie = `tenantId=${data.tenant_id}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+              }
+            })
+            .catch(error => {
+              console.error('[ClientDataSync] Error creating tenant ID:', error);
+            });
+          }
+        }
+        
+        setSynced(true);
+      } catch (error) {
+        console.error('[ClientDataSync] Error syncing data:', error);
+      }
+    };
+    
+    syncData();
+    
+    // Set up periodic sync
+    const intervalId = setInterval(syncData, 30000); // Every 30 seconds
+    
+    return () => clearInterval(intervalId);
+  }, [session, status]);
+  
+  return null;
+}
+
+// Helper function to get cookie value
+function getCookie(name) {
+  if (typeof document === 'undefined') return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
 } 

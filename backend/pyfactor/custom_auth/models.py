@@ -87,7 +87,7 @@ class User(AbstractUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
     
-    objects = UserManager()
+    objects = UserManager()  # type: ignore
     
     class Meta:
         db_table = 'custom_auth_user'

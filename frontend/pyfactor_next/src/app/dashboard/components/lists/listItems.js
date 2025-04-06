@@ -1,3 +1,18 @@
+/**
+ * @component MainListItems
+ * @description 
+ * IMPORTANT: THIS IS THE FINAL DESIGN AND LAYOUT FOR THE MAIN LIST MENU.
+ * DO NOT MAKE ANY CHANGES TO THIS COMPONENT WITHOUT EXPRESS PERMISSION FROM THE OWNER.
+ * This design was finalized on 2025-04-06 with the following specifications:
+ * - Complete navigation menu system for the dashboard with collapsible sections
+ * - Support for both expanded and icon-only views
+ * - Custom SVG icons for all menu items
+ * - Mobile and desktop responsive behavior
+ * - Smooth animations and hover effects
+ * 
+ * Any changes require explicit approval from the project owner.
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 
@@ -188,6 +203,15 @@ const MainListItems = ({
       return;
     }
     
+    // Handle string-based navigation if using handleDrawerItemClick
+    if (typeof callback === 'string' && handleDrawerClose) {
+      // Close the drawer on mobile
+      if (isMobile.current) {
+        handleDrawerClose();
+      }
+      return;
+    }
+    
     // Call the original callback with its parameter if provided
     if (param !== undefined) {
       callback(param);
@@ -200,12 +224,9 @@ const MainListItems = ({
       return;
     }
     
-    // Close drawer when an item is clicked, only on mobile devices
-    if (handleDrawerClose && !isIconOnly && isMobile.current) {
-      // Use setTimeout to ensure this happens after the callback has completed
-      setTimeout(() => {
-        handleDrawerClose();
-      }, 50);
+    // Close the drawer on mobile screens after navigation
+    if (isMobile.current && handleDrawerClose) {
+      handleDrawerClose();
     }
   };
 
@@ -406,69 +427,110 @@ const MainListItems = ({
   ];
 
   const createOptions = [
-    { 
-      label: 'Transaction', 
-      icon: <NavIcons.Payments className="w-4 h-4" />,
-      onClick: () => {
-        handleShowCreateOptions('Transaction');
-      }, 
-      value: 'Transaction' 
+    {
+      label: 'Create New',
+      description: 'Create a new transaction, invoice, or entity',
+      icon: (props) => (
+        <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+      ),
+      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu) => {
+        console.log('Create New button clicked');
+        if (isIconOnly) {
+          handleDrawerClose();
+        }
+        // Use handleShowCreateMenu instead of showing a local dropdown
+        if (typeof handleShowCreateMenu === 'function') {
+          handleShowCreateMenu();
+        } else {
+          console.error('handleShowCreateMenu is not a function');
+        }
+      }
     },
-    { 
-      label: 'Product', 
+    {
+      label: 'Transaction',
+      description: 'Create a new transaction',
+      icon: (props) => (
+        <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+        if (typeof handleShowCreateOptions === 'function') {
+          handleShowCreateOptions('Transaction');
+        }
+      }
+    },
+    {
+      label: 'Product',
       icon: <NavIcons.Inventory className="w-4 h-4" />,
-      onClick: () => {
-        handleShowCreateOptions('Product');
-      }, 
-      value: 'Product' 
+      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+        if (typeof handleShowCreateOptions === 'function') {
+          handleShowCreateOptions('Product');
+        }
+      },
+      value: 'Product'
     },
-    { 
-      label: 'Service', 
+    {
+      label: 'Service',
       icon: <NavIcons.Receipt className="w-4 h-4" />,
-      onClick: () => {
-        handleShowCreateOptions('Service');
-      }, 
-      value: 'Service' 
+      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+        if (typeof handleShowCreateOptions === 'function') {
+          handleShowCreateOptions('Service');
+        }
+      },
+      value: 'Service'
     },
-    { 
-      label: 'Invoice', 
+    {
+      label: 'Invoice',
       icon: <NavIcons.Description className="w-4 h-4" />,
-      onClick: () => {
-        handleShowCreateOptions('Invoice');
-      }, 
-      value: 'Invoice' 
+      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+        if (typeof handleShowCreateOptions === 'function') {
+          handleShowCreateOptions('Invoice');
+        }
+      },
+      value: 'Invoice'
     },
-    { 
-      label: 'Bill', 
+    {
+      label: 'Bill',
       icon: <NavIcons.Cart className="w-4 h-4" />,
-      onClick: () => {
-        handleShowCreateOptions('Bill');
-      }, 
-      value: 'Bill' 
+      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+        if (typeof handleShowCreateOptions === 'function') {
+          handleShowCreateOptions('Bill');
+        }
+      },
+      value: 'Bill'
     },
-    { 
-      label: 'Estimate', 
+    {
+      label: 'Estimate',
       icon: <NavIcons.Reports className="w-4 h-4" />,
-      onClick: () => {
-        handleShowCreateOptions('Estimate');
-      }, 
-      value: 'Estimate' 
+      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+        if (typeof handleShowCreateOptions === 'function') {
+          handleShowCreateOptions('Estimate');
+        }
+      },
+      value: 'Estimate'
     },
-    { 
-      label: 'Customer', 
+    {
+      label: 'Customer',
       icon: <NavIcons.People className="w-4 h-4" />,
-      onClick: () => {
-        handleShowCreateOptions('Customer');
-      }, 
-      value: 'Customer' 
+      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+        if (typeof handleShowCreateOptions === 'function') {
+          handleShowCreateOptions('Customer');
+        }
+      },
+      value: 'Customer'
     },
-    { 
-      label: 'Vendor', 
+    {
+      label: 'Vendor',
       icon: <NavIcons.Contacts className="w-4 h-4" />,
-      onClick: () => {
-        handleShowCreateOptions('Vendor');
-      }, 
-      value: 'Vendor' 
+      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+        if (typeof handleShowCreateOptions === 'function') {
+          handleShowCreateOptions('Vendor');
+        }
+      },
+      value: 'Vendor'
     },
   ];
 
@@ -518,10 +580,22 @@ const MainListItems = ({
         >
           <nav className="w-full" aria-label="Main Navigation">
             <ul className="w-full space-y-0.5">
-              {/* Create New button */}
+              {/* Create New button - Only call handleShowCreateMenu */}
               <li className={isIconOnly ? "px-[10px] py-2" : "px-3 py-2"}>
                 <button
-                  onClick={isIconOnly ? handleDrawerClose : handleShowCreateMenu}
+                  onClick={() => {
+                    console.log("Create New button clicked");
+                    // If in icon-only mode, also close the drawer
+                    if (isIconOnly && typeof handleDrawerClose === 'function') {
+                      handleDrawerClose();
+                    }
+                    // Call the external handleShowCreateMenu function to show the main menu
+                    if (typeof handleShowCreateMenu === 'function') {
+                      handleShowCreateMenu();
+                    } else {
+                      console.error("handleShowCreateMenu is not defined or not a function");
+                    }
+                  }}
                   className={`
                     flex items-center 
                     ${isIconOnly ? 'justify-center w-10 h-10 p-0 mx-auto' : 'w-full text-left py-3 px-4'}

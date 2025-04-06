@@ -3,9 +3,57 @@
 // This is a simplified version of logger.js that doesn't depend on the debug module
 // It will replace the original logger.js temporarily
 
+// Configuration for log filtering
+const LOG_LEVEL = {
+  DEBUG: 0,
+  INFO: 1,
+  WARN: 2,
+  ERROR: 3
+};
+
+// Current log level - only logs of this level and higher will be shown
+// In production, default to INFO level; in development, default to DEBUG
+const CURRENT_LOG_LEVEL = (process.env.NODE_ENV === 'production') ? LOG_LEVEL.INFO : LOG_LEVEL.DEBUG;
+
+// Deduplication of logs
+const recentLogs = new Map();
+const DEDUP_TIMEOUT = 2000; // 2 seconds timeout for deduplicating identical logs
+
 // Enhanced safe logger implementation
 const safeLog = (level, prefix, ...args) => {
   try {
+    // Check if we should show this log based on current level
+    const numericLevel = level === 'debug' ? LOG_LEVEL.DEBUG :
+                         level === 'info' ? LOG_LEVEL.INFO :
+                         level === 'warn' ? LOG_LEVEL.WARN :
+                         LOG_LEVEL.ERROR;
+                         
+    if (numericLevel < CURRENT_LOG_LEVEL) {
+      return; // Skip logs below the current level
+    }
+    
+    // Generate a key for deduplication
+    const logKey = `${level}-${prefix}-${JSON.stringify(args)}`;
+    
+    // Check if this exact log was recently shown
+    const now = Date.now();
+    const lastLogTime = recentLogs.get(logKey);
+    
+    if (lastLogTime && (now - lastLogTime < DEDUP_TIMEOUT)) {
+      // Skip this log as it's a duplicate within our timeout window
+      return;
+    }
+    
+    // Update the deduplication map
+    recentLogs.set(logKey, now);
+    
+    // Clean up old entries in the map
+    for (const [key, timestamp] of recentLogs.entries()) {
+      if (now - timestamp > DEDUP_TIMEOUT) {
+        recentLogs.delete(key);
+      }
+    }
+    
     // Ensure we have valid arguments
     if (!args || args.length === 0) {
       console[level](`[pyfactor] [${prefix}]:`, "(no data)");
@@ -89,12 +137,32 @@ const error = (message, ...args) => {
   }
 };
 
+/**
+ * Create a namespaced logger instance
+ * This function was missing and caused errors
+ * @param {string} namespace - The namespace for this logger
+ * @returns {Object} Logger object with debug, info, warn, error methods
+ */
+export const createLogger = (namespace) => {
+  const prefix = `[${namespace}]`;
+  
+  return {
+    debug: (...args) => debug(prefix, ...args),
+    info: (...args) => info(prefix, ...args),
+    warn: (...args) => warn(prefix, ...args),
+    error: (...args) => error(prefix, ...args),
+    log: (...args) => debug(prefix, ...args)
+  };
+};
+
 // Export individual methods
 export const logger = {
   debug,
   info,
   warn,
-  error
+  error,
+  log: debug,
+  createLogger // Export the createLogger function
 };
 
 // Export individual methods for direct access

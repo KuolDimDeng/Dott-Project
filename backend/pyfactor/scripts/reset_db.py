@@ -41,8 +41,7 @@ def reset_database_schema():
                 cur.execute("CREATE SCHEMA public;")
                 
                 print("Granting privileges...")
-                cur.execute("GRANT ALL ON SCHEMA public TO postgres;")
-                cur.execute(f"GRANT ALL ON SCHEMA public TO {conn_details['user']};")
+                cur.execute("GRANT ALL ON SCHEMA public TO dott_admin;")
                 cur.execute("GRANT ALL ON SCHEMA public TO public;")
                 
         print("Database schema reset successfully!")

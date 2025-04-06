@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { validateServerSession } from '@/utils/serverUtils';
 import { logger } from '@/utils/logger';
 import { serverAxiosInstance } from '@/lib/axios/serverConfig';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * API endpoint that triggers schema setup with robust error handling
@@ -138,10 +139,11 @@ export async function POST(request) {
               'X-Id-Token': tokens.idToken.toString()
             },
             body: JSON.stringify({
-              tenantId: finalTenantId,
-              userId,
-              email: userEmail,
-              businessName: user.attributes?.['custom:businessname'] || 'My Business'
+              tenantId: user.attributes?.['custom:tenantId'] || 
+                         uuidv4(), // Fallback to random UUID
+              userId: user.username,
+              email: user.attributes?.email || '',
+              businessName: user.attributes?.['custom:businessname'] || ''
             })
           });
           
@@ -167,10 +169,11 @@ export async function POST(request) {
                   'X-Id-Token': tokens.idToken.toString()
                 },
                 body: JSON.stringify({
-                  tenantId: finalTenantId,
-                  userId,
-                  email: userEmail,
-                  businessName: user.attributes?.['custom:businessname'] || 'My Business'
+                  tenantId: user.attributes?.['custom:tenantId'] || 
+                             uuidv4(), // Fallback to random UUID
+                  userId: user.username,
+                  email: user.attributes?.email || '',
+                  businessName: user.attributes?.['custom:businessname'] || ''
                 })
               });
               

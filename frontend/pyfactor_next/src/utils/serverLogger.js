@@ -4,7 +4,7 @@
 /**
  * Simple server-side logger that works with both console and process.stdout
  */
-const createServerLogger = (namespace) => {
+export function createServerLogger(namespace) {
   // Safe log function that handles errors and circular references
   const safeLog = (level, ...args) => {
     try {
@@ -40,7 +40,7 @@ const createServerLogger = (namespace) => {
     error: (...args) => safeLog('error', ...args),
     log: (...args) => safeLog('log', ...args)
   };
-};
+}
 
 // Create a default server logger instance
 const defaultServerLogger = createServerLogger('API');

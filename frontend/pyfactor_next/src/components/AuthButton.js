@@ -62,25 +62,38 @@ export default function AuthButton({ theme = 'light' }) {
     }
   }, []);
 
-  // Update authentication state when session changes
+  // Update authentication state when session changes - debounce the updates
   useEffect(() => {
     if (!loading) {
       // Consider authenticated if we have a user or valid session
       const hasValidSession = !!user || document.cookie.includes('hasSession=true');
-      setIsAuthenticated(hasValidSession);
       
-      if (hasValidSession) {
-        // Only update button text if authenticated
-        if (previouslyOnboarded) {
-          setButtonText("GO TO DASHBOARD");
-        } else {
-          setButtonText("CONTINUE ONBOARDING");
-        }
-      } else {
-        setButtonText("GET STARTED FOR FREE");
+      // Avoid constant re-rendering
+      if (isAuthenticated !== hasValidSession) {
+        setIsAuthenticated(hasValidSession);
       }
     }
-  }, [user, loading, previouslyOnboarded]);
+  }, [user, loading]);
+
+  // Update button text only when authentication status actually changes
+  useEffect(() => {
+    let newButtonText = "GET STARTED FOR FREE";
+    
+    if (isAuthenticated) {
+      if (previouslyOnboarded) {
+        newButtonText = "GO TO DASHBOARD";
+      } else {
+        newButtonText = "CONTINUE ONBOARDING";
+      }
+    } else {
+      newButtonText = "GET STARTED FOR FREE";
+    }
+    
+    // Only update if text needs to change
+    if (buttonText !== newButtonText) {
+      setButtonText(newButtonText);
+    }
+  }, [isAuthenticated, previouslyOnboarded]);
 
   // Handle the button click based on authentication state
   const handleButtonClick = () => {
@@ -183,17 +196,20 @@ export default function AuthButton({ theme = 'light' }) {
     // Default for new users or loading state
     return {
       text: t('button_get_started_for_free', 'GET STARTED FOR FREE'),
-      action: () => router.push('/auth/signin')
+      action: () => router.push('/auth/signup')
     };
   };
 
   const { text, action } = getButtonConfig();
 
+  // Use the already determined buttonText to avoid flickering
+  const displayText = buttonText;
+
   logger.debug('AuthButton state:', {
     isAuthenticated: !!user,
     onboardingStatus: user?.attributes?.['custom:onboarding'],
     previouslyOnboarded: previouslyOnboarded,
-    buttonText: text
+    buttonText: displayText
   });
 
   const sizeClasses = {
@@ -214,23 +230,15 @@ export default function AuthButton({ theme = 'light' }) {
   return (
     <button
       onClick={handleButtonClick}
-      disabled={loading}
       className={`
         ${sizeClasses[theme]}
         ${variantClasses[theme]}
         ${theme === 'fullWidth' ? 'w-full' : 'min-w-[200px]'}
         font-semibold uppercase tracking-wider rounded-md transition-colors duration-200
         focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-50
-        disabled:opacity-50 disabled:cursor-not-allowed
       `}
     >
-      {loading ? (
-        <div className="flex justify-center items-center">
-          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-        </div>
-      ) : (
-        buttonText
-      )}
+      {displayText}
     </button>
   );
 }

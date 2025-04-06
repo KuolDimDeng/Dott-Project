@@ -178,37 +178,29 @@ export default function LandingButton() {
   // Get current button configuration
   const buttonConfig = getButtonConfig();
 
+  // Always display the same text regardless of loading state
+  const displayText = buttonConfig.text;
+
   if (isLoading) {
     return (
       <button
-        disabled
-        className="min-w-[200px] rounded-md bg-primary-main px-6 py-3 text-base font-medium text-white opacity-70"
+        className="min-w-[200px] rounded-md bg-primary-main px-6 py-3 text-base font-medium text-white"
       >
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+        {displayText}
       </button>
     );
   }
 
   return (
     <button
-      disabled={loading && !retrying} // Allow clicks during retry
       className={`min-w-[200px] relative rounded-md px-6 py-3 text-base font-medium ${
         buttonConfig.variant === 'primary' 
           ? 'bg-primary-main text-white hover:bg-primary-dark' 
           : 'border border-primary-main bg-transparent text-primary-main hover:bg-primary-main/5'
-      } ${(loading && !retrying) ? 'opacity-70 cursor-not-allowed' : ''}`}
+      }`}
       onClick={handleButtonClick}
     >
-      {loading ? (
-        <>
-          <span>{retrying ? 'Retrying...' : 'Loading...'}</span>
-          <div
-            className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 animate-spin rounded-full border-2 border-white border-t-transparent"
-          />
-        </>
-      ) : (
-        buttonConfig.text
-      )}
+      {displayText}
     </button>
   );
 }

@@ -118,8 +118,8 @@ class Command(BaseCommand):
         try:
             cursor.execute("DROP SCHEMA IF EXISTS public CASCADE;")
             cursor.execute("CREATE SCHEMA public;")
-            cursor.execute("GRANT ALL ON SCHEMA public TO postgres;")
-            cursor.execute("GRANT ALL ON SCHEMA public TO public;")
+            cursor.execute("GRANT ALL ON SCHEMA public TO dott_admin;")
+            cursor.execute("GRANT ALL ON SCHEMA public TO PUBLIC;")
             self.stdout.write("Public schema dropped and recreated successfully.")
         except Exception as e:
             self.stdout.write(f"Error dropping public schema: {e}")

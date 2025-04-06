@@ -9,7 +9,7 @@ import ContactForm from '@/app/components/ContactForm';
 import Footer from '@/app/components/Footer';
 
 export const metadata = {
-  title: 'Dott, LLC | Business Management Platform',
+  title: 'Dott: Business Management Platform',
   description: 'Global business management software with advanced inventory, barcode scanning, and regional payment solutions—all in one intuitive platform.',
 };
 

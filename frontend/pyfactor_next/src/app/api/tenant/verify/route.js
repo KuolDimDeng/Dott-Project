@@ -215,51 +215,43 @@ export async function POST(request) {
         } else {
           console.warn('[TenantVerify] Tenant not found in database:', { tenantId: formattedTenantId });
           
-          // Return valid anyway to allow the dashboard to load
+          // Return invalid status to keep dashboard in loading state
           return NextResponse.json({
-            isValid: true,
-            tenant: {
-              id: formattedTenantId,
-              name: 'My Business',
-              status: 'active',
-              schema_name: `tenant_${formattedTenantId.replace(/-/g, '_')}`
-            },
-            fallback: true
-          });
+            isValid: false,
+            message: 'Tenant not found in database',
+            error: 'TENANT_NOT_FOUND',
+            tenantId: formattedTenantId
+          }, { status: 404 });
         }
       }
     } catch (dbError) {
       console.error('[TenantVerify] Database verification failed:', dbError);
-      // Continue with fallback approach
+      // Return error to keep dashboard in loading state
+      return NextResponse.json({
+        isValid: false,
+        message: 'Database verification failed',
+        error: 'DB_ERROR',
+        details: dbError.message
+      }, { status: 500 });
     }
     
-    // Return valid response with the tenant ID we have
+    // Return invalid status since no tenant was found
     return NextResponse.json({
-      isValid: true,
-      tenant: {
-        id: formattedTenantId,
-        name: 'My Business',
-        status: 'active',
-        schema_name: `tenant_${formattedTenantId.replace(/-/g, '_')}`
-      },
-      fallback: true
-    });
+      isValid: false,
+      message: 'No valid tenant record found',
+      error: 'TENANT_INVALID',
+      tenantId: formattedTenantId
+    }, { status: 404 });
     
   } catch (error) {
     console.error('[TenantVerify] Error in POST verify:', error);
     
-    // Even in case of error, return a valid response to allow the dashboard to load
-    const fallbackId = formatTenantId('18609ed2-1a46-4d50-bc4e-483d6e3405ff');
+    // Return error to keep dashboard in loading state
     return NextResponse.json({
-      isValid: true,
-      tenant: {
-        id: fallbackId,
-        name: 'My Business',
-        status: 'active',
-        schema_name: `tenant_${fallbackId.replace(/-/g, '_')}`
-      },
-      fallback: true,
-      error: 'Using fallback tenant due to error'
-    });
+      isValid: false,
+      message: 'Error processing request',
+      error: 'INTERNAL_ERROR',
+      details: error.message
+    }, { status: 500 });
   }
 } 

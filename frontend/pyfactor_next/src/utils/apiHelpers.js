@@ -2,6 +2,7 @@
  * Utility functions for API requests
  */
 import { logger } from './logger';
+import axiosInstance from './axiosInstance';
 
 /**
  * Gets standardized headers for API requests
@@ -33,98 +34,184 @@ export const getApiHeaders = () => {
 /**
  * Makes a standardized API request with proper headers and error handling
  */
-export const apiRequest = async (url, options = {}) => {
-  const requestId = crypto.randomUUID();
-  const startTime = Date.now();
-  
+export const apiRequest = async (method, endpoint, data = null, params = {}) => {
   try {
-    // Merge default headers with any custom headers
-    const headers = {
-      ...getApiHeaders(),
-      ...options.headers
-    };
+    // Get tenant ID from localStorage or use default
+    let tenantId = localStorage.getItem('tenantId') || 'default';
     
-    // Add request ID for tracing
-    headers['x-request-id'] = requestId;
-    
-    const response = await fetch(url, {
-      ...options,
-      headers
-    });
-    
-    const responseTime = Date.now() - startTime;
-    
-    // For non-JSON responses or empty responses
-    if (!response.ok) {
-      logger.warn(`[apiRequest] Request failed: ${response.status}`, {
-        url,
-        status: response.status,
-        statusText: response.statusText,
-        responseTime,
-        requestId
-      });
-      
-      // Try to parse error as JSON
-      try {
-        const errorData = await response.json();
-        throw {
-          status: response.status,
-          message: errorData.error || errorData.message || 'Request failed',
-          data: errorData,
-          requestId,
-          responseTime
-        };
-      } catch (e) {
-        // If parsing fails, throw generic error
-        throw {
-          status: response.status,
-          message: response.statusText || 'Request failed',
-          requestId,
-          responseTime
-        };
+    // Ensure tenant ID is properly formatted for schema name
+    if (tenantId) {
+      // Check for masked tenant ID format and try to get proper tenant ID
+      if (tenantId.includes('----') || !tenantId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        console.warn('[ApiRequest] Found invalid tenant ID format. Using proper ID from localStorage if available.');
+        
+        // Try to get actual tenant ID from localStorage proper_tenant_id
+        const properTenantId = localStorage.getItem('proper_tenant_id');
+        if (properTenantId && properTenantId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          console.log('[ApiRequest] Using proper tenant ID from storage:', properTenantId);
+          tenantId = properTenantId;
+          
+          // Update the main tenantId in localStorage
+          localStorage.setItem('tenantId', tenantId);
+        } else {
+          // If no proper ID available, just use the schema without tenant ID validation
+          // The server endpoints will handle this by using a default schema
+          console.warn('[ApiRequest] No proper tenant ID found, continuing with existing ID');
+        }
       }
     }
     
-    // Handle empty responses
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      return {
-        success: true,
-        data: null,
-        requestId,
-        responseTime
-      };
+    // Format schema name - ensure it uses underscores instead of dashes
+    const schemaName = tenantId ? `tenant_${tenantId.replace(/-/g, '_')}` : 'public';
+    
+    // Add schema parameter if not already in params
+    if (!params.schema) {
+      params.schema = schemaName;
     }
     
-    const data = await response.json();
+    // Add tenant ID to params for server-side RLS policies
+    if (!params.tenantId && tenantId) {
+      params.tenantId = tenantId;
+    }
     
-    // Return standardized success response
-    return {
-      success: true,
-      data,
-      requestId,
-      responseTime
+    const config = {
+      method,
+      url: endpoint,
+      ...(data && { data }),
+      ...(Object.keys(params).length > 0 && { params })
     };
     
+    // Add request timeout (30 seconds)
+    config.timeout = 30000;
+    
+    try {
+      console.log(`[ApiRequest] ${method} ${endpoint} with schema: ${params.schema}`);
+      const response = await axiosInstance(config);
+      return response.data;
+    } catch (apiError) {
+      console.log(`[ApiRequest] Error details:`, {
+        status: apiError?.response?.status,
+        statusText: apiError?.response?.statusText,
+        data: apiError?.response?.data,
+        message: apiError?.message
+      });
+      
+      // Check for various error types
+      const errorMessage = apiError?.response?.data?.message || 
+                            apiError?.response?.data?.error || 
+                            '';
+                            
+      // Table doesn't exist error
+      const isTableNotExistError = 
+        (typeof errorMessage === 'string' && 
+          (errorMessage.includes('relation') && errorMessage.includes('does not exist'))) ||
+        (apiError?.response?.data?.code === '42P01');
+      
+      // Connection error to database
+      const isConnectionError = 
+        apiError?.message?.includes('connect') || 
+        errorMessage?.includes('connect') ||
+        apiError?.code === 'ECONNREFUSED' ||
+        apiError?.code === 'ETIMEDOUT';
+      
+      // Handle timeout error
+      const isTimeoutError = 
+        apiError?.message?.includes('timeout') || 
+        apiError?.code === 'ECONNABORTED';
+      
+      // Handle timeout errors - retry with double timeout for critical operations
+      if (isTimeoutError && method.toLowerCase() !== 'get') {
+        console.log(`[ApiRequest] Request timed out. Retrying with longer timeout for ${endpoint}`);
+        try {
+          // Retry with longer timeout for important operations (60 seconds)
+          const retryConfig = { ...config, timeout: 60000 };
+          const retryResponse = await axiosInstance(retryConfig);
+          return retryResponse.data;
+        } catch (retryError) {
+          console.error(`[ApiRequest] Retry also failed:`, retryError);
+          throw retryError;
+        }
+      }
+      
+      // Handle table doesn't exist error
+      if (isTableNotExistError) {
+        console.log(`[ApiRequest] Detected missing table in ${endpoint}. Attempting to initialize schema.`);
+        
+        // For GET requests, we can just return an empty array/object
+        if (method.toLowerCase() === 'get') {
+          console.log(`[ApiRequest] This is a GET request. Returning empty data.`);
+          
+          // Try to initialize schema in the background
+          try {
+            await axiosInstance.post('/api/tenant/initialize-schema', { tenantId });
+            console.log(`[ApiRequest] Schema initialization triggered in the background.`);
+          } catch (initError) {
+            console.error(`[ApiRequest] Failed to initialize schema:`, initError);
+          }
+          
+          // Return empty array or object based on endpoint
+          return endpoint.includes('list') ? [] : {};
+        }
+        
+        // For other methods, we need to initialize the schema first, then retry
+        try {
+          console.log(`[ApiRequest] Initializing schema for tenant ${tenantId}...`);
+          await axiosInstance.post('/api/tenant/initialize-schema', { tenantId });
+          console.log(`[ApiRequest] Schema initialized. Retrying original request.`);
+          
+          // Retry the original request after schema initialization
+          const retryResponse = await axiosInstance(config);
+          return retryResponse.data;
+        } catch (initError) {
+          console.error(`[ApiRequest] Failed to initialize schema:`, initError);
+          throw initError;
+        }
+      }
+      
+      // Handle connection errors gracefully
+      if (isConnectionError) {
+        console.error(`[ApiRequest] Database connection error. AWS RDS may be unavailable.`);
+        
+        // For GET requests, return empty data
+        if (method.toLowerCase() === 'get') {
+          return endpoint.includes('list') ? [] : {};
+        } else {
+          throw {
+            error: true,
+            message: 'Database connection failed. Please try again later.',
+            originalError: apiError
+          };
+        }
+      }
+      
+      // Re-throw other errors
+      throw apiError;
+    }
   } catch (error) {
-    const responseTime = Date.now() - startTime;
+    console.error(`[ApiRequest] Error in ${method} ${endpoint}:`, error);
     
-    // Standardize error format
-    const standardError = {
-      success: false,
-      error: error.message || 'An error occurred',
-      data: error.data,
-      status: error.status || 500,
-      requestId,
-      responseTime
+    // Format error message for UI
+    let errorMessage = 'An unexpected error occurred';
+    
+    if (error.response) {
+      errorMessage = error.response.data?.message || error.response.data?.error || `Error: ${error.response.status}`;
+    } else if (error.request) {
+      errorMessage = 'No response received from server. Please check your connection.';
+    } else {
+      errorMessage = error.message;
+    }
+    
+    // For GET requests, return empty data instead of throwing
+    if (method?.toLowerCase() === 'get') {
+      console.log(`[ApiRequest] Returning empty data for failed GET request`);
+      return endpoint.includes('list') ? [] : {};
+    }
+    
+    throw {
+      error: true,
+      message: errorMessage,
+      originalError: error,
+      status: error.response?.status
     };
-    
-    logger.error(`[apiRequest] Error: ${standardError.error}`, {
-      url,
-      error: standardError,
-      stack: error.stack
-    });
-    
-    return standardError;
   }
 }; 

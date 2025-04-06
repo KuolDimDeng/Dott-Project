@@ -343,12 +343,88 @@ export const applyGlobalOptimizations = (options = {}) => {
 export const createEfficientFetcher = (fetchFn) => {
   // Cache for responses
   const cache = new Map();
+  // LRU tracking - keep track of most recently used keys
+  const lruKeys = [];
+  // Maximum cache size - adjust depending on expected data size
+  const MAX_CACHE_SIZE = 50;
+  
+  // Helper function to create cache keys safely (avoiding circular references)
+  const createCacheKey = (args) => {
+    try {
+      // Create a simplified version of args to avoid circular references
+      const simplifiedArgs = args.map(arg => {
+        if (arg === null || arg === undefined) return arg;
+        
+        // For objects, only use primitive properties to avoid circular refs
+        if (typeof arg === 'object') {
+          const simpleObj = {};
+          // Only include primitive values in the key
+          Object.keys(arg).forEach(key => {
+            const val = arg[key];
+            if (val === null || 
+                val === undefined || 
+                typeof val === 'string' || 
+                typeof val === 'number' || 
+                typeof val === 'boolean') {
+              simpleObj[key] = val;
+            }
+          });
+          return simpleObj;
+        }
+        
+        return arg;
+      });
+      
+      return JSON.stringify(simplifiedArgs);
+    } catch (error) {
+      // Fallback if JSON stringify fails (e.g., circular references)
+      console.warn('Cache key creation failed, using fallback:', error.message);
+      
+      // Create a unique key based on argument types and some values
+      return args.map(arg => {
+        const type = typeof arg;
+        if (arg === null) return 'null';
+        if (arg === undefined) return 'undefined';
+        if (type === 'string' || type === 'number' || type === 'boolean') return String(arg);
+        if (type === 'object') {
+          if (Array.isArray(arg)) return `array:${arg.length}`;
+          return `object:${Object.keys(arg).join(',')}`;
+        }
+        return type;
+      }).join('|');
+    }
+  };
+  
+  // Update LRU order
+  const updateLRU = (key) => {
+    // Remove the key if it already exists
+    const index = lruKeys.indexOf(key);
+    if (index !== -1) {
+      lruKeys.splice(index, 1);
+    }
+    // Add key to the front (most recently used)
+    lruKeys.unshift(key);
+  };
+  
+  // Cleanup cache if it's too large
+  const cleanupCache = () => {
+    while (cache.size > MAX_CACHE_SIZE) {
+      // Remove least recently used item
+      const oldestKey = lruKeys.pop();
+      if (oldestKey) {
+        cache.delete(oldestKey);
+      }
+    }
+  };
   
   return async function efficientFetch(...args) {
-    const key = JSON.stringify(args);
+    // Create a safe cache key
+    const key = createCacheKey(args);
     
     // Return cached response if available
     if (cache.has(key)) {
+      // Update LRU tracking
+      updateLRU(key);
       return cache.get(key);
     }
     
@@ -358,13 +434,10 @@ export const createEfficientFetcher = (fetchFn) => {
       
       // Cache successful response
       cache.set(key, response);
+      updateLRU(key);
       
-      // Limit cache size
-      if (cache.size > 100) {
-        // Remove oldest entry
-        const firstKey = cache.keys().next().value;
-        cache.delete(firstKey);
-      }
+      // Clean up old cache entries if needed
+      cleanupCache();
       
       return response;
     } catch (error) {

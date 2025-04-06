@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+'use client';
+
+import React, { useState, useEffect, useReducer, useMemo, memo } from 'react';
 import { format } from 'date-fns';
-import { axiosInstance } from '@/lib/axiosConfig';
+import { invoiceApi, customerApi, productApi, serviceApi } from '@/utils/apiClient';
+import { useMemoryOptimizer } from '@/utils/memoryManager';
 import { logger } from '@/utils/logger';
 import { useNotification } from '@/context/NotificationContext';
 import PropTypes from 'prop-types';
+import { toast } from 'react-hot-toast';
 
 // Tailwind theme utility to replace useTheme from MUI
 const getTailwindColor = (colorName, shade = 500) => {
@@ -78,24 +82,30 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
   const isNewInvoice = isNewInvoiceProp || mode === 'create';
   
   const [activeTab, setActiveTab] = useState(isNewInvoice ? 0 : 2);
-  const [invoices, setInvoices] = useState([]);
+  const [invoices, setInvoices] = useState(() => []);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [newInvoice, setNewInvoice] = useState({
+  const [newInvoice, setNewInvoice] = useState(() => ({
     customer: '',
     date: new Date(),
     items: [],
     discount: 0,
     currency: 'USD',
     totalAmount: 0,
-  });
+  }));
   const { notifySuccess, notifyError, notifyInfo, notifyWarning } = useNotification();
   const [isEditing, setIsEditing] = useState(false);
   const [editedInvoice, setEditedInvoice] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [exportAnchorEl, setExportAnchorEl] = useState(null);
-  const [customers, setCustomers] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [services, setServices] = useState([]);
+
+// TODO: Consider using useReducer instead of multiple useState calls
+/* Example:
+const [state, dispatch] = useReducer(reducer, initialState);
+*/
+  const [customers, setCustomers] = useState(() => []);
+  const [products, setProducts] = useState(() => []);
+  const [services, setServices] = useState(() => []);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     fetchInvoices();
@@ -106,40 +116,69 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
 
   const fetchInvoices = async () => {
     try {
-      const response = await axiosInstance.get('/api/invoices/');
-      setInvoices(response.data);
+      setIsLoading(true);
+      console.log('[InvoiceManagement] Fetching invoices...');
+      
+      try {
+        const data = await invoiceApi.getAll();
+        console.log('[InvoiceManagement] Invoices data:', data);
+        setInvoices(Array.isArray(data) ? data : []);
+      } catch (apiError) {
+        // Handle errors in API client
+        console.error('[InvoiceManagement] Error in API call:', apiError);
+        setInvoices([]);
+        
+        if (apiError.message?.includes('relation') && 
+            apiError.message?.includes('does not exist')) {
+          toast.info('Your invoice database is being set up. This should only happen once.');
+        } else {
+          toast.error('Failed to load invoices. Please try again.');
+        }
+      }
     } catch (error) {
-      console.error('Error fetching invoices:', error);
-      notifyError('Failed to fetch invoices');
+      console.error('[InvoiceManagement] Error fetching invoices:', error);
+      setInvoices([]);
+      toast.error('Failed to load invoices. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const fetchCustomers = async () => {
     try {
-      const response = await axiosInstance.get('/api/customers/');
-      setCustomers(response.data);
+      const data = await customerApi.getAll();
+      // Ensure data is an array
+      setCustomers(Array.isArray(data) ? data : []);
+      console.log('[InvoiceManagement] Customers data:', Array.isArray(data) ? `${data.length} customers loaded` : 'No customers found or invalid format');
     } catch (error) {
       console.error('Error fetching customers:', error);
+      setCustomers([]); // Set to empty array on error
       notifyError('Failed to fetch customers');
     }
   };
 
   const fetchProducts = async () => {
     try {
-      const response = await axiosInstance.get('/api/products/');
-      setProducts(response.data);
+      const data = await productApi.getAll();
+      // Ensure data is an array
+      setProducts(Array.isArray(data) ? data : []);
+      console.log('[InvoiceManagement] Products data:', Array.isArray(data) ? `${data.length} products loaded` : 'No products found or invalid format');
     } catch (error) {
       console.error('Error fetching products:', error);
+      setProducts([]); // Set to empty array on error
       notifyError('Failed to fetch products');
     }
   };
 
   const fetchServices = async () => {
     try {
-      const response = await axiosInstance.get('/api/services/');
-      setServices(response.data);
+      const data = await serviceApi.getAll();
+      // Ensure data is an array
+      setServices(Array.isArray(data) ? data : []);
+      console.log('[InvoiceManagement] Services data:', Array.isArray(data) ? `${data.length} services loaded` : 'No services found or invalid format');
     } catch (error) {
       console.error('Error fetching services:', error);
+      setServices([]); // Set to empty array on error
       notifyError('Failed to fetch services');
     }
   };
@@ -176,7 +215,14 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
     newItems[index][field] = value;
 
     if (field === 'product') {
-      const selectedItem = [...products, ...services].find((item) => item.id === value);
+      // Create a combined array while making sure both arrays exist
+      const allItems = [
+        ...(Array.isArray(products) ? products : []), 
+        ...(Array.isArray(services) ? services : [])
+      ];
+      
+      // Find the selected item
+      const selectedItem = allItems.find((item) => item.id === value);
       if (selectedItem) {
         newItems[index].unitPrice = parseFloat(selectedItem.price) || 0;
       }
@@ -186,7 +232,8 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
       newItems[index][field] = parseFloat(value) || 0;
     }
 
-    const totalAmount = newItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    // TODO: Consider using useMemo for expensive operation
+const totalAmount = useMemo(() => newItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0), [newItems]);
 
     setNewInvoice((prev) => ({
       ...prev,
@@ -197,7 +244,8 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
 
   const handleItemRemove = (index) => {
     const newItems = newInvoice.items.filter((_, i) => i !== index);
-    const totalAmount = newItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    // TODO: Consider using useMemo for expensive operation
+const totalAmount = useMemo(() => newItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0), [newItems]);
     setNewInvoice((prev) => ({
       ...prev,
       items: newItems,
@@ -217,7 +265,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
       const invoiceData = {
         customer: newInvoice.customer,
         date: newInvoice.date.toISOString().split('T')[0], // Send only the date part
-        items: newInvoice.items.map((item) => ({
+        items: (newInvoice.items || []).map((item) => ({
           product: item.product,
           quantity: item.quantity,
           unit_price: item.unitPrice, // Changed from 'unitPrice' to 'unit_price'
@@ -229,7 +277,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
 
       console.log('Sending invoice data:', invoiceData); // For debugging
 
-      const response = await axiosInstance.post('/api/invoices/create/', invoiceData);
+      const response = await invoiceApi.create(invoiceData);
       notifySuccess('Invoice created successfully');
       setNewInvoice({
         customer: '',
@@ -266,10 +314,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
 
   const handleSaveEdit = async () => {
     try {
-      const response = await axiosInstance.put(
-        `/api/invoices/${selectedInvoice.id}/`,
-        editedInvoice
-      );
+      const response = await invoiceApi.update(selectedInvoice.id, editedInvoice);
       setSelectedInvoice(response.data);
       setIsEditing(false);
       fetchInvoices();
@@ -286,7 +331,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
 
   const handleConfirmDelete = async () => {
     try {
-      await axiosInstance.delete(`/api/invoices/${selectedInvoice.id}/`);
+      await invoiceApi.delete(selectedInvoice.id);
       notifySuccess('Invoice deleted successfully');
       setDeleteDialogOpen(false);
       setSelectedInvoice(null);
@@ -310,6 +355,57 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
     // Implement export logic here
     console.log(`Exporting to ${format}`);
     handleExportClose();
+  };
+
+  const renderInvoicesList = () => {
+    // Show loading state
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+            <p className="text-gray-600">Loading invoices...</p>
+          </div>
+        </div>
+      );
+    }
+    
+    // Show empty state with helpful message
+    if (!invoices || invoices.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg shadow-md p-6">
+          <div className="text-center mb-6">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-16 w-16 text-gray-300 mx-auto mb-4" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={1.5} 
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+              />
+            </svg>
+            <h3 className="text-xl font-semibold mb-2">No Invoices Yet</h3>
+            <p className="text-gray-500 max-w-md">
+              You haven't created any invoices yet. Create a new invoice by clicking the "Create Invoice" button above.
+            </p>
+          </div>
+          <button 
+            onClick={() => setActiveTab(0)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Create Your First Invoice
+          </button>
+        </div>
+      );
+    }
+    
+    // Existing table rendering code
+    // ... existing code ...
   };
 
   return (
@@ -371,11 +467,15 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
                     onChange={handleInputChange}
                   >
                     <option value="">Select a customer</option>
-                    {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.customerName}
-                      </option>
-                    ))}
+                    {Array.isArray(customers) && customers.length > 0 ? (
+                      (customers || []).map((customer) => (
+                        <option key={customer.id} value={customer.id}>
+                          {customer.customerName || `${customer.first_name} ${customer.last_name}` || customer.name || 'Unnamed Customer'}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No customers available</option>
+                    )}
                   </select>
                 </div>
                 <div>
@@ -395,7 +495,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
                     Items
                   </h3>
                   <div className="space-y-4">
-                    {newInvoice.items.map((item, index) => (
+                    {(newInvoice.items || []).map((item, index) => (
                       <div key={index} className="flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-md">
                         <div className="sm:flex-grow">
                           <label htmlFor={`item-product-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
@@ -409,18 +509,26 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
                           >
                             <option value="">Select a product/service</option>
                             <optgroup label="Products">
-                              {products.map((product) => (
-                                <option key={product.id} value={product.id}>
-                                  {product.name}
-                                </option>
-                              ))}
+                              {Array.isArray(products) && products.length > 0 ? (
+                                (products || []).map((product) => (
+                                  <option key={product.id} value={product.id}>
+                                    {product.name || product.product_name || 'Unnamed Product'}
+                                  </option>
+                                ))
+                              ) : (
+                                <option value="" disabled>No products available</option>
+                              )}
                             </optgroup>
                             <optgroup label="Services">
-                              {services.map((service) => (
-                                <option key={service.id} value={service.id}>
-                                  {service.name}
-                                </option>
-                              ))}
+                              {Array.isArray(services) && services.length > 0 ? (
+                                (services || []).map((service) => (
+                                  <option key={service.id} value={service.id}>
+                                    {service.name || service.service_name || 'Unnamed Service'}
+                                  </option>
+                                ))
+                              ) : (
+                                <option value="" disabled>No services available</option>
+                              )}
                             </optgroup>
                           </select>
                         </div>
@@ -713,46 +821,7 @@ const InvoiceManagement = ({ newInvoice: isNewInvoiceProp = false, mode }) => {
             </div>
             
             <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Invoice Number
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total Amount
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {invoices.map((invoice) => (
-                    <tr 
-                      key={invoice.id} 
-                      onClick={() => handleInvoiceSelect(invoice)}
-                      className="hover:bg-gray-50 cursor-pointer"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {invoice.invoice_num}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {invoice.customer}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(invoice.date).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {invoice.totalAmount} {invoice.currency}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {renderInvoicesList()}
             </div>
           </div>
         )}

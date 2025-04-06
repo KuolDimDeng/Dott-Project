@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useReducer, useMemo, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/utils/logger';
+import { useMemoryOptimizer } from '@/utils/memoryManager';
 import { signInWithSocialProvider } from '@/utils/auth';
 import {
   signIn,
@@ -21,7 +22,7 @@ import { useTenantInitialization } from '@/hooks/useTenantInitialization';
 import { TextField, Button, CircularProgress, Alert, Checkbox } from '@/components/ui/TailwindComponents';
 import { setTenantIdCookies } from '@/utils/tenantUtils';
 
-export default function SignInForm({ mode = 'normal', setMode, email: propEmail, setEmail: setParentEmail }) {
+export default function SignInForm({ propEmail, setParentEmail, mode, setMode, redirectPath, newAccount, plan }) {
   const [email, setEmail] = useState(propEmail || '');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -29,6 +30,13 @@ export default function SignInForm({ mode = 'normal', setMode, email: propEmail,
   const [loadingStep, setLoadingStep] = useState(0);
   const [error, setError] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+// TODO: Consider using useReducer instead of multiple useState calls
+  // Memory optimization
+  const { trackUpdate } = useMemoryOptimizer('SignInForm');
+/* Example:
+const [state, dispatch] = useReducer(reducer, initialState);
+*/
   const router = useRouter();
   const { login, initializeTenantId } = useTenantInitialization();
 
@@ -948,7 +956,7 @@ export default function SignInForm({ mode = 'normal', setMode, email: propEmail,
               {loadingSteps[loadingStep]}
             </p>
             <div className="flex justify-center space-x-2 mt-3">
-              {loadingSteps.map((_, index) => (
+              {(loadingSteps || []).map((_, index) => (
                 <div 
                   key={index}
                   className={`h-2 w-2 rounded-full ${index <= loadingStep ? 'bg-blue-600' : 'bg-gray-300'}`}

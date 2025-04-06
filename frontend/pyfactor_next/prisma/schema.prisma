@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Note: These models represent the database structure, but we'll be using dynamic schemas
+// based on tenant IDs. The actual tables will be created in each tenant's schema.
+
+model Product {
+  id             Int      @id @default(autoincrement())
+  product_name   String
+  description    String?
+  price          Decimal  @db.Decimal(10, 2)
+  sku            String?
+  is_for_sale    Boolean  @default(true)
+  stock_quantity Int      @default(0)
+  weight         Decimal? @db.Decimal(10, 2)
+  dimensions     String?
+  image_url      String?
+  category       String?
+  tenant_id      String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @default(now())
+}
+
+model Service {
+  id            Int      @id @default(autoincrement())
+  service_name  String
+  description   String?
+  price         Decimal  @db.Decimal(10, 2)
+  is_for_sale   Boolean  @default(true)
+  is_recurring  Boolean  @default(false)
+  salestax      Decimal  @default(0) @db.Decimal(10, 2)
+  duration      String?
+  billing_cycle String?
+  tenant_id     String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @default(now())
+}
+
+model Customer {
+  id            Int      @id @default(autoincrement())
+  first_name    String
+  last_name     String
+  email         String?
+  phone         String?
+  company       String?
+  address_line1 String?
+  address_line2 String?
+  city          String?
+  state         String?
+  postal_code   String?
+  country       String?
+  notes         String?
+  tenant_id     String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @default(now())
+}
+
+model Invoice {
+  id           Int      @id @default(autoincrement())
+  invoice_num  String
+  customer_id  Int?
+  date         DateTime @default(now())
+  due_date     DateTime?
+  status       String   @default("unpaid")
+  subtotal     Decimal  @default(0) @db.Decimal(10, 2)
+  tax          Decimal  @default(0) @db.Decimal(10, 2)
+  discount     Decimal  @default(0) @db.Decimal(10, 2)
+  total_amount Decimal  @default(0) @db.Decimal(10, 2)
+  notes        String?
+  currency     String   @default("USD")
+  tenant_id    String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @default(now())
+  items        InvoiceItem[]
+}
+
+model InvoiceItem {
+  id          Int      @id @default(autoincrement())
+  invoice     Invoice  @relation(fields: [invoice_id], references: [id])
+  invoice_id  Int
+  item_type   String
+  item_id     Int?
+  description String?
+  quantity    Int      @default(1)
+  unit_price  Decimal  @db.Decimal(10, 2)
+  tax_rate    Decimal  @default(0) @db.Decimal(5, 2)
+  discount    Decimal  @default(0) @db.Decimal(10, 2)
+  line_total  Decimal  @db.Decimal(10, 2)
+  tenant_id   String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+} 

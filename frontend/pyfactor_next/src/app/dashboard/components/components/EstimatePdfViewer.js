@@ -1,25 +1,39 @@
-import { pdfjs } from 'react-pdf';
-
-// Use the worker from your public directory
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 import React, { useState, useEffect } from 'react';
-import { Document, Page } from 'react-pdf';
+import { loadReactPdfRenderer } from '@/utils/dynamic-imports';
 
 const EstimatePdfViewer = ({ pdfBlob }) => {
   const [numPages, setNumPages] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [Document, setDocument] = useState(null);
+  const [Page, setPage] = useState(null);
 
   useEffect(() => {
-    if (pdfBlob) {
-      setLoading(false);
+    async function loadPdfComponents() {
+      try {
+        const ReactPDF = await loadReactPdfRenderer();
+        // Set up worker if needed
+        if (ReactPDF.pdfjs && ReactPDF.pdfjs.GlobalWorkerOptions) {
+          ReactPDF.pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
+        }
+        setDocument(ReactPDF.Document);
+        setPage(ReactPDF.Page);
+        if (pdfBlob) {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Failed to load PDF components:', error);
+        setLoading(false);
+      }
     }
+    
+    loadPdfComponents();
   }, [pdfBlob]);
 
   function onDocumentLoadSuccess({ numPages }) {
     setNumPages(numPages);
   }
 
-  if (loading) {
+  if (loading || !Document || !Page) {
     return (
       <div className="flex justify-center items-center p-4">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-main"></div>

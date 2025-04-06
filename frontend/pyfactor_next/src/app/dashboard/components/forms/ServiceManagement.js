@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { axiosInstance } from '@/lib/axiosConfig';
+import { serviceApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
 import { useToast } from '@/components/Toast/ToastProvider';
 import ModernFormLayout from '@/app/components/ModernFormLayout';
@@ -91,34 +91,28 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
   const fetchServices = async () => {
     try {
       setIsLoading(true);
-      logger.info('[ServiceManagement] Fetching services from API');
-      const response = await axiosInstance.get('/api/services/');
-      logger.info('[ServiceManagement] Services fetched successfully:', response.data.length);
+      console.log('[ServiceManagement] Fetching services...');
       
-      // Map API field names to form field names
-      const mappedServices = response.data.map(service => ({
-        id: service.id,
-        name: service.service_name,
-        description: service.description,
-        price: service.price,
-        is_for_sale: service.is_for_sale,
-        is_recurring: service.is_recurring,
-        salestax: service.salestax,
-        duration: service.duration,
-        billing_cycle: service.billing_cycle,
-        tenant_id: service.tenant_id,
-        created_at: service.created_at
-      }));
-      
-      setServices(mappedServices);
-    } catch (error) {
-      logger.error('[ServiceManagement] Error fetching services:', error);
-      let errorMessage = 'Error fetching services';
-      if (error.response) {
-        logger.error('[ServiceManagement] Error response:', error.response.status, error.response.data);
-        errorMessage += ` (${error.response.status})`;
+      try {
+        const data = await serviceApi.getAll();
+        console.log('[ServiceManagement] Services data:', data);
+        setServices(Array.isArray(data) ? data : []);
+      } catch (apiError) {
+        // Handle errors in API client
+        console.error('[ServiceManagement] Error in API call:', apiError);
+        setServices([]);
+        
+        if (apiError.message?.includes('relation') && 
+            apiError.message?.includes('does not exist')) {
+          toast.info('Your service database is being set up. This should only happen once.');
+        } else {
+          toast.error('Failed to load services. Please try again.');
+        }
       }
-      toast.error(errorMessage);
+    } catch (error) {
+      console.error('[ServiceManagement] Error fetching services:', error);
+      setServices([]);
+      toast.error('Failed to load services. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -164,8 +158,8 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
       };
       
       logger.debug('[ServiceManagement] Sending POST request to /api/services/ with mapped data:', mappedService);
-      const response = await axiosInstance.post('/api/services/', mappedService);
-      logger.info('[ServiceManagement] Service created successfully:', response.data);
+      const response = await serviceApi.create(mappedService);
+      logger.info('[ServiceManagement] Service created successfully:', response);
       toast.success('Service created successfully');
       setNewService({
         name: '',
@@ -228,12 +222,9 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
       };
       
       logger.debug('[ServiceManagement] Updating service with mapped data:', mappedService);
-      const response = await axiosInstance.patch(
-        `/api/services/${selectedService.id}/`,
-        mappedService
-      );
-      logger.info('[ServiceManagement] Service updated successfully:', response.data);
-      setSelectedService(response.data);
+      const response = await serviceApi.update(selectedService.id, mappedService);
+      logger.info('[ServiceManagement] Service updated successfully:', response);
+      setSelectedService(response);
       setIsEditing(false);
       fetchServices();
       toast.success('Service updated successfully');
@@ -258,7 +249,7 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
   const handleConfirmDelete = async () => {
     setIsSubmitting(true);
     try {
-      await axiosInstance.delete(`/api/services/${selectedService.id}/`);
+      await serviceApi.delete(selectedService.id);
       toast.success('Service deleted successfully');
       setDeleteDialogOpen(false);
       setSelectedService(null);
@@ -671,113 +662,143 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
   };
 
   // Service List
-  const renderServiceList = () => (
-    <div className="max-w-7xl mx-auto">
-      <div className="bg-white rounded-xl shadow-sm mb-6 p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
-          <h1 className="text-xl font-semibold text-gray-800">
-            Services
-          </h1>
-          
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <SearchIcon />
-              </div>
-              <input
-                type="text"
-                placeholder="Search services..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full min-w-[200px]"
-              />
-            </div>
-            
-            <button 
-              onClick={() => setActiveTab(0)}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-            >
-              <AddCircleOutlineIcon />
-              <span className="ml-2">New Service</span>
-            </button>
+  const renderServiceList = () => {
+    // Show loading state
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+            <p className="text-gray-600">Loading services...</p>
           </div>
         </div>
-        
-        <div className="flex flex-wrap justify-between mb-4 gap-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-full text-sm bg-white hover:bg-gray-50">
-              <FilterListIcon />
-              <span className="ml-2">All Services</span>
-            </button>
-            <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-full text-sm bg-white hover:bg-gray-50">
-              <FilterListIcon />
-              <span className="ml-2">Recurring</span>
-            </button>
+      );
+    }
+    
+    // Show empty state with helpful message
+    if (!services || services.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg shadow-md p-6">
+          <div className="text-center mb-6">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-16 w-16 text-gray-300 mx-auto mb-4" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={1.5} 
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" 
+              />
+            </svg>
+            <h3 className="text-xl font-semibold mb-2">No Services Yet</h3>
+            <p className="text-gray-500 max-w-md">
+              You haven't added any services to your catalog yet. Get started by clicking the "Create Service" button above.
+            </p>
+          </div>
+          <button 
+            onClick={() => setActiveTab(0)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Create Your First Service
+          </button>
+        </div>
+      );
+    }
+    
+    // Existing table rendering code
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white rounded-xl shadow-sm mb-6 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
+            <h1 className="text-xl font-semibold text-gray-800">
+              Services
+            </h1>
+            
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <SearchIcon />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search services..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full min-w-[200px]"
+                />
+              </div>
+              
+              <button 
+                onClick={() => setActiveTab(0)}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                <AddCircleOutlineIcon />
+                <span className="ml-2">New Service</span>
+              </button>
+            </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={fetchServices} 
-              className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-            >
-              <RefreshIcon />
-            </button>
+          <div className="flex flex-wrap justify-between mb-4 gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-full text-sm bg-white hover:bg-gray-50">
+                <FilterListIcon />
+                <span className="ml-2">All Services</span>
+              </button>
+              <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-full text-sm bg-white hover:bg-gray-50">
+                <FilterListIcon />
+                <span className="ml-2">Recurring</span>
+              </button>
+            </div>
             
-            <div className="relative">
-              <button
-                onClick={handleExportClick}
-                className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50"
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={fetchServices} 
+                className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
               >
-                Export
-                <ArrowDropDownIcon />
+                <RefreshIcon />
               </button>
               
-              {exportAnchorEl && (
-                <div className="absolute right-0 z-10 mt-2 w-32 bg-white rounded-md shadow-lg">
-                  <div className="py-1">
-                    <button 
-                      onClick={() => handleExport('PDF')} 
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                    >
-                      PDF
-                    </button>
-                    <button 
-                      onClick={() => handleExport('CSV')} 
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                    >
-                      CSV
-                    </button>
-                    <button 
-                      onClick={() => handleExport('Excel')} 
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                    >
-                      Excel
-                    </button>
+              <div className="relative">
+                <button
+                  onClick={handleExportClick}
+                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50"
+                >
+                  Export
+                  <ArrowDropDownIcon />
+                </button>
+                
+                {exportAnchorEl && (
+                  <div className="absolute right-0 z-10 mt-2 w-32 bg-white rounded-md shadow-lg">
+                    <div className="py-1">
+                      <button 
+                        onClick={() => handleExport('PDF')} 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      >
+                        PDF
+                      </button>
+                      <button 
+                        onClick={() => handleExport('CSV')} 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      >
+                        CSV
+                      </button>
+                      <button 
+                        onClick={() => handleExport('Excel')} 
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      >
+                        Excel
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </div>
-        
-        {isLoading ? (
-          <div className="flex justify-center my-8">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-          </div>
-        ) : filteredServices.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500">
-              No services found{searchQuery ? ` matching "${searchQuery}"` : ''}
-            </p>
-            <button 
-              onClick={() => setActiveTab(0)}
-              className="inline-flex items-center px-4 py-2 mt-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-            >
-              <AddCircleOutlineIcon />
-              <span className="ml-2">Create New Service</span>
-            </button>
-          </div>
-        ) : (
+          
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -852,10 +873,10 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
               </tbody>
             </table>
           </div>
-        )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="w-full">

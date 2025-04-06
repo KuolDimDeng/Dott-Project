@@ -82,7 +82,7 @@ export async function POST(request) {
       cognito_id: data.cognitoId,
       user_role: data.userRole || 'OWNER',
       business_id: data.business_id || data.businessId,
-      business_name: data.business_name || data.businessName || 'My Business',
+      business_name: data.business_name || data.businessName || 'Default Business',
       business_type: data.business_type || data.businessType || 'Other',
       business_country: data.business_country || data.country || 'US',
       legal_structure: data.legal_structure || data.legalStructure || 'Sole Proprietorship',

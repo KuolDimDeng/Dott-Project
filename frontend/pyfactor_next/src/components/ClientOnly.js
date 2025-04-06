@@ -1,21 +1,34 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/components/ClientOnly.js
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { SafeWrapper } from '@/utils/ContextFix';
 import PropTypes from 'prop-types';
 
-export function ClientOnly({ children }) {
+/**
+ * ClientOnly component 
+ * Ensures children are only rendered on the client to prevent SSR issues with:
+ * - useLayoutEffect warnings
+ * - Components that depend on browser APIs
+ * - Third-party components with client-side-only dependencies
+ */
+export function ClientOnly({ children, fallback = null, delay = 0 }) {
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    // Set mounted state immediately without setTimeout
-    setHasMounted(true);
-  }, []);
+    // Use optional delay to ensure any mounting effects complete first
+    if (delay > 0) {
+      const timer = setTimeout(() => {
+        setHasMounted(true);
+      }, delay);
+      return () => clearTimeout(timer);
+    } else {
+      setHasMounted(true);
+    }
+  }, [delay]);
 
-  // Return null during server-side rendering
+  // Return fallback during server-side rendering
   if (!hasMounted) {
-    return null;
+    return fallback;
   }
 
   // For function children, call the function to get the content
@@ -32,5 +45,10 @@ ClientOnly.propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.node,
     PropTypes.func
-  ]).isRequired
+  ]).isRequired,
+  fallback: PropTypes.node,
+  delay: PropTypes.number
 };
+
+// Add named export and default export
+export default ClientOnly;

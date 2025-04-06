@@ -18,16 +18,10 @@
   --border-color: rgba(0, 0, 0, 0.12);
 }
 
-
 /* Base styles */
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgb(var(--background-end-rgb))
-  )
-  rgb(var(--background-start-rgb));
+  background: rgb(var(--background-start-rgb));
   margin: 0;
   padding: 0;
   min-height: 100vh;
@@ -164,11 +158,9 @@ body {
   @apply animate-spin rounded-full border-4 border-primary-light border-t-primary-main h-8 w-8;
 }
 
-/* Responsive typography */
-@responsive {
-  .text-responsive {
-    @apply text-base md:text-lg lg:text-xl;
-  }
+/* Responsive typography - fixed for Tailwind v3+ */
+.text-responsive {
+  @apply text-base md:text-lg lg:text-xl;
 }
 
 /* Print styles */

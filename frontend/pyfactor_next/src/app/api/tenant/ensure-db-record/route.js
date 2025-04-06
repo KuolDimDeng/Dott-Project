@@ -23,11 +23,26 @@ export async function POST(request) {
       body = {};
     }
     
-    // Extract tenant ID from body or generate a consistent one
-    let tenantId = body.tenantId || body.tenant_id;
+    // Get tenant data from request body
+    const tenantId = body.tenantId || '';
+    const userId = body.userId || '';
+    const email = body.email || '';
+    const businessName = body.businessName || body.business_name || '';
+    const businessType = body.businessType || body.business_type || 'Other';
     
-    // Extract user ID for generating tenant ID if needed
-    const userId = body.userId || body.user_id || `anonymous_${Date.now()}`;
+    // If no userId is provided, generate a proper UUID for it
+    if (!userId) {
+      try {
+        // Generate a UUID using a timestamp-based namespace
+        const USER_NAMESPACE = '8a551c44-4ade-4f89-b078-0af8be794c10';
+        userId = uuidv5(`anonymous_${Date.now()}`, USER_NAMESPACE);
+        logger.info('[EnsureDBRecord] Generated UUID for anonymous user:', userId);
+      } catch (uuidError) {
+        logger.error('[EnsureDBRecord] Error generating UUID for user:', uuidError);
+        // Use a fallback ID that's a valid UUID
+        userId = '28609ed2-1a46-4d50-bc4e-483d6e3405ff';
+      }
+    }
     
     // If no tenant ID, try to generate one from user ID
     if (!tenantId && userId) {
@@ -46,9 +61,6 @@ export async function POST(request) {
       tenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
       logger.warn('[EnsureDBRecord] Using fallback tenant ID:', tenantId);
     }
-    
-    // Extract business name
-    const businessName = body.businessName || body.business_name || 'My Business';
     
     // Generate schema name - convert hyphens to underscores for schema name (PostgreSQL limitation)
     const schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
@@ -121,18 +133,73 @@ export async function POST(request) {
         await pool.query(`CREATE SCHEMA IF NOT EXISTS ${schemaName};`);
         logger.info('[EnsureDBRecord] Created schema:', schemaName);
         
+        // Verify schema creation and wait if needed
+        let schemaExists = false;
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        while (!schemaExists && retryCount < maxRetries) {
+          try {
+            // Check if schema exists
+            const checkSchemaQuery = `
+              SELECT EXISTS (
+                SELECT FROM information_schema.schemata 
+                WHERE schema_name = $1
+              );
+            `;
+            const schemaResult = await pool.query(checkSchemaQuery, [schemaName]);
+            schemaExists = schemaResult.rows[0].exists;
+            
+            if (schemaExists) {
+              logger.info(`[EnsureDBRecord] Schema ${schemaName} exists and is ready`);
+            } else {
+              // Wait a bit before retrying
+              logger.info(`[EnsureDBRecord] Schema ${schemaName} not ready yet, waiting... (attempt ${retryCount + 1}/${maxRetries})`);
+              await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+              retryCount++;
+            }
+          } catch (checkError) {
+            logger.warn(`[EnsureDBRecord] Error checking schema existence: ${checkError.message}`);
+            retryCount++;
+            await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+          }
+        }
+        
+        if (!schemaExists) {
+          logger.warn(`[EnsureDBRecord] Schema ${schemaName} may not be fully created yet, but continuing...`);
+        }
+        
         // Add owner to users table if not exists
         // This is critical for proper tenant setup with RLS
         try {
+          // First insert a user record into custom_auth_user
+          const userEmail = body.email || `${userId}@example.com`;
           const userInsertQuery = `
-            INSERT INTO users_userprofile (id, email, is_active)
-            VALUES ($1, $2, true)
+            INSERT INTO custom_auth_user (
+              id, email, password, is_active, is_staff, is_superuser, date_joined,
+              first_name, last_name, email_confirmed, confirmation_token,
+              is_onboarded, role, occupation, tenant_id
+            )
+            VALUES (
+              $1, $2, 'pbkdf2_sha256$placeholder', true, false, false, NOW(),
+              'User', 'User', false, gen_random_uuid(),
+              false, 'OWNER', 'OWNER', $3
+            )
             ON CONFLICT (id) DO NOTHING;
           `;
           
-          const userEmail = body.email || `${userId}@example.com`;
-          await pool.query(userInsertQuery, [userId, userEmail]);
+          await pool.query(userInsertQuery, [userId, userEmail, tenantId]);
           logger.info('[EnsureDBRecord] Ensured user record exists for:', userId);
+          
+          // Now insert the user profile
+          const profileInsertQuery = `
+            INSERT INTO users_userprofile (id, user_id, tenant_id, created_at, updated_at)
+            VALUES ($1, $1, $2, NOW(), NOW())
+            ON CONFLICT (id) DO NOTHING;
+          `;
+          
+          await pool.query(profileInsertQuery, [userId, tenantId]);
+          logger.info('[EnsureDBRecord] Ensured user profile record exists for:', userId);
         } catch (userError) {
           logger.warn('[EnsureDBRecord] Error ensuring user exists (non-fatal):', userError.message);
           // Continue even if user creation fails
@@ -141,15 +208,15 @@ export async function POST(request) {
         // Add business record if not exists
         try {
           const businessInsertQuery = `
-            INSERT INTO users_business (id, name, owner_id, created_at, updated_at)
-            VALUES ($1, $2, $3, NOW(), NOW())
+            INSERT INTO users_business (id, name, tenant_id, created_at, updated_at)
+            VALUES ($1, $2, $1, NOW(), NOW())
             ON CONFLICT (id) DO UPDATE
             SET name = $2, updated_at = NOW()
             RETURNING id, name;
           `;
           
           const businessId = tenantId; // Use same ID for simplicity
-          const businessResult = await pool.query(businessInsertQuery, [businessId, businessName, userId]);
+          const businessResult = await pool.query(businessInsertQuery, [businessId, businessName]);
           
           if (businessResult.rows && businessResult.rows.length > 0) {
             logger.info('[EnsureDBRecord] Business record inserted/updated:', businessResult.rows[0]);
@@ -184,8 +251,36 @@ export async function POST(request) {
           // Set up RLS policy right away
           try {
             // Grant permissions
-            await pool.query(`GRANT USAGE ON SCHEMA ${schemaName} TO postgres;`);
-            await pool.query(`GRANT ALL PRIVILEGES ON SCHEMA ${schemaName} TO postgres;`);
+            await pool.query(`GRANT USAGE ON SCHEMA ${schemaName} TO dott_admin;`);
+            await pool.query(`GRANT ALL PRIVILEGES ON SCHEMA ${schemaName} TO dott_admin;`);
+            
+            // Check if product table exists in the schema, create if not
+            const checkTableQuery = `
+              SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = '${schemaName}' 
+                AND table_name = 'product'
+              );
+            `;
+            const tableExists = await pool.query(checkTableQuery);
+            
+            // If product table doesn't exist, create it
+            if (!tableExists.rows[0].exists) {
+              logger.info(`[EnsureDBRecord] Product table doesn't exist in schema ${schemaName}, creating it`);
+              const createTableQuery = `
+                CREATE TABLE IF NOT EXISTS ${schemaName}.product (
+                  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                  name VARCHAR(255) NOT NULL,
+                  description TEXT,
+                  price DECIMAL(10, 2),
+                  tenant_id UUID NOT NULL,
+                  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                );
+              `;
+              await pool.query(createTableQuery);
+              logger.info(`[EnsureDBRecord] Created product table in schema ${schemaName}`);
+            }
             
             // Create a basic RLS policy (this will be expanded through migrations)
             const rlsQuery = `

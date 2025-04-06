@@ -6,6 +6,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { toast } from 'react-toastify';
 import { format, isValid, parseISO } from 'date-fns';
+import { optimizeJsPDF } from '@/utils/pdfOptimizer';
 
 export default function ReportDisplay({ type = 'general' }) {
   const [reportType, setReportType] = useState('');
@@ -167,56 +168,97 @@ export default function ReportDisplay({ type = 'general' }) {
     setReportData(mockData);
   };
 
-  const exportToPDF = () => {
-    if (!reportData) return;
-    
-    const doc = new jsPDF();
-    
-    // Add title and date range
-    doc.setFontSize(18);
-    doc.text(reportData.title, 14, 22);
-    doc.setFontSize(12);
-    doc.text(reportData.dateRange, 14, 30);
-    
-    if (reportData.message) {
-      doc.text(reportData.message, 14, 40);
-    } else {
-      // Create table with reportData
+  const exportToPdf = () => {
+    try {
+      // Create a new PDF document with memory optimization
+      const doc = optimizeJsPDF(new jsPDF());
+      
+      // Add a title
+      doc.setFontSize(18);
+      doc.text(reportData.title, 14, 22);
+      
+      // Add metadata and filter info
+      doc.setFontSize(11);
+      doc.text(`Generated on: ${format(new Date(), 'yyyy-MM-dd')}`, 14, 32);
+      if (reportData.dateRange) {
+        doc.text(`Date Range: ${reportData.dateRange}`, 14, 38);
+      }
+      
+      // Create a table with the report data
+      const columns = reportData.columns || [];
+      const data = reportData.data || [];
+      
+      // Create table headers
+      const headers = Array.isArray(columns) 
+        ? columns.map(col => typeof col === 'string' ? col : (col.title || col.label || ''))
+        : [];
+      
+      // Create table body
+      const body = data.map(row => {
+        if (Array.isArray(row)) {
+          return row;
+        } else {
+          return headers.map(header => {
+            const field = columns.find(col => 
+              (col.title || col.label) === header)?.field || header;
+            
+            const value = row[field];
+            if (typeof value === 'object' && value !== null) {
+              return JSON.stringify(value);
+            }
+            return value || '';
+          });
+        }
+      });
+      
+      // Add the table
       doc.autoTable({
-        head: [reportData.columns],
-        body: reportData.data,
-        startY: 40,
-        styles: { fontSize: 10, cellPadding: 3 },
-        headStyles: { fillColor: [66, 66, 66] }
+        startY: 45,
+        head: [headers],
+        body: body,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+          fillColor: [240, 240, 240]
+        },
+        margin: { top: 50 },
+        styles: {
+          overflow: 'linebreak',
+          cellPadding: 3,
+        }
       });
       
       // Add summary if available
       if (reportData.summary) {
-        const summaryY = doc.lastAutoTable.finalY + 15;
+        const summaryY = doc.lastAutoTable.finalY + 10;
         doc.setFontSize(14);
         doc.text('Summary', 14, summaryY);
+        doc.setFontSize(11);
         
-        const summaryData = Object.entries(reportData.summary).map(([key, value]) => {
-          return [
-            key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
-            value
-          ];
-        });
-        
-        doc.autoTable({
-          body: summaryData,
-          startY: summaryY + 5,
-          theme: 'grid',
-          styles: { fontSize: 10 },
-          columnStyles: {
-            0: { fontStyle: 'bold' }
-          }
+        let yOffset = summaryY + 10;
+        Object.entries(reportData.summary).forEach(([key, value]) => {
+          // Format the key as a readable label
+          const label = key.replace(/([A-Z])/g, ' $1')
+            .replace(/^./, str => str.toUpperCase())
+            .replace(/([0-9]+)/g, ' $1');
+            
+          doc.text(`${label}: ${value}`, 14, yOffset);
+          yOffset += 7;
         });
       }
+      
+      // Save the PDF
+      doc.save(`${reportData.title.replace(/\s+/g, '_').toLowerCase()}_${format(new Date(), 'yyyyMMdd')}.pdf`);
+      
+      toast.success('Report exported to PDF');
+    } catch (error) {
+      console.error('Error exporting to PDF:', error);
+      toast.error('Failed to export to PDF');
     }
-    
-    // Save the PDF
-    doc.save(`${reportData.title.replace(/\s+/g, '_').toLowerCase()}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
   };
   
   const exportToCSV = () => {
@@ -232,8 +274,15 @@ export default function ReportDisplay({ type = 'general' }) {
     } else {
       // Create worksheet with headers and data
       const data = [
-        reportData.columns,
-        ...reportData.data
+        reportData.columns.map(col => col.title || col.label),
+        ...reportData.data.map(row => 
+          reportData.columns.map(col => {
+            if (typeof row[col.field] === 'object' && row[col.field] !== null) {
+              return JSON.stringify(row[col.field]);
+            }
+            return row[col.field];
+          })
+        )
       ];
       
       const ws = XLSX.utils.aoa_to_sheet(data);
@@ -281,7 +330,7 @@ export default function ReportDisplay({ type = 'general' }) {
                           key={index}
                           className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                         >
-                          {column}
+                          {column.title || column.label}
                         </th>
                       ))}
                     </tr>
@@ -289,9 +338,9 @@ export default function ReportDisplay({ type = 'general' }) {
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {reportData.data.map((row, rowIndex) => (
                       <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        {row.map((cell, cellIndex) => (
+                        {reportData.columns.map((column, cellIndex) => (
                           <td key={cellIndex} className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                            {cell}
+                            {typeof row[column.field] === 'object' && row[column.field] !== null ? JSON.stringify(row[column.field]) : row[column.field]}
                           </td>
                         ))}
                       </tr>
@@ -320,7 +369,7 @@ export default function ReportDisplay({ type = 'general' }) {
 
           <div className="mt-6 flex justify-end space-x-4">
             <button 
-              onClick={exportToPDF}
+              onClick={exportToPdf}
               className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
               <svg className="mr-2 -ml-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

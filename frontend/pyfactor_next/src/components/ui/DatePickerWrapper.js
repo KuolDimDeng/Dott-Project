@@ -1,16 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
-import 'react-datepicker/dist/react-datepicker.css';
-
-// Use dynamic import with ssr: false to prevent server-side rendering
-const DatePicker = dynamic(() => import('react-datepicker'), {
-  ssr: false,
-});
 
 /**
  * Client-side only wrapper for DatePicker to prevent SSR issues
+ * This is a stub implementation since react-datepicker is not available
  */
 export default function DatePickerWrapper(props) {
   const [mounted, setMounted] = useState(false);
@@ -20,16 +14,26 @@ export default function DatePickerWrapper(props) {
     setMounted(true);
   }, []);
 
-  // Render a placeholder while loading or when server-side rendering
-  if (!mounted) {
-    return (
-      <div 
-        className="w-full h-9 border border-gray-300 rounded-md bg-gray-50"
-        style={{ minHeight: '38px' }}
-      />
-    );
-  }
+  // Access any props that would normally be passed to DatePicker
+  const { 
+    selected, 
+    onChange, 
+    placeholderText = "Select a date...",
+    className = ""
+  } = props;
 
-  // Pass all props to the DatePicker component
-  return <DatePicker {...props} />;
+  // Display a date if one is selected
+  const displayValue = selected ? new Date(selected).toLocaleDateString() : placeholderText;
+
+  // Render a basic input that looks like a date picker
+  return (
+    <div className={`datepicker-stub ${className}`}>
+      <div 
+        className="w-full h-9 border border-gray-300 rounded-md bg-gray-50 px-3 py-2 text-gray-700"
+        onClick={() => onChange && onChange(new Date())}
+      >
+        {displayValue}
+      </div>
+    </div>
+  );
 } 

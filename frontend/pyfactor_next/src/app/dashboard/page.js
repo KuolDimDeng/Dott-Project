@@ -1,4 +1,4 @@
-import DashboardClient from './DashboardClient';
+import DashboardWrapper from './DashboardWrapper';
 
 /**
  * Dashboard Page Component
@@ -7,17 +7,21 @@ import DashboardClient from './DashboardClient';
  * A server component that exports metadata and renders the client component.
  */
 
-export const metadata = {
-  title: 'PyFactor Dashboard',
-  description: 'Manage your business finances with PyFactor',
+const defaultMetadata = {
+  title: 'Dashboard - Juba Made It',
+  description: 'View and manage your business data on our dashboard.'
 };
 
-// Server component that handles searchParams
-export default async function Dashboard({ searchParams }) {
-  // Extract query parameters safely with await to fix the sync-dynamic-apis error
-  const params = await searchParams;
-  const newAccount = params?.newAccount === 'true';
-  const plan = params?.plan || 'free';
+export const metadata = defaultMetadata;
+
+// Server component that handles searchParams with proper async handling
+export default async function DashboardPage({ searchParams }) {
+  // In Next.js 15, we need to await searchParams before using its properties
+  const params = await Promise.resolve(searchParams);
   
-  return <DashboardClient newAccount={newAccount} plan={plan} />;
+  // Now we can safely access the properties
+  const isNewAccount = params?.newAccount === 'true';
+  const planParam = params?.plan || null;
+
+  return <DashboardWrapper newAccount={isNewAccount} plan={planParam} />;
 } 

@@ -3,6 +3,11 @@
  * Provides consistent connection settings with AWS RDS
  */
 
+import { PrismaClient } from '@prisma/client';
+
+// Cache for Prisma clients to avoid creating multiple connections
+const prismaClients = {};
+
 // Connection settings optimized for AWS RDS
 const DB_DEFAULTS = {
   port: 5432,
@@ -24,9 +29,8 @@ export function getDbConfig() {
   
   // Check if SSL should be disabled
   const useSSL = process.env.DB_USE_SSL !== 'false';
-  console.log(`SSL connections ${useSSL ? 'enabled' : 'disabled'}`);
   
-  // Base configuration using environment variables with fallbacks
+  // Base configuration using environment variables with fallbacks for AWS RDS
   const config = {
     user: process.env.RDS_USERNAME || process.env.DB_USER || process.env.DJANGO_DB_USER || 'dott_admin',
     password: process.env.RDS_PASSWORD || process.env.DB_PASSWORD || process.env.DJANGO_DB_PASSWORD || 'RRfXU6uPPUbBEg1JqGTJ',
@@ -41,22 +45,18 @@ export function getDbConfig() {
   };
   
   // Log connection details (without password)
-  console.log('Database connection details:', { 
+  console.log('AWS RDS connection details:', { 
     host: config.host, 
     database: config.database, 
     user: config.user,
     port: config.port
   });
   
-  // Only add SSL if enabled
+  // Always add SSL configuration for AWS RDS unless explicitly disabled
   if (useSSL) {
     config.ssl = {
-      rejectUnauthorized: false, // Allow self-signed certs
-      ca: process.env.SSL_CERT_PATH || undefined, // Use custom CA if provided
+      rejectUnauthorized: false // Allow self-signed certs for AWS RDS
     };
-    
-    // Log SSL configuration
-    console.log('SSL configuration enabled with rejectUnauthorized: false');
   }
   
   return config;
@@ -191,5 +191,92 @@ export async function testDbConnection() {
     };
   } finally {
     if (pool) await pool.end();
+  }
+}
+
+/**
+ * Get a Prisma client for a specific schema
+ * @param {string} schema - The schema name to connect to
+ * @returns {PrismaClient} A Prisma client connected to the specified schema
+ */
+export async function getPrismaClient(schema = 'public') {
+  try {
+    // Return cached client if it exists
+    if (prismaClients[schema]) {
+      console.log(`Using cached Prisma client for schema: ${schema}`);
+      return prismaClients[schema];
+    }
+    
+    console.log(`Creating new Prisma client for schema: ${schema}`);
+    
+    // Get appropriate database URL
+    const dbUrl = process.env.DATABASE_URL || 
+      `postgresql://dott_admin:${process.env.DB_PASSWORD || 'RRfXU6uPPUbBEg1JqGTJ'}@dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com:5432/dott_main?schema=${schema}`;
+    
+    console.log(`Using database URL: ${dbUrl.replace(/:[^:]*@/, ':***@')}`);
+    
+    // Create a new Prisma client with the schema connection
+    const prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: dbUrl
+        }
+      },
+      // Add logging in development
+      log: process.env.NODE_ENV === 'development' ? [
+        { level: 'query', emit: 'event' },
+        { level: 'error', emit: 'stdout' },
+        { level: 'warn', emit: 'stdout' },
+      ] : undefined,
+    });
+    
+    // Add query logging in development
+    if (process.env.NODE_ENV === 'development') {
+      prisma.$on('query', (e) => {
+        console.log(`[Prisma Query] ${e.query} (${e.duration}ms)`);
+      });
+    }
+    
+    // Cache the client
+    prismaClients[schema] = prisma;
+    
+    // Test the connection
+    try {
+      await prisma.$connect();
+      console.log(`Successfully connected to database schema: ${schema}`);
+      
+      // Execute a simple query to verify
+      const result = await prisma.$queryRaw`SELECT 1 as connection_test`;
+      console.log(`Prisma connection test successful: ${JSON.stringify(result)}`);
+      
+      return prisma;
+    } catch (error) {
+      console.error(`Failed to connect to database schema ${schema}:`, {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      
+      // Remove from cache if connection failed
+      delete prismaClients[schema];
+      throw error;
+    }
+  } catch (error) {
+    console.error(`Error setting up Prisma client for schema ${schema}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Clean up all Prisma clients on server shutdown
+ */
+export async function disconnectAllClients() {
+  for (const schema in prismaClients) {
+    try {
+      await prismaClients[schema].$disconnect();
+      console.log(`Disconnected from schema: ${schema}`);
+    } catch (error) {
+      console.error(`Error disconnecting from schema ${schema}:`, error);
+    }
   }
 }

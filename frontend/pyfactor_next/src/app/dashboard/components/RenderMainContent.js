@@ -401,7 +401,7 @@ function RenderMainContent({
               <TransactionForm />
             </div>
             <div style={{ display: selectedOption === 'Product' ? 'block' : 'none' }}>
-              <ProductManagement mode="create" />
+              <ProductManagement isNewProduct={true} mode="create" />
             </div>
             <div style={{ display: selectedOption === 'Service' ? 'block' : 'none' }}>
               <ServiceManagement mode="create" />
@@ -421,6 +421,24 @@ function RenderMainContent({
             <div style={{ display: selectedOption === 'Vendor' ? 'block' : 'none' }}>
               <VendorManagement mode="create" />
             </div>
+          </ContentWrapper>
+        </Suspense>
+      );
+    }
+
+    // Handle special create views
+    if (view && view.startsWith('create-')) {
+      return (
+        <Suspense fallback={<LoadingComponent />}>
+          <ContentWrapper>
+            {view === 'create-product' && <ProductManagement isNewProduct={true} mode="create" />}
+            {view === 'create-service' && <ServiceManagement mode="create" />}
+            {view === 'create-invoice' && <InvoiceManagement mode="create" />}
+            {view === 'create-bill' && <BillManagement mode="create" />}
+            {view === 'create-estimate' && <EstimateManagement mode="create" />}
+            {view === 'create-customer' && <CustomerList mode="create" onCreateCustomer={handleCreateCustomer} />}
+            {view === 'create-vendor' && <VendorManagement mode="create" />}
+            {view === 'create-transaction' && <TransactionForm />}
           </ContentWrapper>
         </Suspense>
       );

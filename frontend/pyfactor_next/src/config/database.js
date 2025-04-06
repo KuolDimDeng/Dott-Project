@@ -3,31 +3,22 @@ import { logger } from '@/utils/serverLogger';
 
 /**
  * Get database configuration based on the current environment
- * This function determines whether to use AWS RDS or a local database
+ * This function always returns AWS RDS configuration as specified by user preference
  * @returns {Object} Database configuration object
  */
 export const getDbConfig = () => {
-  if (process.env.NODE_ENV === 'production') {
-    // Production: Use AWS RDS credentials
-    return {
-      host: process.env.RDS_HOSTNAME,
-      port: process.env.RDS_PORT,
-      database: process.env.RDS_DB_NAME,
-      username: process.env.RDS_USERNAME,
-      password: process.env.RDS_PASSWORD,
-      ssl: { rejectUnauthorized: false }
-    };
-  } else {
-    // Development: Use local database or dev RDS instance
-    return {
-      host: process.env.DEV_DB_HOST || 'localhost',
-      port: process.env.DEV_DB_PORT || 5432,
-      database: process.env.DEV_DB_NAME || 'dev_db',
-      username: process.env.DEV_DB_USER || 'postgres',
-      password: process.env.DEV_DB_PASS || 'password',
-      ssl: process.env.DEV_DB_SSL === 'true' ? { rejectUnauthorized: false } : false
-    };
-  }
+  logger.info('Always using AWS RDS as specified by user preference');
+  
+  // Always use AWS RDS credentials with correct property names for pg module
+  return {
+    host: process.env.RDS_HOSTNAME || 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com',
+    port: process.env.RDS_PORT || 5432,
+    database: process.env.RDS_DB_NAME || 'dott_main',
+    user: process.env.RDS_USERNAME || 'dott_admin', // 'user' is the correct property for pg
+    username: process.env.RDS_USERNAME || 'dott_admin', // Keep for backward compatibility
+    password: process.env.RDS_PASSWORD || 'RRfXU6uPPUbBEg1JqGTJ',
+    ssl: { rejectUnauthorized: false }
+  };
 };
 
 /**

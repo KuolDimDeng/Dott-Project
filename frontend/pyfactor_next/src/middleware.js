@@ -66,8 +66,12 @@ export function isExcludedPath(pathname) {
   // Skip middleware for static files, api routes and other resources
   return pathname.match(/\.(ico|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot)$/) ||
          pathname.includes('/_next/') ||
-         pathname.includes('/static/') ||
-         pathname.includes('/api/auth/');
+         pathname.includes('/static/');
+}
+
+// Function to check if an API route is public
+function isPublicApiRoute(pathname) {
+  return PUBLIC_API_ROUTES.some(route => pathname === route);
 }
 
 // Check if a user has completed onboarding based on their cookies or session
@@ -205,303 +209,65 @@ function isApiRoute(pathname) {
   return pathname.startsWith('/api/');
 }
 
+// Add CORS headers to API responses
+function addCorsHeaders(response) {
+  response.headers.set('Access-Control-Allow-Credentials', 'true');
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT');
+  response.headers.set('Access-Control-Allow-Headers', 
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, X-Id-Token');
+  return response;
+}
+
 // Main middleware handler
 export function middleware(request) {
-  // Handle missing logo images
-  if (request.nextUrl.pathname.startsWith('/static/images/logos') &&
-      request.nextUrl.pathname.includes('logo')) {
-    // Use a default logo instead of 404
-    const defaultLogoUrl = new URL('/static/images/Pyfactor.png', request.url);
-    return NextResponse.redirect(defaultLogoUrl);
-  }
-  
-  // Skip middleware for API routes, static files, etc.
-  if (isExcludedPath(request.nextUrl.pathname)) {
-    return NextResponse.next();
-  }
-  
-  // Get the pathname from the URL
-  const { pathname } = request.nextUrl;
   const url = new URL(request.url);
+  const { pathname } = url;
   
-  // Check if this is a JavaScript file request
-  if (pathname.endsWith('.js') || pathname.includes('/_next/static/chunks/')) {
-    // For JavaScript files, ensure proper MIME type
-    const response = NextResponse.next();
-    response.headers.set('Content-Type', 'application/javascript; charset=utf-8');
-    return response;
-  }
-  
-  // Circuit breaker parameters
-  const noRedirect = url.searchParams.get('noredirect') === 'true'; 
-  const noLoop = url.searchParams.get('noloop') === 'true';
-  const fromParam = url.searchParams.get('from');
-  
-  // If circuit breaker parameters are present, bypass middleware checks
-  if (noRedirect || noLoop) {
-    console.log('[Middleware] Circuit breaker active, passing through', {
-      noRedirect,
-      noLoop,
-      pathname
-    });
+  // Skip middleware for excluded paths to save memory
+  if (isExcludedPath(pathname)) {
     return NextResponse.next();
   }
   
-  // DEVELOPMENT MODE HANDLING
-  // In development mode, apply tenant middleware for API routes
-  if (process.env.NODE_ENV !== 'production') {
-    // If this is an API route, apply tenant middleware
-    if (isApiRoute(pathname)) {
-      console.log(`[Middleware] Applying dev tenant middleware for API route: ${pathname}`);
-      try {
-        return applyDevTenantMiddleware(request);
-      } catch (error) {
-        console.error('[Middleware] Error applying dev tenant middleware:', error);
-        // Fall back to normal middleware processing
-      }
-    }
-    
-    // If in development mode and the bypassAuthValidation cookie is set, skip auth
-    if (isDevMode(request)) {
-      console.log('[Middleware] Development mode detected, bypassing authentication');
-      
-      // For dashboard route, ensure tenant ID is set
-      if (pathname.startsWith('/dashboard')) {
-        const { tenantId } = extractTenantId(request);
-        
-        // Force specific tenant ID for Kuol Deng direct access
-        const isKuolDeng = request.cookies.get('authUser')?.value === 'kuol.deng@example.com';
-        const forcedTenantId = isKuolDeng ? '18609ed2-1a46-4d50-bc4e-483d6e3405ff' : null;
-        
-        // If tenant ID not found, redirect to homepage to set up dev mode
-        if (!tenantId && !forcedTenantId) {
-          console.log('[Middleware] No tenant ID found in dev mode, redirecting to home');
-          return NextResponse.redirect(new URL('/', request.url));
-        }
-        
-        // Add tenant ID to header for RLS
-        const response = NextResponse.next();
-        response.headers.set('x-tenant-id', forcedTenantId || tenantId);
-        
-        return response;
-      }
-      
-      return NextResponse.next();
-    }
-  }
-  
-  // Skip redirect checks if coming from a known source to prevent loops
-  if (fromParam === 'middleware' || fromParam === 'signin' || fromParam === 'oauth') {
-    console.log('[Middleware] Request from known source, passing through', {
-      fromParam,
-      pathname
-    });
-    return NextResponse.next();
-  }
-  
-  // Check for public routes - allow public access without redirects
+  // Always allow access to public routes
   if (isPublicRoute(pathname)) {
     return NextResponse.next();
   }
 
-  // For API routes, check if they're public
-  if (pathname.startsWith('/api/')) {
-    if (PUBLIC_API_ROUTES.some(route => pathname.startsWith(route))) {
-      return NextResponse.next();
-    }
-  }
-
-  // Check for token expiration 
-  if (isTokenExpired(request)) {
-    // If token is expired, clear the expired flag and redirect to sign-in
-    console.log('[Middleware] Token expired, redirecting to sign in');
-    
-    const response = NextResponse.redirect(new URL('/auth/signin?session_expired=true', request.url));
-    
-    // Clear the expired flag cookie
-    response.cookies.set('tokenExpired', '', {
-      expires: new Date(0),
-      path: '/'
-    });
-    
-    return response;
-  }
-
-  // Check authentication for protected routes
-  const authToken = request.cookies.get('authToken')?.value;
-  const idToken = request.cookies.get('idToken')?.value;
-
-  if (!authToken && !idToken) {
-    console.log('[Middleware] No auth tokens found, redirecting to sign in');
-    const signInUrl = new URL('/auth/signin', request.url);
-    signInUrl.searchParams.set('from', 'middleware');
-    signInUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(signInUrl);
-  }
-
-  // Special handling for onboarding routes to allow progress continuation
-  if (pathname.startsWith('/onboarding')) {
-    // Get specific onboarding step from the URL
-    const pathStep = pathname.split('/')[2] || '';
-    if (!pathStep) {
-      // Redirect to first onboarding step if just /onboarding is accessed
-      const redirectUrl = new URL('/onboarding/business-info', request.url); 
-      redirectUrl.searchParams.set('from', 'middleware');
-      return NextResponse.redirect(redirectUrl);
-    }
-    
-    // Don't redirect on the complete page
-    if (pathStep === 'complete') {
-      return NextResponse.next();
-    }
-    
-    // Special case for business-info - allow access even without full auth
-    // This is the first step and we want to avoid redirect loops
-    if (pathStep === 'business-info') {
-      // Add onboarding status cookies to help client-side handling
-      const response = NextResponse.next();
-      response.cookies.set('onboardingInProgress', 'true', {
-        path: '/',
-        maxAge: 24 * 60 * 60, // 24 hours
-        httpOnly: false
-      });
-      response.cookies.set('onboardingStep', 'business-info', {
-        path: '/',
-        maxAge: 24 * 60 * 60, // 24 hours
-        httpOnly: false
-      });
-      return response;
-    }
-    
-    // Verify the user is on the right step
-    const currentStep = getCurrentOnboardingStep(request.cookies);
-    
-    // If trying to access a step ahead of current progress, redirect to current step
-    const stepIndex = ONBOARDING_STEPS.indexOf(pathStep);
-    const currentStepIndex = ONBOARDING_STEPS.indexOf(currentStep);
-    
-    // Only redirect if:
-    // 1. The step in the URL is valid
-    // 2. The current step determined from cookies is valid
-    // 3. The URL step is ahead of the current progress step
-    if (stepIndex !== -1 && currentStepIndex !== -1 && stepIndex > currentStepIndex) {
-      console.log('[Middleware] Redirecting to current onboarding step:', {
-        attemptedStep: pathStep,
-        currentStep,
-        currentStepIndex
-      });
-      
-      const redirectUrl = new URL(`/onboarding/${currentStep}`, request.url);
-      redirectUrl.searchParams.set('from', 'middleware');
-      return NextResponse.redirect(redirectUrl);
-    }
-    
-    // Otherwise, allow access to the requested step
-    return NextResponse.next();
-  }
-
-  // Strict onboarding check for dashboard and other protected routes
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/app')) {
-    // Get cookies for onboarding status checking
-    const onboardedStatus = request.cookies.get('onboardedStatus')?.value;
-    const setupCompleted = request.cookies.get('setupCompleted')?.value;
-    const userEmail = request.cookies.get('userEmail')?.value;
-    
-    // Extra safety check for known onboarded users
-    const knownOnboardedEmails = ['kuoldimdeng@outlook.com', 'dev@pyfactor.com'];
-    const isKnownUser = userEmail && knownOnboardedEmails.includes(userEmail.toLowerCase());
-    
-    console.log('[Middleware] Dashboard access check:', {
-      path: pathname,
-      onboardedStatus,
-      setupCompleted,
-      userEmail,
-      isKnownUser,
-      isComplete: isOnboardingComplete(request.cookies) || isKnownUser
-    });
-    
-    // Only allow access if onboarding is complete or it's a known user
-    if (!isOnboardingComplete(request.cookies) && !isKnownUser) {
-      console.log('[Middleware] Protected route access denied: onboarding not complete');
-      
-      // CRITICAL FIX: Check for inconsistent case in cookies
-      if (onboardedStatus?.toLowerCase() === 'complete' || setupCompleted?.toLowerCase() === 'true') {
-        console.log('[Middleware] Found case mismatch in cookies, fixing and allowing access');
-        
-        // Instead of redirecting, allow access but fix the cookies
-        const response = NextResponse.next();
-        
-        // Set cookies with proper case for consistency
-        response.cookies.set('onboardedStatus', 'complete', {
-          path: '/',
-          maxAge: 60 * 60 * 24 * 7, // 1 week
-          httpOnly: false,
-          sameSite: 'lax'
-        });
-        
-        response.cookies.set('setupCompleted', 'true', {
-          path: '/',
-          maxAge: 60 * 60 * 24 * 7, // 1 week
-          httpOnly: false,
-          sameSite: 'lax'
-        });
-        
-        response.cookies.set('onboardingStep', 'complete', {
-          path: '/',
-          maxAge: 60 * 60 * 24 * 7, // 1 week
-          httpOnly: false,
-          sameSite: 'lax'
-        });
-        
-        return response;
-      }
-      
-      // If it's a known onboarded user but for some reason the cookies aren't set properly,
-      // override the check and allow access
-      if (isKnownUser) {
-        console.log('[Middleware] Known onboarded user detected but cookies not set, fixing and allowing access');
-        
-        const response = NextResponse.next();
-        
-        // Set cookies for the known user
-        response.cookies.set('onboardedStatus', 'complete', {
-          path: '/',
-          maxAge: 60 * 60 * 24 * 7, // 1 week
-          httpOnly: false,
-          sameSite: 'lax'
-        });
-        
-        response.cookies.set('setupCompleted', 'true', {
-          path: '/',
-          maxAge: 60 * 60 * 24 * 7, // 1 week
-          httpOnly: false,
-          sameSite: 'lax'
-        });
-        
-        response.cookies.set('onboardingStep', 'complete', {
-          path: '/',
-          maxAge: 60 * 60 * 24 * 7, // 1 week
-          httpOnly: false,
-          sameSite: 'lax'
-        });
-        
-        return response;
-      }
-    }
-  }
-  
-  // Always pass through for static assets
-  if (pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff|woff2|ttf|eot)$/)) {
+  // Check for public API routes
+  if (pathname.startsWith('/api/') && isPublicApiRoute(pathname)) {
     return NextResponse.next();
   }
   
-  // Allow access to all other routes
+  // For authenticated routes, redirect to login if not logged in
+  // Simple check for presence of session cookie
+  const accessToken = request.cookies.get('accessToken')?.value;
+  if (!accessToken) {
+    // Redirect to signin page
+    const signinUrl = new URL('/auth/signin', request.url);
+    signinUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(signinUrl);
+  }
+
+  // Apply dev tenant middleware if needed
+  const devResponse = applyDevTenantMiddleware(request);
+  if (devResponse) {
+    return devResponse;
+  }
+  
   return NextResponse.next();
 }
 
+// Configure matcher to include all paths
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|static|.*\\.svg|.*\\.png).*)',
-    '/api/:path*'
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],
 };

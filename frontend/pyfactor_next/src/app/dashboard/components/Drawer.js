@@ -6,11 +6,15 @@ const iconOnlyWidth = 60; // Width when showing only icons
 
 const Drawer = ({
   drawerOpen,
+  open,
   handleDrawerToggle,
+  onClose,
+  handleDrawerItemClick,
+  width = drawerWidth,
   handleShowInvoiceBuilder,
   handleCloseInvoiceBuilder,
   handleShowCreateOptions = (option) => console.log(`Create option selected: ${option}`),
-  handleShowCreateMenu,
+  handleShowCreateMenu = () => console.log('Create menu should be shown'),
   handleShowTransactionForm,
   handleReportClick,
   handleBankingClick,
@@ -27,12 +31,49 @@ const Drawer = ({
   handleInventoryClick,
   handleHomeClick,
   handleCRMClick,
+  userData,
+  resetAllStates,
+  handleAddTransaction,
+  handleOpenFaqDialog,
+  handleOpenKnowledgebaseDialog,
+  onProfileDetailsClick,
+  darkMode,
+  handleDrawerOpen,
+  handleDrawerClose
 }) => {
+  // Determine if drawer is open based on either drawerOpen or open prop
+  const isOpen = drawerOpen !== undefined ? drawerOpen : (open !== undefined ? open : false);
+  
+  // Determine drawer toggle handler using either handleDrawerToggle or onClose
+  const toggleDrawer = handleDrawerToggle || onClose || (() => {});
+  
+  // For handleDrawerItemClick compatibility
+  const handleItemClickWrapper = (callback, param) => {
+    if (handleDrawerItemClick && typeof callback === 'string') {
+      // If using the new API with handleDrawerItemClick
+      return () => handleDrawerItemClick(callback);
+    } else {
+      // Use the traditional approach
+      return () => {
+        if (param !== undefined) {
+          callback(param);
+        } else if (callback) {
+          callback();
+        }
+        
+        // Close drawer on mobile
+        if (window.innerWidth < 640) {
+          toggleDrawer();
+        }
+      };
+    }
+  };
+
   // Add effect to handle ESC key to close drawer on mobile
   useEffect(() => {
     const handleEscKey = (event) => {
-      if (event.key === 'Escape' && drawerOpen) {
-        handleDrawerToggle();
+      if (event.key === 'Escape' && isOpen) {
+        toggleDrawer();
       }
     };
     
@@ -43,36 +84,60 @@ const Drawer = ({
     return () => {
       window.removeEventListener('keydown', handleEscKey);
     };
-  }, [drawerOpen, handleDrawerToggle]);
+  }, [isOpen, toggleDrawer]);
+  
+  // Add effect to handle drawer state changes
+  useEffect(() => {
+    // Dispatch a custom event when drawer state changes
+    // This will allow other components to react to drawer changes
+    const event = new CustomEvent('drawerStateChanged', { 
+      detail: { isOpen } 
+    });
+    window.dispatchEvent(event);
+    
+    // Handle resize events
+    const handleResize = () => {
+      // Re-dispatch the event when window is resized
+      window.dispatchEvent(new CustomEvent('drawerStateChanged', { 
+        detail: { isOpen } 
+      }));
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isOpen]);
   
   return (
     <>
       {/* Mobile backdrop when drawer is fully open */}
-      {drawerOpen && (
+      {isOpen && (
         <div 
           className="fixed inset-0 bg-black/30 z-40 sm:hidden"
-          onClick={handleDrawerToggle}
+          onClick={toggleDrawer}
           aria-label="Close menu overlay"
         />
       )}
 
       {/* Drawer component */}
       <aside 
-        key={`drawer-${drawerOpen ? 'open' : 'closed'}`} 
+        key={`drawer-${isOpen ? 'open' : 'closed'}`} 
         className={`
-          fixed top-0 left-0 z-40
-          ${drawerOpen ? 'w-[260px]' : 'w-[60px]'}
-          h-full box-border
+          fixed top-16 left-0 z-30
+          ${isOpen ? 'w-[260px]' : 'w-[60px]'}
+          h-[calc(100vh-64px)] box-border
           bg-white shadow-md
           overflow-x-hidden
           transition-all duration-300 ease-in-out
         `}
       >
         {/* Close button for mobile */}
-        {drawerOpen && (
+        {isOpen && (
           <button
             className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 sm:hidden"
-            onClick={handleDrawerToggle}
+            onClick={toggleDrawer}
             aria-label="Close menu"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -82,10 +147,10 @@ const Drawer = ({
         )}
         
         {/* Toggle button for icon-only mode */}
-        {!drawerOpen && (
+        {!isOpen && (
           <button
-            className="fixed top-3 left-3 p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 sm:hidden"
-            onClick={handleDrawerToggle}
+            className="fixed top-20 left-3 p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 sm:hidden"
+            onClick={toggleDrawer}
             aria-label="Expand menu"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -96,7 +161,7 @@ const Drawer = ({
         
         <div 
           className="
-            mt-[60px] h-[calc(100vh-60px)]
+            h-full
             overflow-y-auto overflow-x-hidden
             scrollbar scrollbar-w-1 scrollbar-thumb-[#d1d5db] scrollbar-track-[#f9fafb]
             hover:scrollbar-thumb-[#9ca3af]
@@ -123,8 +188,9 @@ const Drawer = ({
             handleInventoryClick={handleInventoryClick}
             handleHomeClick={handleHomeClick}
             handleCRMClick={handleCRMClick}
-            handleDrawerClose={handleDrawerToggle}
-            isIconOnly={!drawerOpen}
+            handleDrawerClose={toggleDrawer}
+            isIconOnly={!isOpen}
+            handleItemClick={handleItemClickWrapper}
           />
         </div>
       </aside>

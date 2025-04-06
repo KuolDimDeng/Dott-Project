@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
+import SubscriptionPopup from '../../dashboard/components/SubscriptionPopup';
 
 const MyAccount = ({ userData }) => {
   const [selectedTab, setSelectedTab] = useState(0);
+  const [showSubscriptionPopup, setShowSubscriptionPopup] = useState(false);
   const router = useRouter();
   
   const handleTabChange = (newValue) => {
@@ -11,7 +13,7 @@ const MyAccount = ({ userData }) => {
   };
   
   const handleUpgradeClick = () => {
-    router.push('/onboarding/subscription');
+    setShowSubscriptionPopup(true);
   };
 
   const getPlanColor = (planId) => {
@@ -69,10 +71,8 @@ const MyAccount = ({ userData }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <p className="text-sm text-gray-500 font-medium">
-                Business Name
-              </p>
-              <p className="text-gray-800">{userData?.business_name || 'My Business'}</p>
+              <h2 className="font-medium mb-1">Business Name</h2>
+              <p className="text-gray-800">{userData?.business_name || ''}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500 font-medium">
@@ -374,53 +374,61 @@ const MyAccount = ({ userData }) => {
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        My Account
-      </h1>
-      
-      <div className="mb-6 border-b border-gray-200">
-        <nav className="flex -mb-px">
-          <button
-            onClick={() => handleTabChange(0)}
-            className={`flex items-center mr-8 py-4 px-1 border-b-2 font-medium text-sm ${
-              selectedTab === 0
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <PersonIcon />
-            <span className="ml-2">Account Info</span>
-          </button>
-          <button
-            onClick={() => handleTabChange(1)}
-            className={`flex items-center mr-8 py-4 px-1 border-b-2 font-medium text-sm ${
-              selectedTab === 1
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <CreditCardIcon />
-            <span className="ml-2">Subscription</span>
-          </button>
-          <button
-            onClick={() => handleTabChange(2)}
-            className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
-              selectedTab === 2
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <HistoryIcon />
-            <span className="ml-2">Billing History</span>
-          </button>
-        </nav>
+    <>
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">
+          My Account
+        </h1>
+        
+        <div className="mb-6 border-b border-gray-200">
+          <nav className="flex -mb-px">
+            <button
+              onClick={() => handleTabChange(0)}
+              className={`flex items-center mr-8 py-4 px-1 border-b-2 font-medium text-sm ${
+                selectedTab === 0
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <PersonIcon />
+              <span className="ml-2">Account Info</span>
+            </button>
+            <button
+              onClick={() => handleTabChange(1)}
+              className={`flex items-center mr-8 py-4 px-1 border-b-2 font-medium text-sm ${
+                selectedTab === 1
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <CreditCardIcon />
+              <span className="ml-2">Subscription</span>
+            </button>
+            <button
+              onClick={() => handleTabChange(2)}
+              className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
+                selectedTab === 2
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <HistoryIcon />
+              <span className="ml-2">Billing History</span>
+            </button>
+          </nav>
+        </div>
+        
+        {selectedTab === 0 && renderAccountInfo()}
+        {selectedTab === 1 && renderSubscriptionManagement()}
+        {selectedTab === 2 && renderBillingHistory()}
       </div>
       
-      {selectedTab === 0 && renderAccountInfo()}
-      {selectedTab === 1 && renderSubscriptionManagement()}
-      {selectedTab === 2 && renderBillingHistory()}
-    </div>
+      {/* Add the subscription popup */}
+      <SubscriptionPopup 
+        open={showSubscriptionPopup} 
+        onClose={() => setShowSubscriptionPopup(false)} 
+      />
+    </>
   );
 };
 

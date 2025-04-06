@@ -258,7 +258,7 @@ export function useAuth() {
         'custom:attrversion': '1.0.0',
         'custom:businesscountry': userData.country || 'US',
         'custom:businessid': '', // Will be set after confirmation
-        'custom:businessname': userData.businessName || 'My Business',
+        'custom:businessname': userData.businessName || 'Default Business',
         'custom:businesstype': userData.businessType || 'Other',
         'custom:datefounded': timestamp.split('T')[0], // Just the date part
         'custom:legalstructure': userData.legalStructure || 'Sole Proprietorship',
