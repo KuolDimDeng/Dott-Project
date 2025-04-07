@@ -4,6 +4,20 @@
 import { logger } from './logger';
 import axiosInstance from './axiosInstance';
 
+// Request cache for throttling duplicate requests
+const requestCache = new Map();
+const REQUEST_CACHE_TTL = 60000; // 1 minute cache time
+const TENANT_ENDPOINT_CACHE_TTL = 300000; // 5 minutes for tenant endpoints
+
+// Add list of endpoints that should use longer cache TTL
+const LONG_CACHE_ENDPOINTS = [
+  '/api/tenant/list',
+  '/api/tenant/info',
+  '/api/services',
+  '/api/products',
+  '/api/customers'
+];
+
 /**
  * Gets standardized headers for API requests
  * Handles development mode and authentication bypassing
@@ -29,6 +43,31 @@ export const getApiHeaders = () => {
   }
   
   return headers;
+};
+
+/**
+ * Get a cached response for a request if available
+ * @param {string} cacheKey - The cache key for the request
+ * @returns {Object|null} - The cached response or null
+ */
+const getCachedResponse = (cacheKey) => {
+  if (!cacheKey) return null;
+  
+  const cached = requestCache.get(cacheKey);
+  if (!cached) return null;
+  
+  const { data, timestamp, ttl } = cached;
+  const now = Date.now();
+  
+  // Check if the cache is still valid
+  if (now - timestamp < ttl) {
+    logger.debug(`[ApiRequest] Using cached response for ${cacheKey}`);
+    return data;
+  }
+  
+  // Cache expired, remove it
+  requestCache.delete(cacheKey);
+  return null;
 };
 
 /**
@@ -74,19 +113,69 @@ export const apiRequest = async (method, endpoint, data = null, params = {}) => 
       params.tenantId = tenantId;
     }
     
+    // For GET requests, check the cache first
+    if (method.toLowerCase() === 'get') {
+      // Create a cache key based on endpoint and params
+      const cacheKey = `${endpoint}:${JSON.stringify(params)}`;
+      
+      // Determine TTL based on endpoint
+      const isTenantEndpoint = LONG_CACHE_ENDPOINTS.some(e => endpoint.includes(e));
+      const cacheTTL = isTenantEndpoint ? TENANT_ENDPOINT_CACHE_TTL : REQUEST_CACHE_TTL;
+      
+      // Check if we have a cached response
+      const cachedResponse = getCachedResponse(cacheKey);
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      
+      // No cache, proceed with the request
+      const config = {
+        method,
+        url: endpoint,
+        ...(Object.keys(params).length > 0 && { params }),
+        timeout: 30000
+      };
+      
+      console.log(`[ApiRequest] ${method} ${endpoint} with schema: ${params.schema}`);
+      const response = await axiosInstance(config);
+      
+      // Cache the response for future requests
+      requestCache.set(cacheKey, {
+        data: response.data,
+        timestamp: Date.now(),
+        ttl: cacheTTL
+      });
+      
+      return response.data;
+    }
+    
+    // For non-GET requests, proceed normally without caching
     const config = {
       method,
       url: endpoint,
       ...(data && { data }),
-      ...(Object.keys(params).length > 0 && { params })
+      ...(Object.keys(params).length > 0 && { params }),
+      timeout: 30000
     };
-    
-    // Add request timeout (30 seconds)
-    config.timeout = 30000;
     
     try {
       console.log(`[ApiRequest] ${method} ${endpoint} with schema: ${params.schema}`);
       const response = await axiosInstance(config);
+      
+      // For mutation operations, invalidate related caches
+      if (method.toLowerCase() !== 'get') {
+        // Extract base endpoint without ID
+        const baseEndpoint = endpoint.replace(/\/[^\/]+$/, '');
+        
+        // Invalidate all cached requests for this endpoint
+        for (const [key, _] of requestCache.entries()) {
+          if (key.startsWith(baseEndpoint)) {
+            requestCache.delete(key);
+            logger.debug(`[ApiRequest] Invalidated cache for ${key}`);
+          }
+        }
+      }
+      
       return response.data;
     } catch (apiError) {
       console.log(`[ApiRequest] Error details:`, {

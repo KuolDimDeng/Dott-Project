@@ -17,14 +17,17 @@ import {
 /**
  * ProductForm - A clean form using React's controlled components
  * instead of direct DOM manipulation
+ * @param {function} onSubmit - Function to handle form submission
+ * @param {string} mode - 'create' or 'edit' mode
  */
-export default function ProductForm({ onSubmit }) {
+export default function ProductForm({ onSubmit, mode = 'create' }) {
   // Use React state for form values instead of refs
   const [formState, setFormState] = useState({
     name: '',
     price: '',
     stock_quantity: '',
-    description: ''
+    description: '',
+    sku: ''
   });
   
   // Form submission and UI states
@@ -60,22 +63,32 @@ export default function ProductForm({ onSubmit }) {
         name: formState.name.trim(),
         price: parseFloat(formState.price) || 0,
         stock_quantity: parseInt(formState.stock_quantity) || 0,
-        description: formState.description.trim()
+        description: formState.description.trim(),
+        sku: formState.sku?.trim() || `SKU-${Date.now().toString().substring(9)}`,
       };
+      
+      // Check if onSubmit is provided
+      if (typeof onSubmit !== 'function') {
+        throw new Error('Form submission handler not provided');
+      }
       
       // Call the submit handler
       await onSubmit(productData);
       
       // Show success and reset form
-      setSuccessMessage('Product created successfully!');
-      setFormState({
-        name: '',
-        price: '',
-        stock_quantity: '',
-        description: ''
-      });
+      setSuccessMessage(`Product ${mode === 'create' ? 'created' : 'updated'} successfully!`);
+      
+      if (mode === 'create') {
+        setFormState({
+          name: '',
+          price: '',
+          stock_quantity: '',
+          description: '',
+          sku: ''
+        });
+      }
     } catch (error) {
-      setError(error.message || 'An error occurred while creating the product');
+      setError(error.message || `An error occurred while ${mode === 'create' ? 'creating' : 'updating'} the product`);
     } finally {
       setIsSubmitting(false);
     }
@@ -171,6 +184,19 @@ export default function ProductForm({ onSubmit }) {
                 value={formState.description}
                 onChange={handleChange}
                 placeholder="Enter product description"
+                disabled={isSubmitting}
+                className="relative z-2"
+              />
+            </div>
+            
+            <div className="col-span-1">
+              <TextField
+                fullWidth
+                label="SKU"
+                name="sku"
+                value={formState.sku}
+                onChange={handleChange}
+                placeholder="Enter product SKU"
                 disabled={isSubmitting}
                 className="relative z-2"
               />

@@ -21,6 +21,9 @@ import { appendLanguageParam, getLanguageQueryString } from '@/utils/languageUti
 import { useTenantInitialization } from '@/hooks/useTenantInitialization';
 import { TextField, Button, CircularProgress, Alert, Checkbox } from '@/components/ui/TailwindComponents';
 import { setTenantIdCookies } from '@/utils/tenantUtils';
+import { ensureAmplifyConfigured, authenticateUser, getAuthSessionWithRetries } from '@/utils/authUtils';
+import { Auth } from 'aws-amplify';
+import jwtDecode from 'jwt-decode';
 
 export default function SignInForm({ propEmail, setParentEmail, mode, setMode, redirectPath, newAccount, plan }) {
   const [email, setEmail] = useState(propEmail || '');
@@ -115,52 +118,29 @@ const [state, dispatch] = useReducer(reducer, initialState);
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        // Check if we came from email verification
-        const isFromVerification = localStorage.getItem('justVerified') === 'true' || 
-          document.referrer.includes('/verify-email') ||
-          (new URLSearchParams(window.location.search)).get('status') === 'confirmed';
+        // Use our improved function with retries
+        const session = await getAuthSessionWithRetries();
         
-        if (isFromVerification) {
-          // If we just completed verification, we want to show the form
-          // so the user can sign in with their credentials
-          logger.debug('[SignInForm] Coming from verification, showing sign-in form');
-          setIsAuthenticated(false);
-          // Clear the verification flag
-          localStorage.removeItem('justVerified');
-          return;
-        }
-
-        // Otherwise check normal auth status
-        const session = await fetchAuthSession();
-        
-        // Also check for token validity - ensure not just partial auth state
-        let isValidSession = false;
-        if (session?.tokens?.accessToken) {
+        if (session?.tokens?.idToken) {
           try {
-            // Try to get user attributes as a token validity check
-            await fetchUserAttributes();
-            isValidSession = true;
-          } catch (attrError) {
+            const userAttributes = await Auth.fetchUserAttributes();
+            // User is already signed in, redirect to dashboard
+            logger.debug('[SignInForm] Valid session found on sign-in page, signing out for clean experience');
+            
+            // Sign out to provide a clean experience
+            await handleSignOut();
+          } catch (attributeError) {
+            // Token exists but might be invalid
             logger.debug('[SignInForm] Token exists but cannot fetch attributes, may be invalid');
-            isValidSession = false;
+            await handleSignOut();
           }
-        }
-        
-        // If we have a valid session but the user is on the sign-in page,
-        // automatically sign them out to ensure a clean sign-in experience
-        if (isValidSession) {
-          logger.debug('[SignInForm] Valid session found on sign-in page, signing out for clean experience');
-          await signOut();
-          setIsAuthenticated(false);
-        } else {
-          setIsAuthenticated(false);
         }
       } catch (error) {
         logger.debug('[SignInForm] Error checking auth status:', error);
-        setIsAuthenticated(false);
       }
     };
     
+    // Check auth status when component mounts
     checkAuthStatus();
   }, []);
 
@@ -583,15 +563,15 @@ const [state, dispatch] = useReducer(reducer, initialState);
       logger.debug('[SignInForm] Attempting sign in with username:', email);
       
       // Simplified sign-in call using the Auth hook
-      const result = await signIn({ username: email, password });
+      const result = await authenticateUser(email.trim().toLowerCase(), password);
       
       logger.debug('[SignInForm] Sign-in result:', { 
-        isSignedIn: result.isSignedIn, 
-        nextStep: result.nextStep,
+        hasAuthResponse: !!result,
+        nextStep: result?.nextStep?.signInStep || 'N/A',
         email: email // Add email for debugging
       });
       
-      if (result.isSignedIn) {
+      if (result) {
         setError('Sign in successful!');
         
         // CRITICAL REDIRECT OVERRIDE: For specific problematic users, skip all checks
@@ -820,6 +800,79 @@ const [state, dispatch] = useReducer(reducer, initialState);
         // Default redirect if attributes can't be fetched
         router.push('/dashboard');
       }
+    }
+  };
+
+  const handleSignIn = async () => {
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      // Ensure Amplify is configured properly first
+      ensureAmplifyConfigured();
+      
+      // Use our utility for more reliable authentication
+      const { isSignedIn, nextStep } = await authenticateUser(email, password);
+      
+      if (isSignedIn) {
+        logger.debug('[SignInForm] Sign-in successful!');
+        
+        // Get the auth session to extract the token
+        const session = await getAuthSessionWithRetries();
+        
+        if (session?.tokens?.idToken) {
+          // Set tenant cookies based on token claims
+          const idToken = session.tokens.idToken;
+          const decodedToken = jwtDecode(idToken.toString()); 
+          
+          // Extract user and tenant information
+          const userId = decodedToken.sub;
+          let tenantId = decodedToken['custom:tenant_id'] || decodedToken.tenant_id;
+          
+          // Set cookies and local storage for tenant information
+          setTenantIdCookies(tenantId);
+          
+          // Redirect to the dashboard or specified redirect path
+          const redirectTo = redirectPath || '/dashboard';
+          logger.debug(`[SignInForm] Redirecting to: ${redirectTo}`);
+          router.push(redirectTo);
+        } else {
+          setError('Unable to retrieve user token. Please try again.');
+          logger.error('[SignInForm] No tokens found in session after successful sign-in');
+        }
+      } else if (nextStep && nextStep.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+        // Handle password change requirement
+        setError('You need to change your password. Redirecting...');
+        router.push(`/auth/reset-password?email=${encodeURIComponent(email)}&mode=force`);
+      } else if (nextStep) {
+        // Handle other authentication challenges
+        setError(`Additional verification required: ${nextStep.signInStep}`);
+        logger.debug('[SignInForm] Authentication requires additional steps:', nextStep);
+      } else {
+        setError('Sign-in failed. Please check your credentials and try again.');
+        logger.error('[SignInForm] Sign-in failed without error');
+      }
+    } catch (error) {
+      logger.error('[SignInForm] Sign-in error:', error);
+      
+      // Handle specific error types
+      if (error.name === 'UserNotConfirmedException') {
+        setError('Please verify your email before signing in.');
+        // Save email to localStorage for verification flow
+        localStorage.setItem('verificationEmail', email);
+        router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
+      } else if (error.name === 'NotAuthorizedException') {
+        setError('Incorrect username or password.');
+      } else if (error.name === 'UserNotFoundException') {
+        setError('User does not exist.');
+      } else if (error.name === 'PasswordResetRequiredException') {
+        setError('Password reset required. Redirecting...');
+        router.push(`/auth/reset-password?email=${encodeURIComponent(email)}`);
+      } else {
+        setError('An error occurred during sign-in. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 

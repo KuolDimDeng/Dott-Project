@@ -8,6 +8,9 @@ import {
   extractTenantId 
 } from './middleware/dev-tenant-middleware';
 
+// Import tenant validation middleware
+import { tenantValidationMiddleware } from './middleware/tenant-validator';
+
 // Define public routes that don't require authentication
 const PUBLIC_ROUTES = [
   '/',
@@ -219,55 +222,113 @@ function addCorsHeaders(response) {
   return response;
 }
 
-// Main middleware handler
-export function middleware(request) {
+// Main middleware function
+export async function middleware(request) {
   const url = new URL(request.url);
-  const { pathname } = url;
+  const pathname = url.pathname;
+  const cookies = request.cookies;
   
-  // Skip middleware for excluded paths to save memory
+  // Skip middleware for excluded paths
   if (isExcludedPath(pathname)) {
     return NextResponse.next();
   }
   
-  // Always allow access to public routes
-  if (isPublicRoute(pathname)) {
-    return NextResponse.next();
-  }
-
-  // Check for public API routes
-  if (pathname.startsWith('/api/') && isPublicApiRoute(pathname)) {
-    return NextResponse.next();
+  // Apply development tenant middleware if in dev mode
+  if (isDevMode(request)) {
+    const devTenantResponse = applyDevTenantMiddleware(request);
+    if (devTenantResponse) {
+      return devTenantResponse;
+    }
   }
   
-  // For authenticated routes, redirect to login if not logged in
-  // Simple check for presence of session cookie
-  const accessToken = request.cookies.get('accessToken')?.value;
-  if (!accessToken) {
-    // Redirect to signin page
-    const signinUrl = new URL('/auth/signin', request.url);
-    signinUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(signinUrl);
-  }
-
-  // Apply dev tenant middleware if needed
-  const devResponse = applyDevTenantMiddleware(request);
-  if (devResponse) {
-    return devResponse;
+  // Add CORS headers for API routes
+  if (isApiRoute(pathname)) {
+    const response = NextResponse.next();
+    addCorsHeaders(response);
+    return response;
   }
   
-  return NextResponse.next();
+  // Check tenant validation first - if there's a tenant in the URL,
+  // validate that the user has access to it
+  const tenantResponse = await tenantValidationMiddleware(request);
+  if (tenantResponse) {
+    return tenantResponse;
+  }
+  
+  // Continue with the rest of the middleware logic
+  
+  // Create a new response or use the original
+  const response = NextResponse.next();
+  
+  // Add security headers to all responses
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  
+  // Skip tenant processing for public routes and assets
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/public') ||
+    pathname.startsWith('/favicon') ||
+    pathname.includes('.') // Static files like .js, .css, etc.
+  ) {
+    return response;
+  }
+  
+  // Extract tenant ID from URL path for tenant-specific routes
+  const tenantMatch = pathname.match(/^\/tenant\/([^\/]+)/);
+  let tenantId = tenantMatch ? tenantMatch[1] : null;
+  
+  // If no tenant in URL, try to get from cookies
+  if (!tenantId) {
+    const tenantCookie = request.cookies.get('tenantId');
+    if (tenantCookie) {
+      tenantId = tenantCookie.value;
+    }
+  }
+  
+  // Handle API routes - add tenant headers if available
+  if (pathname.startsWith('/api') && tenantId) {
+    // For API routes, set tenant headers
+    response.headers.set('x-tenant-id', tenantId);
+    
+    // Convert to schema name format for database queries
+    const schemaName = `tenant_${tenantId.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
+    response.headers.set('x-schema-name', schemaName);
+    
+    // For backward compatibility
+    response.headers.set('x-business-id', tenantId);
+  }
+  
+  // For non-API routes that should have tenant context but don't
+  // Redirect to tenant-specific route if we have a tenant ID from cookie
+  if (
+    !pathname.startsWith('/api') && 
+    !pathname.startsWith('/tenant/') && 
+    !pathname.startsWith('/auth') && 
+    !pathname.startsWith('/login') &&
+    !pathname.startsWith('/register') &&
+    tenantId && 
+    pathname !== '/'
+  ) {
+    // Redirect to tenant-specific route
+    return NextResponse.redirect(
+      new URL(`/tenant/${tenantId}${pathname}`, request.url)
+    );
+  }
+  
+  return response;
 }
 
-// Configure matcher to include all paths
+/**
+ * Configuration for which routes should trigger the middleware
+ */
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+    // Match all API routes
+    '/api/:path*',
+    // Match all page routes
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };

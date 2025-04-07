@@ -29,7 +29,7 @@ export const resetPreviouslyOnboarded = () => {
   }
 };
 
-export default function AuthButton({ theme = 'light' }) {
+export default function AuthButton({ size = 'medium', variant = 'primary' }) {
   const router = useRouter();
   const { user, loading, error } = useSession();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -212,30 +212,29 @@ export default function AuthButton({ theme = 'light' }) {
     buttonText: displayText
   });
 
+  // Tailwind CSS classes
   const sizeClasses = {
     small: 'px-3 py-1 text-xs',
     medium: 'px-4 py-2 text-sm',
-    large: 'px-5 py-2.5 text-base',
-    light: 'px-4 py-2 text-sm'
+    large: 'px-5 py-2.5 text-base'
   };
 
   const variantClasses = {
-    primary: 'bg-primary-main hover:bg-primary-dark text-white',
-    secondary: 'bg-secondary-main hover:bg-secondary-dark text-white',
-    outlined: 'bg-transparent border border-primary-main text-primary-main hover:bg-primary-main/5',
-    text: 'bg-transparent hover:bg-primary-light/10 text-primary-main',
-    light: 'bg-blue-600 hover:bg-blue-700 text-white'
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white',
+    secondary: 'bg-gray-600 hover:bg-gray-700 text-white',
+    outlined: 'bg-transparent border border-blue-600 text-blue-600 hover:bg-blue-50',
+    text: 'bg-transparent hover:bg-gray-100 text-blue-600'
   };
 
   return (
     <button
       onClick={handleButtonClick}
       className={`
-        ${sizeClasses[theme]}
-        ${variantClasses[theme]}
-        ${theme === 'fullWidth' ? 'w-full' : 'min-w-[200px]'}
+        ${sizeClasses[size]}
+        ${variantClasses[variant]}
         font-semibold uppercase tracking-wider rounded-md transition-colors duration-200
-        focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-50
+        focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50
+        min-w-[120px] md:min-w-[150px]
       `}
     >
       {displayText}

@@ -10,6 +10,39 @@ const LOADING_TIMEOUT = 10000; // 10 seconds instead of 5
 const MAX_REFRESH_FAILURES = 5;
 // Cooldown period after exceeding max failures (milliseconds)
 const REFRESH_COOLDOWN = 60000; // 1 minute
+// Log throttling for session messages
+const LOG_THROTTLE_INTERVAL = 10000; // 10 seconds
+// Global session log cache to prevent duplicate logs
+const sessionLogCache = new Map();
+
+/**
+ * Throttle session-related logs
+ * @param {string} message - Log message
+ * @param {number} interval - Throttle interval in ms
+ * @returns {boolean} - Whether to log this message
+ */
+const shouldLogSessionMessage = (message, interval = LOG_THROTTLE_INTERVAL) => {
+  const now = Date.now();
+  const lastLog = sessionLogCache.get(message);
+  
+  if (!lastLog || (now - lastLog) > interval) {
+    sessionLogCache.set(message, now);
+    
+    // Clean up old messages occasionally
+    if (sessionLogCache.size > 50) {
+      const expiryTime = now - interval;
+      for (const [key, time] of sessionLogCache.entries()) {
+        if (time < expiryTime) {
+          sessionLogCache.delete(key);
+        }
+      }
+    }
+    
+    return true;
+  }
+  
+  return false;
+};
 
 // Parse user attributes from cookies for better resilience
 const getUserAttributesFromCookies = () => {
@@ -53,6 +86,7 @@ export function useSession() {
   const loadingTimeoutRef = useRef(null);
   const refreshFailuresRef = useRef(0);
   const lastRefreshAttemptRef = useRef(0);
+  const refreshDebugCountRef = useRef(0);
   
   // Function to refresh the session
   const refreshSession = useCallback(async () => {
@@ -65,12 +99,17 @@ export function useSession() {
     // This prevents users from getting stuck in a loading state if auth fails
     loadingTimeoutRef.current = setTimeout(() => {
       setIsLoading(false);
-      logger.warn('[useSession] Loading timeout reached, forcing loading state to false');
+      
+      if (shouldLogSessionMessage('[useSession] Loading timeout reached')) {
+        logger.warn('[useSession] Loading timeout reached, forcing loading state to false');
+      }
       
       // Check if we can use cookie fallback
       const cookieAttributes = getUserAttributesFromCookies();
       if (cookieAttributes?.hasSession) {
-        logger.info('[useSession] Session loading timed out, but hasSession cookie found. Using cookie fallback.');
+        if (shouldLogSessionMessage('[useSession] Using cookie fallback after timeout')) {
+          logger.info('[useSession] Session loading timed out, but hasSession cookie found. Using cookie fallback.');
+        }
         setSession({ userAttributes: cookieAttributes });
       }
     }, LOADING_TIMEOUT);
@@ -80,7 +119,9 @@ export function useSession() {
     if (refreshFailuresRef.current >= MAX_REFRESH_FAILURES) {
       const timeSinceLastAttempt = now - lastRefreshAttemptRef.current;
       if (timeSinceLastAttempt < REFRESH_COOLDOWN) {
-        logger.warn(`[useSession] In cooldown period (${Math.round((REFRESH_COOLDOWN - timeSinceLastAttempt)/1000)}s remaining). Using cached data.`);
+        if (shouldLogSessionMessage('[useSession] In cooldown period')) {
+          logger.warn(`[useSession] In cooldown period (${Math.round((REFRESH_COOLDOWN - timeSinceLastAttempt)/1000)}s remaining). Using cached data.`);
+        }
         setIsLoading(false);
         return session;
       } else {
@@ -162,7 +203,13 @@ export function useSession() {
     
     // Prevent duplicate refresh attempts - both local and global
     if (refreshInProgressRef.current || (typeof window !== 'undefined' && window.__tokenRefreshInProgress)) {
-      logger.debug('[useSession] Refresh already in progress, skipping');
+      // Only log this message occasionally to avoid console spam
+      refreshDebugCountRef.current++;
+      
+      if (refreshDebugCountRef.current % 5 === 0 || shouldLogSessionMessage('[useSession] Refresh already in progress')) {
+        logger.debug('[useSession] Refresh already in progress, skipping');
+      }
+      
       return session;
     }
     
@@ -170,7 +217,9 @@ export function useSession() {
     if (typeof window !== 'undefined' && window.__tokenRefreshCooldown) {
       const now = Date.now();
       if (now < window.__tokenRefreshCooldown) {
-        logger.warn('[useSession] In global cooldown period, skipping refresh');
+        if (shouldLogSessionMessage('[useSession] In global cooldown period')) {
+          logger.warn('[useSession] In global cooldown period, skipping refresh');
+        }
         setIsLoading(false);
         
         // Even in cooldown, check if we have cookies we can use
@@ -190,7 +239,11 @@ export function useSession() {
         window.__tokenRefreshInProgress = true;
       }
       
-      logger.debug('[useSession] Refreshing session');
+      // Only log occasionally to avoid console spam
+      if (shouldLogSessionMessage('[useSession] Refreshing session')) {
+        logger.debug('[useSession] Refreshing session');
+      }
+      
       setIsLoading(true);
       
       // Try to get the cached session first
@@ -212,7 +265,9 @@ export function useSession() {
             throw tokenError;
           }
           
-          logger.debug('[useSession] Session fetched successfully');
+          if (shouldLogSessionMessage('[useSession] Session fetched successfully')) {
+            logger.debug('[useSession] Session fetched successfully');
+          }
           
           // Store token in cookies for better resilience
           if (typeof document !== 'undefined') {

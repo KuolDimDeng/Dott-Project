@@ -61,6 +61,7 @@ const DashAppBar = ({
   userAttributes,
   showCreateMenu,
   handleMenuItemClick,
+  handleCloseCreateMenu,
 }) => {
   const { notifySuccess, notifyError, notifyInfo, notifyWarning } =
     useNotification();
@@ -70,10 +71,27 @@ const DashAppBar = ({
   const [userInitials, setUserInitials] = useState(null);
   const [showSubscriptionPopup, setShowSubscriptionPopup] = useState(false);
   const [businessName, setBusinessName] = useState(null);
+  const [isDesktop, setIsDesktop] = useState(true);
 
   // Create a ref for the dropdown menu and button
   const userMenuRef = useRef(null);
   const profileButtonRef = useRef(null);
+
+  // Check if we're on desktop/mobile for menu positioning
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+
+    // Set initial value
+    checkScreenSize();
+
+    // Add event listener
+    window.addEventListener('resize', checkScreenSize);
+
+    // Clean up
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   // Helper function to consistently generate initials from user data
   const generateInitialsFromNames = useCallback(
@@ -1581,8 +1599,18 @@ const DashAppBar = ({
     const normalizedType =
       typeof type === 'string' ? type.toString().toLowerCase() : 'free';
 
-    // Only log this once per session by using the debug level
-    logger.debug('Normalized subscription type:', normalizedType);
+    // Check if we've already logged this subscription type in this session
+    const hasLoggedSubscription = typeof window !== 'undefined' && 
+      localStorage.getItem('subscription_logged');
+      
+    // Only log once per session
+    if (!hasLoggedSubscription) {
+      logger.debug('Normalized subscription type:', normalizedType);
+      // Mark as logged to prevent excessive logging
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('subscription_logged', 'true');
+      }
+    }
 
     // Enhanced matching to handle more variations
     if (normalizedType.includes('pro')) {
@@ -1674,185 +1702,188 @@ const DashAppBar = ({
           </div>
           
           {/* Controls on the right */}
-          <div className="flex items-center h-full ml-auto">
-            {/* Business name and Subscription type display */}
-            {userData && (
-              <div className="flex items-center">
-                {/* Business name */}
-                <div className="text-white hidden md:flex items-center mr-3">
-                  <span className="font-semibold">{effectiveBusinessName}</span>
-                  <span className="mx-2 h-4 w-px bg-white/30"></span>
+          <div className="flex items-center space-x-1 sm:space-x-3">
+            {/* Existing controls */}
+            <div className="flex items-center h-full ml-auto">
+              {/* Business name and Subscription type display */}
+              {userData && (
+                <div className="flex items-center">
+                  {/* Business name */}
+                  <div className="text-white hidden md:flex items-center mr-3">
+                    <span className="font-semibold">{effectiveBusinessName}</span>
+                    <span className="mx-2 h-4 w-px bg-white/30"></span>
+                  </div>
+                  
+                  <div
+                    onClick={handleSubscriptionClick}
+                    className={`flex items-center px-3 py-1.5 cursor-pointer text-white rounded hover:shadow-md transition-shadow ${
+                      businessData.subscription_type === 'professional'
+                        ? 'bg-purple-600'
+                        : businessData.subscription_type === 'enterprise'
+                          ? 'bg-indigo-600'
+                          : 'bg-blue-600'
+                    }`}
+                  >
+                    {/* Display business name on mobile inside the subscription button */}
+                    <span className="whitespace-nowrap text-xs md:hidden mr-1">
+                      {effectiveBusinessName}:
+                    </span>
+                    <span className="whitespace-nowrap text-xs inline-block">
+                      {displayLabel}
+                    </span>
+                    {businessData.subscription_type === 'free' && (
+                      <button
+                        className="ml-2 text-xs py-0.5 px-2 text-white bg-purple-600 hover:bg-purple-700 rounded"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSubscriptionClick();
+                        }}
+                      >
+                        Upgrade
+                      </button>
+                    )}
+                  </div>
                 </div>
-                
-                <div
-                  onClick={handleSubscriptionClick}
-                  className={`flex items-center px-3 py-1.5 cursor-pointer text-white rounded hover:shadow-md transition-shadow ${
-                    businessData.subscription_type === 'professional'
-                      ? 'bg-purple-600'
-                      : businessData.subscription_type === 'enterprise'
-                        ? 'bg-indigo-600'
-                        : 'bg-blue-600'
-                  }`}
+              )}
+
+              {/* Shopify connection indicator */}
+              {isShopifyConnected && (
+                <span className="text-sm text-green-300 mr-2 hidden md:flex items-center h-full">
+                  Connected to Shopify
+                </span>
+              )}
+
+              {/* Notification button */}
+              <button
+                className="hidden sm:flex items-center justify-center p-2 text-white hover:bg-white/10 rounded-full mr-2"
+                onClick={() => handleShowNotification('info')}
+                title="Show Notification"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                  {/* Display business name on mobile inside the subscription button */}
-                  <span className="whitespace-nowrap text-xs md:hidden mr-1">
-                    {effectiveBusinessName}:
-                  </span>
-                  <span className="whitespace-nowrap text-xs inline-block">
-                    {displayLabel}
-                  </span>
-                  {businessData.subscription_type === 'free' && (
-                    <button
-                      className="ml-2 text-xs py-0.5 px-2 text-white bg-purple-600 hover:bg-purple-700 rounded"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSubscriptionClick();
-                      }}
-                    >
-                      Upgrade
-                    </button>
-                  )}
-                </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
+                </svg>
+              </button>
+
+              {/* Home button */}
+              <button
+                className="hidden sm:flex items-center justify-center p-2 text-white hover:bg-white/10 rounded-full mr-2"
+                onClick={handleHomeClick}
+                title="Home"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 12l2-2m0 0l7-7 7.418 0a2 2 0 012 2v.582m0 0l-2 2M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              </button>
+
+              {/* Menu toggle button */}
+              <button
+                className="flex items-center justify-center p-2 text-white hover:bg-white/10 rounded-full mr-2"
+                aria-label="open drawer"
+                onClick={handleDrawerToggle}
+                title="Open and close menu"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
+
+              {/* Language selector */}
+              <div className="hidden sm:block mr-2">
+                <DashboardLanguageSelector />
               </div>
-            )}
 
-            {/* Shopify connection indicator */}
-            {isShopifyConnected && (
-              <span className="text-sm text-green-300 mr-2 hidden md:flex items-center h-full">
-                Connected to Shopify
-              </span>
-            )}
-
-            {/* Notification button */}
-            <button
-              className="hidden sm:flex items-center justify-center p-2 text-white hover:bg-white/10 rounded-full mr-2"
-              onClick={() => handleShowNotification('info')}
-              title="Show Notification"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+              {/* User profile button */}
+              <button
+                ref={profileButtonRef}
+                onClick={handleClick}
+                aria-controls={openMenu ? 'user-menu' : undefined}
+                aria-haspopup="true"
+                aria-expanded={openMenu ? 'true' : undefined}
+                className="flex items-center justify-center text-white hover:bg-white/10 p-0.5 rounded-full"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
-              </svg>
-            </button>
+                <div className="w-8 h-8 rounded-full bg-primary-main text-white flex items-center justify-center text-sm font-medium border-2 border-white">
+                  {displayInitials ||
+                    (() => {
+                      // Final fallback - calculate initials directly at render time
+                      const firstName =
+                        effectiveUserData?.first_name ||
+                        effectiveUserData?.firstName ||
+                        '';
+                      const lastName =
+                        effectiveUserData?.last_name ||
+                        effectiveUserData?.lastName ||
+                        '';
+                      const email = effectiveUserData?.email || '';
 
-            {/* Home button */}
-            <button
-              className="hidden sm:flex items-center justify-center p-2 text-white hover:bg-white/10 rounded-full mr-2"
-              onClick={handleHomeClick}
-              title="Home"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 12l2-2m0 0l7-7 7.418 0a2 2 0 012 2v.582m0 0l-2 2M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
-            </button>
-
-            {/* Menu toggle button */}
-            <button
-              className="flex items-center justify-center p-2 text-white hover:bg-white/10 rounded-full mr-2"
-              aria-label="open drawer"
-              onClick={handleDrawerToggle}
-              title="Open and close menu"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-
-            {/* Language selector */}
-            <div className="hidden sm:block mr-2">
-              <DashboardLanguageSelector />
-            </div>
-
-            {/* User profile button */}
-            <button
-              ref={profileButtonRef}
-              onClick={handleClick}
-              aria-controls={openMenu ? 'user-menu' : undefined}
-              aria-haspopup="true"
-              aria-expanded={openMenu ? 'true' : undefined}
-              className="flex items-center justify-center text-white hover:bg-white/10 p-0.5 rounded-full"
-            >
-              <div className="w-8 h-8 rounded-full bg-primary-main text-white flex items-center justify-center text-sm font-medium border-2 border-white">
-                {displayInitials ||
-                  (() => {
-                    // Final fallback - calculate initials directly at render time
-                    const firstName =
-                      effectiveUserData?.first_name ||
-                      effectiveUserData?.firstName ||
-                      '';
-                    const lastName =
-                      effectiveUserData?.last_name ||
-                      effectiveUserData?.lastName ||
-                      '';
-                    const email = effectiveUserData?.email || '';
-
-                    if (firstName && lastName) {
-                      return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
-                    } else if (firstName && email) {
-                      // Try to extract last initial from email
-                      if (email.includes('@')) {
-                        const namePart = email.split('@')[0];
-                        if (namePart.includes('.')) {
-                          const parts = namePart.split('.');
-                          if (parts.length >= 2 && parts[1].length > 0) {
-                            return `${firstName.charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
+                      if (firstName && lastName) {
+                        return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
+                      } else if (firstName && email) {
+                        // Try to extract last initial from email
+                        if (email.includes('@')) {
+                          const namePart = email.split('@')[0];
+                          if (namePart.includes('.')) {
+                            const parts = namePart.split('.');
+                            if (parts.length >= 2 && parts[1].length > 0) {
+                              return `${firstName.charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
+                            }
                           }
                         }
+                        return firstName.charAt(0).toUpperCase();
+                      } else if (lastName) {
+                        return lastName.charAt(0).toUpperCase();
+                      } else if (email) {
+                        return email.charAt(0).toUpperCase();
                       }
-                      return firstName.charAt(0).toUpperCase();
-                    } else if (lastName) {
-                      return lastName.charAt(0).toUpperCase();
-                    } else if (email) {
-                      return email.charAt(0).toUpperCase();
-                    }
-                    
-                    return 'U';
-                  })()}
-              </div>
-            </button>
-            
-            {/* User menu */}
-            {openMenu && (
-              <div
-                ref={userMenuRef}
-                id="user-menu"
-                className="absolute right-4 mt-2 top-14 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
-              >
-                {/* ... keep the existing menu content ... */}
-              </div>
-            )}
+                      
+                      return 'U';
+                    })()}
+                </div>
+              </button>
+              
+              {/* User menu */}
+              {openMenu && (
+                <div
+                  ref={userMenuRef}
+                  id="user-menu"
+                  className="absolute right-4 mt-2 top-14 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                >
+                  {/* ... keep the existing menu content ... */}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -1863,7 +1894,141 @@ const DashAppBar = ({
         onClose={() => setShowSubscriptionPopup(false)}
       />
 
-      {/* ... keep the existing create menu popup ... */}
+      {/* Render create menu popup when showCreateMenu is true */}
+      {showCreateMenu && (
+        <>
+          {/* Overlay to catch clicks outside the menu */}
+          <div 
+            className="fixed inset-0 bg-black/20 z-50" 
+            onClick={handleCloseCreateMenu}
+          />
+          
+          {/* Menu positioned based on screen size and drawer state */}
+          <div className={`fixed top-16 ${
+            isDesktop 
+              ? (drawerOpen ? "left-64" : "left-16") 
+              : "left-1/2 -translate-x-1/2"
+          } bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-50 w-64`}>
+            <div className="flex justify-between items-center mb-3 border-b pb-2">
+              <h3 className="text-lg font-semibold">Create New</h3>
+              <button 
+                onClick={handleCloseCreateMenu}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            <ul className="space-y-1">
+              <li>
+                <button 
+                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
+                  onClick={() => handleMenuItemClick('Transaction')}
+                >
+                  <span className="mr-2 text-primary-main">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </span>
+                  <span>Transaction</span>
+                </button>
+              </li>
+              <li>
+                <button 
+                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
+                  onClick={() => handleMenuItemClick('Product')}
+                >
+                  <span className="mr-2 text-primary-main">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                  </span>
+                  <span>Product</span>
+                </button>
+              </li>
+              <li>
+                <button 
+                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
+                  onClick={() => handleMenuItemClick('Service')}
+                >
+                  <span className="mr-2 text-primary-main">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </span>
+                  <span>Service</span>
+                </button>
+              </li>
+              <li>
+                <button 
+                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
+                  onClick={() => handleMenuItemClick('Invoice')}
+                >
+                  <span className="mr-2 text-primary-main">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </span>
+                  <span>Invoice</span>
+                </button>
+              </li>
+              <li>
+                <button 
+                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
+                  onClick={() => handleMenuItemClick('Bill')}
+                >
+                  <span className="mr-2 text-primary-main">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </span>
+                  <span>Bill</span>
+                </button>
+              </li>
+              <li>
+                <button 
+                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
+                  onClick={() => handleMenuItemClick('Estimate')}
+                >
+                  <span className="mr-2 text-primary-main">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </span>
+                  <span>Estimate</span>
+                </button>
+              </li>
+              <li>
+                <button 
+                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
+                  onClick={() => handleMenuItemClick('Customer')}
+                >
+                  <span className="mr-2 text-primary-main">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  </span>
+                  <span>Customer</span>
+                </button>
+              </li>
+              <li>
+                <button 
+                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
+                  onClick={() => handleMenuItemClick('Vendor')}
+                >
+                  <span className="mr-2 text-primary-main">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </span>
+                  <span>Vendor</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </>
+      )}
     </>
   );
 };

@@ -323,16 +323,20 @@ const getProducts = async (params = {}, options = {}) => {
  */
 const createProduct = async (productData) => {
   try {
+    console.log('DEBUG: unifiedInventoryService.createProduct - Starting product creation:', productData);
     logger.info('Creating product:', productData);
     
     // Ensure product_code is generated if not provided
     if (!productData.product_code) {
       productData.product_code = generateProductCode(productData.name);
+      console.log('DEBUG: Generated product code:', productData.product_code);
     }
 
     // Prepare form data if there's an image file
     let requestData = productData;
     let headers = { ...getInventoryHeaders() };
+    
+    console.log('DEBUG: Using tenant headers:', headers);
     
     if (productData.image_file) {
       const formData = new FormData();
@@ -344,23 +348,29 @@ const createProduct = async (productData) => {
         }
       });
       requestData = formData;
+      console.log('DEBUG: Using FormData for image upload');
       // Don't set Content-Type header; fetch will set it with boundary for FormData
     } else {
       headers['Content-Type'] = 'application/json';
+      console.log('DEBUG: Using JSON content type');
     }
     
     // Make the product creation request
+    console.log('DEBUG: Making API request to create product to /api/inventory/products/');
     const response = await apiService.post('/api/inventory/products/', requestData, {
       invalidateCache: ['/api/inventory/products/', '/api/inventory/ultra/products/'],
       headers
     });
     
     // Clear the cache after creating a product
+    console.log('DEBUG: Product API response received:', response);
     clearProductCache();
+    console.log('DEBUG: Product cache cleared');
     
     logger.info('Product created successfully:', response);
     return response;
   } catch (error) {
+    console.error('DEBUG: Error creating product:', error);
     logger.error('Error creating product:', error);
     throw error;
   }

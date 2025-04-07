@@ -40,42 +40,83 @@ export async function GET(request) {
     const cookieHeader = request.headers.get('cookie');
     let cookieTenantId = null;
     let devTenantId = null;
+    let businessIdCookie = null;
     
     if (cookieHeader) {
+      logger.debug('Cookie header:', cookieHeader);
       cookieHeader.split(';').forEach(cookie => {
         const [name, value] = cookie.trim().split('=');
         if (name === 'tenantId') {
           cookieTenantId = value;
+          logger.debug('Found tenantId cookie:', value);
         } else if (name === 'dev-tenant-id') {
           devTenantId = value;
+          logger.debug('Found dev-tenant-id cookie:', value);
+        } else if (name === 'businessid') {
+          businessIdCookie = value;
+          logger.debug('Found businessid cookie:', value);
         }
       });
     }
     
-    // Check if schema parameter was provided and convert it to tenant_id if needed
-    let schemaTenantId = null;
-    if (schema && schema !== 'default_schema') {
-      // Try to extract tenant ID from schema name (if format is tenant_{id})
-      const schemaMatch = schema.match(/tenant_([a-f0-9_-]+)/i);
-      if (schemaMatch && schemaMatch[1]) {
-        schemaTenantId = schemaMatch[1].replace(/_/g, '-');
+    console.log('DEBUG: API GET - Browser using tenant IDs:', {
+      cookieTenantId,
+      devTenantId,
+      businessIdCookie,
+      headerTenantId,
+      jwtTenantId,
+      urlTenantId,
+      schema
+    });
+    
+    // Get active tenant ID from AWS RDS database
+    // Import PostgreSQL
+    const { Pool } = await import('pg');
+    const pool = new Pool({
+      host: process.env.RDS_HOSTNAME || 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com',
+      port: process.env.RDS_PORT || 5432,
+      database: process.env.RDS_DB_NAME || 'dott_main',
+      user: process.env.RDS_USERNAME || 'dott_admin',
+      password: process.env.RDS_PASSWORD || 'RRfXU6uPPUbBEg1JqGTJ',
+      ssl: { rejectUnauthorized: false }
+    });
+    
+    let tenantId;
+    try {
+      // Find the first active tenant in the database
+      const result = await pool.query(`
+        SELECT id, schema_name
+        FROM custom_auth_tenant
+        WHERE is_active = true
+        ORDER BY created_at DESC
+        LIMIT 1
+      `);
+      
+      if (result.rows.length > 0) {
+        tenantId = result.rows[0].id;
+        console.log(`DEBUG: API GET - Found active tenant in database: ${tenantId}`);
+      } else {
+        // Fallback to the tenant ID from the request if no active tenant found
+        tenantId = urlTenantId || jwtTenantId || headerTenantId || 
+                 businessIdCookie || cookieTenantId || devTenantId || 
+                 getDefaultTenantId();
+        console.log(`DEBUG: API GET - No active tenant found, using fallback: ${tenantId}`);
       }
+    } catch (dbError) {
+      console.error('DEBUG: API GET - Error finding tenant in database:', dbError);
+      // Fallback to tenant ID from request
+      tenantId = urlTenantId || jwtTenantId || headerTenantId || 
+               businessIdCookie || cookieTenantId || devTenantId || 
+               getDefaultTenantId();
+    } finally {
+      await pool.end();
     }
     
-    // Determine tenant ID with priority
-    const kuolDengTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-    const isKuolDeng = cookieHeader?.includes('authUser=kuol.deng@example.com');
+    console.log(`DEBUG: API GET - Using tenant ID: ${tenantId}`);
     
-    const tenantId = urlTenantId || 
-                     jwtTenantId ||  // Prioritize JWT token tenant ID
-                     headerTenantId || 
-                     cookieTenantId || 
-                     devTenantId || 
-                     schemaTenantId ||
-                     (isKuolDeng ? kuolDengTenantId : null) ||
-                     getDefaultTenantId();
-    
-    logger.log(`[API] Listing products for tenant: ${tenantId}, schema: ${schema}`);
+    // Get schema name from the tenant ID
+    const effectiveSchema = `tenant_${tenantId.replace(/-/g, '_')}`;
+    console.log(`DEBUG: API GET - Using schema: ${effectiveSchema}`);
     
     // Verify tenant exists (development only)
     const tenant = verifyTenantId(tenantId);
@@ -191,23 +232,30 @@ export async function GET(request) {
 }
 
 /**
- * POST handler for product creation with tenant-aware RLS
+ * POST handler for creating a new product with tenant-aware RLS
  */
 export async function POST(request) {
+  console.log('DEBUG: API - Product POST request received');
   logger.log('[API] Product POST request received');
+  
   try {
-    // Get request body
-    const productData = await request.json();
-    logger.debug('[API] Product POST data:', productData);
-    
-    // Check URL parameters for schema
-    const { searchParams } = new URL(request.url);
-    const schema = searchParams.get('schema');
-    
-    // Extract tenant info from request
+    // Extract tenant information from headers and cookies with priority to headerTenantId
     const headerTenantId = request.headers.get('x-tenant-id');
-
-    // First check Authorization and ID Token headers for JWT-derived tenant ID
+    
+    // Parse cookies for tenant ID info
+    const cookieHeader = request.headers.get('cookie');
+    let cookieTenantId = null;
+    let businessIdCookie = null;
+    
+    if (cookieHeader) {
+      cookieHeader.split(';').forEach(cookie => {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'tenantId') cookieTenantId = value;
+        else if (name === 'businessid') businessIdCookie = value;
+      });
+    }
+    
+    // Check ID token for tenant info
     const idToken = request.headers.get('X-Id-Token');
     let jwtTenantId = null;
     
@@ -215,130 +263,217 @@ export async function POST(request) {
       try {
         const { jwtDecode } = await import('jwt-decode');
         const decoded = jwtDecode(idToken);
-        
-        // Extract business ID from token as tenant ID
         jwtTenantId = decoded['custom:businessid'] || null;
-        
-        if (jwtTenantId) {
-          logger.debug('Found tenant ID in JWT token:', jwtTenantId);
-        }
       } catch (error) {
-        logger.error('Error decoding JWT token:', error.message);
+        console.error('DEBUG: API - Error decoding JWT token:', error);
       }
     }
     
-    const cookieHeader = request.headers.get('cookie');
-    let cookieTenantId = null;
-    let devTenantId = null;
+    console.log('DEBUG: API - Tenant ID options:', {
+      headerTenantId,
+      cookieTenantId,
+      businessIdCookie,
+      jwtTenantId
+    });
     
-    if (cookieHeader) {
-      cookieHeader.split(';').forEach(cookie => {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'tenantId') {
-          cookieTenantId = value;
-        } else if (name === 'dev-tenant-id') {
-          devTenantId = value;
-        }
+    // Get active tenant ID from AWS RDS database
+    // Import PostgreSQL
+    const { Pool } = await import('pg');
+    let pool = new Pool({
+      host: process.env.RDS_HOSTNAME || 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com',
+      port: process.env.RDS_PORT || 5432,
+      database: process.env.RDS_DB_NAME || 'dott_main',
+      user: process.env.RDS_USERNAME || 'dott_admin',
+      password: process.env.RDS_PASSWORD || 'RRfXU6uPPUbBEg1JqGTJ',
+      ssl: { rejectUnauthorized: false }
+    });
+    
+    let tenantId;
+    let schemaName;
+    
+    try {
+      // Find the first active tenant in the database
+      const result = await pool.query(`
+        SELECT id, schema_name
+        FROM custom_auth_tenant
+        WHERE is_active = true
+        ORDER BY created_at DESC
+        LIMIT 1
+      `);
+      
+      if (result.rows.length > 0) {
+        tenantId = result.rows[0].id;
+        schemaName = result.rows[0].schema_name;
+        console.log(`DEBUG: API POST - Found active tenant in database: ${tenantId}, schema: ${schemaName}`);
+      } else {
+        // Fallback to the tenant ID from the request if no active tenant found
+        tenantId = headerTenantId || jwtTenantId || businessIdCookie || cookieTenantId || getDefaultTenantId();
+        schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
+        console.log(`DEBUG: API POST - No active tenant found, using fallback: ${tenantId}`);
+      }
+    } catch (dbError) {
+      console.error('DEBUG: API POST - Error finding tenant in database:', dbError);
+      // Fallback to tenant ID from request
+      tenantId = headerTenantId || jwtTenantId || businessIdCookie || cookieTenantId || getDefaultTenantId();
+      schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
+      await pool.end();
+      
+      // Create a new pool for the product operations
+      pool = new Pool({
+        host: process.env.RDS_HOSTNAME || 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com',
+        port: process.env.RDS_PORT || 5432,
+        database: process.env.RDS_DB_NAME || 'dott_main',
+        user: process.env.RDS_USERNAME || 'dott_admin',
+        password: process.env.RDS_PASSWORD || 'RRfXU6uPPUbBEg1JqGTJ',
+        ssl: { rejectUnauthorized: false }
       });
     }
     
-    // Check if schema parameter was provided and convert it to tenant_id if needed
-    let schemaTenantId = null;
-    if (schema && schema !== 'default_schema') {
-      // Try to extract tenant ID from schema name (if format is tenant_{id})
-      const schemaMatch = schema.match(/tenant_([a-f0-9_-]+)/i);
-      if (schemaMatch && schemaMatch[1]) {
-        schemaTenantId = schemaMatch[1].replace(/_/g, '-');
+    console.log(`DEBUG: API POST - Using tenant ID: ${tenantId}, schema: ${schemaName}`);
+    
+    // Parse request body
+    let productData;
+    const contentType = request.headers.get('content-type');
+    
+    if (contentType && contentType.includes('multipart/form-data')) {
+      // Handle multipart form data (with image uploads)
+      console.log('DEBUG: API - Processing multipart form data');
+      const formData = await request.formData();
+      productData = {};
+      
+      // Convert FormData to object
+      for (const [key, value] of formData.entries()) {
+        productData[key] = value;
       }
+      
+      console.log('DEBUG: API - Parsed form data:', {
+        ...productData,
+        image: productData.image ? 'Image file received' : 'No image'
+      });
+    } else {
+      // Handle JSON data
+      console.log('DEBUG: API - Processing JSON data');
+      productData = await request.json();
+      console.log('DEBUG: API - Parsed JSON data:', productData);
     }
     
-    // Determine tenant ID with priority
-    const kuolDengTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-    const isKuolDeng = cookieHeader?.includes('authUser=kuol.deng@example.com');
-    
-    const tenantId = productData.tenant_id || 
-                     jwtTenantId ||  // Prioritize JWT token tenant ID
-                     headerTenantId || 
-                     cookieTenantId || 
-                     devTenantId || 
-                     schemaTenantId ||
-                     (isKuolDeng ? kuolDengTenantId : null) || 
-                     getDefaultTenantId();
-    
-    logger.debug('Tenant ID determined for product creation:', tenantId);
-    logger.debug('Schema parameter:', schema);
+    // Set tenant_id in the product data for RLS policy
+    productData.tenant_id = tenantId;
     
     // DEVELOPMENT MODE: Use the development database connector
     if (process.env.NODE_ENV !== 'production') {
+      console.log('DEBUG: API - Using development database connector');
       const dbConnector = createDbConnector({ tenantId });
       
-      // Create product with tenant ID
-      const enhancedProductData = {
-        ...productData,
-        tenant_id: tenantId,
-        // Ensure product has both tenantId and tenant_id for compatibility
-        tenantId: tenantId
-      };
+      // Generate ID and timestamps
+      productData.id = productData.id || crypto.randomUUID();
+      productData.created_at = new Date().toISOString();
+      productData.updated_at = new Date().toISOString();
       
-      // Insert into dev database
-      const createdProduct = await dbConnector.insert('products', enhancedProductData);
+      // Save the product
+      await dbConnector.insert('products', productData);
+      console.log('DEBUG: API - Product saved to development database:', productData.id);
       
-      logger.info('Created product with RLS tenant_id:', tenantId);
-      
-      // Return in the format expected by the client
-      if (schema === 'default_schema') {
-        return NextResponse.json(createdProduct, { status: 201 });
-      } else {
-        // Add dev flags to support local storage in the client
-        return NextResponse.json({
-          ...createdProduct,
-          _devMode: true,
-          _storeLocally: true
-        }, { status: 201 });
-      }
+      // Return the newly created product
+      return NextResponse.json(productData);
     }
     
     // PRODUCTION CODE BELOW
-    // Ensure the product data includes the tenant ID for RLS
-    const enhancedProductData = {
-      ...productData,
-      tenant_id: tenantId,
-      tenantId: tenantId // Include both formats for compatibility
-    };
+    console.log('DEBUG: API - Using production database with RLS');
     
-    // Call the real API endpoint to create the product
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-      throw new Error('API key not configured');
+    // Get client
+    const client = await pool.connect();
+    
+    try {
+      // Start transaction
+      await client.query('BEGIN');
+      
+      // Set tenant context for RLS policy
+      await client.query(`SET LOCAL app.current_tenant_id = '${tenantId}'`);
+      
+      console.log('DEBUG: API - Set RLS tenant context:', tenantId);
+      
+      // Use the schema name we already found instead of querying for it again
+      if (!schemaName) {
+        // If somehow schema name wasn't found earlier, look it up now
+        const schemaResult = await client.query(`
+          SELECT schema_name 
+          FROM custom_auth_tenant 
+          WHERE id = $1
+        `, [tenantId]);
+        
+        if (schemaResult.rows.length > 0) {
+          schemaName = schemaResult.rows[0].schema_name;
+          console.log('DEBUG: API - Found schema name from tenant record:', schemaName);
+        } else {
+          // Fallback to conventional schema naming if not found in tenant table
+          schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
+          console.log('DEBUG: API - Using generated schema name:', schemaName);
+        }
+      }
+      
+      // Insert product into inventory_product table with tenant_id for RLS
+      const insertQuery = `
+        INSERT INTO "${schemaName}"."inventory_product" (
+          name, 
+          description, 
+          price, 
+          stock_quantity, 
+          sku, 
+          tenant_id,
+          created_at,
+          updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        RETURNING *
+      `;
+      
+      const sku = productData.sku || `SKU-${Date.now().toString().substring(9)}`;
+      
+      const insertValues = [
+        productData.name,
+        productData.description || '',
+        parseFloat(productData.price) || 0,
+        parseInt(productData.stock_quantity) || 0,
+        sku,
+        tenantId
+      ];
+      
+      console.log('DEBUG: API - Executing insert query with values:', {
+        query: insertQuery,
+        schema: schemaName,
+        values: insertValues
+      });
+      
+      const result = await client.query(insertQuery, insertValues);
+      
+      // Commit transaction
+      await client.query('COMMIT');
+      
+      console.log('DEBUG: API - Product created successfully:', result.rows[0]);
+      
+      // Return the created product
+      return NextResponse.json(result.rows[0]);
+      
+    } catch (error) {
+      // Rollback transaction on error
+      await client.query('ROLLBACK');
+      console.error('DEBUG: API - Database error creating product:', error);
+      throw error;
+    } finally {
+      // Release client
+      client.release();
+      
+      // Close pool
+      await pool.end();
     }
-    
-    // Format the endpoint based on schema or tenant_id
-    const endpoint = schema 
-      ? `${process.env.API_ENDPOINT}/products?schema=${schema}`
-      : `${process.env.API_ENDPOINT}/products`;
-    
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'x-tenant-id': tenantId
-      },
-      body: JSON.stringify(enhancedProductData)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`API returned ${response.status}: ${await response.text()}`);
-    }
-    
-    const createdProduct = await response.json();
-    
-    return NextResponse.json(createdProduct, { status: 201 });
   } catch (error) {
-    logger.error('Product POST error:', error.message, error.stack);
-    return NextResponse.json({ 
-      error: 'Failed to create product',
-      message: error.message 
-    }, { status: 500 });
+    console.error('DEBUG: API - Error creating product:', error);
+    logger.error(`[API] Error creating product: ${error.message}`, { error });
+    
+    // Return error response
+    return NextResponse.json(
+      { error: 'Failed to create product', message: error.message },
+      { status: 500 }
+    );
   }
 }

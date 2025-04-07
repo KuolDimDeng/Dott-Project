@@ -6,7 +6,7 @@ import { inventoryCache } from '@/utils/enhancedCache';
 import { checkAndFixTenantId } from '@/utils/fixTenantId';
 import { axiosInstance } from '@/lib/axiosConfig';
 import userService from './userService';
-import { getInventoryHeaders } from '@/utils/tenantUtils';
+import { getTenantHeaders } from '@/utils/tenantUtils';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { setTokens, forceValidateTenantId, getTenantId, getSchemaName } from '@/utils/tenantUtils';
 
@@ -203,7 +203,7 @@ export const getProducts = async (options = {}, fetchOptions = {}) => {
     await ensureTenantId();
     
     // Get tenant headers to ensure proper tenant context
-    const tenantHeaders = getInventoryHeaders();
+    const tenantHeaders = getTenantHeaders();
     logger.debug('Using tenant headers for inventory request:', tenantHeaders);
 
     // First, run diagnostic check to ensure schema and tables are ready
@@ -457,7 +457,7 @@ export const getProductStats = async (options = {}) => {
     await ensureTenantId();
     
     // Get tenant headers to ensure proper tenant context
-    const tenantHeaders = getInventoryHeaders();
+    const tenantHeaders = getTenantHeaders();
     logger.debug('Using tenant headers for product stats request:', tenantHeaders);
     
     // Update options with tenant headers
@@ -515,7 +515,7 @@ export const getProductById = async (id, options = {}) => {
     await ensureTenantId();
     
     // Get tenant headers to ensure proper tenant context
-    const tenantHeaders = getInventoryHeaders();
+    const tenantHeaders = getTenantHeaders();
     logger.debug(`Using tenant headers for product ID ${id} request:`, tenantHeaders);
     
     // Update options with tenant headers
@@ -643,7 +643,7 @@ export const createProduct = async (productData) => {
       await ensureTenantId({ validateSchema: true, diagnoseTables: true });
       
       // Get tenant headers to ensure proper tenant context
-      const tenantHeaders = getInventoryHeaders();
+      const tenantHeaders = getTenantHeaders();
       logger.debug('Using tenant headers for product creation:', tenantHeaders);
       
       // Run diagnostic to ensure the schema is ready for product creation
@@ -710,7 +710,7 @@ export const createProduct = async (productData) => {
     }
     
     // Make the product creation request with explicit tenant headers
-    const tenantHeaders = getInventoryHeaders();
+    const tenantHeaders = getTenantHeaders();
     
     // Direct API call with more control and explicit headers
     try {
@@ -794,7 +794,7 @@ export const createProduct = async (productData) => {
       
       // Try to run migrations as a recovery attempt
       try {
-        const tenantHeaders = getInventoryHeaders();
+        const tenantHeaders = getTenantHeaders();
         const tenantId = tenantHeaders['X-Tenant-ID'];
         const schemaName = tenantHeaders['X-Schema-Name'];
         

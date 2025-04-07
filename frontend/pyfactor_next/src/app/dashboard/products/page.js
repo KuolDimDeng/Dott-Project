@@ -18,13 +18,39 @@ export default function ProductsPage() {
 
   const fetchProducts = async () => {
     try {
-      // Replace with your actual API endpoint
-      const response = await fetch('/api/products');
+      setLoading(true);
+      
+      // Get tenant ID from localStorage
+      const tenantId = typeof window !== 'undefined' ? localStorage.getItem('tenantId') || localStorage.getItem('businessid') : null;
+      console.log("Fetching products with tenant ID:", tenantId);
+      
+      // Construct schema name from tenant ID
+      const schema = tenantId ? `tenant_${tenantId.replace(/-/g, '_')}` : 'default_schema';
+      console.log("Using schema:", schema);
+      
+      // Update to use the inventory products endpoint with schema parameter
+      const response = await fetch(`/api/inventory/products?schema=${schema}`);
+      
+      if (!response.ok) {
+        console.error("Product fetch failed with status:", response.status);
+        throw new Error(`Failed to fetch products: ${response.status}`);
+      }
+      
       const data = await response.json();
-      setProducts(data);
+      
+      // Handle different response formats - some endpoints return {products: [...]} and others return the array directly
+      const productsArray = Array.isArray(data) ? data : Array.isArray(data.products) ? data.products : [];
+      console.log("Fetched products:", productsArray);
+      
+      setProducts(productsArray);
+      setFilteredProducts(productsArray);
     } catch (error) {
-      console.error('Error fetching products:', error);
-      showNotification('Error loading products', 'error');
+      console.error("Error fetching products:", error);
+      setNotification({
+        show: true,
+        message: 'Failed to fetch products. Please try again.',
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }

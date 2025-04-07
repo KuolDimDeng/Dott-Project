@@ -7,8 +7,19 @@ const generateRequestId = () => {
     : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 };
 
+// Determine if we should use relative paths for internal Next.js API routes
+// or absolute paths for external APIs
+const isInternalApiPath = (url) => {
+  // Detect Django backend routes that should be proxied through Next.js API
+  return url.startsWith('/api/profile') || 
+         url.startsWith('/api/accounts') || 
+         url.startsWith('/api/transactions') ||
+         url.startsWith('/api/customers');
+};
+
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || '',
+  // We'll determine baseURL dynamically in the interceptor
+  baseURL: '',
   timeout: 30000, // 30 seconds
   headers: {
     'Content-Type': 'application/json',
@@ -18,6 +29,22 @@ const axiosInstance = axios.create({
 // Request interceptor to add authorization token
 axiosInstance.interceptors.request.use(
   (config) => {
+    const isInternal = isInternalApiPath(config.url);
+    
+    // Set the baseURL dynamically based on the URL path
+    // For internal API routes, use relative paths to hit Next.js API routes
+    // For external APIs, use the configured external API base URL
+    if (isInternal) {
+      // Use Next.js API route that will proxy to Django
+      config.url = config.url.replace('/api/profile', '/api/proxy/profile');
+      config.url = config.url.replace('/api/accounts', '/api/proxy/accounts');
+      config.url = config.url.replace('/api/transactions', '/api/proxy/transactions');
+      config.url = config.url.replace('/api/customers', '/api/proxy/customers');
+    } else {
+      // Use the configured API URL for direct API calls
+      config.baseURL = process.env.NEXT_PUBLIC_API_URL || '';
+    }
+    
     // Add auth token from localStorage if available
     const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
     

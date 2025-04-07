@@ -1,146 +1,121 @@
 import { NextResponse } from 'next/server';
-import { getAuth } from '@/lib/auth';
-import { cookies } from 'next/headers';
+import { createServerLogger } from '@/utils/serverLogger';
+import { getAuth } from '@/utils/auth-helpers';
+import { Pool } from 'pg';
+
+const logger = createServerLogger('tenant-verify');
 
 /**
- * Format tenant ID to be database-compatible
- * @param {string} tenantId - The tenant ID to format
- * @returns {string} - The formatted tenant ID
+ * GET handler to verify user access to a tenant
  */
-function formatTenantId(tenantId) {
-  if (!tenantId) return null;
-  // For PostgreSQL UUID compatibility, we need to use hyphens, not underscores
-  // If the ID has underscores, convert them to hyphens for UUID compatibility
-  return tenantId.replace(/_/g, '-');
-}
-
 export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const tenantId = searchParams.get('tenantId');
+  
+  if (!tenantId) {
+    return NextResponse.json(
+      { error: 'Tenant ID is required', hasAccess: false },
+      { status: 400 }
+    );
+  }
+  
+  logger.info(`Verifying tenant access for tenant ID: ${tenantId}`);
+  
+  // Get authentication information
+  const auth = await getAuth();
+  
+  if (!auth.user) {
+    logger.warn('Unauthorized attempt to verify tenant access');
+    return NextResponse.json(
+      { error: 'Authentication required', hasAccess: false },
+      { status: 401 }
+    );
+  }
+  
+  // Create database connection
+  const pool = new Pool({
+    host: process.env.RDS_HOSTNAME || 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com',
+    port: process.env.RDS_PORT || 5432,
+    database: process.env.RDS_DB_NAME || 'dott_main',
+    user: process.env.RDS_USERNAME || 'dott_admin',
+    password: process.env.RDS_PASSWORD || 'RRfXU6uPPUbBEg1JqGTJ',
+    ssl: { rejectUnauthorized: false }
+  });
+  
   try {
-    // Get authenticated user
-    const auth = await getAuth();
-    if (!auth.user) {
-      console.error('[TenantVerify] User not authenticated');
-      return NextResponse.json(
-        { 
-          status: 'invalid',
-          error: 'User not authenticated' 
-        },
-        { status: 401 }
-      );
-    }
-
-    // Extract tenant ID from user
-    const userId = auth.user.id;
-    // First check tenant_id from auth.user
-    let tenantId = auth.user.tenantId || auth.user.tenant_id;
+    // Get tenant information to check if it exists
+    const tenantResult = await pool.query(`
+      SELECT id, name, schema_name, owner_id, is_active
+      FROM custom_auth_tenant
+      WHERE id = $1
+    `, [tenantId]);
     
-    // If no tenant ID in auth.user, check cookies
-    if (!tenantId) {
-      const cookieStore = cookies();
-      tenantId = cookieStore.get('tenantId')?.value || cookieStore.get('businessid')?.value;
-      console.info('[TenantVerify] No tenant in auth user, using cookie:', { tenantId });
+    if (tenantResult.rows.length === 0) {
+      logger.warn(`Tenant not found with ID: ${tenantId}`);
+      return NextResponse.json({ hasAccess: false, reason: 'tenant_not_found' });
     }
-
-    if (!tenantId) {
-      console.error('[TenantVerify] User has no tenant_id', { userId });
-      return NextResponse.json(
-        { 
-          status: 'invalid',
-          error: 'No tenant associated with user', 
-          schema_exists: false 
-        },
-        { status: 200 }
-      );
-    }
-
-    // Format tenant ID for database compatibility
-    tenantId = formatTenantId(tenantId);
-
-    // Always return valid status with the tenant ID we have
-    // This ensures the dashboard can load even if backend verification fails
-    console.info('[TenantVerify] Using tenant ID:', { tenantId });
     
-    try {
-      // Attempt direct database verification if we have connection details
-      const { Pool } = require('pg');
-      
-      const dbConfig = {
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        host: process.env.DB_HOST,
-        port: process.env.DB_PORT || 5432,
-        database: process.env.DB_NAME
-      };
-      
-      // Only attempt direct DB connection if we have credentials
-      if (dbConfig.user && dbConfig.password && dbConfig.host && dbConfig.database) {
-        console.info('[TenantVerify] Attempting direct database verification');
-        
-        const pool = new Pool(dbConfig);
-        
-        const query = `
-          SELECT id, name, status
-          FROM tenants
-          WHERE id = $1
-          LIMIT 1;
-        `;
-        
-        const result = await pool.query(query, [tenantId]);
-        
-        pool.end();
-        
-        if (result.rows && result.rows.length > 0) {
-          console.info('[TenantVerify] Tenant found in database:', result.rows[0]);
-          
-          return NextResponse.json({
-            status: 'valid',
-            isValid: true,
-            tenant: {
-              id: tenantId,
-              name: result.rows[0].name,
-              schema_name: `tenant_${tenantId.replace(/-/g, '_')}`,
-              exists: true
-            },
-            direct_db: true,
-            message: 'Tenant verified via direct database connection'
-          });
+    const tenant = tenantResult.rows[0];
+    
+    // Check if tenant is active
+    if (!tenant.is_active) {
+      logger.warn(`Tenant is inactive: ${tenantId}`);
+      return NextResponse.json({ hasAccess: false, reason: 'tenant_inactive' });
+    }
+    
+    // Check if user is the owner
+    const userId = auth.user.sub;
+    const userEmail = auth.user.email;
+    const isOwner = tenant.owner_id === userId || tenant.owner_id === userEmail;
+    
+    if (isOwner) {
+      logger.info(`User ${userEmail} is the owner of tenant ${tenantId}`);
+      return NextResponse.json({ 
+        hasAccess: true, 
+        role: 'owner',
+        tenant: {
+          id: tenant.id,
+          name: tenant.name,
+          schemaName: tenant.schema_name
         }
-      }
-    } catch (dbError) {
-      console.warn('[TenantVerify] Database verification failed:', dbError);
-      // Continue with the fallback response below
+      });
     }
     
-    // Fallback response with valid status
+    // Check user membership
+    const userResult = await pool.query(`
+      SELECT id, email, is_admin
+      FROM custom_auth_user
+      WHERE (email = $1 OR id = $2) AND tenant_id = $3
+    `, [userEmail, userId, tenantId]);
+    
+    if (userResult.rows.length === 0) {
+      logger.warn(`User ${userEmail} does not have access to tenant ${tenantId}`);
+      return NextResponse.json({ hasAccess: false, reason: 'user_not_member' });
+    }
+    
+    // Determine role
+    const userRole = userResult.rows[0].is_admin ? 'admin' : 'member';
+    
+    logger.info(`User ${userEmail} has ${userRole} access to tenant ${tenantId}`);
+    
     return NextResponse.json({
-      status: 'valid',
-      isValid: true,
+      hasAccess: true,
+      role: userRole,
       tenant: {
-        id: tenantId,
-        schema_name: `tenant_${tenantId.replace(/-/g, '_')}`,
-        exists: true
-      },
-      message: 'Using tenant ID without backend verification'
+        id: tenant.id,
+        name: tenant.name,
+        schemaName: tenant.schema_name
+      }
     });
   } catch (error) {
-    console.error('[TenantVerify] Error verifying tenant schema', { error: error.message });
-    
-    // Even in case of error, return a valid response with fallback tenant
-    // This ensures the dashboard can still load
-    const fallbackId = formatTenantId('18609ed2-1a46-4d50-bc4e-483d6e3405ff');
+    logger.error(`Error verifying tenant access: ${error.message}`, error);
     return NextResponse.json(
-      { 
-        status: 'valid',
-        isValid: true,
-        tenant: {
-          id: fallbackId, // Fallback tenant ID
-          schema_name: `tenant_${fallbackId.replace(/-/g, '_')}`,
-          exists: true
-        },
-        message: 'Using fallback tenant due to error'
-      },
-      { status: 200 }
+      { error: 'Failed to verify tenant access', hasAccess: false },
+      { status: 500 }
     );
+  } finally {
+    // Always close the pool
+    await pool.end();
   }
 }
 

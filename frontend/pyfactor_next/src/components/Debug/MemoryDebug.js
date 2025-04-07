@@ -105,25 +105,7 @@ const MemoryDebug = ({ pollInterval = 5000 }) => {
   
   // If memory API is not available
   if (!memoryData) {
-    return (
-      <div style={{ 
-        position: 'fixed', 
-        bottom: '10px', 
-        right: '10px',
-        padding: '10px',
-        background: '#f8d7da',
-        borderRadius: '4px',
-        color: '#721c24',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        zIndex: 9999,
-        fontSize: '12px',
-        lineHeight: 1.4
-      }}>
-        Memory monitoring not available.
-        <br />
-        Try Chrome with --enable-precise-memory-info flag.
-      </div>
-    );
+    return null; // Return nothing if memory monitoring is not available
   }
   
   return (

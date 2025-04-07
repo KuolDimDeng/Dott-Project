@@ -22,7 +22,7 @@ const CustomerList = ({ onCreateCustomer, onInvoiceSelect, onCustomerSelect, onB
 
   const fetchUserProfile = async () => {
     try {
-      const response = await axiosInstance.get('http://localhost:8000/api/profile/');
+      const response = await axiosInstance.get('/api/profile/');
       setUserDatabase(response.data.database_name);
       console.log('User profile:', response.data);
       console.log('User database:', response.data.database_name);
@@ -37,7 +37,7 @@ const CustomerList = ({ onCreateCustomer, onInvoiceSelect, onCustomerSelect, onB
   const fetchCustomers = async (database_name) => {
     try {
       console.log('Fetching customers from database:', database_name);
-      const response = await axiosInstance.get('http://localhost:8000/api/customers/', {
+      const response = await axiosInstance.get('/api/customers/', {
         params: { database: database_name },
       });
       console.log('Fetched customers:', response.data);
@@ -54,7 +54,7 @@ const CustomerList = ({ onCreateCustomer, onInvoiceSelect, onCustomerSelect, onB
   const handleViewCustomer = (customer) => {
     console.log('Selected customer:', customer);
     onCustomerSelect(customer.id);
-    notifyInfo(`Viewing customer: ${customer.customerName || `${customer.first_name} ${customer.last_name}`}`);
+    notifyInfo(`Viewing customer: ${customer.customer_name || `${customer.first_name} ${customer.last_name}`}`);
   };
 
   if (loading) {
@@ -121,7 +121,7 @@ const CustomerList = ({ onCreateCustomer, onInvoiceSelect, onCustomerSelect, onB
                   className="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                    {customer.customerName || `${customer.first_name} ${customer.last_name}`}
+                    {customer.customer_name || `${customer.first_name} ${customer.last_name}`}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                     {customer.email}

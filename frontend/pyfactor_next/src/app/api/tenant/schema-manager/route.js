@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
 import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
-import { createLogger } from '@/utils/logger';
+import { createServerLogger } from '@/utils/serverLogger';
 import { getDbConfigFromEnv } from '@/utils/db-config';
 import { isUUID, validateAndRepairUuid } from '@/utils/uuid-helpers';
 import { getAuth } from '@/utils/auth-helpers';
 
 // Dedicated logger for schema operations
-const logger = createLogger('schema-manager');
+const logger = createServerLogger('schema-manager');
 
 // Constants
 const TENANT_NAMESPACE = '9a551c44-4ade-4f89-b078-0af8be794c23';

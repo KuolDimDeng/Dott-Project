@@ -353,15 +353,20 @@ export async function POST(request) {
   } catch (error) {
     logger.error('[EnsureDBRecord] Error creating tenant record:', error.message);
     
-    // Always return a success response even on errors, 
-    // so the client can continue with the tenant ID
-    return NextResponse.json({
+    // Always return a valid JSON response, even on errors
+    // Add proper Content-Type header to ensure browser treats it as JSON
+    return new NextResponse(JSON.stringify({
       success: true,
       tenantId,
       schemaName,
       clientSideOnly: true,
       message: 'Failed to create tenant record in database, but client can use tenant ID',
       error: error.message
+    }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
   }
 }

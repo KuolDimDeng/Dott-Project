@@ -650,7 +650,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
     }
   ];
 
-  const fetchProducts = async () => {
+  // Memoize fetchProducts to prevent it from causing infinite loops in useEffect
+  const fetchProducts = useCallback(async () => {
     try {
       setIsLoading(true);
       console.log('[ProductManagement] Fetching products...');
@@ -678,14 +679,20 @@ const [state, dispatch] = useReducer(reducer, initialState);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [productApi, toast]); // Add the correct dependencies
 
   // Fetch products when active tab is the product list
   useEffect(() => {
-    if (activeTab === 2) {
+    let isMounted = true;
+    
+    if (activeTab === 2 && isMounted) {
       fetchProducts();
     }
-  }, [activeTab, fetchProducts]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [activeTab, fetchProducts]); // Now fetchProducts is properly memoized
   
   const retryFetchProducts = useCallback(async () => {
     try {

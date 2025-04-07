@@ -3,10 +3,10 @@
  * Provides consistent connection settings with AWS RDS
  */
 
-import { createLogger } from './logger';
+import { createServerLogger } from './serverLogger';
 
 // Create logger for this module
-const logger = createLogger('db-config');
+const logger = createServerLogger('db-config');
 
 // Connection settings optimized for AWS RDS
 const DB_DEFAULTS = {

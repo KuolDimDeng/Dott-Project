@@ -4,6 +4,7 @@ import { useState } from 'react';
 import ProductForm from '../components/ProductForm'; // Import from the new Tailwind component
 import { useRouter } from 'next/navigation';
 import { axiosInstance } from '@/lib/axiosConfig';
+import { useNotification } from '@/context/NotificationContext'; // Import the notification hook
 
 // Simple HTML-based fallback form with no dependencies
 function FallbackForm({ onSubmit }) {
@@ -105,68 +106,118 @@ export default function NewProductPage() {
   const [useStandardForm, setUseStandardForm] = useState(true);
   const [useFallbackForm, setUseFallbackForm] = useState(false);
   const [formError, setFormError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { notifySuccess, notifyError } = useNotification(); // Add the notification hook
   
   const handleSubmit = async (productData) => {
     try {
-      console.log("Submitting product data:", productData);
+      console.log("Starting product submission with data:", productData);
+      setLoading(true);
       
-      const response = await axiosInstance.post('/api/inventory/products/', productData);
-      console.log("Product created:", response.data);
+      // Get tenant ID from localStorage
+      const tenantId = typeof window !== 'undefined' ? localStorage.getItem('tenantId') || localStorage.getItem('businessid') : null;
+      console.log("Using tenant ID for product creation:", tenantId);
       
+      // Include detailed debugging
+      console.log("User entered product price:", productData.price);
+      console.log("User entered stock quantity:", productData.stock);
+      
+      // Map the form data to the expected structure for inventory_product table
+      // The server expects stock_quantity but our form provides 'stock'
+      const mappedProductData = {
+        name: productData.name,
+        product_name: productData.name,
+        description: productData.description || '',
+        price: parseFloat(productData.price) || 0,
+        stock_quantity: parseInt(productData.stock) || 0, // Map 'stock' from form to 'stock_quantity'
+        sku: productData.sku || `SKU-${Date.now().toString().substring(9)}`,
+        is_for_sale: true,
+        category: productData.category || '',
+        tax_rate: parseFloat(productData.taxRate) || 0, // Include tax rate
+        status: productData.status || 'Active',
+        tenant_id: tenantId // Include tenant ID for RLS
+      };
+      
+      console.log("Submitting mapped product data to API:", mappedProductData);
+      console.log("API endpoint: /api/inventory/products");
+      
+      // Set headers with tenant ID
+      const headers = { 'x-tenant-id': tenantId };
+      
+      // Make an API request to the proper inventory endpoint
+      const response = await axiosInstance.post('/api/inventory/products', mappedProductData, { headers });
+      
+      console.log("Product created successfully:", response.data);
+      
+      // Show success notification
+      notifySuccess(`Product "${productData.name}" created successfully!`);
+      
+      // Navigate to products list
       router.push('/dashboard/products');
     } catch (error) {
       console.error("Error creating product:", error);
-      setFormError('Failed to create product. Please try again.');
+      console.error("Error details:", error.response?.data || error.message);
+      
+      // Check for specific error types and provide better messages
+      let errorMessage = 'Failed to create product. Please try again.';
+      
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. The server is taking too long to respond.';
+      } else if (error.response) {
+        if (error.response.status === 400) {
+          errorMessage = `Invalid data: ${error.response.data?.message || 'Please check your inputs'}`;
+        } else if (error.response.status === 401 || error.response.status === 403) {
+          errorMessage = 'You do not have permission to create products';
+        } else if (error.response.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+      }
+      
+      // Set form error state
+      setFormError(errorMessage);
+      
+      // Show error notification
+      notifyError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
   
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="mt-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Create New Product</h1>
-          
-          <div className="flex space-x-2">
-            <button 
-              onClick={() => {
-                setUseStandardForm(!useStandardForm);
-                setUseFallbackForm(false);
-              }}
-              className="px-4 py-2 border border-blue-500 text-blue-500 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {useStandardForm ? "Switch to Advanced Form" : "Switch to Standard Form"}
-            </button>
-            <button
-              onClick={() => {
-                setUseFallbackForm(!useFallbackForm);
-                setUseStandardForm(false);
-              }}
-              className="px-4 py-2 border border-red-500 text-red-500 rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-              {useFallbackForm ? "Use React Forms" : "Use Fallback Form"}
-            </button>
-          </div>
-        </div>
+    <div className="p-4 max-w-5xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Create New Product</h1>
         
-        {formError && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
-            {formError}
-          </div>
-        )}
-        
-        {useFallbackForm ? (
-          <FallbackForm onSubmit={handleSubmit} />
-        ) : useStandardForm ? (
-          <ProductForm mode="create" />
-        ) : (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 mb-6">
-              Advanced form is not available in Tailwind version yet. Please use the standard form.
-            </div>
-            <ProductForm mode="create" />
-          </div>
-        )}
+        {/* Debugging button */}
+        <button 
+          onClick={() => {
+            console.log("Debug button clicked");
+            notifySuccess("Notification test - this should appear as a toast");
+          }}
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
+          Test Notification
+        </button>
       </div>
+      
+      {formError && (
+        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+          {formError}
+        </div>
+      )}
+      
+      {useStandardForm && (
+        <ProductForm 
+          mode="create" 
+          onSubmit={handleSubmit} 
+          error={formError} 
+          loading={loading}
+        />
+      )}
+      
+      {useFallbackForm && (
+        <FallbackForm onSubmit={handleSubmit} />
+      )}
     </div>
   );
 }

@@ -1,0 +1,93 @@
+/* Editor styling for rich text components */
+.editor-container {
+  @apply w-full overflow-hidden border border-gray-300 rounded-md;
+}
+
+.editor-toolbar {
+  @apply flex items-center p-2 gap-2 bg-gray-50 border-b border-gray-300;
+}
+
+.editor-toolbar button {
+  @apply p-1 rounded hover:bg-gray-200 transition-colors;
+}
+
+.editor-toolbar button.active {
+  @apply bg-blue-100 text-blue-600;
+}
+
+.editor-content {
+  @apply p-4 min-h-[200px] outline-none;
+}
+
+/* Code editor styling */
+.code-editor {
+  @apply font-mono text-sm bg-gray-800 text-white p-4 rounded-md;
+}
+
+.code-editor pre {
+  @apply m-0;
+}
+
+.code-editor .line-numbers {
+  @apply text-gray-500 select-none mr-4 inline-block text-right w-8;
+}
+
+/* Markdown editor */
+.markdown-editor .preview {
+  @apply p-4 border-t border-gray-300 bg-white;
+}
+
+.markdown-editor .preview h1 {
+  @apply text-2xl font-bold mb-4;
+}
+
+.markdown-editor .preview h2 {
+  @apply text-xl font-bold mb-3;
+}
+
+.markdown-editor .preview h3 {
+  @apply text-lg font-bold mb-2;
+}
+
+.markdown-editor .preview p {
+  @apply mb-4;
+}
+
+.markdown-editor .preview ul, 
+.markdown-editor .preview ol {
+  @apply ml-5 mb-4;
+}
+
+.markdown-editor .preview ul {
+  @apply list-disc;
+}
+
+.markdown-editor .preview ol {
+  @apply list-decimal;
+}
+
+.markdown-editor .preview code {
+  @apply px-1 py-0.5 bg-gray-100 rounded text-sm font-mono;
+}
+
+.markdown-editor .preview pre {
+  @apply p-3 bg-gray-100 rounded mb-4 overflow-x-auto;
+}
+
+.markdown-editor .preview blockquote {
+  @apply pl-4 border-l-4 border-gray-300 text-gray-700 italic;
+}
+
+/* Table editor */
+.table-editor table {
+  @apply w-full border-collapse;
+}
+
+.table-editor th, 
+.table-editor td {
+  @apply border border-gray-300 p-2;
+}
+
+.table-editor th {
+  @apply bg-gray-50 font-medium;
+} 

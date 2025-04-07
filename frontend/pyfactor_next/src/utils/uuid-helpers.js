@@ -3,10 +3,10 @@
  * Used across all services for consistent UUID handling
  */
 import { validate as uuidValidate, version as uuidVersion } from 'uuid';
-import { createLogger } from './logger';
+import { createServerLogger } from './serverLogger';
 
 // Create logger for this module
-const logger = createLogger('uuid-helpers');
+const logger = createServerLogger('uuid-helpers');
 
 /**
  * Check if a string is a valid UUID

@@ -111,14 +111,7 @@ const MemoryMonitor = ({ pollInterval = 2000, maxSamples = 20 }) => {
   
   // If memory API is not available
   if (!memoryData) {
-    return (
-      <div className="p-4 m-4 bg-gray-100 border border-gray-200 rounded-lg">
-        <p className="text-sm text-red-500">
-          Memory monitoring not available in this browser.
-          Try Chrome with --enable-precise-memory-info flag.
-        </p>
-      </div>
-    );
+    return null;
   }
   
   // Calculate memory usage percentage

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { serviceApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
 import { useToast } from '@/components/Toast/ToastProvider';
@@ -52,6 +52,19 @@ const DesignServicesIcon = () => (
     <path fillRule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 4h3a3 3 0 006 0h3a2 2 0 012 2v9a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm2.5 7a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm2.45 4a2.5 2.5 0 10-4.9 0h4.9zM12 9a1 1 0 100 2h3a1 1 0 100-2h-3zm-1 4a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z" clipRule="evenodd" />
   </svg>
 );
+
+// Constants for rendering optimization
+const THROTTLE_LOG_INTERVAL = 1000; // 1 second between log messages
+let lastLogTime = 0;
+
+// Add throttled logger function
+const throttledDebugLog = (message, data) => {
+  const now = Date.now();
+  if (now - lastLogTime > THROTTLE_LOG_INTERVAL) {
+    lastLogTime = now;
+    logger.debug(message, data);
+  }
+};
 
 const ServiceManagement = ({ salesContext = false, mode, newService: isNewService = false }) => {
   // Determine initial tab based on mode
@@ -118,14 +131,14 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
     }
   };
 
-  const handleTabChange = (event, newValue) => {
-    logger.debug('[ServiceManagement] Tab changed to:', newValue);
+  const handleTabChange = useCallback((event, newValue) => {
+    throttledDebugLog('[ServiceManagement] Tab changed to:', newValue);
     setActiveTab(newValue);
-  };
+  }, []);
 
-  const handleInputChange = (event) => {
+  const handleInputChange = useCallback((event) => {
     const { name, value, checked, type } = event.target;
-    logger.debug('[ServiceManagement] Input changed:', name, type === 'checkbox' ? checked : value);
+    throttledDebugLog('[ServiceManagement] Input changed:', name);
     
     if (isEditing) {
       setEditedService((prev) => ({
@@ -138,7 +151,7 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
         [name]: type === 'checkbox' ? checked : value,
       }));
     }
-  };
+  }, [isEditing]);
 
   const handleCreateService = async (e) => {
     e.preventDefault();
@@ -277,12 +290,12 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
     handleExportClose();
   };
 
-  const filteredServices = services.filter(service => 
+  const filteredServices = useMemo(() => services.filter(service => 
     service.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     service.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ), [services, searchQuery]);
 
-  logger.debug('[ServiceManagement] Rendering with activeTab:', activeTab);
+  throttledDebugLog('[ServiceManagement] Rendering with activeTab:', activeTab);
   
   // Create Service Form
   const renderCreateServiceForm = () => (
@@ -961,4 +974,4 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
   );
 };
 
-export default ServiceManagement;
+export default React.memo(ServiceManagement);

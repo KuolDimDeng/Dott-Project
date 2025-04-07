@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { fixInputFields, monitorInputEvents } from '@/utils/inputDebug';
 
-export default function ProductForm({ product, mode = 'create' }) {
+export default function ProductForm({ product, mode = 'create', onSubmit, error: externalError, loading: externalLoading }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,6 +24,13 @@ export default function ProductForm({ product, mode = 'create' }) {
     ...product,
   });
 
+  // Update error state when external error changes
+  useEffect(() => {
+    if (externalError) {
+      setError(externalError);
+    }
+  }, [externalError]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -34,30 +41,68 @@ export default function ProductForm({ product, mode = 'create' }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    console.log("ProductForm handleSubmit triggered");
+    
+    // Don't set loading state if parent component is handling it
+    if (!externalLoading) {
+      setLoading(true);
+    }
+    
     setError('');
 
     try {
-      const url = mode === 'create' ? '/api/products' : `/api/products/${product.id}`;
-      const method = mode === 'create' ? 'POST' : 'PUT';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save product');
+      // Validate required fields
+      if (!formData.name || !formData.sku || !formData.price) {
+        throw new Error('Please fill in all required fields.');
       }
 
-      router.push('/dashboard/products');
+      // Convert numeric strings to numbers
+      const processedData = {
+        ...formData,
+        price: parseFloat(formData.price),
+        cost: parseFloat(formData.cost),
+        stock: parseInt(formData.stock, 10),
+        minStock: formData.minStock ? parseInt(formData.minStock, 10) : undefined,
+        maxStock: formData.maxStock ? parseInt(formData.maxStock, 10) : undefined,
+        taxRate: parseFloat(formData.taxRate)
+      };
+
+      console.log("ProductForm submitting data:", processedData);
+      
+      if (onSubmit) {
+        // Use the onSubmit handler from parent component if provided
+        await onSubmit(processedData);
+      } else {
+        // Default behavior if no onSubmit handler is provided
+        console.log("No onSubmit handler provided, using default behavior");
+        const url = mode === 'create' ? '/api/products' : `/api/products/${product.id}`;
+        const method = mode === 'create' ? 'POST' : 'PUT';
+
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(processedData),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save product');
+        }
+
+        router.push('/dashboard/products');
+      }
     } catch (err) {
-      setError(err.message);
+      console.error("ProductForm error:", err);
+      // Only set error if not handled by parent component
+      if (!externalError) {
+        setError(err.message);
+      }
     } finally {
-      setLoading(false);
+      // Only reset loading if not handled by parent component
+      if (!externalLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -298,10 +343,10 @@ export default function ProductForm({ product, mode = 'create' }) {
           </button>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || externalLoading}
             className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {loading ? (
+            {(loading || externalLoading) ? (
               <div className="flex items-center justify-center">
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

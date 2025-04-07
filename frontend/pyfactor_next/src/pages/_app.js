@@ -1,6 +1,9 @@
 // Import our polyfill first to ensure compatibility
 import '../utils/modulePolyfill';
 
+// Import Amplify configuration early
+import '../lib/amplifyConfig';
+
 import React from 'react';
 import Head from 'next/head';
 

@@ -282,16 +282,28 @@ const ProductForm = ({ open, onClose, product = null, isEdit = false }) => {
       setLoading(true);
       setError(null);
       
+      // Debug logs to track product creation
+      console.log('DEBUG: ProductForm - Product submission initiated', {
+        isEdit,
+        productData: { ...formData, image_file: formData.image_file ? "File attached" : null }
+      });
+      
       // Create or update product
       if (isEdit) {
+        console.log(`DEBUG: ProductForm - Updating product ${product.id}`);
         await unifiedInventoryService.updateProduct(product.id, formData);
+        console.log(`DEBUG: ProductForm - Product ${product.id} updated successfully`);
       } else {
-        await unifiedInventoryService.createProduct(formData);
+        console.log('DEBUG: ProductForm - Creating new product');
+        const result = await unifiedInventoryService.createProduct(formData);
+        console.log('DEBUG: ProductForm - Product created successfully', result);
       }
       
       // Close dialog and refresh list
+      console.log('DEBUG: ProductForm - Closing dialog with refresh=true');
       onClose(true);
     } catch (error) {
+      console.error('DEBUG: ProductForm - Error saving product:', error);
       logger.error('Error saving product:', error);
       setError('Failed to save product. Please try again.');
     } finally {

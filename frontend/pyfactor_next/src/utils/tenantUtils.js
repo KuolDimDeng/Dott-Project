@@ -1,21 +1,244 @@
 "use strict";
 
 /**
- * Simple utility for tenant ID management.
- * This is a simplified version to avoid memory issues and initialization problems.
- * It provides stubs for all required exports.
+ * Enhanced tenant management utilities
+ * Provides secure methods for handling tenant information
  */
 
-// Basic logger that just wraps console methods
-const logger = {
-  debug: (msg, data) => console.log(msg, data || ''),
-  error: (msg, data) => console.error(msg, data || ''),
-  warn: (msg, data) => console.warn(msg, data || ''),
-  info: (msg, data) => console.info(msg, data || '')
-};
+import Cookies from 'js-cookie';
+import { logger } from './logger';
+import { jwtDecode } from 'jwt-decode';
 
 // Helper function to detect if code is running in browser
 const isBrowser = typeof window !== 'undefined';
+
+// Cookie configuration
+const COOKIE_CONFIG = {
+  path: '/',
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  expires: 30 // 30 days
+};
+
+// Near the top of the file, add a caching mechanism
+// Cache for tenant ID to avoid excessive cookie reads
+let cachedTenantId = null;
+let lastCacheTime = 0;
+const CACHE_DURATION = 5000; // 5 seconds
+
+/**
+ * Get tenant ID from JWT token
+ * @param {string} token - JWT token
+ * @returns {string|null} - Tenant ID from token
+ */
+export function getTenantFromToken(token) {
+  try {
+    if (!token) return null;
+    
+    const decoded = jwtDecode(token);
+    
+    // Check various possible locations for tenant ID
+    return decoded['custom:tenant_id'] || 
+           decoded['custom:tenantId'] || 
+           decoded['custom:businessid'] || 
+           decoded.tenantId || 
+           null;
+  } catch (error) {
+    logger.error('[TenantUtils] Error extracting tenant from token:', error);
+    return null;
+  }
+}
+
+/**
+ * Store tenant ID securely
+ * @param {string} tenantId - Tenant ID to store
+ */
+export function storeTenantId(tenantId) {
+  if (!isBrowser || !tenantId) {
+    return;
+  }
+
+  try {
+    // Set in cookies (both secure and regular for compatibility)
+    Cookies.set('tenantId', tenantId, COOKIE_CONFIG);
+    
+    // Set in sessionStorage (more secure than localStorage)
+    try {
+      sessionStorage.setItem('tenantId', tenantId);
+    } catch (e) {
+      // Ignore sessionStorage errors
+      logger.error('[TenantUtils] Error saving to sessionStorage:', e);
+    }
+
+    // Legacy: Set in localStorage with warning (less secure)
+    try {
+      localStorage.setItem('tenantId', tenantId);
+      localStorage.setItem('businessid', tenantId); // For backward compatibility
+    } catch (e) {
+      // Ignore localStorage errors
+      logger.error('[TenantUtils] Error saving to localStorage:', e);
+    }
+    
+    logger.debug(`[TenantUtils] Tenant ID stored: ${tenantId}`);
+  } catch (error) {
+    logger.error('[TenantUtils] Error storing tenant ID:', error);
+  }
+}
+
+/**
+ * Get tenant ID from all available sources with priority
+ * Uses caching to avoid excessive cookie reads and logging
+ * @returns {string|null} - Tenant ID from most secure source
+ */
+export function getTenantId() {
+  if (!isBrowser) {
+    return null;
+  }
+
+  try {
+    const now = Date.now();
+    
+    // Return cached value if valid
+    if (cachedTenantId && (now - lastCacheTime) < CACHE_DURATION) {
+      return cachedTenantId;
+    }
+    
+    // Try from cookies first (most secure)
+    const cookieTenantId = Cookies.get('tenantId');
+    if (cookieTenantId) {
+      // Only log first time or when value changes
+      if (cookieTenantId !== cachedTenantId) {
+        logger.debug(`[TenantUtils] Got tenant ID from cookie: ${cookieTenantId}`);
+      }
+      
+      // Update cache
+      cachedTenantId = cookieTenantId;
+      lastCacheTime = now;
+      return cookieTenantId;
+    }
+    
+    // Try from sessionStorage next
+    const sessionTenantId = sessionStorage.getItem('tenantId');
+    if (sessionTenantId) {
+      // Only log when value changes
+      if (sessionTenantId !== cachedTenantId) {
+        logger.debug(`[TenantUtils] Got tenant ID from sessionStorage: ${sessionTenantId}`);
+      }
+      
+      // Sync to cookies
+      storeTenantId(sessionTenantId);
+      
+      // Update cache
+      cachedTenantId = sessionTenantId;
+      lastCacheTime = now;
+      return sessionTenantId;
+    }
+    
+    // Try from localStorage last (least secure)
+    const localTenantId = localStorage.getItem('tenantId') || localStorage.getItem('businessid');
+    if (localTenantId) {
+      // Only log when value changes
+      if (localTenantId !== cachedTenantId) {
+        logger.debug(`[TenantUtils] Got tenant ID from localStorage: ${localTenantId}`);
+      }
+      
+      // Sync to more secure storage
+      storeTenantId(localTenantId);
+      
+      // Update cache
+      cachedTenantId = localTenantId;
+      lastCacheTime = now;
+      return localTenantId;
+    }
+    
+    // Only log no tenant found once
+    if (cachedTenantId !== null) {
+      logger.debug('[TenantUtils] No tenant ID found in any storage');
+      cachedTenantId = null;
+    }
+    
+    return null;
+  } catch (error) {
+    logger.error('[TenantUtils] Error getting tenant ID:', error);
+    return null;
+  }
+}
+
+/**
+ * Clear all tenant-related storage
+ * This removes tenant IDs from cookies and storage
+ */
+export function clearTenantStorage() {
+  if (!isBrowser) {
+    logger.debug('[TenantUtils] Cannot clear tenant storage on server side');
+    return;
+  }
+
+  try {
+    // Clear cookies
+    Cookies.remove('tenantId', { path: '/' });
+    Cookies.remove('businessid', { path: '/' });
+    
+    // Clear sessionStorage
+    try {
+      sessionStorage.removeItem('tenantId');
+    } catch (e) {
+      // Ignore errors
+    }
+    
+    // Clear localStorage
+    try {
+      localStorage.removeItem('tenantId');
+      localStorage.removeItem('businessid');
+    } catch (e) {
+      // Ignore errors
+    }
+    
+    logger.debug('[TenantUtils] Tenant storage cleared successfully');
+  } catch (error) {
+    logger.error('[TenantUtils] Error clearing tenant storage:', error);
+  }
+}
+
+/**
+ * Add tenant ID to URL or API request
+ * @param {string} url - URL to add tenant to
+ * @param {string} [tenantIdOverride] - Optional override tenant ID
+ * @returns {string} - URL with tenant ID parameter
+ */
+export function addTenantToUrl(url, tenantIdOverride) {
+  try {
+    const id = tenantIdOverride || getTenantId();
+    if (!id || !url) return url;
+    
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}tenantId=${id}`;
+  } catch (error) {
+    logger.error('[TenantUtils] Error adding tenant to URL:', error);
+    return url;
+  }
+}
+
+/**
+ * Generate headers with tenant ID for API requests
+ * @param {Object} [existingHeaders={}] - Existing headers
+ * @param {string} [tenantIdOverride] - Optional override tenant ID 
+ * @returns {Object} - Headers with tenant ID
+ */
+export function getTenantHeaders(existingHeaders = {}, tenantIdOverride) {
+  try {
+    const id = tenantIdOverride || getTenantId();
+    if (!id) return existingHeaders;
+    
+    return {
+      ...existingHeaders,
+      'X-Tenant-ID': id
+    };
+  } catch (error) {
+    logger.error('[TenantUtils] Error generating tenant headers:', error);
+    return existingHeaders;
+  }
+}
 
 /**
  * Synchronize a repaired tenant ID by updating cookies and localStorage
@@ -53,24 +276,18 @@ export async function syncRepairedTenantId(oldTenantId, newTenantId) {
 }
 
 /**
- * Get the current tenant ID from cookies or localStorage
- * @returns {string|null} Current tenant ID or null if not found
+ * Convert tenant ID to schema name format
  */
-export function getTenantId() {
-  if (!isBrowser) {
-    return null;
-  }
+export function getSchemaName(tenantId) {
+  if (!tenantId) return null;
   
   try {
-    // Get from cookie
-    const cookieMatch = document.cookie.match(/tenantId=([^;]+)/);
-    if (cookieMatch) {
-      return cookieMatch[1];
-    }
-    
-    // Fallback to localStorage
-    return localStorage.getItem('tenantId');
-  } catch (e) {
+    // Schema name is typically tenant_ followed by tenant ID
+    // Ensure tenant ID is formatted correctly for database schema
+    const sanitizedTenantId = tenantId.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    return `tenant_${sanitizedTenantId}`;
+  } catch (error) {
+    logger.error('Error formatting schema name', error);
     return null;
   }
 }
@@ -93,6 +310,10 @@ export function storeTenantInfo(tenantId) {
     expires.setDate(expires.getDate() + 30); // 30 days expiry
     document.cookie = `tenantId=${tenantId}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
     document.cookie = `businessid=${tenantId}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
+    
+    // Update cache
+    cachedTenantId = tenantId;
+    lastCacheTime = Date.now();
     
     logger.debug('[TenantUtils] Tenant info stored:', tenantId);
   } catch (error) {
@@ -163,57 +384,4 @@ export function setTokens(tokens = {}) {
   } catch (error) {
     logger.error('[TenantUtils] Error setting tokens:', error);
   }
-}
-
-/**
- * Get schema name for database
- * @returns {string|null} The schema name or null
- */
-export function getSchemaName() {
-  const tenantId = getTenantId();
-  if (!tenantId) {
-    return null;
-  }
-  
-  // Convert tenant ID to schema name format
-  return `tenant_${tenantId.replace(/-/g, '_')}`;
-}
-
-/**
- * Get headers for inventory API requests
- * @returns {Object} Headers with tenant information
- */
-export function getInventoryHeaders() {
-  const tenantId = getTenantId();
-  if (!tenantId) {
-    return {};
-  }
-  
-  // Generate basic headers
-  const headers = {
-    'Content-Type': 'application/json',
-    'X-Tenant-ID': tenantId,
-    'X-Schema-Name': getSchemaName(),
-    'X-Business-ID': tenantId
-  };
-  
-  // Add auth tokens if available
-  try {
-    if (isBrowser) {
-      const tokensStr = localStorage.getItem('tokens');
-      if (tokensStr) {
-        const tokens = JSON.parse(tokensStr);
-        if (tokens.accessToken) {
-          headers['Authorization'] = `Bearer ${tokens.accessToken}`;
-        }
-        if (tokens.idToken) {
-          headers['X-Id-Token'] = tokens.idToken;
-        }
-      }
-    }
-  } catch (error) {
-    logger.error('[TenantUtils] Error adding auth to headers:', error);
-  }
-  
-  return headers;
 }

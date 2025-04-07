@@ -1,171 +1,244 @@
 'use client';
 
-// This is a simplified version of logger.js that doesn't depend on the debug module
-// It will replace the original logger.js temporarily
+/**
+ * Logger utility for consistent application logging
+ * Includes tenant context in logs for easier debugging
+ */
 
-// Configuration for log filtering
-const LOG_LEVEL = {
+import { getTenantId } from './tenantUtils';
+
+// Log levels
+const LOG_LEVELS = {
   DEBUG: 0,
   INFO: 1,
   WARN: 2,
-  ERROR: 3
+  ERROR: 3,
+  NONE: 4
 };
 
-// Current log level - only logs of this level and higher will be shown
-// In production, default to INFO level; in development, default to DEBUG
-const CURRENT_LOG_LEVEL = (process.env.NODE_ENV === 'production') ? LOG_LEVEL.INFO : LOG_LEVEL.DEBUG;
+// Current log level - can be overridden with environment variables
+let currentLogLevel = process.env.NODE_ENV === 'production' 
+  ? LOG_LEVELS.INFO 
+  : LOG_LEVELS.DEBUG;
 
-// Deduplication of logs
-const recentLogs = new Map();
-const DEDUP_TIMEOUT = 2000; // 2 seconds timeout for deduplicating identical logs
-
-// Enhanced safe logger implementation
-const safeLog = (level, prefix, ...args) => {
+// Allow log level to be set via localStorage for debugging
+if (typeof window !== 'undefined') {
   try {
-    // Check if we should show this log based on current level
-    const numericLevel = level === 'debug' ? LOG_LEVEL.DEBUG :
-                         level === 'info' ? LOG_LEVEL.INFO :
-                         level === 'warn' ? LOG_LEVEL.WARN :
-                         LOG_LEVEL.ERROR;
-                         
-    if (numericLevel < CURRENT_LOG_LEVEL) {
-      return; // Skip logs below the current level
+    const storedLogLevel = localStorage.getItem('logLevel');
+    if (storedLogLevel && LOG_LEVELS[storedLogLevel] !== undefined) {
+      currentLogLevel = LOG_LEVELS[storedLogLevel];
+    }
+  } catch (error) {
+    console.error('Error reading log level from localStorage', error);
+  }
+}
+
+// Message throttling mechanism to avoid excessive logs
+const messageCache = new Map();
+const MESSAGE_THROTTLE_INTERVAL = 5000; // 5 seconds
+
+// Service Management specific throttling
+const SERVICE_MANAGEMENT_THROTTLE_INTERVAL = 2000; // 2 seconds
+const RENDERING_THROTTLE_INTERVAL = 1000; // 1 second for rendering logs
+
+// Patterns for messages that should be heavily throttled
+const THROTTLE_PATTERNS = [
+  '[TenantUtils]',
+  '[apiService] Added tenant headers',
+  'Normalized subscription type',
+  '[useSession]',
+  'Session fetched successfully',
+  '[Dashboard]',
+  '[ServiceManagement] Rendering',
+  '[ServiceManagement] Component mounted',
+  '[ApiRequest] GET',
+  'Fetching services',
+  'with schema: tenant_',
+  'with activeTab',
+  'GET /api/'
+];
+
+/**
+ * Should the message be logged based on throttling rules
+ * @param {string} message - Message to check
+ * @returns {boolean} - Whether to log the message
+ */
+function shouldLogMessage(message) {
+  // Check if this message matches any throttle pattern
+  let needsThrottling = false;
+  let throttleInterval = MESSAGE_THROTTLE_INTERVAL;
+  
+  for (const pattern of THROTTLE_PATTERNS) {
+    if (message.includes(pattern)) {
+      needsThrottling = true;
+      
+      // Apply different throttle intervals based on pattern
+      if (pattern.startsWith('[ServiceManagement] Rendering')) {
+        throttleInterval = RENDERING_THROTTLE_INTERVAL;
+      } else if (pattern.startsWith('[ServiceManagement]')) {
+        throttleInterval = SERVICE_MANAGEMENT_THROTTLE_INTERVAL;
+      } else if (pattern.startsWith('[ApiRequest]')) {
+        throttleInterval = RENDERING_THROTTLE_INTERVAL;
+      }
+      
+      break;
+    }
+  }
+  
+  // If it doesn't need throttling, log it
+  if (!needsThrottling) {
+    return true;
+  }
+  
+  const now = Date.now();
+  const lastLogTime = messageCache.get(message);
+  
+  // If this exact message hasn't been logged recently, allow it
+  if (!lastLogTime || (now - lastLogTime) > throttleInterval) {
+    messageCache.set(message, now);
+    
+    // Cleanup old messages from cache to prevent memory leaks
+    if (messageCache.size > 100) {
+      const oldMessages = [];
+      messageCache.forEach((time, msg) => {
+        if ((now - time) > throttleInterval) {
+          oldMessages.push(msg);
+        }
+      });
+      oldMessages.forEach(msg => messageCache.delete(msg));
     }
     
-    // Generate a key for deduplication
-    const logKey = `${level}-${prefix}-${JSON.stringify(args)}`;
-    
-    // Check if this exact log was recently shown
-    const now = Date.now();
-    const lastLogTime = recentLogs.get(logKey);
-    
-    if (lastLogTime && (now - lastLogTime < DEDUP_TIMEOUT)) {
-      // Skip this log as it's a duplicate within our timeout window
-      return;
-    }
-    
-    // Update the deduplication map
-    recentLogs.set(logKey, now);
-    
-    // Clean up old entries in the map
-    for (const [key, timestamp] of recentLogs.entries()) {
-      if (now - timestamp > DEDUP_TIMEOUT) {
-        recentLogs.delete(key);
-      }
-    }
-    
-    // Ensure we have valid arguments
-    if (!args || args.length === 0) {
-      console[level](`[pyfactor] [${prefix}]:`, "(no data)");
-      return;
-    }
-    
-    // Convert complex objects to safe strings (avoiding circular references)
-    const safeArgs = args.map(arg => {
-      if (arg === undefined) {
-        return "(undefined)";
-      }
-      if (arg === null) {
-        return "(null)";
-      }
-      if (arg instanceof Error) {
-        return {
-          message: arg.message || "No message",
-          code: arg.code,
-          name: arg.name || "Error",
-          stack: arg.stack
-        };
-      }
-      else if (typeof arg === 'object' && arg !== null) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Format log messages with additional context
+ */
+function formatMessage(message) {
+  try {
+    const timestamp = new Date().toISOString();
+    const tenantId = typeof window !== 'undefined' ? getTenantId() : 'server';
+    return `[${timestamp}] [${tenantId || 'no-tenant'}] ${message}`;
+  } catch (error) {
+    return message; // Fallback to original message if formatting fails
+  }
+}
+
+/**
+ * Logger instance with methods for different log levels
+ */
+export const logger = {
+  /**
+   * Set the current log level
+   * @param {string} level - One of DEBUG, INFO, WARN, ERROR, NONE
+   */
+  setLogLevel: (level) => {
+    if (LOG_LEVELS[level] !== undefined) {
+      currentLogLevel = LOG_LEVELS[level];
+      
+      if (typeof window !== 'undefined') {
         try {
-          return JSON.parse(JSON.stringify(arg));
-        } catch (e) {
-          return `[Circular or complex object: ${Object.keys(arg).join(', ')}]`;
+          localStorage.setItem('logLevel', level);
+        } catch (error) {
+          console.error('Error saving log level to localStorage', error);
         }
       }
-      return arg;
-    });
-    
-    console[level](`[pyfactor] [${prefix}]:`, ...safeArgs);
-  } catch (e) {
-    // Last-resort fallback
-    try {
-      console.log(`[pyfactor] [ERROR] Logger failed:`, e.message);
-    } catch {
-      // Nothing we can do at this point
+      
+      console.info(`Log level set to ${level}`);
     }
-  }
-};
-
-// Client-side debug method
-const debug = (message, ...args) => {
-  if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-    safeLog('debug', message, ...args);
-  } else if (process.env.NODE_ENV !== 'production') {
-    // Server-side debug handling
-    console.debug(`[pyfactor] [${message}]:`, ...args);
-  }
-};
-
-// Client-side info method
-const info = (message, ...args) => {
-  if (typeof window !== 'undefined') {
-    safeLog('info', message, ...args);
-  } else {
-    // Server-side info handling
-    console.info(`[pyfactor] [${message}]:`, ...args);
-  }
-};
-
-// Client-side warn method
-const warn = (message, ...args) => {
-  if (typeof window !== 'undefined') {
-    safeLog('warn', message, ...args);
-  } else {
-    // Server-side warn handling
-    console.warn(`[pyfactor] [${message}]:`, ...args);
-  }
-};
-
-// Client-side error method
-const error = (message, ...args) => {
-  if (typeof window !== 'undefined') {
-    safeLog('error', message, ...args);
-  } else {
-    // Server-side error handling
-    console.error(`[pyfactor] [${message}]:`, ...args);
+  },
+  
+  /**
+   * Log at DEBUG level
+   */
+  debug: (message, data) => {
+    if (currentLogLevel <= LOG_LEVELS.DEBUG) {
+      const formattedMessage = formatMessage(message);
+      
+      // Apply throttling for debug messages
+      if (shouldLogMessage(formattedMessage)) {
+        if (data !== undefined) {
+          console.debug(formattedMessage, data);
+        } else {
+          console.debug(formattedMessage);
+        }
+      }
+    }
+  },
+  
+  /**
+   * Log at INFO level
+   */
+  info: (message, data) => {
+    if (currentLogLevel <= LOG_LEVELS.INFO) {
+      const formattedMessage = formatMessage(message);
+      
+      // Apply some throttling for info messages too
+      if (shouldLogMessage(formattedMessage)) {
+        if (data !== undefined) {
+          console.info(formattedMessage, data);
+        } else {
+          console.info(formattedMessage);
+        }
+      }
+    }
+  },
+  
+  /**
+   * Log at WARN level
+   */
+  warn: (message, data) => {
+    if (currentLogLevel <= LOG_LEVELS.WARN) {
+      const formattedMessage = formatMessage(message);
+      // Apply throttling for warnings that match patterns
+      if (shouldLogMessage(formattedMessage)) {
+        if (data !== undefined) {
+          console.warn(formattedMessage, data);
+        } else {
+          console.warn(formattedMessage);
+        }
+      }
+    }
+  },
+  
+  /**
+   * Log at ERROR level
+   */
+  error: (message, data) => {
+    if (currentLogLevel <= LOG_LEVELS.ERROR) {
+      const formattedMessage = formatMessage(message);
+      // Apply throttling for errors that match patterns
+      if (shouldLogMessage(formattedMessage)) {
+        if (data !== undefined) {
+          console.error(formattedMessage, data);
+        } else {
+          console.error(formattedMessage);
+        }
+      }
+    }
   }
 };
 
 /**
- * Create a namespaced logger instance
- * This function was missing and caused errors
- * @param {string} namespace - The namespace for this logger
- * @returns {Object} Logger object with debug, info, warn, error methods
+ * Create a server-side logger
+ * Used for API routes
  */
-export const createLogger = (namespace) => {
-  const prefix = `[${namespace}]`;
-  
+export function createServerLogger(context = {}) {
   return {
-    debug: (...args) => debug(prefix, ...args),
-    info: (...args) => info(prefix, ...args),
-    warn: (...args) => warn(prefix, ...args),
-    error: (...args) => error(prefix, ...args),
-    log: (...args) => debug(prefix, ...args)
+    debug: (message, data) => {
+      console.debug(`[SERVER] [${context.tenantId || 'no-tenant'}] ${message}`, data || '');
+    },
+    info: (message, data) => {
+      console.info(`[SERVER] [${context.tenantId || 'no-tenant'}] ${message}`, data || '');
+    },
+    warn: (message, data) => {
+      console.warn(`[SERVER] [${context.tenantId || 'no-tenant'}] ${message}`, data || '');
+    },
+    error: (message, data) => {
+      console.error(`[SERVER] [${context.tenantId || 'no-tenant'}] ${message}`, data || '');
+    }
   };
-};
-
-// Export individual methods
-export const logger = {
-  debug,
-  info,
-  warn,
-  error,
-  log: debug,
-  createLogger // Export the createLogger function
-};
-
-// Export individual methods for direct access
-export { debug, info, warn, error };
-
-// Do not export default logger to avoid confusion
+}

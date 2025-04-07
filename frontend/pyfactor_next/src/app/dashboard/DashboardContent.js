@@ -1085,6 +1085,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
               setShowCreateMenu={setShowCreateMenu}
               showCreateMenu={showCreateMenu}
               handleClose={handleCloseCreateMenu}
+              handleCloseCreateMenu={handleCloseCreateMenu}
               handleMenuItemClick={handleMenuItemClick}
               setShowForm={setShowForm}
               setFormOption={setFormOption}

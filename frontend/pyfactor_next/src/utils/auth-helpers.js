@@ -4,6 +4,7 @@
  */
 import { cookies } from 'next/headers';
 import { createLogger } from './logger';
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 // Create logger for this module
 const logger = createLogger('auth-helpers');
@@ -115,4 +116,49 @@ export async function getTenantId(request = null) {
 export async function getUserId(request = null) {
   const auth = await getAuth(request);
   return auth.userId;
-} 
+}
+
+/**
+ * Get the current authenticated session
+ * @returns {Promise<Object>} Session object or null
+ */
+export const getAuthSession = async () => {
+  try {
+    const session = await fetchAuthSession();
+    if (!session) {
+      return { user: null, authenticated: false };
+    }
+    
+    const tokens = session.tokens;
+    if (!tokens || !tokens.idToken) {
+      return { user: null, authenticated: false };
+    }
+    
+    // Parse the user info from the ID token
+    const idToken = tokens.idToken.toString();
+    const payload = JSON.parse(
+      Buffer.from(idToken.split('.')[1], 'base64').toString()
+    );
+    
+    const user = {
+      id: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      tenantId: payload['custom:businessid'] || payload['custom:tenantId']
+    };
+    
+    return {
+      user,
+      authenticated: true,
+      accessToken: tokens.accessToken.toString(),
+      idToken
+    };
+  } catch (error) {
+    logger.error('Failed to get auth session:', error);
+    return { user: null, authenticated: false };
+  }
+};
+
+export default {
+  getAuthSession
+}; 

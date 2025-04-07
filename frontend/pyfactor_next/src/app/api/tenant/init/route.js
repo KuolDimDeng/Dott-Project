@@ -4,6 +4,11 @@ import { getCognitoUser } from '@/lib/cognito';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 import { validateTenantIdFormat } from '@/utils/tenantUtils';
+import { isUUID } from '@/utils/uuid-helpers';
+import { createServerLogger } from '@/utils/serverLogger';
+
+// Create server logger for API routes
+const logger = createServerLogger('TenantInit');
 
 /**
  * Format tenant ID to be database-compatible
@@ -59,13 +64,13 @@ function validateAndRepairUuid(uuid) {
   
   // Test again after repairs
   if (uuidPattern.test(repairedUuid)) {
-    console.info('[TenantInit] Repaired UUID:', { original: uuid, repaired: repairedUuid });
+    logger.info('Repaired UUID:', { original: uuid, repaired: repairedUuid });
     return repairedUuid;
   }
   
   // If repair failed, generate a new UUID
   const newUuid = uuidv4();
-  console.warn('[TenantInit] Could not repair UUID, generated new one:', 
+  logger.warn('Could not repair UUID, generated new one:', 
               { original: uuid, generated: newUuid });
   return newUuid;
 }
@@ -90,13 +95,13 @@ async function findUserByEmail(pool, email) {
     const result = await pool.query(query, [email]);
     
     if (result.rows && result.rows.length > 0) {
-      console.info('[TenantInit] Found existing user by email:', result.rows[0]);
+      logger.info('Found existing user by email:', result.rows[0]);
       return result.rows[0];
     }
     
     return null;
   } catch (error) {
-    console.error('[TenantInit] Error finding user by email:', error);
+    logger.error('Error finding user by email:', error);
     return null;
   }
 }
@@ -121,13 +126,13 @@ async function findTenantById(pool, tenantId) {
     const result = await pool.query(query, [tenantId]);
     
     if (result.rows && result.rows.length > 0) {
-      console.info('[TenantInit] Found existing tenant by ID:', result.rows[0]);
+      logger.info('Found existing tenant by ID:', result.rows[0]);
       return result.rows[0];
     }
     
     return null;
   } catch (error) {
-    console.error('[TenantInit] Error finding tenant by ID:', error);
+    logger.error('Error finding tenant by ID:', error);
     return null;
   }
 }
@@ -143,29 +148,29 @@ export async function POST(request) {
       body = await request.json();
     } catch (e) {
       // If parsing fails, use empty object
-      console.warn('[TenantInit] Failed to parse request body');
+      logger.warn('Failed to parse request body');
     }
     
     if (!cognitoUser) {
-      console.error('[TenantInit] No Cognito user available');
+      logger.error('No Cognito user available');
       
       // If we have a tenant ID in the body, use it even without authentication
       // This allows the application to function when authentication fails
       if (body.tenantId) {
-        console.info('[TenantInit] Using tenant ID from request body without authentication:', body.tenantId);
+        logger.info('Using tenant ID from request body without authentication:', body.tenantId);
         
         // Validate and repair the UUID before using it
         const repairedTenantId = validateAndRepairUuid(body.tenantId);
         const formattedTenantId = formatTenantId(repairedTenantId);
         
         // Store tenant ID in cookies
-        const cookieStore = cookies();
-        cookieStore.set('tenantId', formattedTenantId, {
+        const cookieStore = await cookies();
+        await cookieStore.set('tenantId', formattedTenantId, {
           path: '/',
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 365, // 1 year
         });
-        cookieStore.set('businessid', formattedTenantId, {
+        await cookieStore.set('businessid', formattedTenantId, {
           path: '/',
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 365, // 1 year
@@ -197,7 +202,7 @@ export async function POST(request) {
     // Check for tenant ID in cookies if not found in body or user
     let tenantId = originalTenantId;
     try {
-      const cookieStore = cookies();
+      const cookieStore = await cookies();
       const businessIdCookie = cookieStore.get('businessid');
       const tenantIdCookie = cookieStore.get('tenantId');
       
@@ -205,13 +210,13 @@ export async function POST(request) {
         tenantId = businessIdCookie?.value || tenantIdCookie?.value;
       }
       
-      console.info('[TenantInit] Checked cookies for tenant ID:', { 
+      logger.info('Checked cookies for tenant ID:', { 
         businessIdCookie: businessIdCookie?.value ? 'found' : 'missing',
         tenantIdCookie: tenantIdCookie?.value ? 'found' : 'missing',
         tenantId
       });
     } catch (cookieError) {
-      console.warn('[TenantInit] Error accessing cookies:', cookieError.message);
+      logger.warn('Error accessing cookies:', cookieError.message);
     }
     
     // Get the user's email address from Cognito
@@ -236,7 +241,7 @@ export async function POST(request) {
       });
       
       try {
-        console.info('[TenantInit] Connected to database, checking for existing user by email');
+        logger.info('Connected to database, checking for existing user by email');
         
         // First check if this user already exists and has a tenant_id
         if (userEmail) {
@@ -244,26 +249,26 @@ export async function POST(request) {
           
           if (existingUser && existingUser.tenant_id) {
             // User exists and has a tenant ID already
-            console.info('[TenantInit] User already exists with tenant ID:', existingUser.tenant_id);
+            logger.info('User already exists with tenant ID:', existingUser.tenant_id);
             
             // Check if this tenant exists and is active
             const existingTenant = await findTenantById(pool, existingUser.tenant_id);
             
             if (existingTenant && existingTenant.is_active) {
               // Store tenant ID in a cookie for future requests
-              const cookieStore = cookies();
-              cookieStore.set('tenantId', existingTenant.id, {
+              const cookieStore = await cookies();
+              await cookieStore.set('tenantId', existingTenant.id, {
                 path: '/',
                 sameSite: 'lax',
                 maxAge: 60 * 60 * 24 * 365, // 1 year
               });
-              cookieStore.set('businessid', existingTenant.id, {
+              await cookieStore.set('businessid', existingTenant.id, {
                 path: '/',
                 sameSite: 'lax',
                 maxAge: 60 * 60 * 24 * 365, // 1 year
               });
               
-              console.info('[TenantInit] Using existing tenant for user:', existingTenant);
+              logger.info('Using existing tenant for user:', existingTenant);
               
               return NextResponse.json({
                 success: true,
@@ -284,7 +289,7 @@ export async function POST(request) {
         if (tenantId) {
           // Validate and repair the existing tenant ID
           repairedTenantId = validateAndRepairUuid(tenantId);
-          console.info('[TenantInit] Using existing tenant ID (repaired):', repairedTenantId);
+          logger.info('Using existing tenant ID (repaired):', repairedTenantId);
           
           // Check if this tenant exists
           const existingTenant = await findTenantById(pool, repairedTenantId);
@@ -303,7 +308,7 @@ export async function POST(request) {
                     WHERE id = $2
                   `, [repairedTenantId, existingUser.id]);
                   
-                  console.info('[TenantInit] Updated existing user with tenant ID:', {
+                  logger.info('Updated existing user with tenant ID:', {
                     user_id: existingUser.id,
                     tenant_id: repairedTenantId
                   });
@@ -316,25 +321,25 @@ export async function POST(request) {
                     SET tenant_id = EXCLUDED.tenant_id
                   `, [userEmail, repairedTenantId]);
                   
-                  console.info('[TenantInit] Created new user with tenant ID:', {
+                  logger.info('Created new user with tenant ID:', {
                     email: userEmail,
                     tenant_id: repairedTenantId
                   });
                 }
               } catch (userUpdateError) {
-                console.warn('[TenantInit] Error updating user tenant ID:', userUpdateError);
+                logger.warn('Error updating user tenant ID:', userUpdateError);
                 // Continue since the tenant exists
               }
             }
             
             // Store tenant ID in a cookie for future requests
-            const cookieStore = cookies();
-            cookieStore.set('tenantId', existingTenant.id, {
+            const cookieStore = await cookies();
+            await cookieStore.set('tenantId', existingTenant.id, {
               path: '/',
               sameSite: 'lax',
               maxAge: 60 * 60 * 24 * 365, // 1 year
             });
-            cookieStore.set('businessid', existingTenant.id, {
+            await cookieStore.set('businessid', existingTenant.id, {
               path: '/',
               sameSite: 'lax',
               maxAge: 60 * 60 * 24 * 365, // 1 year
@@ -365,19 +370,19 @@ export async function POST(request) {
             repairedTenantId = existingTenant.id;
             
             // Store tenant ID in a cookie for future requests
-            const cookieStore = cookies();
-            cookieStore.set('tenantId', existingTenant.id, {
+            const cookieStore = await cookies();
+            await cookieStore.set('tenantId', existingTenant.id, {
               path: '/',
               sameSite: 'lax',
               maxAge: 60 * 60 * 24 * 365, // 1 year
             });
-            cookieStore.set('businessid', existingTenant.id, {
+            await cookieStore.set('businessid', existingTenant.id, {
               path: '/',
               sameSite: 'lax',
               maxAge: 60 * 60 * 24 * 365, // 1 year
             });
             
-            console.info('[TenantInit] Found tenant for email:', {
+            logger.info('Found tenant for email:', {
               email: userEmail,
               tenant_id: existingTenant.id
             });
@@ -394,7 +399,7 @@ export async function POST(request) {
           } else {
             // Generate a new tenant ID if we can't find one
             repairedTenantId = uuidv4();
-            console.info('[TenantInit] Generating new tenant ID for user:', {
+            logger.info('Generating new tenant ID for user:', {
               email: userEmail,
               tenant_id: repairedTenantId
             });
@@ -402,13 +407,13 @@ export async function POST(request) {
         } else {
           // Generate a new tenant ID if we can't find one
           repairedTenantId = uuidv4();
-          console.info('[TenantInit] Generating new tenant ID as last resort:', repairedTenantId);
+          logger.info('Generating new tenant ID as last resort:', repairedTenantId);
         }
         
         // Tenant doesn't exist, we need to use the schema manager to create it
         // Call the schema manager API to create the schema
         const schemaManagerUrl = new URL('/api/tenant/schema-manager', request.url).toString();
-        console.info('[TenantInit] Calling schema manager API:', schemaManagerUrl);
+        logger.info('Calling schema manager API:', schemaManagerUrl);
         
         // Check if explicit creation was requested
         const forceCreate = body.forceCreate === true;
@@ -417,7 +422,7 @@ export async function POST(request) {
         const shouldCreateTenant = forceCreate || Boolean(body.isFromDashboard);
         
         // Log the tenant creation decision
-        console.info(`[TenantInit] ${shouldCreateTenant ? 'Creating' : 'Validating'} tenant with ID: ${repairedTenantId}`);
+        logger.info(`${shouldCreateTenant ? 'Creating' : 'Validating'} tenant with ID: ${repairedTenantId}`);
         
         const schemaResponse = await fetch(schemaManagerUrl, {
           method: 'POST',
@@ -433,7 +438,7 @@ export async function POST(request) {
           const schemaResult = await schemaResponse.json();
           
           if (schemaResult.success) {
-            console.info('[TenantInit] Schema manager created schema successfully:', schemaResult);
+            logger.info('Schema manager created schema successfully:', schemaResult);
             
             // Now update the user's tenant_id if the user exists
             if (userEmail) {
@@ -448,7 +453,7 @@ export async function POST(request) {
                     WHERE id = $2
                   `, [repairedTenantId, existingUser.id]);
                   
-                  console.info('[TenantInit] Updated existing user with new tenant ID:', {
+                  logger.info('Updated existing user with new tenant ID:', {
                     user_id: existingUser.id,
                     tenant_id: repairedTenantId
                   });
@@ -461,25 +466,25 @@ export async function POST(request) {
                     SET tenant_id = EXCLUDED.tenant_id
                   `, [userEmail, repairedTenantId]);
                   
-                  console.info('[TenantInit] Created new user with tenant ID:', {
+                  logger.info('Created new user with tenant ID:', {
                     email: userEmail,
                     tenant_id: repairedTenantId
                   });
                 }
               } catch (userUpdateError) {
-                console.warn('[TenantInit] Error updating user tenant ID:', userUpdateError);
+                logger.warn('Error updating user tenant ID:', userUpdateError);
                 // Continue since the tenant was created successfully
               }
             }
             
             // Store tenant ID in cookies for future requests
-            const cookieStore = cookies();
-            cookieStore.set('tenantId', repairedTenantId, {
+            const cookieStore = await cookies();
+            await cookieStore.set('tenantId', repairedTenantId, {
               path: '/',
               sameSite: 'lax',
               maxAge: 60 * 60 * 24 * 365, // 1 year
             });
-            cookieStore.set('businessid', repairedTenantId, {
+            await cookieStore.set('businessid', repairedTenantId, {
               path: '/',
               sameSite: 'lax',
               maxAge: 60 * 60 * 24 * 365, // 1 year
@@ -494,46 +499,46 @@ export async function POST(request) {
               message: 'Tenant initialized successfully via schema manager'
             });
           } else {
-            console.error('[TenantInit] Schema manager failed to create schema:', schemaResult);
+            logger.error('Schema manager failed to create schema:', schemaResult);
             // Continue with fallback approaches
           }
         } else {
           // Schema manager API call failed
           const errorText = await schemaResponse.text();
-          console.error('[TenantInit] Schema manager API error:', errorText);
+          logger.error('Schema manager API error:', errorText);
           // Continue with fallback approaches
         }
       } catch (dbQueryError) {
-        console.error('[TenantInit] Error executing database query:', dbQueryError);
+        logger.error('Error executing database query:', dbQueryError);
         // Pool will be closed in finally block
       } finally {
         // Close the pool connection only once at the end
         try {
           await pool.end();
         } catch (error) {
-          console.warn('[TenantInit] Error closing database pool, may already be closed:', error.message);
+          logger.warn('Error closing database pool, may already be closed:', error.message);
         }
       }
     } catch (dbError) {
-      console.error('[TenantInit] Direct database initialization failed:', dbError);
+      logger.error('Direct database initialization failed:', dbError);
       // Continue to API approach - don't return error
     }
     
     // If we can't use direct DB approach, return a success response with the tenant ID we have
     // This allows the dashboard to at least load even if the database isn't accessible
-    console.info('[TenantInit] Using fallback tenant initialization approach');
+    logger.info('Using fallback tenant initialization approach');
     
     // Validate and repair the UUID before using it
     const repairedTenantId = validateAndRepairUuid(tenantId || uuidv4());
     
     // Store tenant ID in a cookie for future requests
-    const cookieStore = cookies();
-    cookieStore.set('tenantId', repairedTenantId, {
+    const cookieStore = await cookies();
+    await cookieStore.set('tenantId', repairedTenantId, {
       path: '/',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 365, // 1 year
     });
-    cookieStore.set('businessid', repairedTenantId, {
+    await cookieStore.set('businessid', repairedTenantId, {
       path: '/',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 365, // 1 year
@@ -551,15 +556,21 @@ export async function POST(request) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('[TenantInit] Error initializing tenant:', error);
+    logger.error('Error initializing tenant:', error);
     
-    // Return a generic error response
-    return NextResponse.json(
-      { 
+    // Return a generic error response with proper headers
+    return new NextResponse(
+      JSON.stringify({ 
         error: 'Failed to initialize tenant',
-        message: error.message 
-      },
-      { status: 500 }
+        message: error.message,
+        success: false
+      }),
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
     );
   }
 }
@@ -570,41 +581,41 @@ export async function GET(request) {
     // Get tenant ID from cookies
     let tenantId = null;
     try {
-      const cookieStore = cookies();
+      const cookieStore = await cookies();
       const businessIdCookie = cookieStore.get('businessid');
       const tenantIdCookie = cookieStore.get('tenantId');
       
       tenantId = businessIdCookie?.value || tenantIdCookie?.value;
       
-      console.info('[TenantInit GET] Checked cookies for tenant ID:', { 
+      logger.info('Checked cookies for tenant ID:', { 
         businessIdCookie: businessIdCookie?.value ? 'found' : 'missing',
         tenantIdCookie: tenantIdCookie?.value ? 'found' : 'missing',
         tenantId
       });
     } catch (cookieError) {
-      console.warn('[TenantInit GET] Error accessing cookies:', cookieError.message);
+      logger.warn('Error accessing cookies:', cookieError.message);
     }
     
     // If no tenant ID found, generate a new one as fallback
     if (!tenantId || !validateTenantIdFormat(tenantId)) {
       tenantId = uuidv4();
-      console.info('[TenantInit GET] Generated new tenant ID:', tenantId);
+      logger.info('Generated new tenant ID:', tenantId);
       
       // Store in cookies
       try {
-        const cookieStore = cookies();
-        cookieStore.set('tenantId', tenantId, {
+        const cookieStore = await cookies();
+        await cookieStore.set('tenantId', tenantId, {
           path: '/',
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 365, // 1 year
         });
-        cookieStore.set('businessid', tenantId, {
+        await cookieStore.set('businessid', tenantId, {
           path: '/',
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 365, // 1 year
         });
       } catch (cookieSetError) {
-        console.error('[TenantInit GET] Error setting cookies:', cookieSetError);
+        logger.error('Error setting cookies:', cookieSetError);
       }
     }
     
@@ -617,18 +628,26 @@ export async function GET(request) {
       message: 'Minimal tenant initialization complete'
     });
   } catch (error) {
-    console.error('[TenantInit GET] Error in minimal tenant init:', error);
+    logger.error('Error in minimal tenant init:', error);
     
     // Generate emergency fallback tenant ID
     const fallbackTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
     
-    // Return fallback response
-    return NextResponse.json({
-      success: true,
-      tenantId: fallbackTenantId,
-      isVerified: false,
-      isFallback: true,
-      message: 'Using emergency fallback tenant ID due to error'
-    });
+    // Return fallback response with proper headers
+    return new NextResponse(
+      JSON.stringify({
+        success: true,
+        tenantId: fallbackTenantId,
+        isVerified: false,
+        isFallback: true,
+        message: 'Using emergency fallback tenant ID due to error'
+      }),
+      { 
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
   }
 } 
